@@ -1,0 +1,13 @@
+bin/
+obj/
+artifacts/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+docs/_site/
+docs/api/
+*.DotSettings.user
+.env
+agent-tools/

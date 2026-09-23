@@ -1,0 +1,29 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../src",
+          "files": [
+            "Vercel.AI.Sdk/Vercel.AI.Sdk.csproj",
+            "Vercel.AI.Sdk.Provider/Vercel.AI.Sdk.Provider.csproj",
+            "Vercel.AI.Sdk.AspNetCore/Vercel.AI.Sdk.AspNetCore.csproj"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      { "files": ["index.md", "toc.yml", "articles/**.md", "articles/toc.yml"] }
+    ],
+    "resource": [{ "files": ["images/**"] }],
+    "output": "_site",
+    "template": ["default"],
+    "globalMetadata": {
+      "_appTitle": "Vercel AI SDK for .NET",
+      "_disableBreadcrumb": false
+    }
+  }
+}

@@ -1,0 +1,12 @@
+Vercel AI SDK for .NET
+Copyright 2023 Vercel, Inc.
+
+This product is a community .NET port of the Vercel AI SDK
+(https://github.com/vercel/ai).
+
+It is not an official Vercel product and is not endorsed by Vercel.
+
+Licensed under the Apache License, Version 2.0.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
