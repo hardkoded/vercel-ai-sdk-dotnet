@@ -73,7 +73,7 @@ public static class V4Json
             {
                 ["type"] = "json",
                 ["name"] = options.JsonSchemaName,
-                ["schema"] = JsonNode.Parse(schema.GetRawText()),
+                ["schema"] = PrepareSchema(JsonNode.Parse(schema.GetRawText())),
             };
         }
         else
@@ -91,7 +91,7 @@ public static class V4Json
                     ["type"] = "function",
                     ["name"] = tool.Name,
                     ["description"] = tool.Description,
-                    ["inputSchema"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+                    ["inputSchema"] = PrepareSchema(JsonNode.Parse(tool.InputSchema.GetRawText())),
                 });
             }
 
@@ -156,7 +156,7 @@ public static class V4Json
                 return new ToolCallStreamPart(
                     root.GetProperty("toolCallId").GetString() ?? "call",
                     root.GetProperty("toolName").GetString() ?? string.Empty,
-                    root.TryGetProperty("args", out var args) ? args.ValueKind == JsonValueKind.String ? args.GetString() ?? "{}" : args.GetRawText() : "{}");
+                    ReadToolInput(root));
             case "source":
             case "source-url":
                 return new SourceStreamPart(
@@ -221,7 +221,7 @@ public static class V4Json
                         ["toolCallType"] = "function",
                         ["toolCallId"] = call.ToolCallId,
                         ["toolName"] = call.ToolName,
-                        ["args"] = call.ArgumentsJson,
+                        ["input"] = JsonValue(call.ArgumentsJson),
                     });
                 }
 
@@ -237,8 +237,7 @@ public static class V4Json
                             ["type"] = "tool-result",
                             ["toolCallId"] = tool.ToolCallId,
                             ["toolName"] = tool.ToolName,
-                            ["output"] = tool.OutputJson,
-                            ["isError"] = tool.IsError,
+                            ["output"] = ToolOutput(tool.OutputJson, tool.IsError),
                         },
                     },
                 };
@@ -257,9 +256,7 @@ public static class V4Json
             case "reasoning":
                 return new GeneratedReasoning(part.GetProperty("text").GetString() ?? string.Empty);
             case "tool-call":
-                var args = part.TryGetProperty("args", out var argsElement)
-                    ? argsElement.ValueKind == JsonValueKind.String ? argsElement.GetString() ?? "{}" : argsElement.GetRawText()
-                    : "{}";
+                var args = ReadToolInput(part);
                 return new GeneratedToolCall(
                     part.GetProperty("toolCallId").GetString() ?? "call",
                     part.GetProperty("toolName").GetString() ?? string.Empty,
@@ -354,5 +351,99 @@ public static class V4Json
         }
 
         return null;
+    }
+
+    /// <summary>Adds <c>additionalProperties: false</c> on object schemas, which providers require for tools.</summary>
+    private static JsonNode? PrepareSchema(JsonNode? node)
+    {
+        if (node is not JsonObject schema)
+        {
+            return node;
+        }
+
+        var typeName = schema["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var type) ? type : null;
+        if (typeName == "object" || schema["properties"] is JsonObject)
+        {
+            if (schema["additionalProperties"] == null)
+            {
+                schema["additionalProperties"] = false;
+            }
+
+            if (schema["properties"] is JsonObject properties)
+            {
+                foreach (var property in properties.ToList())
+                {
+                    if (property.Value != null)
+                    {
+                        properties[property.Key] = PrepareSchema(property.Value);
+                    }
+                }
+
+                if (schema["required"] == null && properties.Count > 0)
+                {
+                    var required = new JsonArray();
+                    foreach (var property in properties)
+                    {
+                        required.Add(property.Key);
+                    }
+
+                    schema["required"] = required;
+                }
+            }
+        }
+
+        return schema;
+    }
+
+    private static JsonNode? JsonValue(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new JsonObject();
+        }
+
+        try
+        {
+            return JsonNode.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return json;
+        }
+    }
+
+    private static JsonObject ToolOutput(string? outputJson, bool isError)
+    {
+        JsonNode? value = null;
+        var json = false;
+        if (!string.IsNullOrWhiteSpace(outputJson))
+        {
+            try
+            {
+                value = JsonNode.Parse(outputJson);
+                json = true;
+            }
+            catch (JsonException)
+            {
+                value = outputJson;
+            }
+        }
+
+        var type = isError ? (json ? "error-json" : "error-text") : (json ? "json" : "text");
+        return new JsonObject
+        {
+            ["type"] = type,
+            ["value"] = value,
+        };
+    }
+
+    private static string ReadToolInput(JsonElement part)
+    {
+        if (!part.TryGetProperty("input", out var input) && !part.TryGetProperty("args", out input))
+        {
+            return "{}";
+        }
+
+        return input.ValueKind == JsonValueKind.String ? input.GetString() ?? "{}" : input.GetRawText();
     }
 }

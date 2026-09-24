@@ -87,7 +87,8 @@ public static class JsonValues
                         var message = GetString(error, "message");
                         if (!string.IsNullOrEmpty(message))
                         {
-                            return message!;
+                            var param = GetString(error, "param");
+                            return string.IsNullOrEmpty(param) ? message! : message + " (" + param + ")";
                         }
                     }
                 }

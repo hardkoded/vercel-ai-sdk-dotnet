@@ -709,10 +709,12 @@ public static class FinishReasons
             case "MAX_OUTPUT_TOKENS":
                 return FinishReason.Length;
             case "CONTENT_FILTER":
+            case "CONTENT-FILTER":
             case "SAFETY":
             case "RECITATION":
                 return FinishReason.ContentFilter;
             case "TOOL_CALLS":
+            case "TOOL-CALLS":
             case "TOOL_USE":
             case "FUNCTION_CALL":
                 return FinishReason.ToolCalls;
