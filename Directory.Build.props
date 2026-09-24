@@ -17,6 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/hardkoded/vercel-ai-sdk-dotnet</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IsPackable>false</IsPackable>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <MinVerTagPrefix>v</MinVerTagPrefix>

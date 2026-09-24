@@ -7,7 +7,5 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
-    <ProjectReference Include="..\..\src\Vercel.AI.Gateway\Vercel.AI.Gateway.csproj" />
-    <ProjectReference Include="..\..\src\Vercel.AI.Testing\Vercel.AI.Testing.csproj" />
   </ItemGroup>
 </Project>
