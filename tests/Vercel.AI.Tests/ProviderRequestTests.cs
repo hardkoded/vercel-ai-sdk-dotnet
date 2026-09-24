@@ -68,6 +68,8 @@ public sealed class ProviderRequestTests
         var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, handler);
         await provider.LanguageModel("openai/gpt-4.1-mini").DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("4", handler.Headers["ai-language-model-specification-version"]);
+        Assert.Equal("0.0.1", handler.Headers["ai-gateway-protocol-version"]);
+        Assert.Equal("api-key", handler.Headers["ai-gateway-auth-method"]);
         Assert.Equal("openai/gpt-4.1-mini", handler.Headers["ai-language-model-id"]);
         Assert.Contains("\"prompt\"", handler.Body);
     }

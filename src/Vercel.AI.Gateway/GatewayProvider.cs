@@ -77,6 +77,8 @@ public sealed class GatewayProvider : ProviderBase
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] = "Bearer " + key,
+            ["ai-gateway-protocol-version"] = "0.0.1",
+            ["ai-gateway-auth-method"] = "api-key",
             [specificationHeader] = specificationValue,
             [modelHeader] = modelId,
         };

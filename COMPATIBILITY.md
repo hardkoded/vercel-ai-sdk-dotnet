@@ -54,7 +54,7 @@ Not emitted yet, because the core stream does not surface them:
 
 ## Provider notes
 
-- Gateway language, embedding, and image calls use `https://ai-gateway.vercel.sh/v4/ai` and the V4 specification headers. They are not only the OpenAI-compatible `/v1/chat/completions` route.
+- Gateway language, embedding, and image calls use `https://ai-gateway.vercel.sh/v4/ai`, the V4 specification headers, `ai-gateway-protocol-version: 0.0.1`, and `ai-gateway-auth-method: api-key`. They are not only the OpenAI-compatible `/v1/chat/completions` route.
 - OpenResponses defaults to `https://ai-gateway.vercel.sh/v1/responses`.
 - Azure OpenAI uses the deployments URL, the `api-key` header, and API version `2024-10-21`.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming is generate-then-delta.
