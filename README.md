@@ -15,7 +15,7 @@ License: Apache License 2.0. Copyright 2023 Vercel, Inc.
 dotnet add package Vercel.AI
 ```
 
-Add a provider package when you call that provider directly, for example `Vercel.AI.OpenAI`. String model ids such as `openai/gpt-4.1-mini` go through `Vercel.AI`, which depends on the Gateway package.
+String model ids such as `openai/gpt-4.1-mini` are resolved by the Gateway, which ships inside this package.
 
 ## What you can call
 
@@ -25,9 +25,9 @@ Add a provider package when you call that provider directly, for example `Vercel
 - `EmbedAsync`, `EmbedManyAsync`, `RerankAsync`, `CosineSimilarity`
 - `GenerateImageAsync`, `GenerateSpeechAsync`, `TranscribeAsync`, `TranslateAsync`, `GenerateVideoAsync`
 - `Agent`, `ProviderRegistry`, and provider middleware
-- One package per model provider, including the Vercel AI Gateway
+- Model providers, including the Vercel AI Gateway, in the same package
 
-`Vercel.AI.AspNetCore` writes the AI SDK UI message stream (`text/event-stream`) that a JavaScript `useChat` client already consumes. There is no React, Vue, Svelte, Angular, or RSC package in this repo.
+`ToUIMessageStreamResult` writes the AI SDK UI message stream (`text/event-stream`) that a JavaScript `useChat` client already consumes. That helper is available on `net10.0`. There is no React, Vue, Svelte, Angular, or RSC package in this repo.
 
 String model ids such as `openai/gpt-4.1-mini` are resolved by the Gateway provider.
 
@@ -56,7 +56,7 @@ Unit tests mock HTTP and do not need keys. Integration tests call a live provide
 
 ## Packages
 
-Projects target `net10.0` and `netstandard2.0`, except `Vercel.AI.AspNetCore` and the samples, which are `net10.0` only. Versions come from MinVer. Pushing a `vMAJOR.MINOR.PATCH` tag packs the libraries, publishes them to nuget.org with Trusted Publishing, and the docs workflow publishes the DocFX site.
+The library targets `net10.0` and `netstandard2.0`. The ASP.NET UI stream helper and the samples are `net10.0` only. Versions come from MinVer. Pushing a `vMAJOR.MINOR.PATCH` tag packs `Vercel.AI`, publishes that package to nuget.org with Trusted Publishing, and the docs workflow publishes the DocFX site.
 
 ```csharp
 var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");

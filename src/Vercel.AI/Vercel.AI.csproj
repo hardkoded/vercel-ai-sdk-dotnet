@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Community .NET port of the Vercel AI SDK. Generate text, stream, call tools, and embed through any provider. Not an official Vercel product.</Description>
+    <IsPackable>true</IsPackable>
     <PackageTags>ai;vercel;llm;sdk</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
@@ -8,10 +9,15 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Vercel.AI.Provider\Vercel.AI.Provider.csproj" />
-    <ProjectReference Include="..\Vercel.AI.ProviderUtils\Vercel.AI.ProviderUtils.csproj" />
-    <ProjectReference Include="..\Vercel.AI.Gateway\Vercel.AI.Gateway.csproj" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Remove="AspNetCore/**" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>
