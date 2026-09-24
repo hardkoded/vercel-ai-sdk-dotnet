@@ -2,7 +2,11 @@
   <PropertyGroup>
     <Description>Community .NET port of the Vercel AI SDK. Generate text, stream, call tools, and embed through any provider. Not an official Vercel product.</Description>
     <PackageTags>ai;vercel;llm;sdk</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vercel.AI.Provider\Vercel.AI.Provider.csproj" />
     <ProjectReference Include="..\Vercel.AI.ProviderUtils\Vercel.AI.ProviderUtils.csproj" />
