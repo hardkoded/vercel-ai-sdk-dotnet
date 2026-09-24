@@ -20,7 +20,7 @@ Console.WriteLine(await stream.FinishReason);
 
 ## UI message stream
 
-`Vercel.AI.Sdk.AspNetCore` writes the same Server-Sent Events a JavaScript `useChat` client reads:
+`Vercel.AI.AspNetCore` writes the same Server-Sent Events a JavaScript `useChat` client reads:
 
 ```csharp
 app.MapPost("/chat", (ChatRequest request) =>

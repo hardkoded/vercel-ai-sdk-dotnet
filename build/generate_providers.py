@@ -79,9 +79,9 @@ def thin_source(class_name, provider_id, base, env, embeddings, images, extra_en
     extra = ", ".join(f'"{name}"' for name in extra_env)
     extra_assign = f"options.AdditionalApiKeyEnvironmentVariables = new[] {{ {extra} }};" if extra else ""
     return f"""{HEADER}using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.Sdk.OpenAICompatible;
+using Vercel.AI.OpenAICompatible;
 
-namespace Vercel.AI.Sdk.{class_name};
+namespace Vercel.AI.{class_name};
 
 /// <summary>{class_name} provider. OpenAI Chat Completions compatible at <c>{base}</c>.</summary>
 public sealed class {class_name}Provider : OpenAICompatibleProvider
@@ -154,9 +154,9 @@ public static class {class_name}ServiceCollectionExtensions
 
 def azure_source():
     return f"""{HEADER}using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.Sdk.OpenAICompatible;
+using Vercel.AI.OpenAICompatible;
 
-namespace Vercel.AI.Sdk.Azure;
+namespace Vercel.AI.Azure;
 
 /// <summary>Azure OpenAI settings.</summary>
 public sealed class AzureOpenAIOptions
@@ -362,11 +362,11 @@ def media_source(class_name, provider_id, env, base, style, header, kind, path):
     text_using = "using System.Text;\n" if kind == "speech" else ""
     return f"""{HEADER}{text_using}using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.Sdk.OpenAICompatible;
-using Vercel.AI.Sdk.Provider;
-using Vercel.AI.Sdk.ProviderUtils;
+using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
-namespace Vercel.AI.Sdk.{class_name};
+namespace Vercel.AI.{class_name};
 
 /// <summary>{class_name} provider.</summary>
 public sealed class {class_name}Provider : OpenAICompatibleProvider
@@ -426,17 +426,17 @@ public static class {class_name}ServiceCollectionExtensions
 def main() -> None:
     for item in THIN:
         class_name, provider_id, base, env, embeddings, images, extra = item
-        folder = f"Vercel.AI.Sdk.{class_name}"
-        csproj(folder, f"{class_name} provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.Sdk.OpenAICompatible"])
+        folder = f"Vercel.AI.{class_name}"
+        csproj(folder, f"{class_name} provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.OpenAICompatible"])
         write(ROOT / "src" / folder / f"{class_name}Provider.cs", thin_source(class_name, provider_id, base, env, embeddings, images, extra))
 
-    folder = "Vercel.AI.Sdk.Azure"
-    csproj(folder, "Azure OpenAI provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.Sdk.OpenAICompatible"])
+    folder = "Vercel.AI.Azure"
+    csproj(folder, "Azure OpenAI provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.OpenAICompatible"])
     write(ROOT / "src" / folder / "AzureOpenAIProvider.cs", azure_source())
 
     for class_name, provider_id, env, base, style, header, kind, path, _extra in MEDIA:
-        folder = f"Vercel.AI.Sdk.{class_name}"
-        csproj(folder, f"{class_name} provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.Sdk.OpenAICompatible"])
+        folder = f"Vercel.AI.{class_name}"
+        csproj(folder, f"{class_name} provider for the community .NET port of the Vercel AI SDK.", ["Vercel.AI.OpenAICompatible"])
         write(ROOT / "src" / folder / f"{class_name}Provider.cs", media_source(class_name, provider_id, env, base, style, header, kind, path))
 
     print("generated", len(THIN) + 1 + len(MEDIA), "providers")

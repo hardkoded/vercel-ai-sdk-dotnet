@@ -8,7 +8,7 @@ License: Apache License 2.0. Copyright 2023 Vercel, Inc.
 
 ## What you can call
 
-`Vercel.AI.Sdk` is a server library:
+`Vercel.AI` is a server library:
 
 - `GenerateTextAsync` and `StreamTextAsync` (tools, structured JSON output, stop conditions, middleware)
 - `EmbedAsync`, `EmbedManyAsync`, `RerankAsync`, `CosineSimilarity`
@@ -16,15 +16,15 @@ License: Apache License 2.0. Copyright 2023 Vercel, Inc.
 - `Agent`, `ProviderRegistry`, and provider middleware
 - One package per model provider, including the Vercel AI Gateway
 
-`Vercel.AI.Sdk.AspNetCore` writes the AI SDK UI message stream (`text/event-stream`) that a JavaScript `useChat` client already consumes. There is no React, Vue, Svelte, Angular, or RSC package in this repo.
+`Vercel.AI.AspNetCore` writes the AI SDK UI message stream (`text/event-stream`) that a JavaScript `useChat` client already consumes. There is no React, Vue, Svelte, Angular, or RSC package in this repo.
 
 String model ids such as `openai/gpt-4.1-mini` are resolved by the Gateway provider.
 
 ## Run the samples
 
 ```bash
-dotnet run --project samples/Vercel.AI.Sdk.Sample
-dotnet run --project samples/Vercel.AI.Sdk.AspNetCore.Sample
+dotnet run --project samples/Vercel.AI.Sample
+dotnet run --project samples/Vercel.AI.AspNetCore.Sample
 ```
 
 The console sample uses a scripted model unless `AI_GATEWAY_API_KEY` is set. The ASP.NET sample listens on `http://127.0.0.1:43123` and does the same for `POST /chat`.
@@ -38,18 +38,18 @@ curl -N -X POST http://127.0.0.1:43123/chat \
 ## Tests
 
 ```bash
-dotnet test Vercel.AI.Sdk.slnx -c Release
+dotnet test Vercel.AI.slnx -c Release
 ```
 
 Unit tests mock HTTP and do not need keys. Integration tests call a live provider only when `AI_GATEWAY_API_KEY` or `OPENAI_API_KEY` is set.
 
 ## Packages
 
-Projects target `net10.0` and `netstandard2.0`, except `Vercel.AI.Sdk.AspNetCore` and the samples, which are `net10.0` only. Versions come from MinVer. Tag a release as `vMAJOR.MINOR.PATCH`. This repository does not publish to nuget.org on its own.
+Projects target `net10.0` and `netstandard2.0`, except `Vercel.AI.AspNetCore` and the samples, which are `net10.0` only. Versions come from MinVer. Tag a release as `vMAJOR.MINOR.PATCH`. This repository does not publish to nuget.org on its own.
 
 ```csharp
 var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");
-var result = await new AiClient(Vercel.AI.Sdk.Gateway.GatewayProvider.Create(new() { ApiKey = "unused" }))
+var result = await new AiClient(Vercel.AI.Gateway.GatewayProvider.Create(new() { ApiKey = "unused" }))
     .GenerateTextAsync(new GenerateTextOptions
     {
         Model = model,

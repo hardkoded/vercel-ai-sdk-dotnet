@@ -41,10 +41,10 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 ## Providers
 
-Each package exposes `CreateXxx()` / `AddXxx()` and reads the same environment variable as the JavaScript provider. Gateway uses `AI_GATEWAY_API_KEY` and `https://ai-gateway.vercel.sh/v4/ai`. OpenAI-compatible providers share `Vercel.AI.Sdk.OpenAICompatible`.
+Each package exposes `CreateXxx()` / `AddXxx()` and reads the same environment variable as the JavaScript provider. Gateway uses `AI_GATEWAY_API_KEY` and `https://ai-gateway.vercel.sh/v4/ai`. OpenAI-compatible providers share `Vercel.AI.OpenAICompatible`.
 
-Register the client with `services.AddAiSdk()`. Add `services.AddAiSdkOpenTelemetry()` to record spans on the `Vercel.AI.Sdk` activity source.
+Register the client with `services.AddAiSdk()`. Add `services.AddAiSdkOpenTelemetry()` to record spans on the `Vercel.AI` activity source.
 
 ## Tests
 
-Mock `HttpMessageHandler`. Use `TestLanguageModel` from `Vercel.AI.Sdk.Testing` when the test does not care about HTTP. Skip live tests unless the provider key is set.
+Mock `HttpMessageHandler`. Use `TestLanguageModel` from `Vercel.AI.Testing` when the test does not care about HTTP. Skip live tests unless the provider key is set.

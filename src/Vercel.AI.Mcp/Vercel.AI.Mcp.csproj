@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Turns MCP tools into Vercel.AI tools over stdio and Streamable HTTP. Not an official Vercel product.</Description>
+    <PackageTags>ai;vercel;mcp</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Vercel.AI\Vercel.AI.csproj" />
+    <ProjectReference Include="..\Vercel.AI.Provider\Vercel.AI.Provider.csproj" />
+  </ItemGroup>
+</Project>

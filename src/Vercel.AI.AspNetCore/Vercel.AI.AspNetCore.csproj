@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <Description>ASP.NET Core host for the AI SDK UI message stream. Not an official Vercel product.</Description>
+    <PackageTags>ai;vercel;aspnetcore</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\Vercel.AI\Vercel.AI.csproj" />
+    <ProjectReference Include="..\Vercel.AI.ProviderUtils\Vercel.AI.ProviderUtils.csproj" />
+  </ItemGroup>
+</Project>

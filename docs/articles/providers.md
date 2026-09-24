@@ -11,6 +11,6 @@ Native wire protocols have their own request mappers:
 - Cohere speaks chat, embed, and rerank.
 - OpenResponses posts to `{base}/responses`. The default base is the Gateway Open Responses route.
 
-OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, and the others) are thin wrappers over `Vercel.AI.Sdk.OpenAICompatible`. They set the base URL, the provider id, and the environment variable.
+OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, and the others) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable.
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
