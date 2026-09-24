@@ -6,6 +6,17 @@ The parity target is AI SDK 7 / Language Model specification V4. See [COMPATIBIL
 
 License: Apache License 2.0. Copyright 2023 Vercel, Inc.
 
+[![NuGet](https://img.shields.io/nuget/v/Vercel.AI.svg)](https://www.nuget.org/packages/Vercel.AI)
+**Docs:** https://hardkoded.github.io/vercel-ai-sdk-dotnet/
+
+## Install
+
+```bash
+dotnet add package Vercel.AI
+```
+
+Add a provider package when you call that provider directly, for example `Vercel.AI.OpenAI`. String model ids such as `openai/gpt-4.1-mini` go through `Vercel.AI`, which depends on the Gateway package.
+
 ## What you can call
 
 `Vercel.AI` is a server library:
@@ -45,7 +56,7 @@ Unit tests mock HTTP and do not need keys. Integration tests call a live provide
 
 ## Packages
 
-Projects target `net10.0` and `netstandard2.0`, except `Vercel.AI.AspNetCore` and the samples, which are `net10.0` only. Versions come from MinVer. Tag a release as `vMAJOR.MINOR.PATCH`. This repository does not publish to nuget.org on its own.
+Projects target `net10.0` and `netstandard2.0`, except `Vercel.AI.AspNetCore` and the samples, which are `net10.0` only. Versions come from MinVer. Pushing a `vMAJOR.MINOR.PATCH` tag packs the libraries, publishes them to nuget.org with Trusted Publishing, and the docs workflow publishes the DocFX site.
 
 ```csharp
 var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");
