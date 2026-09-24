@@ -5,9 +5,9 @@
         {
           "src": "../src",
           "files": [
-            "Vercel.AI.Sdk/Vercel.AI.Sdk.csproj",
-            "Vercel.AI.Sdk.Provider/Vercel.AI.Sdk.Provider.csproj",
-            "Vercel.AI.Sdk.AspNetCore/Vercel.AI.Sdk.AspNetCore.csproj"
+            "Vercel.AI/Vercel.AI.csproj",
+            "Vercel.AI.Provider/Vercel.AI.Provider.csproj",
+            "Vercel.AI.AspNetCore/Vercel.AI.AspNetCore.csproj"
           ]
         }
       ],

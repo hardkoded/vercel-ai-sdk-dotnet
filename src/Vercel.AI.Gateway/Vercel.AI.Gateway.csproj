@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Vercel AI Gateway provider for the community .NET port of the Vercel AI SDK. Not an official Vercel product.</Description>
+    <PackageTags>ai;vercel;gateway;llm</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Vercel.AI.Provider\Vercel.AI.Provider.csproj" />
+    <ProjectReference Include="..\Vercel.AI.ProviderUtils\Vercel.AI.ProviderUtils.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+</Project>

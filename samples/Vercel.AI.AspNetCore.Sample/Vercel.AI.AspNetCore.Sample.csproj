@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <Description>Minimal API sample that streams an AI SDK UI message response.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.AspNetCore\Vercel.AI.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Gateway\Vercel.AI.Gateway.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Testing\Vercel.AI.Testing.csproj" />
+  </ItemGroup>
+</Project>

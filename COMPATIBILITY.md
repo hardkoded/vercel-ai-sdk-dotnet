@@ -10,23 +10,23 @@ The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by t
 
 | JavaScript | .NET |
 | --- | --- |
-| `ai` | `Vercel.AI.Sdk` |
-| `@ai-sdk/provider` | `Vercel.AI.Sdk.Provider` |
-| `@ai-sdk/provider-utils` | `Vercel.AI.Sdk.ProviderUtils` |
-| `@ai-sdk/gateway` | `Vercel.AI.Sdk.Gateway` |
-| `@ai-sdk/openai-compatible` | `Vercel.AI.Sdk.OpenAICompatible` |
-| `@ai-sdk/openai` | `Vercel.AI.Sdk.OpenAI` |
-| `@ai-sdk/anthropic` | `Vercel.AI.Sdk.Anthropic` (includes Anthropic on AWS) |
-| `@ai-sdk/google` and `@ai-sdk/google-vertex` | `Vercel.AI.Sdk.Google` |
-| `@ai-sdk/amazon-bedrock` | `Vercel.AI.Sdk.AmazonBedrock` |
-| `@ai-sdk/azure` | `Vercel.AI.Sdk.Azure` |
-| `@ai-sdk/cohere` | `Vercel.AI.Sdk.Cohere` |
-| `@ai-sdk/mistral` | `Vercel.AI.Sdk.Mistral` |
-| OpenAI-compatible providers (Groq, DeepSeek, xAI, Together, and the others under `packages/`) | `Vercel.AI.Sdk.<Provider>` |
-| Speech, transcription, image, video, and Voyage | one `Vercel.AI.Sdk.<Provider>` package each |
-| `ai` UI message stream used by `useChat` | `Vercel.AI.Sdk.AspNetCore` (`ToUIMessageStreamResult`) |
-| OpenTelemetry | `Vercel.AI.Sdk.OpenTelemetry` |
-| MCP tools | `Vercel.AI.Sdk.Mcp` |
+| `ai` | `Vercel.AI` |
+| `@ai-sdk/provider` | `Vercel.AI.Provider` |
+| `@ai-sdk/provider-utils` | `Vercel.AI.ProviderUtils` |
+| `@ai-sdk/gateway` | `Vercel.AI.Gateway` |
+| `@ai-sdk/openai-compatible` | `Vercel.AI.OpenAICompatible` |
+| `@ai-sdk/openai` | `Vercel.AI.OpenAI` |
+| `@ai-sdk/anthropic` | `Vercel.AI.Anthropic` (includes Anthropic on AWS) |
+| `@ai-sdk/google` and `@ai-sdk/google-vertex` | `Vercel.AI.Google` |
+| `@ai-sdk/amazon-bedrock` | `Vercel.AI.AmazonBedrock` |
+| `@ai-sdk/azure` | `Vercel.AI.Azure` |
+| `@ai-sdk/cohere` | `Vercel.AI.Cohere` |
+| `@ai-sdk/mistral` | `Vercel.AI.Mistral` |
+| OpenAI-compatible providers (Groq, DeepSeek, xAI, Together, and the others under `packages/`) | `Vercel.AI.<Provider>` |
+| Speech, transcription, image, video, and Voyage | one `Vercel.AI.<Provider>` package each |
+| `ai` UI message stream used by `useChat` | `Vercel.AI.AspNetCore` (`ToUIMessageStreamResult`) |
+| OpenTelemetry | `Vercel.AI.OpenTelemetry` |
+| MCP tools | `Vercel.AI.Mcp` |
 
 `typesafe-ai` is not re-ported. Pair this library with the existing [TypeSafe.AI.Sdk](https://github.com/hardkoded/typesafe-sdk-dotnet) package when you want that companion.
 

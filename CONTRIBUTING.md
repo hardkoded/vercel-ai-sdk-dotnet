@@ -24,7 +24,7 @@ This is an independent reimplementation of the public Vercel AI SDK. Do not copy
 
 Projects multi-target `net10.0` and `netstandard2.0` unless they depend on ASP.NET Core. Avoid APIs that are missing on `netstandard2.0`, including `string.StartsWith(string, StringComparison)`, `Random.Shared`, and `SHA256.HashData`.
 
-Warnings are errors. `dotnet test Vercel.AI.Sdk.slnx -c Release` is the check that has to pass.
+Warnings are errors. `dotnet test Vercel.AI.slnx -c Release` is the check that has to pass.
 
 Provider tests should mock `HttpMessageHandler` and assert the request URL and authentication header. Live calls belong in `[SkippableFact]` tests that skip when the provider’s environment variable is empty.
 

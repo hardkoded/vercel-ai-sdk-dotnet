@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Alibaba\Vercel.AI.Alibaba.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.AmazonBedrock\Vercel.AI.AmazonBedrock.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Anthropic\Vercel.AI.Anthropic.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.AspNetCore\Vercel.AI.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.AssemblyAI\Vercel.AI.AssemblyAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Azure\Vercel.AI.Azure.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Baseten\Vercel.AI.Baseten.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.BlackForestLabs\Vercel.AI.BlackForestLabs.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.ByteDance\Vercel.AI.ByteDance.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Cartesia\Vercel.AI.Cartesia.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Cerebras\Vercel.AI.Cerebras.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Cohere\Vercel.AI.Cohere.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.DeepInfra\Vercel.AI.DeepInfra.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.DeepSeek\Vercel.AI.DeepSeek.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Deepgram\Vercel.AI.Deepgram.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.ElevenLabs\Vercel.AI.ElevenLabs.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Fal\Vercel.AI.Fal.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Fireworks\Vercel.AI.Fireworks.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.FishAudio\Vercel.AI.FishAudio.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Gateway\Vercel.AI.Gateway.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Gladia\Vercel.AI.Gladia.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.GmiCloud\Vercel.AI.GmiCloud.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Google\Vercel.AI.Google.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Groq\Vercel.AI.Groq.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.HuggingFace\Vercel.AI.HuggingFace.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Hume\Vercel.AI.Hume.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.KlingAI\Vercel.AI.KlingAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Luma\Vercel.AI.Luma.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Mcp\Vercel.AI.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.MiniMax\Vercel.AI.MiniMax.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Mistral\Vercel.AI.Mistral.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Moonshot\Vercel.AI.Moonshot.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.OpenAI\Vercel.AI.OpenAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.OpenAICompatible\Vercel.AI.OpenAICompatible.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.OpenResponses\Vercel.AI.OpenResponses.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.OpenTelemetry\Vercel.AI.OpenTelemetry.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Perplexity\Vercel.AI.Perplexity.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Prodia\Vercel.AI.Prodia.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Provider\Vercel.AI.Provider.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.ProviderUtils\Vercel.AI.ProviderUtils.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.QuiverAI\Vercel.AI.QuiverAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Replicate\Vercel.AI.Replicate.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.RevAI\Vercel.AI.RevAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Testing\Vercel.AI.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.TogetherAI\Vercel.AI.TogetherAI.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Voyage\Vercel.AI.Voyage.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Xai\Vercel.AI.Xai.csproj" />
+    <ProjectReference Include="..\..\src\Vercel.AI.Zai\Vercel.AI.Zai.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

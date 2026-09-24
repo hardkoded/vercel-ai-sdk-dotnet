@@ -1,13 +1,13 @@
 # Quickstart
 
-Install `Vercel.AI.Sdk` and the provider package you call. `OpenAIProvider.Create()` reads `OPENAI_API_KEY`. `GatewayProvider.Create()` reads `AI_GATEWAY_API_KEY`.
+Install `Vercel.AI` and the provider package you call. `OpenAIProvider.Create()` reads `OPENAI_API_KEY`. `GatewayProvider.Create()` reads `AI_GATEWAY_API_KEY`.
 
 ```csharp
-using Vercel.AI.Sdk;
-using Vercel.AI.Sdk.OpenAI;
+using Vercel.AI;
+using Vercel.AI.OpenAI;
 
 var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");
-var client = new AiClient(Vercel.AI.Sdk.Gateway.GatewayProvider.Create(new() { ApiKey = "unused" }));
+var client = new AiClient(Vercel.AI.Gateway.GatewayProvider.Create(new() { ApiKey = "unused" }));
 var result = await client.GenerateTextAsync(new GenerateTextOptions
 {
     Model = model,
