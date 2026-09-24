@@ -128,7 +128,7 @@ public static class V4Json
             }
         }
 
-        var raw = root.TryGetProperty("finishReason", out var finish) ? finish.GetString() : null;
+        var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) : null;
         var usage = ReadUsage(root);
         var id = root.TryGetProperty("response", out var response) && response.TryGetProperty("id", out var responseId)
             ? responseId.GetString()
@@ -165,7 +165,7 @@ public static class V4Json
                     root.TryGetProperty("title", out var title) ? title.GetString() : null);
             case "finish":
             case "finish-step":
-                var raw = root.TryGetProperty("finishReason", out var finish) ? finish.GetString() : "stop";
+                var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
             case "error":
                 var message = root.TryGetProperty("error", out var error) ? error.ToString() : "Provider stream error.";
@@ -300,9 +300,59 @@ public static class V4Json
             return LanguageModelUsage.Empty;
         }
 
-        int? input = usage.TryGetProperty("inputTokens", out var inputTokens) ? inputTokens.GetInt32() : null;
-        int? output = usage.TryGetProperty("outputTokens", out var outputTokens) ? outputTokens.GetInt32() : null;
-        int? total = usage.TryGetProperty("totalTokens", out var totalTokens) ? totalTokens.GetInt32() : null;
+        int? input = ReadTokenCount(usage, "inputTokens");
+        int? output = ReadTokenCount(usage, "outputTokens");
+        int? total = ReadTokenCount(usage, "totalTokens");
         return new LanguageModelUsage(input, output, total);
+    }
+
+    /// <summary>Reads a finish reason that is either a string or <c>{ unified, raw }</c>.</summary>
+    private static string? ReadFinishReason(JsonElement finish)
+    {
+        if (finish.ValueKind == JsonValueKind.String)
+        {
+            return finish.GetString();
+        }
+
+        if (finish.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (finish.TryGetProperty("unified", out var unified) && unified.ValueKind == JsonValueKind.String)
+        {
+            return unified.GetString();
+        }
+
+        if (finish.TryGetProperty("raw", out var raw) && raw.ValueKind == JsonValueKind.String)
+        {
+            return raw.GetString();
+        }
+
+        return null;
+    }
+
+    /// <summary>Reads a token count that is either a number or <c>{ total }</c>.</summary>
+    private static int? ReadTokenCount(JsonElement usage, string name)
+    {
+        if (!usage.TryGetProperty(name, out var value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
+        {
+            return number;
+        }
+
+        if (value.ValueKind == JsonValueKind.Object
+            && value.TryGetProperty("total", out var total)
+            && total.ValueKind == JsonValueKind.Number
+            && total.TryGetInt32(out var nested))
+        {
+            return nested;
+        }
+
+        return null;
     }
 }

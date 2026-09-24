@@ -46,7 +46,7 @@ internal sealed class ScriptedHandler : HttpMessageHandler
     {
         if (uri.Contains("language-model"))
         {
-            return "{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"finishReason\":\"stop\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
+            return "{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"finishReason\":{\"unified\":\"stop\",\"raw\":\"stop\"},\"usage\":{\"inputTokens\":{\"total\":1},\"outputTokens\":{\"total\":1}}}";
         }
 
         if (uri.Contains("embedding-model"))
