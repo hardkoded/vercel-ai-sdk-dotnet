@@ -148,6 +148,10 @@ public sealed class ProviderRequestTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > doGenerate::should pass headers correctly",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks the V4 specification header, model id, and prompt body.")]
     public async Task Gateway_sends_the_v4_specification_header()
     {
         var handler = new ScriptedHandler();
@@ -165,6 +169,14 @@ public sealed class ProviderRequestTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks an AWS4-HMAC-SHA256 credential scope. The upstream test mocks the signer.")]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should use default service name \"bedrock\" when no service parameter is provided",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The credential scope includes the bedrock service.")]
     public async Task Bedrock_signs_with_sigv4()
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://bedrock-runtime.us-east-1.amazonaws.com/model/demo/converse");

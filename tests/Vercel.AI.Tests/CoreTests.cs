@@ -10,6 +10,10 @@ namespace Vercel.AI.Tests;
 public sealed class CoreTests
 {
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > result.text::should generate text",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Asserts the returned text and finish reason only.")]
     public async Task Generate_text_returns_the_model_text()
     {
         var model = new TestLanguageModel { OnGenerate = _ => TestLanguageModel.Text("hello") };
@@ -19,6 +23,14 @@ public sealed class CoreTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stop-condition.test.ts::stop conditions > isStepCount::should return true when the step count matches exactly",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Stops a tool loop at two steps. Does not assert the other stop conditions.")]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.stopWhen > 2 steps: initial, tool-result::result.toolResults should contain tool results from all steps",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Runs one tool and checks its output. Does not cover multi-tool steps.")]
     public async Task Tools_run_and_a_second_step_can_answer()
     {
         var model = new TestLanguageModel();
@@ -62,6 +74,10 @@ public sealed class CoreTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.textStream::should send text deltas",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Reads text deltas and the joined text. Does not cover empty-delta filtering.")]
     public async Task Stream_yields_text_deltas()
     {
         var model = new TestLanguageModel
@@ -85,6 +101,10 @@ public sealed class CoreTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/util/cosine-similarity.test.ts::should calculate cosine similarity correctly",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Asserts identical vectors only.")]
     public void Cosine_similarity_of_the_same_vector_is_one()
     {
         var score = Ai.CosineSimilarity(new[] { 1f, 0f }, new[] { 1f, 0f });
@@ -92,6 +112,10 @@ public sealed class CoreTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/middleware/extract-reasoning-middleware.test.ts::extractReasoningMiddleware > wrapGenerate::should extract reasoning from <think> tags",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Splits one think tag into reasoning and text on generate.")]
     public async Task Extract_reasoning_middleware_splits_think_tags()
     {
         var model = new TestLanguageModel
@@ -104,6 +128,10 @@ public sealed class CoreTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/registry/provider-registry.test.ts::languageModel::should return language model from provider",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Resolves provider:model. Does not cover missing provider or model errors.")]
     public void Registry_resolves_provider_and_model()
     {
         var model = new TestLanguageModel("echo");
