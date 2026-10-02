@@ -17,6 +17,8 @@ namespace Vercel.AI.Perplexity;
 /// </summary>
 public sealed class PerplexityProvider : OpenAICompatibleProvider
 {
+    private readonly HttpClient _httpClient;
+
     /// <summary>Provider id.</summary>
     public const string ProviderId = "perplexity";
 
@@ -39,6 +41,7 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
     public PerplexityProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient;
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -53,6 +56,24 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
     {
         return new PerplexityLanguageModel(this, modelId);
     }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        return new PerplexityEmbeddingModel(this, modelId);
+    }
+
+    /// <summary>
+    /// Sonar chat-completions model. <see cref="LanguageModel"/> uses the Agent API.
+    /// This client is the compatibility-snapshot chat route for citations, PDF files, and image results.
+    /// </summary>
+    public PerplexityChatLanguageModel ChatLanguageModel(string modelId)
+    {
+        return new PerplexityChatLanguageModel(this, modelId ?? throw new ArgumentNullException(nameof(modelId)));
+    }
+
+    /// <summary>HTTP client passed to the constructor. Chat streaming reads its response headers.</summary>
+    internal HttpClient HttpClient => _httpClient;
 
     /// <summary>Agent API URL. A custom base URL is prefixed to <c>v1/agent</c>.</summary>
     public Uri AgentUri()

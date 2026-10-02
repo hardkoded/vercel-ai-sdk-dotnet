@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Xai;
 
@@ -17,6 +18,15 @@ public sealed class XaiProvider : OpenAICompatibleProvider
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "XAI_API_KEY";
+
+    /// <summary>User-Agent suffix sent on xAI calls.</summary>
+    public const string UserAgent = "ai-sdk/xai/0.0.0-test";
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return new XaiResponsesLanguageModel(this, modelId);
+    }
 
     /// <summary>Creates a provider.</summary>
     public XaiProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)

@@ -10,6 +10,27 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
+/// <summary>AWS credentials used to sign a Bedrock request.</summary>
+public sealed class AmazonBedrockCredentials
+{
+    /// <summary>Creates credentials.</summary>
+    public AmazonBedrockCredentials(string accessKeyId, string secretAccessKey, string? sessionToken = null)
+    {
+        AccessKeyId = accessKeyId ?? string.Empty;
+        SecretAccessKey = secretAccessKey ?? string.Empty;
+        SessionToken = sessionToken;
+    }
+
+    /// <summary>Access key id.</summary>
+    public string AccessKeyId { get; }
+
+    /// <summary>Secret access key.</summary>
+    public string SecretAccessKey { get; }
+
+    /// <summary>Optional session token.</summary>
+    public string? SessionToken { get; }
+}
+
 /// <summary>Amazon Bedrock settings.</summary>
 public sealed class AmazonBedrockOptions
 {
@@ -22,8 +43,17 @@ public sealed class AmazonBedrockOptions
     /// <summary>Secret key. Falls back to <c>AWS_SECRET_ACCESS_KEY</c>.</summary>
     public string? SecretAccessKey { get; set; }
 
-    /// <summary>Session token. Falls back to <c>AWS_SESSION_TOKEN</c>.</summary>
+    /// <summary>Session token. Falls back to <c>AWS_SESSION_TOKEN</c> unless both access keys are set explicitly.</summary>
     public string? SessionToken { get; set; }
+
+    /// <summary>Bearer token. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c> when this is null.</summary>
+    public string? ApiKey { get; set; }
+
+    /// <summary>Explicit base URL. When set, region and endpoint environment variables are not used.</summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>Supplies credentials for each signed request.</summary>
+    public Func<AmazonBedrockCredentials>? CredentialProvider { get; set; }
 
     /// <summary>Clock used for signing. Tests can pin this.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
@@ -63,14 +93,26 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId) => new AmazonBedrockLanguageModel(this, modelId);
 
+    /// <summary>Creates a chat model and records its family, such as <c>anthropic</c>.</summary>
+    public AmazonBedrockLanguageModel ChatModel(string modelId, string? modelFamily = null)
+    {
+        return new AmazonBedrockLanguageModel(this, modelId) { ModelFamily = modelFamily };
+    }
+
+    /// <summary>Creates a reranking model.</summary>
+    public new AmazonBedrockRerankingModel RerankingModel(string modelId)
+    {
+        return new AmazonBedrockRerankingModel(this, modelId);
+    }
+
     internal Uri ConverseUri(string modelId)
     {
-        if (!HostnameParts.IsValidHostnamePart(Options.Region))
-        {
-            throw new ArgumentException("An AWS region must be a single DNS label.", nameof(AmazonBedrockOptions.Region));
-        }
+        return new Uri(AmazonBedrockEndpoints.ResolveRuntimeBaseUrl(Options) + "/model/" + Uri.EscapeDataString(modelId) + "/converse");
+    }
 
-        return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
+    internal Uri RerankUri()
+    {
+        return new Uri(AmazonBedrockEndpoints.ResolveAgentRuntimeBaseUrl(Options) + "/rerank");
     }
 }
 
@@ -95,30 +137,57 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <summary>Model family used when the id does not identify the underlying model.</summary>
+    public string? ModelFamily { get; set; }
+
+    /// <summary>Id factory for tool calls that arrive without a tool-use id.</summary>
+    public Func<string>? GenerateId { get; set; }
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var body = Build(options).ToJsonString();
+        var prepared = AmazonBedrockConverseRequest.Prepare(ModelId, options, ModelFamily);
+        var bodyNode = prepared.CreateTransportBody();
+        var body = bodyNode.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, _provider.ConverseUri(ModelId))
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),
         };
+        CopyHeaders(request, options?.Headers);
         Sign(request, Encoding.UTF8.GetBytes(body));
         var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var headers = CopyResponseHeaders(response);
         if (!response.IsSuccessStatusCode)
         {
             throw ProviderHttp.MapStatus((int)response.StatusCode, text);
         }
 
         using var document = JsonDocument.Parse(text);
-        return Parse(document.RootElement);
+        var parsed = AmazonBedrockResponseParser.Parse(document.RootElement, ModelId, prepared.UsesJsonResponseTool, GenerateId, headers);
+        return new LanguageModelGenerateResult(
+            parsed.Content,
+            parsed.FinishReason,
+            parsed.Usage,
+            parsed.RawFinishReason,
+            MapWarnings(prepared.Warnings),
+            parsed.ResponseId,
+            parsed.ProviderMetadata,
+            text,
+            ModelId,
+            parsed.Timestamp,
+            headers);
     }
 
     /// <inheritdoc />
     public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        if (result.Warnings.Count > 0)
+        {
+            yield return new StreamStartStreamPart(result.Warnings);
+        }
+
         if (!string.IsNullOrEmpty(result.Text))
         {
             yield return new TextDeltaStreamPart("text", result.Text);
@@ -126,17 +195,64 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
         foreach (var part in result.Content)
         {
-            if (part is GeneratedToolCall call)
+            if (part is GeneratedReasoning reasoning && reasoning.Text.Length > 0)
+            {
+                yield return new ReasoningDeltaStreamPart("reasoning", reasoning.Text);
+            }
+            else if (part is GeneratedToolCall call)
             {
                 yield return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson);
             }
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason, result.ProviderMetadata);
     }
 
     private void Sign(HttpRequestMessage request, byte[] payload)
     {
+        var apiKey = ResolveApiKey();
+        if (apiKey != null)
+        {
+            request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + apiKey);
+            return;
+        }
+
+        var credentials = ResolveCredentials();
+        AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", credentials.AccessKeyId, credentials.SecretAccessKey, credentials.SessionToken, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
+    }
+
+    private string? ResolveApiKey()
+    {
+        if (_provider.Options.ApiKey != null)
+        {
+            var trimmed = _provider.Options.ApiKey.Trim();
+            return trimmed.Length == 0 ? null : trimmed;
+        }
+
+        var environment = Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        if (string.IsNullOrWhiteSpace(environment))
+        {
+            return null;
+        }
+
+        return environment!.Trim();
+    }
+
+    private AmazonBedrockCredentials ResolveCredentials()
+    {
+        if (_provider.Options.CredentialProvider != null)
+        {
+            var provided = _provider.Options.CredentialProvider() ?? throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
+            if (string.IsNullOrEmpty(provided.AccessKeyId) || string.IsNullOrEmpty(provided.SecretAccessKey))
+            {
+                throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
+            }
+
+            return provided;
+        }
+
+        var explicitAccess = _provider.Options.AccessKeyId != null;
+        var explicitSecret = _provider.Options.SecretAccessKey != null;
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
@@ -144,168 +260,169 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
         }
 
-        var token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-        AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
+        string? token;
+        if (explicitAccess && explicitSecret)
+        {
+            token = _provider.Options.SessionToken;
+        }
+        else
+        {
+            token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
+        }
+
+        return new AmazonBedrockCredentials(accessKey!, secret!, token);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options)
+    private static void CopyHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
     {
-        var messages = new JsonArray();
-        JsonArray? system = null;
-        foreach (var message in options.Prompt)
+        if (headers == null)
         {
-            if (message is SystemModelMessage systemMessage)
+            return;
+        }
+
+        foreach (var header in headers)
+        {
+            if (string.IsNullOrEmpty(header.Key) || header.Value == null)
             {
-                system ??= new JsonArray();
-                system.Add(new JsonObject { ["text"] = systemMessage.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var content = new JsonArray();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart text)
-                    {
-                        content.Add(new JsonObject { ["text"] = text.Text });
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = content });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var content = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    content.Add(new JsonObject { ["text"] = assistant.Text });
-                }
-
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content });
-            }
-        }
-
-        var body = new JsonObject { ["messages"] = messages };
-        if (system != null)
-        {
-            body["system"] = system;
-        }
-
-        var inference = new JsonObject();
-        if (options.MaxOutputTokens is { } max)
-        {
-            inference["maxTokens"] = max;
-        }
-
-        if (options.Temperature is { } temperature)
-        {
-            inference["temperature"] = temperature;
-        }
-
-        if (inference.Count > 0)
-        {
-            body["inferenceConfig"] = inference;
-        }
-
-        if (options.Tools is { Count: > 0 })
-        {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                tools.Add(new JsonObject
-                {
-                    ["toolSpec"] = new JsonObject
-                    {
-                        ["name"] = tool.Name,
-                        ["description"] = tool.Description,
-                        ["inputSchema"] = new JsonObject { ["json"] = JsonNode.Parse(tool.InputSchema.GetRawText()) },
-                    },
-                });
+                continue;
             }
 
-            body["toolConfig"] = new JsonObject { ["tools"] = tools };
+            if (!request.Headers.TryAddWithoutValidation(header.Key, header.Value))
+            {
+                request.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
         }
-
-        var requestMetadata = ReadRequestMetadata(options);
-        if (requestMetadata != null)
-        {
-            body["requestMetadata"] = requestMetadata;
-        }
-
-        return body;
     }
 
-    /// <summary>Reads <c>requestMetadata</c> from <c>amazon-bedrock</c>, then <c>amazonBedrock</c>, then <c>bedrock</c>.</summary>
-    private static JsonObject? ReadRequestMetadata(LanguageModelCallOptions options)
+    private static Dictionary<string, string> CopyResponseHeaders(HttpResponseMessage response)
     {
-        var providerOptions = options.ProviderOptions;
-        if (providerOptions == null)
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers)
         {
-            return null;
+            headers[header.Key] = string.Join(",", header.Value);
         }
 
-        JsonElement provider;
-        if (!providerOptions.TryGetValue("amazon-bedrock", out provider)
-            && !providerOptions.TryGetValue("amazonBedrock", out provider)
-            && !providerOptions.TryGetValue("bedrock", out provider))
+        if (response.Content != null)
         {
-            return null;
-        }
-
-        if (provider.ValueKind != JsonValueKind.Object || !provider.TryGetProperty("requestMetadata", out var metadata))
-        {
-            return null;
-        }
-
-        if (metadata.ValueKind != JsonValueKind.Object)
-        {
-            throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
-        }
-
-        var result = new JsonObject();
-        foreach (var property in metadata.EnumerateObject())
-        {
-            if (property.Value.ValueKind != JsonValueKind.String)
+            foreach (var header in response.Content.Headers)
             {
-                throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
+                headers[header.Key] = string.Join(",", header.Value);
             }
-
-            var value = property.Value.GetString();
-            if (value == null)
-            {
-                throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
-            }
-
-            result[property.Name] = value;
         }
 
-        return result;
+        return headers;
     }
 
-    private static LanguageModelGenerateResult Parse(JsonElement root)
+    private static IReadOnlyList<CallWarning> MapWarnings(IReadOnlyList<AmazonBedrockWarning> warnings)
     {
-        var content = new List<GeneratedContent>();
-        if (root.TryGetProperty("output", out var output) && output.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var parts))
+        var mapped = new List<CallWarning>();
+        foreach (var warning in warnings)
         {
-            foreach (var part in parts.EnumerateArray())
+            mapped.Add(new CallWarning(warning.Type, warning.Details ?? warning.Feature));
+        }
+
+        return mapped;
+    }
+}
+
+/// <summary>Bedrock Agent Runtime reranking model.</summary>
+public sealed class AmazonBedrockRerankingModel
+{
+    private readonly AmazonBedrockProvider _provider;
+
+    /// <summary>Creates a reranking model.</summary>
+    public AmazonBedrockRerankingModel(AmazonBedrockProvider provider, string modelId)
+    {
+        _provider = provider;
+        ModelId = modelId;
+    }
+
+    /// <summary>Provider id.</summary>
+    public string Provider => AmazonBedrockProvider.ProviderName;
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Extra headers merged into the rerank request.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    /// <summary>Reranks <paramref name="documents"/>.</summary>
+    public async Task<AmazonBedrockRerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, bool jsonDocuments, int? topN, IReadOnlyDictionary<string, JsonElement>? providerOptions, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken)
+    {
+        var nodes = new List<JsonNode?>();
+        foreach (var document in documents ?? Array.Empty<string>())
+        {
+            if (jsonDocuments)
             {
-                if (part.TryGetProperty("text", out var text))
-                {
-                    content.Add(new GeneratedText(text.GetString() ?? string.Empty));
-                }
+                nodes.Add(JsonNode.Parse(document));
+            }
+            else
+            {
+                nodes.Add(JsonValue.Create(document));
             }
         }
 
-        var raw = root.TryGetProperty("stopReason", out var stop) ? stop.GetString() : "end_turn";
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement))
+        AmazonBedrockRerank.ReadOptions(providerOptions, out var nextToken, out var additional);
+        var bodyNode = AmazonBedrockRerank.BuildRequest(ModelId, _provider.Options.Region, query, topN, jsonDocuments, nodes, nextToken, additional);
+        var body = bodyNode.ToJsonString();
+        var request = new HttpRequestMessage(HttpMethod.Post, _provider.RerankUri())
         {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("inputTokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("outputTokens", out var outputTokens) ? outputTokens.GetInt32() : null,
-                usageElement.TryGetProperty("totalTokens", out var total) ? total.GetInt32() : null);
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        CopyHeaders(request, Headers);
+        CopyHeaders(request, headers);
+        if (!string.IsNullOrEmpty(_provider.Options.ApiKey))
+        {
+            request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _provider.Options.ApiKey.Trim());
+        }
+        else if (!string.IsNullOrEmpty(_provider.Options.AccessKeyId) && !string.IsNullOrEmpty(_provider.Options.SecretAccessKey))
+        {
+            AwsSigV4.Sign(request, Encoding.UTF8.GetBytes(body), _provider.Options.Region, "bedrock", _provider.Options.AccessKeyId!, _provider.Options.SecretAccessKey!, _provider.Options.SessionToken, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
         }
 
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw);
+        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw ProviderHttp.MapStatus((int)response.StatusCode, text);
+        }
+
+        return AmazonBedrockRerank.Parse(text, CopyResponseHeaders(response));
+    }
+
+    private static void CopyHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
+    {
+        if (headers == null)
+        {
+            return;
+        }
+
+        foreach (var header in headers)
+        {
+            if (!string.IsNullOrEmpty(header.Key) && header.Value != null)
+            {
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+    }
+
+    private static Dictionary<string, string> CopyResponseHeaders(HttpResponseMessage response)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers)
+        {
+            headers[header.Key] = string.Join(",", header.Value);
+        }
+
+        if (response.Content != null)
+        {
+            foreach (var header in response.Content.Headers)
+            {
+                headers[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
+        return headers;
     }
 }
 

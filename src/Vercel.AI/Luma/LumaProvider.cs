@@ -18,10 +18,16 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.lumalabs.ai";
 
+    /// <summary>User-Agent suffix sent on every call.</summary>
+    public const string UserAgent = "ai-sdk/luma/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public LumaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -40,7 +46,24 @@ public sealed class LumaProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
+    }
+
+    /// <summary>HTTP client used by <see cref="LumaImageModel"/>.</summary>
+    internal HttpClient Client
+    {
+        get { return _httpClient; }
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new LumaImageModel(Client, modelId, "luma.image", Options.BaseUrl, () => CreateHeaders());
     }
 
     /// <inheritdoc />

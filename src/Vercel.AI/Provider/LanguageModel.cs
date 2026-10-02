@@ -127,7 +127,7 @@ public sealed class LanguageModelUsage
 }
 
 /// <summary>A warning produced while calling a model.</summary>
-public sealed class CallWarning
+public class CallWarning
 {
     /// <summary>Creates a warning.</summary>
     public CallWarning(string type, string message)

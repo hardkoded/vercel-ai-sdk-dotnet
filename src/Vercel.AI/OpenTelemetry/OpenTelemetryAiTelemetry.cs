@@ -73,15 +73,15 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
 
     private static void SetCount(Activity activity, string name, int? value)
     {
-        if (value is int number)
+        if (value is int number && TelemetryAttributes.SanitizeAttributeValue(number) is int sanitized)
         {
-            activity.SetTag(name, number);
+            activity.SetTag(name, sanitized);
         }
     }
 
     private static bool IsFinite(double value)
     {
-        return !double.IsNaN(value) && !double.IsInfinity(value);
+        return TelemetryAttributes.SanitizeAttributeValue(value) is double;
     }
 
     private sealed class Empty : IDisposable

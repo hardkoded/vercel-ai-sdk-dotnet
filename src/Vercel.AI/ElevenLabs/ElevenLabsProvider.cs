@@ -1,12 +1,9 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.ElevenLabs;
 
@@ -19,10 +16,16 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.elevenlabs.io";
 
+    /// <summary>User-Agent suffix sent on every call. Matches the package version fallback.</summary>
+    public const string UserAgent = "ai-sdk/elevenlabs/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public ElevenLabsProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -42,28 +45,48 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.CustomHeader;
         options.ApiKeyHeaderName = "xi-api-key";
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
     }
 
-    /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new Speech(this, modelId);
-
-    private sealed class Speech : ISpeechModel
+    /// <summary>HTTP client used by <see cref="ElevenLabsSpeechModel"/>.</summary>
+    internal HttpClient Client
     {
-        private readonly ElevenLabsProvider _provider;
-        public Speech(ElevenLabsProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "elevenlabs";
-        public string ModelId { get; }
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
-        {
-            var voice = options.Voice ?? "default";
-            var path = "/v1/text-to-speech/{voice}".Replace("{voice}", voice);
-            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId, ["model"] = ModelId };
-            var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            return new SpeechResult(bytes, "audio/mpeg");
-        }
+        get { return _httpClient; }
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw Unsupported(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw Unsupported(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw Unsupported(modelId, "imageModel");
+    }
+
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return new ElevenLabsSpeechModel(Client, modelId, "elevenlabs.speech", Options.BaseUrl, () => CreateHeaders());
+    }
+
+    private static AiSdkException Unsupported(string modelId, string modelType)
+    {
+        return new AiSdkException("ElevenLabs does not provide " + modelType + " '" + modelId + "'.");
+    }
 }
 
 /// <summary>Registers ElevenLabs.</summary>

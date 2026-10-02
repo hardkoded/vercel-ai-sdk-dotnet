@@ -27,6 +27,12 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
 
     /// <summary>When true, <see cref="OpenAIProvider.LanguageModel"/> uses the Responses API.</summary>
     public bool UseResponsesApi { get; set; }
+
+    /// <summary>Sent as <c>OpenAI-Organization</c> when set.</summary>
+    public string? Organization { get; set; }
+
+    /// <summary>Sent as <c>OpenAI-Project</c> when set.</summary>
+    public string? Project { get; set; }
 }
 
 /// <summary>OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches.</summary>
@@ -60,7 +66,7 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
             return new OpenAIResponsesLanguageModel(this, modelId);
         }
 
-        return base.LanguageModel(modelId);
+        return new OpenAIChatLanguageModel(this, modelId);
     }
 
     /// <inheritdoc />

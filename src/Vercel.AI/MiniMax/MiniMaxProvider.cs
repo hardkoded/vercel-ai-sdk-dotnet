@@ -3,17 +3,24 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.MiniMax;
 
-/// <summary>MiniMax provider. OpenAI Chat Completions compatible at <c>https://api.minimax.io/v1</c>.</summary>
+/// <summary>MiniMax provider. Chat uses Anthropic Messages at <c>https://api.minimax.io/anthropic/v1</c>.</summary>
 public sealed class MiniMaxProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "minimax";
 
-    /// <summary>Default API origin.</summary>
-    public const string DefaultBaseUrl = "https://api.minimax.io/v1";
+    /// <summary>Anthropic Messages origin used for chat.</summary>
+    public const string DefaultBaseUrl = "https://api.minimax.io/anthropic/v1";
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return new MiniMaxLanguageModel(this, modelId);
+    }
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "MINIMAX_API_KEY";
@@ -39,10 +46,12 @@ public sealed class MiniMaxProvider : OpenAICompatibleProvider
             options.ProviderName = ProviderId;
         }
 
-        if (options.BaseUrl == "https://api.openai.com/v1")
+        if (options.BaseUrl == "https://api.openai.com/v1" || options.BaseUrl == "https://api.minimax.io/v1")
         {
             options.BaseUrl = DefaultBaseUrl;
         }
+
+        options.ChatCompletionsPath = "messages";
 
         if (options.ApiKeyEnvironmentVariable == "OPENAI_API_KEY")
         {

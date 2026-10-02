@@ -245,9 +245,9 @@
       "title": "Cover upstream unit tests: ai/ui",
       "dotnetProject": "Vercel.AI",
       "inScope": 372,
-      "covered": 0,
+      "covered": 44,
       "partial": 0,
-      "missing": 372,
+      "missing": 328,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/54"
     },
     {
@@ -255,9 +255,9 @@
       "title": "Cover upstream unit tests: ai/ui-message-stream",
       "dotnetProject": "Vercel.AI",
       "inScope": 104,
-      "covered": 0,
+      "covered": 21,
       "partial": 1,
-      "missing": 103,
+      "missing": 82,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/55"
     },
     {
@@ -285,9 +285,9 @@
       "title": "Cover upstream unit tests: ai/util",
       "dotnetProject": "Vercel.AI",
       "inScope": 225,
-      "covered": 0,
+      "covered": 213,
       "partial": 2,
-      "missing": 223,
+      "missing": 10,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/58"
     },
     {
@@ -295,9 +295,9 @@
       "title": "Cover upstream unit tests: ai/util/download",
       "dotnetProject": "Vercel.AI",
       "inScope": 17,
-      "covered": 0,
+      "covered": 14,
       "partial": 0,
-      "missing": 17,
+      "missing": 3,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/59"
     },
     {
@@ -315,9 +315,9 @@
       "title": "Cover upstream unit tests: amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 428,
-      "covered": 0,
-      "partial": 2,
-      "missing": 426,
+      "covered": 211,
+      "partial": 1,
+      "missing": 216,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/61"
     },
     {
@@ -345,9 +345,9 @@
       "title": "Cover upstream unit tests: amazon-bedrock/reranking",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 13,
-      "covered": 0,
+      "covered": 13,
       "partial": 0,
-      "missing": 13,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/64"
     },
     {
@@ -355,9 +355,9 @@
       "title": "Cover upstream unit tests: anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 573,
-      "covered": 0,
+      "covered": 185,
       "partial": 0,
-      "missing": 573,
+      "missing": 388,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/65"
     },
     {
@@ -395,9 +395,9 @@
       "title": "Cover upstream unit tests: assemblyai",
       "dotnetProject": "Vercel.AI.AssemblyAI",
       "inScope": 21,
-      "covered": 0,
+      "covered": 21,
       "partial": 0,
-      "missing": 21,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/69"
     },
     {
@@ -505,9 +505,9 @@
       "title": "Cover upstream unit tests: deepseek/chat",
       "dotnetProject": "Vercel.AI.DeepSeek",
       "inScope": 102,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 102,
+      "missing": 100,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/80"
     },
     {
@@ -525,9 +525,9 @@
       "title": "Cover upstream unit tests: elevenlabs",
       "dotnetProject": "Vercel.AI.ElevenLabs",
       "inScope": 35,
-      "covered": 0,
+      "covered": 8,
       "partial": 0,
-      "missing": 35,
+      "missing": 27,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/82"
     },
     {
@@ -595,9 +595,9 @@
       "title": "Cover upstream unit tests: gladia",
       "dotnetProject": "Vercel.AI.Gladia",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/89"
     },
     {
@@ -605,9 +605,9 @@
       "title": "Cover upstream unit tests: gmicloud",
       "dotnetProject": "Vercel.AI.GmiCloud",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/90"
     },
     {
@@ -755,9 +755,9 @@
       "title": "Cover upstream unit tests: groq",
       "dotnetProject": "Vercel.AI.Groq",
       "inScope": 104,
-      "covered": 0,
+      "covered": 96,
       "partial": 0,
-      "missing": 104,
+      "missing": 8,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/105"
     },
     {
@@ -785,9 +785,9 @@
       "title": "Cover upstream unit tests: hume",
       "dotnetProject": "Vercel.AI.Hume",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/108"
     },
     {
@@ -805,9 +805,9 @@
       "title": "Cover upstream unit tests: luma",
       "dotnetProject": "Vercel.AI.Luma",
       "inScope": 29,
-      "covered": 0,
+      "covered": 29,
       "partial": 0,
-      "missing": 29,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/110"
     },
     {
@@ -815,9 +815,9 @@
       "title": "Cover upstream unit tests: mcp/tool",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 270,
-      "covered": 0,
+      "covered": 20,
       "partial": 2,
-      "missing": 268,
+      "missing": 248,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/111"
     },
     {
@@ -825,9 +825,9 @@
       "title": "Cover upstream unit tests: mcp/tool/mcp-stdio",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 20,
-      "covered": 0,
+      "covered": 1,
       "partial": 1,
-      "missing": 19,
+      "missing": 18,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/112"
     },
     {
@@ -835,9 +835,9 @@
       "title": "Cover upstream unit tests: mcp/util",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/113"
     },
     {
@@ -845,9 +845,9 @@
       "title": "Cover upstream unit tests: minimax",
       "dotnetProject": "Vercel.AI.MiniMax",
       "inScope": 128,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 128,
+      "missing": 127,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/114"
     },
     {
@@ -855,9 +855,9 @@
       "title": "Cover upstream unit tests: mistral",
       "dotnetProject": "Vercel.AI.Mistral",
       "inScope": 114,
-      "covered": 0,
+      "covered": 15,
       "partial": 0,
-      "missing": 114,
+      "missing": 99,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/115"
     },
     {
@@ -865,9 +865,9 @@
       "title": "Cover upstream unit tests: moonshotai",
       "dotnetProject": "Vercel.AI.Moonshot",
       "inScope": 156,
-      "covered": 0,
+      "covered": 16,
       "partial": 0,
-      "missing": 156,
+      "missing": 140,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/116"
     },
     {
@@ -965,9 +965,9 @@
       "title": "Cover upstream unit tests: openai/chat",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 149,
-      "covered": 0,
+      "covered": 134,
       "partial": 0,
-      "missing": 149,
+      "missing": 15,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/126"
     },
     {
@@ -1085,9 +1085,9 @@
       "title": "Cover upstream unit tests: otel",
       "dotnetProject": "Vercel.AI.OpenTelemetry",
       "inScope": 222,
-      "covered": 0,
+      "covered": 72,
       "partial": 0,
-      "missing": 222,
+      "missing": 150,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/138"
     },
     {
@@ -1095,9 +1095,9 @@
       "title": "Cover upstream unit tests: perplexity",
       "dotnetProject": "Vercel.AI.Perplexity",
       "inScope": 46,
-      "covered": 0,
-      "partial": 0,
-      "missing": 46,
+      "covered": 45,
+      "partial": 1,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/139"
     },
     {
@@ -1185,9 +1185,9 @@
       "title": "Cover upstream unit tests: revai",
       "dotnetProject": "Vercel.AI.RevAI",
       "inScope": 6,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 6,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/148"
     },
     {
@@ -1195,9 +1195,9 @@
       "title": "Cover upstream unit tests: togetherai",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 34,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 34,
+      "missing": 25,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/149"
     },
     {
@@ -1205,9 +1205,9 @@
       "title": "Cover upstream unit tests: togetherai/reranking",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/150"
     },
     {
@@ -1215,9 +1215,9 @@
       "title": "Cover upstream unit tests: voyage",
       "dotnetProject": "Vercel.AI.Voyage",
       "inScope": 11,
-      "covered": 0,
+      "covered": 11,
       "partial": 0,
-      "missing": 11,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/151"
     },
     {
@@ -1225,9 +1225,9 @@
       "title": "Cover upstream unit tests: voyage/reranking",
       "dotnetProject": "Vercel.AI.Voyage",
       "inScope": 10,
-      "covered": 0,
+      "covered": 10,
       "partial": 0,
-      "missing": 10,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/152"
     },
     {
@@ -1235,9 +1235,9 @@
       "title": "Cover upstream unit tests: xai",
       "dotnetProject": "Vercel.AI.Xai",
       "inScope": 170,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 170,
+      "missing": 168,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/153"
     },
     {

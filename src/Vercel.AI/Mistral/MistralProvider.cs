@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Mistral;
 
@@ -17,6 +18,12 @@ public sealed class MistralProvider : OpenAICompatibleProvider
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "MISTRAL_API_KEY";
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return new MistralChatLanguageModel(this, modelId);
+    }
 
     /// <summary>Creates a provider.</summary>
     public MistralProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)

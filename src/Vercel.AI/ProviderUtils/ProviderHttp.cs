@@ -110,6 +110,36 @@ public sealed class ProviderHttp
         }
     }
 
+    /// <summary>Posts JSON and yields SSE payloads, copying response headers before the first event.</summary>
+    public async IAsyncEnumerable<string> SendSseAsync(
+        Uri uri,
+        string jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        IDictionary<string, string> responseHeaders,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw MapStatus((int)response.StatusCode, body);
+        }
+
+        if (responseHeaders != null)
+        {
+            foreach (var pair in CopyHeaders(response))
+            {
+                responseHeaders[pair.Key] = pair.Value;
+            }
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+        {
+            yield return data;
+        }
+    }
+
     /// <summary>Maps an HTTP status onto the SDK exception hierarchy.</summary>
     public static ApiException MapStatus(int statusCode, string? body)
     {

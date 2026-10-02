@@ -25,6 +25,9 @@ public class AnthropicOptions
 
     /// <summary><c>anthropic-version</c> header.</summary>
     public string Version { get; set; } = "2023-06-01";
+
+    /// <summary>Headers merged into every request.</summary>
+    public Dictionary<string, string?> Headers { get; set; } = new Dictionary<string, string?>();
 }
 
 /// <summary>Anthropic Messages provider.</summary>
@@ -35,10 +38,16 @@ public class AnthropicProvider : ProviderBase
 
     /// <summary>Creates a provider.</summary>
     public AnthropicProvider(HttpClient httpClient, AnthropicOptions? options = null)
+        : this(httpClient, options, null)
+    {
+    }
+
+    /// <summary>Creates a provider with an explicit retry policy.</summary>
+    internal AnthropicProvider(HttpClient httpClient, AnthropicOptions? options, RetryPolicy? retry)
         : base(ProviderName)
     {
         Options = options ?? new AnthropicOptions();
-        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)), retry);
     }
 
     /// <summary>Options.</summary>
@@ -94,13 +103,14 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        using var document = await _provider.Http.SendJsonAsync(
+        var prepared = AnthropicRequest.Prepare(ModelId, options, false);
+        var response = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "v1/messages"),
-            Build(options, false).ToJsonString(),
-            _provider.Headers(),
+            AnthropicRequest.Serialize(prepared.Body),
+            Headers(prepared, options),
             cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
+        return AnthropicResponse.Parse(response.Body, response.Headers, prepared);
     }
 
     /// <inheritdoc />
@@ -112,10 +122,11 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         var toolName = string.Empty;
         var toolArgs = new StringBuilder();
         string? finish = null;
+        var prepared = AnthropicRequest.Prepare(ModelId, options, true);
         await foreach (var data in _provider.Http.SendSseAsync(
             ApiKeys.Combine(_provider.Options.BaseUrl, "v1/messages"),
-            Build(options, true).ToJsonString(),
-            _provider.Headers(),
+            AnthropicRequest.Serialize(prepared.Body),
+            Headers(prepared, options),
             cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node;
@@ -160,143 +171,28 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         yield return new FinishStreamPart(FinishReasons.Parse(finish), LanguageModelUsage.Empty, finish);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options, bool stream)
+    private Dictionary<string, string?> Headers(AnthropicPreparedRequest prepared, LanguageModelCallOptions options)
     {
-        var system = new StringBuilder();
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
+        var headers = _provider.Headers();
+        foreach (var pair in _provider.Options.Headers)
         {
-            if (message is SystemModelMessage systemMessage)
-            {
-                if (system.Length > 0)
-                {
-                    system.Append('\n');
-                }
+            headers[pair.Key] = pair.Value;
+        }
 
-                system.Append(systemMessage.Content);
-            }
-            else if (message is UserModelMessage user)
+        if (options.Headers != null)
+        {
+            foreach (var pair in options.Headers)
             {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var content = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    content.Add(new JsonObject { ["type"] = "text", ["text"] = assistant.Text });
-                }
-
-                foreach (var call in assistant.ToolCalls)
-                {
-                    content.Add(new JsonObject
-                    {
-                        ["type"] = "tool_use",
-                        ["id"] = call.ToolCallId,
-                        ["name"] = call.ToolName,
-                        ["input"] = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson),
-                    });
-                }
-
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content });
-            }
-            else if (message is ToolModelMessage tool)
-            {
-                messages.Add(new JsonObject
-                {
-                    ["role"] = "user",
-                    ["content"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["type"] = "tool_result",
-                            ["tool_use_id"] = tool.ToolCallId,
-                            ["content"] = tool.OutputJson,
-                            ["is_error"] = tool.IsError,
-                        },
-                    },
-                });
+                headers[pair.Key] = pair.Value;
             }
         }
 
-        var body = new JsonObject
+        if (prepared.Betas.Count > 0)
         {
-            ["model"] = ModelId,
-            ["max_tokens"] = options.MaxOutputTokens ?? 4096,
-            ["messages"] = messages,
-            ["stream"] = stream,
-        };
-        if (system.Length > 0)
-        {
-            body["system"] = system.ToString();
+            headers["anthropic-beta"] = string.Join(",", prepared.Betas);
         }
 
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        if (options.Tools is { Count: > 0 })
-        {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                tools.Add(new JsonObject
-                {
-                    ["name"] = tool.Name,
-                    ["description"] = tool.Description,
-                    ["input_schema"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                });
-            }
-
-            body["tools"] = tools;
-        }
-
-        return body;
-    }
-
-    private static LanguageModelGenerateResult Parse(JsonElement root)
-    {
-        var content = new List<GeneratedContent>();
-        if (root.TryGetProperty("content", out var parts))
-        {
-            foreach (var part in parts.EnumerateArray())
-            {
-                var type = part.GetProperty("type").GetString();
-                if (type == "text")
-                {
-                    content.Add(new GeneratedText(part.GetProperty("text").GetString() ?? string.Empty));
-                }
-                else if (type == "tool_use")
-                {
-                    content.Add(new GeneratedToolCall(
-                        part.GetProperty("id").GetString() ?? "tool",
-                        part.GetProperty("name").GetString() ?? string.Empty,
-                        part.GetProperty("input").GetRawText()));
-                }
-            }
-        }
-
-        var raw = root.TryGetProperty("stop_reason", out var stop) ? stop.GetString() : null;
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement))
-        {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("input_tokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("output_tokens", out var output) ? output.GetInt32() : null,
-                null);
-        }
-
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw, responseId: root.TryGetProperty("id", out var id) ? id.GetString() : null);
+        return headers;
     }
 
     private static string? StringOf(JsonNode? node)

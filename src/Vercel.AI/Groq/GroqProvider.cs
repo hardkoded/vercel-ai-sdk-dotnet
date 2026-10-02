@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Groq;
 
@@ -17,6 +18,15 @@ public sealed class GroqProvider : OpenAICompatibleProvider
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "GROQ_API_KEY";
+
+    /// <summary>User-Agent suffix sent on Groq chat calls.</summary>
+    public const string UserAgent = "ai-sdk/groq/0.0.0-test";
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return new GroqChatLanguageModel(this, modelId);
+    }
 
     /// <summary>Creates a provider.</summary>
     public GroqProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)

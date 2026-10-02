@@ -1,16 +1,13 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Hume;
 
-/// <summary>Hume provider.</summary>
+/// <summary>Hume speech provider. Calls <c>POST https://api.hume.ai/v0/tts/file</c>.</summary>
 public sealed class HumeProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -19,10 +16,16 @@ public sealed class HumeProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.hume.ai";
 
+    /// <summary>User-Agent suffix sent on every call.</summary>
+    public const string UserAgent = "ai-sdk/hume/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public HumeProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -30,6 +33,12 @@ public sealed class HumeProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new HumeProvider(client, options);
+    }
+
+    /// <summary>HTTP client used by <see cref="HumeSpeechModel"/>.</summary>
+    internal HttpClient Client
+    {
+        get { return _httpClient; }
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -42,28 +51,56 @@ public sealed class HumeProvider : OpenAICompatibleProvider
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.CustomHeader;
         options.ApiKeyHeaderName = "X-Hume-Api-Key";
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
     }
 
-    /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new Speech(this, modelId);
-
-    private sealed class Speech : ISpeechModel
+    /// <summary>Creates a speech model with the empty Hume model id.</summary>
+    public HumeSpeechModel Speech()
     {
-        private readonly HumeProvider _provider;
-        public Speech(HumeProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "hume";
-        public string ModelId { get; }
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
-        {
-            var voice = options.Voice ?? "default";
-            var path = "/v0/tts".Replace("{voice}", voice);
-            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId, ["model"] = ModelId };
-            var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            return new SpeechResult(bytes, "audio/mpeg");
-        }
+        return CreateSpeech(string.Empty);
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw Unsupported(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw Unsupported(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw Unsupported(modelId, "imageModel");
+    }
+
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return CreateSpeech(modelId ?? string.Empty);
+    }
+
+    private HumeSpeechModel CreateSpeech(string modelId)
+    {
+        return new HumeSpeechModel(Client, modelId, Options.BaseUrl, () => CreateHeaders())
+        {
+            Provider = "hume.speech",
+        };
+    }
+
+    private static AiSdkException Unsupported(string modelId, string modelType)
+    {
+        return new AiSdkException("NoSuchModelError: Hume does not provide " + modelType + " '" + modelId + "'.");
+    }
 }
 
 /// <summary>Registers Hume.</summary>

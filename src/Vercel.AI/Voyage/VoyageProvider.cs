@@ -1,15 +1,13 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Voyage;
 
-/// <summary>Voyage provider.</summary>
+/// <summary>Voyage embeddings and reranking. Calls <c>https://api.voyageai.com/v1</c>.</summary>
 public sealed class VoyageProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -18,10 +16,16 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.voyageai.com/v1";
 
+    /// <summary>User-Agent suffix sent on every call.</summary>
+    public const string UserAgent = "ai-sdk/voyage/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public VoyageProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -29,6 +33,12 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new VoyageProvider(client, options);
+    }
+
+    /// <summary>HTTP client used by the Voyage models.</summary>
+    internal HttpClient Client
+    {
+        get { return _httpClient; }
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -40,38 +50,42 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
     }
 
     /// <inheritdoc />
-    public override IEmbeddingModel EmbeddingModel(string modelId) => new Embedding(this, modelId);
-
-    private sealed class Embedding : IEmbeddingModel
+    public override ILanguageModel LanguageModel(string modelId)
     {
-        private readonly VoyageProvider _provider;
-        public Embedding(VoyageProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string SpecificationVersion => "V4";
-        public string Provider => "voyage";
-        public string ModelId { get; }
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
-        {
-            var input = new JsonArray();
-            foreach (var value in values) input.Add(value);
-            var body = new JsonObject { ["model"] = ModelId, ["input"] = input };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/embeddings"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            var vectors = new List<float[]>();
-            foreach (var item in document.RootElement.GetProperty("data").EnumerateArray())
-            {
-                var embedding = item.GetProperty("embedding");
-                var vector = new float[embedding.GetArrayLength()];
-                var index = 0;
-                foreach (var number in embedding.EnumerateArray()) vector[index++] = number.GetSingle();
-                vectors.Add(vector);
-            }
-            return new EmbeddingResult(vectors, null);
-        }
+        throw Unsupported(modelId, "languageModel");
     }
 
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw Unsupported(modelId, "imageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        return new VoyageEmbeddingModel(Client, modelId, Options.BaseUrl, () => CreateHeaders());
+    }
+
+    /// <inheritdoc />
+    public override IRerankingModel RerankingModel(string modelId)
+    {
+        return new VoyageRerankingModel(Client, modelId, Options.BaseUrl, () => CreateHeaders());
+    }
+
+    private static AiSdkException Unsupported(string modelId, string modelType)
+    {
+        return new AiSdkException("NoSuchModelError: Voyage does not provide " + modelType + " '" + modelId + "'.");
+    }
 }
 
 /// <summary>Registers Voyage.</summary>

@@ -1,15 +1,13 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Gladia;
 
-/// <summary>Gladia provider.</summary>
+/// <summary>Gladia transcription provider. Uploads audio, then calls <c>/v2/pre-recorded</c>.</summary>
 public sealed class GladiaProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -18,10 +16,16 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.gladia.io";
 
+    /// <summary>User-Agent suffix sent on every call.</summary>
+    public const string UserAgent = "ai-sdk/gladia/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public GladiaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -29,6 +33,12 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new GladiaProvider(client, options);
+    }
+
+    /// <summary>HTTP client used by <see cref="GladiaTranscriptionModel"/>.</summary>
+    internal HttpClient Client
+    {
+        get { return _httpClient; }
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -41,27 +51,45 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.CustomHeader;
         options.ApiKeyHeaderName = "x-gladia-key";
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
     }
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new Transcription(this, modelId);
-
-    private sealed class Transcription : ITranscriptionModel
+    public override ILanguageModel LanguageModel(string modelId)
     {
-        private readonly GladiaProvider _provider;
-        public Transcription(GladiaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "gladia";
-        public string ModelId { get; }
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
-        {
-            var body = new JsonObject { ["model"] = ModelId, ["audio"] = Convert.ToBase64String(audio.Data) };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcription"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            var text = document.RootElement.TryGetProperty("text", out var value) ? value.GetString() ?? string.Empty : string.Empty;
-            return new TranscriptionResult(text);
-        }
+        throw Unsupported(modelId, "languageModel");
     }
 
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw Unsupported(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw Unsupported(modelId, "imageModel");
+    }
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new GladiaTranscriptionModel(Client, string.IsNullOrEmpty(modelId) ? "default" : modelId, Options.BaseUrl, () => CreateHeaders())
+        {
+            Provider = "gladia.transcription",
+        };
+    }
+
+    private static AiSdkException Unsupported(string modelId, string modelType)
+    {
+        return new AiSdkException("NoSuchModelError: Gladia does not provide " + modelType + " '" + modelId + "'.");
+    }
 }
 
 /// <summary>Registers Gladia.</summary>

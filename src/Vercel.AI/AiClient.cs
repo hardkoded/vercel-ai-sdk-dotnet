@@ -449,27 +449,37 @@ public static class Ai
             throw new ArgumentNullException(nameof(right));
         }
 
-        if (left.Count != right.Count || left.Count == 0)
+        if (left.Count != right.Count)
         {
-            throw new ArgumentException("Vectors must be non-empty and the same length.");
+            throw new Vercel.AI.Util.InvalidArgumentException(
+                "vector1,vector2",
+                "Vectors must have the same length");
         }
 
-        double dot = 0;
-        double leftNorm = 0;
-        double rightNorm = 0;
-        for (var i = 0; i < left.Count; i++)
-        {
-            dot += left[i] * right[i];
-            leftNorm += left[i] * left[i];
-            rightNorm += right[i] * right[i];
-        }
-
-        if (leftNorm == 0 || rightNorm == 0)
+        var count = left.Count;
+        if (count == 0)
         {
             return 0;
         }
 
-        return dot / (Math.Sqrt(leftNorm) * Math.Sqrt(rightNorm));
+        double magnitudeSquared1 = 0;
+        double magnitudeSquared2 = 0;
+        double dotProduct = 0;
+        for (var i = 0; i < count; i++)
+        {
+            double value1 = left[i];
+            double value2 = right[i];
+            magnitudeSquared1 += value1 * value1;
+            magnitudeSquared2 += value2 * value2;
+            dotProduct += value1 * value2;
+        }
+
+        if (magnitudeSquared1 == 0 || magnitudeSquared2 == 0)
+        {
+            return 0;
+        }
+
+        return dotProduct / (Math.Sqrt(magnitudeSquared1) * Math.Sqrt(magnitudeSquared2));
     }
 }
 

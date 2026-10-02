@@ -1,15 +1,13 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AssemblyAI;
 
-/// <summary>AssemblyAI provider.</summary>
+/// <summary>AssemblyAI transcription provider. Uploads audio and polls <c>/v2/transcript</c>.</summary>
 public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -18,10 +16,16 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.assemblyai.com";
 
+    /// <summary>User-Agent suffix sent on every call. Matches the package version fallback.</summary>
+    public const string UserAgent = "ai-sdk/assemblyai/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public AssemblyAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
     /// <summary>Creates a provider.</summary>
@@ -29,6 +33,12 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new AssemblyAIProvider(client, options);
+    }
+
+    /// <summary>HTTP client used by <see cref="AssemblyAITranscriptionModel"/>.</summary>
+    internal HttpClient Client
+    {
+        get { return _httpClient; }
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -40,27 +50,42 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.RawAuthorization;
+        if (!options.Headers.ContainsKey("User-Agent"))
+        {
+            options.Headers["User-Agent"] = UserAgent;
+        }
+
         return options;
     }
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new Transcription(this, modelId);
-
-    private sealed class Transcription : ITranscriptionModel
+    public override ILanguageModel LanguageModel(string modelId)
     {
-        private readonly AssemblyAIProvider _provider;
-        public Transcription(AssemblyAIProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "assemblyai";
-        public string ModelId { get; }
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
-        {
-            var body = new JsonObject { ["model"] = ModelId, ["audio"] = Convert.ToBase64String(audio.Data) };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            var text = document.RootElement.TryGetProperty("text", out var value) ? value.GetString() ?? string.Empty : string.Empty;
-            return new TranscriptionResult(text);
-        }
+        throw Unsupported(modelId, "languageModel");
     }
 
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw Unsupported(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw Unsupported(modelId, "imageModel");
+    }
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new AssemblyAITranscriptionModel(Client, modelId, "assemblyai.transcription", Options.BaseUrl, () => CreateHeaders());
+    }
+
+    private static AiSdkException Unsupported(string modelId, string modelType)
+    {
+        return new AiSdkException("AssemblyAI does not provide " + modelType + " '" + modelId + "'.");
+    }
 }
 
 /// <summary>Registers AssemblyAI.</summary>

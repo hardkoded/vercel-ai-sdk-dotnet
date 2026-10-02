@@ -27,7 +27,8 @@ public static class McpClient
             throw new ArgumentNullException(nameof(transport));
         }
 
-        using var init = JsonDocument.Parse("{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}");
+        using var init = JsonDocument.Parse(
+            "{\"protocolVersion\":\"" + McpProtocol.Latest + "\",\"capabilities\":{},\"clientInfo\":{\"name\":\"" + McpProtocol.ClientName + "\",\"version\":\"" + McpProtocol.ClientVersion + "\"}}");
         await transport.CallAsync("initialize", init.RootElement, cancellationToken).ConfigureAwait(false);
         return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
     }
@@ -69,12 +70,59 @@ public static class McpClient
         };
         using var document = JsonDocument.Parse(parameters.ToJsonString());
         var result = await transport.CallAsync("tools/call", document.RootElement, cancellationToken).ConfigureAwait(false);
+        JsonNode? node = null;
+        try
+        {
+            node = JsonNode.Parse(result.GetRawText());
+        }
+        catch (JsonException)
+        {
+            node = null;
+        }
+
+        if (node != null && McpCallToolResult.TryParse(node, out var parsed) && parsed != null)
+        {
+            if (IsError(parsed))
+            {
+                throw new AiSdkException(ReadText(parsed));
+            }
+
+            return ReadText(parsed);
+        }
+
         if (result.TryGetProperty("isError", out var isError) && isError.ValueKind == JsonValueKind.True)
         {
             throw new AiSdkException(ReadText(result));
         }
 
         return ReadText(result);
+    }
+
+    private static bool IsError(JsonObject result)
+    {
+        return result["isError"] is JsonValue value && value.TryGetValue<bool>(out var isError) && isError;
+    }
+
+    private static string ReadText(JsonNode result)
+    {
+        if (result is JsonObject obj && obj["content"] is JsonArray content)
+        {
+            var builder = new StringBuilder();
+            foreach (var part in content)
+            {
+                if (part is JsonObject item && item["text"] is JsonValue text && text.TryGetValue<string>(out var value))
+                {
+                    builder.Append(value);
+                }
+            }
+
+            if (builder.Length > 0)
+            {
+                return builder.ToString();
+            }
+        }
+
+        return result.ToJsonString();
     }
 
     private static string ReadText(JsonElement result)

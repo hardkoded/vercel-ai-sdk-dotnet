@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.TogetherAI;
 
@@ -16,7 +17,36 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     public const string DefaultBaseUrl = "https://api.together.xyz/v1";
 
     /// <summary>Environment variable for the API key.</summary>
-    public const string ApiKeyVariable = "TOGETHER_AI_API_KEY";
+    public const string ApiKeyVariable = "TOGETHER_API_KEY";
+
+    /// <summary>Deprecated environment variable. Used only when <see cref="ApiKeyVariable"/> is unset.</summary>
+    public const string DeprecatedApiKeyVariable = "TOGETHER_AI_API_KEY";
+
+    /// <summary>Warning emitted when the deprecated environment variable supplies the key.</summary>
+    public const string DeprecatedApiKeyMessage = "TOGETHER_AI_API_KEY is deprecated and will be removed in a future release. Please use TOGETHER_API_KEY instead.";
+
+    private static readonly List<string> KeyWarnings = new();
+
+    /// <summary>Warnings recorded while resolving the API key.</summary>
+    public static IReadOnlyList<string> DeprecationWarnings => KeyWarnings;
+
+    /// <summary>Clears <see cref="DeprecationWarnings"/>.</summary>
+    public static void ClearDeprecationWarnings()
+    {
+        KeyWarnings.Clear();
+    }
+
+    /// <summary>True only for <c>deepseek-ai/DeepSeek-V4-Flash-0731</c>.</summary>
+    public static bool SupportsStructuredOutputs(string modelId)
+    {
+        return string.Equals(modelId, "deepseek-ai/DeepSeek-V4-Flash-0731", StringComparison.Ordinal);
+    }
+
+    /// <inheritdoc />
+    public override IRerankingModel RerankingModel(string modelId)
+    {
+        return new TogetherRerankingModel(this, modelId);
+    }
 
     /// <summary>Creates a provider.</summary>
     public TogetherAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
@@ -44,14 +74,21 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
             options.BaseUrl = DefaultBaseUrl;
         }
 
-        if (options.ApiKeyEnvironmentVariable == "OPENAI_API_KEY")
+        if (options.ApiKeyEnvironmentVariable == "OPENAI_API_KEY" || options.ApiKeyEnvironmentVariable == DeprecatedApiKeyVariable)
         {
             options.ApiKeyEnvironmentVariable = ApiKeyVariable;
         }
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = true;
-        options.AdditionalApiKeyEnvironmentVariables = new[] { "TOGETHER_API_KEY" };
+        options.AdditionalApiKeyEnvironmentVariables = new[] { DeprecatedApiKeyVariable };
+        if (string.IsNullOrEmpty(options.ApiKey)
+            && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(ApiKeyVariable))
+            && Environment.GetEnvironmentVariable(DeprecatedApiKeyVariable) != null)
+        {
+            KeyWarnings.Add(DeprecatedApiKeyMessage);
+        }
+
         return options;
     }
 }

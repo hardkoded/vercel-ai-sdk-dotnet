@@ -173,10 +173,6 @@ public sealed class ProviderRequestTests
         "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent",
         Coverage = UpstreamCoverage.Partial,
         Note = "Checks an AWS4-HMAC-SHA256 credential scope. The upstream test mocks the signer.")]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should use default service name \"bedrock\" when no service parameter is provided",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The credential scope includes the bedrock service.")]
     public async Task Bedrock_signs_with_sigv4()
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://bedrock-runtime.us-east-1.amazonaws.com/model/demo/converse");
@@ -229,7 +225,7 @@ public sealed class ProviderRequestTests
         yield return Media("/v1/text-to-speech/", "xi-api-key", "secret", h => ElevenLabsProvider.Create(Key(), h), "speech");
         yield return Media("/fal-ai/flux/dev", "Authorization", "Key secret", h => FalProvider.Create(Key(), h), "image");
         yield return Media("/v1/tts", "Authorization", "Bearer secret", h => FishAudioProvider.Create(Key(), h), "speech");
-        yield return Media("/v2/transcription", "x-gladia-key", "secret", h => GladiaProvider.Create(Key(), h), "transcription");
+        yield return Media("/v2/upload", "x-gladia-key", "secret", h => GladiaProvider.Create(Key(), h), "transcription");
         yield return Media("/v0/tts", "X-Hume-Api-Key", "secret", h => HumeProvider.Create(Key(), h), "speech");
         yield return Media("/v1/videos/text2video", "Authorization", "Bearer secret", h => KlingAIProvider.Create(Key(), h), "video");
         yield return Media("/dream-machine/v1/generations", "Authorization", "Bearer secret", h => LumaProvider.Create(Key(), h), "video");
