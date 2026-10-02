@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.OpenTelemetry;
 
@@ -27,6 +28,15 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
         activity.SetTag("gen_ai.operation.name", operation);
         activity.SetTag("gen_ai.request.model", modelId);
         return activity;
+    }
+
+    /// <inheritdoc />
+    public void OnFinish(IDisposable span, FinishReason finishReason)
+    {
+        if (span is Activity activity && finishReason == FinishReason.Error)
+        {
+            activity.SetStatus(ActivityStatusCode.Error);
+        }
     }
 
     private sealed class Empty : IDisposable

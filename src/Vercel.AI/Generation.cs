@@ -103,6 +103,11 @@ internal static class Generation
             }
 
             var result = ToResult(steps, options);
+            if (telemetry != null && scope != null)
+            {
+                telemetry.OnFinish(scope, result.FinishReason);
+            }
+
             if (options.OnFinish != null)
             {
                 await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
@@ -233,6 +238,11 @@ internal static class Generation
             }
 
             var result = ToResult(steps, options);
+            if (telemetry != null && scope != null)
+            {
+                telemetry.OnFinish(scope, result.FinishReason);
+            }
+
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
             buffer.Complete();
             textSource.TrySetResult(result.Text);
