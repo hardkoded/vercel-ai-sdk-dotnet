@@ -455,6 +455,504 @@ public sealed class PerplexityAgentTests
         Assert.Equal(FinishReason.ToolCalls, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
     }
 
+    [Fact]
+    public async Task ConvertsSystemAndTextMessagesToAgentApiInputItems()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new SystemModelMessage("Be concise."),
+                new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello "), new TextContentPart("world") }),
+                new AssistantModelMessage("Hello!", null, null),
+            },
+        };
+
+        await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var input = Body(handler).GetProperty("input");
+        Assert.Equal("system", input[0].GetProperty("role").GetString());
+        Assert.Equal("Be concise.", input[0].GetProperty("content").GetString());
+        Assert.Equal("user", input[1].GetProperty("role").GetString());
+        Assert.Equal("Hello world", input[1].GetProperty("content").GetString());
+        Assert.Equal("assistant", input[2].GetProperty("role").GetString());
+        Assert.Equal("Hello!", input[2].GetProperty("content").GetString());
+    }
+
+    [Fact]
+    public async Task ConvertsImageUrlsAndInlineImageData()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage(new UserContentPart[]
+                {
+                    new TextContentPart("Describe these images"),
+                    new FileContentPart("image/png", "https://example.com/image.png", null, null),
+                    new FileContentPart("image/png", null, new byte[] { 0, 1, 2, 3 }, null),
+                }),
+            },
+        };
+
+        await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var content = Body(handler).GetProperty("input")[0].GetProperty("content");
+        Assert.Equal("Describe these images", content[0].GetProperty("text").GetString());
+        Assert.Equal("https://example.com/image.png", content[1].GetProperty("image_url").GetString());
+        Assert.Equal("data:image/png;base64,AAECAw==", content[2].GetProperty("image_url").GetString());
+    }
+
+    [Fact]
+    public async Task ConvertsFunctionCallsAndToolResultsForMultiTurnInput()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var call = new GeneratedToolCall("call-1", "weather", "{\"city\":\"San Francisco\"}", Json("{\"perplexity\":{\"thoughtSignature\":\"signature-1\"}}"));
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new AssistantModelMessage(null, new[] { call }, null),
+                new ToolModelMessage("call-1", "weather", "{\"temperature\":18}", false),
+            },
+        };
+
+        await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var input = Body(handler).GetProperty("input");
+        Assert.Equal("call-1", input[0].GetProperty("call_id").GetString());
+        Assert.Equal("weather", input[0].GetProperty("name").GetString());
+        Assert.Equal("{\"city\":\"San Francisco\"}", input[0].GetProperty("arguments").GetString());
+        Assert.Equal("signature-1", input[0].GetProperty("thought_signature").GetString());
+        Assert.Equal("call-1", input[1].GetProperty("call_id").GetString());
+        Assert.Equal("weather", input[1].GetProperty("name").GetString());
+        Assert.Equal("{\"temperature\":18}", input[1].GetProperty("output").GetString());
+    }
+
+    [Fact]
+    public async Task OmitsNullThoughtSignaturesFromMultiTurnInput()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var call = new GeneratedToolCall("call-1", "weather", "{\"city\":\"San Francisco\"}", Json("{\"perplexity\":{\"thoughtSignature\":null}}"));
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new AssistantModelMessage(null, new[] { call }, null) },
+        };
+
+        await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var functionCall = Body(handler).GetProperty("input")[0];
+        Assert.Equal("call-1", functionCall.GetProperty("call_id").GetString());
+        Assert.Equal("weather", functionCall.GetProperty("name").GetString());
+        Assert.Equal("{\"city\":\"San Francisco\"}", functionCall.GetProperty("arguments").GetString());
+        Assert.False(functionCall.TryGetProperty("thought_signature", out _));
+    }
+
+    [Fact]
+    public async Task WarnsWhenReasoningPromptPartsCannotBeReplayed()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new AssistantModelMessage(null, null, "private reasoning") },
+        };
+
+        var result = await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("reasoning content in prompt", warning.Message);
+    }
+
+    [Fact]
+    public void TreatsReasoningTokensAsSeparateFromCompletionTokens()
+    {
+        var usage = "{\"input_tokens\":33,\"output_tokens\":205342,\"output_tokens_details\":{\"reasoning_tokens\":193947}}";
+        using var document = JsonDocument.Parse(usage);
+        var result = PerplexityAgent.ConvertPerplexityUsage(document.RootElement);
+
+        Assert.Equal(33, result.InputTokens);
+        Assert.Equal(0, result.CacheReadTokens);
+        Assert.Equal(0, result.CacheWriteTokens);
+        Assert.Equal(33, result.NoCacheInputTokens);
+        Assert.Equal(205342, result.OutputTokens);
+        Assert.Equal(193947, result.ReasoningTokens);
+        Assert.Equal(11395, result.TextTokens);
+        Assert.Equal(document.RootElement.GetRawText(), result.Raw!.Value.GetRawText());
+    }
+
+    [Fact]
+    public async Task ParsesACapturedAgentApiWebSearchResponse()
+    {
+        var json = File.ReadAllText(Fixture("perplexity-agent-web-search.json"));
+        var result = await Create(new AgentHandler(json)).LanguageModel("fast").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+
+        Assert.Contains(result.Content, part => part is GeneratedSource source && source.Url == "https://www.typescriptlang.org/");
+        Assert.Contains("TypeScript", result.Text);
+        Assert.Equal(FinishReason.Stop, result.FinishReason);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(document.RootElement.GetProperty("usage").GetRawText(), result.Usage.Raw!.Value.GetRawText());
+    }
+
+    [Fact]
+    public async Task AcceptsNativeToolResultsWithoutTreatingThemAsWebSearchResults()
+    {
+        var json = SampleResponse("{\"output\":[{\"type\":\"finance_results\",\"categories\":[\"quote\"],\"tickers\":[\"AAPL\"],\"results\":[{\"category\":\"quote\",\"content\":\"AAPL: $230.00\",\"sources\":[\"https://example.com/quote\"],\"tickers\":[\"AAPL\"]}]},{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}]}");
+        var result = await Create(new AgentHandler(json)).LanguageModel("low").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+
+        Assert.Equal("Hello from Perplexity.", result.Text);
+        Assert.Equal(FinishReason.Stop, result.FinishReason);
+        Assert.DoesNotContain(result.Content, part => part is GeneratedSource);
+        Assert.Contains("finance_results", result.RawResponse);
+    }
+
+    [Fact]
+    public async Task ExtractsTextSourcesUsageCostAndResponseMetadata()
+    {
+        var json = SampleResponse();
+        var result = await Create(new AgentHandler(json)).LanguageModel("low").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+        var source = Assert.IsType<GeneratedSource>(result.Content[0]);
+        var text = Assert.IsType<GeneratedText>(result.Content[1]);
+
+        Assert.Equal("1", source.Id);
+        Assert.Equal("https://example.com/source", source.Url);
+        Assert.Equal("Example source", source.Title);
+        Assert.Equal("Hello from Perplexity.", text.Text);
+        Assert.Equal(120, result.Usage.InputTokens);
+        Assert.Equal(90, result.Usage.NoCacheInputTokens);
+        Assert.Equal(20, result.Usage.CacheReadTokens);
+        Assert.Equal(10, result.Usage.CacheWriteTokens);
+        Assert.Equal(45, result.Usage.OutputTokens);
+        Assert.Equal(40, result.Usage.TextTokens);
+        Assert.Equal(5, result.Usage.ReasoningTokens);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(document.RootElement.GetProperty("usage").GetRawText(), result.Usage.Raw!.Value.GetRawText());
+        var cost = result.ProviderMetadata!.Value.GetProperty("perplexity").GetProperty("cost");
+        Assert.Equal(0.001, cost.GetProperty("inputTokensCost").GetDouble());
+        Assert.Equal(0.002, cost.GetProperty("outputTokensCost").GetDouble());
+        Assert.Equal(JsonValueKind.Null, cost.GetProperty("requestCost").ValueKind);
+        Assert.Equal(0.006, cost.GetProperty("totalCost").GetDouble());
+        Assert.Equal("USD", cost.GetProperty("currency").GetString());
+        Assert.Equal(JsonValueKind.Null, cost.GetProperty("cacheCreationCost").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cost.GetProperty("cacheReadCost").ValueKind);
+        Assert.Equal(0.003, cost.GetProperty("toolCallsCost").GetDouble());
+        Assert.Equal("resp-123", result.ResponseId);
+        Assert.Equal("openai/gpt-5.1", result.ResponseModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1784292159), result.ResponseTimestamp);
+    }
+
+    [Fact]
+    public async Task PassesAgentApiProviderOptionsAndAiSdkFunctionTools()
+    {
+        var handler = new AgentHandler(SampleResponse());
+        var options = Prompt("Hello");
+        options.MaxOutputTokens = 200;
+        options.Temperature = 0.4;
+        options.TopP = 0.9;
+        options.Reasoning = "high";
+        options.JsonSchemaName = "answer";
+        options.JsonSchema = Json("{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}},\"required\":[\"answer\"],\"additionalProperties\":false}");
+        options.Tools = new[]
+        {
+            new LanguageModelTool("weather", "Get the weather", Json("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}},\"required\":[\"city\"]}"), true),
+        };
+        options.ProviderOptions = new Dictionary<string, JsonElement>
+        {
+            ["perplexity"] = Json("{\"max_steps\":4,\"previous_response_id\":\"resp-previous\",\"store\":false,\"tools\":[{\"type\":\"web_search\",\"search_context_size\":\"low\"}],\"future_option\":{\"enabled\":true}}"),
+        };
+
+        await Create(handler).LanguageModel("low").DoGenerateAsync(options, CancellationToken.None);
+
+        var body = Body(handler);
+        Assert.Equal("low", body.GetProperty("preset").GetString());
+        Assert.Equal("low", body.GetProperty("tools")[0].GetProperty("search_context_size").GetString());
+        var function = body.GetProperty("tools")[1];
+        Assert.Equal("function", function.GetProperty("type").GetString());
+        Assert.True(function.GetProperty("strict").GetBoolean());
+        Assert.Equal("string", function.GetProperty("parameters").GetProperty("properties").GetProperty("city").GetProperty("type").GetString());
+        Assert.Equal("answer", body.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString());
+        Assert.Equal("object", body.GetProperty("response_format").GetProperty("json_schema").GetProperty("schema").GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task ExtractsFunctionCalls()
+    {
+        var json = SampleResponse("{\"status\":\"requires_action\",\"output\":[{\"id\":\"fc-123\",\"type\":\"function_call\",\"call_id\":\"call-123\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"San Francisco\\\"}\",\"thought_signature\":\"signature-123\"}]}");
+        var result = await Create(new AgentHandler(json)).LanguageModel("low").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+        var call = Assert.IsType<GeneratedToolCall>(Assert.Single(result.Content));
+
+        Assert.Equal("call-123", call.ToolCallId);
+        Assert.Equal("weather", call.ToolName);
+        Assert.Equal("{\"city\":\"San Francisco\"}", call.ArgumentsJson);
+        Assert.Equal("fc-123", call.ProviderMetadata!.Value.GetProperty("perplexity").GetProperty("itemId").GetString());
+        Assert.Equal("signature-123", call.ProviderMetadata.Value.GetProperty("perplexity").GetProperty("thoughtSignature").GetString());
+        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Equal("requires_action", result.RawFinishReason);
+    }
+
+    [Fact]
+    public async Task OmitsMissingFunctionCallThoughtSignatures()
+    {
+        var json = SampleResponse("{\"status\":\"requires_action\",\"output\":[{\"id\":\"fc-123\",\"type\":\"function_call\",\"call_id\":\"call-123\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"San Francisco\\\"}\"}]}");
+        var result = await Create(new AgentHandler(json)).LanguageModel("low").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+        var metadata = Assert.IsType<GeneratedToolCall>(result.Content[0]).ProviderMetadata!.Value.GetProperty("perplexity");
+
+        Assert.Equal("fc-123", metadata.GetProperty("itemId").GetString());
+        Assert.False(metadata.TryGetProperty("thoughtSignature", out _));
+    }
+
+    [Fact]
+    public async Task MapsIncompleteReasonContentFilterToContentFilter()
+    {
+        var json = SampleResponse("{\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}");
+        var result = await Create(new AgentHandler(json)).LanguageModel("low").DoGenerateAsync(Prompt("Hello"), CancellationToken.None);
+
+        Assert.Equal(FinishReason.ContentFilter, result.FinishReason);
+        Assert.Equal("content_filter", result.RawFinishReason);
+    }
+
+    [Fact]
+    public async Task PassesRequestAndProviderHeadersAndExposesResponseHeaders()
+    {
+        var settings = new OpenAICompatibleOptions { ApiKey = "custom-key" };
+        settings.Headers["custom-provider-header"] = "provider-value";
+        var handler = new AgentHandler(SampleResponse(), responseHeaders: new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var provider = PerplexityProvider.Create(settings, handler);
+        var options = Prompt("Hello");
+        options.Headers = new Dictionary<string, string?> { ["custom-request-header"] = "request-value" };
+
+        var result = await provider.LanguageModel("fast").DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("Bearer custom-key", handler.Headers["Authorization"]);
+        Assert.Equal("provider-value", handler.Headers["custom-provider-header"]);
+        Assert.Equal("request-value", handler.Headers["custom-request-header"]);
+        Assert.Equal("test-value", result.ResponseHeaders["test-header"]);
+    }
+
+    [Fact]
+    public async Task PreservesCitationAnnotationsFromOutputItemsAndResponseCompleted()
+    {
+        await AssertCitationAnnotations("response.completed", "completed");
+    }
+
+    [Fact]
+    public async Task PreservesCitationAnnotationsFromOutputItemsAndResponseIncomplete()
+    {
+        await AssertCitationAnnotations("response.incomplete", "incomplete");
+    }
+
+    [Fact]
+    public async Task PreservesNativeToolTracesInRawChunksWithoutRejectingTheResponse()
+    {
+        var finance = "{\"type\":\"finance_results\",\"categories\":[\"quote\"],\"tickers\":[\"AAPL\"],\"results\":[{\"category\":\"quote\",\"content\":\"AAPL: $230.00\"}]}";
+        var first = "{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + finance + "}";
+        var events = Event(first) + CreateStreamEvents(financePrefix: finance);
+        var options = Prompt("Hello");
+        options.IncludeRawChunks = true;
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None));
+
+        Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
+        Assert.Contains(parts.OfType<RawStreamPart>(), part => part.RawJson == first);
+        Assert.Equal(FinishReason.Stop, parts.OfType<FinishStreamPart>().Last().FinishReason);
+    }
+
+    [Fact]
+    public async Task StreamsTypedAgentApiEventsAsTextSourcesUsageAndMetadata()
+    {
+        var parts = await Read(Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
+
+        Assert.Contains(parts, part => part is StreamStartStreamPart);
+        var metadata = Assert.Single(parts.OfType<ResponseMetadataStreamPart>());
+        Assert.Equal("resp-123", metadata.Id);
+        Assert.Equal("openai/gpt-5.1", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1784292159), metadata.Timestamp);
+        Assert.Contains(parts.OfType<SourceStreamPart>(), source => source.Url == "https://example.com/source");
+        Assert.Equal(new[] { "Hello ", "from Perplexity." }, deltas.Select(part => part.Delta));
+        Assert.All(deltas, part => Assert.Equal("msg-123", part.Id));
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("completed", finish.RawFinishReason);
+        Assert.Equal(120, finish.Usage.InputTokens);
+        Assert.Equal(45, finish.Usage.OutputTokens);
+    }
+
+    [Fact]
+    public async Task SendsTheAgentApiStreamingRequestBody()
+    {
+        var handler = new AgentHandler(CreateStreamEvents(), sse: true);
+        await Read(Create(handler).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var body = Body(handler);
+
+        Assert.Equal("low", body.GetProperty("preset").GetString());
+        Assert.Equal("Hello", body.GetProperty("input")[0].GetProperty("content").GetString());
+        Assert.True(body.GetProperty("stream").GetBoolean());
+    }
+
+    [Fact]
+    public async Task StreamsRawAgentApiEventsWhenRequested()
+    {
+        var created = "{\"type\":\"response.created\",\"sequence_number\":0,\"response\":" + SampleResponse("{\"output\":[],\"usage\":null}") + "}";
+        var options = Prompt("Hello");
+        options.IncludeRawChunks = true;
+        var parts = await Read(Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None));
+        var raw = parts.OfType<RawStreamPart>().ToList();
+
+        Assert.Equal(6, raw.Count);
+        Assert.Equal(created, raw[0].RawJson);
+    }
+
+    [Fact]
+    public async Task StreamsFunctionCallsFromOutputItems()
+    {
+        var call = "{\"id\":\"fc-123\",\"type\":\"function_call\",\"status\":\"completed\",\"call_id\":\"call-123\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"San Francisco\\\"}\"}";
+        var events = Event("{\"type\":\"response.output_item.done\",\"item\":" + call + "}")
+            + Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"status\":\"requires_action\",\"output\":[" + call + "]}") + "}");
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var tool = Assert.Single(parts.OfType<ToolCallStreamPart>());
+
+        Assert.Equal("call-123", tool.ToolCallId);
+        Assert.Equal("weather", tool.ToolName);
+        Assert.Equal("{\"city\":\"San Francisco\"}", tool.ArgumentsJson);
+        Assert.Equal(FinishReason.ToolCalls, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
+    }
+
+    [Fact]
+    public async Task StreamsSourcesFromFetchUrlReasoningEvents()
+    {
+        var events = Event("{\"type\":\"response.reasoning.fetch_url_results\",\"sequence_number\":0,\"contents\":[{\"title\":\"Fetched page\",\"url\":\"https://example.com/fetched\",\"snippet\":\"Fetched content.\"}]}");
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var source = Assert.Single(parts.OfType<SourceStreamPart>());
+
+        Assert.Equal("https://example.com/fetched", source.Url);
+        Assert.Equal("Fetched page", source.Title);
+    }
+
+    [Fact]
+    public async Task StreamsAgentApiReasoningThoughts()
+    {
+        var events = string.Join(string.Empty, new[]
+        {
+            Event("{\"type\":\"response.reasoning.started\",\"sequence_number\":0,\"thought\":\"Planning. \"}"),
+            Event("{\"type\":\"response.reasoning.search_queries\",\"sequence_number\":1,\"queries\":[\"latest AI news\"],\"thought\":\"Searching. \"}"),
+            Event("{\"type\":\"response.reasoning.search_results\",\"sequence_number\":2,\"results\":[],\"thought\":\"Reviewing results. \"}"),
+            Event("{\"type\":\"response.reasoning.fetch_url_queries\",\"sequence_number\":3,\"urls\":[\"https://example.com/source\"],\"thought\":\"Fetching details. \"}"),
+            Event("{\"type\":\"response.reasoning.fetch_url_results\",\"sequence_number\":4,\"contents\":[],\"thought\":\"Checking details. \"}"),
+            Event("{\"type\":\"response.reasoning.stopped\",\"sequence_number\":5,\"thought\":\"Done.\"}"),
+        });
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var thoughts = parts.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta).ToList();
+
+        Assert.Equal(new[] { "Planning. ", "Searching. ", "Reviewing results. ", "Fetching details. ", "Checking details. ", "Done." }, thoughts);
+        Assert.All(thoughts, _ => Assert.Contains(parts, part => part is ReasoningStartStreamPart start && start.Id == "reasoning-0"));
+    }
+
+    [Fact]
+    public async Task HandlesIncompleteTerminalEventsAndPreservesUsage()
+    {
+        var events = Event("{\"type\":\"response.incomplete\",\"response\":" + SampleResponse("{\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}") + "}");
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var text = Assert.Single(parts.OfType<TextDeltaStreamPart>());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+
+        Assert.Equal("msg-123", text.Id);
+        Assert.Equal("Hello from Perplexity.", text.Delta);
+        Assert.Equal(FinishReason.Length, finish.FinishReason);
+        Assert.Equal(45, finish.Usage.OutputTokens);
+        Assert.Equal(120, finish.Usage.InputTokens);
+    }
+
+    [Fact]
+    public async Task RecoversTextFromResponseOutputItemDoneWithoutDeltas()
+    {
+        await AssertRecoveredText("response.output_item.done");
+    }
+
+    [Fact]
+    public async Task RecoversTextFromResponseCompletedWithoutDeltas()
+    {
+        await AssertRecoveredText("response.completed");
+    }
+
+    [Fact]
+    public async Task AppendsOnlyMissingTextAndDoesNotRepeatCompletedContentParts()
+    {
+        var message = "{\"type\":\"message\",\"id\":\"msg-123\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello world.\"},{\"type\":\"output_text\",\"text\":\"Second part.\"}]}";
+        var events = string.Join(string.Empty, new[]
+        {
+            Event("{\"type\":\"response.output_text.delta\",\"item_id\":\"msg-123\",\"content_index\":0,\"delta\":\"Hello \"}"),
+            Event("{\"type\":\"response.output_text.done\",\"item_id\":\"msg-123\",\"content_index\":0,\"text\":\"Hello world.\"}"),
+            Event("{\"type\":\"response.output_text.delta\",\"item_id\":\"msg-123\",\"content_index\":1,\"delta\":\"Second \"}"),
+            Event("{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + message + "}"),
+            Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"output\":[" + message + "]}") + "}"),
+        });
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
+
+        Assert.Equal(new[] { "Hello ", "world.", "Second ", "part." }, deltas.Select(part => part.Delta));
+        Assert.Equal(new[] { "msg-123", "msg-123", "msg-123:1", "msg-123:1" }, deltas.Select(part => part.Id));
+    }
+
+    private static async Task AssertCitationAnnotations(string terminalType, string status)
+    {
+        var message = "{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"A cited answer.\",\"annotations\":[{\"type\":\"url_citation\",\"url\":\"https://example.com/first\",\"title\":\"First\"},{\"type\":\"file_citation\",\"file_id\":\"file-123\"}]}]}";
+        var second = "{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Another citation.\",\"annotations\":[{\"type\":\"url_citation\",\"url\":\"https://example.com/second\",\"title\":\"Second\"}]}]}";
+        var events = Event("{\"type\":\"response.output_item.done\",\"item\":" + message + ",\"output_index\":0}")
+            + Event("{\"type\":\"" + terminalType + "\",\"response\":" + SampleResponse("{\"status\":\"" + status + "\",\"output\":[" + message + "," + second + "]}") + "}");
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var sources = parts.OfType<SourceStreamPart>().ToList();
+
+        Assert.Equal(2, sources.Count);
+        Assert.Equal("https://example.com/first", sources[0].Url);
+        Assert.Equal("First", sources[0].Title);
+        Assert.Equal("https://example.com/second", sources[1].Url);
+        Assert.Equal("Second", sources[1].Title);
+    }
+
+    private static async Task AssertRecoveredText(string type)
+    {
+        var message = "{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}";
+        var response = SampleResponse("{\"output\":[" + message + "]}");
+        var events = Event("{\"type\":\"" + type + "\",\"item_id\":\"msg-123\",\"output_index\":0,\"content_index\":0,\"text\":\"Hello from Perplexity.\",\"item\":" + message + ",\"response\":" + response + "}");
+        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var text = parts.Where(part => part.Type.StartsWith("text-", StringComparison.Ordinal)).ToList();
+
+        Assert.Equal("text-start", text[0].Type);
+        Assert.Equal("msg-123", Assert.IsType<TextStartStreamPart>(text[0]).Id);
+        Assert.Equal("Hello from Perplexity.", Assert.IsType<TextDeltaStreamPart>(text[1]).Delta);
+        Assert.Equal("msg-123", Assert.IsType<TextDeltaStreamPart>(text[1]).Id);
+        Assert.Equal("text-end", text[2].Type);
+    }
+
+    private static string MessageJson()
+    {
+        return "{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}";
+    }
+
+    private static string CreateStreamEvents(string? responseOverrides = null, string? financePrefix = null)
+    {
+        var completedOverrides = responseOverrides;
+        if (financePrefix != null)
+        {
+            completedOverrides = "{\"output\":[" + financePrefix + "," + MessageJson() + ",{\"type\":\"search_results\",\"results\":[{\"id\":1,\"title\":\"Example source\",\"url\":\"https://example.com/source\",\"snippet\":\"An example search result.\",\"date\":\"2026-08-01\",\"source\":\"web\"}]}]}";
+        }
+
+        var completed = SampleResponse(completedOverrides);
+        var created = SampleResponse("{\"output\":[],\"usage\":null}");
+        var events = new[]
+        {
+            "{\"type\":\"response.created\",\"sequence_number\":0,\"response\":" + created + "}",
+            "{\"type\":\"response.reasoning.search_results\",\"sequence_number\":1,\"results\":[{\"id\":1,\"title\":\"Example source\",\"url\":\"https://example.com/source\",\"snippet\":\"An example search result.\",\"source\":\"web\"}]}",
+            "{\"type\":\"response.output_text.delta\",\"sequence_number\":2,\"item_id\":\"msg-123\",\"output_index\":1,\"content_index\":0,\"delta\":\"Hello \"}",
+            "{\"type\":\"response.output_text.delta\",\"sequence_number\":3,\"item_id\":\"msg-123\",\"output_index\":1,\"content_index\":0,\"delta\":\"from Perplexity.\"}",
+            "{\"type\":\"response.output_text.done\",\"sequence_number\":4,\"item_id\":\"msg-123\",\"output_index\":1,\"content_index\":0,\"text\":\"Hello from Perplexity.\"}",
+            "{\"type\":\"response.completed\",\"sequence_number\":5,\"response\":" + completed + "}",
+        };
+        return string.Join(string.Empty, events.Select(Event));
+    }
+
     private static PerplexityProvider Create(AgentHandler handler)
     {
         return PerplexityProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler);
@@ -551,10 +1049,13 @@ public sealed class PerplexityAgentTests
         private readonly string _body;
         private readonly bool _sse;
 
-        public AgentHandler(string body, bool sse = false)
+        private readonly IReadOnlyDictionary<string, string>? _responseHeaders;
+
+        public AgentHandler(string body, bool sse = false, IReadOnlyDictionary<string, string>? responseHeaders = null)
         {
             _body = body;
             _sse = sse;
+            _responseHeaders = responseHeaders;
         }
 
         public int Calls { get; private set; }
@@ -590,10 +1091,19 @@ public sealed class PerplexityAgentTests
             }
 
             var mediaType = _sse ? "text/event-stream" : "application/json";
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            var message = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(_body, Encoding.UTF8, mediaType),
             };
+            if (_responseHeaders != null)
+            {
+                foreach (var header in _responseHeaders)
+                {
+                    message.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+
+            return message;
         }
     }
 }

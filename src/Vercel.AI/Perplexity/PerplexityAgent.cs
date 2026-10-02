@@ -18,17 +18,17 @@ internal static class PerplexityAgent
     private static readonly string[] BuiltinSkills = { "office", "office/docx", "office/pdf", "office/pptx", "office/xlsx" };
     private static readonly string[] HandledTypes = { "message", "search_results", "fetch_url_results", "function_call" };
 
-    public static bool IsPreset(string modelId)
+    public static PerplexityModelSelection GetModelSelection(string modelId)
     {
         for (var index = 0; index < Presets.Length; index++)
         {
             if (string.Equals(Presets[index], modelId, StringComparison.Ordinal))
             {
-                return true;
+                return new PerplexityModelSelection(modelId, null);
             }
         }
 
-        return false;
+        return new PerplexityModelSelection(null, modelId);
     }
 
     public static string? MapReasoningEffort(string? reasoning, IList<CallWarning> warnings)
@@ -268,7 +268,7 @@ internal static class PerplexityAgent
         return true;
     }
 
-    public static LanguageModelUsage ReadUsage(JsonElement? usage)
+    public static LanguageModelUsage ConvertPerplexityUsage(JsonElement? usage)
     {
         if (usage is not { } element || element.ValueKind != JsonValueKind.Object)
         {
@@ -277,7 +277,11 @@ internal static class PerplexityAgent
 
         var input = ReadInt(element, "input_tokens");
         var output = ReadInt(element, "output_tokens");
-        var total = ReadInt(element, "total_tokens");
+        int? total = null;
+        if (element.TryGetProperty("total_tokens", out var totalElement) && totalElement.ValueKind == JsonValueKind.Number)
+        {
+            total = ReadIntValue(totalElement);
+        }
         var cacheRead = 0;
         var cacheWrite = 0;
         var reasoning = 0;
@@ -306,7 +310,7 @@ internal static class PerplexityAgent
             reasoning = ReadIntValue(reasoningElement);
         }
 
-        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning);
+        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone());
     }
 
     public static JsonElement ProviderMetadata(JsonElement? usage)
@@ -325,7 +329,7 @@ internal static class PerplexityAgent
         return ToElement(new JsonObject { ["perplexity"] = perplexity });
     }
 
-    public static GeneratedSource CreateSearchSource(AgentSearchResult result, Func<string> generateId)
+    public static GeneratedSource CreateSource(AgentSearchResult result, Func<string> generateId)
     {
         var id = result.Id is { } number
             ? number.ToString(CultureInfo.InvariantCulture)
@@ -390,7 +394,7 @@ internal static class PerplexityAgent
         return signature.GetString();
     }
 
-    public static FinishReason MapFinish(string? status, string? incompleteReason, bool hasFunctionCall, out string? raw)
+    public static FinishReason MapPerplexityFinishReason(string? status, string? incompleteReason, bool hasFunctionCall, out string? raw)
     {
         raw = incompleteReason ?? status;
         if (string.Equals(incompleteReason, "max_output_tokens", StringComparison.Ordinal))
@@ -1222,6 +1226,19 @@ internal static class PerplexityAgent
     {
         return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
     }
+}
+
+internal readonly struct PerplexityModelSelection
+{
+    public PerplexityModelSelection(string? preset, string? model)
+    {
+        Preset = preset;
+        Model = model;
+    }
+
+    public string? Preset { get; }
+
+    public string? Model { get; }
 }
 
 internal sealed class AgentResponse

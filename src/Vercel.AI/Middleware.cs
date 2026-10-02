@@ -101,7 +101,7 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
             content.Add(part);
         }
 
-        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId, result.ProviderMetadata, result.RawResponse);
+        return MiddlewareResults.CopyResult(content, result);
     }
 }
 
@@ -128,7 +128,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
             }
         }
 
-        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId, result.ProviderMetadata, result.RawResponse);
+        return MiddlewareResults.CopyResult(content, result);
     }
 
     internal static string StripFence(string text)
@@ -152,6 +152,25 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         }
 
         return body.Trim();
+    }
+}
+
+internal static class MiddlewareResults
+{
+    public static LanguageModelGenerateResult CopyResult(IReadOnlyList<GeneratedContent> content, LanguageModelGenerateResult result)
+    {
+        return new LanguageModelGenerateResult(
+            content,
+            result.FinishReason,
+            result.Usage,
+            result.RawFinishReason,
+            result.Warnings,
+            result.ResponseId,
+            result.ProviderMetadata,
+            result.RawResponse,
+            result.ResponseModelId,
+            result.ResponseTimestamp,
+            result.ResponseHeaders);
     }
 }
 

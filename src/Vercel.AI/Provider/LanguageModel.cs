@@ -37,7 +37,8 @@ public sealed class LanguageModelUsage
         int? totalTokens,
         int? cacheReadTokens = null,
         int? cacheWriteTokens = null,
-        int? reasoningTokens = null)
+        int? reasoningTokens = null,
+        JsonElement? raw = null)
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
@@ -45,6 +46,7 @@ public sealed class LanguageModelUsage
         CacheReadTokens = cacheReadTokens;
         CacheWriteTokens = cacheWriteTokens;
         ReasoningTokens = reasoningTokens;
+        Raw = raw;
     }
 
     /// <summary>Prompt tokens.</summary>
@@ -64,6 +66,9 @@ public sealed class LanguageModelUsage
 
     /// <summary>Output tokens spent on reasoning, when the provider reports them.</summary>
     public int? ReasoningTokens { get; }
+
+    /// <summary>Provider usage object, unchanged.</summary>
+    public JsonElement? Raw { get; }
 
     /// <summary>Input tokens that were not served from cache.</summary>
     public int? NoCacheInputTokens
@@ -322,11 +327,12 @@ public abstract class ToolChoice
 public sealed class LanguageModelTool
 {
     /// <summary>Creates a function tool.</summary>
-    public LanguageModelTool(string name, string? description, JsonElement inputSchema)
+    public LanguageModelTool(string name, string? description, JsonElement inputSchema, bool? strict = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description;
         InputSchema = inputSchema;
+        Strict = strict;
     }
 
     /// <summary>Tool name.</summary>
@@ -337,6 +343,9 @@ public sealed class LanguageModelTool
 
     /// <summary>JSON Schema for the arguments.</summary>
     public JsonElement InputSchema { get; }
+
+    /// <summary>Whether the provider should use strict tool arguments.</summary>
+    public bool? Strict { get; }
 }
 
 /// <summary>A prompt message.</summary>
@@ -560,7 +569,10 @@ public sealed class LanguageModelGenerateResult
         IReadOnlyList<CallWarning>? warnings = null,
         string? responseId = null,
         JsonElement? providerMetadata = null,
-        string? rawResponse = null)
+        string? rawResponse = null,
+        string? responseModelId = null,
+        DateTimeOffset? responseTimestamp = null,
+        IReadOnlyDictionary<string, string>? responseHeaders = null)
     {
         Content = content ?? Array.Empty<GeneratedContent>();
         FinishReason = finishReason;
@@ -570,6 +582,9 @@ public sealed class LanguageModelGenerateResult
         ResponseId = responseId;
         ProviderMetadata = providerMetadata;
         RawResponse = rawResponse;
+        ResponseModelId = responseModelId;
+        ResponseTimestamp = responseTimestamp;
+        ResponseHeaders = responseHeaders ?? new Dictionary<string, string>();
     }
 
     /// <summary>Generated content parts.</summary>
@@ -595,6 +610,15 @@ public sealed class LanguageModelGenerateResult
 
     /// <summary>Raw provider response body, when the model captured it.</summary>
     public string? RawResponse { get; }
+
+    /// <summary>Model id reported by the provider.</summary>
+    public string? ResponseModelId { get; }
+
+    /// <summary>Provider timestamp for the response.</summary>
+    public DateTimeOffset? ResponseTimestamp { get; }
+
+    /// <summary>HTTP response headers.</summary>
+    public IReadOnlyDictionary<string, string> ResponseHeaders { get; }
 
     /// <summary>Concatenated text parts.</summary>
     public string Text

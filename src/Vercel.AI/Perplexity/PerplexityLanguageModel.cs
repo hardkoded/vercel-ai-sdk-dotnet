@@ -38,12 +38,13 @@ public sealed class PerplexityLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var built = Build(options, stream: false);
-        var raw = await _provider.Http.SendJsonStringAsync(
+        var http = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             _provider.AgentUri(),
             built.Body.ToJsonString(),
             Headers(options),
             cancellationToken).ConfigureAwait(false);
+        var raw = http.Body;
         JsonDocument document;
         try
         {
@@ -75,16 +76,19 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 CollectItem(item, content, indexes, ref hasFunctionCall);
             }
 
-            var finish = PerplexityAgent.MapFinish(response.Status, response.IncompleteReason, hasFunctionCall, out var rawFinish);
+            var finish = PerplexityAgent.MapPerplexityFinishReason(response.Status, response.IncompleteReason, hasFunctionCall, out var rawFinish);
             return new LanguageModelGenerateResult(
                 content,
                 finish,
-                PerplexityAgent.ReadUsage(response.Usage),
+                PerplexityAgent.ConvertPerplexityUsage(response.Usage),
                 rawFinish,
                 built.Warnings,
                 response.Id,
                 PerplexityAgent.ProviderMetadata(response.Usage),
-                raw);
+                raw,
+                response.Model,
+                DateTimeOffset.FromUnixTimeSeconds(response.CreatedAt),
+                http.Headers);
         }
     }
 
@@ -176,16 +180,18 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         body.Remove("input");
         body.Remove("stream");
 
-        if (PerplexityAgent.IsPreset(ModelId))
+        var selection = PerplexityAgent.GetModelSelection(ModelId);
+        if (selection.Preset != null)
         {
-            body["preset"] = ModelId;
-        }
-        else
-        {
-            body["model"] = ModelId;
+            body["preset"] = selection.Preset;
         }
 
-        body["input"] = ConvertInput(options.Prompt, warnings);
+        if (selection.Model != null)
+        {
+            body["model"] = selection.Model;
+        }
+
+        body["input"] = ConvertToPerplexityInput(options.Prompt, warnings);
         if (options.MaxOutputTokens is { } maxOutputTokens)
         {
             body["max_output_tokens"] = maxOutputTokens;
@@ -228,18 +234,41 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             };
         }
 
-        var tools = new JsonArray();
+        var tools = PreparePerplexityTools(options.Tools, options.ToolChoice, nativeTools, warnings);
+        if (tools.Count > 0)
+        {
+            body["tools"] = tools;
+        }
+
+        if (stream)
+        {
+            body["stream"] = true;
+        }
+
+        return new PreparedRequest(body, warnings);
+    }
+
+    private static JsonArray PreparePerplexityTools(
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        JsonArray? nativeTools,
+        List<CallWarning> warnings)
+    {
+        var prepared = new JsonArray();
         if (nativeTools != null)
         {
             foreach (var tool in nativeTools)
             {
-                tools.Add(tool?.DeepClone());
+                if (tool != null)
+                {
+                    prepared.Add(tool.DeepClone());
+                }
             }
         }
 
-        if (options.Tools != null)
+        if (tools != null)
         {
-            foreach (var tool in options.Tools)
+            foreach (var tool in tools)
             {
                 var function = new JsonObject
                 {
@@ -254,29 +283,24 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                     function["description"] = tool.Description;
                 }
 
-                tools.Add(function);
+                if (tool.Strict is { } strict)
+                {
+                    function["strict"] = strict;
+                }
+
+                prepared.Add(function);
             }
         }
 
-        if (tools.Count > 0)
-        {
-            body["tools"] = tools;
-        }
-
-        if (options.ToolChoice != null && !string.Equals(options.ToolChoice.Type, "auto", StringComparison.Ordinal))
+        if (toolChoice != null && !string.Equals(toolChoice.Type, "auto", StringComparison.Ordinal))
         {
             warnings.Add(new CallWarning("unsupported", "toolChoice: The Perplexity Agent API currently selects tools automatically."));
         }
 
-        if (stream)
-        {
-            body["stream"] = true;
-        }
-
-        return new PreparedRequest(body, warnings);
+        return prepared;
     }
 
-    private static JsonNode ConvertInput(IReadOnlyList<ModelMessage> prompt, List<CallWarning> warnings)
+    private static JsonNode ConvertToPerplexityInput(IReadOnlyList<ModelMessage> prompt, List<CallWarning> warnings)
     {
         var input = new JsonArray();
         foreach (var message in prompt)
@@ -492,7 +516,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         {
             foreach (var result in item.Results)
             {
-                AddSource(content, indexes, PerplexityAgent.CreateSearchSource(result, NewId));
+                AddSource(content, indexes, PerplexityAgent.CreateSource(result, NewId));
             }
         }
         else if (string.Equals(item.Type, "fetch_url_results", StringComparison.Ordinal))
@@ -635,7 +659,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                         {
                             foreach (var result in chunk.Results)
                             {
-                                StageSource(PerplexityAgent.CreateSearchSource(result, NewId), parts);
+                                StageSource(PerplexityAgent.CreateSource(result, NewId), parts);
                             }
                         }
 
@@ -683,7 +707,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                             }
 
                             _usage = chunk.Response.Usage;
-                            _finish = PerplexityAgent.MapFinish(chunk.Response.Status, chunk.Response.IncompleteReason, _hasFunctionCall, out _rawFinish);
+                            _finish = PerplexityAgent.MapPerplexityFinishReason(chunk.Response.Status, chunk.Response.IncompleteReason, _hasFunctionCall, out _rawFinish);
                         }
 
                         break;
@@ -725,7 +749,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 }
             }
 
-            parts.Add(new FinishStreamPart(_finish, PerplexityAgent.ReadUsage(_usage), _rawFinish, PerplexityAgent.ProviderMetadata(_usage)));
+            parts.Add(new FinishStreamPart(_finish, PerplexityAgent.ConvertPerplexityUsage(_usage), _rawFinish, PerplexityAgent.ProviderMetadata(_usage)));
             return parts;
         }
 
@@ -853,7 +877,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
             foreach (var result in item.Results)
             {
-                StageSource(PerplexityAgent.CreateSearchSource(result, NewId), parts);
+                StageSource(PerplexityAgent.CreateSource(result, NewId), parts);
             }
 
             foreach (var result in item.Contents)

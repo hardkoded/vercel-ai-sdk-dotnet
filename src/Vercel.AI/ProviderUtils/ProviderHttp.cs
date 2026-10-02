@@ -46,8 +46,8 @@ public sealed class ProviderHttp
         return JsonDocument.Parse(body);
     }
 
-    /// <summary>Posts JSON and returns the response body text.</summary>
-    public async Task<string> SendJsonStringAsync(
+    /// <summary>Posts JSON and returns the response body text and headers.</summary>
+    public async Task<ProviderTextResponse> SendJsonStringAsync(
         HttpMethod method,
         Uri uri,
         string? jsonBody,
@@ -63,7 +63,7 @@ public sealed class ProviderHttp
                 throw MapStatus((int)response.StatusCode, body);
             }
 
-            return body ?? string.Empty;
+            return new ProviderTextResponse(body ?? string.Empty, CopyHeaders(response));
         }
         finally
         {
@@ -257,6 +257,25 @@ public sealed class ProviderHttp
         }
     }
 
+    private static IReadOnlyDictionary<string, string> CopyHeaders(HttpResponseMessage response)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers)
+        {
+            headers[header.Key] = string.Join(",", header.Value);
+        }
+
+        if (response.Content != null)
+        {
+            foreach (var header in response.Content.Headers)
+            {
+                headers[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
+        return headers;
+    }
+
     private static TimeSpan? ReadRetryAfter(HttpResponseMessage response)
     {
         if (response.Headers.TryGetValues("retry-after-ms", out var millisecondsValues))
@@ -275,4 +294,21 @@ public sealed class ProviderHttp
 
         return null;
     }
+}
+
+/// <summary>A successful JSON response body and its headers.</summary>
+public sealed class ProviderTextResponse
+{
+    /// <summary>Creates a text response.</summary>
+    public ProviderTextResponse(string body, IReadOnlyDictionary<string, string> headers)
+    {
+        Body = body ?? string.Empty;
+        Headers = headers ?? new Dictionary<string, string>();
+    }
+
+    /// <summary>Response body.</summary>
+    public string Body { get; }
+
+    /// <summary>Response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
 }
