@@ -49,7 +49,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var body = BuildBody(options, stream: true);
-        var toolCalls = new SortedDictionary<int, ToolAccumulator>();
+        var toolCalls = new ToolAccumulator();
         string? finishRaw = null;
         LanguageModelUsage? usage = null;
         await foreach (var data in _provider.Http.SendSseAsync(
@@ -112,52 +112,17 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             {
                 foreach (var item in toolDeltas)
                 {
-                    if (item is not JsonObject tool)
+                    if (item is JsonObject tool)
                     {
-                        continue;
-                    }
-
-                    var index = 0;
-                    if (tool["index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out var parsedIndex))
-                    {
-                        index = parsedIndex;
-                    }
-                    if (!toolCalls.TryGetValue(index, out var accumulator))
-                    {
-                        accumulator = new ToolAccumulator();
-                        toolCalls[index] = accumulator;
-                    }
-
-                    var id = AsString(tool["id"]);
-                    if (!string.IsNullOrEmpty(id))
-                    {
-                        accumulator.Id = id;
-                    }
-
-                    if (tool["function"] is JsonObject function)
-                    {
-                        var name = AsString(function["name"]);
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            accumulator.Name = (accumulator.Name ?? string.Empty) + name;
-                        }
-
-                        var arguments = AsString(function["arguments"]);
-                        if (!string.IsNullOrEmpty(arguments))
-                        {
-                            accumulator.Arguments.Append(arguments);
-                        }
+                        toolCalls.Add(tool);
                     }
                 }
             }
         }
 
-        foreach (var pair in toolCalls)
+        foreach (var call in toolCalls.Finish())
         {
-            yield return new ToolCallStreamPart(
-                pair.Value.Id ?? ("call_" + pair.Key),
-                pair.Value.Name ?? string.Empty,
-                pair.Value.Arguments.ToString());
+            yield return call;
         }
 
         yield return new FinishStreamPart(FinishReasons.Parse(finishRaw), usage ?? LanguageModelUsage.Empty, finishRaw);
@@ -466,12 +431,523 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return null;
     }
 
+    /// <summary>
+    /// Correlates streamed Chat Completions tool-call deltas. A non-blank id, an index, and a
+    /// function name are labels. Blank labels are absent. Calls stay distinct when those labels
+    /// are omitted, repeated, or changed.
+    /// </summary>
     private sealed class ToolAccumulator
     {
-        public string? Id { get; set; }
+        private readonly List<PendingToolCall> _calls = new();
+        private readonly Dictionary<string, List<PendingToolCall>> _byId = new(StringComparer.Ordinal);
+        private readonly Dictionary<int, List<PendingToolCall>> _byIndex = new();
+        private readonly HashSet<string> _usedIds = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _nextSuffix = new(StringComparer.Ordinal);
 
-        public string? Name { get; set; }
+        public void Add(JsonObject tool)
+        {
+            var function = tool["function"] as JsonObject;
+            var rawName = function == null ? null : AsString(function["name"]);
+            var wireId = NonBlank(AsString(tool["id"]));
+            var name = NonBlank(rawName);
+            int? index = TryReadIndex(tool, out var parsedIndex) ? parsedIndex : null;
+            var arguments = function == null ? null : AsString(function["arguments"]);
+            var startsStructured = name != null && StartsWithStructuredValue(arguments);
+            var match = Resolve(wireId, index, name, startsStructured);
+            if (match.Kind == MatchKind.Ambiguous)
+            {
+                return;
+            }
 
-        public StringBuilder Arguments { get; } = new();
+            PendingToolCall call;
+            if (match.Kind == MatchKind.New)
+            {
+                // A blank or missing name cannot start a call. Continuations are matched first,
+                // so this only drops the unmatched delta and leaves calls already accumulated.
+                if (name == null)
+                {
+                    return;
+                }
+
+                call = Start(wireId, index, name, arguments ?? string.Empty);
+            }
+            else
+            {
+                call = match.Call!;
+                if (wireId != null)
+                {
+                    AssociateId(call, wireId);
+                }
+
+                if (arguments != null)
+                {
+                    call.Structure.Append(arguments);
+                    call.Arguments.Append(arguments);
+                }
+            }
+
+            if (index != null)
+            {
+                AssociateIndex(call, index.Value);
+            }
+        }
+
+        public List<ToolCallStreamPart> Finish()
+        {
+            var ordered = _calls;
+            if (EveryCallHasIndex())
+            {
+                ordered = new List<PendingToolCall>(_calls);
+                ordered.Sort(CompareByIndex);
+            }
+
+            var parts = new List<ToolCallStreamPart>(ordered.Count);
+            foreach (var call in ordered)
+            {
+                parts.Add(new ToolCallStreamPart(call.Id, call.Name, call.Arguments.ToString()));
+            }
+
+            return parts;
+        }
+
+        private Match Resolve(string? wireId, int? index, string? name, bool startsStructured)
+        {
+            List<PendingToolCall>? indexed = null;
+            if (index != null && _byIndex.TryGetValue(index.Value, out var indexedCalls))
+            {
+                indexed = indexedCalls;
+            }
+
+            var matchingIndexed = FilterByName(indexed, name);
+            if (wireId != null)
+            {
+                if (_byId.TryGetValue(wireId, out var withId))
+                {
+                    if (index != null)
+                    {
+                        var matching = new List<PendingToolCall>();
+                        foreach (var call in matchingIndexed)
+                        {
+                            if (withId.Contains(call))
+                            {
+                                matching.Add(call);
+                            }
+                        }
+
+                        var resolved = ResolveMatching(matching, startsStructured);
+                        if (resolved.Kind != MatchKind.New)
+                        {
+                            return resolved;
+                        }
+
+                        // A named delta at a different index is a new call even when the id repeats.
+                        if (name != null)
+                        {
+                            return Match.New();
+                        }
+
+                        if (indexed != null)
+                        {
+                            return Match.Ambiguous();
+                        }
+
+                        return ResolveMatching(withId, false);
+                    }
+
+                    if (name != null)
+                    {
+                        var matching = new List<PendingToolCall>();
+                        foreach (var call in withId)
+                        {
+                            if (call.Name == name)
+                            {
+                                matching.Add(call);
+                            }
+                        }
+
+                        return ResolveMatching(matching, startsStructured);
+                    }
+
+                    return ResolveMatching(withId, false);
+                }
+
+                if (matchingIndexed.Count > 0)
+                {
+                    // An unseen id plus a fresh object or array is a new call. An ordinary
+                    // fragment keeps the call already stored under that index and name, including
+                    // when the continuation's id differs from the first id.
+                    return startsStructured ? Match.New() : ResolveMatching(matchingIndexed, false);
+                }
+
+                return Match.New();
+            }
+
+            if (indexed != null)
+            {
+                return ResolveMatching(matchingIndexed, startsStructured);
+            }
+
+            if (name != null)
+            {
+                return Match.New();
+            }
+
+            if (_calls.Count == 1)
+            {
+                return Match.Existing(_calls[0]);
+            }
+
+            return _calls.Count > 1 ? Match.Ambiguous() : Match.New();
+        }
+
+        private static Match ResolveMatching(List<PendingToolCall> calls, bool startsStructured)
+        {
+            if (calls.Count == 0)
+            {
+                return Match.New();
+            }
+
+            if (!startsStructured)
+            {
+                return calls.Count == 1 ? Match.Existing(calls[0]) : Match.Ambiguous();
+            }
+
+            var open = new List<PendingToolCall>();
+            foreach (var call in calls)
+            {
+                if (!call.Structure.HasCompleteValue)
+                {
+                    open.Add(call);
+                }
+            }
+
+            if (open.Count == 1)
+            {
+                return Match.Existing(open[0]);
+            }
+
+            return open.Count > 1 ? Match.Ambiguous() : Match.New();
+        }
+
+        private static List<PendingToolCall> FilterByName(List<PendingToolCall>? calls, string? name)
+        {
+            var result = new List<PendingToolCall>();
+            if (calls == null)
+            {
+                return result;
+            }
+
+            foreach (var call in calls)
+            {
+                if (name == null || call.Name == name)
+                {
+                    result.Add(call);
+                }
+            }
+
+            return result;
+        }
+
+        private PendingToolCall Start(string? wireId, int? index, string name, string arguments)
+        {
+            var call = new PendingToolCall(CreateId(wireId), index, _calls.Count, name, arguments);
+            _calls.Add(call);
+            if (wireId != null)
+            {
+                AssociateId(call, wireId);
+            }
+
+            return call;
+        }
+
+        private string CreateId(string? wireId)
+        {
+            if (wireId != null && _usedIds.Add(wireId))
+            {
+                return wireId;
+            }
+
+            var generated = NonBlank(JsonValues.GenerateId("call_")) ?? "tool-call";
+            if (_usedIds.Add(generated))
+            {
+                return generated;
+            }
+
+            var suffix = 1;
+            if (_nextSuffix.TryGetValue(generated, out var storedSuffix))
+            {
+                suffix = storedSuffix;
+            }
+
+            var lastSuffix = suffix + _usedIds.Count;
+            for (; suffix <= lastSuffix; suffix++)
+            {
+                var candidate = generated + "-" + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (_usedIds.Add(candidate))
+                {
+                    _nextSuffix[generated] = suffix + 1;
+                    return candidate;
+                }
+            }
+
+            throw new InvalidOperationException("Failed to create a unique tool call id.");
+        }
+
+        private void AssociateId(PendingToolCall call, string wireId)
+        {
+            if (!_byId.TryGetValue(wireId, out var calls))
+            {
+                calls = new List<PendingToolCall>();
+                _byId[wireId] = calls;
+            }
+
+            if (!calls.Contains(call))
+            {
+                calls.Add(call);
+            }
+        }
+
+        private void AssociateIndex(PendingToolCall call, int index)
+        {
+            if (!_byIndex.TryGetValue(index, out var calls))
+            {
+                calls = new List<PendingToolCall>();
+                _byIndex[index] = calls;
+            }
+
+            if (!calls.Contains(call))
+            {
+                calls.Add(call);
+            }
+        }
+
+        private bool EveryCallHasIndex()
+        {
+            foreach (var call in _calls)
+            {
+                if (call.Index == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static int CompareByIndex(PendingToolCall left, PendingToolCall right)
+        {
+            var compared = left.Index.GetValueOrDefault().CompareTo(right.Index.GetValueOrDefault());
+            if (compared != 0)
+            {
+                return compared;
+            }
+
+            return left.Sequence.CompareTo(right.Sequence);
+        }
+
+        private static string? NonBlank(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return value;
+        }
+
+        private static bool TryReadIndex(JsonObject tool, out int index)
+        {
+            index = 0;
+            if (tool["index"] is JsonValue value && value.TryGetValue<int>(out index))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool StartsWithStructuredValue(string? value)
+        {
+            if (value == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                if (char.IsWhiteSpace(value[i]))
+                {
+                    continue;
+                }
+
+                return value[i] == '{' || value[i] == '[';
+            }
+
+            return false;
+        }
+
+        private enum MatchKind
+        {
+            Existing,
+            New,
+            Ambiguous,
+        }
+
+        private readonly struct Match
+        {
+            private Match(MatchKind kind, PendingToolCall? call)
+            {
+                Kind = kind;
+                Call = call;
+            }
+
+            public MatchKind Kind { get; }
+
+            public PendingToolCall? Call { get; }
+
+            public static Match Existing(PendingToolCall call)
+            {
+                return new Match(MatchKind.Existing, call);
+            }
+
+            public static Match New()
+            {
+                return new Match(MatchKind.New, null);
+            }
+
+            public static Match Ambiguous()
+            {
+                return new Match(MatchKind.Ambiguous, null);
+            }
+        }
+
+        private sealed class PendingToolCall
+        {
+            public PendingToolCall(string id, int? index, int sequence, string name, string arguments)
+            {
+                Id = id;
+                Index = index;
+                Sequence = sequence;
+                Name = name;
+                Arguments = new StringBuilder(arguments);
+                Structure = new ArgumentStructure(arguments);
+            }
+
+            public string Id { get; }
+
+            public int? Index { get; }
+
+            public int Sequence { get; }
+
+            public string Name { get; }
+
+            public StringBuilder Arguments { get; }
+
+            public ArgumentStructure Structure { get; }
+        }
+
+        /// <summary>
+        /// Tracks whether arguments contain one complete object or array. A scalar such as
+        /// <c>1</c> followed by <c>2</c> stays incomplete, so the fragments remain one call.
+        /// </summary>
+        private sealed class ArgumentStructure
+        {
+            private enum StructureKind
+            {
+                Undetermined,
+                Other,
+                Structured,
+            }
+
+            private readonly List<char> _stack = new();
+            private StructureKind _kind;
+            private bool _inString;
+            private bool _escaped;
+            private bool _complete;
+
+            public ArgumentStructure(string initial)
+            {
+                Append(initial);
+            }
+
+            public bool HasCompleteValue
+            {
+                get { return _kind == StructureKind.Structured && _complete; }
+            }
+
+            public void Append(string delta)
+            {
+                foreach (var character in delta)
+                {
+                    if (_kind == StructureKind.Undetermined)
+                    {
+                        if (char.IsWhiteSpace(character))
+                        {
+                            continue;
+                        }
+
+                        if (character != '{' && character != '[')
+                        {
+                            _kind = StructureKind.Other;
+                            continue;
+                        }
+
+                        _kind = StructureKind.Structured;
+                        _stack.Add(character);
+                        _inString = false;
+                        _escaped = false;
+                        _complete = false;
+                        continue;
+                    }
+
+                    if (_kind != StructureKind.Structured || _complete)
+                    {
+                        continue;
+                    }
+
+                    if (_inString)
+                    {
+                        if (_escaped)
+                        {
+                            _escaped = false;
+                        }
+                        else if (character == '\\')
+                        {
+                            _escaped = true;
+                        }
+                        else if (character == '"')
+                        {
+                            _inString = false;
+                        }
+
+                        continue;
+                    }
+
+                    if (character == '"')
+                    {
+                        _inString = true;
+                    }
+                    else if (character == '{' || character == '[')
+                    {
+                        _stack.Add(character);
+                    }
+                    else if (character == '}' || character == ']')
+                    {
+                        var expected = character == '}' ? '{' : '[';
+                        if (_stack.Count == 0 || _stack[_stack.Count - 1] != expected)
+                        {
+                            _kind = StructureKind.Other;
+                            continue;
+                        }
+
+                        _stack.RemoveAt(_stack.Count - 1);
+                        if (_stack.Count == 0)
+                        {
+                            _complete = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
