@@ -62,6 +62,45 @@ public sealed class ProviderRequestTests
     }
 
     [Fact]
+    public void Azure_rejects_a_resource_name_that_would_rewrite_the_host()
+    {
+        var handler = new ScriptedHandler();
+        var exception = Assert.Throws<ArgumentException>(() =>
+            AzureOpenAIProvider.Create(new AzureOpenAIOptions
+            {
+                ApiKey = "secret",
+                ResourceName = "user@internal:8080/#",
+            }, handler));
+        Assert.Contains("DNS label", exception.Message);
+        Assert.Contains("BaseUrl", exception.Message);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Azure_ignores_resource_name_when_base_url_is_set()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
+        {
+            ApiKey = "secret",
+            ResourceName = "user@internal:8080/#",
+            BaseUrl = "https://proxy.example",
+        }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://proxy.example/", handler.Uri);
+        Assert.Equal(1, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Azure_defaults_a_null_resource_name()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret" }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://resource.openai.azure.com/", handler.Uri);
+    }
+
+    [Fact]
     public async Task Gateway_sends_the_v4_specification_header()
     {
         var handler = new ScriptedHandler();
