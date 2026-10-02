@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -236,7 +237,7 @@ public sealed class UIMessageStreamResult : IResult
         IAsyncEnumerable<TextStreamPart> source,
         StreamWriter writer,
         int keepAliveMs,
-        CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var enumerator = source.GetAsyncEnumerator(cancellationToken);
         try
