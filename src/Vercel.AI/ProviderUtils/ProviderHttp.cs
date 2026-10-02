@@ -46,6 +46,31 @@ public sealed class ProviderHttp
         return JsonDocument.Parse(body);
     }
 
+    /// <summary>Posts JSON and returns the response body text.</summary>
+    public async Task<string> SendJsonStringAsync(
+        HttpMethod method,
+        Uri uri,
+        string? jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw MapStatus((int)response.StatusCode, body);
+            }
+
+            return body ?? string.Empty;
+        }
+        finally
+        {
+            response.Dispose();
+        }
+    }
+
     /// <summary>Posts JSON and returns the raw bytes.</summary>
     public async Task<byte[]> SendBytesAsync(
         HttpMethod method,

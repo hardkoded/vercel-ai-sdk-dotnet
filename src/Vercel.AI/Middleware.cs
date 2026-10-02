@@ -101,7 +101,7 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
             content.Add(part);
         }
 
-        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId);
+        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId, result.ProviderMetadata, result.RawResponse);
     }
 }
 
@@ -128,7 +128,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
             }
         }
 
-        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId);
+        return new LanguageModelGenerateResult(content, result.FinishReason, result.Usage, result.RawFinishReason, result.Warnings, result.ResponseId, result.ProviderMetadata, result.RawResponse);
     }
 
     internal static string StripFence(string text)
@@ -170,7 +170,7 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
             yield return new TextDeltaStreamPart("text", result.Text);
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason, result.ProviderMetadata);
     }
 }
 

@@ -31,11 +31,20 @@ public enum FinishReason
 public sealed class LanguageModelUsage
 {
     /// <summary>Creates usage counts.</summary>
-    public LanguageModelUsage(int? inputTokens, int? outputTokens, int? totalTokens)
+    public LanguageModelUsage(
+        int? inputTokens,
+        int? outputTokens,
+        int? totalTokens,
+        int? cacheReadTokens = null,
+        int? cacheWriteTokens = null,
+        int? reasoningTokens = null)
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
         TotalTokens = totalTokens ?? ((inputTokens ?? 0) + (outputTokens ?? 0));
+        CacheReadTokens = cacheReadTokens;
+        CacheWriteTokens = cacheWriteTokens;
+        ReasoningTokens = reasoningTokens;
     }
 
     /// <summary>Prompt tokens.</summary>
@@ -47,13 +56,55 @@ public sealed class LanguageModelUsage
     /// <summary>Input plus output tokens.</summary>
     public int? TotalTokens { get; }
 
+    /// <summary>Input tokens read from cache, when the provider reports them.</summary>
+    public int? CacheReadTokens { get; }
+
+    /// <summary>Input tokens written to cache, when the provider reports them.</summary>
+    public int? CacheWriteTokens { get; }
+
+    /// <summary>Output tokens spent on reasoning, when the provider reports them.</summary>
+    public int? ReasoningTokens { get; }
+
+    /// <summary>Input tokens that were not served from cache.</summary>
+    public int? NoCacheInputTokens
+    {
+        get
+        {
+            if (InputTokens is null || CacheReadTokens is null || CacheWriteTokens is null)
+            {
+                return null;
+            }
+
+            var value = InputTokens.Value - CacheReadTokens.Value - CacheWriteTokens.Value;
+            return value < 0 ? 0 : value;
+        }
+    }
+
+    /// <summary>Output tokens that were not reasoning tokens.</summary>
+    public int? TextTokens
+    {
+        get
+        {
+            if (OutputTokens is null || ReasoningTokens is null)
+            {
+                return null;
+            }
+
+            var value = OutputTokens.Value - ReasoningTokens.Value;
+            return value < 0 ? 0 : value;
+        }
+    }
+
     /// <summary>Adds two usage values.</summary>
     public static LanguageModelUsage Add(LanguageModelUsage left, LanguageModelUsage right)
     {
         return new LanguageModelUsage(
             Sum(left.InputTokens, right.InputTokens),
             Sum(left.OutputTokens, right.OutputTokens),
-            Sum(left.TotalTokens, right.TotalTokens));
+            Sum(left.TotalTokens, right.TotalTokens),
+            Sum(left.CacheReadTokens, right.CacheReadTokens),
+            Sum(left.CacheWriteTokens, right.CacheWriteTokens),
+            Sum(left.ReasoningTokens, right.ReasoningTokens));
     }
 
     /// <summary>Zero usage.</summary>
@@ -118,12 +169,13 @@ public sealed class GeneratedText : GeneratedContent
 public sealed class GeneratedToolCall : GeneratedContent
 {
     /// <summary>Creates a tool call.</summary>
-    public GeneratedToolCall(string toolCallId, string toolName, string argumentsJson)
+    public GeneratedToolCall(string toolCallId, string toolName, string argumentsJson, JsonElement? providerMetadata = null)
         : base("tool-call")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
         ArgumentsJson = argumentsJson ?? "{}";
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Provider id for this call.</summary>
@@ -134,6 +186,9 @@ public sealed class GeneratedToolCall : GeneratedContent
 
     /// <summary>JSON object arguments.</summary>
     public string ArgumentsJson { get; }
+
+    /// <summary>Provider-specific metadata for this call, such as a thought signature.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning text kept separate from the answer.</summary>
@@ -154,15 +209,16 @@ public sealed class GeneratedReasoning : GeneratedContent
 public sealed class GeneratedSource : GeneratedContent
 {
     /// <summary>Creates a source.</summary>
-    public GeneratedSource(string id, string url, string? title)
+    public GeneratedSource(string id, string url, string? title, JsonElement? providerMetadata = null)
         : base("source")
     {
         Id = id;
         Url = url;
         Title = title;
+        ProviderMetadata = providerMetadata;
     }
 
-    /// <summary>Source id.</summary>
+    /// <summary>Source id. Search results keep the provider result id so citations can be correlated.</summary>
     public string Id { get; }
 
     /// <summary>Source URL.</summary>
@@ -170,6 +226,9 @@ public sealed class GeneratedSource : GeneratedContent
 
     /// <summary>Optional title.</summary>
     public string? Title { get; }
+
+    /// <summary>Provider-specific source metadata, such as a snippet or search-result id.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A generated file.</summary>
@@ -406,13 +465,14 @@ public sealed class AssistantModelMessage : ModelMessage
 public sealed class ToolModelMessage : ModelMessage
 {
     /// <summary>Creates a tool result message.</summary>
-    public ToolModelMessage(string toolCallId, string toolName, string outputJson, bool isError)
+    public ToolModelMessage(string toolCallId, string toolName, string outputJson, bool isError, JsonElement? providerMetadata = null)
         : base("tool")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
         OutputJson = outputJson ?? "null";
         IsError = isError;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Matching tool call id.</summary>
@@ -426,6 +486,9 @@ public sealed class ToolModelMessage : ModelMessage
 
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
+
+    /// <summary>Provider metadata carried on this tool result, such as a thought signature.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Settings for one language-model call. Property names follow the V4 call options.</summary>
@@ -475,6 +538,14 @@ public sealed class LanguageModelCallOptions
 
     /// <summary>Provider-specific options, keyed by provider name.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// Reasoning effort for providers that accept it: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, or <c>xhigh</c>.
+    /// </summary>
+    public string? Reasoning { get; set; }
+
+    /// <summary>When true, the stream includes one raw provider chunk for each event.</summary>
+    public bool IncludeRawChunks { get; set; }
 }
 
 /// <summary>Result of <see cref="ILanguageModel.DoGenerateAsync"/>.</summary>
@@ -487,7 +558,9 @@ public sealed class LanguageModelGenerateResult
         LanguageModelUsage usage,
         string? rawFinishReason = null,
         IReadOnlyList<CallWarning>? warnings = null,
-        string? responseId = null)
+        string? responseId = null,
+        JsonElement? providerMetadata = null,
+        string? rawResponse = null)
     {
         Content = content ?? Array.Empty<GeneratedContent>();
         FinishReason = finishReason;
@@ -495,6 +568,8 @@ public sealed class LanguageModelGenerateResult
         RawFinishReason = rawFinishReason;
         Warnings = warnings ?? Array.Empty<CallWarning>();
         ResponseId = responseId;
+        ProviderMetadata = providerMetadata;
+        RawResponse = rawResponse;
     }
 
     /// <summary>Generated content parts.</summary>
@@ -514,6 +589,12 @@ public sealed class LanguageModelGenerateResult
 
     /// <summary>Provider response id.</summary>
     public string? ResponseId { get; }
+
+    /// <summary>Provider metadata for this call, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Raw provider response body, when the model captured it.</summary>
+    public string? RawResponse { get; }
 
     /// <summary>Concatenated text parts.</summary>
     public string Text
@@ -587,12 +668,13 @@ public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 public sealed class ToolCallStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a tool-call part.</summary>
-    public ToolCallStreamPart(string toolCallId, string toolName, string argumentsJson)
+    public ToolCallStreamPart(string toolCallId, string toolName, string argumentsJson, JsonElement? providerMetadata = null)
         : base("tool-call")
     {
         ToolCallId = toolCallId;
         ToolName = toolName;
         ArgumentsJson = argumentsJson ?? "{}";
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Tool call id.</summary>
@@ -603,18 +685,22 @@ public sealed class ToolCallStreamPart : LanguageModelStreamPart
 
     /// <summary>JSON arguments.</summary>
     public string ArgumentsJson { get; }
+
+    /// <summary>Provider metadata for this call.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A cited URL.</summary>
 public sealed class SourceStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a source part.</summary>
-    public SourceStreamPart(string id, string url, string? title)
+    public SourceStreamPart(string id, string url, string? title, JsonElement? providerMetadata = null)
         : base("source")
     {
         Id = id;
         Url = url;
         Title = title;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Source id.</summary>
@@ -625,18 +711,26 @@ public sealed class SourceStreamPart : LanguageModelStreamPart
 
     /// <summary>Optional title.</summary>
     public string? Title { get; }
+
+    /// <summary>Provider-specific source metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>The stream finished.</summary>
 public sealed class FinishStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a finish part.</summary>
-    public FinishStreamPart(FinishReason finishReason, LanguageModelUsage usage, string? rawFinishReason = null)
+    public FinishStreamPart(
+        FinishReason finishReason,
+        LanguageModelUsage usage,
+        string? rawFinishReason = null,
+        JsonElement? providerMetadata = null)
         : base("finish")
     {
         FinishReason = finishReason;
         Usage = usage ?? LanguageModelUsage.Empty;
         RawFinishReason = rawFinishReason;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Finish reason.</summary>
@@ -647,6 +741,9 @@ public sealed class FinishStreamPart : LanguageModelStreamPart
 
     /// <summary>Provider finish reason.</summary>
     public string? RawFinishReason { get; }
+
+    /// <summary>Provider metadata reported with the finish event.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A stream error from the provider.</summary>
@@ -661,6 +758,112 @@ public sealed class ErrorStreamPart : LanguageModelStreamPart
 
     /// <summary>Error message.</summary>
     public string Message { get; }
+}
+
+/// <summary>Marks the start of a stream and carries call warnings.</summary>
+public sealed class StreamStartStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a stream-start part.</summary>
+    public StreamStartStreamPart(IReadOnlyList<CallWarning>? warnings)
+        : base("stream-start")
+    {
+        Warnings = warnings ?? Array.Empty<CallWarning>();
+    }
+
+    /// <summary>Warnings discovered while preparing the request.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
+}
+
+/// <summary>Marks the start of one text block.</summary>
+public sealed class TextStartStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a text-start part.</summary>
+    public TextStartStreamPart(string id)
+        : base("text-start")
+    {
+        Id = id ?? string.Empty;
+    }
+
+    /// <summary>Text block id.</summary>
+    public string Id { get; }
+}
+
+/// <summary>Marks the end of one text block.</summary>
+public sealed class TextEndStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a text-end part.</summary>
+    public TextEndStreamPart(string id)
+        : base("text-end")
+    {
+        Id = id ?? string.Empty;
+    }
+
+    /// <summary>Text block id.</summary>
+    public string Id { get; }
+}
+
+/// <summary>Marks the start of one reasoning block.</summary>
+public sealed class ReasoningStartStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a reasoning-start part.</summary>
+    public ReasoningStartStreamPart(string id)
+        : base("reasoning-start")
+    {
+        Id = id ?? string.Empty;
+    }
+
+    /// <summary>Reasoning block id.</summary>
+    public string Id { get; }
+}
+
+/// <summary>Marks the end of one reasoning block.</summary>
+public sealed class ReasoningEndStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a reasoning-end part.</summary>
+    public ReasoningEndStreamPart(string id)
+        : base("reasoning-end")
+    {
+        Id = id ?? string.Empty;
+    }
+
+    /// <summary>Reasoning block id.</summary>
+    public string Id { get; }
+}
+
+/// <summary>Identifies the provider response.</summary>
+public sealed class ResponseMetadataStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a response-metadata part.</summary>
+    public ResponseMetadataStreamPart(string? id, string? modelId, DateTimeOffset? timestamp)
+        : base("response-metadata")
+    {
+        Id = id;
+        ModelId = modelId;
+        Timestamp = timestamp;
+    }
+
+    /// <summary>Provider response id.</summary>
+    public string? Id { get; }
+
+    /// <summary>Provider model id.</summary>
+    public string? ModelId { get; }
+
+    /// <summary>Provider timestamp.</summary>
+    public DateTimeOffset? Timestamp { get; }
+}
+
+/// <summary>One raw provider stream event.</summary>
+public sealed class RawStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a raw part.</summary>
+    public RawStreamPart(string rawJson)
+        : base("raw")
+    {
+        RawJson = rawJson ?? string.Empty;
+    }
+
+    /// <summary>Raw event JSON.</summary>
+    public string RawJson { get; }
 }
 
 /// <summary>

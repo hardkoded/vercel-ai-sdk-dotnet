@@ -3,17 +3,28 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Perplexity;
 
-/// <summary>Perplexity provider. OpenAI Chat Completions compatible at <c>https://api.perplexity.ai</c>.</summary>
+/// <summary>
+/// Perplexity provider. Language generation uses the Agent API at <c>{base}/v1/agent</c>.
+/// Embeddings stay on the OpenAI-compatible embeddings route. Preset ids are
+/// <c>fast</c>, <c>low</c>, <c>medium</c>, <c>high</c>, and <c>xhigh</c>; any other id is sent as a model id.
+/// Legacy Sonar model ids are not aliased and Sonar provider options are not translated.
+/// Sonar PDF input, video input, and image or video results have no Agent API equivalent.
+/// </summary>
 public sealed class PerplexityProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "perplexity";
 
-    /// <summary>Default API origin.</summary>
+    /// <summary>Default API origin. Language calls append <c>/v1/agent</c>.</summary>
     public const string DefaultBaseUrl = "https://api.perplexity.ai";
+
+    /// <summary>Relative Agent API path.</summary>
+    public const string AgentPath = "v1/agent";
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "PERPLEXITY_API_KEY";
@@ -29,6 +40,18 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new PerplexityProvider(client, options);
+    }
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return new PerplexityLanguageModel(this, modelId);
+    }
+
+    /// <summary>Agent API URL. A custom base URL is prefixed to <c>v1/agent</c>.</summary>
+    public Uri AgentUri()
+    {
+        return ApiKeys.Combine(Options.BaseUrl, AgentPath);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
@@ -51,7 +74,7 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
-        
+
         return options;
     }
 }

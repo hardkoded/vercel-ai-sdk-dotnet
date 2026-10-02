@@ -90,6 +90,38 @@ public static class JsonValues
                             var param = GetString(error, "param");
                             return string.IsNullOrEmpty(param) ? message! : message + " (" + param + ")";
                         }
+
+                        var type = GetString(error, "type");
+                        if (!string.IsNullOrEmpty(type))
+                        {
+                            return type!;
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("detail", out var detail))
+                {
+                    if (detail.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(detail.GetString()))
+                    {
+                        return detail.GetString()!;
+                    }
+
+                    if (detail.ValueKind == JsonValueKind.Array)
+                    {
+                        var parts = new List<string>();
+                        foreach (var item in detail.EnumerateArray())
+                        {
+                            var msg = GetString(item, "msg");
+                            if (!string.IsNullOrEmpty(msg))
+                            {
+                                parts.Add(msg!);
+                            }
+                        }
+
+                        if (parts.Count > 0)
+                        {
+                            return string.Join(", ", parts);
+                        }
                     }
                 }
 

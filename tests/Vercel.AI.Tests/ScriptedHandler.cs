@@ -59,6 +59,11 @@ internal sealed class ScriptedHandler : HttpMessageHandler
             return "{\"images\":[{\"url\":\"https://example.test/cat.png\"}]}";
         }
 
+        if (uri.Contains("/v1/agent"))
+        {
+            return "{\"id\":\"resp\",\"created_at\":1,\"model\":\"m\",\"object\":\"response\",\"output\":[{\"type\":\"message\",\"id\":\"msg\",\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}],\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
+        }
+
         if (uri.Contains("/responses"))
         {
             return "{\"output_text\":\"ok\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";

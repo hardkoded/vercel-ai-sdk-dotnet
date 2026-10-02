@@ -62,3 +62,4 @@ Not emitted yet, because the core stream does not surface them:
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
 - MiniMax uses the OpenAI-compatible `/v1` base. The JavaScript package also has an Anthropic-compatible path.
 - Media providers speak that provider’s public HTTP API for one modality. Their inherited chat method is the OpenAI-compatible client and is not the supported entry point.
+- Perplexity language generation uses the Agent API at `{base}/v1/agent`. Embeddings stay on the OpenAI-compatible embeddings route. Legacy Sonar model ids are not aliased. Sonar PDF input, video input, and image or video results have no Agent API equivalent.
