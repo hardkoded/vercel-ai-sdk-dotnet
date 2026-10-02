@@ -5,9 +5,9 @@
       "title": "Cover upstream unit tests: ai/agent",
       "dotnetProject": "Vercel.AI",
       "inScope": 116,
-      "covered": 0,
+      "covered": 27,
       "partial": 0,
-      "missing": 116,
+      "missing": 89,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/30"
     },
     {
@@ -85,9 +85,9 @@
       "title": "Cover upstream unit tests: ai/generate-text",
       "dotnetProject": "Vercel.AI",
       "inScope": 1136,
-      "covered": 0,
+      "covered": 73,
       "partial": 4,
-      "missing": 1132,
+      "missing": 1059,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/38"
     },
     {
@@ -125,9 +125,9 @@
       "title": "Cover upstream unit tests: ai/middleware",
       "dotnetProject": "Vercel.AI",
       "inScope": 156,
-      "covered": 1,
+      "covered": 20,
       "partial": 0,
-      "missing": 155,
+      "missing": 136,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/42"
     },
     {

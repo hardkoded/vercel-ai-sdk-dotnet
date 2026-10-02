@@ -100,7 +100,8 @@ public sealed class StepResult
         FinishReason finishReason,
         LanguageModelUsage usage,
         IReadOnlyList<GeneratedSource> sources,
-        JsonElement? providerMetadata = null)
+        JsonElement? providerMetadata = null,
+        int stepNumber = 0)
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -110,6 +111,7 @@ public sealed class StepResult
         Usage = usage ?? LanguageModelUsage.Empty;
         Sources = sources ?? Array.Empty<GeneratedSource>();
         ProviderMetadata = providerMetadata;
+        StepNumber = stepNumber;
     }
 
     /// <summary>Text generated in this step.</summary>
@@ -135,6 +137,9 @@ public sealed class StepResult
 
     /// <summary>Provider metadata for this step, including cost and native-tool counts when the provider sent them.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Zero-based index of this step in the tool loop.</summary>
+    public int StepNumber { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -142,12 +147,18 @@ public abstract class StopCondition
 {
     /// <summary>Returns true when the loop should stop after <paramref name="steps"/>.</summary>
     public abstract bool ShouldStop(IReadOnlyList<StepResult> steps);
+
+    /// <summary>Returns true when the loop should stop. Async conditions override this.</summary>
+    public virtual Task<bool> ShouldStopAsync(IReadOnlyList<StepResult> steps, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(ShouldStop(steps));
+    }
 }
 
 /// <summary>Stop-condition factories. Maps to <c>isStepCount</c>, <c>hasToolCall</c>, and <c>isLoopFinished</c>.</summary>
 public static class StopWhen
 {
-    /// <summary>Stops after <paramref name="count"/> steps.</summary>
+    /// <summary>Stops when the number of completed steps equals <paramref name="count"/>. Maps to <c>isStepCount</c>.</summary>
     public static StopCondition IsStepCount(int count)
     {
         if (count < 1)
@@ -164,10 +175,96 @@ public static class StopWhen
         return new HasToolCallCondition(toolNames ?? Array.Empty<string>());
     }
 
-    /// <summary>Stops when the latest step did not call a tool.</summary>
+    /// <summary>
+    /// A condition that never stops the loop by itself. Maps to <c>isLoopFinished</c>.
+    /// The loop still ends when the model stops calling tools.
+    /// </summary>
     public static StopCondition IsLoopFinished()
     {
         return new LoopFinishedCondition();
+    }
+
+    /// <summary>Stops when <paramref name="predicate"/> returns true. Maps to a custom <c>StopCondition</c>.</summary>
+    public static StopCondition Custom(Func<IReadOnlyList<StepResult>, bool> predicate)
+    {
+        if (predicate is null)
+        {
+            throw new ArgumentNullException(nameof(predicate));
+        }
+
+        return new PredicateCondition(predicate);
+    }
+
+    /// <summary>Stops when <paramref name="predicate"/> returns true.</summary>
+    public static StopCondition Custom(Func<IReadOnlyList<StepResult>, CancellationToken, Task<bool>> predicate)
+    {
+        if (predicate is null)
+        {
+            throw new ArgumentNullException(nameof(predicate));
+        }
+
+        return new AsyncPredicateCondition(predicate);
+    }
+
+    /// <summary>Stops when any condition returns true. Every condition is evaluated. Maps to <c>isStopConditionMet</c>.</summary>
+    public static StopCondition Any(params StopCondition[] conditions)
+    {
+        return new AnyCondition(conditions ?? Array.Empty<StopCondition>());
+    }
+
+    /// <summary>
+    /// Returns true when any condition returns true. Faulted conditions propagate their exception.
+    /// Maps to <c>isStopConditionMet</c>.
+    /// </summary>
+    public static async Task<bool> IsMetAsync(
+        IReadOnlyList<StopCondition> conditions,
+        IReadOnlyList<StepResult> steps,
+        CancellationToken cancellationToken = default)
+    {
+        if (conditions is null)
+        {
+            throw new ArgumentNullException(nameof(conditions));
+        }
+
+        var tasks = new Task<bool>[conditions.Count];
+        for (var i = 0; i < conditions.Count; i++)
+        {
+            try
+            {
+                tasks[i] = conditions[i].ShouldStopAsync(steps, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                tasks[i] = Task.FromException<bool>(exception);
+            }
+        }
+
+        var any = false;
+        Exception? error = null;
+        for (var i = 0; i < tasks.Length; i++)
+        {
+            try
+            {
+                if (await tasks[i].ConfigureAwait(false))
+                {
+                    any = true;
+                }
+            }
+            catch (Exception exception)
+            {
+                if (error == null)
+                {
+                    error = exception;
+                }
+            }
+        }
+
+        if (error != null)
+        {
+            throw error;
+        }
+
+        return any;
     }
 
     private sealed class StepCountCondition : StopCondition
@@ -181,7 +278,7 @@ public static class StopWhen
 
         public override bool ShouldStop(IReadOnlyList<StepResult> steps)
         {
-            return steps.Count >= _count;
+            return steps.Count == _count;
         }
     }
 
@@ -221,7 +318,62 @@ public static class StopWhen
     {
         public override bool ShouldStop(IReadOnlyList<StepResult> steps)
         {
-            return steps.Count > 0 && steps[steps.Count - 1].ToolCalls.Count == 0;
+            return false;
+        }
+    }
+
+    private sealed class PredicateCondition : StopCondition
+    {
+        private readonly Func<IReadOnlyList<StepResult>, bool> _predicate;
+
+        public PredicateCondition(Func<IReadOnlyList<StepResult>, bool> predicate)
+        {
+            _predicate = predicate;
+        }
+
+        public override bool ShouldStop(IReadOnlyList<StepResult> steps)
+        {
+            return _predicate(steps);
+        }
+    }
+
+    private sealed class AsyncPredicateCondition : StopCondition
+    {
+        private readonly Func<IReadOnlyList<StepResult>, CancellationToken, Task<bool>> _predicate;
+
+        public AsyncPredicateCondition(Func<IReadOnlyList<StepResult>, CancellationToken, Task<bool>> predicate)
+        {
+            _predicate = predicate;
+        }
+
+        public override bool ShouldStop(IReadOnlyList<StepResult> steps)
+        {
+            return ShouldStopAsync(steps, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public override Task<bool> ShouldStopAsync(IReadOnlyList<StepResult> steps, CancellationToken cancellationToken)
+        {
+            return _predicate(steps, cancellationToken);
+        }
+    }
+
+    private sealed class AnyCondition : StopCondition
+    {
+        private readonly StopCondition[] _conditions;
+
+        public AnyCondition(StopCondition[] conditions)
+        {
+            _conditions = conditions;
+        }
+
+        public override bool ShouldStop(IReadOnlyList<StepResult> steps)
+        {
+            return IsMetAsync(_conditions, steps).GetAwaiter().GetResult();
+        }
+
+        public override Task<bool> ShouldStopAsync(IReadOnlyList<StepResult> steps, CancellationToken cancellationToken)
+        {
+            return IsMetAsync(_conditions, steps, cancellationToken);
         }
     }
 }
@@ -383,8 +535,14 @@ public class GenerateTextOptions
     /// <summary>Called before each step. Maps to <c>prepareStep</c>.</summary>
     public Func<PrepareStepContext, PrepareStepUpdate?>? PrepareStep { get; set; }
 
-    /// <summary>Called after each step. Maps to <c>onStepEnd</c>.</summary>
+    /// <summary>Called before each model call. Maps to <c>onStepStart</c>.</summary>
+    public Func<PrepareStepContext, CancellationToken, Task>? OnStepStart { get; set; }
+
+    /// <summary>Called after each step. Maps to <c>onStepEnd</c>. Wins over <see cref="OnStepFinish"/> when both are set.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
+
+    /// <summary>Called after each step when <see cref="OnStepEnd"/> is not set. Maps to the deprecated <c>onStepFinish</c> callback.</summary>
+    public Func<StepResult, CancellationToken, Task>? OnStepFinish { get; set; }
 
     /// <summary>Called when generation finishes. Maps to <c>onFinish</c>.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnFinish { get; set; }
@@ -413,7 +571,8 @@ public sealed class GenerateTextResult
         LanguageModelUsage usage,
         JsonElement? output,
         IReadOnlyList<GeneratedSource> sources,
-        JsonElement? providerMetadata = null)
+        JsonElement? providerMetadata = null,
+        IReadOnlyList<ModelMessage>? responseMessages = null)
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -423,6 +582,10 @@ public sealed class GenerateTextResult
         Output = output;
         Sources = sources ?? Array.Empty<GeneratedSource>();
         ProviderMetadata = providerMetadata;
+        ResponseMessages = responseMessages ?? Array.Empty<ModelMessage>();
+        FinalStep = Steps.Count == 0
+            ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
+            : Steps[Steps.Count - 1];
         var calls = new List<GeneratedToolCall>();
         var results = new List<ExecutedTool>();
         foreach (var step in Steps)
@@ -464,6 +627,55 @@ public sealed class GenerateTextResult
 
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>The last completed step. Maps to <c>finalStep</c>.</summary>
+    public StepResult FinalStep { get; }
+
+    /// <summary>Assistant and tool messages produced by the loop. Maps to <c>responseMessages</c>.</summary>
+    public IReadOnlyList<ModelMessage> ResponseMessages { get; }
+}
+
+/// <summary>Thrown when structured output cannot be parsed. Maps to <c>NoObjectGeneratedError</c>.</summary>
+public sealed class NoObjectGeneratedException : AiSdkException
+{
+    /// <summary>Creates the exception.</summary>
+    public NoObjectGeneratedException(string text, FinishReason finishReason, LanguageModelUsage usage)
+        : this(text, finishReason, usage, null)
+    {
+    }
+
+    /// <summary>Creates the exception with the parser failure.</summary>
+    public NoObjectGeneratedException(string text, FinishReason finishReason, LanguageModelUsage usage, Exception? inner)
+        : base("No object generated: could not parse the response.", inner ?? new JsonException("No object generated: could not parse the response."))
+    {
+        Text = text ?? string.Empty;
+        FinishReason = finishReason;
+        Usage = usage ?? LanguageModelUsage.Empty;
+    }
+
+    /// <summary>Model text that failed to parse.</summary>
+    public string Text { get; }
+
+    /// <summary>Finish reason of the step that failed to parse.</summary>
+    public FinishReason FinishReason { get; }
+
+    /// <summary>Usage accumulated before parsing failed.</summary>
+    public LanguageModelUsage Usage { get; }
+}
+
+/// <summary>Token-count arithmetic. Maps to <c>sumTokenCounts</c>.</summary>
+public static class TokenCounts
+{
+    /// <summary>Adds two token counts. Unknown on both sides stays unknown.</summary>
+    public static int? Sum(int? left, int? right)
+    {
+        if (left is null && right is null)
+        {
+            return null;
+        }
+
+        return (left ?? 0) + (right ?? 0);
+    }
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

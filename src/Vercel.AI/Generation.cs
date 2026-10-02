@@ -43,7 +43,7 @@ internal static class Generation
     {
         return new LanguageModelCallOptions
         {
-            Prompt = prompt,
+            Prompt = prompt.ToArray(),
             MaxOutputTokens = options.MaxOutputTokens,
             Temperature = options.Temperature,
             TopP = options.TopP,
@@ -89,15 +89,17 @@ internal static class Generation
                     current = update.Model;
                 }
 
-                var generated = await current.DoGenerateAsync(CallOptions(options, messages), cancellationToken).ConfigureAwait(false);
-                var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
-                steps.Add(step);
-                if (options.OnStepEnd != null)
+                if (options.OnStepStart != null)
                 {
-                    await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
+                    await options.OnStepStart(new PrepareStepContext(steps.Count, steps), cancellationToken).ConfigureAwait(false);
                 }
 
-                if (step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                var generated = await current.DoGenerateAsync(CallOptions(options, messages), cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, steps.Count, cancellationToken).ConfigureAwait(false);
+                steps.Add(step);
+                await NotifyStepAsync(options, step, cancellationToken).ConfigureAwait(false);
+
+                if (step.ToolCalls.Count == 0 || await stop.ShouldStopAsync(steps, cancellationToken).ConfigureAwait(false))
                 {
                     break;
                 }
@@ -117,7 +119,7 @@ internal static class Generation
 
             return result;
         }
-        catch (Exception exception) when (exception is not ApiUserAbortException)
+        catch (Exception exception) when (!IsAbort(exception))
         {
             if (options.OnError != null)
             {
@@ -136,11 +138,14 @@ internal static class Generation
     {
         var buffer = new PartBuffer();
         var textSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reasoningSource = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, textSource, finishSource, usageSource, stepsSource, cancellationToken));
-        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task);
+        var sourcesSource = new TaskCompletionSource<IReadOnlyList<GeneratedSource>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finalStepSource = new TaskCompletionSource<StepResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, textSource, reasoningSource, finishSource, usageSource, stepsSource, sourcesSource, finalStepSource, cancellationToken));
+        return new StreamTextResult(buffer, textSource.Task, reasoningSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, sourcesSource.Task, finalStepSource.Task);
     }
 
     private static async Task ProduceAsync(
@@ -149,9 +154,12 @@ internal static class Generation
         IAiTelemetry? telemetry,
         PartBuffer buffer,
         TaskCompletionSource<string> textSource,
+        TaskCompletionSource<string?> reasoningSource,
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
         TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
+        TaskCompletionSource<IReadOnlyList<GeneratedSource>> sourcesSource,
+        TaskCompletionSource<StepResult> finalStepSource,
         CancellationToken cancellationToken)
     {
         try
@@ -175,8 +183,14 @@ internal static class Generation
                     current = update.Model;
                 }
 
+                if (options.OnStepStart != null)
+                {
+                    await options.OnStepStart(new PrepareStepContext(steps.Count, steps), cancellationToken).ConfigureAwait(false);
+                }
+
                 var text = new StringBuilder();
-                var reasoning = new StringBuilder();
+                var reasoningBlocks = new List<StringBuilder>();
+                var reasoningIndex = new Dictionary<string, int>(StringComparer.Ordinal);
                 var toolCalls = new List<GeneratedToolCall>();
                 var sources = new List<GeneratedSource>();
                 FinishReason? finish = null;
@@ -192,7 +206,14 @@ internal static class Generation
                             buffer.Add(new TextDeltaPart(delta.Delta));
                             break;
                         case ReasoningDeltaStreamPart reasoningDelta:
-                            reasoning.Append(reasoningDelta.Delta);
+                            if (!reasoningIndex.TryGetValue(reasoningDelta.Id, out var blockIndex))
+                            {
+                                blockIndex = reasoningBlocks.Count;
+                                reasoningIndex[reasoningDelta.Id] = blockIndex;
+                                reasoningBlocks.Add(new StringBuilder());
+                            }
+
+                            reasoningBlocks[blockIndex].Append(reasoningDelta.Delta);
                             buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                             break;
                         case ToolCallStreamPart toolCall:
@@ -217,13 +238,19 @@ internal static class Generation
                     }
                 }
 
+                var reasoning = new StringBuilder();
+                foreach (var block in reasoningBlocks)
+                {
+                    reasoning.Append(block);
+                }
+
                 var generated = new LanguageModelGenerateResult(
                     BuildContent(text.ToString(), reasoning.ToString(), toolCalls, sources),
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
                     rawFinish,
                     providerMetadata: providerMetadata);
-                var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, steps.Count, cancellationToken).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     buffer.Add(new ToolResultPart(toolResult));
@@ -231,12 +258,9 @@ internal static class Generation
 
                 buffer.Add(new StepFinishPart(step));
                 steps.Add(step);
-                if (options.OnStepEnd != null)
-                {
-                    await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
-                }
+                await NotifyStepAsync(options, step, cancellationToken).ConfigureAwait(false);
 
-                if (step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                if (step.ToolCalls.Count == 0 || await stop.ShouldStopAsync(steps, cancellationToken).ConfigureAwait(false))
                 {
                     break;
                 }
@@ -252,9 +276,12 @@ internal static class Generation
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
             buffer.Complete();
             textSource.TrySetResult(result.Text);
+            reasoningSource.TrySetResult(result.ReasoningText);
             finishSource.TrySetResult(result.FinishReason);
             usageSource.TrySetResult(result.Usage);
             stepsSource.TrySetResult(result.Steps);
+            sourcesSource.TrySetResult(result.Sources);
+            finalStepSource.TrySetResult(result.FinalStep);
             if (options.OnFinish != null)
             {
                 await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
@@ -264,10 +291,13 @@ internal static class Generation
         {
             buffer.Fail(exception);
             textSource.TrySetException(exception);
+            reasoningSource.TrySetException(exception);
             finishSource.TrySetException(exception);
             usageSource.TrySetException(exception);
             stepsSource.TrySetException(exception);
-            if (options.OnError != null)
+            sourcesSource.TrySetException(exception);
+            finalStepSource.TrySetException(exception);
+            if (options.OnError != null && !IsAbort(exception))
             {
                 try
                 {
@@ -299,10 +329,25 @@ internal static class Generation
         return content;
     }
 
+    private static async Task NotifyStepAsync(GenerateTextOptions options, StepResult step, CancellationToken cancellationToken)
+    {
+        var callback = options.OnStepEnd ?? options.OnStepFinish;
+        if (callback != null)
+        {
+            await callback(step, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static bool IsAbort(Exception exception)
+    {
+        return exception is OperationCanceledException || exception is ApiUserAbortException;
+    }
+
     private static async Task<StepResult> FinishStepAsync(
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         List<ModelMessage> messages,
+        int stepNumber,
         CancellationToken cancellationToken)
     {
         var toolCalls = new List<GeneratedToolCall>();
@@ -333,7 +378,7 @@ internal static class Generation
             messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, stepNumber);
     }
 
     private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
@@ -370,6 +415,10 @@ internal static class Generation
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
             return new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false);
+        }
+        catch (Exception exception) when (IsAbort(exception))
+        {
+            throw;
         }
         catch (Exception exception)
         {
@@ -426,13 +475,40 @@ internal static class Generation
         }
 
         JsonElement? output = null;
-        if (options.Output?.Schema != null && !string.IsNullOrWhiteSpace(last.Text))
+        if (options.Output?.Schema != null)
         {
-            using var document = JsonDocument.Parse(last.Text);
-            output = document.RootElement.Clone();
+            if (string.IsNullOrWhiteSpace(last.Text))
+            {
+                throw new NoObjectGeneratedException(last.Text, last.FinishReason, usage);
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(last.Text);
+                output = document.RootElement.Clone();
+            }
+            catch (JsonException exception)
+            {
+                throw new NoObjectGeneratedException(last.Text, last.FinishReason, usage, exception);
+            }
         }
 
-        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata);
+        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata, ResponseMessages(steps));
+    }
+
+    private static List<ModelMessage> ResponseMessages(List<StepResult> steps)
+    {
+        var messages = new List<ModelMessage>();
+        foreach (var step in steps)
+        {
+            messages.Add(new AssistantModelMessage(step.Text, step.ToolCalls, step.ReasoningText));
+            foreach (var toolResult in step.ToolResults)
+            {
+                messages.Add(new ToolModelMessage(toolResult.ToolCallId, toolResult.ToolName, toolResult.OutputJson, toolResult.IsError));
+            }
+        }
+
+        return messages;
     }
 }
 
@@ -527,15 +603,21 @@ public sealed class StreamTextResult
     internal StreamTextResult(
         PartBuffer buffer,
         Task<string> text,
+        Task<string?> reasoningText,
         Task<FinishReason> finishReason,
         Task<LanguageModelUsage> usage,
-        Task<IReadOnlyList<StepResult>> steps)
+        Task<IReadOnlyList<StepResult>> steps,
+        Task<IReadOnlyList<GeneratedSource>> sources,
+        Task<StepResult> finalStep)
     {
         _buffer = buffer;
         Text = text;
+        ReasoningText = reasoningText;
         FinishReason = finishReason;
         Usage = usage;
         Steps = steps;
+        Sources = sources;
+        FinalStep = finalStep;
     }
 
     /// <summary>Text deltas only.</summary>
@@ -543,7 +625,7 @@ public sealed class StreamTextResult
     {
         await foreach (var part in _buffer.Read(cancellationToken).ConfigureAwait(false))
         {
-            if (part is TextDeltaPart delta)
+            if (part is TextDeltaPart delta && delta.Text.Length > 0)
             {
                 yield return delta.Text;
             }
@@ -559,6 +641,9 @@ public sealed class StreamTextResult
     /// <summary>Full text from the last step. Completes when the stream finishes.</summary>
     public Task<string> Text { get; }
 
+    /// <summary>Reasoning from the last step. Completes when the stream finishes.</summary>
+    public Task<string?> ReasoningText { get; }
+
     /// <summary>Finish reason. Completes when the stream finishes.</summary>
     public Task<FinishReason> FinishReason { get; }
 
@@ -567,4 +652,10 @@ public sealed class StreamTextResult
 
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
+
+    /// <summary>Sources from every step. Completes when the stream finishes.</summary>
+    public Task<IReadOnlyList<GeneratedSource>> Sources { get; }
+
+    /// <summary>The last completed step. Completes when the stream finishes.</summary>
+    public Task<StepResult> FinalStep { get; }
 }
