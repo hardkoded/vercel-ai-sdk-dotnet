@@ -808,7 +808,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         private static string TextKey(string? itemId, double? outputIndex, double? contentIndex)
         {
             var index = outputIndex.HasValue ? (int)outputIndex.Value : (int?)null;
-            var partIndex = contentIndex.HasValue ? (int)contentIndex.Value : 0;
+            int? partIndex = contentIndex.HasValue ? (int)contentIndex.Value : null;
             return PerplexityAgent.TextId(itemId, index, partIndex);
         }
 

@@ -195,23 +195,23 @@ internal static class PerplexityAgent
             return false;
         }
 
-        if (!TryOptionalNumber(root, "sequence_number", out var sequence)
-            || !TryOptionalNumber(root, "output_index", out var outputIndex)
-            || !TryOptionalNumber(root, "content_index", out var contentIndex)
-            || !TryOptionalString(root, "item_id", out var itemId)
-            || !TryOptionalString(root, "delta", out var delta)
-            || !TryOptionalString(root, "text", out var text)
-            || !TryOptionalString(root, "thought", out var thought)
-            || !TryOptionalStringArray(root, "queries")
-            || !TryOptionalStringArray(root, "urls"))
+        if (!TryNullishNumber(root, "sequence_number", out var sequence)
+            || !TryNullishNumber(root, "output_index", out var outputIndex)
+            || !TryNullishNumber(root, "content_index", out var contentIndex)
+            || !TryNullishString(root, "item_id", out var itemId)
+            || !TryNullishString(root, "delta", out var delta)
+            || !TryNullishString(root, "text", out var text)
+            || !TryNullishString(root, "thought", out var thought)
+            || !TryNullishStringArray(root, "queries")
+            || !TryNullishStringArray(root, "urls"))
         {
             return false;
         }
 
         AgentResponse? response = null;
-        if (root.TryGetProperty("response", out var responseElement))
+        if (root.TryGetProperty("response", out var responseElement) && responseElement.ValueKind != JsonValueKind.Null)
         {
-            if (responseElement.ValueKind == JsonValueKind.Null || !TryReadResponse(responseElement, out var parsedResponse))
+            if (!TryReadResponse(responseElement, out var parsedResponse))
             {
                 return false;
             }
@@ -220,9 +220,9 @@ internal static class PerplexityAgent
         }
 
         AgentItem? item = null;
-        if (root.TryGetProperty("item", out var itemElement))
+        if (root.TryGetProperty("item", out var itemElement) && itemElement.ValueKind != JsonValueKind.Null)
         {
-            if (itemElement.ValueKind == JsonValueKind.Null || !TryReadItem(itemElement, out var parsedItem))
+            if (!TryReadItem(itemElement, out var parsedItem))
             {
                 return false;
             }
@@ -230,15 +230,18 @@ internal static class PerplexityAgent
             item = parsedItem;
         }
 
-        if (!TryOptionalSearchResults(root, "results", out var results) || !TryOptionalFetched(root, "contents", out var contents))
+        if (!TryNullableSearchResults(root, "results", out var results) || !TryNullableFetchedContents(root, "contents", out var contents))
         {
             return false;
         }
 
         string? errorMessage = null;
-        if (root.TryGetProperty("error", out var error))
+        if (root.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
         {
-            if (error.ValueKind == JsonValueKind.Null || error.ValueKind != JsonValueKind.Object || !TryRequiredString(error, "message", out var message))
+            if (error.ValueKind != JsonValueKind.Object
+                || !TryRequiredString(error, "message", out var message)
+                || !TryNullishString(error, "code", out _)
+                || !TryNullishString(error, "type", out _))
             {
                 return false;
             }
@@ -413,10 +416,15 @@ internal static class PerplexityAgent
         }
     }
 
-    public static string TextId(string? itemId, int? outputIndex, int contentIndex)
+    public static string TextId(string? itemId, int? outputIndex, int? contentIndex)
     {
         var id = itemId ?? (outputIndex.HasValue ? outputIndex.Value.ToString(CultureInfo.InvariantCulture) : "text");
-        return contentIndex == 0 ? id : id + ":" + contentIndex.ToString(CultureInfo.InvariantCulture);
+        if (!contentIndex.HasValue || contentIndex.Value == 0)
+        {
+            return id;
+        }
+
+        return id + ":" + contentIndex.Value.ToString(CultureInfo.InvariantCulture);
     }
 
     public static bool StartsWithOrdinal(string value, string prefix)
@@ -669,17 +677,12 @@ internal static class PerplexityAgent
         return TrySearchArray(value, results);
     }
 
-    private static bool TryOptionalSearchResults(JsonElement element, string name, out List<AgentSearchResult>? results)
+    private static bool TryNullableSearchResults(JsonElement element, string name, out List<AgentSearchResult>? results)
     {
         results = null;
-        if (!element.TryGetProperty(name, out var value))
+        if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
         {
             return true;
-        }
-
-        if (value.ValueKind == JsonValueKind.Null)
-        {
-            return false;
         }
 
         var parsed = new List<AgentSearchResult>();
@@ -758,17 +761,12 @@ internal static class PerplexityAgent
         return TryFetchedArray(value, contents);
     }
 
-    private static bool TryOptionalFetched(JsonElement element, string name, out List<AgentFetched>? contents)
+    private static bool TryNullableFetchedContents(JsonElement element, string name, out List<AgentFetched>? contents)
     {
         contents = null;
-        if (!element.TryGetProperty(name, out var value))
+        if (!element.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
         {
             return true;
-        }
-
-        if (value.ValueKind == JsonValueKind.Null)
-        {
-            return false;
         }
 
         var parsed = new List<AgentFetched>();
@@ -914,9 +912,26 @@ internal static class PerplexityAgent
         return true;
     }
 
-    private static bool TryOptionalStringArray(JsonElement element, string name)
+    private static bool TryNullishNumber(JsonElement element, string name, out double? value)
     {
-        if (!element.TryGetProperty(name, out var property))
+        value = null;
+        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        if (property.ValueKind != JsonValueKind.Number)
+        {
+            return false;
+        }
+
+        value = property.GetDouble();
+        return true;
+    }
+
+    private static bool TryNullishStringArray(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
         {
             return true;
         }
