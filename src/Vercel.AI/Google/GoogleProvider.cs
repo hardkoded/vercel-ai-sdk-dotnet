@@ -375,17 +375,21 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
 /// </summary>
 public sealed class VertexOptions : GoogleOptions
 {
-    /// <summary>Creates Vertex options.</summary>
+    /// <summary>
+    /// Creates Vertex options. <see cref="GoogleOptions.BaseUrl"/> starts empty.
+    /// An empty base URL is replaced with the regional publisher host from <see cref="Region"/>. A caller-supplied base URL is kept as-is.
+    /// </summary>
     public VertexOptions()
     {
         UseBearerToken = true;
         ApiKeyEnvironmentVariable = "GOOGLE_VERTEX_API_KEY";
+        BaseUrl = string.Empty;
     }
 
     /// <summary>GCP project id.</summary>
     public string Project { get; set; } = string.Empty;
 
-    /// <summary>GCP region.</summary>
+    /// <summary>Vertex location. One DNS label, used only when <see cref="GoogleOptions.BaseUrl"/> is empty.</summary>
     public string Region { get; set; } = "us-central1";
 }
 
@@ -412,6 +416,16 @@ public sealed class GoogleVertexProvider : GoogleProvider
         if (string.IsNullOrEmpty(options.Project))
         {
             options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT") ?? string.Empty;
+        }
+
+        if (!string.IsNullOrEmpty(options.BaseUrl))
+        {
+            return options;
+        }
+
+        if (!HostnameParts.IsValidHostnamePart(options.Region))
+        {
+            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
         }
 
         options.BaseUrl = "https://" + options.Region + "-aiplatform.googleapis.com/v1/projects/" + options.Project

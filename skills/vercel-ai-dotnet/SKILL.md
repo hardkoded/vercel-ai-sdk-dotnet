@@ -37,7 +37,7 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 ## Stream
 
-`StreamTextResult.TextStream` yields text deltas. `Stream` yields every part. In ASP.NET Core, `result.ToUIMessageStreamResult()` writes `text/event-stream` for a JavaScript `useChat` client. Do not add a React or Razor chat component for that protocol.
+`StreamTextResult.TextStream` yields text deltas. `Stream` yields every part. In ASP.NET Core, `result.ToUIMessageStreamResult()` writes `text/event-stream` for a JavaScript `useChat` client. Pass `keepAliveMs` to write `: stream-open` immediately and `: keep-alive` comments while the next part is still pending. Do not add a React or Razor chat component for that protocol.
 
 ## Providers
 

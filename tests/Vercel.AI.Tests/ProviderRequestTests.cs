@@ -61,6 +61,92 @@ public sealed class ProviderRequestTests
         Assert.StartsWith(expected, actual);
     }
 
+    [Theory]
+    [InlineData("resource\n")]
+    [InlineData("resource\r")]
+    [InlineData("resource.example")]
+    [InlineData("-resource")]
+    [InlineData("resource-")]
+    [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("")]
+    [InlineData("user@internal:8080/#")]
+    [InlineData("169.254.169.254:80/x#")]
+    [InlineData("evil.example.com/#")]
+    public void RejectsBeforeSendingARequest(string resourceName)
+    {
+        var handler = new ScriptedHandler();
+        var exception = Assert.Throws<ArgumentException>(() =>
+            AzureOpenAIProvider.Create(new AzureOpenAIOptions
+            {
+                ApiKey = "secret",
+                ResourceName = resourceName,
+            }, handler));
+        Assert.Contains("DNS label", exception.Message);
+        Assert.Contains("BaseUrl", exception.Message);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    public async Task AcceptsADnsLabelResourceName()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
+        {
+            ApiKey = "secret",
+            ResourceName = "my-resource",
+        }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://my-resource.openai.azure.com/", handler.Uri);
+        Assert.Equal(1, handler.Calls);
+    }
+
+    [Fact]
+    public async Task DoesNotValidateAnUnusedResourceNameWithACustomEndpoint()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
+        {
+            ApiKey = "secret",
+            ResourceName = "not a resource",
+            BaseUrl = "https://proxy.example/openai",
+        }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://proxy.example/openai/", handler.Uri);
+        Assert.Equal(1, handler.Calls);
+    }
+
+    [Fact]
+    public async Task Azure_defaults_a_null_resource_name()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret" }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://resource.openai.azure.com/", handler.Uri);
+    }
+
+    [Fact]
+    public async Task Perplexity_sends_integration_attribution()
+    {
+        var handler = new ScriptedHandler();
+        var provider = PerplexityProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("vercel-ai-sdk", handler.Headers["X-Pplx-Integration"]);
+
+        var customHandler = new ScriptedHandler();
+        var options = new OpenAICompatibleOptions { ApiKey = "secret" };
+        options.Headers["X-Pplx-Integration"] = "custom";
+        var custom = PerplexityProvider.Create(options, customHandler);
+        await custom.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("custom", customHandler.Headers["X-Pplx-Integration"]);
+
+        var mixedCaseHandler = new ScriptedHandler();
+        var mixedCase = new OpenAICompatibleOptions { ApiKey = "secret" };
+        mixedCase.Headers["x-pplx-integration"] = "custom";
+        var mixed = PerplexityProvider.Create(mixedCase, mixedCaseHandler);
+        await mixed.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("custom", mixedCaseHandler.Headers["X-Pplx-Integration"]);
+    }
+
     [Fact]
     public async Task Gateway_sends_the_v4_specification_header()
     {
@@ -118,8 +204,8 @@ public sealed class ProviderRequestTests
         yield return Row("/v1/messages", "x-api-key", "secret", h => AnthropicProvider.Create(new AnthropicOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("aws-external-anthropic", "x-api-key", "secret", h => AnthropicAwsProvider.Create(new AnthropicOptions { ApiKey = "secret", BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws" }, h), "chat");
         yield return Row(":generateContent", "x-goog-api-key", "secret", h => GoogleProvider.Create(new GoogleOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
-        yield return Row("/converse", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
+        yield return Row("us-central1-aiplatform.googleapis.com/v1/projects/demo/locations/us-central1/publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
+        yield return Row("bedrock-runtime.us-east-1.amazonaws.com", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
         yield return Row("api.cohere.com/v2/chat", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("/rerank", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "rerank");
         yield return Row("/responses", "Authorization", "Bearer secret", h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h), "chat");

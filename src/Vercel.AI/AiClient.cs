@@ -13,6 +13,9 @@ public interface IAiTelemetry
 {
     /// <summary>Starts a span. Dispose it when the call finishes.</summary>
     IDisposable Begin(string operation, string modelId);
+
+    /// <summary>Records the final finish reason on the span opened by <see cref="Begin"/>.</summary>
+    void OnFinish(IDisposable span, FinishReason finishReason);
 }
 
 /// <summary>Core AI SDK client. Maps to the <c>ai</c> package functions.</summary>
@@ -141,25 +144,27 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default)
+    public async Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default)
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("GenerateSpeech requires a speech model.");
         }
 
-        return options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken);
+        using var scope = _telemetry?.Begin("generateSpeech", options.Model.ModelId);
+        return await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default)
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("Transcribe requires a transcription model.");
         }
 
-        return options.Model.DoTranscribeAsync(options.Audio, cancellationToken);
+        using var scope = _telemetry?.Begin("transcribe", options.Model.ModelId);
+        return await options.Model.DoTranscribeAsync(options.Audio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

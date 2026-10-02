@@ -106,6 +106,27 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     }
 }
 
+/// <summary>Function tools prepared for the OpenAI Responses API.</summary>
+public sealed class PreparedResponsesTools
+{
+    /// <summary>Creates a prepared tool list.</summary>
+    public PreparedResponsesTools(JsonArray? tools, ToolChoice? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
+    {
+        Tools = tools;
+        ToolChoice = toolChoice;
+        ToolWarnings = toolWarnings ?? Array.Empty<CallWarning>();
+    }
+
+    /// <summary>Provider tool objects. Null when the request has no tools.</summary>
+    public JsonArray? Tools { get; }
+
+    /// <summary>Tool choice passed through for this request. Null when unset.</summary>
+    public ToolChoice? ToolChoice { get; }
+
+    /// <summary>Warnings produced while preparing tools.</summary>
+    public IReadOnlyList<CallWarning> ToolWarnings { get; }
+}
+
 /// <summary>OpenAI Responses API language model.</summary>
 public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 {
@@ -207,24 +228,39 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             body["temperature"] = temperature;
         }
 
-        if (options.Tools is { Count: > 0 })
+        var prepared = PrepareResponsesTools(options.Tools, options.ToolChoice);
+        if (prepared.Tools is { Count: > 0 })
         {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                tools.Add(new JsonObject
-                {
-                    ["type"] = "function",
-                    ["name"] = tool.Name,
-                    ["description"] = tool.Description,
-                    ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                });
-            }
-
-            body["tools"] = tools;
+            body["tools"] = prepared.Tools;
         }
 
         return body;
+    }
+
+    /// <summary>
+    /// Prepares Responses function tools. Strict is false unless the tool sets <see cref="LanguageModelTool.Strict"/>.
+    /// </summary>
+    public static PreparedResponsesTools PrepareResponsesTools(IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice)
+    {
+        if (tools == null || tools.Count == 0)
+        {
+            return new PreparedResponsesTools(null, null, Array.Empty<CallWarning>());
+        }
+
+        var prepared = new JsonArray();
+        foreach (var tool in tools)
+        {
+            prepared.Add(new JsonObject
+            {
+                ["type"] = "function",
+                ["name"] = tool.Name,
+                ["description"] = tool.Description,
+                ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+                ["strict"] = tool.Strict ?? false,
+            });
+        }
+
+        return new PreparedResponsesTools(prepared, toolChoice, Array.Empty<CallWarning>());
     }
 
     private static LanguageModelGenerateResult Parse(System.Text.Json.JsonElement root)

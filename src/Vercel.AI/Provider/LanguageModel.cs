@@ -344,7 +344,7 @@ public sealed class LanguageModelTool
     /// <summary>JSON Schema for the arguments.</summary>
     public JsonElement InputSchema { get; }
 
-    /// <summary>Whether the provider should use strict tool arguments.</summary>
+    /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
     public bool? Strict { get; }
 }
 
