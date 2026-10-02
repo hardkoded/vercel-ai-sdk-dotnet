@@ -405,9 +405,9 @@
       "title": "Cover upstream unit tests: azure",
       "dotnetProject": "Vercel.AI.Azure",
       "inScope": 66,
-      "covered": 0,
+      "covered": 43,
       "partial": 0,
-      "missing": 66,
+      "missing": 23,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/70"
     },
     {
@@ -465,9 +465,9 @@
       "title": "Cover upstream unit tests: cohere",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 68,
-      "covered": 0,
+      "covered": 66,
       "partial": 0,
-      "missing": 68,
+      "missing": 2,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/76"
     },
     {
@@ -475,9 +475,9 @@
       "title": "Cover upstream unit tests: cohere/reranking",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/77"
     },
     {
@@ -1115,9 +1115,9 @@
       "title": "Cover upstream unit tests: provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 650,
-      "covered": 0,
+      "covered": 369,
       "partial": 0,
-      "missing": 650,
+      "missing": 281,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/141"
     },
     {
@@ -1135,9 +1135,9 @@
       "title": "Cover upstream unit tests: provider-utils/to-json-schema/zod3-to-json-schema/parsers",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 109,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 109,
+      "missing": 103,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/143"
     },
     {
@@ -1145,9 +1145,9 @@
       "title": "Cover upstream unit tests: provider-utils/types",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/144"
     },
     {

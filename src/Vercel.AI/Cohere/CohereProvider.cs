@@ -1,9 +1,8 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -18,6 +17,12 @@ public sealed class CohereOptions
 
     /// <summary>Explicit key.</summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>Headers added to every request.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    /// <summary>Supplies citation ids. A null value uses <c>id-0</c>, <c>id-1</c>, and so on.</summary>
+    public Func<string>? GenerateId { get; set; }
 }
 
 /// <summary>Cohere provider for chat, embeddings, and rerank.</summary>
@@ -26,12 +31,18 @@ public sealed class CohereProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderName = "cohere";
 
+    /// <summary>User-Agent product sent when the caller does not set one.</summary>
+    public const string UserAgent = "ai-sdk/cohere/0.0.0-test";
+
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public CohereProvider(HttpClient httpClient, CohereOptions? options = null)
         : base(ProviderName)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         Options = options ?? new CohereOptions();
-        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        Http = new ProviderHttp(_httpClient);
     }
 
     /// <summary>Options.</summary>
@@ -56,222 +67,101 @@ public sealed class CohereProvider : ProviderBase
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId) => new CohereRerankingModel(this, modelId);
 
-    internal Dictionary<string, string?> Headers()
+    /// <summary>Merges provider headers, caller headers, and the bearer token.</summary>
+    public Dictionary<string, string?> CreateHeaders(IReadOnlyDictionary<string, string?>? requestHeaders)
     {
-        return new Dictionary<string, string?>
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        Copy(Options.Headers, headers);
+        headers["Authorization"] = "Bearer " + ApiKeys.Require(Options.ApiKey, "COHERE_API_KEY");
+        Copy(requestHeaders, headers);
+        if (!headers.TryGetValue("User-Agent", out var userAgent) || string.IsNullOrEmpty(userAgent))
         {
-            ["Authorization"] = "Bearer " + ApiKeys.Require(Options.ApiKey, "COHERE_API_KEY"),
-        };
-    }
-}
-
-/// <summary>Cohere v2 chat model.</summary>
-public sealed class CohereLanguageModel : ILanguageModel
-{
-    private readonly CohereProvider _provider;
-
-    /// <summary>Creates a model.</summary>
-    public CohereLanguageModel(CohereProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => CohereProvider.ProviderName;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "chat"), Build(options).ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
-    }
-
-    /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
-        {
-            yield return new TextDeltaStreamPart("text", result.Text);
+            headers["User-Agent"] = UserAgent;
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        return headers;
     }
 
-    private JsonObject Build(LanguageModelCallOptions options)
+    internal async Task<ProviderTextResponse> PostJsonAsync(Uri uri, string json, IReadOnlyDictionary<string, string?>? requestHeaders, CancellationToken cancellationToken)
     {
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
+        return await Http.SendJsonStringAsync(HttpMethod.Post, uri, json, CreateHeaders(requestHeaders), cancellationToken).ConfigureAwait(false);
+    }
+
+    internal async Task<HttpResponseMessage> SendStreamAsync(Uri uri, string json, IReadOnlyDictionary<string, string?>? requestHeaders, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+        Apply(request, CreateHeaders(requestHeaders));
+        request.Content = new StringContent(json ?? string.Empty, Encoding.UTF8, "application/json");
+        var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
         {
-            if (message is SystemModelMessage system)
+            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            response.Dispose();
+            throw ProviderHttp.MapStatus((int)response.StatusCode, body);
+        }
+
+        return response;
+    }
+
+    internal static Dictionary<string, string> CopyResponseHeaders(HttpResponseMessage response)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers)
+        {
+            headers[header.Key] = string.Join(",", header.Value);
+        }
+
+        if (response.Content != null)
+        {
+            foreach (var header in response.Content.Headers)
             {
-                messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
+                headers[header.Key] = string.Join(",", header.Value);
             }
-            else if (message is UserModelMessage user)
+        }
+
+        return headers;
+    }
+
+    private static void Copy(IReadOnlyDictionary<string, string?>? source, Dictionary<string, string?> target)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        foreach (var pair in source)
+        {
+            target[pair.Key] = pair.Value;
+        }
+    }
+
+    private static void Apply(HttpRequestMessage request, IReadOnlyDictionary<string, string?> headers)
+    {
+        foreach (var pair in headers)
+        {
+            if (string.IsNullOrEmpty(pair.Value) || pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
             {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
+                continue;
+            }
+
+            if (pair.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+            {
+                var value = pair.Value!;
+                var space = value.IndexOf(' ');
+                if (space > 0)
                 {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
+                    request.Headers.Authorization = new AuthenticationHeaderValue(value.Substring(0, space), value.Substring(space + 1));
+                }
+                else
+                {
+                    request.Headers.TryAddWithoutValidation("Authorization", value);
                 }
 
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistant.Text });
-            }
-        }
-
-        var body = new JsonObject { ["model"] = ModelId, ["messages"] = messages };
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        if (options.MaxOutputTokens is { } max)
-        {
-            body["max_tokens"] = max;
-        }
-
-        return body;
-    }
-
-    private static LanguageModelGenerateResult Parse(JsonElement root)
-    {
-        var text = new StringBuilder();
-        if (root.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var part in content.EnumerateArray())
-            {
-                if (part.TryGetProperty("text", out var partText))
-                {
-                    text.Append(partText.GetString());
-                }
-            }
-        }
-        else if (root.TryGetProperty("text", out var legacy))
-        {
-            text.Append(legacy.GetString());
-        }
-
-        var raw = root.TryGetProperty("finish_reason", out var finish) ? finish.GetString() : "COMPLETE";
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(text.ToString()) }, FinishReasons.Parse(raw), LanguageModelUsage.Empty, raw);
-    }
-}
-
-/// <summary>Cohere embedding model.</summary>
-public sealed class CohereEmbeddingModel : IEmbeddingModel
-{
-    private readonly CohereProvider _provider;
-
-    /// <summary>Creates an embedding model.</summary>
-    public CohereEmbeddingModel(CohereProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => CohereProvider.ProviderName;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
-    {
-        var texts = new JsonArray();
-        foreach (var value in values)
-        {
-            texts.Add(value);
-        }
-
-        var body = new JsonObject { ["model"] = ModelId, ["texts"] = texts, ["input_type"] = "search_document" };
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
-        var root = document.RootElement;
-        JsonElement vectorsElement;
-        if (root.TryGetProperty("embeddings", out var embeddings) && embeddings.ValueKind == JsonValueKind.Object && embeddings.TryGetProperty("float", out var floats))
-        {
-            vectorsElement = floats;
-        }
-        else
-        {
-            vectorsElement = root.GetProperty("embeddings");
-        }
-
-        var vectors = new List<float[]>();
-        foreach (var embedding in vectorsElement.EnumerateArray())
-        {
-            var vector = new float[embedding.GetArrayLength()];
-            var index = 0;
-            foreach (var number in embedding.EnumerateArray())
-            {
-                vector[index++] = number.GetSingle();
+                continue;
             }
 
-            vectors.Add(vector);
+            request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
         }
-
-        return new EmbeddingResult(vectors, null);
-    }
-}
-
-/// <summary>Cohere rerank model.</summary>
-public sealed class CohereRerankingModel : IRerankingModel
-{
-    private readonly CohereProvider _provider;
-
-    /// <summary>Creates a reranking model.</summary>
-    public CohereRerankingModel(CohereProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string Provider => CohereProvider.ProviderName;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
-    {
-        var docs = new JsonArray();
-        foreach (var document in documents)
-        {
-            docs.Add(document);
-        }
-
-        var body = new JsonObject { ["model"] = ModelId, ["query"] = query, ["documents"] = docs };
-        if (topN is { } top)
-        {
-            body["top_n"] = top;
-        }
-
-        using var response = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "rerank"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
-        var items = new List<RerankItem>();
-        foreach (var item in response.RootElement.GetProperty("results").EnumerateArray())
-        {
-            var score = item.TryGetProperty("relevance_score", out var relevance) ? relevance.GetDouble() : 0;
-            items.Add(new RerankItem(item.GetProperty("index").GetInt32(), score));
-        }
-
-        return new RerankResult(items);
     }
 }
 

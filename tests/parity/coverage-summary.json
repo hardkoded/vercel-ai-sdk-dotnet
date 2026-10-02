@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 1775,
+  "covered": 2278,
   "partial": 15,
-  "missing": 9279,
+  "missing": 8776,
   "features": [
     {
       "feature": "ai/agent",
@@ -331,9 +331,9 @@
       "feature": "azure",
       "dotnetProject": "Vercel.AI.Azure",
       "inScope": 66,
-      "covered": 0,
+      "covered": 43,
       "partial": 0,
-      "missing": 66
+      "missing": 23
     },
     {
       "feature": "baseten",
@@ -379,17 +379,17 @@
       "feature": "cohere",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 68,
-      "covered": 0,
+      "covered": 66,
       "partial": 0,
-      "missing": 68
+      "missing": 2
     },
     {
       "feature": "cohere/reranking",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12
+      "missing": 0
     },
     {
       "feature": "deepgram",
@@ -899,9 +899,9 @@
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 650,
-      "covered": 0,
+      "covered": 369,
       "partial": 0,
-      "missing": 650
+      "missing": 281
     },
     {
       "feature": "provider-utils/to-json-schema/zod3-to-json-schema",
@@ -915,17 +915,17 @@
       "feature": "provider-utils/to-json-schema/zod3-to-json-schema/parsers",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 109,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 109
+      "missing": 103
     },
     {
       "feature": "provider-utils/types",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "provider/errors",

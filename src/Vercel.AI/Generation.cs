@@ -273,6 +273,11 @@ internal static class Generation
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 
+            if (options.OnFinish != null)
+            {
+                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
+            }
+
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
             buffer.Complete();
             textSource.TrySetResult(result.Text);
@@ -282,10 +287,6 @@ internal static class Generation
             stepsSource.TrySetResult(result.Steps);
             sourcesSource.TrySetResult(result.Sources);
             finalStepSource.TrySetResult(result.FinalStep);
-            if (options.OnFinish != null)
-            {
-                await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
-            }
         }
         catch (Exception exception)
         {
