@@ -26,6 +26,28 @@ public sealed class OpenAICompatibleToolStreamTests
     }
 
     [Fact]
+    public async Task ShouldKeepIdLessToolCallsDistinctWhenTheIndexIsReused()
+    {
+        var calls = await ReadTools(
+            Chunk(Tool(0, null, "read_file", "{\"path\":\"p0\"}")) +
+            Chunk(Tool(0, null, "write_file", "{\"path\":\"p1\"}")) +
+            Chunk(Tool(0, null, "read_file", "{\"path\":\"p2\"}")) +
+            Done());
+
+        Assert.Equal(3, calls.Count);
+        Assert.Equal("read_file", calls[0].ToolName);
+        Assert.Equal("{\"path\":\"p0\"}", calls[0].ArgumentsJson);
+        Assert.Equal("write_file", calls[1].ToolName);
+        Assert.Equal("{\"path\":\"p1\"}", calls[1].ArgumentsJson);
+        Assert.Equal("read_file", calls[2].ToolName);
+        Assert.Equal("{\"path\":\"p2\"}", calls[2].ArgumentsJson);
+        Assert.False(string.IsNullOrWhiteSpace(calls[0].ToolCallId));
+        Assert.False(string.IsNullOrWhiteSpace(calls[1].ToolCallId));
+        Assert.False(string.IsNullOrWhiteSpace(calls[2].ToolCallId));
+        Assert.Equal(3, new HashSet<string> { calls[0].ToolCallId, calls[1].ToolCallId, calls[2].ToolCallId }.Count);
+    }
+
+    [Fact]
     public async Task Reused_index_with_a_new_name_stays_a_separate_call()
     {
         var calls = await ReadTools(
