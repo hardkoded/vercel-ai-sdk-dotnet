@@ -35,7 +35,7 @@ def unescape(value: str) -> str:
 
 def load_links() -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
-    for path in sorted(TEST_DIR.glob("*.cs")):
+    for path in sorted(TEST_DIR.rglob("*.cs")):
         text = path.read_text(encoding="utf-8")
         class_name = "Tests"
         cursor = 0
