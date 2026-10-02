@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 
@@ -12,7 +13,10 @@ public sealed class AzureOpenAIOptions
     /// <summary>Resource host, for example <c>https://my-resource.openai.azure.com</c>.</summary>
     public string? BaseUrl { get; set; }
 
-    /// <summary>Resource name used when <see cref="BaseUrl"/> is empty.</summary>
+    /// <summary>
+    /// Resource name used when <see cref="BaseUrl"/> is empty.
+    /// Must be a single DNS label (letters, digits, and hyphens).
+    /// </summary>
     public string? ResourceName { get; set; }
 
     /// <summary>Explicit key. Falls back to <c>AZURE_API_KEY</c>.</summary>
@@ -27,6 +31,11 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "azure";
+
+    // $ can succeed before a trailing newline, so the match must cover the whole value.
+    private static readonly Regex HostnamePart = new(
+        "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     /// <summary>Creates a provider.</summary>
     public AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options = null)
@@ -44,8 +53,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options)
     {
         options ??= new AzureOpenAIOptions();
-        var resource = options.ResourceName ?? "resource";
-        var baseUrl = string.IsNullOrEmpty(options.BaseUrl) ? "https://" + resource + ".openai.azure.com" : options.BaseUrl!;
+        var baseUrl = ResolveBaseUrl(options);
         return new OpenAICompatibleOptions
         {
             ProviderName = ProviderId,
@@ -58,6 +66,32 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             SupportsEmbeddings = true,
             SupportsImages = false,
         };
+    }
+
+    private static string ResolveBaseUrl(AzureOpenAIOptions options)
+    {
+        if (!string.IsNullOrEmpty(options.BaseUrl))
+        {
+            return options.BaseUrl;
+        }
+
+        // ResourceName is concatenated into the host. A value such as
+        // user@internal:8080/# would send the request somewhere else.
+        var resource = options.ResourceName ?? "resource";
+        if (!IsValidHostnamePart(resource))
+        {
+            throw new ArgumentException(
+                "An Azure resource name must be a single DNS label (letters, digits, and hyphens). Custom endpoints belong in BaseUrl.",
+                nameof(options.ResourceName));
+        }
+
+        return "https://" + resource + ".openai.azure.com";
+    }
+
+    private static bool IsValidHostnamePart(string value)
+    {
+        var match = HostnamePart.Match(value);
+        return match.Success && match.Value == value;
     }
 }
 
