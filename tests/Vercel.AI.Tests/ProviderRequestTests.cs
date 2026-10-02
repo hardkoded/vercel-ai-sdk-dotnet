@@ -62,6 +62,29 @@ public sealed class ProviderRequestTests
     }
 
     [Fact]
+    public async Task Perplexity_sends_integration_attribution()
+    {
+        var handler = new ScriptedHandler();
+        var provider = PerplexityProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("vercel-ai-sdk", handler.Headers["X-Pplx-Integration"]);
+
+        var customHandler = new ScriptedHandler();
+        var options = new OpenAICompatibleOptions { ApiKey = "secret" };
+        options.Headers["X-Pplx-Integration"] = "custom";
+        var custom = PerplexityProvider.Create(options, customHandler);
+        await custom.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("custom", customHandler.Headers["X-Pplx-Integration"]);
+
+        var mixedCaseHandler = new ScriptedHandler();
+        var mixedCase = new OpenAICompatibleOptions { ApiKey = "secret" };
+        mixedCase.Headers["x-pplx-integration"] = "custom";
+        var mixed = PerplexityProvider.Create(mixedCase, mixedCaseHandler);
+        await mixed.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("custom", mixedCaseHandler.Headers["X-Pplx-Integration"]);
+    }
+
+    [Fact]
     public async Task Gateway_sends_the_v4_specification_header()
     {
         var handler = new ScriptedHandler();
