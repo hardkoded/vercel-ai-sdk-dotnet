@@ -263,11 +263,12 @@ public abstract class ToolChoice
 public sealed class LanguageModelTool
 {
     /// <summary>Creates a function tool.</summary>
-    public LanguageModelTool(string name, string? description, JsonElement inputSchema)
+    public LanguageModelTool(string name, string? description, JsonElement inputSchema, bool? strict = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description;
         InputSchema = inputSchema;
+        Strict = strict;
     }
 
     /// <summary>Tool name.</summary>
@@ -278,6 +279,9 @@ public sealed class LanguageModelTool
 
     /// <summary>JSON Schema for the arguments.</summary>
     public JsonElement InputSchema { get; }
+
+    /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
+    public bool? Strict { get; }
 }
 
 /// <summary>A prompt message.</summary>

@@ -10,12 +10,13 @@ namespace Vercel.AI;
 public sealed class Tool
 {
     /// <summary>Creates a function tool.</summary>
-    public Tool(string name, string? description, JsonElement inputSchema, Func<JsonElement, CancellationToken, Task<string>>? execute)
+    public Tool(string name, string? description, JsonElement inputSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description;
         InputSchema = inputSchema;
         Execute = execute;
+        Strict = strict;
     }
 
     /// <summary>Tool name.</summary>
@@ -30,11 +31,14 @@ public sealed class Tool
     /// <summary>Executes the tool and returns a JSON string. Null means the call is not executed locally.</summary>
     public Func<JsonElement, CancellationToken, Task<string>>? Execute { get; }
 
+    /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
+    public bool? Strict { get; }
+
     /// <summary>Creates a tool from a JSON schema string.</summary>
-    public static Tool Function(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute)
+    public static Tool Function(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(jsonSchema) ? "{}" : jsonSchema);
-        return new Tool(name, description, document.RootElement.Clone(), execute);
+        return new Tool(name, description, document.RootElement.Clone(), execute, strict);
     }
 }
 

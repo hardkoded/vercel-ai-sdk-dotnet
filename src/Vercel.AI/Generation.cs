@@ -377,7 +377,7 @@ internal static class Generation
                 continue;
             }
 
-            tools.Add(new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema));
+            tools.Add(new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict));
         }
 
         return tools;
