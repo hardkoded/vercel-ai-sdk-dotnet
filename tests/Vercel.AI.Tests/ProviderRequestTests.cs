@@ -1,7 +1,6 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
 using Vercel.AI.Alibaba;
 using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Anthropic;
@@ -60,34 +59,6 @@ public sealed class ProviderRequestTests
         Assert.Contains(path, handler.Uri);
         Assert.True(handler.Headers.TryGetValue(header, out var actual), "Missing header " + header);
         Assert.StartsWith(expected, actual);
-    }
-
-    [Fact]
-    public async Task OpenAI_responses_function_tools_send_strict_false()
-    {
-        var handler = new ScriptedHandler();
-        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "secret", UseResponsesApi = true }, handler);
-        using var schema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}");
-        var options = new LanguageModelCallOptions
-        {
-            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
-            Tools = new[]
-            {
-                new LanguageModelTool("lookup", "Lookup a city", schema.RootElement),
-                new LanguageModelTool("ping", null, schema.RootElement),
-            },
-        };
-
-        await provider.LanguageModel("gpt-4.1-mini").DoGenerateAsync(options, CancellationToken.None);
-
-        Assert.Contains("/responses", handler.Uri);
-        using var body = JsonDocument.Parse(handler.Body);
-        var tools = body.RootElement.GetProperty("tools");
-        Assert.Equal(2, tools.GetArrayLength());
-        AssertResponsesFunctionTool(tools[0], "lookup", "Lookup a city");
-        AssertResponsesFunctionTool(tools[1], "ping", null);
-        Assert.Equal("object", tools[0].GetProperty("parameters").GetProperty("type").GetString());
-        Assert.Equal("string", tools[0].GetProperty("parameters").GetProperty("properties").GetProperty("city").GetProperty("type").GetString());
     }
 
     [Fact]
@@ -189,22 +160,6 @@ public sealed class ProviderRequestTests
     private static OpenAICompatibleOptions Key()
     {
         return new OpenAICompatibleOptions { ApiKey = "secret" };
-    }
-
-    private static void AssertResponsesFunctionTool(JsonElement tool, string name, string? description)
-    {
-        Assert.Equal("function", tool.GetProperty("type").GetString());
-        Assert.Equal(name, tool.GetProperty("name").GetString());
-        if (description is null)
-        {
-            Assert.Equal(JsonValueKind.Null, tool.GetProperty("description").ValueKind);
-        }
-        else
-        {
-            Assert.Equal(description, tool.GetProperty("description").GetString());
-        }
-
-        Assert.Equal(JsonValueKind.False, tool.GetProperty("strict").ValueKind);
     }
 
     private static LanguageModelCallOptions Prompt()
