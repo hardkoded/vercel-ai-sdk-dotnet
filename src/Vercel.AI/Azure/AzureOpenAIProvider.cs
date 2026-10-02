@@ -32,9 +32,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// <summary>Provider id.</summary>
     public const string ProviderId = "azure";
 
-    // \z is the absolute end. $ would also match before a trailing newline.
-    private static readonly Regex DnsLabel = new(
-        "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\z",
+    // $ can succeed before a trailing newline, so the match must cover the whole value.
+    private static readonly Regex HostnamePart = new(
+        "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     /// <summary>Creates a provider.</summary>
@@ -78,7 +78,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         // ResourceName is concatenated into the host. A value such as
         // user@internal:8080/# would send the request somewhere else.
         var resource = options.ResourceName ?? "resource";
-        if (!DnsLabel.IsMatch(resource))
+        if (!IsValidHostnamePart(resource))
         {
             throw new ArgumentException(
                 "An Azure resource name must be a single DNS label (letters, digits, and hyphens). Custom endpoints belong in BaseUrl.",
@@ -86,6 +86,12 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         }
 
         return "https://" + resource + ".openai.azure.com";
+    }
+
+    private static bool IsValidHostnamePart(string value)
+    {
+        var match = HostnamePart.Match(value);
+        return match.Success && match.Value == value;
     }
 }
 

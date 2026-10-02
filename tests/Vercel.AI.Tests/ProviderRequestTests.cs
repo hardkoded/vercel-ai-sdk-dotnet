@@ -61,15 +61,25 @@ public sealed class ProviderRequestTests
         Assert.StartsWith(expected, actual);
     }
 
-    [Fact]
-    public void Azure_rejects_a_resource_name_that_would_rewrite_the_host()
+    [Theory]
+    [InlineData("resource\n")]
+    [InlineData("resource\r")]
+    [InlineData("resource.example")]
+    [InlineData("-resource")]
+    [InlineData("resource-")]
+    [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("")]
+    [InlineData("user@internal:8080/#")]
+    [InlineData("169.254.169.254:80/x#")]
+    [InlineData("evil.example.com/#")]
+    public void RejectsBeforeSendingARequest(string resourceName)
     {
         var handler = new ScriptedHandler();
         var exception = Assert.Throws<ArgumentException>(() =>
             AzureOpenAIProvider.Create(new AzureOpenAIOptions
             {
                 ApiKey = "secret",
-                ResourceName = "user@internal:8080/#",
+                ResourceName = resourceName,
             }, handler));
         Assert.Contains("DNS label", exception.Message);
         Assert.Contains("BaseUrl", exception.Message);
@@ -77,17 +87,31 @@ public sealed class ProviderRequestTests
     }
 
     [Fact]
-    public async Task Azure_ignores_resource_name_when_base_url_is_set()
+    public async Task AcceptsADnsLabelResourceName()
     {
         var handler = new ScriptedHandler();
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
         {
             ApiKey = "secret",
-            ResourceName = "user@internal:8080/#",
-            BaseUrl = "https://proxy.example",
+            ResourceName = "my-resource",
         }, handler);
         await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
-        Assert.Contains("https://proxy.example/", handler.Uri);
+        Assert.Contains("https://my-resource.openai.azure.com/", handler.Uri);
+        Assert.Equal(1, handler.Calls);
+    }
+
+    [Fact]
+    public async Task DoesNotValidateAnUnusedResourceNameWithACustomEndpoint()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
+        {
+            ApiKey = "secret",
+            ResourceName = "not a resource",
+            BaseUrl = "https://proxy.example/openai",
+        }, handler);
+        await provider.LanguageModel("m").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Contains("https://proxy.example/openai/", handler.Uri);
         Assert.Equal(1, handler.Calls);
     }
 
