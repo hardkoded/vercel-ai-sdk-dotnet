@@ -49,7 +49,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var body = BuildBody(options, stream: true);
-        var toolCalls = new SortedDictionary<int, ToolAccumulator>();
+        var toolCalls = new StreamingToolCallTracker();
         string? finishRaw = null;
         LanguageModelUsage? usage = null;
         await foreach (var data in _provider.Http.SendSseAsync(
@@ -112,52 +112,17 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             {
                 foreach (var item in toolDeltas)
                 {
-                    if (item is not JsonObject tool)
+                    if (item is JsonObject tool)
                     {
-                        continue;
-                    }
-
-                    var index = 0;
-                    if (tool["index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out var parsedIndex))
-                    {
-                        index = parsedIndex;
-                    }
-                    if (!toolCalls.TryGetValue(index, out var accumulator))
-                    {
-                        accumulator = new ToolAccumulator();
-                        toolCalls[index] = accumulator;
-                    }
-
-                    var id = AsString(tool["id"]);
-                    if (!string.IsNullOrEmpty(id))
-                    {
-                        accumulator.Id = id;
-                    }
-
-                    if (tool["function"] is JsonObject function)
-                    {
-                        var name = AsString(function["name"]);
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            accumulator.Name = (accumulator.Name ?? string.Empty) + name;
-                        }
-
-                        var arguments = AsString(function["arguments"]);
-                        if (!string.IsNullOrEmpty(arguments))
-                        {
-                            accumulator.Arguments.Append(arguments);
-                        }
+                        toolCalls.ProcessDelta(ReadToolDelta(tool));
                     }
                 }
             }
         }
 
-        foreach (var pair in toolCalls)
+        foreach (var call in toolCalls.Flush())
         {
-            yield return new ToolCallStreamPart(
-                pair.Value.Id ?? ("call_" + pair.Key),
-                pair.Value.Name ?? string.Empty,
-                pair.Value.Arguments.ToString());
+            yield return call;
         }
 
         yield return new FinishStreamPart(FinishReasons.Parse(finishRaw), usage ?? LanguageModelUsage.Empty, finishRaw);
@@ -466,12 +431,25 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return null;
     }
 
-    private sealed class ToolAccumulator
+    private static StreamingToolCallDelta ReadToolDelta(JsonObject tool)
     {
-        public string? Id { get; set; }
+        int? index = null;
+        if (tool["index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out var parsedIndex))
+        {
+            index = parsedIndex;
+        }
 
-        public string? Name { get; set; }
+        string? name = null;
+        string? arguments = null;
+        if (tool["function"] is JsonObject function)
+        {
+            name = AsString(function["name"]);
+            if (function["arguments"] is JsonValue argumentValue && argumentValue.TryGetValue<string>(out var argumentText))
+            {
+                arguments = argumentText;
+            }
+        }
 
-        public StringBuilder Arguments { get; } = new();
+        return new StreamingToolCallDelta(index, AsString(tool["id"]), name, arguments);
     }
 }
