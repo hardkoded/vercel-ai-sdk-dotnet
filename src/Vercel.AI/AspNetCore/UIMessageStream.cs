@@ -94,126 +94,235 @@ public sealed class UIMessageStreamResult : IResult
         ValidateKeepAlive(keepAliveMs);
 
         using var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        if (keepAliveMs is int)
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, cancellationToken), keepAliveMs, cancellationToken);
+        await foreach (var chunk in chunks.ConfigureAwait(false))
         {
-            await WriteCommentAsync(writer, StreamOpenComment, cancellationToken).ConfigureAwait(false);
+            await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Wraps an SSE chunk stream with optional idle comments.
+    /// A null interval returns <paramref name="source"/> unchanged.
+    /// </summary>
+    internal static IAsyncEnumerable<string> CreateSseStreamWithKeepAlive(
+        IAsyncEnumerable<string> source,
+        int? keepAliveMs,
+        CancellationToken cancellationToken = default)
+    {
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
         }
 
+        if (keepAliveMs is null)
+        {
+            return source;
+        }
+
+        ValidateKeepAlive(keepAliveMs);
+        return KeepAlive(source, keepAliveMs.Value, cancellationToken);
+    }
+
+    private static async IAsyncEnumerable<string> ReadSseChunks(
+        StreamTextResult result,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var messageId = JsonValues.GenerateId("msg_");
         var stepOpen = false;
         string? textId = null;
         string? reasoningId = null;
 
-        await SendAsync(writer, new JsonObject { ["type"] = "start", ["messageId"] = messageId }, cancellationToken).ConfigureAwait(false);
+        yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
 
-        IAsyncEnumerable<TextStreamPart> parts = keepAliveMs is int interval
-            ? ReadWithKeepAlive(result.Stream(cancellationToken), writer, interval, cancellationToken)
-            : result.Stream(cancellationToken);
-
-        await foreach (var part in parts.ConfigureAwait(false))
+        await foreach (var part in result.Stream(cancellationToken).ConfigureAwait(false))
         {
-            if (part is not StepFinishPart && part is not FinishPart && part is not ErrorPart)
+            if (part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && !stepOpen)
             {
-                stepOpen = await EnsureStepAsync(writer, stepOpen, cancellationToken).ConfigureAwait(false);
+                yield return Frame(new JsonObject { ["type"] = "start-step" });
+                stepOpen = true;
             }
 
             switch (part)
             {
                 case TextDeltaPart text:
-                    textId = await OpenAsync(writer, textId, "text-start", "text", cancellationToken).ConfigureAwait(false);
-                    await SendAsync(writer, new JsonObject { ["type"] = "text-delta", ["id"] = textId, ["delta"] = text.Text }, cancellationToken).ConfigureAwait(false);
+                    if (textId == null)
+                    {
+                        textId = "text";
+                        yield return Frame(new JsonObject { ["type"] = "text-start", ["id"] = textId });
+                    }
+
+                    yield return Frame(new JsonObject { ["type"] = "text-delta", ["id"] = textId, ["delta"] = text.Text });
                     break;
                 case ReasoningDeltaPart reasoning:
-                    reasoningId = await OpenAsync(writer, reasoningId, "reasoning-start", "reasoning", cancellationToken).ConfigureAwait(false);
-                    await SendAsync(writer, new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoningId, ["delta"] = reasoning.Text }, cancellationToken).ConfigureAwait(false);
+                    if (reasoningId == null)
+                    {
+                        reasoningId = "reasoning";
+                        yield return Frame(new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningId });
+                    }
+
+                    yield return Frame(new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoningId, ["delta"] = reasoning.Text });
                     break;
                 case ToolCallPart call:
-                    await SendAsync(
-                        writer,
-                        new JsonObject
-                        {
-                            ["type"] = "tool-input-available",
-                            ["toolCallId"] = call.ToolCall.ToolCallId,
-                            ["toolName"] = call.ToolCall.ToolName,
-                            ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
-                        },
-                        cancellationToken).ConfigureAwait(false);
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "tool-input-available",
+                        ["toolCallId"] = call.ToolCall.ToolCallId,
+                        ["toolName"] = call.ToolCall.ToolName,
+                        ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
+                    });
                     break;
                 case ToolResultPart toolResult:
                     if (toolResult.Result.IsError)
                     {
-                        await SendAsync(
-                            writer,
-                            new JsonObject
-                            {
-                                ["type"] = "tool-output-error",
-                                ["toolCallId"] = toolResult.Result.ToolCallId,
-                                ["errorText"] = toolResult.Result.OutputJson,
-                            },
-                            cancellationToken).ConfigureAwait(false);
+                        yield return Frame(new JsonObject
+                        {
+                            ["type"] = "tool-output-error",
+                            ["toolCallId"] = toolResult.Result.ToolCallId,
+                            ["errorText"] = toolResult.Result.OutputJson,
+                        });
                     }
                     else
                     {
-                        await SendAsync(
-                            writer,
-                            new JsonObject
-                            {
-                                ["type"] = "tool-output-available",
-                                ["toolCallId"] = toolResult.Result.ToolCallId,
-                                ["output"] = ParseJson(toolResult.Result.OutputJson),
-                            },
-                            cancellationToken).ConfigureAwait(false);
+                        yield return Frame(new JsonObject
+                        {
+                            ["type"] = "tool-output-available",
+                            ["toolCallId"] = toolResult.Result.ToolCallId,
+                            ["output"] = ParseJson(toolResult.Result.OutputJson),
+                        });
                     }
 
                     break;
                 case SourcePart source:
-                    await SendAsync(
-                        writer,
-                        new JsonObject
-                        {
-                            ["type"] = "source-url",
-                            ["sourceId"] = source.Source.Id,
-                            ["url"] = source.Source.Url,
-                            ["title"] = source.Source.Title,
-                        },
-                        cancellationToken).ConfigureAwait(false);
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "source-url",
+                        ["sourceId"] = source.Source.Id,
+                        ["url"] = source.Source.Url,
+                        ["title"] = source.Source.Title,
+                    });
                     break;
                 case StepFinishPart:
-                    textId = await CloseAsync(writer, textId, "text-end", cancellationToken).ConfigureAwait(false);
-                    reasoningId = await CloseAsync(writer, reasoningId, "reasoning-end", cancellationToken).ConfigureAwait(false);
+                    if (textId != null)
+                    {
+                        yield return Frame(new JsonObject { ["type"] = "text-end", ["id"] = textId });
+                        textId = null;
+                    }
+
+                    if (reasoningId != null)
+                    {
+                        yield return Frame(new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId });
+                        reasoningId = null;
+                    }
+
                     if (stepOpen)
                     {
-                        await SendAsync(writer, new JsonObject { ["type"] = "finish-step" }, cancellationToken).ConfigureAwait(false);
+                        yield return Frame(new JsonObject { ["type"] = "finish-step" });
                         stepOpen = false;
                     }
 
                     break;
                 case ErrorPart error:
-                    await SendAsync(writer, new JsonObject { ["type"] = "error", ["errorText"] = error.Message }, cancellationToken).ConfigureAwait(false);
+                    yield return Frame(new JsonObject { ["type"] = "error", ["errorText"] = error.Message });
                     break;
                 case FinishPart finish:
-                    textId = await CloseAsync(writer, textId, "text-end", cancellationToken).ConfigureAwait(false);
-                    reasoningId = await CloseAsync(writer, reasoningId, "reasoning-end", cancellationToken).ConfigureAwait(false);
+                    if (textId != null)
+                    {
+                        yield return Frame(new JsonObject { ["type"] = "text-end", ["id"] = textId });
+                        textId = null;
+                    }
+
+                    if (reasoningId != null)
+                    {
+                        yield return Frame(new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId });
+                        reasoningId = null;
+                    }
+
                     if (stepOpen)
                     {
-                        await SendAsync(writer, new JsonObject { ["type"] = "finish-step" }, cancellationToken).ConfigureAwait(false);
+                        yield return Frame(new JsonObject { ["type"] = "finish-step" });
                         stepOpen = false;
                     }
 
-                    await SendAsync(
-                        writer,
-                        new JsonObject
-                        {
-                            ["type"] = "finish",
-                            ["finishReason"] = finish.FinishReason.ToString().ToLowerInvariant(),
-                        },
-                        cancellationToken).ConfigureAwait(false);
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "finish",
+                        ["finishReason"] = finish.FinishReason.ToString().ToLowerInvariant(),
+                    });
                     break;
             }
         }
 
-        await writer.WriteAsync("data: [DONE]\n\n").ConfigureAwait(false);
-        await writer.FlushAsync().ConfigureAwait(false);
+        yield return "data: [DONE]\n\n";
+    }
+
+    private static async IAsyncEnumerable<string> KeepAlive(
+        IAsyncEnumerable<string> source,
+        int keepAliveMs,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var enumerator = source.GetAsyncEnumerator(cancellationToken);
+        Task<bool>? pending = null;
+        CancellationTokenSource? timer = null;
+        try
+        {
+            yield return StreamOpenComment;
+            pending = enumerator.MoveNextAsync().AsTask();
+            timer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            while (true)
+            {
+                while (!pending.IsCompleted)
+                {
+                    var delay = Task.Delay(keepAliveMs, timer!.Token);
+                    if (await Task.WhenAny(pending, delay).ConfigureAwait(false) == pending)
+                    {
+                        break;
+                    }
+
+                    cancellationToken.ThrowIfCancellationRequested();
+                    yield return KeepAliveComment;
+                }
+
+                var finished = timer;
+                timer = null;
+                finished!.Cancel();
+                finished.Dispose();
+
+                if (!await pending.ConfigureAwait(false))
+                {
+                    yield break;
+                }
+
+                var chunk = enumerator.Current;
+                yield return chunk;
+                pending = enumerator.MoveNextAsync().AsTask();
+                timer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            }
+        }
+        finally
+        {
+            if (timer != null)
+            {
+                timer.Cancel();
+                timer.Dispose();
+            }
+
+            if (pending != null && !pending.IsCompleted && cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await pending.ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // The in-flight read is observed before the source enumerator is disposed.
+                }
+            }
+
+            await enumerator.DisposeAsync().ConfigureAwait(false);
+            Observe(pending);
+        }
     }
 
     private static void ValidateKeepAlive(int? keepAliveMs)
@@ -233,74 +342,13 @@ public sealed class UIMessageStreamResult : IResult
         }
     }
 
-    private static async IAsyncEnumerable<TextStreamPart> ReadWithKeepAlive(
-        IAsyncEnumerable<TextStreamPart> source,
-        StreamWriter writer,
-        int keepAliveMs,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static void Observe(Task? pending)
     {
-        var enumerator = source.GetAsyncEnumerator(cancellationToken);
-        try
+        if (pending is null)
         {
-            while (await WaitForPartAsync(enumerator, writer, keepAliveMs, cancellationToken).ConfigureAwait(false))
-            {
-                yield return enumerator.Current;
-            }
-        }
-        finally
-        {
-            await enumerator.DisposeAsync().ConfigureAwait(false);
-        }
-    }
-
-    private static async Task<bool> WaitForPartAsync(
-        IAsyncEnumerator<TextStreamPart> enumerator,
-        StreamWriter writer,
-        int keepAliveMs,
-        CancellationToken cancellationToken)
-    {
-        var pending = enumerator.MoveNextAsync().AsTask();
-        using (var timer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-        {
-            try
-            {
-                while (!pending.IsCompleted)
-                {
-                    var delay = Task.Delay(keepAliveMs, timer.Token);
-                    if (await Task.WhenAny(pending, delay).ConfigureAwait(false) == pending)
-                    {
-                        break;
-                    }
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await WriteCommentAsync(writer, KeepAliveComment, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                try
-                {
-                    await pending.ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // The read is stopped; the caller still sees cancellation.
-                }
-
-                throw;
-            }
-            catch
-            {
-                Observe(pending);
-                throw;
-            }
+            return;
         }
 
-        return await pending.ConfigureAwait(false);
-    }
-
-    private static void Observe(Task pending)
-    {
         if (pending.IsCompleted)
         {
             _ = pending.Exception;
@@ -314,54 +362,9 @@ public sealed class UIMessageStreamResult : IResult
             TaskScheduler.Default);
     }
 
-    private static async Task WriteCommentAsync(StreamWriter writer, string comment, CancellationToken cancellationToken)
+    private static string Frame(JsonObject payload)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        await writer.WriteAsync(comment.AsMemory(), cancellationToken).ConfigureAwait(false);
-        await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<bool> EnsureStepAsync(StreamWriter writer, bool stepOpen, CancellationToken cancellationToken)
-    {
-        if (stepOpen)
-        {
-            return true;
-        }
-
-        await SendAsync(writer, new JsonObject { ["type"] = "start-step" }, cancellationToken).ConfigureAwait(false);
-        return true;
-    }
-
-    private static async Task<string> OpenAsync(StreamWriter writer, string? current, string type, string prefix, CancellationToken cancellationToken)
-    {
-        if (current != null)
-        {
-            return current;
-        }
-
-        var id = prefix;
-        await SendAsync(writer, new JsonObject { ["type"] = type, ["id"] = id }, cancellationToken).ConfigureAwait(false);
-        return id;
-    }
-
-    private static async Task<string?> CloseAsync(StreamWriter writer, string? current, string type, CancellationToken cancellationToken)
-    {
-        if (current is null)
-        {
-            return null;
-        }
-
-        await SendAsync(writer, new JsonObject { ["type"] = type, ["id"] = current }, cancellationToken).ConfigureAwait(false);
-        return null;
-    }
-
-    private static async Task SendAsync(StreamWriter writer, JsonObject payload, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        await writer.WriteAsync("data: ").ConfigureAwait(false);
-        await writer.WriteAsync(payload.ToJsonString()).ConfigureAwait(false);
-        await writer.WriteAsync("\n\n").ConfigureAwait(false);
-        await writer.FlushAsync().ConfigureAwait(false);
+        return "data: " + payload.ToJsonString() + "\n\n";
     }
 
     private static JsonNode ParseJson(string json)

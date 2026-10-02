@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.AspNetCore.Http;
@@ -51,7 +52,31 @@ public sealed class UIMessageStreamTests
     }
 
     [Fact]
-    public async Task Writes_opening_and_keep_alive_comments_while_the_source_is_idle()
+    public async Task ShouldPassThroughTheOriginalStreamWhenKeepAliveMsIsUndefined()
+    {
+        var source = new ChunkList("data");
+        Assert.Same(source, UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, null));
+
+        var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
+        var immediate = client.StreamTextAsync(new StreamTextOptions
+        {
+            Model = new TestLanguageModel
+            {
+                StreamParts = new LanguageModelStreamPart[]
+                {
+                    new TextDeltaStreamPart("text", "Hi"),
+                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+                },
+            },
+            Prompt = "hi",
+        });
+        using var plain = new MemoryStream();
+        await UIMessageStreamResult.WriteAsync(immediate, plain);
+        AssertNoCommentLines(Encoding.UTF8.GetString(plain.ToArray()));
+    }
+
+    [Fact]
+    public async Task ShouldSendAnOpeningCommentImmediatelyAndCommentsWhileTheSourceIsIdle()
     {
         var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
@@ -89,27 +114,69 @@ public sealed class UIMessageStreamTests
         var partAt = text.IndexOf("\"delta\":\"Later\"", StringComparison.Ordinal);
         Assert.True(openAt >= 0 && dataAt > openAt);
         Assert.True(keepAliveAt >= 0 && partAt > keepAliveAt);
-
-        var immediate = client.StreamTextAsync(new StreamTextOptions
-        {
-            Model = new TestLanguageModel
-            {
-                StreamParts = new LanguageModelStreamPart[]
-                {
-                    new TextDeltaStreamPart("text", "Hi"),
-                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
-                },
-            },
-            Prompt = "hi",
-        });
-        using var plain = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(immediate, plain);
-        AssertNoCommentLines(Encoding.UTF8.GetString(plain.ToArray()));
     }
 
     [Fact]
-    public async Task ToUIMessageStreamResult_writes_stream_open_before_events()
+    public async Task ShouldRetainOnePendingSourceReadAcrossManyIdleKeepAlives()
     {
+        var source = new PendingSource();
+        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 1).GetAsyncEnumerator();
+        try
+        {
+            Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
+            for (var i = 0; i < 2500; i++)
+            {
+                Assert.Equal(": keep-alive\n\n", await ReadChunk(enumerator));
+            }
+
+            Assert.Equal(1, source.Pulls);
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
+
+        Assert.Equal(1, source.Cancels);
+    }
+
+    [Fact]
+    public async Task ShouldResetTheKeepAliveTimerAfterSourceActivity()
+    {
+        var source = new GatedSource();
+        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 100).GetAsyncEnumerator();
+        try
+        {
+            Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
+            var next = ReadChunk(enumerator);
+            await Task.Delay(50);
+            Assert.False(next.IsCompleted);
+            source.Enqueue("data");
+            Assert.Equal("data", await next.WaitAsync(TimeSpan.FromSeconds(2)));
+
+            var started = Stopwatch.StartNew();
+            var keepAlive = ReadChunk(enumerator);
+            await Task.Delay(80);
+            Assert.False(keepAlive.IsCompleted);
+            Assert.Equal(": keep-alive\n\n", await keepAlive.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.InRange(started.ElapsedMilliseconds, 90, 2000);
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ShouldPreserveSourceChunksAndCompletion()
+    {
+        var actual = new List<string>();
+        await foreach (var chunk in UIMessageStreamResult.CreateSseStreamWithKeepAlive(new ChunkList("data 1", "data 2"), 100))
+        {
+            actual.Add(chunk);
+        }
+
+        Assert.Equal(new[] { ": stream-open\n\n", "data 1", "data 2" }, actual);
+
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
         var stream = client.StreamTextAsync(new StreamTextOptions
         {
@@ -155,8 +222,14 @@ public sealed class UIMessageStreamTests
     }
 
     [Fact]
-    public async Task Keep_alive_stops_when_cancellation_is_requested()
+    public async Task ShouldCancelTheSourceStream()
     {
+        var source = new PendingSource();
+        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 100).GetAsyncEnumerator();
+        Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
+        await enumerator.DisposeAsync();
+        Assert.Equal(1, source.Cancels);
+        Assert.Equal(0, source.Pulls);
         var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
         using var cts = new CancellationTokenSource();
@@ -177,6 +250,12 @@ public sealed class UIMessageStreamTests
         {
             release.TrySetResult(true);
         }
+    }
+
+    private static async Task<string> ReadChunk(IAsyncEnumerator<string> enumerator)
+    {
+        Assert.True(await enumerator.MoveNextAsync());
+        return enumerator.Current;
     }
 
     private static void AssertNoCommentLines(string text)
@@ -287,6 +366,150 @@ public sealed class UIMessageStreamTests
         {
             Write(buffer.Span);
             return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class ChunkList : IAsyncEnumerable<string>
+    {
+        private readonly string[] _chunks;
+
+        public ChunkList(params string[] chunks)
+        {
+            _chunks = chunks;
+        }
+
+        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return new Enumerator(_chunks);
+        }
+
+        private sealed class Enumerator : IAsyncEnumerator<string>
+        {
+            private readonly string[] _chunks;
+            private int _index = -1;
+
+            public Enumerator(string[] chunks)
+            {
+                _chunks = chunks;
+            }
+
+            public string Current => _chunks[_index];
+
+            public ValueTask<bool> MoveNextAsync()
+            {
+                _index++;
+                return new ValueTask<bool>(_index < _chunks.Length);
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                return default;
+            }
+        }
+    }
+
+    private sealed class PendingSource : IAsyncEnumerable<string>
+    {
+        private readonly TaskCompletionSource<bool> _never = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _pulls;
+        private int _cancels;
+
+        public int Pulls => Volatile.Read(ref _pulls);
+
+        public int Cancels => Volatile.Read(ref _cancels);
+
+        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return new Enumerator(this);
+        }
+
+        private sealed class Enumerator : IAsyncEnumerator<string>
+        {
+            private readonly PendingSource _owner;
+
+            public Enumerator(PendingSource owner)
+            {
+                _owner = owner;
+            }
+
+            public string Current => string.Empty;
+
+            public ValueTask<bool> MoveNextAsync()
+            {
+                Interlocked.Increment(ref _owner._pulls);
+                return new ValueTask<bool>(_owner._never.Task);
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                Interlocked.Increment(ref _owner._cancels);
+                _owner._never.TrySetCanceled();
+                return default;
+            }
+        }
+    }
+
+    private sealed class GatedSource : IAsyncEnumerable<string>
+    {
+        private readonly TaskCompletionSource<string> _chunk = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void Enqueue(string value)
+        {
+            _chunk.TrySetResult(value);
+        }
+
+        public IAsyncEnumerator<string> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            return new Enumerator(this, cancellationToken);
+        }
+
+        private sealed class Enumerator : IAsyncEnumerator<string>
+        {
+            private readonly GatedSource _owner;
+            private readonly CancellationTokenSource _cancellation;
+            private int _stage;
+
+            public Enumerator(GatedSource owner, CancellationToken cancellationToken)
+            {
+                _owner = owner;
+                _cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            }
+
+            public string Current { get; private set; } = string.Empty;
+
+            public async ValueTask<bool> MoveNextAsync()
+            {
+                if (_stage != 0)
+                {
+                    try
+                    {
+                        await Task.Delay(Timeout.Infinite, _cancellation.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return false;
+                    }
+
+                    return false;
+                }
+
+                _stage = 1;
+                try
+                {
+                    Current = await _owner._chunk.Task.WaitAsync(_cancellation.Token).ConfigureAwait(false);
+                    return true;
+                }
+                catch (OperationCanceledException)
+                {
+                    return false;
+                }
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                _cancellation.Cancel();
+                return default;
+            }
         }
     }
 }
