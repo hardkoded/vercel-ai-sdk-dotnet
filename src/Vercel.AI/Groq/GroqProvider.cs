@@ -51,7 +51,13 @@ public sealed class GroqProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.SupportsStructuredOutputs = true;
+        options.TransformRequestBody = OpenAICompatibleTransforms.Groq;
         return options;
     }
 }

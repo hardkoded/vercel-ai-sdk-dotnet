@@ -25,6 +25,12 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("ElevenLabs does not provide language models.");
+    }
+
     /// <summary>Creates a provider.</summary>
     public static new ElevenLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
@@ -56,9 +62,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         public string ModelId { get; }
         public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
         {
-            var voice = options.Voice ?? "default";
+            var voice = string.IsNullOrEmpty(options.Voice) ? "21m00Tcm4TlvDq8ikWAM" : options.Voice;
             var path = "/v1/text-to-speech/{voice}".Replace("{voice}", voice);
-            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId, ["model"] = ModelId };
+            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId };
             var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
             return new SpeechResult(bytes, "audio/mpeg");
         }

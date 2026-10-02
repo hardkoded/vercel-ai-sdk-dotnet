@@ -101,10 +101,6 @@ public sealed class CoreTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/ai/src/util/cosine-similarity.test.ts::should calculate cosine similarity correctly",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts identical vectors only.")]
     public void Cosine_similarity_of_the_same_vector_is_one()
     {
         var score = Ai.CosineSimilarity(new[] { 1f, 0f }, new[] { 1f, 0f });

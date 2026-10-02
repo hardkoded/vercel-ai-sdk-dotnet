@@ -100,7 +100,9 @@ public sealed class StepResult
         FinishReason finishReason,
         LanguageModelUsage usage,
         IReadOnlyList<GeneratedSource> sources,
-        JsonElement? providerMetadata = null)
+        JsonElement? providerMetadata = null,
+        IReadOnlyList<CallWarning>? warnings = null,
+        IReadOnlyList<GeneratedFile>? files = null)
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -110,6 +112,8 @@ public sealed class StepResult
         Usage = usage ?? LanguageModelUsage.Empty;
         Sources = sources ?? Array.Empty<GeneratedSource>();
         ProviderMetadata = providerMetadata;
+        Warnings = warnings ?? Array.Empty<CallWarning>();
+        Files = files ?? Array.Empty<GeneratedFile>();
     }
 
     /// <summary>Text generated in this step.</summary>
@@ -135,6 +139,12 @@ public sealed class StepResult
 
     /// <summary>Provider metadata for this step, including cost and native-tool counts when the provider sent them.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Warnings reported for this step.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
+
+    /// <summary>Files generated in this step.</summary>
+    public IReadOnlyList<GeneratedFile> Files { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -147,7 +157,7 @@ public abstract class StopCondition
 /// <summary>Stop-condition factories. Maps to <c>isStepCount</c>, <c>hasToolCall</c>, and <c>isLoopFinished</c>.</summary>
 public static class StopWhen
 {
-    /// <summary>Stops after <paramref name="count"/> steps.</summary>
+    /// <summary>Stops when the number of completed steps equals <paramref name="count"/>.</summary>
     public static StopCondition IsStepCount(int count)
     {
         if (count < 1)
@@ -164,10 +174,41 @@ public static class StopWhen
         return new HasToolCallCondition(toolNames ?? Array.Empty<string>());
     }
 
-    /// <summary>Stops when the latest step did not call a tool.</summary>
+    /// <summary>A stop condition that never stops the loop. The loop still ends when a step does not call a tool.</summary>
     public static StopCondition IsLoopFinished()
     {
         return new LoopFinishedCondition();
+    }
+
+    /// <summary>Returns true when any stop condition returns true. Maps to <c>isStopConditionMet</c>.</summary>
+    public static async Task<bool> IsStopConditionMet(IReadOnlyList<Func<IReadOnlyList<StepResult>, Task<bool>>> stopConditions, IReadOnlyList<StepResult> steps)
+    {
+        if (stopConditions is null)
+        {
+            throw new ArgumentNullException(nameof(stopConditions));
+        }
+
+        if (steps is null)
+        {
+            throw new ArgumentNullException(nameof(steps));
+        }
+
+        var tasks = new Task<bool>[stopConditions.Count];
+        for (var i = 0; i < stopConditions.Count; i++)
+        {
+            tasks[i] = stopConditions[i](steps);
+        }
+
+        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        foreach (var result in results)
+        {
+            if (result)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private sealed class StepCountCondition : StopCondition
@@ -181,7 +222,7 @@ public static class StopWhen
 
         public override bool ShouldStop(IReadOnlyList<StepResult> steps)
         {
-            return steps.Count >= _count;
+            return steps.Count == _count;
         }
     }
 
@@ -221,7 +262,8 @@ public static class StopWhen
     {
         public override bool ShouldStop(IReadOnlyList<StepResult> steps)
         {
-            return steps.Count > 0 && steps[steps.Count - 1].ToolCalls.Count == 0;
+            _ = steps;
+            return false;
         }
     }
 }
@@ -300,6 +342,9 @@ public sealed class PrepareStepUpdate
 
     /// <summary>Replacement model.</summary>
     public ILanguageModel? Model { get; set; }
+
+    /// <summary>Replacement tool choice for this step.</summary>
+    public ToolChoice? ToolChoice { get; set; }
 }
 
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
@@ -433,6 +478,30 @@ public sealed class GenerateTextResult
 
         ToolCalls = calls;
         ToolResults = results;
+        var warnings = new List<CallWarning>();
+        var files = new List<GeneratedFile>();
+        foreach (var step in Steps)
+        {
+            warnings.AddRange(step.Warnings);
+            files.AddRange(step.Files);
+        }
+
+        Warnings = warnings;
+        Files = files;
+    }
+
+    /// <summary>The last completed step.</summary>
+    public StepResult FinalStep
+    {
+        get
+        {
+            if (Steps.Count == 0)
+            {
+                throw new InvalidOperationException("GenerateTextResult has no steps.");
+            }
+
+            return Steps[Steps.Count - 1];
+        }
     }
 
     /// <summary>Text from the last step.</summary>
@@ -464,6 +533,12 @@ public sealed class GenerateTextResult
 
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Warnings from every step.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
+
+    /// <summary>Files from every step.</summary>
+    public IReadOnlyList<GeneratedFile> Files { get; }
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

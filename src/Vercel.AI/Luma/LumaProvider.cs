@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -18,10 +19,25 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.lumalabs.ai";
 
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public LumaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("Luma does not provide language models.");
+    }
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId)
+    {
+        throw new AiSdkException("Luma does not provide video models.");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -40,24 +56,38 @@ public sealed class LumaProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        options.UserAgent = ProviderExchange.UserAgent("luma");
         return options;
     }
 
     /// <inheritdoc />
-    public override IVideoModel VideoModel(string modelId) => new Video(this, modelId);
+    public override IImageModel ImageModel(string modelId) => new Image(this, modelId);
 
-    private sealed class Video : IVideoModel
+    /// <summary>Posts an image generation to Dream Machine.</summary>
+    public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    {
+        return new Image(this, modelId).GenerateAsync(options, headers, cancellationToken);
+    }
+
+    private sealed class Image : IImageModel
     {
         private readonly LumaProvider _provider;
-        public Video(LumaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "luma";
+        public Image(LumaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
+        public string Provider => "luma.image";
         public string ModelId { get; }
-        public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+        public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+        {
+            return GenerateAsync(options, null, cancellationToken);
+        }
+
+        public async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
         {
             var body = new JsonObject { ["prompt"] = options.Prompt, ["model"] = ModelId };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
+            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
+            var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations/image"), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new VideoResult(url, null, "video/mp4");
+            return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
         }
     }
 

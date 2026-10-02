@@ -1,10 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -25,6 +22,18 @@ public class GoogleOptions
 
     /// <summary>When set, requests use <c>Authorization: Bearer</c> instead of <c>x-goog-api-key</c>.</summary>
     public bool UseBearerToken { get; set; }
+
+    /// <summary>Extra headers merged into every request.</summary>
+    public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>User-Agent suffix. Defaults to <c>ai-sdk/google</c>.</summary>
+    public string UserAgent { get; set; } = "ai-sdk/google";
+
+    /// <summary>Id factory used for tool calls that the response does not identify.</summary>
+    public Func<string>? GenerateId { get; set; }
+
+    /// <summary>Embedding provider options read by <see cref="GoogleEmbeddingModel"/>.</summary>
+    public JsonElement? EmbeddingProviderOptions { get; set; }
 }
 
 /// <summary>Google Gemini provider.</summary>
@@ -35,10 +44,17 @@ public class GoogleProvider : ProviderBase
 
     /// <summary>Creates a provider.</summary>
     public GoogleProvider(HttpClient httpClient, GoogleOptions? options = null)
+        : this(httpClient, options, "google.generative-ai")
+    {
+    }
+
+    /// <summary>Creates a provider with an explicit model provider id.</summary>
+    protected GoogleProvider(HttpClient httpClient, GoogleOptions? options, string modelProvider)
         : base(ProviderName)
     {
         Options = options ?? new GoogleOptions();
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        ModelProvider = modelProvider ?? "google.generative-ai";
     }
 
     /// <summary>Options.</summary>
@@ -46,6 +62,12 @@ public class GoogleProvider : ProviderBase
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
+
+    /// <summary>Provider id recorded on models, such as <c>google.generative-ai</c> or <c>google.vertex.chat</c>.</summary>
+    public string ModelProvider { get; }
+
+    /// <summary>Clock used for response timestamps.</summary>
+    public Func<DateTimeOffset> Clock { get; set; } = () => DateTimeOffset.UtcNow;
 
     /// <summary>Creates a provider.</summary>
     public static GoogleProvider Create(GoogleOptions? options = null, HttpMessageHandler? handler = null)
@@ -60,377 +82,118 @@ public class GoogleProvider : ProviderBase
         return new GoogleLanguageModel(this, modelId);
     }
 
+    /// <summary>Language model that posts to the Interactions API.</summary>
+    public virtual ILanguageModel Interactions(string modelId)
+    {
+        return new GoogleInteractionsModel(this, modelId);
+    }
+
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
         return new GoogleEmbeddingModel(this, modelId);
     }
 
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new GoogleImageModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return new GoogleSpeechModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new GoogleTranscriptionModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override IRealtimeModel RealtimeModel(string modelId)
+    {
+        return new GoogleRealtimeModel(this, modelId);
+    }
+
+    /// <summary>Builds request headers. An API key is required.</summary>
     internal Dictionary<string, string?> Headers()
     {
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in Options.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        if (!ContainsKey(headers, "user-agent") && !string.IsNullOrEmpty(Options.UserAgent))
+        {
+            headers["user-agent"] = Options.UserAgent;
+        }
+
         var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
         if (Options.UseBearerToken)
         {
-            return new Dictionary<string, string?> { ["Authorization"] = "Bearer " + key };
+            if (!ContainsKey(headers, "Authorization"))
+            {
+                headers["Authorization"] = "Bearer " + key;
+            }
+        }
+        else if (!ContainsKey(headers, "x-goog-api-key"))
+        {
+            headers["x-goog-api-key"] = key;
         }
 
-        return new Dictionary<string, string?> { ["x-goog-api-key"] = key };
+        return headers;
+    }
+
+    private static bool ContainsKey(Dictionary<string, string?> headers, string name)
+    {
+        foreach (var key in headers.Keys)
+        {
+            if (string.Equals(key, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
-/// <summary>Gemini language model.</summary>
-public sealed class GoogleLanguageModel : ILanguageModel
+/// <summary>Realtime model. Event mapping is local; opening the Live socket is not available on this runtime.</summary>
+public sealed class GoogleRealtimeModel : IRealtimeModel
 {
     private readonly GoogleProvider _provider;
 
-    /// <summary>Creates a model.</summary>
-    public GoogleLanguageModel(GoogleProvider provider, string modelId)
+    /// <summary>Creates a realtime model.</summary>
+    public GoogleRealtimeModel(GoogleProvider provider, string modelId)
     {
         _provider = provider;
         ModelId = modelId;
     }
 
     /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => _provider.Name;
+    public string Provider
+    {
+        get { return _provider.ModelProvider; }
+    }
 
     /// <inheritdoc />
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Uri BuildUri()
     {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "models/" + ModelId + ":generateContent"),
-            Build(options).ToJsonString(),
-            _provider.Headers(),
-            cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
+        var key = _provider.Options.UseBearerToken ? null : _provider.Options.ApiKey;
+        return GoogleSpeechTranslation.WebSocketUrl(_provider.Options.BaseUrl, key);
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
-        LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
     {
-        await foreach (var data in _provider.Http.SendSseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "models/" + ModelId + ":streamGenerateContent?alt=sse"),
-            Build(options).ToJsonString(),
-            _provider.Headers(),
-            cancellationToken).ConfigureAwait(false))
-        {
-            JsonDocument document;
-            try
-            {
-                document = JsonDocument.Parse(data);
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
-
-            using (document)
-            {
-                var result = Parse(document.RootElement);
-                if (!string.IsNullOrEmpty(result.Text))
-                {
-                    yield return new TextDeltaStreamPart("text", result.Text);
-                }
-
-                foreach (var part in result.Content)
-                {
-                    if (part is GeneratedToolCall call)
-                    {
-                        yield return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson);
-                    }
-                }
-
-                yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
-            }
-        }
-    }
-
-    private JsonObject Build(LanguageModelCallOptions options)
-    {
-        var contents = new JsonArray();
-        JsonArray? system = null;
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage systemMessage)
-            {
-                system ??= new JsonArray();
-                system.Add(new JsonObject { ["text"] = systemMessage.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var parts = new JsonArray();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart text)
-                    {
-                        parts.Add(new JsonObject { ["text"] = text.Text });
-                    }
-                }
-
-                contents.Add(new JsonObject { ["role"] = "user", ["parts"] = parts });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var parts = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    parts.Add(new JsonObject { ["text"] = assistant.Text });
-                }
-
-                foreach (var call in assistant.ToolCalls)
-                {
-                    parts.Add(new JsonObject
-                    {
-                        ["functionCall"] = new JsonObject
-                        {
-                            ["name"] = call.ToolName,
-                            ["args"] = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson),
-                        },
-                    });
-                }
-
-                contents.Add(new JsonObject { ["role"] = "model", ["parts"] = parts });
-            }
-            else if (message is ToolModelMessage tool)
-            {
-                contents.Add(new JsonObject
-                {
-                    ["role"] = "user",
-                    ["parts"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["functionResponse"] = new JsonObject
-                            {
-                                ["name"] = tool.ToolName,
-                                ["response"] = new JsonObject { ["result"] = tool.OutputJson },
-                            },
-                        },
-                    },
-                });
-            }
-        }
-
-        var body = new JsonObject { ["contents"] = contents };
-        if (system != null)
-        {
-            body["systemInstruction"] = new JsonObject { ["parts"] = system };
-        }
-
-        var config = new JsonObject();
-        if (options.Temperature is { } temperature)
-        {
-            config["temperature"] = temperature;
-        }
-
-        if (options.MaxOutputTokens is { } max)
-        {
-            config["maxOutputTokens"] = max;
-        }
-
-        if (options.TopP is { } topP)
-        {
-            config["topP"] = topP;
-        }
-
-        if (options.TopK is { } topK)
-        {
-            config["topK"] = topK;
-        }
-
-        if (options.JsonSchema is { } schema)
-        {
-            config["responseMimeType"] = "application/json";
-            config["responseSchema"] = JsonNode.Parse(schema.GetRawText());
-        }
-
-        if (config.Count > 0)
-        {
-            body["generationConfig"] = config;
-        }
-
-        if (options.Tools is { Count: > 0 })
-        {
-            var declarations = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                declarations.Add(new JsonObject
-                {
-                    ["name"] = tool.Name,
-                    ["description"] = tool.Description,
-                    ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                });
-            }
-
-            body["tools"] = new JsonArray { new JsonObject { ["functionDeclarations"] = declarations } };
-        }
-
-        return body;
-    }
-
-    private static LanguageModelGenerateResult Parse(JsonElement root)
-    {
-        var content = new List<GeneratedContent>();
-        var raw = "STOP";
-        if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
-        {
-            var candidate = candidates[0];
-            raw = candidate.TryGetProperty("finishReason", out var finish) ? finish.GetString() ?? raw : raw;
-            if (candidate.TryGetProperty("content", out var candidateContent) && candidateContent.TryGetProperty("parts", out var parts))
-            {
-                foreach (var part in parts.EnumerateArray())
-                {
-                    if (part.TryGetProperty("text", out var text))
-                    {
-                        content.Add(new GeneratedText(text.GetString() ?? string.Empty));
-                    }
-
-                    if (part.TryGetProperty("functionCall", out var call))
-                    {
-                        content.Add(new GeneratedToolCall(
-                            "call_" + (call.GetProperty("name").GetString() ?? "tool"),
-                            call.GetProperty("name").GetString() ?? string.Empty,
-                            call.TryGetProperty("args", out var args) ? args.GetRawText() : "{}"));
-                    }
-                }
-            }
-        }
-
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usageMetadata", out var usageElement))
-        {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("promptTokenCount", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("candidatesTokenCount", out var output) ? output.GetInt32() : null,
-                usageElement.TryGetProperty("totalTokenCount", out var total) ? total.GetInt32() : null);
-        }
-
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw);
-    }
-}
-
-/// <summary>Gemini embedding model. Posts to <c>:embedContent</c>.</summary>
-public sealed class GoogleEmbeddingModel : IEmbeddingModel
-{
-    private readonly GoogleProvider _provider;
-
-    /// <summary>Creates an embedding model.</summary>
-    public GoogleEmbeddingModel(GoogleProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => _provider.Name;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
-    {
-        var vectors = new List<float[]>();
-        foreach (var value in values)
-        {
-            var body = new JsonObject
-            {
-                ["content"] = new JsonObject { ["parts"] = new JsonArray { new JsonObject { ["text"] = value } } },
-            };
-            using var document = await _provider.Http.SendJsonAsync(
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "models/" + ModelId + ":embedContent"),
-                body.ToJsonString(),
-                _provider.Headers(),
-                cancellationToken).ConfigureAwait(false);
-            var valuesElement = document.RootElement.GetProperty("embedding").GetProperty("values");
-            var vector = new float[valuesElement.GetArrayLength()];
-            var index = 0;
-            foreach (var number in valuesElement.EnumerateArray())
-            {
-                vector[index++] = number.GetSingle();
-            }
-
-            vectors.Add(vector);
-        }
-
-        return new EmbeddingResult(vectors, null);
-    }
-}
-
-/// <summary>
-/// Gemini on Vertex AI. Set <see cref="VertexOptions.Project"/> and <see cref="VertexOptions.Region"/>.
-/// The key is a bearer access token from <c>GOOGLE_VERTEX_API_KEY</c>.
-/// </summary>
-public sealed class VertexOptions : GoogleOptions
-{
-    /// <summary>
-    /// Creates Vertex options. <see cref="GoogleOptions.BaseUrl"/> starts empty.
-    /// An empty base URL is replaced with the regional publisher host from <see cref="Region"/>. A caller-supplied base URL is kept as-is.
-    /// </summary>
-    public VertexOptions()
-    {
-        UseBearerToken = true;
-        ApiKeyEnvironmentVariable = "GOOGLE_VERTEX_API_KEY";
-        BaseUrl = string.Empty;
-    }
-
-    /// <summary>GCP project id.</summary>
-    public string Project { get; set; } = string.Empty;
-
-    /// <summary>Vertex location. One DNS label, used only when <see cref="GoogleOptions.BaseUrl"/> is empty.</summary>
-    public string Region { get; set; } = "us-central1";
-}
-
-/// <summary>Google Vertex AI provider.</summary>
-public sealed class GoogleVertexProvider : GoogleProvider
-{
-    /// <summary>Creates a Vertex provider and points the base URL at the project publisher route.</summary>
-    public GoogleVertexProvider(HttpClient httpClient, VertexOptions? options = null)
-        : base(httpClient, Prepare(options))
-    {
-    }
-
-    /// <summary>Creates a provider.</summary>
-    public static GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)
-    {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-        return new GoogleVertexProvider(client, options);
-    }
-
-    private static VertexOptions Prepare(VertexOptions? options)
-    {
-        options ??= new VertexOptions();
-        options.UseBearerToken = true;
-        if (string.IsNullOrEmpty(options.Project))
-        {
-            options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT") ?? string.Empty;
-        }
-
-        if (!string.IsNullOrEmpty(options.BaseUrl))
-        {
-            return options;
-        }
-
-        if (!HostnameParts.IsValidHostnamePart(options.Region))
-        {
-            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
-        }
-
-        options.BaseUrl = "https://" + options.Region + "-aiplatform.googleapis.com/v1/projects/" + options.Project
-            + "/locations/" + options.Region + "/publishers/google";
-        return options;
+        throw new AiSdkException("Gemini Live WebSocket sessions are not opened by this port. Map events with GoogleRealtime instead.");
     }
 }
 

@@ -24,6 +24,12 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("Black Forest Labs does not provide language models.");
+    }
+
     /// <summary>Creates a provider.</summary>
     public static new BlackForestLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
@@ -55,8 +61,8 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
         public string ModelId { get; }
         public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
         {
-            var path = "/flux-pro-1.1".Replace("{model}", ModelId);
-            var body = new JsonObject { ["prompt"] = options.Prompt, ["model"] = ModelId };
+            var path = "/" + ModelId;
+            var body = new JsonObject { ["prompt"] = options.Prompt };
             using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
             return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });

@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.HuggingFace;
 
@@ -22,6 +23,24 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
     public HuggingFaceProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+    }
+
+    /// <summary>Creates a Responses API model. <see cref="LanguageModel"/> stays on Chat Completions.</summary>
+    public HuggingFaceResponsesLanguageModel ResponsesModel(string modelId)
+    {
+        return new HuggingFaceResponsesLanguageModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new AiSdkException("Hugging Face Responses API does not support text embeddings. Use the Hugging Face Inference API directly for embeddings.");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new AiSdkException("Hugging Face Responses API does not support image generation. Use the Hugging Face Inference API directly for image models.");
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -49,9 +68,13 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
             options.ApiKeyEnvironmentVariable = ApiKeyVariable;
         }
 
-        options.SupportsEmbeddings = true;
+        options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
         return options;
     }
 }

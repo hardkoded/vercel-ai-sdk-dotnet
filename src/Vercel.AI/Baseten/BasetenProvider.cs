@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Baseten;
 
@@ -22,6 +24,47 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
     public BasetenProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+    }
+
+    /// <inheritdoc />
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
+    {
+        var url = (Options as BasetenOptions)?.ModelUrl;
+        if (!string.IsNullOrEmpty(url) && url!.IndexOf("/predict", StringComparison.Ordinal) >= 0)
+        {
+            throw new AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.");
+        }
+
+        var model = base.CreateChatModel(string.IsNullOrEmpty(modelId) ? "chat" : modelId);
+        if (!string.IsNullOrEmpty(url) && url!.IndexOf("/sync/v1", StringComparison.Ordinal) >= 0)
+        {
+            model.Endpoint = ApiKeys.Combine(url!, "chat/completions");
+        }
+
+        return model;
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        var url = (Options as BasetenOptions)?.ModelUrl;
+        if (string.IsNullOrEmpty(url)
+            || url!.IndexOf("/sync", StringComparison.Ordinal) < 0
+            || url.IndexOf("/predict", StringComparison.Ordinal) >= 0)
+        {
+            throw new AiSdkException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.");
+        }
+
+        var baseUrl = url!;
+        if (baseUrl.IndexOf("/sync/v1", StringComparison.Ordinal) < 0)
+        {
+            baseUrl = baseUrl.TrimEnd('/') + "/v1";
+        }
+
+        var model = new OpenAICompatibleEmbeddingModel(this, string.IsNullOrEmpty(modelId) ? "embedding" : modelId);
+        model.Endpoint = ApiKeys.Combine(baseUrl, "embeddings");
+        model.MaxEmbeddingsPerCall = 128;
+        return model;
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -51,9 +94,23 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.IncludeUsage = true;
+        options.SupportsStructuredOutputs = true;
+        options.MaxEmbeddingsPerCall = 128;
         return options;
     }
+}
+
+/// <summary>Baseten settings, including an optional dedicated deployment URL.</summary>
+public sealed class BasetenOptions : OpenAICompatibleOptions
+{
+    /// <summary>Dedicated deployment URL. Chat requires <c>/sync/v1</c>. Embeddings require <c>/sync</c>.</summary>
+    public string? ModelUrl { get; set; }
 }
 
 /// <summary>Registers <see cref="BasetenProvider"/>.</summary>

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,30 +13,76 @@ namespace Vercel.AI.Anthropic;
 /// <summary>Anthropic Messages API settings.</summary>
 public class AnthropicOptions
 {
-    /// <summary>API origin. Message calls append <c>/v1/messages</c>.</summary>
+    /// <summary>API origin. The official host is normalized to <c>/v1</c>. Message calls append <c>/messages</c>.</summary>
     public string BaseUrl { get; set; } = "https://api.anthropic.com";
 
-    /// <summary>Explicit key.</summary>
+    /// <summary>Explicit API key. Mutually exclusive with <see cref="AuthToken"/>.</summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>Bearer token. Mutually exclusive with <see cref="ApiKey"/>.</summary>
+    public string? AuthToken { get; set; }
 
     /// <summary>Environment variable. Defaults to <c>ANTHROPIC_API_KEY</c>.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "ANTHROPIC_API_KEY";
 
     /// <summary><c>anthropic-version</c> header.</summary>
     public string Version { get; set; } = "2023-06-01";
+
+    /// <summary>Model provider id. Defaults to <c>anthropic.messages</c>.</summary>
+    public string? Name { get; set; }
+
+    /// <summary>Headers merged into every request.</summary>
+    public Dictionary<string, string?> Headers { get; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
+    public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
+
+    /// <summary>AWS region. Used when the AWS base URL is not set explicitly.</summary>
+    public string? Region { get; set; }
+
+    /// <summary>Claude Platform workspace id.</summary>
+    public string? WorkspaceId { get; set; }
+
+    /// <summary>AWS access key. Used when no Anthropic API key is configured.</summary>
+    public string? AccessKeyId { get; set; }
+
+    /// <summary>AWS secret key.</summary>
+    public string? SecretAccessKey { get; set; }
+
+    /// <summary>AWS session token.</summary>
+    public string? SessionToken { get; set; }
+
+    /// <summary>Supplies SigV4 credentials for one request.</summary>
+    public Func<CancellationToken, Task<AnthropicAwsCredentials>>? CredentialProvider { get; set; }
+
+    /// <summary>Clock used when signing. Tests pin this.</summary>
+    public Func<DateTimeOffset>? UtcNow { get; set; }
 }
 
 /// <summary>Anthropic Messages provider.</summary>
 public class AnthropicProvider : ProviderBase
 {
-    /// <summary>Provider id.</summary>
+    /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
+
+    /// <summary>User agent for the Messages API.</summary>
+    public const string UserAgent = "ai-sdk/anthropic/0.0.0-test";
 
     /// <summary>Creates a provider.</summary>
     public AnthropicProvider(HttpClient httpClient, AnthropicOptions? options = null)
         : base(ProviderName)
     {
         Options = options ?? new AnthropicOptions();
+        if (string.IsNullOrWhiteSpace(Options.BaseUrl))
+        {
+            throw new ArgumentException("baseURL must be a non-empty string.", nameof(options));
+        }
+
+        if (!string.IsNullOrEmpty(Options.ApiKey) && !string.IsNullOrEmpty(Options.AuthToken))
+        {
+            throw new InvalidOperationException("Both apiKey and authToken were provided. Please use only one authentication method.");
+        }
+
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
     }
 
@@ -46,6 +91,26 @@ public class AnthropicProvider : ProviderBase
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
+
+    /// <summary>True for Claude Platform on AWS.</summary>
+    protected bool Aws { get; set; }
+
+    /// <summary>True when the caller supplied a base URL other than the public Anthropic host.</summary>
+    protected bool ExplicitBaseUrl { get; set; }
+
+    /// <summary>Provider id reported by language models.</summary>
+    public string ModelProvider
+    {
+        get
+        {
+            if (!string.IsNullOrEmpty(Options.Name))
+            {
+                return Options.Name!;
+            }
+
+            return Aws ? "anthropic-aws.messages" : "anthropic.messages";
+        }
+    }
 
     /// <summary>Creates a provider.</summary>
     public static AnthropicProvider Create(AnthropicOptions? options = null, HttpMessageHandler? handler = null)
@@ -57,16 +122,245 @@ public class AnthropicProvider : ProviderBase
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
+        if (Aws && !ExplicitBaseUrl)
+        {
+            ResolveRegion();
+        }
+
         return new AnthropicLanguageModel(this, modelId);
     }
 
-    internal Dictionary<string, string?> Headers()
+    /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
+    public ILanguageModel New(string modelId)
     {
-        return new Dictionary<string, string?>
+        throw new InvalidOperationException("The Anthropic model function cannot be called with the new keyword.");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new AiSdkException("no such embeddingModel: " + modelId);
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new AiSdkException("no such imageModel: " + modelId);
+    }
+
+    /// <inheritdoc />
+    public override IEvaluationModel EvaluationModel(string modelId)
+    {
+        return new AnthropicEvaluationModel(this, modelId);
+    }
+
+    /// <summary>Files API client.</summary>
+    public AnthropicFiles Files()
+    {
+        return new AnthropicFiles(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), ModelProvider);
+    }
+
+    /// <summary>Skills API client.</summary>
+    public AnthropicSkills Skills()
+    {
+        return new AnthropicSkills(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), Aws ? "anthropic-aws.skills" : "anthropic.skills");
+    }
+
+    /// <summary>Messages URL for the resolved base.</summary>
+    public Uri MessagesUri()
+    {
+        var baseUrl = NormalizedBase().TrimEnd('/');
+        if (baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
         {
-            ["x-api-key"] = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable),
-            ["anthropic-version"] = Options.Version,
-        };
+            return new Uri(baseUrl + "/messages");
+        }
+
+        return new Uri(baseUrl + "/v1/messages");
+    }
+
+    /// <summary>Resolved API origin, including <c>/v1</c> when the host is the public Anthropic API or a regional AWS host.</summary>
+    public string NormalizedBase()
+    {
+        var raw = Options.BaseUrl.Trim();
+        if (Aws && !ExplicitBaseUrl)
+        {
+            raw = "https://aws-external-anthropic." + ResolveRegion() + ".api.aws/v1";
+        }
+        else if (!Aws && IsOfficial(raw))
+        {
+            var env = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
+            raw = string.IsNullOrWhiteSpace(env) ? "https://api.anthropic.com/v1" : env.Trim();
+        }
+
+        raw = raw.TrimEnd('/');
+        if (IsOfficial(raw))
+        {
+            raw = "https://api.anthropic.com/v1";
+        }
+
+        return raw;
+    }
+
+    /// <summary>Headers for a Messages call that already has an API key or auth token.</summary>
+    public Dictionary<string, string?> CreateHeaders(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders)
+    {
+        return CreateHeadersAsync(betas, callHeaders, null, CancellationToken.None).GetAwaiter().GetResult();
+    }
+
+    /// <summary>Headers for a Messages call. Signs the body when AWS credentials are used.</summary>
+    public async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    {
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in Options.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        headers["anthropic-version"] = Options.Version;
+        headers["user-agent"] = Aws ? AnthropicAwsFetch.UserAgent : UserAgent;
+        if (Aws)
+        {
+            var workspace = WorkspaceId();
+            if (!ExplicitBaseUrl && string.IsNullOrEmpty(workspace))
+            {
+                throw new ArgumentException("workspaceId is missing. Pass it using the 'workspaceId' parameter or the ANTHROPIC_AWS_WORKSPACE_ID environment variable.");
+            }
+
+            if (!string.IsNullOrEmpty(workspace))
+            {
+                headers["anthropic-workspace-id"] = workspace;
+            }
+        }
+
+        if (betas != null && betas.Count > 0)
+        {
+            headers["anthropic-beta"] = string.Join(",", betas);
+        }
+
+        if (!string.IsNullOrEmpty(Options.AuthToken))
+        {
+            headers["Authorization"] = "Bearer " + Options.AuthToken;
+        }
+        else
+        {
+            var apiKey = TryApiKey();
+            if (apiKey != null)
+            {
+                headers["x-api-key"] = apiKey;
+            }
+            else if (Aws && body != null)
+            {
+                var credentials = await ResolveCredentialsAsync(cancellationToken).ConfigureAwait(false);
+                var signed = AnthropicAwsFetch.Prepare(MessagesUri().AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
+                foreach (var pair in signed.Headers)
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+            else if (!Aws)
+            {
+                headers["x-api-key"] = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
+            }
+            else
+            {
+                await ResolveCredentialsAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        if (callHeaders != null)
+        {
+            foreach (var pair in callHeaders)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return headers;
+    }
+
+    internal static CallWarning ToCallWarning(AnthropicWarning warning)
+    {
+        return new CallWarning(warning.Type, warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type);
+    }
+
+    private string? TryApiKey()
+    {
+        if (!string.IsNullOrEmpty(Options.ApiKey))
+        {
+            return Options.ApiKey;
+        }
+
+        var env = Environment.GetEnvironmentVariable(Options.ApiKeyEnvironmentVariable);
+        return string.IsNullOrEmpty(env) ? null : env;
+    }
+
+    private string? WorkspaceId()
+    {
+        if (!string.IsNullOrEmpty(Options.WorkspaceId))
+        {
+            return Options.WorkspaceId;
+        }
+
+        var env = Environment.GetEnvironmentVariable("ANTHROPIC_AWS_WORKSPACE_ID");
+        return string.IsNullOrEmpty(env) ? null : env;
+    }
+
+    private string ResolveRegion()
+    {
+        var region = Options.Region;
+        if (string.IsNullOrEmpty(region))
+        {
+            region = Environment.GetEnvironmentVariable("AWS_REGION");
+        }
+
+        if (string.IsNullOrEmpty(region))
+        {
+            throw new ArgumentException("AWS region setting is missing. Pass it using the 'region' parameter or the AWS_REGION environment variable.");
+        }
+
+        if (!HostnameParts.IsValidHostnamePart(region))
+        {
+            throw new ArgumentException("region is not a valid DNS label.", nameof(region));
+        }
+
+        return region!;
+    }
+
+    private async Task<AnthropicAwsCredentials> ResolveCredentialsAsync(CancellationToken cancellationToken)
+    {
+        if (Options.CredentialProvider != null)
+        {
+            try
+            {
+                return await Options.CredentialProvider(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (!(exception is AiSdkException))
+            {
+                throw new AiSdkException("AWS credential provider failed: " + exception.Message, exception);
+            }
+        }
+
+        var accessKey = string.IsNullOrEmpty(Options.AccessKeyId) ? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID") : Options.AccessKeyId;
+        var secret = string.IsNullOrEmpty(Options.SecretAccessKey) ? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") : Options.SecretAccessKey;
+        var token = string.IsNullOrEmpty(Options.SessionToken) ? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN") : Options.SessionToken;
+        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
+        {
+            throw new AiSdkException("AWS SigV4 authentication requires AWS credentials. Pass accessKeyId and secretAccessKey, or a credentialProvider.");
+        }
+
+        return new AnthropicAwsCredentials(ExplicitBaseUrl ? Options.Region ?? "us-east-1" : ResolveRegion(), accessKey!, secret!, token);
+    }
+
+    private static Dictionary<string, string?> ToStringMap(Dictionary<string, string?> headers)
+    {
+        return new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool IsOfficial(string url)
+    {
+        var trimmed = url.Trim().TrimEnd('/');
+        return trimmed.Equals("https://api.anthropic.com", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("https://api.anthropic.com/v1", StringComparison.OrdinalIgnoreCase);
     }
 }
 
@@ -86,21 +380,34 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public string Provider => AnthropicProvider.ProviderName;
+    public string Provider => _provider.ModelProvider;
 
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <summary>URL patterns the model accepts for images and PDFs.</summary>
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["image/*"] = "^https?://",
+        ["application/pdf"] = "^https?://",
+    };
+
+    /// <summary>True when <paramref name="url"/> is an http or https URL for a supported media type.</summary>
+    public bool SupportsUrl(string mediaType, string url)
+    {
+        return SupportedUrls.ContainsKey(mediaType)
+            && (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("http://", StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v1/messages"),
-            Build(options, false).ToJsonString(),
-            _provider.Headers(),
-            cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
+        var prepared = Prepare(options, false);
+        var body = prepared.Body.ToJsonString();
+        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.MessagesUri(), body, headers, cancellationToken).ConfigureAwait(false);
+        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
+        return AnthropicResponse.Parse(response.Body, context, response.Body, response.Headers);
     }
 
     /// <inheritdoc />
@@ -108,209 +415,50 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var toolId = string.Empty;
-        var toolName = string.Empty;
-        var toolArgs = new StringBuilder();
-        string? finish = null;
-        await foreach (var data in _provider.Http.SendSseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "v1/messages"),
-            Build(options, true).ToJsonString(),
-            _provider.Headers(),
-            cancellationToken).ConfigureAwait(false))
+        var prepared = Prepare(options, true);
+        var body = prepared.Body.ToJsonString();
+        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        yield return new StreamStartStreamPart(Warnings(prepared));
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool);
+        await foreach (var data in _provider.Http.SendSseAsync(_provider.MessagesUri(), body, headers, cancellationToken).ConfigureAwait(false))
         {
-            JsonObject? node;
-            try
+            foreach (var part in reader.Push(data))
             {
-                node = JsonNode.Parse(data) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
-
-            var type = StringOf(node?["type"]);
-            if (type == "content_block_start" && node?["content_block"] is JsonObject block && StringOf(block["type"]) == "tool_use")
-            {
-                toolId = StringOf(block["id"]) ?? string.Empty;
-                toolName = StringOf(block["name"]) ?? string.Empty;
-            }
-            else if (type == "content_block_delta" && node?["delta"] is JsonObject delta)
-            {
-                var deltaType = StringOf(delta["type"]);
-                if (deltaType == "text_delta")
-                {
-                    yield return new TextDeltaStreamPart("text", StringOf(delta["text"]) ?? string.Empty);
-                }
-                else if (deltaType == "input_json_delta")
-                {
-                    toolArgs.Append(StringOf(delta["partial_json"]) ?? string.Empty);
-                }
-            }
-            else if (type == "message_delta" && node?["delta"] is JsonObject messageDelta)
-            {
-                finish = StringOf(messageDelta["stop_reason"]);
+                yield return part;
             }
         }
-
-        if (toolName.Length > 0)
-        {
-            yield return new ToolCallStreamPart(toolId, toolName, toolArgs.ToString());
-        }
-
-        yield return new FinishStreamPart(FinishReasons.Parse(finish), LanguageModelUsage.Empty, finish);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options, bool stream)
+    private AnthropicPreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
     {
-        var system = new StringBuilder();
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
+        var prepared = AnthropicMessagesRequest.Prepare(ModelId, options ?? new LanguageModelCallOptions(), stream, Provider);
+        if (_provider.Options.TransformRequestBody == null)
         {
-            if (message is SystemModelMessage systemMessage)
-            {
-                if (system.Length > 0)
-                {
-                    system.Append('\n');
-                }
-
-                system.Append(systemMessage.Content);
-            }
-            else if (message is UserModelMessage user)
-            {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var content = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    content.Add(new JsonObject { ["type"] = "text", ["text"] = assistant.Text });
-                }
-
-                foreach (var call in assistant.ToolCalls)
-                {
-                    content.Add(new JsonObject
-                    {
-                        ["type"] = "tool_use",
-                        ["id"] = call.ToolCallId,
-                        ["name"] = call.ToolName,
-                        ["input"] = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson),
-                    });
-                }
-
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content });
-            }
-            else if (message is ToolModelMessage tool)
-            {
-                messages.Add(new JsonObject
-                {
-                    ["role"] = "user",
-                    ["content"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["type"] = "tool_result",
-                            ["tool_use_id"] = tool.ToolCallId,
-                            ["content"] = tool.OutputJson,
-                            ["is_error"] = tool.IsError,
-                        },
-                    },
-                });
-            }
+            return prepared;
         }
 
-        var body = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["max_tokens"] = options.MaxOutputTokens ?? 4096,
-            ["messages"] = messages,
-            ["stream"] = stream,
-        };
-        if (system.Length > 0)
-        {
-            body["system"] = system.ToString();
-        }
-
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        if (options.Tools is { Count: > 0 })
-        {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                tools.Add(new JsonObject
-                {
-                    ["name"] = tool.Name,
-                    ["description"] = tool.Description,
-                    ["input_schema"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                });
-            }
-
-            body["tools"] = tools;
-        }
-
-        return body;
+        return new AnthropicPreparedRequest(
+            _provider.Options.TransformRequestBody(prepared.Body),
+            prepared.Warnings,
+            prepared.Betas,
+            prepared.UsesJsonResponseTool,
+            prepared.ProviderOptionsName,
+            prepared.UsedCustomProviderKey);
     }
 
-    private static LanguageModelGenerateResult Parse(JsonElement root)
+    private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)
     {
-        var content = new List<GeneratedContent>();
-        if (root.TryGetProperty("content", out var parts))
+        var warnings = new List<CallWarning>(prepared.Warnings.Count);
+        foreach (var warning in prepared.Warnings)
         {
-            foreach (var part in parts.EnumerateArray())
-            {
-                var type = part.GetProperty("type").GetString();
-                if (type == "text")
-                {
-                    content.Add(new GeneratedText(part.GetProperty("text").GetString() ?? string.Empty));
-                }
-                else if (type == "tool_use")
-                {
-                    content.Add(new GeneratedToolCall(
-                        part.GetProperty("id").GetString() ?? "tool",
-                        part.GetProperty("name").GetString() ?? string.Empty,
-                        part.GetProperty("input").GetRawText()));
-                }
-            }
+            warnings.Add(AnthropicProvider.ToCallWarning(warning));
         }
 
-        var raw = root.TryGetProperty("stop_reason", out var stop) ? stop.GetString() : null;
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement))
-        {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("input_tokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("output_tokens", out var output) ? output.GetInt32() : null,
-                null);
-        }
-
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw, responseId: root.TryGetProperty("id", out var id) ? id.GetString() : null);
-    }
-
-    private static string? StringOf(JsonNode? node)
-    {
-        if (node is JsonValue value && value.TryGetValue<string>(out var text))
-        {
-            return text;
-        }
-
-        return null;
+        return warnings;
     }
 }
 
-/// <summary>Anthropic on AWS. Same Messages body, with <c>ANTHROPIC_AWS_API_KEY</c> and a regional base URL.</summary>
+/// <summary>Anthropic on AWS. Same Messages body, with regional hosts, workspace ids, and SigV4.</summary>
 public sealed class AnthropicAwsProvider : AnthropicProvider
 {
     /// <summary>Creates an Anthropic on AWS provider.</summary>
@@ -321,6 +469,22 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
             ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY",
         })
     {
+        Aws = true;
+        if (options == null)
+        {
+            ExplicitBaseUrl = true;
+        }
+        else
+        {
+            if (Options.ApiKeyEnvironmentVariable == "ANTHROPIC_API_KEY")
+            {
+                Options.ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY";
+            }
+
+            var trimmed = Options.BaseUrl.Trim().TrimEnd('/');
+            ExplicitBaseUrl = !trimmed.Equals("https://api.anthropic.com", StringComparison.OrdinalIgnoreCase)
+                && !trimmed.Equals("https://api.anthropic.com/v1", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     /// <summary>Creates a provider.</summary>

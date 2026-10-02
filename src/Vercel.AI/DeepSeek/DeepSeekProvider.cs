@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.DeepSeek;
 
@@ -22,6 +23,12 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
     public DeepSeekProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+    }
+
+    /// <inheritdoc />
+    public override IFileStore FileStore()
+    {
+        return new DeepSeekFileStore(this);
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -51,7 +58,11 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
         return options;
     }
 }

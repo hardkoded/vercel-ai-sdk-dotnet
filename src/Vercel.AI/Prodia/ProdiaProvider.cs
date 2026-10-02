@@ -54,8 +54,8 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
         public string ModelId { get; }
         public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
         {
-            var path = "/job".Replace("{model}", ModelId);
-            var body = new JsonObject { ["prompt"] = options.Prompt, ["model"] = ModelId };
+            var path = "/job?price=true";
+            var body = new JsonObject { ["type"] = ModelId, ["config"] = new JsonObject { ["prompt"] = options.Prompt } };
             using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
             return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });

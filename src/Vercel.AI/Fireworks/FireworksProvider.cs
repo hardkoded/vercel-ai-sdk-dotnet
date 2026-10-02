@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Fireworks;
 
@@ -22,6 +23,12 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
     public FireworksProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new FireworksImageModel(this, modelId);
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -51,7 +58,14 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = true;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.IncludeUsage = true;
+        options.SupportsStructuredOutputs = true;
+        options.TransformRequestBody = OpenAICompatibleTransforms.Fireworks;
         return options;
     }
 }

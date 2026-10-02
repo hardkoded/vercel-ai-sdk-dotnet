@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -12,35 +13,141 @@ namespace Vercel.AI.OpenAICompatible;
 /// <summary>Chat Completions language model.</summary>
 public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 {
+    private static readonly string[] KnownProviderOptionNames =
+    {
+        "user",
+        "reasoningEffort",
+        "textVerbosity",
+        "strictJsonSchema",
+        "responseFormat",
+        "responseFormatDescription",
+        "structuredOutputs",
+    };
+
     private readonly OpenAICompatibleProvider _provider;
+    private readonly string _providerId;
 
     /// <summary>Creates a language model.</summary>
     public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId)
+        : this(provider, modelId, null)
+    {
+    }
+
+    /// <summary>Creates a language model with an explicit provider id such as <c>anthropic.beta</c>.</summary>
+    public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _providerId = providerId ?? OpenAICompatibleChat.Qualify(provider.Options.ProviderName, "chat");
+        SupportsStructuredOutputs = provider.Options.SupportsStructuredOutputs;
     }
 
     /// <inheritdoc />
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public string Provider => _provider.Name;
+    public string Provider => _providerId;
+
+    /// <summary>Provider-options key. The segment before the first dot of <see cref="Provider"/>.</summary>
+    public string ProviderOptionsName => OpenAICompatibleChat.BaseProviderName(Provider);
 
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <summary>When true, JSON schema responses use <c>json_schema</c>.</summary>
+    public bool SupportsStructuredOutputs { get; set; }
+
+    /// <summary>When set, chat calls use this URL instead of the provider chat route.</summary>
+    public Uri? Endpoint { get; set; }
+
+    /// <summary>HTTP response headers from the most recent call.</summary>
+    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var body = BuildBody(options, stream: false);
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            _provider.ChatUri(ModelId),
-            body.ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        return ParseGenerate(document.RootElement);
+        options = options ?? new LanguageModelCallOptions();
+        var prepared = Prepare(options, stream: false);
+        var response = await _provider.PostJsonAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
+        LastResponseHeaders = response.Headers;
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var root = document.RootElement;
+        if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+        {
+            throw new AiSdkException("Response did not contain any choices.");
+        }
+
+        var choice = choices[0];
+        if (!choice.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiSdkException("Response did not contain any choices.");
+        }
+
+        var content = new List<GeneratedContent>();
+        if (message.TryGetProperty("content", out var contentElement))
+        {
+            foreach (var part in OpenAICompatibleChat.ConvertContent(contentElement))
+            {
+                content.Add(part.Reasoning ? (GeneratedContent)new GeneratedReasoning(part.Text) : new GeneratedText(part.Text));
+            }
+        }
+
+        var reasoning = PreferredString(message, "reasoning_content", "reasoning");
+        if (!string.IsNullOrEmpty(reasoning))
+        {
+            content.Add(new GeneratedReasoning(reasoning!));
+        }
+
+        if (message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var call in toolCalls.EnumerateArray())
+            {
+                if (call.ValueKind != JsonValueKind.Object || !call.TryGetProperty("function", out var function))
+                {
+                    continue;
+                }
+
+                var id = call.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String
+                    ? idElement.GetString()
+                    : null;
+                if (string.IsNullOrEmpty(id))
+                {
+                    id = JsonValues.GenerateId("call_");
+                }
+
+                var signature = ReadWireSignature(call);
+                JsonElement? metadata = string.IsNullOrEmpty(signature)
+                    ? null
+                    : OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature!);
+                content.Add(new GeneratedToolCall(
+                    id!,
+                    function.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty,
+                    function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String
+                        ? arguments.GetString() ?? "{}"
+                        : "{}",
+                    metadata));
+            }
+        }
+
+        var raw = choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String
+            ? finish.GetString()
+            : null;
+        var usage = root.TryGetProperty("usage", out var usageElement)
+            ? OpenAICompatibleChat.ConvertUsage(usageElement)
+            : OpenAICompatibleUsage.Missing;
+        var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
+        return new LanguageModelGenerateResult(
+            content,
+            MapFinish(raw),
+            usage.Usage,
+            raw,
+            prepared.Warnings,
+            ResponseString(root, "id"),
+            metadataElement,
+            response.Body,
+            ResponseString(root, "model"),
+            ResponseTimestamp(root),
+            response.Headers);
     }
 
     /// <inheritdoc />
@@ -48,39 +155,89 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var body = BuildBody(options, stream: true);
+        options = options ?? new LanguageModelCallOptions();
+        var prepared = Prepare(options, stream: true);
+        var sse = await _provider.PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
+        LastResponseHeaders = sse.Headers;
+        yield return new StreamStartStreamPart(prepared.Warnings);
+
         var toolCalls = new StreamingToolCallTracker();
+        var pending = new Dictionary<int, PendingTool>();
+        var forwarded = new HashSet<int>();
+        var signatures = new Dictionary<string, string>(StringComparer.Ordinal);
         string? finishRaw = null;
-        LanguageModelUsage? usage = null;
-        await foreach (var data in _provider.Http.SendSseAsync(
-            _provider.ChatUri(ModelId),
-            body.ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false))
+        var sawFinish = false;
+        JsonElement? usageElement = null;
+        var metadataSent = false;
+        var textOpen = false;
+        var reasoningOpen = false;
+        var failed = false;
+
+        await foreach (var data in sse.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
+            if (options.IncludeRawChunks)
+            {
+                yield return new RawStreamPart(data);
+            }
+
             JsonNode? node;
             try
             {
                 node = JsonNode.Parse(data);
             }
-            catch (System.Text.Json.JsonException)
+            catch (JsonException)
             {
+                failed = true;
+                sawFinish = true;
+                finishRaw = null;
+                yield return new ErrorStreamPart("The provider stream chunk could not be parsed.");
                 continue;
             }
 
             if (node is not JsonObject root)
             {
+                failed = true;
+                sawFinish = true;
+                finishRaw = null;
+                yield return new ErrorStreamPart("The provider stream chunk could not be parsed.");
                 continue;
             }
 
-            var usageNode = root["usage"];
-            if (usageNode is JsonObject usageObject)
+            if (root["error"] != null)
             {
-                usage = ReadUsage(usageObject);
+                failed = true;
+                sawFinish = true;
+                finishRaw = null;
+                yield return new ErrorStreamPart(ErrorText(root["error"]));
+                continue;
+            }
+
+            if (!metadataSent)
+            {
+                var id = AsString(root["id"]);
+                var model = AsString(root["model"]);
+                var created = ReadInt(root, "created");
+                if (created == 0)
+                {
+                    created = null;
+                }
+
+                if (!string.IsNullOrEmpty(id) || !string.IsNullOrEmpty(model) || created != null)
+                {
+                    metadataSent = true;
+                    DateTimeOffset? timestamp = created == null ? null : DateTimeOffset.FromUnixTimeSeconds(created.Value);
+                    yield return new ResponseMetadataStreamPart(id, model, timestamp);
+                }
+            }
+
+            if (root["usage"] is JsonObject usageObject)
+            {
+                using var usageDocument = JsonDocument.Parse(usageObject.ToJsonString());
+                usageElement = usageDocument.RootElement.Clone();
             }
 
             var choice = root["choices"]?[0] as JsonObject;
-            if (choice is null)
+            if (choice == null)
             {
                 continue;
             }
@@ -89,6 +246,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             if (!string.IsNullOrEmpty(finishText))
             {
                 finishRaw = finishText;
+                sawFinish = true;
             }
 
             if (choice["delta"] is not JsonObject delta)
@@ -96,94 +254,288 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 continue;
             }
 
-            var text = AsString(delta["content"]);
-            if (!string.IsNullOrEmpty(text))
-            {
-                yield return new TextDeltaStreamPart("text", text!);
-            }
-
-            var reasoning = AsString(delta["reasoning_content"]);
+            var reasoning = PreferredString(delta, "reasoning_content", "reasoning");
             if (!string.IsNullOrEmpty(reasoning))
             {
-                yield return new ReasoningDeltaStreamPart("reasoning", reasoning!);
+                foreach (var part in OpenReasoning(ref textOpen, ref reasoningOpen, reasoning!))
+                {
+                    yield return part;
+                }
             }
 
-            if (delta["tool_calls"] is JsonArray toolDeltas)
+            if (delta["content"] != null)
             {
+                JsonElement contentElement;
+                using (var contentDocument = JsonDocument.Parse(delta["content"]!.ToJsonString()))
+                {
+                    contentElement = contentDocument.RootElement.Clone();
+                }
+
+                foreach (var fragment in OpenAICompatibleChat.ConvertContent(contentElement))
+                {
+                    if (fragment.Reasoning)
+                    {
+                        foreach (var part in OpenReasoning(ref textOpen, ref reasoningOpen, fragment.Text))
+                        {
+                            yield return part;
+                        }
+                    }
+                    else
+                    {
+                        foreach (var part in OpenText(ref textOpen, ref reasoningOpen, fragment.Text))
+                        {
+                            yield return part;
+                        }
+                    }
+                }
+            }
+
+            if (delta["tool_calls"] is JsonArray toolDeltas && toolDeltas.Count > 0)
+            {
+                if (reasoningOpen)
+                {
+                    reasoningOpen = false;
+                    yield return new ReasoningEndStreamPart("reasoning-0");
+                }
+
                 foreach (var item in toolDeltas)
                 {
                     if (item is JsonObject tool)
                     {
-                        toolCalls.ProcessDelta(ReadToolDelta(tool));
+                        HandleToolDelta(tool, toolCalls, pending, forwarded, signatures);
                     }
                 }
             }
         }
 
-        foreach (var call in toolCalls.Flush())
+        if (reasoningOpen)
         {
-            yield return call;
+            yield return new ReasoningEndStreamPart("reasoning-0");
         }
 
-        yield return new FinishStreamPart(FinishReasons.Parse(finishRaw), usage ?? LanguageModelUsage.Empty, finishRaw);
+        if (textOpen)
+        {
+            yield return new TextEndStreamPart("txt-0");
+        }
+
+        foreach (var pair in pending)
+        {
+            toolCalls.ProcessDelta(new StreamingToolCallDelta(pair.Key, pair.Value.Id, null, pair.Value.Arguments.ToString()));
+        }
+
+        pending.Clear();
+        foreach (var call in toolCalls.Flush())
+        {
+            if (signatures.TryGetValue(call.ToolCallId, out var signature))
+            {
+                yield return new ToolCallStreamPart(
+                    call.ToolCallId,
+                    call.ToolName,
+                    call.ArgumentsJson,
+                    OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature));
+            }
+            else
+            {
+                yield return call;
+            }
+        }
+
+        if (!sawFinish)
+        {
+            failed = true;
+            yield return new ErrorStreamPart("Response stream ended without a finish reason.");
+        }
+
+        var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
+        var finishReason = !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
+        yield return new FinishStreamPart(
+            finishReason,
+            converted.Usage,
+            sawFinish ? finishRaw : null,
+            OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, converted.AcceptedPredictionTokens, converted.RejectedPredictionTokens));
     }
 
-    private JsonObject BuildBody(LanguageModelCallOptions options, bool stream)
+    private PreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
     {
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
+        var warnings = new List<CallWarning>();
+        var rawName = ProviderOptionsName;
+        if (OpenAICompatibleChat.HasOptions(options.ProviderOptions, "openai-compatible"))
         {
-            messages.Add(MapMessage(message));
+            warnings.Add(new CallWarning(
+                "deprecated",
+                "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."));
+        }
+
+        var camel = OpenAICompatibleChat.ToCamelCase(rawName);
+        if (!string.Equals(camel, rawName, StringComparison.Ordinal) && OpenAICompatibleChat.HasOptions(options.ProviderOptions, rawName))
+        {
+            warnings.Add(new CallWarning(
+                "deprecated",
+                "providerOptions key '" + rawName + "'. Use '" + camel + "' instead."));
+        }
+
+        var settings = new ChatSettings();
+        ApplyOptions(settings, options.ProviderOptions, "openai-compatible");
+        ApplyOptions(settings, options.ProviderOptions, "openaiCompatible");
+        ApplyOptions(settings, options.ProviderOptions, rawName);
+        if (!string.Equals(camel, rawName, StringComparison.Ordinal))
+        {
+            ApplyOptions(settings, options.ProviderOptions, camel);
+        }
+
+        if (options.TopK != null)
+        {
+            warnings.Add(new CallWarning("unsupported", "topK"));
         }
 
         var body = new JsonObject
         {
             ["model"] = ModelId,
-            ["messages"] = messages,
-            ["stream"] = stream,
         };
-
-        if (stream)
+        if (!string.IsNullOrEmpty(settings.User))
         {
-            body["stream_options"] = new JsonObject { ["include_usage"] = true };
+            body["user"] = settings.User;
         }
 
         AddSampling(body, options);
-        if (options.Tools is { Count: > 0 })
+        AddResponseFormat(body, options, settings, warnings);
+        if (options.StopSequences is { Count: > 0 })
         {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
+            var stop = new JsonArray();
+            foreach (var sequence in options.StopSequences)
             {
-                tools.Add(new JsonObject
-                {
-                    ["type"] = "function",
-                    ["function"] = new JsonObject
-                    {
-                        ["name"] = tool.Name,
-                        ["description"] = tool.Description,
-                        ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                    },
-                });
+                stop.Add(sequence);
             }
 
-            body["tools"] = tools;
-            body["tool_choice"] = MapToolChoice(options.ToolChoice);
+            body["stop"] = stop;
         }
 
-        if (options.JsonSchema is { } schema)
+        if (options.Seed is { } seed)
         {
+            body["seed"] = seed;
+        }
+
+        foreach (var pair in settings.Extras)
+        {
+            body[pair.Key] = pair.Value?.DeepClone();
+        }
+
+        var reasoningEffort = settings.ReasoningEffort;
+        if (reasoningEffort == null && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning))
+        {
+            reasoningEffort = options.Reasoning;
+        }
+
+        if (reasoningEffort != null)
+        {
+            body["reasoning_effort"] = reasoningEffort;
+        }
+
+        if (settings.TextVerbosity != null)
+        {
+            body["verbosity"] = settings.TextVerbosity;
+        }
+
+        var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(rawName, options.ProviderOptions);
+        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey);
+        AddTools(body, options);
+
+        if (stream)
+        {
+            body["stream"] = true;
+            if (_provider.Options.IncludeUsage)
+            {
+                body["stream_options"] = new JsonObject { ["include_usage"] = true };
+            }
+        }
+
+        if (_provider.Options.TransformRequestBody != null)
+        {
+            body = _provider.Options.TransformRequestBody(body, warnings) ?? body;
+        }
+
+        return new PreparedRequest(body.ToJsonString(), _provider.CreateHeaders(options.Headers), warnings, metadataKey);
+    }
+
+    private void AddResponseFormat(JsonObject body, LanguageModelCallOptions options, ChatSettings settings, List<CallWarning> warnings)
+    {
+        var wantsJson = string.Equals(settings.ResponseFormat, "json", StringComparison.OrdinalIgnoreCase);
+        var hasSchema = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined && schema.ValueKind != JsonValueKind.Null;
+        if (!wantsJson && !hasSchema)
+        {
+            return;
+        }
+
+        var structured = settings.StructuredOutputs ?? SupportsStructuredOutputs;
+        if (hasSchema && structured)
+        {
+            var strict = settings.StrictJsonSchema ?? true;
+            var schemaObject = new JsonObject
+            {
+                ["schema"] = JsonNode.Parse(options.JsonSchema!.Value.GetRawText()),
+                ["strict"] = strict,
+                ["name"] = options.JsonSchemaName ?? "response",
+            };
+            if (!string.IsNullOrEmpty(settings.ResponseFormatDescription))
+            {
+                schemaObject["description"] = settings.ResponseFormatDescription;
+            }
+
             body["response_format"] = new JsonObject
             {
                 ["type"] = "json_schema",
-                ["json_schema"] = new JsonObject
-                {
-                    ["name"] = options.JsonSchemaName ?? "response",
-                    ["schema"] = JsonNode.Parse(schema.GetRawText()),
-                },
+                ["json_schema"] = schemaObject,
             };
+            return;
         }
 
-        return body;
+        if (hasSchema)
+        {
+            warnings.Add(new CallWarning(
+                "unsupported",
+                "responseFormat. JSON response format schema is only supported with structuredOutputs."));
+        }
+
+        body["response_format"] = new JsonObject { ["type"] = "json_object" };
+    }
+
+    private static void AddTools(JsonObject body, LanguageModelCallOptions options)
+    {
+        if (options.Tools == null || options.Tools.Count == 0)
+        {
+            return;
+        }
+
+        var tools = new JsonArray();
+        foreach (var tool in options.Tools)
+        {
+            var function = new JsonObject
+            {
+                ["name"] = tool.Name,
+                ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+            };
+            if (tool.Description != null)
+            {
+                function["description"] = tool.Description;
+            }
+
+            if (tool.Strict is { } strict)
+            {
+                function["strict"] = strict;
+            }
+
+            tools.Add(new JsonObject
+            {
+                ["type"] = "function",
+                ["function"] = function,
+            });
+        }
+
+        body["tools"] = tools;
+        if (options.ToolChoice != null)
+        {
+            body["tool_choice"] = MapToolChoice(options.ToolChoice);
+        }
     }
 
     private static void AddSampling(JsonObject body, LanguageModelCallOptions options)
@@ -212,31 +564,87 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             body["frequency_penalty"] = frequency;
         }
+    }
 
-        if (options.Seed is { } seed)
+    private static void ApplyOptions(ChatSettings settings, IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    {
+        if (!OpenAICompatibleChat.HasOptions(providerOptions, key))
         {
-            body["seed"] = seed;
+            return;
         }
 
-        if (options.StopSequences is { Count: > 0 })
+        var bag = providerOptions![key];
+        if (bag.ValueKind != JsonValueKind.Object)
         {
-            var stop = new JsonArray();
-            foreach (var sequence in options.StopSequences)
-            {
-                stop.Add(sequence);
-            }
+            return;
+        }
 
-            body["stop"] = stop;
+        foreach (var property in bag.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "user":
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        settings.User = property.Value.GetString();
+                    }
+
+                    break;
+                case "reasoningEffort":
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        settings.ReasoningEffort = property.Value.GetString();
+                    }
+
+                    break;
+                case "textVerbosity":
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        settings.TextVerbosity = property.Value.GetString();
+                    }
+
+                    break;
+                case "strictJsonSchema":
+                    if (property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False)
+                    {
+                        settings.StrictJsonSchema = property.Value.GetBoolean();
+                    }
+
+                    break;
+                case "responseFormat":
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        settings.ResponseFormat = property.Value.GetString();
+                    }
+
+                    break;
+                case "responseFormatDescription":
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        settings.ResponseFormatDescription = property.Value.GetString();
+                    }
+
+                    break;
+                case "structuredOutputs":
+                    if (property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False)
+                    {
+                        settings.StructuredOutputs = property.Value.GetBoolean();
+                    }
+
+                    break;
+                default:
+                    if (Array.IndexOf(KnownProviderOptionNames, property.Name) < 0)
+                    {
+                        settings.Extras[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                    }
+
+                    break;
+            }
         }
     }
 
-    private static JsonNode MapToolChoice(ToolChoice? toolChoice)
+    private static JsonNode MapToolChoice(ToolChoice toolChoice)
     {
-        if (toolChoice is null || toolChoice.Type == "auto")
-        {
-            return "auto";
-        }
-
         if (toolChoice.Type == "none")
         {
             return "none";
@@ -259,156 +667,210 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return "auto";
     }
 
-    private static JsonObject MapMessage(ModelMessage message)
+    private Uri RequestUri()
     {
-        switch (message)
-        {
-            case SystemModelMessage system:
-                return new JsonObject { ["role"] = "system", ["content"] = system.Content };
-            case UserModelMessage user:
-                return new JsonObject { ["role"] = "user", ["content"] = MapUserContent(user) };
-            case AssistantModelMessage assistant:
-                var assistantJson = new JsonObject
-                {
-                    ["role"] = "assistant",
-                    ["content"] = assistant.Text,
-                };
-                if (assistant.ToolCalls.Count > 0)
-                {
-                    var calls = new JsonArray();
-                    foreach (var call in assistant.ToolCalls)
-                    {
-                        calls.Add(new JsonObject
-                        {
-                            ["id"] = call.ToolCallId,
-                            ["type"] = "function",
-                            ["function"] = new JsonObject
-                            {
-                                ["name"] = call.ToolName,
-                                ["arguments"] = call.ArgumentsJson,
-                            },
-                        });
-                    }
-
-                    assistantJson["tool_calls"] = calls;
-                }
-
-                return assistantJson;
-            case ToolModelMessage tool:
-                return new JsonObject
-                {
-                    ["role"] = "tool",
-                    ["tool_call_id"] = tool.ToolCallId,
-                    ["content"] = tool.OutputJson,
-                };
-            default:
-                throw new AiSdkException("Unsupported message role '" + message.Role + "'.");
-        }
+        return Endpoint ?? _provider.ChatUri(ModelId);
     }
 
-    private static JsonNode MapUserContent(UserModelMessage user)
+    private FinishReason MapFinish(string? raw)
     {
-        var onlyText = true;
-        foreach (var part in user.Content)
+        var mapped = _provider.Options.MapFinishReason?.Invoke(raw);
+        return mapped ?? FinishReasons.Parse(raw);
+    }
+
+    private static List<LanguageModelStreamPart> OpenReasoning(ref bool textOpen, ref bool reasoningOpen, string delta)
+    {
+        var parts = new List<LanguageModelStreamPart>();
+        if (textOpen)
         {
-            if (part is not TextContentPart)
-            {
-                onlyText = false;
-                break;
-            }
+            textOpen = false;
+            parts.Add(new TextEndStreamPart("txt-0"));
         }
 
-        if (onlyText)
+        if (!reasoningOpen)
         {
-            var builder = new StringBuilder();
-            foreach (var part in user.Content)
-            {
-                if (part is TextContentPart text)
-                {
-                    builder.Append(text.Text);
-                }
-            }
-
-            return builder.ToString();
+            reasoningOpen = true;
+            parts.Add(new ReasoningStartStreamPart("reasoning-0"));
         }
 
-        var parts = new JsonArray();
-        foreach (var part in user.Content)
-        {
-            if (part is TextContentPart textPart)
-            {
-                parts.Add(new JsonObject { ["type"] = "text", ["text"] = textPart.Text });
-            }
-            else if (part is FileContentPart file)
-            {
-                var url = file.Url;
-                if (url is null && file.Data != null)
-                {
-                    url = "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data);
-                }
-
-                parts.Add(new JsonObject
-                {
-                    ["type"] = "image_url",
-                    ["image_url"] = new JsonObject { ["url"] = url },
-                });
-            }
-        }
-
+        parts.Add(new ReasoningDeltaStreamPart("reasoning-0", delta));
         return parts;
     }
 
-    private static LanguageModelGenerateResult ParseGenerate(System.Text.Json.JsonElement root)
+    private static List<LanguageModelStreamPart> OpenText(ref bool textOpen, ref bool reasoningOpen, string delta)
     {
-        var choice = root.GetProperty("choices")[0];
-        var message = choice.GetProperty("message");
-        var content = new List<GeneratedContent>();
-        if (message.TryGetProperty("content", out var text) && text.ValueKind == System.Text.Json.JsonValueKind.String)
+        var parts = new List<LanguageModelStreamPart>();
+        if (reasoningOpen)
         {
-            var value = text.GetString();
-            if (!string.IsNullOrEmpty(value))
-            {
-                content.Add(new GeneratedText(value!));
-            }
+            reasoningOpen = false;
+            parts.Add(new ReasoningEndStreamPart("reasoning-0"));
         }
 
-        if (message.TryGetProperty("reasoning_content", out var reasoning) && reasoning.ValueKind == System.Text.Json.JsonValueKind.String)
+        if (!textOpen)
         {
-            content.Add(new GeneratedReasoning(reasoning.GetString() ?? string.Empty));
+            textOpen = true;
+            parts.Add(new TextStartStreamPart("txt-0"));
         }
 
-        if (message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            foreach (var call in toolCalls.EnumerateArray())
-            {
-                var function = call.GetProperty("function");
-                content.Add(new GeneratedToolCall(
-                    call.GetProperty("id").GetString() ?? JsonValues.GenerateId("call_"),
-                    function.GetProperty("name").GetString() ?? string.Empty,
-                    function.GetProperty("arguments").GetString() ?? "{}"));
-            }
-        }
-
-        var raw = choice.TryGetProperty("finish_reason", out var finish) ? finish.GetString() : null;
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == System.Text.Json.JsonValueKind.Object)
-        {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("prompt_tokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("completion_tokens", out var output) ? output.GetInt32() : null,
-                usageElement.TryGetProperty("total_tokens", out var total) ? total.GetInt32() : null);
-        }
-
-        var id = root.TryGetProperty("id", out var responseId) ? responseId.GetString() : null;
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw, responseId: id);
+        parts.Add(new TextDeltaStreamPart("txt-0", delta));
+        return parts;
     }
 
-    private static LanguageModelUsage ReadUsage(JsonObject usage)
+    private static void HandleToolDelta(
+        JsonObject tool,
+        StreamingToolCallTracker tracker,
+        Dictionary<int, PendingTool> pending,
+        HashSet<int> forwarded,
+        Dictionary<string, string> signatures)
     {
-        return new LanguageModelUsage(
-            ReadInt(usage, "prompt_tokens"),
-            ReadInt(usage, "completion_tokens"),
-            ReadInt(usage, "total_tokens"));
+        var delta = ReadToolDelta(tool);
+        var signature = ReadWireSignature(tool);
+        if (delta.Index == null || forwarded.Contains(delta.Index.Value))
+        {
+            tracker.ProcessDelta(delta);
+            Remember(signatures, delta.Id, signature);
+            return;
+        }
+
+        var index = delta.Index.Value;
+        if (!pending.TryGetValue(index, out var item))
+        {
+            item = new PendingTool { Id = delta.Id, Signature = signature };
+            pending[index] = item;
+        }
+        else
+        {
+            if (item.Id == null && delta.Id != null)
+            {
+                item.Id = delta.Id;
+            }
+
+            if (item.Signature == null && signature != null)
+            {
+                item.Signature = signature;
+            }
+        }
+
+        if (delta.HasArguments && delta.Arguments != null)
+        {
+            item.Arguments.Append(delta.Arguments);
+        }
+
+        if (!delta.NameIsString)
+        {
+            return;
+        }
+
+        tracker.ProcessDelta(new StreamingToolCallDelta(index, item.Id, delta.Name, item.Arguments.ToString()));
+        Remember(signatures, item.Id, item.Signature);
+        pending.Remove(index);
+        forwarded.Add(index);
+    }
+
+    private static void Remember(Dictionary<string, string> signatures, string? id, string? signature)
+    {
+        if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(signature))
+        {
+            signatures[id!] = signature!;
+        }
+    }
+
+    private static string? ReadWireSignature(JsonObject tool)
+    {
+        if (tool["extra_content"] is JsonObject extra
+            && extra["google"] is JsonObject google)
+        {
+            return AsString(google["thought_signature"]);
+        }
+
+        return null;
+    }
+
+    private static string? ReadWireSignature(JsonElement call)
+    {
+        if (call.TryGetProperty("extra_content", out var extra)
+            && extra.ValueKind == JsonValueKind.Object
+            && extra.TryGetProperty("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("thought_signature", out var signature)
+            && signature.ValueKind == JsonValueKind.String)
+        {
+            return signature.GetString();
+        }
+
+        return null;
+    }
+
+    private static string? PreferredString(JsonObject obj, string preferred, string fallback)
+    {
+        if (obj.ContainsKey(preferred) && !IsNullNode(obj[preferred]))
+        {
+            return AsString(obj[preferred]);
+        }
+
+        return AsString(obj[fallback]);
+    }
+
+    private static string? PreferredString(JsonElement obj, string preferred, string fallback)
+    {
+        if (obj.TryGetProperty(preferred, out var preferredValue)
+            && preferredValue.ValueKind != JsonValueKind.Null
+            && preferredValue.ValueKind != JsonValueKind.Undefined)
+        {
+            return preferredValue.ValueKind == JsonValueKind.String ? preferredValue.GetString() : null;
+        }
+
+        if (obj.TryGetProperty(fallback, out var fallbackValue) && fallbackValue.ValueKind == JsonValueKind.String)
+        {
+            return fallbackValue.GetString();
+        }
+
+        return null;
+    }
+
+    private static bool IsNullNode(JsonNode? node)
+    {
+        return node == null || node.GetValueKind() == JsonValueKind.Null;
+    }
+
+    private static string ErrorText(JsonNode? error)
+    {
+        if (error is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrEmpty(text))
+        {
+            return text!;
+        }
+
+        if (error is JsonObject obj)
+        {
+            var message = AsString(obj["message"]);
+            if (!string.IsNullOrEmpty(message))
+            {
+                return message!;
+            }
+        }
+
+        return "Unknown provider error.";
+    }
+
+    private static string? ResponseString(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var text = value.GetString();
+        return string.IsNullOrEmpty(text) ? null : text;
+    }
+
+    private static DateTimeOffset? ResponseTimestamp(JsonElement root)
+    {
+        if (!root.TryGetProperty("created", out var created) || created.ValueKind != JsonValueKind.Number || !created.TryGetInt64(out var seconds) || seconds == 0)
+        {
+            return null;
+        }
+
+        return DateTimeOffset.FromUnixTimeSeconds(seconds);
     }
 
     private static string? AsString(JsonNode? node)
@@ -451,5 +913,52 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         return new StreamingToolCallDelta(index, AsString(tool["id"]), name, arguments);
+    }
+
+    private sealed class ChatSettings
+    {
+        public string? User { get; set; }
+
+        public string? ReasoningEffort { get; set; }
+
+        public string? TextVerbosity { get; set; }
+
+        public bool? StrictJsonSchema { get; set; }
+
+        public string? ResponseFormat { get; set; }
+
+        public string? ResponseFormatDescription { get; set; }
+
+        public bool? StructuredOutputs { get; set; }
+
+        public JsonObject Extras { get; } = new();
+    }
+
+    private sealed class PendingTool
+    {
+        public string? Id { get; set; }
+
+        public string? Signature { get; set; }
+
+        public StringBuilder Arguments { get; } = new();
+    }
+
+    private sealed class PreparedRequest
+    {
+        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey)
+        {
+            Json = json;
+            Headers = headers;
+            Warnings = warnings;
+            MetadataKey = metadataKey;
+        }
+
+        public string Json { get; }
+
+        public Dictionary<string, string?> Headers { get; }
+
+        public List<CallWarning> Warnings { get; }
+
+        public string MetadataKey { get; }
     }
 }

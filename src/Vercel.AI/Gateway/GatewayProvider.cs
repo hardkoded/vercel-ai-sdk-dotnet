@@ -71,7 +71,7 @@ public sealed class GatewayProvider : ProviderBase
         return new GatewayImageModel(this, modelId);
     }
 
-    internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming)
+    internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming, IReadOnlyDictionary<string, string?>? extra = null)
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
@@ -87,7 +87,30 @@ public sealed class GatewayProvider : ProviderBase
             headers["ai-language-model-streaming"] = value ? "true" : "false";
         }
 
+        if (extra != null)
+        {
+            foreach (var pair in extra)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
         return headers;
+    }
+
+    internal static Exception MapFailure(Exception exception)
+    {
+        if (exception is ApiException api)
+        {
+            return GatewayErrors.FromResponseBody(api.ResponseBody, api.StatusCode, "api-key", api);
+        }
+
+        if (exception is ApiTimeoutException timeout)
+        {
+            return GatewayTimeoutError.Create(timeout.Message, timeout);
+        }
+
+        return exception;
     }
 
     internal Uri Route(string path)
@@ -120,13 +143,24 @@ public sealed class GatewayLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            _provider.Route("language-model"),
-            V4Json.CallOptions(options),
-            _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false),
-            cancellationToken).ConfigureAwait(false);
-        return V4Json.ParseGenerate(document.RootElement);
+        try
+        {
+            using var document = await _provider.Http.SendJsonAsync(
+                HttpMethod.Post,
+                _provider.Route("language-model"),
+                V4Json.CallOptions(options),
+                _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false, options.Headers),
+                cancellationToken).ConfigureAwait(false);
+            return V4Json.ParseGenerate(document.RootElement);
+        }
+        catch (ApiException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+        catch (ApiTimeoutException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
     }
 
     /// <inheritdoc />
@@ -134,26 +168,43 @@ public sealed class GatewayLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var data in _provider.Http.SendSseAsync(
-            _provider.Route("language-model"),
-            V4Json.CallOptions(options),
-            _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true),
-            cancellationToken).ConfigureAwait(false))
+        var collected = new List<LanguageModelStreamPart>();
+        try
         {
-            LanguageModelStreamPart? part;
-            try
+            await foreach (var data in _provider.Http.SendSseAsync(
+                _provider.Route("language-model"),
+                V4Json.CallOptions(options),
+                _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
+                cancellationToken).ConfigureAwait(false))
             {
-                part = V4Json.ParseStreamPart(data);
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
+                LanguageModelStreamPart? part;
+                try
+                {
+                    part = V4Json.ParseStreamPart(data);
+                }
+                catch (JsonException)
+                {
+                    continue;
+                }
 
-            if (part != null)
-            {
-                yield return part;
+                if (part != null)
+                {
+                    collected.Add(part);
+                }
             }
+        }
+        catch (ApiException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+        catch (ApiTimeoutException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+
+        foreach (var part in collected)
+        {
+            yield return part;
         }
     }
 }
@@ -180,7 +231,19 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    {
+        return DoEmbedAsync(values, null, null, cancellationToken);
+    }
+
+    /// <summary>Embeds values and sends <paramref name="providerOptions"/> when it is a JSON object.</summary>
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, CancellationToken cancellationToken)
+    {
+        return DoEmbedAsync(values, providerOptions, null, cancellationToken);
+    }
+
+    /// <summary>Embeds values. Call headers are merged onto the Gateway V4 headers.</summary>
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken)
     {
         var input = new JsonArray();
         foreach (var value in values)
@@ -189,32 +252,53 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         }
 
         var body = new JsonObject { ["values"] = input };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            _provider.Route("embedding-model"),
-            body.ToJsonString(),
-            _provider.Headers("ai-embedding-model-specification-version", "4", "ai-model-id", ModelId, null),
-            cancellationToken).ConfigureAwait(false);
-        var vectors = new List<float[]>();
-        foreach (var embedding in document.RootElement.GetProperty("embeddings").EnumerateArray())
+        if (providerOptions is { ValueKind: JsonValueKind.Object } options)
         {
-            var vector = new float[embedding.GetArrayLength()];
-            var index = 0;
-            foreach (var number in embedding.EnumerateArray())
+            body["providerOptions"] = JsonNode.Parse(options.GetRawText());
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = await _provider.Http.SendJsonAsync(
+                HttpMethod.Post,
+                _provider.Route("embedding-model"),
+                body.ToJsonString(),
+                _provider.Headers("ai-embedding-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (ApiException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+        catch (ApiTimeoutException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+
+        using (document)
+        {
+            var vectors = new List<float[]>();
+            foreach (var embedding in document.RootElement.GetProperty("embeddings").EnumerateArray())
             {
-                vector[index++] = number.GetSingle();
+                var vector = new float[embedding.GetArrayLength()];
+                var index = 0;
+                foreach (var number in embedding.EnumerateArray())
+                {
+                    vector[index++] = number.GetSingle();
+                }
+
+                vectors.Add(vector);
             }
 
-            vectors.Add(vector);
-        }
+            int? tokens = null;
+            if (document.RootElement.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object && usage.TryGetProperty("tokens", out var tokenCount))
+            {
+                tokens = tokenCount.GetInt32();
+            }
 
-        int? tokens = null;
-        if (document.RootElement.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object && usage.TryGetProperty("tokens", out var tokenCount))
-        {
-            tokens = tokenCount.GetInt32();
+            return new EmbeddingResult(vectors, tokens);
         }
-
-        return new EmbeddingResult(vectors, tokens);
     }
 }
 
@@ -243,39 +327,63 @@ public sealed class GatewayImageModel : IImageModel
         {
             ["prompt"] = options.Prompt,
             ["n"] = options.Count,
-            ["size"] = options.Size,
-            ["aspectRatio"] = options.AspectRatio,
         };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            _provider.Route("image-model"),
-            body.ToJsonString(),
-            _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null),
-            cancellationToken).ConfigureAwait(false);
-        var images = new List<GeneratedImage>();
-        if (document.RootElement.TryGetProperty("images", out var array))
+        if (options.Size != null)
         {
-            foreach (var item in array.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.String)
-                {
-                    images.Add(new GeneratedImage("image/png", Convert.FromBase64String(item.GetString() ?? string.Empty), null));
-                    continue;
-                }
-
-                string? url = item.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
-                byte[]? data = null;
-                if (item.TryGetProperty("b64", out var b64) || item.TryGetProperty("base64", out b64))
-                {
-                    data = Convert.FromBase64String(b64.GetString() ?? string.Empty);
-                }
-
-                var mediaType = item.TryGetProperty("mediaType", out var media) ? media.GetString() ?? "image/png" : "image/png";
-                images.Add(new GeneratedImage(mediaType, data, url));
-            }
+            body["size"] = options.Size;
         }
 
-        return new ImageGenerationResult(images);
+        if (options.AspectRatio != null)
+        {
+            body["aspectRatio"] = options.AspectRatio;
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = await _provider.Http.SendJsonAsync(
+                HttpMethod.Post,
+                _provider.Route("image-model"),
+                body.ToJsonString(),
+                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (ApiException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+        catch (ApiTimeoutException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+
+        using (document)
+        {
+            var images = new List<GeneratedImage>();
+            if (document.RootElement.TryGetProperty("images", out var array))
+            {
+                foreach (var item in array.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.String)
+                    {
+                        images.Add(new GeneratedImage("image/png", Convert.FromBase64String(item.GetString() ?? string.Empty), null));
+                        continue;
+                    }
+
+                    string? url = item.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
+                    byte[]? data = null;
+                    if (item.TryGetProperty("b64", out var b64) || item.TryGetProperty("base64", out b64))
+                    {
+                        data = Convert.FromBase64String(b64.GetString() ?? string.Empty);
+                    }
+
+                    var mediaType = item.TryGetProperty("mediaType", out var media) ? media.GetString() ?? "image/png" : "image/png";
+                    images.Add(new GeneratedImage(mediaType, data, url));
+                }
+            }
+
+            return new ImageGenerationResult(images);
+        }
     }
 }
 

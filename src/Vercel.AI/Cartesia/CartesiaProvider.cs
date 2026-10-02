@@ -1,7 +1,6 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -19,10 +18,19 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.cartesia.ai";
 
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public CartesiaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("Cartesia does not provide language models.");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -41,25 +49,48 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        options.Headers["Cartesia-Version"] = "2026-03-01";
+        options.UserAgent = ProviderExchange.UserAgent("cartesia");
         return options;
     }
 
     /// <inheritdoc />
     public override ISpeechModel SpeechModel(string modelId) => new Speech(this, modelId);
 
+    /// <summary>Synthesizes speech. <paramref name="headers"/> override the provider headers.</summary>
+    public Task<SpeechResult> GenerateSpeechAsync(string modelId, SpeechCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    {
+        return new Speech(this, modelId).GenerateAsync(options, headers, cancellationToken);
+    }
+
     private sealed class Speech : ISpeechModel
     {
         private readonly CartesiaProvider _provider;
         public Speech(CartesiaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "cartesia";
+        public string Provider => "cartesia.speech";
         public string ModelId { get; }
-        public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+        public Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
         {
-            var voice = options.Voice ?? "default";
-            var path = "/tts/bytes".Replace("{voice}", voice);
-            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId, ["model"] = ModelId };
-            var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            return new SpeechResult(bytes, "audio/mpeg");
+            return GenerateAsync(options, null, cancellationToken);
+        }
+
+        public async Task<SpeechResult> GenerateAsync(SpeechCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(options.Voice))
+            {
+                throw new AiSdkException("Cartesia speech requires a voice id.");
+            }
+
+            var body = new JsonObject
+            {
+                ["model_id"] = ModelId,
+                ["transcript"] = options.Text,
+                ["voice"] = new JsonObject { ["mode"] = "id", ["id"] = options.Voice },
+                ["output_format"] = new JsonObject { ["container"] = "mp3", ["sample_rate"] = 44100, ["bit_rate"] = 128000 },
+            };
+            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
+            var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/tts/bytes"), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
+            return new SpeechResult(response.Bytes, "audio/mpeg");
         }
     }
 

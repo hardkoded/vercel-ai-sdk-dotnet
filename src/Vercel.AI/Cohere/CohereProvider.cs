@@ -26,12 +26,15 @@ public sealed class CohereProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderName = "cohere";
 
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public CohereProvider(HttpClient httpClient, CohereOptions? options = null)
         : base(ProviderName)
     {
         Options = options ?? new CohereOptions();
-        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        Http = new ProviderHttp(_httpClient);
     }
 
     /// <summary>Options.</summary>
@@ -251,28 +254,175 @@ public sealed class CohereRerankingModel : IRerankingModel
     /// <inheritdoc />
     public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
     {
-        var docs = new JsonArray();
-        foreach (var document in documents)
+        var result = await RerankAsync(new CohereRerankRequest { Query = query, TextDocuments = documents, TopN = topN }, cancellationToken).ConfigureAwait(false);
+        return new RerankResult(result.Ranking);
+    }
+
+    /// <summary>Reranks text or JSON documents and returns the response body.</summary>
+    public async Task<CohereRerankResult> RerankAsync(CohereRerankRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null)
         {
-            docs.Add(document);
+            throw new ArgumentNullException(nameof(request));
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["query"] = query, ["documents"] = docs };
-        if (topN is { } top)
+        var warnings = new List<CohereRerankWarning>();
+        var documents = new JsonArray();
+        if (request.ObjectDocuments != null)
+        {
+            warnings.Add(new CohereRerankWarning("compatibility", "object documents", "Object documents are converted to strings."));
+            foreach (var document in request.ObjectDocuments)
+            {
+                documents.Add(document.ToJsonString());
+            }
+        }
+        else if (request.TextDocuments != null)
+        {
+            foreach (var document in request.TextDocuments)
+            {
+                documents.Add(document);
+            }
+        }
+
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["query"] = request.Query,
+            ["documents"] = documents,
+        };
+        if (request.TopN is { } top)
         {
             body["top_n"] = top;
         }
 
-        using var response = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "rerank"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
-        var items = new List<RerankItem>();
-        foreach (var item in response.RootElement.GetProperty("results").EnumerateArray())
+        if (request.MaxTokensPerDoc is { } maxTokens)
         {
-            var score = item.TryGetProperty("relevance_score", out var relevance) ? relevance.GetDouble() : 0;
-            items.Add(new RerankItem(item.GetProperty("index").GetInt32(), score));
+            body["max_tokens_per_doc"] = maxTokens;
         }
 
-        return new RerankResult(items);
+        if (request.Priority is { } priority)
+        {
+            body["priority"] = priority;
+        }
+
+        var headers = ProviderExchange.Merge(_provider.Headers(), request.Headers);
+        var response = await ProviderExchange.SendAsync(
+            _provider._httpClient,
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "rerank"),
+            ProviderExchange.Json(body.ToJsonString()),
+            headers,
+            cancellationToken).ConfigureAwait(false);
+        using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+        {
+            var ranking = new List<RerankItem>();
+            if (document.RootElement.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in results.EnumerateArray())
+                {
+                    var score = item.TryGetProperty("relevance_score", out var relevance) ? relevance.GetDouble() : 0;
+                    ranking.Add(new RerankItem(item.GetProperty("index").GetInt32(), score));
+                }
+            }
+
+            var id = document.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String
+                ? idValue.GetString()
+                : null;
+            return new CohereRerankResult(ranking, warnings, null, new CohereRerankResponse(id, response.Headers, document.RootElement.Clone()));
+        }
     }
+}
+
+/// <summary>A compatibility warning from a Cohere rerank call.</summary>
+public sealed class CohereRerankWarning
+{
+    /// <summary>Creates a warning.</summary>
+    public CohereRerankWarning(string type, string feature, string details)
+    {
+        Type = type ?? string.Empty;
+        Feature = feature ?? string.Empty;
+        Details = details ?? string.Empty;
+    }
+
+    /// <summary>Warning type.</summary>
+    public string Type { get; }
+
+    /// <summary>Feature name.</summary>
+    public string Feature { get; }
+
+    /// <summary>Explanation.</summary>
+    public string Details { get; }
+}
+
+/// <summary>Cohere rerank request.</summary>
+public sealed class CohereRerankRequest
+{
+    /// <summary>Query text.</summary>
+    public string Query { get; set; } = string.Empty;
+
+    /// <summary>Plain-text documents.</summary>
+    public IReadOnlyList<string>? TextDocuments { get; set; }
+
+    /// <summary>JSON documents. They are stringified before they are sent.</summary>
+    public IReadOnlyList<JsonObject>? ObjectDocuments { get; set; }
+
+    /// <summary><c>top_n</c>, when set.</summary>
+    public int? TopN { get; set; }
+
+    /// <summary><c>max_tokens_per_doc</c>, when set.</summary>
+    public int? MaxTokensPerDoc { get; set; }
+
+    /// <summary><c>priority</c>, when set.</summary>
+    public int? Priority { get; set; }
+
+    /// <summary>Headers merged over the provider headers.</summary>
+    public IDictionary<string, string>? Headers { get; set; }
+}
+
+/// <summary>Cohere rerank HTTP response.</summary>
+public sealed class CohereRerankResponse
+{
+    /// <summary>Creates response metadata.</summary>
+    public CohereRerankResponse(string? id, IReadOnlyDictionary<string, string> headers, JsonElement body)
+    {
+        Id = id;
+        Headers = headers ?? new Dictionary<string, string>();
+        Body = body;
+    }
+
+    /// <summary>Response id, when the body includes one.</summary>
+    public string? Id { get; }
+
+    /// <summary>Response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+
+    /// <summary>Raw response body.</summary>
+    public JsonElement Body { get; }
+}
+
+/// <summary>Cohere rerank result. Provider metadata stays unset.</summary>
+public sealed class CohereRerankResult
+{
+    /// <summary>Creates a rerank result.</summary>
+    public CohereRerankResult(IReadOnlyList<RerankItem> ranking, IReadOnlyList<CohereRerankWarning> warnings, JsonElement? providerMetadata, CohereRerankResponse response)
+    {
+        Ranking = ranking ?? Array.Empty<RerankItem>();
+        Warnings = warnings ?? Array.Empty<CohereRerankWarning>();
+        ProviderMetadata = providerMetadata;
+        Response = response ?? throw new ArgumentNullException(nameof(response));
+    }
+
+    /// <summary>Documents in provider order.</summary>
+    public IReadOnlyList<RerankItem> Ranking { get; }
+
+    /// <summary>Warnings. Object documents produce one compatibility warning.</summary>
+    public IReadOnlyList<CohereRerankWarning> Warnings { get; }
+
+    /// <summary>Always null. The raw payload is <see cref="CohereRerankResponse.Body"/>.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Response id, headers, and body.</summary>
+    public CohereRerankResponse Response { get; }
 }
 
 /// <summary>Registers Cohere.</summary>

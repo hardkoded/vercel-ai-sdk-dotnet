@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI;
@@ -89,7 +90,14 @@ internal static class Generation
                     current = update.Model;
                 }
 
-                var generated = await current.DoGenerateAsync(CallOptions(options, messages), cancellationToken).ConfigureAwait(false);
+                var callOptions = CallOptions(options, messages);
+                if (update?.ToolChoice != null)
+                {
+                    callOptions.ToolChoice = update.ToolChoice;
+                }
+
+                var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
@@ -97,7 +105,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -175,6 +183,12 @@ internal static class Generation
                     current = update.Model;
                 }
 
+                var callOptions = CallOptions(options, messages);
+                if (update?.ToolChoice != null)
+                {
+                    callOptions.ToolChoice = update.ToolChoice;
+                }
+
                 var text = new StringBuilder();
                 var reasoning = new StringBuilder();
                 var toolCalls = new List<GeneratedToolCall>();
@@ -182,8 +196,9 @@ internal static class Generation
                 FinishReason? finish = null;
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
+                IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Empty;
-                await foreach (var part in current.DoStreamAsync(CallOptions(options, messages), cancellationToken).ConfigureAwait(false))
+                await foreach (var part in current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false))
                 {
                     switch (part)
                     {
@@ -214,6 +229,9 @@ internal static class Generation
                         case ErrorStreamPart error:
                             buffer.Add(new ErrorPart(error.Message));
                             throw new AiSdkException(error.Message);
+                        case StreamStartStreamPart start:
+                            warnings = start.Warnings;
+                            break;
                     }
                 }
 
@@ -222,7 +240,9 @@ internal static class Generation
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
                     rawFinish,
+                    warnings,
                     providerMetadata: providerMetadata);
+                EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
@@ -236,7 +256,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -307,7 +327,8 @@ internal static class Generation
     {
         var toolCalls = new List<GeneratedToolCall>();
         var sources = new List<GeneratedSource>();
-        string? reasoning = null;
+        var files = new List<GeneratedFile>();
+        var reasoningParts = new List<string>();
         foreach (var part in generated.Content)
         {
             switch (part)
@@ -319,21 +340,87 @@ internal static class Generation
                     sources.Add(source);
                     break;
                 case GeneratedReasoning generatedReasoning:
-                    reasoning = generatedReasoning.Text;
+                    reasoningParts.Add(generatedReasoning.Text);
+                    break;
+                case GeneratedFile file:
+                    files.Add(file);
+                    break;
+                case GeneratedFileUrl remote:
+                    DownloadUrls.ValidateDownloadUrl(remote.Url);
                     break;
             }
         }
 
+        var reasoning = reasoningParts.Count == 0 ? null : string.Concat(reasoningParts);
+        if (reasoning != null && reasoning.Length == 0)
+        {
+            reasoning = null;
+        }
         messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning));
         var toolResults = new List<ExecutedTool>();
-        foreach (var call in toolCalls)
+        if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
-            var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
-            toolResults.Add(executed);
-            messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
+            foreach (var call in toolCalls)
+            {
+                var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+                toolResults.Add(executed);
+                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
+            }
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files);
+    }
+
+    private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
+    {
+        if (toolChoice is null || toolChoice.Type == "auto" || toolChoice.Type == "none")
+        {
+            return;
+        }
+
+        var calls = new List<GeneratedToolCall>();
+        foreach (var part in generated.Content)
+        {
+            if (part is GeneratedToolCall call)
+            {
+                calls.Add(call);
+            }
+        }
+
+        if (toolChoice.Type == "required")
+        {
+            if (calls.Count == 0)
+            {
+                throw new ToolChoiceViolationException(
+                    "Model response did not contain a tool call even though tool choice was required.",
+                    toolChoice,
+                    generated.FinishReason,
+                    model.Provider,
+                    model.ModelId,
+                    generated.Content);
+            }
+
+            return;
+        }
+
+        if (toolChoice is ToolChoice.NamedChoice named)
+        {
+            foreach (var call in calls)
+            {
+                if (string.Equals(call.ToolName, named.ToolName, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            throw new ToolChoiceViolationException(
+                "Model response did not contain a call to the required tool '" + named.ToolName + "'.",
+                toolChoice,
+                generated.FinishReason,
+                model.Provider,
+                model.ModelId,
+                generated.Content);
+        }
     }
 
     private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)

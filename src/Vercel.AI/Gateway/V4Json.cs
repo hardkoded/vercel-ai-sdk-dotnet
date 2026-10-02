@@ -109,6 +109,17 @@ public static class V4Json
             body["toolChoice"] = choice;
         }
 
+        if (options.ProviderOptions is { Count: > 0 })
+        {
+            var providers = new JsonObject();
+            foreach (var pair in options.ProviderOptions)
+            {
+                providers[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+            }
+
+            body["providerOptions"] = providers;
+        }
+
         return body.ToJsonString();
     }
 

@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.DeepInfra;
 
@@ -22,6 +23,12 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
     public DeepInfraProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new DeepInfraImageModel(this, modelId);
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
@@ -51,7 +58,20 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = true;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.SupportsStructuredOutputs = true;
+        options.SelectErrorMessage = DeepInfraImageModel.ReadError;
+        if (string.IsNullOrEmpty(options.ImageBaseUrl))
+        {
+            options.ImageBaseUrl = options.BaseUrl == DefaultBaseUrl
+                ? "https://api.deepinfra.com/v1/inference"
+                : options.BaseUrl.TrimEnd('/') + "/inference";
+        }
+
         return options;
     }
 }

@@ -13,10 +13,6 @@ namespace Vercel.AI.Tests;
 public sealed class HttpTests
 {
     [Fact]
-    [UpstreamTest(
-        "packages/ai/src/util/retry-with-exponential-backoff.test.ts::retryWithExponentialBackoffRespectingRetryHeaders > with mocked provider responses::should handle multiple retries with exponential backoff progression",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Retries one 500 and returns the next body. Does not assert delay headers.")]
     public async Task Retries_a_retryable_status_then_returns_the_body()
     {
         var handler = new ScriptedHandler();

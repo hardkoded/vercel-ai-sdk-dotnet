@@ -19,10 +19,11 @@ PARITY = ROOT / "tests" / "parity"
 TEST_DIR = ROOT / "tests" / "Vercel.AI.Tests"
 
 ATTR = re.compile(
-    r'\[UpstreamTest\(\s*"(?P<id>(?:\\.|[^"\\])*)"'
+    r'\[UpstreamTest\(\s*(?:(?P<prefix>[A-Za-z_][A-Za-z0-9_]*)\s*\+\s*)?"(?P<id>(?:\\.|[^"\\])*)"'
     r'(?P<rest>.*?)\)\]',
     re.S,
 )
+CONST_RE = re.compile(r'const\s+string\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"((?:\\.|[^"\\])*)"')
 CLASS_RE = re.compile(r"\bclass\s+(\w+)")
 METHOD_RE = re.compile(r"public\s+(?:async\s+)?(?:Task|void)\s+(\w+)\s*\(")
 COVERAGE_RE = re.compile(r"Coverage\s*=\s*UpstreamCoverage\.(Covered|Partial)")
@@ -35,8 +36,9 @@ def unescape(value: str) -> str:
 
 def load_links() -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
-    for path in sorted(TEST_DIR.glob("*.cs")):
+    for path in sorted(TEST_DIR.rglob("*.cs")):
         text = path.read_text(encoding="utf-8")
+        constants = {name: unescape(value) for name, value in CONST_RE.findall(text)}
         class_name = "Tests"
         cursor = 0
         for match in ATTR.finditer(text):
@@ -51,8 +53,14 @@ def load_links() -> list[dict[str, str]]:
             rest = match.group("rest")
             coverage = COVERAGE_RE.search(rest)
             note = NOTE_RE.search(rest)
+            upstream_id = unescape(match.group("id"))
+            prefix_name = match.group("prefix")
+            if prefix_name:
+                if prefix_name not in constants:
+                    raise SystemExit(f"Unknown string constant {prefix_name} in {path}")
+                upstream_id = constants[prefix_name] + upstream_id
             link = {
-                "upstreamId": unescape(match.group("id")),
+                "upstreamId": upstream_id,
                 "dotnetTest": f"Vercel.AI.Tests.{class_name}.{method.group(1)}",
                 "coverage": coverage.group(1) if coverage else "Partial",
             }
@@ -60,6 +68,16 @@ def load_links() -> list[dict[str, str]]:
                 link["note"] = unescape(note.group(1))
             links.append(link)
             cursor = match.end()
+    seen: dict[str, str] = {}
+    duplicates: list[str] = []
+    for link in links:
+        previous = seen.get(link["upstreamId"])
+        if previous is not None:
+            duplicates.append(f"{link['upstreamId']}\n  {previous}\n  {link['dotnetTest']}")
+        else:
+            seen[link["upstreamId"]] = link["dotnetTest"]
+    if duplicates:
+        raise SystemExit("Duplicate upstream ids:\n" + "\n".join(duplicates))
     return links
 
 
