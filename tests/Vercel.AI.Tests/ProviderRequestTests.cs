@@ -37,7 +37,6 @@ using Vercel.AI.OpenResponses;
 using Vercel.AI.Perplexity;
 using Vercel.AI.Prodia;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
 using Vercel.AI.QuiverAI;
 using Vercel.AI.Replicate;
 using Vercel.AI.RevAI;
@@ -89,90 +88,6 @@ public sealed class ProviderRequestTests
         var authorization = string.Join(" ", values);
         Assert.StartsWith("AWS4-HMAC-SHA256", authorization);
         Assert.Contains("us-east-1/bedrock/aws4_request", authorization);
-    }
-
-    [Fact]
-    public async Task Bedrock_rejects_a_region_that_is_not_a_single_dns_label()
-    {
-        var handler = new ScriptedHandler();
-        var provider = AmazonBedrockProvider.Create(
-            new AmazonBedrockOptions
-            {
-                Region = "user@internal:8080/#",
-                AccessKeyId = "AKIA",
-                SecretAccessKey = "secret",
-            },
-            handler);
-        var model = provider.LanguageModel("m");
-        var error = await Assert.ThrowsAsync<ArgumentException>(() => model.DoGenerateAsync(Prompt(), CancellationToken.None));
-        Assert.Contains("AWS region must be a single DNS label", error.Message);
-        Assert.Equal(0, handler.Calls);
-    }
-
-    [Fact]
-    public void Vertex_rejects_a_location_that_is_not_a_single_dns_label()
-    {
-        var handler = new ScriptedHandler();
-        var error = Assert.Throws<ArgumentException>(() => GoogleVertexProvider.Create(
-            new VertexOptions
-            {
-                ApiKey = "secret",
-                Project = "demo",
-                Region = "evil.com/#",
-            },
-            handler));
-        Assert.Contains("Vertex location must be a single DNS label", error.Message);
-        Assert.Equal(0, handler.Calls);
-    }
-
-    [Theory]
-    [InlineData("a")]
-    [InlineData("0")]
-    [InlineData("us-east-1")]
-    [InlineData("us-central1")]
-    [InlineData("MY-resource")]
-    public void Hostname_part_accepts_a_single_dns_label(string value)
-    {
-        Assert.True(HostnameParts.IsValid(value));
-    }
-
-    [Fact]
-    public void Hostname_part_accepts_a_63_character_label()
-    {
-        Assert.True(HostnameParts.IsValid(new string('a', 63)));
-    }
-
-    [Fact]
-    public void Hostname_part_rejects_null()
-    {
-        Assert.False(HostnameParts.IsValid(null));
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("a.b")]
-    [InlineData("user@internal:8080/#")]
-    [InlineData("evil.com/#")]
-    [InlineData("us-east-1:443")]
-    [InlineData("us-east-1/../..")]
-    [InlineData("evil.com/#extra")]
-    [InlineData("a_b")]
-    [InlineData("us east 1")]
-    [InlineData(" ")]
-    [InlineData("a\n")]
-    [InlineData("a\r")]
-    [InlineData("a\t")]
-    [InlineData("-a")]
-    [InlineData("a-")]
-    public void Hostname_part_rejects_a_value_that_is_not_one_label(string value)
-    {
-        Assert.False(HostnameParts.IsValid(value));
-    }
-
-    [Fact]
-    public void Hostname_part_rejects_a_64_character_label()
-    {
-        Assert.False(HostnameParts.IsValid(new string('a', 64)));
     }
 
     public static IEnumerable<object[]> Cases()

@@ -65,7 +65,7 @@ public sealed class AmazonBedrockProvider : ProviderBase
 
     internal Uri ConverseUri(string modelId)
     {
-        if (!HostnameParts.IsValid(Options.Region))
+        if (!HostnameParts.IsValidHostnamePart(Options.Region))
         {
             throw new ArgumentException("An AWS region must be a single DNS label.", nameof(AmazonBedrockOptions.Region));
         }

@@ -14,7 +14,7 @@ public static class HostnameParts
     /// <summary>
     /// Returns whether <paramref name="value"/> is one DNS label: 1–63 letters, digits, or hyphens, with no leading or trailing hyphen.
     /// </summary>
-    public static bool IsValid(string? value)
+    public static bool IsValidHostnamePart(string? value)
     {
         if (value is null)
         {
