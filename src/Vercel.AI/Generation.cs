@@ -58,6 +58,7 @@ internal static class Generation
             ToolChoice = options.ToolChoice,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
+            Reasoning = options.Reasoning,
         };
     }
 
@@ -179,6 +180,7 @@ internal static class Generation
                 var sources = new List<GeneratedSource>();
                 FinishReason? finish = null;
                 string? rawFinish = null;
+                JsonElement? providerMetadata = null;
                 var usage = LanguageModelUsage.Empty;
                 await foreach (var part in current.DoStreamAsync(CallOptions(options, messages), cancellationToken).ConfigureAwait(false))
                 {
@@ -193,12 +195,12 @@ internal static class Generation
                             buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                             break;
                         case ToolCallStreamPart toolCall:
-                            var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson);
+                            var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata);
                             toolCalls.Add(call);
                             buffer.Add(new ToolCallPart(call));
                             break;
                         case SourceStreamPart source:
-                            var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title);
+                            var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
                             sources.Add(generatedSource);
                             buffer.Add(new SourcePart(generatedSource));
                             break;
@@ -206,6 +208,7 @@ internal static class Generation
                             finish = done.FinishReason;
                             rawFinish = done.RawFinishReason;
                             usage = done.Usage;
+                            providerMetadata = done.ProviderMetadata;
                             break;
                         case ErrorStreamPart error:
                             buffer.Add(new ErrorPart(error.Message));
@@ -217,7 +220,8 @@ internal static class Generation
                     BuildContent(text.ToString(), reasoning.ToString(), toolCalls, sources),
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
-                    rawFinish);
+                    rawFinish,
+                    providerMetadata: providerMetadata);
                 var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
@@ -327,7 +331,7 @@ internal static class Generation
             messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata);
     }
 
     private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
@@ -426,7 +430,7 @@ internal static class Generation
             output = document.RootElement.Clone();
         }
 
-        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources);
+        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata);
     }
 }
 

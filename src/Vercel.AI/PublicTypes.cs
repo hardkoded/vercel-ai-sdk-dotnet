@@ -99,7 +99,8 @@ public sealed class StepResult
         IReadOnlyList<ExecutedTool> toolResults,
         FinishReason finishReason,
         LanguageModelUsage usage,
-        IReadOnlyList<GeneratedSource> sources)
+        IReadOnlyList<GeneratedSource> sources,
+        JsonElement? providerMetadata = null)
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -108,6 +109,7 @@ public sealed class StepResult
         FinishReason = finishReason;
         Usage = usage ?? LanguageModelUsage.Empty;
         Sources = sources ?? Array.Empty<GeneratedSource>();
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Text generated in this step.</summary>
@@ -130,6 +132,9 @@ public sealed class StepResult
 
     /// <summary>Sources cited in this step.</summary>
     public IReadOnlyList<GeneratedSource> Sources { get; }
+
+    /// <summary>Provider metadata for this step, including cost and native-tool counts when the provider sent them.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -357,6 +362,12 @@ public class GenerateTextOptions
     /// <summary>Seed.</summary>
     public int? Seed { get; set; }
 
+    /// <summary>
+    /// Reasoning effort: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, or <c>xhigh</c>.
+    /// A provider option with the same setting wins when both are set.
+    /// </summary>
+    public string? Reasoning { get; set; }
+
     /// <summary>Retries for provider calls made by this request. Providers that own their HTTP stack use their own policy.</summary>
     public int? MaxRetries { get; set; }
 
@@ -401,7 +412,8 @@ public sealed class GenerateTextResult
         FinishReason finishReason,
         LanguageModelUsage usage,
         JsonElement? output,
-        IReadOnlyList<GeneratedSource> sources)
+        IReadOnlyList<GeneratedSource> sources,
+        JsonElement? providerMetadata = null)
     {
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
@@ -410,6 +422,7 @@ public sealed class GenerateTextResult
         Usage = usage ?? LanguageModelUsage.Empty;
         Output = output;
         Sources = sources ?? Array.Empty<GeneratedSource>();
+        ProviderMetadata = providerMetadata;
         var calls = new List<GeneratedToolCall>();
         var results = new List<ExecutedTool>();
         foreach (var step in Steps)
@@ -448,6 +461,9 @@ public sealed class GenerateTextResult
 
     /// <summary>Sources from every step.</summary>
     public IReadOnlyList<GeneratedSource> Sources { get; }
+
+    /// <summary>Provider metadata from the last step.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

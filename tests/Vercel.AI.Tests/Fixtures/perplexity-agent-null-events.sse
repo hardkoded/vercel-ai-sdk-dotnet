@@ -1,0 +1,15 @@
+data: {"type":"response.created","sequence_number":null,"response":null,"item":null,"output_index":null,"item_id":null,"content_index":null,"delta":null,"text":null,"thought":null,"queries":null,"urls":null,"results":null,"contents":null,"error":null}
+
+data: {"type":"response.reasoning.started","sequence_number":0,"thought":null}
+
+data: {"type":"response.reasoning.fetch_url_results","call_id":"call-1","sequence_number":1,"thought":"Fetched content from 0 URLs","contents":null,"urls":null,"queries":null,"error":{"code":null,"message":"unused","type":null}}
+
+data: {"type":"response.reasoning.search_results","sequence_number":2,"results":null}
+
+data: {"type":"response.reasoning.stopped","sequence_number":3}
+
+data: {"type":"response.output_item.done","item":null,"output_index":null}
+
+data: {"type":"response.output_text.delta","item_id":"msg-1","output_index":0,"content_index":null,"delta":"Hello"}
+
+data: {"type":"response.output_text.done","item_id":"msg-1","output_index":0,"content_index":null,"delta":null,"text":null}
