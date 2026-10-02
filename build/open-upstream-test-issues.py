@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,18 +26,26 @@ ISSUES = ROOT / "tests" / "parity" / "issues.json"
 
 
 def create_issue(title: str, body: str) -> str:
-    result = subprocess.run(
-        ["gh", "issue", "create", "--repo", REPO, "--title", title, "--body", body],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise SystemExit(result.stderr.strip() or result.stdout.strip() or "gh issue create failed")
-    url = result.stdout.strip().splitlines()[-1]
-    if not url.startswith("https://"):
-        raise SystemExit("Unexpected gh output: " + result.stdout)
-    return url
+    delay = 2
+    last_error = "gh issue create failed"
+    for _ in range(6):
+        result = subprocess.run(
+            ["gh", "issue", "create", "--repo", REPO, "--title", title, "--body", body],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            url = result.stdout.strip().splitlines()[-1]
+            if not url.startswith("https://"):
+                raise SystemExit("Unexpected gh output: " + result.stdout)
+            return url
+        last_error = result.stderr.strip() or result.stdout.strip() or last_error
+        if "rate limit" not in last_error.lower() and "abuse" not in last_error.lower():
+            raise SystemExit(last_error)
+        time.sleep(delay)
+        delay = min(delay * 2, 60)
+    raise SystemExit(last_error)
 
 
 def main() -> None:
@@ -44,11 +53,12 @@ def main() -> None:
     links = parity.load_links()
     commit = str(manifest["upstreamCommit"])
     index = json.loads(ISSUES.read_text(encoding="utf-8"))
+    features = {item["feature"]: item for item in parity.summarize(rows, links, commit)["features"]}
     opened = 0
     for issue in index["issues"]:
         if issue.get("url"):
             continue
-        feature = next(item for item in parity.summarize(rows, links, commit)["features"] if item["feature"] == issue["feature"])
+        feature = features[issue["feature"]]
         body = parity.issue_body(feature, rows, links, commit)
         issue["url"] = create_issue(issue["title"], body)
         opened += 1
