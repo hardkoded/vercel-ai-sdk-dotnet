@@ -218,6 +218,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     ["name"] = tool.Name,
                     ["description"] = tool.Description,
                     ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+                    // Responses treats a missing strict field as schema normalization.
+                    // Tool has no strict flag, so the omitted case is explicit false.
+                    ["strict"] = false,
                 });
             }
 
