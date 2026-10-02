@@ -26,8 +26,10 @@ Console.WriteLine(await stream.FinishReason);
 app.MapPost("/chat", (ChatRequest request) =>
 {
     var stream = client.StreamTextAsync(new StreamTextOptions { Model = model, Prompt = request.Prompt });
-    return stream.ToUIMessageStreamResult();
+    return stream.ToUIMessageStreamResult(keepAliveMs: 15_000);
 });
 ```
 
 The response is `text/event-stream` with `x-vercel-ai-ui-message-stream: v1`. Chunks include text, reasoning, tool input and output, sources, step boundaries, finish, and errors. See COMPATIBILITY.md for chunk types that are not emitted yet.
+
+`keepAliveMs` is optional. When it is set, the response writes `: stream-open` before the start event and `: keep-alive` whenever the next part is still pending after that many milliseconds. Omit it, or pass null, and the stream contains no comment lines.
