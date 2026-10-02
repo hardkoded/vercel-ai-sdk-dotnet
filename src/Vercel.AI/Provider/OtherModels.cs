@@ -105,14 +105,53 @@ public sealed class ImageCallOptions
     public string? AspectRatio { get; set; }
 }
 
+/// <summary>
+/// Numeric usage from a speech or transcription call.
+/// A count stays unset when the provider does not report that unit.
+/// </summary>
+public sealed class AudioUsage
+{
+    /// <summary>Creates usage. Counts that the provider did not report stay null.</summary>
+    public AudioUsage(int? characters = null, double? seconds = null, int? inputTokens = null, int? outputTokens = null, int? totalTokens = null)
+    {
+        Characters = characters;
+        Seconds = seconds;
+        InputTokens = inputTokens;
+        OutputTokens = outputTokens;
+        TotalTokens = totalTokens;
+    }
+
+    /// <summary>Character count, when the provider reports one.</summary>
+    public int? Characters { get; }
+
+    /// <summary>Duration in seconds, when the provider reports one.</summary>
+    public double? Seconds { get; }
+
+    /// <summary>Prompt tokens, when the provider reports them.</summary>
+    public int? InputTokens { get; }
+
+    /// <summary>Generated tokens, when the provider reports them.</summary>
+    public int? OutputTokens { get; }
+
+    /// <summary>Input plus output tokens, when the provider reports them.</summary>
+    public int? TotalTokens { get; }
+}
+
 /// <summary>Speech synthesis result.</summary>
 public sealed class SpeechResult
 {
-    /// <summary>Creates a speech result.</summary>
+    /// <summary>Creates a speech result with no usage.</summary>
     public SpeechResult(byte[] audio, string mediaType)
+        : this(audio, mediaType, null)
+    {
+    }
+
+    /// <summary>Creates a speech result.</summary>
+    public SpeechResult(byte[] audio, string mediaType, AudioUsage? usage)
     {
         Audio = audio ?? throw new ArgumentNullException(nameof(audio));
         MediaType = mediaType;
+        Usage = usage;
     }
 
     /// <summary>Audio bytes.</summary>
@@ -120,6 +159,9 @@ public sealed class SpeechResult
 
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
+
+    /// <summary>Usage reported by the call. Absent unless the caller supplies it.</summary>
+    public AudioUsage? Usage { get; }
 }
 
 /// <summary>Speech call settings.</summary>
@@ -154,14 +196,24 @@ public interface ISpeechModel
 /// <summary>Transcription result.</summary>
 public sealed class TranscriptionResult
 {
-    /// <summary>Creates a transcription.</summary>
+    /// <summary>Creates a transcription with no usage.</summary>
     public TranscriptionResult(string text)
+        : this(text, null)
+    {
+    }
+
+    /// <summary>Creates a transcription.</summary>
+    public TranscriptionResult(string text, AudioUsage? usage)
     {
         Text = text ?? string.Empty;
+        Usage = usage;
     }
 
     /// <summary>Transcript text.</summary>
     public string Text { get; }
+
+    /// <summary>Usage reported by the call. Absent unless the caller supplies it.</summary>
+    public AudioUsage? Usage { get; }
 }
 
 /// <summary>Audio sent to a transcription or translation model.</summary>

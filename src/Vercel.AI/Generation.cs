@@ -106,6 +106,7 @@ internal static class Generation
             var result = ToResult(steps, options);
             if (telemetry != null && scope != null)
             {
+                telemetry.OnUsage(scope, result.Usage);
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 
@@ -244,6 +245,7 @@ internal static class Generation
             var result = ToResult(steps, options);
             if (telemetry != null && scope != null)
             {
+                telemetry.OnUsage(scope, result.Usage);
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 

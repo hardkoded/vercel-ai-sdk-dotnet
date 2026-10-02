@@ -39,6 +39,51 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
         }
     }
 
+    /// <inheritdoc />
+    public void OnUsage(IDisposable span, LanguageModelUsage usage)
+    {
+        if (span is not Activity activity)
+        {
+            return;
+        }
+
+        SetCount(activity, "gen_ai.usage.input_tokens", usage.InputTokens);
+        SetCount(activity, "gen_ai.usage.output_tokens", usage.OutputTokens);
+        SetCount(activity, "gen_ai.usage.total_tokens", usage.TotalTokens);
+    }
+
+    /// <inheritdoc />
+    public void OnUsage(IDisposable span, AudioUsage? usage)
+    {
+        if (span is not Activity activity || usage is null)
+        {
+            return;
+        }
+
+        SetCount(activity, "gen_ai.usage.characters", usage.Characters);
+        if (usage.Seconds is double seconds && IsFinite(seconds))
+        {
+            activity.SetTag("gen_ai.usage.seconds", seconds);
+        }
+
+        SetCount(activity, "gen_ai.usage.input_tokens", usage.InputTokens);
+        SetCount(activity, "gen_ai.usage.output_tokens", usage.OutputTokens);
+        SetCount(activity, "gen_ai.usage.total_tokens", usage.TotalTokens);
+    }
+
+    private static void SetCount(Activity activity, string name, int? value)
+    {
+        if (value is int number)
+        {
+            activity.SetTag(name, number);
+        }
+    }
+
+    private static bool IsFinite(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value);
+    }
+
     private sealed class Empty : IDisposable
     {
         public static readonly Empty Instance = new();

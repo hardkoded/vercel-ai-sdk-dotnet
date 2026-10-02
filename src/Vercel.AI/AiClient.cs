@@ -16,6 +16,12 @@ public interface IAiTelemetry
 
     /// <summary>Records the final finish reason on the span opened by <see cref="Begin"/>.</summary>
     void OnFinish(IDisposable span, FinishReason finishReason);
+
+    /// <summary>Records token usage on the span opened by <see cref="Begin"/>.</summary>
+    void OnUsage(IDisposable span, LanguageModelUsage usage);
+
+    /// <summary>Records speech or transcription usage on the span opened by <see cref="Begin"/>.</summary>
+    void OnUsage(IDisposable span, AudioUsage? usage);
 }
 
 /// <summary>Core AI SDK client. Maps to the <c>ai</c> package functions.</summary>
@@ -152,7 +158,13 @@ public sealed class AiClient : IAiClient
         }
 
         using var scope = _telemetry?.Begin("generateSpeech", options.Model.ModelId);
-        return await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+        var result = await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+        if (_telemetry != null && scope != null)
+        {
+            _telemetry.OnUsage(scope, result.Usage);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />
@@ -164,7 +176,13 @@ public sealed class AiClient : IAiClient
         }
 
         using var scope = _telemetry?.Begin("transcribe", options.Model.ModelId);
-        return await options.Model.DoTranscribeAsync(options.Audio, cancellationToken).ConfigureAwait(false);
+        var result = await options.Model.DoTranscribeAsync(options.Audio, cancellationToken).ConfigureAwait(false);
+        if (_telemetry != null && scope != null)
+        {
+            _telemetry.OnUsage(scope, result.Usage);
+        }
+
+        return result;
     }
 
     /// <inheritdoc />
