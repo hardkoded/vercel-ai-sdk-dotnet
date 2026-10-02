@@ -37,6 +37,7 @@ using Vercel.AI.OpenResponses;
 using Vercel.AI.Perplexity;
 using Vercel.AI.Prodia;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.QuiverAI;
 using Vercel.AI.Replicate;
 using Vercel.AI.RevAI;
@@ -90,6 +91,90 @@ public sealed class ProviderRequestTests
         Assert.Contains("us-east-1/bedrock/aws4_request", authorization);
     }
 
+    [Fact]
+    public async Task Bedrock_rejects_a_region_that_is_not_a_single_dns_label()
+    {
+        var handler = new ScriptedHandler();
+        var provider = AmazonBedrockProvider.Create(
+            new AmazonBedrockOptions
+            {
+                Region = "user@internal:8080/#",
+                AccessKeyId = "AKIA",
+                SecretAccessKey = "secret",
+            },
+            handler);
+        var model = provider.LanguageModel("m");
+        var error = await Assert.ThrowsAsync<ArgumentException>(() => model.DoGenerateAsync(Prompt(), CancellationToken.None));
+        Assert.Contains("AWS region must be a single DNS label", error.Message);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    public void Vertex_rejects_a_location_that_is_not_a_single_dns_label()
+    {
+        var handler = new ScriptedHandler();
+        var error = Assert.Throws<ArgumentException>(() => GoogleVertexProvider.Create(
+            new VertexOptions
+            {
+                ApiKey = "secret",
+                Project = "demo",
+                Region = "evil.com/#",
+            },
+            handler));
+        Assert.Contains("Vertex location must be a single DNS label", error.Message);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("0")]
+    [InlineData("us-east-1")]
+    [InlineData("us-central1")]
+    [InlineData("MY-resource")]
+    public void Hostname_part_accepts_a_single_dns_label(string value)
+    {
+        Assert.True(HostnameParts.IsValid(value));
+    }
+
+    [Fact]
+    public void Hostname_part_accepts_a_63_character_label()
+    {
+        Assert.True(HostnameParts.IsValid(new string('a', 63)));
+    }
+
+    [Fact]
+    public void Hostname_part_rejects_null()
+    {
+        Assert.False(HostnameParts.IsValid(null));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a.b")]
+    [InlineData("user@internal:8080/#")]
+    [InlineData("evil.com/#")]
+    [InlineData("us-east-1:443")]
+    [InlineData("us-east-1/../..")]
+    [InlineData("evil.com/#extra")]
+    [InlineData("a_b")]
+    [InlineData("us east 1")]
+    [InlineData(" ")]
+    [InlineData("a\n")]
+    [InlineData("a\r")]
+    [InlineData("a\t")]
+    [InlineData("-a")]
+    [InlineData("a-")]
+    public void Hostname_part_rejects_a_value_that_is_not_one_label(string value)
+    {
+        Assert.False(HostnameParts.IsValid(value));
+    }
+
+    [Fact]
+    public void Hostname_part_rejects_a_64_character_label()
+    {
+        Assert.False(HostnameParts.IsValid(new string('a', 64)));
+    }
+
     public static IEnumerable<object[]> Cases()
     {
         yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h => AlibabaProvider.Create(Key(), h));
@@ -118,8 +203,8 @@ public sealed class ProviderRequestTests
         yield return Row("/v1/messages", "x-api-key", "secret", h => AnthropicProvider.Create(new AnthropicOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("aws-external-anthropic", "x-api-key", "secret", h => AnthropicAwsProvider.Create(new AnthropicOptions { ApiKey = "secret", BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws" }, h), "chat");
         yield return Row(":generateContent", "x-goog-api-key", "secret", h => GoogleProvider.Create(new GoogleOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
-        yield return Row("/converse", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
+        yield return Row("us-central1-aiplatform.googleapis.com/v1/projects/demo/locations/us-central1/publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
+        yield return Row("bedrock-runtime.us-east-1.amazonaws.com", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
         yield return Row("api.cohere.com/v2/chat", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("/rerank", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "rerank");
         yield return Row("/responses", "Authorization", "Bearer secret", h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h), "chat");

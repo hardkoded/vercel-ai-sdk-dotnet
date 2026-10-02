@@ -414,6 +414,11 @@ public sealed class GoogleVertexProvider : GoogleProvider
             options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT") ?? string.Empty;
         }
 
+        if (!HostnameParts.IsValid(options.Region))
+        {
+            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
+        }
+
         options.BaseUrl = "https://" + options.Region + "-aiplatform.googleapis.com/v1/projects/" + options.Project
             + "/locations/" + options.Region + "/publishers/google";
         return options;
