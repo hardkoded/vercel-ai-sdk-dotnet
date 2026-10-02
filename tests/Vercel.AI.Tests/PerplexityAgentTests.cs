@@ -335,6 +335,25 @@ public sealed class PerplexityAgentTests
     }
 
     [Fact]
+    public async Task Stream_accepts_null_event_fields()
+    {
+        var sse = File.ReadAllText(Fixture("perplexity-agent-null-events.sse"));
+        var parts = await Read(Create(new AgentHandler(sse, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+
+        Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
+        Assert.Equal(FinishReason.Other, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
+        Assert.Equal("Fetched content from 0 URLs", string.Concat(parts.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta)));
+        Assert.Contains(parts, part => part is ReasoningStartStreamPart start && start.Id == "reasoning-0");
+        Assert.Contains(parts, part => part is ReasoningEndStreamPart end && end.Id == "reasoning-0");
+        Assert.Equal(new[] { "text-start", "text-delta", "text-end" }, parts.Where(part => part.Type.StartsWith("text-", StringComparison.Ordinal)).Select(part => part.Type));
+        Assert.Equal("Hello", string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
+        Assert.Equal("msg-1", Assert.Single(parts.OfType<TextStartStreamPart>()).Id);
+        Assert.Equal("msg-1", Assert.Single(parts.OfType<TextDeltaStreamPart>()).Id);
+        Assert.Equal("msg-1", Assert.Single(parts.OfType<TextEndStreamPart>()).Id);
+        Assert.Empty(parts.OfType<SourceStreamPart>());
+    }
+
+    [Fact]
     public async Task Stream_recovers_terminal_text_without_repeating_parts()
     {
         var done = Event("{\"type\":\"response.output_text.done\",\"item_id\":\"msg-123\",\"output_index\":0,\"content_index\":0,\"text\":\"Hello from Perplexity.\"}");
