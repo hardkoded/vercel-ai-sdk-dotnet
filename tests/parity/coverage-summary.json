@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 169,
+  "covered": 525,
   "partial": 15,
-  "missing": 10885,
+  "missing": 10529,
   "features": [
     {
       "feature": "ai/agent",
@@ -459,17 +459,17 @@
       "feature": "gateway",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 425,
-      "covered": 0,
+      "covered": 59,
       "partial": 1,
-      "missing": 424
+      "missing": 365
     },
     {
       "feature": "gateway/errors",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 113,
-      "covered": 0,
+      "covered": 113,
       "partial": 0,
-      "missing": 113
+      "missing": 0
     },
     {
       "feature": "gateway/tool",
@@ -499,17 +499,17 @@
       "feature": "google",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 513,
-      "covered": 0,
+      "covered": 178,
       "partial": 0,
-      "missing": 513
+      "missing": 335
     },
     {
       "feature": "google-vertex",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 131,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 131
+      "missing": 130
     },
     {
       "feature": "google-vertex/anthropic",
@@ -539,9 +539,9 @@
       "feature": "google-vertex/gemini-transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 9,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 9
+      "missing": 8
     },
     {
       "feature": "google-vertex/maas",
@@ -603,9 +603,9 @@
       "feature": "google/transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 15,
-      "covered": 0,
+      "covered": 4,
       "partial": 0,
-      "missing": 15
+      "missing": 11
     },
     {
       "feature": "groq",

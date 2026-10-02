@@ -18,6 +18,14 @@ public sealed class GatewayOptions
 
     /// <summary>Explicit key. Falls back to <c>AI_GATEWAY_API_KEY</c>.</summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Value of <c>ai-gateway-auth-method</c>. <c>api-key</c> and <c>oidc</c> select the authentication error hint.
+    /// </summary>
+    public string AuthMethod { get; set; } = "api-key";
+
+    /// <summary>Optional observability headers, usually named <c>ai-o11y-*</c>, sent on every call.</summary>
+    public IReadOnlyDictionary<string, string>? ObservabilityHeaders { get; set; }
 }
 
 /// <summary>
@@ -37,7 +45,7 @@ public sealed class GatewayProvider : ProviderBase
         : base(ProviderId)
     {
         Options = options ?? new GatewayOptions();
-        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)), new RetryPolicy { MaxRetries = 0 });
     }
 
     /// <summary>Options.</summary>
@@ -50,6 +58,7 @@ public sealed class GatewayProvider : ProviderBase
     public static GatewayProvider Create(GatewayOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        client.Timeout = Timeout.InfiniteTimeSpan;
         return new GatewayProvider(options, client);
     }
 
@@ -71,23 +80,76 @@ public sealed class GatewayProvider : ProviderBase
         return new GatewayImageModel(this, modelId);
     }
 
-    internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming)
+    internal Dictionary<string, string?> Headers(
+        string specificationHeader,
+        string specificationValue,
+        string modelHeader,
+        string modelId,
+        bool? streaming,
+        IReadOnlyDictionary<string, string?>? callHeaders = null,
+        IReadOnlyDictionary<string, string>? observabilityHeaders = null)
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] = "Bearer " + key,
-            ["ai-gateway-protocol-version"] = "0.0.1",
-            ["ai-gateway-auth-method"] = "api-key",
-            [specificationHeader] = specificationValue,
-            [modelHeader] = modelId,
+            [GatewayHeaders.ProtocolVersion] = "0.0.1",
+            [GatewayHeaders.AuthMethod] = string.IsNullOrEmpty(Options.AuthMethod) ? "api-key" : Options.AuthMethod,
         };
+        CopyHeaders(headers, callHeaders);
+        headers[specificationHeader] = specificationValue;
+        headers[modelHeader] = modelId;
         if (streaming is { } value)
         {
             headers["ai-language-model-streaming"] = value ? "true" : "false";
         }
 
+        if (observabilityHeaders != null)
+        {
+            foreach (var pair in observabilityHeaders)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
         return headers;
+    }
+
+    /// <summary>Posts JSON. HTTP failures become <see cref="GatewayError"/> values.</summary>
+    internal async Task<JsonDocument> PostAsync(Uri uri, string json, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await Http.SendJsonAsync(HttpMethod.Post, uri, json, headers, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not JsonException)
+        {
+            throw Normalize(exception, headers);
+        }
+    }
+
+    /// <summary>Maps a transport failure onto a Gateway error. An existing <see cref="GatewayError"/> is returned unchanged.</summary>
+    internal static Exception Normalize(Exception exception, IReadOnlyDictionary<string, string?>? headers)
+    {
+        if (exception is GatewayError)
+        {
+            return exception;
+        }
+
+        return GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
+    }
+
+    private static void CopyHeaders(Dictionary<string, string?> target, IReadOnlyDictionary<string, string?>? source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        foreach (var pair in source)
+        {
+            target[pair.Key] = pair.Value;
+        }
     }
 
     internal Uri Route(string path)
@@ -120,13 +182,24 @@ public sealed class GatewayLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            _provider.Route("language-model"),
-            V4Json.CallOptions(options),
-            _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false),
-            cancellationToken).ConfigureAwait(false);
-        return V4Json.ParseGenerate(document.RootElement);
+        var headers = RequestHeaders(options, false);
+        ProviderTextResponse response;
+        try
+        {
+            response = await _provider.Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                _provider.Route("language-model"),
+                V4Json.CallOptions(options),
+                headers,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not JsonException)
+        {
+            throw GatewayProvider.Normalize(exception, headers);
+        }
+
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        return V4Json.ParseGenerate(document.RootElement, response.Body, response.Headers);
     }
 
     /// <inheritdoc />
@@ -134,27 +207,68 @@ public sealed class GatewayLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await foreach (var data in _provider.Http.SendSseAsync(
+        var headers = RequestHeaders(options, true);
+        var stream = _provider.Http.SendSseAsync(
             _provider.Route("language-model"),
             V4Json.CallOptions(options),
-            _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true),
-            cancellationToken).ConfigureAwait(false))
+            headers,
+            cancellationToken);
+        var enumerator = stream.GetAsyncEnumerator(cancellationToken);
+        try
         {
-            LanguageModelStreamPart? part;
-            try
+            while (true)
             {
-                part = V4Json.ParseStreamPart(data);
-            }
-            catch (JsonException)
-            {
-                continue;
-            }
+                string data;
+                bool moved;
+                try
+                {
+                    moved = await enumerator.MoveNextAsync().ConfigureAwait(false);
+                    data = moved ? enumerator.Current : string.Empty;
+                }
+                catch (Exception exception) when (exception is not JsonException)
+                {
+                    throw GatewayProvider.Normalize(exception, headers);
+                }
 
-            if (part != null)
-            {
+                if (!moved)
+                {
+                    yield break;
+                }
+
+                LanguageModelStreamPart? part;
+                try
+                {
+                    part = V4Json.ParseStreamPart(data);
+                }
+                catch (JsonException)
+                {
+                    continue;
+                }
+
+                if (part == null || (part is RawStreamPart && !options.IncludeRawChunks))
+                {
+                    continue;
+                }
+
                 yield return part;
             }
         }
+        finally
+        {
+            await enumerator.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private Dictionary<string, string?> RequestHeaders(LanguageModelCallOptions options, bool streaming)
+    {
+        return _provider.Headers(
+            "ai-language-model-specification-version",
+            "4",
+            "ai-language-model-id",
+            ModelId,
+            streaming,
+            options.Headers,
+            _provider.Options.ObservabilityHeaders);
     }
 }
 
@@ -189,11 +303,11 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         }
 
         var body = new JsonObject { ["values"] = input };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
+        var headers = _provider.Headers("ai-embedding-model-specification-version", "4", "ai-model-id", ModelId, null);
+        using var document = await _provider.PostAsync(
             _provider.Route("embedding-model"),
             body.ToJsonString(),
-            _provider.Headers("ai-embedding-model-specification-version", "4", "ai-model-id", ModelId, null),
+            headers,
             cancellationToken).ConfigureAwait(false);
         var vectors = new List<float[]>();
         foreach (var embedding in document.RootElement.GetProperty("embeddings").EnumerateArray())
@@ -246,11 +360,11 @@ public sealed class GatewayImageModel : IImageModel
             ["size"] = options.Size,
             ["aspectRatio"] = options.AspectRatio,
         };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
+        var headers = _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null);
+        using var document = await _provider.PostAsync(
             _provider.Route("image-model"),
             body.ToJsonString(),
-            _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null),
+            headers,
             cancellationToken).ConfigureAwait(false);
         var images = new List<GeneratedImage>();
         if (document.RootElement.TryGetProperty("images", out var array))

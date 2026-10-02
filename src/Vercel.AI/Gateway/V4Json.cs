@@ -1,7 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
@@ -109,18 +109,54 @@ public static class V4Json
             body["toolChoice"] = choice;
         }
 
+        if (options.ProviderOptions is { Count: > 0 })
+        {
+            var providerOptions = new JsonObject();
+            foreach (var pair in options.ProviderOptions)
+            {
+                providerOptions[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+            }
+
+            body["providerOptions"] = providerOptions;
+        }
+
+        if (options.Headers is { Count: > 0 })
+        {
+            var headers = new JsonObject();
+            foreach (var pair in options.Headers)
+            {
+                if (pair.Value != null)
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+
+            body["headers"] = headers;
+        }
+
         return body.ToJsonString();
     }
 
     /// <summary>Parses a V4 generate result.</summary>
-    public static LanguageModelGenerateResult ParseGenerate(JsonElement root)
+    public static LanguageModelGenerateResult ParseGenerate(JsonElement root, string? rawResponse = null, IReadOnlyDictionary<string, string>? responseHeaders = null)
     {
         var content = new List<GeneratedContent>();
         if (root.TryGetProperty("content", out var parts))
         {
-            foreach (var part in parts.EnumerateArray())
+            if (parts.ValueKind == JsonValueKind.Array)
             {
-                var parsed = Content(part);
+                foreach (var part in parts.EnumerateArray())
+                {
+                    var parsed = Content(part);
+                    if (parsed != null)
+                    {
+                        content.Add(parsed);
+                    }
+                }
+            }
+            else if (parts.ValueKind == JsonValueKind.Object)
+            {
+                var parsed = Content(parts);
                 if (parsed != null)
                 {
                     content.Add(parsed);
@@ -128,12 +164,68 @@ public static class V4Json
             }
         }
 
-        var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) : null;
+        JsonElement finish = default;
+        var hasFinish = root.TryGetProperty("finishReason", out finish) || root.TryGetProperty("finish_reason", out finish);
+        var raw = hasFinish ? ReadFinishReason(finish) : null;
         var usage = ReadUsage(root);
-        var id = root.TryGetProperty("response", out var response) && response.TryGetProperty("id", out var responseId)
-            ? responseId.GetString()
-            : null;
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw, responseId: id);
+        string? id = null;
+        string? modelId = null;
+        DateTimeOffset? timestamp = null;
+        if (root.TryGetProperty("response", out var response) && response.ValueKind == JsonValueKind.Object)
+        {
+            if (response.TryGetProperty("id", out var responseId) && responseId.ValueKind == JsonValueKind.String)
+            {
+                id = responseId.GetString();
+            }
+
+            if (response.TryGetProperty("modelId", out var responseModel) && responseModel.ValueKind == JsonValueKind.String)
+            {
+                modelId = responseModel.GetString();
+            }
+            else if (response.TryGetProperty("model", out var responseModelName) && responseModelName.ValueKind == JsonValueKind.String)
+            {
+                modelId = responseModelName.GetString();
+            }
+
+            if (response.TryGetProperty("timestamp", out var responseTimestamp) && responseTimestamp.ValueKind == JsonValueKind.String)
+            {
+                timestamp = ReadTimestamp(responseTimestamp.GetString());
+            }
+        }
+
+        if (id == null && root.TryGetProperty("id", out var topId) && topId.ValueKind == JsonValueKind.String)
+        {
+            id = topId.GetString();
+        }
+
+        if (modelId == null && root.TryGetProperty("model", out var topModel) && topModel.ValueKind == JsonValueKind.String)
+        {
+            modelId = topModel.GetString();
+        }
+
+        if (timestamp == null && root.TryGetProperty("created", out var created) && created.ValueKind == JsonValueKind.Number && created.TryGetInt64(out var unixSeconds))
+        {
+            timestamp = DateTimeOffset.FromUnixTimeSeconds(unixSeconds);
+        }
+
+        JsonElement? providerMetadata = null;
+        if (root.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
+        {
+            providerMetadata = metadata.Clone();
+        }
+
+        return new LanguageModelGenerateResult(
+            content,
+            FinishReasons.Parse(raw),
+            usage,
+            raw,
+            ReadWarnings(root),
+            id,
+            providerMetadata,
+            rawResponse,
+            modelId,
+            timestamp,
+            responseHeaders);
     }
 
     /// <summary>Parses one SSE JSON object into a stream part.</summary>
@@ -148,6 +240,22 @@ public static class V4Json
                 return new TextDeltaStreamPart(
                     root.TryGetProperty("id", out var id) ? id.GetString() ?? "text" : "text",
                     ReadDelta(root));
+            case "stream-start":
+                return new StreamStartStreamPart(ReadWarnings(root));
+            case "response-metadata":
+                DateTimeOffset? timestamp = null;
+                if (root.TryGetProperty("timestamp", out var stamp) && stamp.ValueKind == JsonValueKind.String)
+                {
+                    timestamp = ReadTimestamp(stamp.GetString());
+                }
+
+                return new ResponseMetadataStreamPart(
+                    root.TryGetProperty("id", out var metadataId) ? metadataId.GetString() : null,
+                    root.TryGetProperty("modelId", out var metadataModel) ? metadataModel.GetString() : null,
+                    timestamp);
+            case "raw":
+                var rawJson = root.TryGetProperty("rawValue", out var rawValue) ? rawValue.GetRawText() : root.GetRawText();
+                return new RawStreamPart(rawJson);
             case "reasoning-delta":
                 return new ReasoningDeltaStreamPart(
                     root.TryGetProperty("id", out var reasoningId) ? reasoningId.GetString() ?? "reasoning" : "reasoning",
@@ -168,8 +276,15 @@ public static class V4Json
                 var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
             case "error":
-                var message = root.TryGetProperty("error", out var error) ? error.ToString() : "Provider stream error.";
-                return new ErrorStreamPart(message ?? "Provider stream error.");
+                var message = "Provider stream error.";
+                if (root.TryGetProperty("error", out var error))
+                {
+                    message = error.ValueKind == JsonValueKind.String
+                        ? error.GetString() ?? message
+                        : error.GetRawText();
+                }
+
+                return new ErrorStreamPart(message);
             default:
                 return null;
         }
@@ -191,12 +306,7 @@ public static class V4Json
                     }
                     else if (part is FileContentPart file)
                     {
-                        userParts.Add(new JsonObject
-                        {
-                            ["type"] = "file",
-                            ["mediaType"] = file.MediaType,
-                            ["data"] = file.Url ?? (file.Data is null ? null : Convert.ToBase64String(file.Data)),
-                        });
+                        userParts.Add(FilePart(file.MediaType, file.Url, file.Data));
                     }
                 }
 
@@ -275,6 +385,96 @@ public static class V4Json
         }
     }
 
+    private static JsonObject FilePart(string? mediaType, string? url, byte[]? data)
+    {
+        JsonNode? payload = null;
+        if (data != null)
+        {
+            payload = new JsonObject
+            {
+                ["type"] = "data",
+                ["data"] = Convert.ToBase64String(data),
+            };
+        }
+        else if (!string.IsNullOrEmpty(url))
+        {
+            payload = new JsonObject
+            {
+                ["type"] = "url",
+                ["url"] = url,
+            };
+        }
+
+        return new JsonObject
+        {
+            ["type"] = "file",
+            ["mediaType"] = string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType,
+            ["data"] = payload,
+        };
+    }
+
+    private static IReadOnlyList<CallWarning> ReadWarnings(JsonElement container)
+    {
+        if (!container.TryGetProperty("warnings", out var warnings) || warnings.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<CallWarning>();
+        }
+
+        var list = new List<CallWarning>();
+        foreach (var warning in warnings.EnumerateArray())
+        {
+            if (warning.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var type = warning.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
+                ? typeElement.GetString() ?? "other"
+                : "other";
+            string message;
+            if (warning.TryGetProperty("message", out var messageElement) && messageElement.ValueKind == JsonValueKind.String)
+            {
+                message = messageElement.GetString() ?? string.Empty;
+            }
+            else
+            {
+                var feature = warning.TryGetProperty("feature", out var featureElement) && featureElement.ValueKind == JsonValueKind.String
+                    ? featureElement.GetString()
+                    : null;
+                var details = warning.TryGetProperty("details", out var detailsElement) && detailsElement.ValueKind == JsonValueKind.String
+                    ? detailsElement.GetString()
+                    : null;
+                if (!string.IsNullOrEmpty(feature) && !string.IsNullOrEmpty(details))
+                {
+                    message = feature + ": " + details;
+                }
+                else
+                {
+                    message = details ?? feature ?? string.Empty;
+                }
+            }
+
+            list.Add(new CallWarning(type, message));
+        }
+
+        return list;
+    }
+
+    private static DateTimeOffset? ReadTimestamp(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return null;
+        }
+
+        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
     private static string ReadDelta(JsonElement root)
     {
         if (root.TryGetProperty("delta", out var delta))
@@ -297,10 +497,14 @@ public static class V4Json
             return LanguageModelUsage.Empty;
         }
 
-        int? input = ReadTokenCount(usage, "inputTokens");
-        int? output = ReadTokenCount(usage, "outputTokens");
-        int? total = ReadTokenCount(usage, "totalTokens");
-        return new LanguageModelUsage(input, output, total);
+        int? input = ReadTokenCount(usage, "inputTokens")
+            ?? ReadTokenCount(usage, "prompt_tokens")
+            ?? ReadTokenCount(usage, "promptTokens");
+        int? output = ReadTokenCount(usage, "outputTokens")
+            ?? ReadTokenCount(usage, "completion_tokens")
+            ?? ReadTokenCount(usage, "completionTokens");
+        int? total = ReadTokenCount(usage, "totalTokens") ?? ReadTokenCount(usage, "total_tokens");
+        return new LanguageModelUsage(input, output, total, raw: usage.Clone());
     }
 
     /// <summary>Reads a finish reason that is either a string or <c>{ unified, raw }</c>.</summary>

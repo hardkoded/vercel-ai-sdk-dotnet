@@ -23,6 +23,12 @@ ATTR = re.compile(
     r'(?P<rest>.*?)\)\]',
     re.S,
 )
+ATTR_CONCAT = re.compile(
+    r'\[UpstreamTest\(\s*(?P<name>\w+)\s*\+\s*"(?P<id>(?:\\.|[^"\\])*)"'
+    r'(?P<rest>.*?)\)\]',
+    re.S,
+)
+CONST_RE = re.compile(r'\bconst string (\w+) = "((?:\\.|[^"\\])*)"')
 CLASS_RE = re.compile(r"\bclass\s+(\w+)")
 METHOD_RE = re.compile(r"public\s+(?:async\s+)?(?:Task|void)\s+(\w+)\s*\(")
 COVERAGE_RE = re.compile(r"Coverage\s*=\s*UpstreamCoverage\.(Covered|Partial)")
@@ -33,33 +39,49 @@ def unescape(value: str) -> str:
     return json.loads('"' + value + '"')
 
 
+def attribute_matches(text: str):
+    """Yield UpstreamTest matches, including const-string concatenation."""
+    constants = {name: unescape(value) for name, value in CONST_RE.findall(text)}
+    matches = []
+    for match in ATTR.finditer(text):
+        matches.append((match.start(), match.end(), unescape(match.group("id")), match.group("rest")))
+    for match in ATTR_CONCAT.finditer(text):
+        name = match.group("name")
+        if name not in constants:
+            raise SystemExit(f"UpstreamTest concatenates unknown const {name}")
+        matches.append(
+            (match.start(), match.end(), constants[name] + unescape(match.group("id")), match.group("rest"))
+        )
+    matches.sort(key=lambda item: item[0])
+    return matches
+
+
 def load_links() -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
     for path in sorted(TEST_DIR.rglob("*.cs")):
         text = path.read_text(encoding="utf-8")
         class_name = "Tests"
         cursor = 0
-        for match in ATTR.finditer(text):
+        for start, end, upstream_id, rest in attribute_matches(text):
             class_match = None
-            for candidate in CLASS_RE.finditer(text, cursor, match.start()):
+            for candidate in CLASS_RE.finditer(text, cursor, start):
                 class_match = candidate
             if class_match is not None:
                 class_name = class_match.group(1)
-            method = METHOD_RE.search(text, match.end())
+            method = METHOD_RE.search(text, end)
             if method is None:
                 raise SystemExit(f"No test method after UpstreamTest in {path}")
-            rest = match.group("rest")
             coverage = COVERAGE_RE.search(rest)
             note = NOTE_RE.search(rest)
             link = {
-                "upstreamId": unescape(match.group("id")),
+                "upstreamId": upstream_id,
                 "dotnetTest": f"Vercel.AI.Tests.{class_name}.{method.group(1)}",
                 "coverage": coverage.group(1) if coverage else "Partial",
             }
             if note:
                 link["note"] = unescape(note.group(1))
             links.append(link)
-            cursor = match.end()
+            cursor = end
     return links
 
 
