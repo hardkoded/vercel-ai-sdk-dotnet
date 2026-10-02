@@ -220,7 +220,60 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["toolConfig"] = new JsonObject { ["tools"] = tools };
         }
 
+        var requestMetadata = ReadRequestMetadata(options);
+        if (requestMetadata != null)
+        {
+            body["requestMetadata"] = requestMetadata;
+        }
+
         return body;
+    }
+
+    /// <summary>Reads <c>requestMetadata</c> from <c>amazon-bedrock</c>, then <c>amazonBedrock</c>, then <c>bedrock</c>.</summary>
+    private static JsonObject? ReadRequestMetadata(LanguageModelCallOptions options)
+    {
+        var providerOptions = options.ProviderOptions;
+        if (providerOptions == null)
+        {
+            return null;
+        }
+
+        JsonElement provider;
+        if (!providerOptions.TryGetValue("amazon-bedrock", out provider)
+            && !providerOptions.TryGetValue("amazonBedrock", out provider)
+            && !providerOptions.TryGetValue("bedrock", out provider))
+        {
+            return null;
+        }
+
+        if (provider.ValueKind != JsonValueKind.Object || !provider.TryGetProperty("requestMetadata", out var metadata))
+        {
+            return null;
+        }
+
+        if (metadata.ValueKind != JsonValueKind.Object)
+        {
+            throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
+        }
+
+        var result = new JsonObject();
+        foreach (var property in metadata.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
+            }
+
+            var value = property.Value.GetString();
+            if (value == null)
+            {
+                throw new ArgumentException("Bedrock requestMetadata must be a JSON object whose values are strings.");
+            }
+
+            result[property.Name] = value;
+        }
+
+        return result;
     }
 
     private static LanguageModelGenerateResult Parse(JsonElement root)
