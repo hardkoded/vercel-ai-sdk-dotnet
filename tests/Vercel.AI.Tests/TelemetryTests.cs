@@ -166,6 +166,214 @@ public sealed class TelemetryTests
         Assert.False(telemetry.Disposed);
     }
 
+    [Fact]
+    public async Task Generate_records_token_usage()
+    {
+        var activity = await StoppedGenerate(new LanguageModelUsage(3, 5, 8));
+
+        AssertIdentity(activity, "generateText", "test");
+        Assert.Equal(3, activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Equal(5, activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Equal(8, activity.GetTagItem("gen_ai.usage.total_tokens"));
+    }
+
+    [Fact]
+    public async Task OnUsage_omits_absent_token_counts()
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var telemetry = new OpenTelemetryAiTelemetry();
+        using (var span = telemetry.Begin("generateText", "test"))
+        {
+            telemetry.OnUsage(span, new LanguageModelUsage(null, 5, 8));
+        }
+
+        var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Equal(5, activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Equal(8, activity.GetTagItem("gen_ai.usage.total_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.characters"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.seconds"));
+    }
+
+    [Fact]
+    public async Task Stream_records_token_usage()
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var model = new TestLanguageModel
+        {
+            StreamParts = new LanguageModelStreamPart[]
+            {
+                new TextDeltaStreamPart("text", "response"),
+                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 5, 8)),
+            },
+        };
+
+        var stream = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
+        await foreach (var _ in stream.Stream())
+        {
+        }
+
+        var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(new LanguageModelUsage(3, 5, 8).InputTokens, (await stream.Usage).InputTokens);
+        AssertIdentity(activity, "streamText", "test");
+        Assert.Equal(3, activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Equal(5, activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Equal(8, activity.GetTagItem("gen_ai.usage.total_tokens"));
+    }
+
+    [Fact]
+    public async Task GenerateSpeech_records_character_usage_and_leaves_token_tags_unset()
+    {
+        var activity = await StoppedSpeech(new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(characters: 12)));
+
+        AssertIdentity(activity, "generateSpeech", "tts-1");
+        Assert.Equal(12, activity.GetTagItem("gen_ai.usage.characters"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.total_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.seconds"));
+    }
+
+    [Fact]
+    public async Task GenerateSpeech_records_token_usage()
+    {
+        var activity = await StoppedSpeech(new SpeechResult(
+            new byte[] { 1 },
+            "audio/mpeg",
+            new AudioUsage(inputTokens: 3, outputTokens: 5, totalTokens: 8)));
+
+        Assert.Equal(3, activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Equal(5, activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Equal(8, activity.GetTagItem("gen_ai.usage.total_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.characters"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.seconds"));
+    }
+
+    [Fact]
+    public async Task Transcribe_records_duration_usage()
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var result = await Client().TranscribeAsync(new TranscribeOptions
+        {
+            Model = new StubTranscriptionModel("whisper-1", new AudioUsage(seconds: 1.5)),
+            Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
+        });
+
+        var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("noted", result.Text);
+        Assert.Equal(1.5, result.Usage!.Seconds);
+        AssertIdentity(activity, "transcribe", "whisper-1");
+        Assert.Equal(1.5, activity.GetTagItem("gen_ai.usage.seconds"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.characters"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.input_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.output_tokens"));
+        Assert.Null(activity.GetTagItem("gen_ai.usage.total_tokens"));
+    }
+
+    [Fact]
+    public async Task Speech_and_transcription_without_usage_set_no_usage_tags()
+    {
+        var speech = await StoppedSpeech(new SpeechResult(new byte[] { 1 }, "audio/mpeg"));
+        AssertNoUsageTags(speech);
+        AssertIdentity(speech, "generateSpeech", "tts-1");
+
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var result = await Client().TranscribeAsync(new TranscribeOptions
+        {
+            Model = new StubTranscriptionModel("whisper-1"),
+            Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
+        });
+
+        var transcription = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Null(result.Usage);
+        AssertIdentity(transcription, "transcribe", "whisper-1");
+        AssertNoUsageTags(transcription);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public async Task Non_finite_duration_stays_off_the_span(double seconds)
+    {
+        var activity = await StoppedSpeech(new SpeechResult(new byte[] { 1 }, "audio/mpeg", new AudioUsage(seconds: seconds)));
+
+        Assert.Null(activity.GetTagItem("gen_ai.usage.seconds"));
+        AssertNoUsageTags(activity);
+    }
+
+    [Fact]
+    public async Task Thrown_speech_call_disposes_the_span_without_usage_tags()
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var model = new StubSpeechModel("tts-1")
+        {
+            OnGenerate = (_, _) => throw new InvalidOperationException("fail"),
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Client().GenerateSpeechAsync(new GenerateSpeechOptions
+        {
+            Model = model,
+            Text = "hello",
+        }));
+
+        var activity = await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        AssertIdentity(activity, "generateSpeech", "tts-1");
+        AssertNoUsageTags(activity);
+    }
+
+    private static async Task<Activity> StoppedGenerate(LanguageModelUsage usage)
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ => new LanguageModelGenerateResult(
+                new GeneratedContent[] { new GeneratedText("response") },
+                FinishReason.Stop,
+                usage),
+        };
+
+        var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "hi" });
+        Assert.Equal(usage.InputTokens, result.Usage.InputTokens);
+        Assert.Equal(usage.OutputTokens, result.Usage.OutputTokens);
+        Assert.Equal(usage.TotalTokens, result.Usage.TotalTokens);
+        return await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    private static async Task<Activity> StoppedSpeech(SpeechResult speech)
+    {
+        var stopped = new TaskCompletionSource<Activity>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var listener = Listen(null, stopped);
+        var model = new StubSpeechModel("tts-1")
+        {
+            OnGenerate = (_, _) => Task.FromResult(speech),
+        };
+        var result = await Client().GenerateSpeechAsync(new GenerateSpeechOptions { Model = model, Text = "hello" });
+        Assert.Same(speech, result);
+        return await stopped.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    private static void AssertIdentity(Activity activity, string operation, string modelId)
+    {
+        Assert.Equal(operation, activity.OperationName);
+        Assert.Equal(operation, activity.GetTagItem("gen_ai.operation.name"));
+        Assert.Equal(modelId, activity.GetTagItem("gen_ai.request.model"));
+    }
+
+    private static void AssertNoUsageTags(Activity activity)
+    {
+        foreach (var tag in activity.TagObjects)
+        {
+            Assert.False(tag.Key.StartsWith("gen_ai.usage.", StringComparison.Ordinal), tag.Key);
+        }
+    }
+
     private static AiClient Client()
     {
         return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }), new OpenTelemetryAiTelemetry());
@@ -212,6 +420,14 @@ public sealed class TelemetryTests
         {
         }
 
+        public void OnUsage(IDisposable span, LanguageModelUsage usage)
+        {
+        }
+
+        public void OnUsage(IDisposable span, AudioUsage? usage)
+        {
+        }
+
         private sealed class Scope : IDisposable
         {
             private readonly RecordingTelemetry _owner;
@@ -254,9 +470,12 @@ public sealed class TelemetryTests
 
     private sealed class StubTranscriptionModel : ITranscriptionModel
     {
-        public StubTranscriptionModel(string modelId)
+        private readonly AudioUsage? _usage;
+
+        public StubTranscriptionModel(string modelId, AudioUsage? usage = null)
         {
             ModelId = modelId;
+            _usage = usage;
         }
 
         public string Provider => "test";
@@ -265,7 +484,7 @@ public sealed class TelemetryTests
 
         public Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new TranscriptionResult("noted"));
+            return Task.FromResult(new TranscriptionResult("noted", _usage));
         }
     }
 }
