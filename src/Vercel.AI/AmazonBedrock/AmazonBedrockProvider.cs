@@ -65,6 +65,11 @@ public sealed class AmazonBedrockProvider : ProviderBase
 
     internal Uri ConverseUri(string modelId)
     {
+        if (!HostnameParts.IsValidHostnamePart(Options.Region))
+        {
+            throw new ArgumentException("An AWS region must be a single DNS label.", nameof(AmazonBedrockOptions.Region));
+        }
+
         return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
     }
 }

@@ -204,8 +204,8 @@ public sealed class ProviderRequestTests
         yield return Row("/v1/messages", "x-api-key", "secret", h => AnthropicProvider.Create(new AnthropicOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("aws-external-anthropic", "x-api-key", "secret", h => AnthropicAwsProvider.Create(new AnthropicOptions { ApiKey = "secret", BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws" }, h), "chat");
         yield return Row(":generateContent", "x-goog-api-key", "secret", h => GoogleProvider.Create(new GoogleOptions { ApiKey = "secret" }, h), "chat");
-        yield return Row("publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
-        yield return Row("/converse", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
+        yield return Row("us-central1-aiplatform.googleapis.com/v1/projects/demo/locations/us-central1/publishers/google", "Authorization", "Bearer secret", h => GoogleVertexProvider.Create(new VertexOptions { ApiKey = "secret", Project = "demo", Region = "us-central1" }, h), "chat");
+        yield return Row("bedrock-runtime.us-east-1.amazonaws.com", "Authorization", "AWS4-HMAC-SHA256", h => AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret", UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) }, h), "chat");
         yield return Row("api.cohere.com/v2/chat", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("/rerank", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "rerank");
         yield return Row("/responses", "Authorization", "Bearer secret", h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h), "chat");
