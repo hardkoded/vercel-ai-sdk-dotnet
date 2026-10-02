@@ -18,6 +18,12 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "PERPLEXITY_API_KEY";
 
+    /// <summary>Header Perplexity uses to attribute SDK requests.</summary>
+    public const string IntegrationHeader = "X-Pplx-Integration";
+
+    /// <summary>Default <see cref="IntegrationHeader"/> value.</summary>
+    public const string DefaultIntegration = "vercel-ai-sdk";
+
     /// <summary>Creates a provider.</summary>
     public PerplexityProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
@@ -51,8 +57,25 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
-        
+        if (!ContainsHeader(options.Headers, IntegrationHeader))
+        {
+            options.Headers[IntegrationHeader] = DefaultIntegration;
+        }
+
         return options;
+    }
+
+    private static bool ContainsHeader(Dictionary<string, string> headers, string name)
+    {
+        foreach (var pair in headers)
+        {
+            if (pair.Key.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
