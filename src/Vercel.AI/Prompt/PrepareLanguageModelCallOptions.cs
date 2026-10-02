@@ -3,24 +3,6 @@
 
 namespace Vercel.AI;
 
-/// <summary>The call rejected a setting. Maps to <c>InvalidArgumentError</c>.</summary>
-public sealed class InvalidArgumentException : ArgumentException
-{
-    /// <summary>Creates an invalid-argument error.</summary>
-    public InvalidArgumentException(string parameter, object? value, string message)
-        : base(message)
-    {
-        Parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
-        Value = value;
-    }
-
-    /// <summary>Parameter name.</summary>
-    public string Parameter { get; }
-
-    /// <summary>Rejected value.</summary>
-    public object? Value { get; }
-}
-
 /// <summary>Settings passed to <see cref="CallSettings.PrepareLanguageModelCallOptions"/>.</summary>
 public sealed class LanguageModelCallSettings
 {
@@ -67,12 +49,12 @@ public static class CallSettings
         {
             if (!IsInteger(maxOutputTokens))
             {
-                throw new InvalidArgumentException("maxOutputTokens", maxOutputTokens, "maxOutputTokens must be an integer");
+                throw new Error.InvalidArgumentException("maxOutputTokens", maxOutputTokens, "maxOutputTokens must be an integer");
             }
 
             if (maxOutputTokens < 1)
             {
-                throw new InvalidArgumentException("maxOutputTokens", maxOutputTokens, "maxOutputTokens must be >= 1");
+                throw new Error.InvalidArgumentException("maxOutputTokens", maxOutputTokens, "maxOutputTokens must be >= 1");
             }
         }
 
@@ -83,7 +65,7 @@ public static class CallSettings
         RequireNumber(settings.FrequencyPenalty, "frequencyPenalty");
         if (settings.Seed is { } seed && !IsInteger(seed))
         {
-            throw new InvalidArgumentException("seed", seed, "seed must be an integer");
+            throw new Error.InvalidArgumentException("seed", seed, "seed must be an integer");
         }
 
         return Copy(settings);
@@ -99,7 +81,7 @@ public static class CallSettings
     {
         if (value is { } number && (double.IsNaN(number) || double.IsInfinity(number)))
         {
-            throw new InvalidArgumentException(parameter, number, parameter + " must be a number");
+            throw new Error.InvalidArgumentException(parameter, number, parameter + " must be a number");
         }
     }
 

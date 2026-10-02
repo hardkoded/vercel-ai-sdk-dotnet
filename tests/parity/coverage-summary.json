@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 1,
+  "covered": 50,
   "partial": 15,
-  "missing": 11053,
+  "missing": 11004,
   "features": [
     {
       "feature": "ai/agent",
@@ -35,9 +35,9 @@
       "feature": "ai/error",
       "dotnetProject": "Vercel.AI",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "ai/evaluate",
@@ -91,17 +91,17 @@
       "feature": "ai/internal",
       "dotnetProject": "Vercel.AI",
       "inScope": 2,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 2
+      "missing": 0
     },
     {
       "feature": "ai/logger",
       "dotnetProject": "Vercel.AI",
       "inScope": 17,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 17
+      "missing": 0
     },
     {
       "feature": "ai/middleware",
@@ -171,9 +171,9 @@
       "feature": "ai/text-stream",
       "dotnetProject": "Vercel.AI",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "ai/tool-search",
@@ -931,9 +931,9 @@
       "feature": "provider/errors",
       "dotnetProject": "Vercel.AI.Provider",
       "inScope": 16,
-      "covered": 0,
+      "covered": 16,
       "partial": 0,
-      "missing": 16
+      "missing": 0
     },
     {
       "feature": "quiverai",

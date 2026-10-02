@@ -33,14 +33,14 @@ public sealed class PrepareCallSettingsTests
         Coverage = UpstreamCoverage.Covered)]
     public void Prepare_call_settings_rejects_a_fractional_max_output_tokens()
     {
-        var alias = Assert.Throws<InvalidArgumentException>(() =>
+        var alias = Assert.Throws<Error.InvalidArgumentException>(() =>
             CallSettings.PrepareCallSettings(new LanguageModelCallSettings { MaxOutputTokens = 10.5 }));
-        var direct = Assert.Throws<InvalidArgumentException>(() =>
+        var direct = Assert.Throws<Error.InvalidArgumentException>(() =>
             CallSettings.PrepareLanguageModelCallOptions(new LanguageModelCallSettings { MaxOutputTokens = 10.5 }));
 
         Assert.Equal("maxOutputTokens", alias.Parameter);
         Assert.Equal(10.5d, alias.Value);
-        Assert.Equal("maxOutputTokens must be an integer", alias.Message);
+        Assert.Equal("Invalid argument for parameter maxOutputTokens: maxOutputTokens must be an integer", alias.Message);
         Assert.Equal(direct.Parameter, alias.Parameter);
         Assert.Equal(direct.Message, alias.Message);
     }
