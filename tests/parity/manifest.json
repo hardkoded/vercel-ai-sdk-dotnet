@@ -1,0 +1,121 @@
+{
+  "upstreamRepo": "https://github.com/vercel/ai",
+  "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
+  "unitTestCount": 13848,
+  "inScopeCount": 11069,
+  "outOfScopeCount": 2779,
+  "excludedFiles": [
+    {
+      "file": "packages/ai/src/generate-text/stream-provider-error.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/code-mode/src/e2e/code-mode-haiku.e2e.test.ts",
+      "reason": "e2e"
+    },
+    {
+      "file": "packages/devtools/tests/e2e/theme.e2e.test.ts",
+      "reason": "e2e"
+    },
+    {
+      "file": "packages/harness/src/bridge/disk-replay.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/harness/src/bridge/reconnect.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/policy-opa/src/opa/opa-policy.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/rsc/tests/e2e/spec/streamable.e2e.test.ts",
+      "reason": "e2e"
+    },
+    {
+      "file": "packages/tui/src/agent-tui.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/generate-video.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/workflow-agent-e2e.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/workflow-smoke.integration.test.ts",
+      "reason": "integration"
+    }
+  ],
+  "dotnetProjects": {
+    "ai": "Vercel.AI",
+    "provider": "Vercel.AI.Provider",
+    "provider-utils": "Vercel.AI.ProviderUtils",
+    "gateway": "Vercel.AI.Gateway",
+    "openai-compatible": "Vercel.AI.OpenAICompatible",
+    "openai": "Vercel.AI.OpenAI",
+    "anthropic": "Vercel.AI.Anthropic",
+    "anthropic-aws": "Vercel.AI.Anthropic",
+    "google": "Vercel.AI.Google",
+    "google-vertex": "Vercel.AI.Google",
+    "amazon-bedrock": "Vercel.AI.AmazonBedrock",
+    "azure": "Vercel.AI.Azure",
+    "cohere": "Vercel.AI.Cohere",
+    "mistral": "Vercel.AI.Mistral",
+    "alibaba": "Vercel.AI.Alibaba",
+    "assemblyai": "Vercel.AI.AssemblyAI",
+    "baseten": "Vercel.AI.Baseten",
+    "black-forest-labs": "Vercel.AI.BlackForestLabs",
+    "bytedance": "Vercel.AI.ByteDance",
+    "cartesia": "Vercel.AI.Cartesia",
+    "cerebras": "Vercel.AI.Cerebras",
+    "deepgram": "Vercel.AI.Deepgram",
+    "deepinfra": "Vercel.AI.DeepInfra",
+    "deepseek": "Vercel.AI.DeepSeek",
+    "elevenlabs": "Vercel.AI.ElevenLabs",
+    "fal": "Vercel.AI.Fal",
+    "fireworks": "Vercel.AI.Fireworks",
+    "fish-audio": "Vercel.AI.FishAudio",
+    "gladia": "Vercel.AI.Gladia",
+    "gmicloud": "Vercel.AI.GmiCloud",
+    "groq": "Vercel.AI.Groq",
+    "huggingface": "Vercel.AI.HuggingFace",
+    "hume": "Vercel.AI.Hume",
+    "klingai": "Vercel.AI.KlingAI",
+    "luma": "Vercel.AI.Luma",
+    "minimax": "Vercel.AI.MiniMax",
+    "moonshotai": "Vercel.AI.Moonshot",
+    "open-responses": "Vercel.AI.OpenResponses",
+    "otel": "Vercel.AI.OpenTelemetry",
+    "perplexity": "Vercel.AI.Perplexity",
+    "prodia": "Vercel.AI.Prodia",
+    "quiverai": "Vercel.AI.QuiverAI",
+    "replicate": "Vercel.AI.Replicate",
+    "revai": "Vercel.AI.RevAI",
+    "togetherai": "Vercel.AI.TogetherAI",
+    "voyage": "Vercel.AI.Voyage",
+    "xai": "Vercel.AI.Xai",
+    "zai": "Vercel.AI.Zai",
+    "mcp": "Vercel.AI.Mcp"
+  },
+  "notPortedPackages": [
+    "angular",
+    "code-mode",
+    "codemod",
+    "devtools",
+    "langchain",
+    "llamaindex",
+    "policy-opa",
+    "react",
+    "rsc",
+    "svelte",
+    "test-server",
+    "tui",
+    "typesafe-ai",
+    "valibot",
+    "vue"
+  ]
+}

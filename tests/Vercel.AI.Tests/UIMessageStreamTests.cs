@@ -15,6 +15,10 @@ namespace Vercel.AI.Tests;
 public sealed class UIMessageStreamTests
 {
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream::maps text and lifecycle parts to UI message chunks",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Writes text, tool, source, and finish SSE chunks, including [DONE].")]
     public async Task Writes_text_tool_and_finish_chunks()
     {
         var model = new TestLanguageModel

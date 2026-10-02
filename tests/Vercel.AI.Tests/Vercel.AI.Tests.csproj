@@ -19,5 +19,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\COMPATIBILITY.md" Link="parity\COMPATIBILITY.md" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\parity\manifest.json" Link="parity\manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\parity\coverage-summary.json" Link="parity\coverage-summary.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\parity\issues.json" Link="parity\issues.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\parity\upstream-unit-tests.jsonl" Link="parity\upstream-unit-tests.jsonl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
