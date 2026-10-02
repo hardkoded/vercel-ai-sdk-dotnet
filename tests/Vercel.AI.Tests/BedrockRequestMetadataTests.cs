@@ -10,7 +10,7 @@ namespace Vercel.AI.Tests;
 public sealed class BedrockRequestMetadataTests
 {
     [Fact]
-    public async Task Generate_sends_request_metadata_and_leaves_other_provider_options_off_the_body()
+    public async Task ShouldPassRequestMetadataInGenerateRequests()
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
@@ -41,7 +41,7 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
-    public async Task Generate_omits_request_metadata_when_provider_options_are_missing()
+    public async Task ShouldOmitRequestMetadataFromGenerateRequestsWhenNotProvided()
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
@@ -56,7 +56,7 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
-    public async Task Generate_rejects_a_non_string_request_metadata_value_before_sending()
+    public async Task RejectsNonStringValuesInTheRecord()
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
@@ -69,7 +69,7 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
-    public async Task Stream_posts_request_metadata_on_the_converse_body()
+    public async Task ShouldPassRequestMetadataInStreamRequests()
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
@@ -86,6 +86,55 @@ public sealed class BedrockRequestMetadataTests
         Assert.Equal("search", metadata.GetProperty("team").GetString());
         Assert.Equal("prod", metadata.GetProperty("environment").GetString());
         Assert.Equal(2, Count(metadata));
+    }
+
+    [Fact]
+    public async Task ShouldOmitRequestMetadataFromStreamRequestsWhenNotProvided()
+    {
+        var handler = new ScriptedHandler();
+        var model = CreateModel(handler);
+        await foreach (var part in model.DoStreamAsync(new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+        }, CancellationToken.None))
+        {
+            _ = part;
+        }
+
+        using var document = JsonDocument.Parse(handler.Body);
+        Assert.False(document.RootElement.TryGetProperty("requestMetadata", out _));
+        Assert.DoesNotContain("requestMetadata", handler.Body);
+        Assert.Contains("/converse", handler.Uri);
+    }
+
+    [Fact]
+    public async Task AcceptsARecordOfStringString()
+    {
+        var handler = new ScriptedHandler();
+        var model = CreateModel(handler);
+        var result = await model.DoGenerateAsync(Call(@"{
+            ""amazon-bedrock"": { ""requestMetadata"": { ""team"": ""search"", ""environment"": ""prod"" } }
+        }"), CancellationToken.None);
+
+        Assert.Equal("ok", result.Text);
+        using var document = JsonDocument.Parse(handler.Body);
+        var metadata = document.RootElement.GetProperty("requestMetadata");
+        Assert.Equal(2, Count(metadata));
+        Assert.Equal("search", metadata.GetProperty("team").GetString());
+        Assert.Equal("prod", metadata.GetProperty("environment").GetString());
+    }
+
+    [Fact]
+    public async Task IsOptional()
+    {
+        var handler = new ScriptedHandler();
+        var model = CreateModel(handler);
+        var result = await model.DoGenerateAsync(Call(@"{ ""amazon-bedrock"": {} }"), CancellationToken.None);
+
+        Assert.Equal("ok", result.Text);
+        using var document = JsonDocument.Parse(handler.Body);
+        Assert.False(document.RootElement.TryGetProperty("requestMetadata", out _));
+        Assert.DoesNotContain("requestMetadata", handler.Body);
     }
 
     [Theory]
