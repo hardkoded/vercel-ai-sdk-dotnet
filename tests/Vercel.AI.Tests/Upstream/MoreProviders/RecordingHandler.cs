@@ -4,13 +4,13 @@
 using System.Net;
 using System.Text;
 
-namespace Vercel.AI.Tests;
+namespace Vercel.AI.Tests.MoreProviders;
 
-/// <summary>One request captured by <see cref="RecordingHandler"/>.</summary>
-internal sealed class RecordedCall
+/// <summary>One request captured by <see cref="ParityHandler"/>.</summary>
+internal sealed class ParityCall
 {
     /// <summary>Creates a captured call.</summary>
-    public RecordedCall(HttpMethod method, Uri uri, byte[] body, IReadOnlyDictionary<string, string> headers)
+    public ParityCall(HttpMethod method, Uri uri, byte[] body, IReadOnlyDictionary<string, string> headers)
     {
         Method = method;
         Uri = uri;
@@ -50,19 +50,19 @@ internal sealed class RecordedCall
 }
 
 /// <summary>Records every request and returns a scripted response.</summary>
-internal sealed class RecordingHandler : HttpMessageHandler
+internal sealed class ParityHandler : HttpMessageHandler
 {
     /// <summary>Creates a handler. <paramref name="respond"/> receives each recorded call.</summary>
-    public RecordingHandler(Func<RecordedCall, HttpResponseMessage>? respond = null)
+    public ParityHandler(Func<ParityCall, HttpResponseMessage>? respond = null)
     {
         Respond = respond ?? (_ => Json("{}"));
     }
 
     /// <summary>Calls in order.</summary>
-    public List<RecordedCall> Calls { get; } = new();
+    public List<ParityCall> Calls { get; } = new();
 
     /// <summary>Response factory.</summary>
-    public Func<RecordedCall, HttpResponseMessage> Respond { get; set; }
+    public Func<ParityCall, HttpResponseMessage> Respond { get; set; }
 
     /// <summary>JSON response.</summary>
     public static HttpResponseMessage Json(string json, params (string Name, string Value)[] headers)
@@ -113,7 +113,7 @@ internal sealed class RecordingHandler : HttpMessageHandler
             }
         }
 
-        var call = new RecordedCall(request.Method, request.RequestUri ?? new Uri("https://example.invalid/"), body, headers);
+        var call = new ParityCall(request.Method, request.RequestUri ?? new Uri("https://example.invalid/"), body, headers);
         Calls.Add(call);
         return Respond(call);
     }

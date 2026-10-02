@@ -41,7 +41,7 @@ public sealed class StreamProviderError : AiSdkError
     public bool IsRetryable { get; }
 
     /// <summary>Original provider error payload.</summary>
-    public object? Data { get; }
+    public new object? Data { get; }
 
     /// <summary>Returns whether <paramref name="error"/> carries this error's marker.</summary>
     public static new bool IsInstance(object? error)

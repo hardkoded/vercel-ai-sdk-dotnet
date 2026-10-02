@@ -13,13 +13,13 @@ namespace Vercel.AI.Operations;
 public sealed class ImageModelFile
 {
     /// <summary>Creates a URL image.</summary>
-    public static ImageModelFile Url(string url)
+    public static ImageModelFile FromUrl(string url)
     {
         return new ImageModelFile("url", url, null, null);
     }
 
     /// <summary>Creates a binary image.</summary>
-    public static ImageModelFile File(byte[] data, string mediaType)
+    public static ImageModelFile FromFile(byte[] data, string mediaType)
     {
         return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType);
     }
@@ -453,18 +453,18 @@ public static class GenerateImage
     {
         if (data is string text && text.StartsWith("http", StringComparison.Ordinal))
         {
-            return ImageModelFile.Url(text);
+            return ImageModelFile.FromUrl(text);
         }
 
         if (data is string dataUrl && dataUrl.StartsWith("data:", StringComparison.Ordinal))
         {
             var split = SplitDataUrl(dataUrl);
             var bytes = split.Base64 == null ? Array.Empty<byte>() : Convert.FromBase64String(split.Base64);
-            return ImageModelFile.File(bytes, string.IsNullOrEmpty(split.MediaType) ? MediaTypeDetector.Detect(bytes, "image") ?? "image/png" : split.MediaType!);
+            return ImageModelFile.FromFile(bytes, string.IsNullOrEmpty(split.MediaType) ? MediaTypeDetector.Detect(bytes, "image") ?? "image/png" : split.MediaType!);
         }
 
         var payload = MediaTypeDetector.ToBytes(data);
-        return ImageModelFile.File(payload, MediaTypeDetector.Detect(payload, "image") ?? "image/png");
+        return ImageModelFile.FromFile(payload, MediaTypeDetector.Detect(payload, "image") ?? "image/png");
     }
 
     private static (string? MediaType, string? Base64) SplitDataUrl(string dataUrl)

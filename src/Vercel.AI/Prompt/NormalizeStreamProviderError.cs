@@ -63,7 +63,7 @@ public sealed class StreamProviderError : Exception
     public bool IsRetryable { get; }
 
     /// <summary>Original payload.</summary>
-    public object? Data { get; }
+    public new object? Data { get; }
 }
 
 /// <summary>An error-shaped value that must be returned unchanged.</summary>

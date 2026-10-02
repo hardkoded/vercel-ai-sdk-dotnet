@@ -300,7 +300,76 @@ public static class JsonSchemas
             return "null";
         }
 
-        return node.ToJsonString(Compact);
+        return RelaxNonAscii(node.ToJsonString(Compact));
+    }
+
+    /// <summary>
+    /// Turns <c>\u</c> escapes above ASCII back into characters. System.Text.Json writes emoji as surrogate escapes
+    /// even when the encoder allows them, and JSON.stringify leaves those characters in place.
+    /// </summary>
+    private static string RelaxNonAscii(string json)
+    {
+        var builder = new StringBuilder(json.Length);
+        for (var i = 0; i < json.Length; i++)
+        {
+            if (json[i] == '\\' && i + 5 < json.Length && json[i + 1] == 'u' && TryHex(json, i + 2, out var code))
+            {
+                if (code >= 0xD800 && code <= 0xDBFF
+                    && i + 11 < json.Length
+                    && json[i + 6] == '\\'
+                    && json[i + 7] == 'u'
+                    && TryHex(json, i + 8, out var low)
+                    && low >= 0xDC00
+                    && low <= 0xDFFF)
+                {
+                    var rune = ((code - 0xD800) << 10) + (low - 0xDC00) + 0x10000;
+                    builder.Append(char.ConvertFromUtf32(rune));
+                    i += 11;
+                    continue;
+                }
+
+                if (code >= 0x80)
+                {
+                    builder.Append((char)code);
+                    i += 5;
+                    continue;
+                }
+            }
+
+            builder.Append(json[i]);
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool TryHex(string text, int start, out int value)
+    {
+        value = 0;
+        for (var i = 0; i < 4; i++)
+        {
+            var digit = text[start + i];
+            int nibble;
+            if (digit >= '0' && digit <= '9')
+            {
+                nibble = digit - '0';
+            }
+            else if (digit >= 'a' && digit <= 'f')
+            {
+                nibble = digit - 'a' + 10;
+            }
+            else if (digit >= 'A' && digit <= 'F')
+            {
+                nibble = digit - 'A' + 10;
+            }
+            else
+            {
+                return false;
+            }
+
+            value = (value << 4) + nibble;
+        }
+
+        return true;
     }
 
     /// <summary>

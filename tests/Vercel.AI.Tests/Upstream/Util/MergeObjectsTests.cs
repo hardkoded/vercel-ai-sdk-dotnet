@@ -91,7 +91,7 @@ public sealed class MergeObjectsTests
         var first = new DateTime(2023, 1, 1);
         var second = new DateTime(2023, 2, 1);
         var result = ObjectMerge.MergeObjects(Map(("a", first)), Map(("a", second)))!;
-        Assert.Same(second, result["a"]);
+        Assert.Equal(second, result["a"]);
     }
 
     [UpstreamTest("packages/ai/src/util/merge-objects.test.ts::mergeObjects::should handle RegExp objects", Coverage = UpstreamCoverage.Covered)]

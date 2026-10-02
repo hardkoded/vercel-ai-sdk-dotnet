@@ -101,6 +101,8 @@ public sealed class AnthropicSkills
             var content = new ByteArrayContent(file.Data);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
             form.Add(content, "files[]", file.Path);
+            content.Headers.Remove("Content-Disposition");
+            content.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"files[]\"; filename=\"" + file.Path + "\"");
         }
 
         var headers = WithBeta(_headers());

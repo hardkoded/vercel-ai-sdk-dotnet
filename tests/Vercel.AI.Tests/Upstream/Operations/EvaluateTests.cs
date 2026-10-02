@@ -428,7 +428,7 @@ public sealed class EvaluateTests
         Assert.Equal(2, telemetryStarts[0].MaxRetries);
         Assert.Equal("ai.evaluate.doEvaluate", modelStarts[0].OperationId);
         Assert.Equal((int?)30, modelEnds[0].Usage!.InputTokens);
-        Assert.Null(modelEnds[0].Usage.TotalTokens);
+        Assert.Null(modelEnds[0].Usage!.TotalTokens);
         Assert.Equal((int?)34, telemetryEnds[0].Usage!.TotalTokens);
         Assert.Equal("hidden", userStarts[0].RuntimeContext["secret"]);
         Assert.Null(userStarts[0].FunctionId);

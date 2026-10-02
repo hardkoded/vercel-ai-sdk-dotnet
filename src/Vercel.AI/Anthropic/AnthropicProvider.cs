@@ -407,7 +407,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.MessagesUri(), body, headers, cancellationToken).ConfigureAwait(false);
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
-        return AnthropicResponse.Parse(response.Body, context, response.Body, response.Headers);
+        return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
 
     /// <inheritdoc />

@@ -245,9 +245,9 @@ public static class ProviderValues
     /// <summary>True when both absolute URLs have the same scheme, host, and port.</summary>
     public static bool IsSameOrigin(string url, string baseUrl)
     {
-        Uri left;
-        Uri right;
-        if (!Uri.TryCreate(url, UriKind.Absolute, out left) || !Uri.TryCreate(baseUrl, UriKind.Absolute, out right))
+        Uri? left;
+        Uri? right;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out left) || !Uri.TryCreate(baseUrl, UriKind.Absolute, out right) || left == null || right == null)
         {
             return false;
         }

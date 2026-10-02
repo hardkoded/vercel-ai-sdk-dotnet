@@ -151,7 +151,14 @@ internal sealed class CaptureHandler : HttpMessageHandler
         Method = request.Method.Method;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
         Uris.Add(Uri);
-        Body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (request.Content != null)
+        {
+            var text = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+            if (text.Length > 0)
+            {
+                Body = text;
+            }
+        }
         Headers.Clear();
         foreach (var header in request.Headers)
         {

@@ -63,8 +63,8 @@ public sealed class ServerResponse
         for (var i = 0; i < entries.Count; i++)
         {
             var key = entries[i].Key.ToLowerInvariant();
-            object existing;
-            if (!Headers.TryGetValue(key, out existing))
+            object? existing;
+            if (!Headers.TryGetValue(key, out existing) || existing == null)
             {
                 Headers[key] = entries[i].Value;
                 continue;

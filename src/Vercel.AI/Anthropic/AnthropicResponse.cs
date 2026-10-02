@@ -411,7 +411,7 @@ public static class AnthropicResponse
 
     private static string CustomName(AnthropicParseContext context, string apiName)
     {
-        string mapped;
+        string? mapped;
         return context.ToolNames.TryGetValue(apiName, out mapped) ? mapped : apiName;
     }
 

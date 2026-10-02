@@ -758,7 +758,7 @@ public static class GoogleMessages
                     ["inlineData"] = new JsonObject
                     {
                         ["mimeType"] = ResolveMediaType(part.MediaType ?? "application/octet-stream", part.Data),
-                        ["data"] = Convert.ToBase64String(part.Data ?? Array.Empty<byte>()),
+                        ["data"] = System.Convert.ToBase64String(part.Data ?? Array.Empty<byte>()),
                     },
                 });
             }
@@ -859,7 +859,7 @@ public static class GoogleMessages
     {
         return new JsonObject
         {
-            ["inlineData"] = new JsonObject { ["mimeType"] = mediaType, ["data"] = Convert.ToBase64String(data) },
+            ["inlineData"] = new JsonObject { ["mimeType"] = mediaType, ["data"] = System.Convert.ToBase64String(data) },
         };
     }
 

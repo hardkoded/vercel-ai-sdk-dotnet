@@ -150,7 +150,7 @@ public sealed class InvalidResponseDataException : AiSdkException
     }
 
     /// <summary>Response payload that failed validation.</summary>
-    public object? Data { get; }
+    public new object? Data { get; }
 }
 
 /// <summary>The provider does not implement the requested operation.</summary>

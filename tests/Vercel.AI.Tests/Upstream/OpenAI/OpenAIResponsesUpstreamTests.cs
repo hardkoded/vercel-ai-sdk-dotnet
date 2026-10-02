@@ -132,7 +132,7 @@ public sealed class OpenAIResponsesUpstreamTests
     [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsUsage()
     {
-        var usage = (await Generate("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"future_usage_field\":{\"value\":true},\"input_tokens\":345,\"input_tokens_details\":{\"cache_write_tokens\":45,\"cached_tokens\":234,\"future_input_detail\":{\"tokens\":7}},\"output_tokens\":538,\"output_tokens_details\":{\"future_output_detail\":[\"preserved\"],\"reasoning_tokens\":123},\"total_tokens\":572}}")).Usage;
+        var usage = (await GenerateFromJson("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"future_usage_field\":{\"value\":true},\"input_tokens\":345,\"input_tokens_details\":{\"cache_write_tokens\":45,\"cached_tokens\":234,\"future_input_detail\":{\"tokens\":7}},\"output_tokens\":538,\"output_tokens_details\":{\"future_output_detail\":[\"preserved\"],\"reasoning_tokens\":123},\"total_tokens\":572}}")).Usage;
         Assert.Equal(345, usage.InputTokens);
         Assert.Equal(234, usage.CacheReadTokens);
         Assert.Equal(45, usage.CacheWriteTokens);
@@ -148,7 +148,7 @@ public sealed class OpenAIResponsesUpstreamTests
     [UpstreamTest(Generate + "should preserve orchestration usage fields in raw", Coverage = UpstreamCoverage.Covered)]
     public async Task PreservesOrchestrationUsage()
     {
-        var usage = (await Generate("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"input_tokens\":120,\"input_tokens_details\":{\"cached_tokens\":0,\"orchestration_input_tokens\":40,\"orchestration_input_cached_tokens\":10},\"output_tokens\":80,\"output_tokens_details\":{\"reasoning_tokens\":0,\"orchestration_output_tokens\":25},\"total_tokens\":265}}")).Usage;
+        var usage = (await GenerateFromJson("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"input_tokens\":120,\"input_tokens_details\":{\"cached_tokens\":0,\"orchestration_input_tokens\":40,\"orchestration_input_cached_tokens\":10},\"output_tokens\":80,\"output_tokens_details\":{\"reasoning_tokens\":0,\"orchestration_output_tokens\":25},\"total_tokens\":265}}")).Usage;
         Assert.Equal(40, usage.Raw!.Value.GetProperty("input_tokens_details").GetProperty("orchestration_input_tokens").GetInt32());
         Assert.Equal(10, usage.Raw.Value.GetProperty("input_tokens_details").GetProperty("orchestration_input_cached_tokens").GetInt32());
         Assert.Equal(25, usage.Raw.Value.GetProperty("output_tokens_details").GetProperty("orchestration_output_tokens").GetInt32());
@@ -157,7 +157,7 @@ public sealed class OpenAIResponsesUpstreamTests
     [UpstreamTest(Generate + "should generate text", Coverage = UpstreamCoverage.Partial, Note = "The text is answer text. Generated text does not carry the Responses item id.")]
     public async Task GeneratesText()
     {
-        var result = await Generate("{\"id\":\"resp_67c97c0203188190a025beb4a75242bc\",\"created_at\":1741257730,\"model\":\"gpt-4o\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer text\"}]}]}");
+        var result = await GenerateFromJson("{\"id\":\"resp_67c97c0203188190a025beb4a75242bc\",\"created_at\":1741257730,\"model\":\"gpt-4o\",\"output\":[{\"id\":\"msg_1\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer text\"}]}]}");
         Assert.Equal("answer text", result.Text);
         Assert.Equal("resp_67c97c0203188190a025beb4a75242bc", result.ResponseId);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1741257730), result.ResponseTimestamp);
@@ -166,7 +166,7 @@ public sealed class OpenAIResponsesUpstreamTests
     [UpstreamTest(ToolCalls + "should have tool-calls finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task UsesToolCallsFinishReason()
     {
-        var result = await Generate("{\"id\":\"resp_tool\",\"incomplete_details\":null,\"output\":[{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"test-tool\",\"arguments\":\"{\\\"value\\\":\\\"Spark\\\"}\"}]}");
+        var result = await GenerateFromJson("{\"id\":\"resp_tool\",\"incomplete_details\":null,\"output\":[{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"test-tool\",\"arguments\":\"{\\\"value\\\":\\\"Spark\\\"}\"}]}");
         Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
         Assert.Null(result.RawFinishReason);
         var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
@@ -187,7 +187,7 @@ public sealed class OpenAIResponsesUpstreamTests
         return (JsonObject)prepared.Tools![0]!;
     }
 
-    private static async Task<LanguageModelGenerateResult> Generate(string json)
+    private static async Task<LanguageModelGenerateResult> GenerateFromJson(string json)
     {
         var capture = new OpenAICapture { ResponseJson = json };
         return await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-4o").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);

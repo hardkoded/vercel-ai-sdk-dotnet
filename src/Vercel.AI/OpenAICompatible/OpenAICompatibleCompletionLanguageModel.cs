@@ -116,12 +116,18 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
                 yield return new RawStreamPart(data);
             }
 
-            JsonNode? node;
+            JsonNode? node = null;
+            var invalidJson = false;
             try
             {
                 node = JsonNode.Parse(data);
             }
             catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson)
             {
                 failed = true;
                 yield return new ErrorStreamPart("The provider stream chunk could not be parsed.");

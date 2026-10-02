@@ -247,8 +247,8 @@ public sealed class TelemetryAttributeTests
         var result = await TelemetryAttributes.SelectTelemetryAttributesAsync(
             new TelemetrySelection { IsEnabled = true },
             Map(
-                ("input", ResolvableTelemetryAttribute.Input(() => null)),
-                ("output", ResolvableTelemetryAttribute.Output(() => null)),
+                ("input", ResolvableTelemetryAttribute.Input(() => (object?)null)),
+                ("output", ResolvableTelemetryAttribute.Output(() => (object?)null)),
                 ("other", "value")));
 
         Assert.Equal("value", Assert.Single(result).Value);
@@ -269,7 +269,7 @@ public sealed class TelemetryAttributeTests
                 ["output"] = ResolvableTelemetryAttribute.Output(() => "output value"),
                 ["undefined"] = null,
                 ["null"] = null,
-                ["input_null"] = ResolvableTelemetryAttribute.Input(() => null),
+                ["input_null"] = ResolvableTelemetryAttribute.Input(() => (object?)null),
             });
 
         Assert.Equal(3, result.Count);

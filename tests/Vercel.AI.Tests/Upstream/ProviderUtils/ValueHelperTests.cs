@@ -122,7 +122,7 @@ public sealed class ValueHelperTests
             ["d"] = null,
             ["e"] = null,
         });
-        Assert.Equal(false, (bool)result["a"]);
+        Assert.False((bool)result["a"]);
         Assert.Equal(0, (int)result["b"]);
         Assert.Equal(string.Empty, (string)result["c"]);
         Assert.Equal(3, result.Count);

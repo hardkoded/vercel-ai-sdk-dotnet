@@ -725,7 +725,7 @@ public static class AnthropicPrompt
 
     private static string ToProviderName(IReadOnlyDictionary<string, string> names, string toolName)
     {
-        string mapped;
+        string? mapped;
         return names.TryGetValue(toolName, out mapped) ? mapped : toolName;
     }
 
@@ -759,7 +759,7 @@ public static class AnthropicPrompt
         byte[] bytes;
         try
         {
-            bytes = Convert.FromBase64String(data);
+            bytes = System.Convert.FromBase64String(data);
         }
         catch (FormatException)
         {
@@ -793,7 +793,7 @@ public static class AnthropicPrompt
 
         try
         {
-            return Encoding.UTF8.GetString(Convert.FromBase64String(data));
+            return Encoding.UTF8.GetString(System.Convert.FromBase64String(data));
         }
         catch (FormatException)
         {

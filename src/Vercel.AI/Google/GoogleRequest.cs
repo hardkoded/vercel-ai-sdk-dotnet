@@ -94,7 +94,7 @@ public static class GoogleRequest
             extra["X-Vertex-AI-LLM-Request-Type"] = requestType;
         }
 
-        var imageConfig = ImageConfig(google, vertex, provider, warnings);
+        var imageConfig = ImageConfig(google, vertex, provider!, warnings);
         var developer25 = !vertex && Gemini25.IsMatch(modelId ?? string.Empty);
         if (developer25 && options.FrequencyPenalty != null)
         {

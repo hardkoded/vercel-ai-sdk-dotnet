@@ -3,6 +3,7 @@
 
 using System.Text;
 using Vercel.AI.Util;
+using UtilTextPart = Vercel.AI.Util.TextStreamPart;
 
 namespace Vercel.AI.Tests;
 
@@ -12,13 +13,13 @@ public sealed class TextAndServerResponseTests
     [Fact]
     public async Task Keeps_only_text_deltas()
     {
-        var stream = TextStreams.ToTextStream(ReadableStream<TextStreamPart>.FromArray(new[]
+        var stream = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
         {
-            new TextStreamPart("start"),
-            new TextStreamPart("text-start", "t1"),
-            new TextStreamPart("text-delta", "t1", "Hello"),
-            new TextStreamPart("text-delta", "t1", ", world!"),
-            new TextStreamPart("text-end", "t1"),
+            new UtilTextPart("start"),
+            new UtilTextPart("text-start", "t1"),
+            new UtilTextPart("text-delta", "t1", "Hello"),
+            new UtilTextPart("text-delta", "t1", ", world!"),
+            new UtilTextPart("text-end", "t1"),
         }));
         Assert.Equal(new[] { "Hello", ", world!" }, await stream.ToArrayAsync());
     }
@@ -41,12 +42,12 @@ public sealed class TextAndServerResponseTests
     [Fact]
     public async Task Responds_with_a_text_stream()
     {
-        var text = TextStreams.ToTextStream(ReadableStream<TextStreamPart>.FromArray(new[]
+        var text = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
         {
-            new TextStreamPart("start"),
-            new TextStreamPart("text-delta", "t1", "Hello"),
-            new TextStreamPart("text-delta", "t1", ", world!"),
-            new TextStreamPart("text-end", "t1"),
+            new UtilTextPart("start"),
+            new UtilTextPart("text-delta", "t1", "Hello"),
+            new UtilTextPart("text-delta", "t1", ", world!"),
+            new UtilTextPart("text-end", "t1"),
         }));
         var response = TextStreams.CreateTextStreamResponse(text);
         Assert.Equal(new[] { "Hello", ", world!" }, await Decode(response.Body));
@@ -85,12 +86,12 @@ public sealed class TextAndServerResponseTests
     public async Task Pipes_a_text_stream()
     {
         var response = new ServerResponse();
-        var text = TextStreams.ToTextStream(ReadableStream<TextStreamPart>.FromArray(new[]
+        var text = TextStreams.ToTextStream(ReadableStream<UtilTextPart>.FromArray(new[]
         {
-            new TextStreamPart("start"),
-            new TextStreamPart("text-delta", "t1", "Hello"),
-            new TextStreamPart("text-delta", "t1", ", world!"),
-            new TextStreamPart("text-end", "t1"),
+            new UtilTextPart("start"),
+            new UtilTextPart("text-delta", "t1", "Hello"),
+            new UtilTextPart("text-delta", "t1", ", world!"),
+            new UtilTextPart("text-end", "t1"),
         }));
         await TextStreams.PipeTextStreamToResponseAsync(response, text);
         Assert.Equal(new[] { "Hello", ", world!" }, response.GetDecodedChunks());

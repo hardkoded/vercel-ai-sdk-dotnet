@@ -57,7 +57,7 @@ public static class PartialJson
             return new PartialJsonResult(null, UndefinedInput);
         }
 
-        JsonNode parsed;
+        JsonNode? parsed;
         if (TryParse(jsonText, out parsed))
         {
             return new PartialJsonResult(parsed, SuccessfulParse);

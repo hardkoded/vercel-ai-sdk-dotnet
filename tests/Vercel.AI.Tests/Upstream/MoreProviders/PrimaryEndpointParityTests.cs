@@ -14,6 +14,7 @@ using Vercel.AI.Luma;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.Replicate;
+using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
 
@@ -26,7 +27,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/alibaba/src/alibaba-embedding-model.test.ts::doEmbed::should pass the model and values", Coverage = UpstreamCoverage.Covered)]
     public async Task Alibaba_embedding_posts_texts_and_empty_parameters()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json("{\"output\":{\"embeddings\":[]}}"));
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"output\":{\"embeddings\":[]}}"));
         var provider = AlibabaProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler);
         var model = (AlibabaProvider.AlibabaEmbeddingModel)provider.EmbeddingModel("text-embedding-v4");
         await model.EmbedAsync(new AlibabaEmbeddingRequest(EmbeddingValues), CancellationToken.None).ConfigureAwait(false);
@@ -38,7 +39,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/alibaba/src/alibaba-embedding-model.test.ts::doEmbed::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Alibaba_embedding_sends_bearer_custom_headers_and_user_agent()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json("{\"output\":{\"embeddings\":[]}}"));
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"output\":{\"embeddings\":[]}}"));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = AlibabaProvider.Create(options, handler);
@@ -56,9 +57,9 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/assemblyai/src/assemblyai-transcription-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task AssemblyAI_upload_sends_the_raw_key_and_user_agent()
     {
-        var handler = new RecordingHandler(call => call.Uri.AbsolutePath.EndsWith("/v2/upload", StringComparison.Ordinal)
-            ? RecordingHandler.Json("{\"upload_url\":\"https://cdn.example/audio\"}")
-            : RecordingHandler.Json("{\"text\":\"hello\"}"));
+        var handler = new ParityHandler(call => call.Uri.AbsolutePath.EndsWith("/v2/upload", StringComparison.Ordinal)
+            ? ParityHandler.Json("{\"upload_url\":\"https://cdn.example/audio\"}")
+            : ParityHandler.Json("{\"text\":\"hello\"}"));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = AssemblyAIProvider.Create(options, handler);
@@ -91,7 +92,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/cartesia/src/cartesia-speech-model.test.ts::CartesiaSpeechModel > doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Cartesia_speech_sends_version_and_custom_headers()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Bytes(new byte[8], "audio/mpeg"));
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[8], "audio/mpeg"));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = CartesiaProvider.Create(options, handler);
@@ -107,7 +108,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/cartesia/src/cartesia-speech-model.test.ts::CartesiaSpeechModel > doGenerate::should include user-agent header", Coverage = UpstreamCoverage.Covered)]
     public async Task Cartesia_speech_sends_the_sdk_user_agent()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Bytes(new byte[8], "audio/mpeg"));
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[8], "audio/mpeg"));
         var provider = CartesiaProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler);
         await provider.GenerateSpeechAsync("sonic-3.5", new SpeechCallOptions("Hello, world!") { Voice = "test-voice-id" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Contains("ai-sdk/cartesia/0.0.0-test", handler.Calls[0].Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
@@ -118,7 +119,7 @@ public sealed class PrimaryEndpointParityTests
     public async Task Deepgram_puts_the_model_in_the_query_and_posts_raw_audio()
     {
         var audio = new byte[] { 1, 2, 3, 4 };
-        var handler = new RecordingHandler(_ => RecordingHandler.Json("{\"text\":\"hello\"}"));
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"text\":\"hello\"}"));
         var provider = DeepgramProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler);
         await provider.TranscribeAsync("nova-3", new AudioInput(audio, "audio/wav", "audio.wav"), null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("https://api.deepgram.com/v1/listen?model=nova-3", handler.Calls[0].Uri.AbsoluteUri);
@@ -131,7 +132,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/deepgram/src/deepgram-transcription-model.test.ts::doGenerate > transcription::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Deepgram_sends_token_auth_and_the_audio_content_type()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json("{\"text\":\"hello\"}"));
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"text\":\"hello\"}"));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = DeepgramProvider.Create(options, handler);
@@ -206,7 +207,7 @@ public sealed class PrimaryEndpointParityTests
         }, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", handler.Calls[0].Uri.AbsoluteUri);
         using var body = JsonDocument.Parse(handler.Calls[0].Text);
-        Assert.Equal(1, body.RootElement.EnumerateObject().Count());
+        Assert.Single(body.RootElement.EnumerateObject());
         var input = body.RootElement.GetProperty("input");
         Assert.Equal(6, input.EnumerateObject().Count());
         Assert.Equal("The Loch Ness monster getting a manicure", input.GetProperty("prompt").GetString());
@@ -238,9 +239,9 @@ public sealed class PrimaryEndpointParityTests
         Assert.Contains("ai-sdk/replicate/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
-    private static RecordingHandler ImageHandler()
+    private static ParityHandler ImageHandler()
     {
-        return new RecordingHandler(_ => RecordingHandler.Json("{\"url\":\"https://example.test/out.bin\"}"));
+        return new ParityHandler(_ => ParityHandler.Json("{\"url\":\"https://example.test/out.bin\"}"));
     }
 
     private static OpenAICompatibleOptions HeaderOptions(string baseUrl)

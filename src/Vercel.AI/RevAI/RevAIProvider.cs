@@ -271,7 +271,12 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             }
 
             form.Add(media, "media", "audio." + Extension(audio.MediaType));
-            form.Add(new StringContent(config.ToJsonString(), Encoding.UTF8), "config");
+            media.Headers.Remove("Content-Disposition");
+            media.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"media\"; filename=\"audio." + Extension(audio.MediaType) + "\"");
+            var configContent = new StringContent(config.ToJsonString(), Encoding.UTF8);
+            form.Add(configContent, "config");
+            configContent.Headers.Remove("Content-Disposition");
+            configContent.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"config\"");
 
             var submission = await ProviderExchange.SendAsync(
                 _provider._httpClient,
@@ -437,12 +442,13 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                     ? raw.GetString() ?? string.Empty
                     : string.Empty;
                 monologueText.Append(value);
-                current.Append(value);
                 var type = element.TryGetProperty("type", out var typeValue) ? typeValue.GetString() : null;
                 if (!string.Equals(type, "text", StringComparison.Ordinal))
                 {
                     continue;
                 }
+
+                current.Append(value);
 
                 if (element.TryGetProperty("end_ts", out var endValue) && endValue.TryGetDouble(out var end) && end > duration)
                 {

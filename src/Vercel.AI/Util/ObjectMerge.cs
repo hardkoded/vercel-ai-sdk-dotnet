@@ -44,7 +44,7 @@ public static class ObjectMerge
                 continue;
             }
 
-            object baseValue;
+            object? baseValue;
             result.TryGetValue(pair.Key, out baseValue);
             var overrideMap = AsMergeableMap(pair.Value);
             var baseMap = AsMergeableMap(baseValue);

@@ -83,19 +83,19 @@ public sealed class OpenAIChatRequestUpstreamTests
     [UpstreamTest(Tools + "should handle tool choice \"auto\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsAutoToolChoice()
     {
-        Assert.Equal("auto", Choice(ToolChoice.Auto).GetValue<string>());
+        Assert.Equal("auto", Choice(ToolChoice.Auto)!.GetValue<string>());
     }
 
     [UpstreamTest(Tools + "should handle tool choice \"required\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsRequiredToolChoice()
     {
-        Assert.Equal("required", Choice(ToolChoice.Required).GetValue<string>());
+        Assert.Equal("required", Choice(ToolChoice.Required)!.GetValue<string>());
     }
 
     [UpstreamTest(Tools + "should handle tool choice \"none\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsNoneToolChoice()
     {
-        Assert.Equal("none", Choice(ToolChoice.None).GetValue<string>());
+        Assert.Equal("none", Choice(ToolChoice.None)!.GetValue<string>());
     }
 
     [UpstreamTest(Tools + "should handle tool choice \"tool\"", Coverage = UpstreamCoverage.Covered)]

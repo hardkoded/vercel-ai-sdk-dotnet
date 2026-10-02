@@ -51,7 +51,7 @@ public sealed class DownloadError : AiSdkError
     }
 }
 
-/// <summary>Bytes and media type returned by <see cref="Download.GetAsync"/>.</summary>
+/// <summary>Bytes and media type returned by <c>Download.GetAsync</c>.</summary>
 public sealed class DownloadResult
 {
     /// <summary>Creates a download result.</summary>

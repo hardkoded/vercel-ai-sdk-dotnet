@@ -13,6 +13,6 @@ public static class TokenRates
     public static double CalculateTokensPerSecond(double? tokens, double? durationMs)
     {
         var tokenRate = (1000d * (tokens ?? 0d)) / (durationMs ?? 0d);
-        return double.IsFinite(tokenRate) ? tokenRate : 0d;
+        return !double.IsNaN(tokenRate) && !double.IsInfinity(tokenRate) ? tokenRate : 0d;
     }
 }

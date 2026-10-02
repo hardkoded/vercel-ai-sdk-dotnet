@@ -256,7 +256,7 @@ public sealed class GenerateVideoTests
     public async Task Handles_omitted_video_metadata()
     {
         var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = new VideoFake { Result = Clip() }, Prompt = new VideoPrompt("a cat") });
-        Assert.Equal(0, result.ProviderMetadata.EnumerateObject().Count());
+        Assert.Empty(result.ProviderMetadata.EnumerateObject());
     }
 
     [Fact]
@@ -288,7 +288,7 @@ public sealed class GenerateVideoTests
         var model = new VideoFake { Result = Clip() };
         await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = model, Prompt = new VideoPrompt("a cat", png) });
         Assert.Equal("file", model.Generates[0].Image!.Type);
-        Assert.Equal("image/png", model.Generates[0].Image.MediaType);
+        Assert.Equal("image/png", model.Generates[0].Image!.MediaType);
     }
 
     [Fact]
@@ -298,7 +298,7 @@ public sealed class GenerateVideoTests
         var model = new VideoFake { Result = Clip() };
         await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = model, Prompt = new VideoPrompt("a cat", "https://example.com/cat.png") });
         Assert.Equal("url", model.Generates[0].Image!.Type);
-        Assert.Equal("https://example.com/cat.png", model.Generates[0].Image.Url);
+        Assert.Equal("https://example.com/cat.png", model.Generates[0].Image!.Url);
     }
 
     [Fact]

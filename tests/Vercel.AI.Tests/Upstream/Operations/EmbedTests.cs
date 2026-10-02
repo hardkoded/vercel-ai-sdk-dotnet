@@ -385,12 +385,12 @@ public sealed class EmbedTests
                 }
 
                 Interlocked.Decrement(ref active);
-                return Vector(new[] { call.Values[0][0] }, 1);
+                return Vector(new[] { 1d }, 1);
             },
         };
         var pending = EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = model, Values = new[] { "a", "b" }, MaxParallelCalls = 8, MaxRetries = 0 });
         await Task.Delay(30);
-        Assert.Equal(1, model.Calls.Count);
+        Assert.Single(model.Calls);
         gate.SetResult(true);
         var result = await pending;
         Assert.Equal(1, max);

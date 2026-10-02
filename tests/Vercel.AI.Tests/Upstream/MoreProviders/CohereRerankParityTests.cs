@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Cohere;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
 
@@ -119,9 +120,9 @@ public sealed class CohereRerankParityTests
         AssertResponse(await Texts(provider).ConfigureAwait(false));
     }
 
-    private static (CohereProvider Provider, RecordingHandler Handler) Client()
+    private static (CohereProvider Provider, ParityHandler Handler) Client()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json(Fixture));
+        var handler = new ParityHandler(_ => ParityHandler.Json(Fixture));
         return (CohereProvider.Create(new CohereOptions { ApiKey = "test-api-key" }, handler), handler);
     }
 

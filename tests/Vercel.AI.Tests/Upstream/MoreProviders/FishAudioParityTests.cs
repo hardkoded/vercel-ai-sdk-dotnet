@@ -15,8 +15,8 @@ public sealed class FishAudioParityTests
     public void Speech_and_speech_model_return_speech_models()
     {
         var provider = FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" });
-        Assert.IsType<FishAudioProvider.Speech>(provider.Speech("s1"));
-        Assert.IsType<FishAudioProvider.Speech>(provider.SpeechModel("s1"));
+        Assert.IsType<FishAudioProvider.FishSpeechModel>(provider.Speech("s1"));
+        Assert.IsType<FishAudioProvider.FishSpeechModel>(provider.SpeechModel("s1"));
     }
 
     [Fact]
@@ -24,8 +24,8 @@ public sealed class FishAudioParityTests
     public void Transcription_factories_return_transcription_models()
     {
         var provider = FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" });
-        Assert.IsType<FishAudioProvider.Transcription>(provider.Transcription());
-        Assert.IsType<FishAudioProvider.Transcription>(provider.TranscriptionModel("transcribe-1"));
+        Assert.IsType<FishAudioProvider.FishTranscriptionModel>(provider.Transcription());
+        Assert.IsType<FishAudioProvider.FishTranscriptionModel>(provider.TranscriptionModel("transcribe-1"));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class FishAudioParityTests
     [UpstreamTest("packages/fish-audio/src/fish-audio-provider.test.ts::createFishAudio::should expose the speech model id and provider", Coverage = UpstreamCoverage.Covered)]
     public void Speech_model_exposes_its_id_provider_and_version()
     {
-        var model = (FishAudioProvider.Speech)FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }).Speech("s2-pro");
+        var model = (FishAudioProvider.FishSpeechModel)FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }).Speech("s2-pro");
         Assert.Equal("s2-pro", model.ModelId);
         Assert.Equal("fish-audio.speech", model.Provider);
         Assert.Equal("v4", model.SpecificationVersion);
@@ -50,7 +50,7 @@ public sealed class FishAudioParityTests
     [UpstreamTest("packages/fish-audio/src/fish-audio-provider.test.ts::createFishAudio::should expose the transcription model provider", Coverage = UpstreamCoverage.Covered)]
     public void Transcription_model_exposes_its_provider_and_version()
     {
-        var model = (FishAudioProvider.Transcription)FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }).Transcription();
+        var model = (FishAudioProvider.FishTranscriptionModel)FishAudioProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }).Transcription();
         Assert.Equal("fish-audio.transcription", model.Provider);
         Assert.Equal("v4", model.SpecificationVersion);
     }

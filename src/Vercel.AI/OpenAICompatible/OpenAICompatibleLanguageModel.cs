@@ -180,12 +180,18 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 yield return new RawStreamPart(data);
             }
 
-            JsonNode? node;
+            JsonNode? node = null;
+            var invalidJson = false;
             try
             {
                 node = JsonNode.Parse(data);
             }
             catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson)
             {
                 failed = true;
                 sawFinish = true;

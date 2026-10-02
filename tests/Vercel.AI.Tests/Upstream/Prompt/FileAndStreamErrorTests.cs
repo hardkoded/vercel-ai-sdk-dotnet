@@ -278,7 +278,7 @@ public sealed class CreateToolModelOutputTests
             Empty(),
             output,
             true,
-            call => new JsonToolModelOutput(Json("{\"processed\":" + call.Output!.GetRawText() + ",\"timestamp\":\"2023-01-01\"}")),
+            call => new JsonToolModelOutput(Json("{\"processed\":" + ((JsonElement)call.Output!).GetRawText() + ",\"timestamp\":\"2023-01-01\"}")),
             "none");
         Assert.Equal("success", result.Value.GetProperty("processed").GetProperty("status").GetString());
         Assert.Equal(1, result.Value.GetProperty("processed").GetProperty("data")[0].GetInt32());

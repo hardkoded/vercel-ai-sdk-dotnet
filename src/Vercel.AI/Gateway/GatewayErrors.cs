@@ -54,7 +54,7 @@ public sealed class GatewayAuthenticationError : GatewayError
     public override string Type => "authentication_error";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayAuthenticationError;
     }
@@ -93,7 +93,7 @@ public sealed class GatewayInvalidRequestError : GatewayError
     public override string Type => "invalid_request_error";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayInvalidRequestError;
     }
@@ -112,7 +112,7 @@ public sealed class GatewayRateLimitError : GatewayError
     public override string Type => "rate_limit_exceeded";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayRateLimitError;
     }
@@ -135,7 +135,7 @@ public sealed class GatewayModelNotFoundError : GatewayError
     public string? ModelId { get; }
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayModelNotFoundError;
     }
@@ -154,7 +154,7 @@ public sealed class GatewayNotFoundError : GatewayError
     public override string Type => "not_found";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayNotFoundError;
     }
@@ -173,7 +173,7 @@ public sealed class GatewayInternalServerError : GatewayError
     public override string Type => "internal_server_error";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayInternalServerError;
     }
@@ -192,7 +192,7 @@ public sealed class GatewayFailedDependencyError : GatewayError
     public override string Type => "failed_dependency";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayFailedDependencyError;
     }
@@ -215,7 +215,7 @@ public sealed class GatewayForbiddenError : GatewayError
     public string? RuleId { get; }
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayForbiddenError;
     }
@@ -242,7 +242,7 @@ public sealed class GatewayResponseError : GatewayError
     public string? ValidationError { get; }
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayResponseError;
     }
@@ -261,7 +261,7 @@ public sealed class GatewayTimeoutError : GatewayError
     public override string Type => "timeout_error";
 
     /// <summary>True when <paramref name="error"/> is this error.</summary>
-    public static bool IsInstance(Exception? error)
+    public static new bool IsInstance(Exception? error)
     {
         return error is GatewayTimeoutError;
     }

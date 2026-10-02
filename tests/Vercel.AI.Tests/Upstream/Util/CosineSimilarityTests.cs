@@ -11,7 +11,7 @@ public sealed class CosineSimilarityTests
     [Fact]
     public void Calculates_close_similarity()
     {
-        var result = AiClient.CosineSimilarity(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f, 6f });
+        var result = Ai.CosineSimilarity(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f, 6f });
         Assert.Equal(0.9746318461970762, result, 5);
     }
 
@@ -19,7 +19,7 @@ public sealed class CosineSimilarityTests
     [Fact]
     public void Calculates_negative_similarity()
     {
-        var result = AiClient.CosineSimilarity(new float[] { 1f, 0f }, new float[] { -1f, 0f });
+        var result = Ai.CosineSimilarity(new float[] { 1f, 0f }, new float[] { -1f, 0f });
         Assert.Equal(-1d, result, 5);
     }
 
@@ -29,7 +29,7 @@ public sealed class CosineSimilarityTests
     {
         Assert.ThrowsAny<Exception>(delegate
         {
-            AiClient.CosineSimilarity(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f });
+            Ai.CosineSimilarity(new float[] { 1f, 2f, 3f }, new float[] { 4f, 5f });
         });
     }
 
@@ -37,15 +37,15 @@ public sealed class CosineSimilarityTests
     [Fact]
     public void Returns_zero_for_a_zero_vector()
     {
-        Assert.Equal(0d, AiClient.CosineSimilarity(new float[] { 0f, 1f, 2f }, new float[] { 0f, 0f, 0f }));
-        Assert.Equal(0d, AiClient.CosineSimilarity(new float[] { 0f, 0f, 0f }, new float[] { 0f, 1f, 2f }));
+        Assert.Equal(0d, Ai.CosineSimilarity(new float[] { 0f, 1f, 2f }, new float[] { 0f, 0f, 0f }));
+        Assert.Equal(0d, Ai.CosineSimilarity(new float[] { 0f, 0f, 0f }, new float[] { 0f, 1f, 2f }));
     }
 
     [UpstreamTest("packages/ai/src/util/cosine-similarity.test.ts::should handle vectors with very small magnitudes", Coverage = UpstreamCoverage.Covered)]
     [Fact]
     public void Handles_tiny_magnitudes()
     {
-        Assert.Equal(1d, AiClient.CosineSimilarity(new float[] { 1e-10f, 0f, 0f }, new float[] { 2e-10f, 0f, 0f }));
-        Assert.Equal(-1d, AiClient.CosineSimilarity(new float[] { 1e-10f, 0f, 0f }, new float[] { -1e-10f, 0f, 0f }));
+        Assert.Equal(1d, Ai.CosineSimilarity(new float[] { 1e-10f, 0f, 0f }, new float[] { 2e-10f, 0f, 0f }));
+        Assert.Equal(-1d, Ai.CosineSimilarity(new float[] { 1e-10f, 0f, 0f }, new float[] { -1e-10f, 0f, 0f }));
     }
 }

@@ -545,10 +545,10 @@ public static class EmbedMany
                 ValidateCount(single.Embeddings, values);
                 WarningLog.Write(single.Warnings, model.Provider, model.ModelId);
                 var usage = new OperationUsage(tokens: single.Tokens);
-                var responses = new ProviderResponse?[] { single.Response };
-                var end = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, responses);
+                var singleResponses = new ProviderResponse?[] { single.Response };
+                var end = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, singleResponses);
                 await OperationCallbacks.NotifyAsync(end, onEnd, Embed.TelemetryEnd(telemetry)).ConfigureAwait(false);
-                return new EmbedManyResult(values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, responses);
+                return new EmbedManyResult(values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, singleResponses);
             }
 
             var chunks = SplitByLimits(values, hasCountLimit ? model.MaxEmbeddingsPerCall!.Value : int.MaxValue, hasByteLimit ? byteLimit!.Value : double.PositiveInfinity);

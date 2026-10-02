@@ -294,32 +294,32 @@ public sealed class CallbackTests
 
     private sealed class WeatherEvent
     {
-        public string ToolName { get; set; }
+        public string ToolName { get; set; } = string.Empty;
 
-        public WeatherInput Input { get; set; }
+        public WeatherInput Input { get; set; } = null!;
 
         public int StepNumber { get; set; }
     }
 
     private sealed class WeatherInput
     {
-        public string Location { get; set; }
+        public string Location { get; set; } = string.Empty;
     }
 
     private sealed class ModelEvent
     {
-        public ModelRef Model { get; set; }
+        public ModelRef Model { get; set; } = null!;
 
-        public Usage Usage { get; set; }
+        public Usage Usage { get; set; } = null!;
 
-        public Step[] Steps { get; set; }
+        public Step[] Steps { get; set; } = Array.Empty<Step>();
     }
 
     private sealed class ModelRef
     {
-        public string Provider { get; set; }
+        public string Provider { get; set; } = string.Empty;
 
-        public string ModelId { get; set; }
+        public string ModelId { get; set; } = string.Empty;
     }
 
     private sealed class Usage

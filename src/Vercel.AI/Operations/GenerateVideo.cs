@@ -12,13 +12,13 @@ namespace Vercel.AI.Operations;
 public sealed class VideoModelFile
 {
     /// <summary>Creates a URL file.</summary>
-    public static VideoModelFile Url(string url, string? mediaType = null)
+    public static VideoModelFile FromUrl(string url, string? mediaType = null)
     {
         return new VideoModelFile("url", url, null, mediaType);
     }
 
     /// <summary>Creates a binary file.</summary>
-    public static VideoModelFile File(byte[] data, string mediaType)
+    public static VideoModelFile FromFile(byte[] data, string mediaType)
     {
         return new VideoModelFile("file", null, data ?? Array.Empty<byte>(), mediaType);
     }
@@ -671,7 +671,7 @@ public static class GenerateVideo
 
                 if (reference.HasMediaType && reference.MediaType != null)
                 {
-                    file = file.Type == "url" ? VideoModelFile.Url(file.Url!, reference.MediaType) : VideoModelFile.File(file.Data!, reference.MediaType);
+                    file = file.Type == "url" ? VideoModelFile.FromUrl(file.Url!, reference.MediaType) : VideoModelFile.FromFile(file.Data!, reference.MediaType);
                 }
 
                 normalized.Add(file);
@@ -880,7 +880,11 @@ public static class GenerateVideo
             }
         }
 
-        var copy = new Dictionary<string, string>(headers, StringComparer.Ordinal);
+        var copy = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var header in headers)
+        {
+            copy[header.Key] = header.Value;
+        }
         copy["idempotency-key"] = "aisdk_vid_" + (generateId ?? (() => Guid.NewGuid().ToString("N")))();
         return copy;
     }
@@ -909,7 +913,7 @@ public static class GenerateVideo
         {
             if (text.StartsWith("http://", StringComparison.Ordinal) || text.StartsWith("https://", StringComparison.Ordinal))
             {
-                return VideoModelFile.Url(text);
+                return VideoModelFile.FromUrl(text);
             }
 
             if (text.StartsWith("data:", StringComparison.Ordinal))
@@ -925,15 +929,15 @@ public static class GenerateVideo
                 }
 
                 var bytes = string.IsNullOrEmpty(payload) ? Array.Empty<byte>() : Convert.FromBase64String(payload);
-                return VideoModelFile.File(bytes, media.Length == 0 ? Detect(bytes, imagesOnly) : media);
+                return VideoModelFile.FromFile(bytes, media.Length == 0 ? Detect(bytes, imagesOnly) : media);
             }
 
             var decoded = Convert.FromBase64String(text);
-            return VideoModelFile.File(decoded, Detect(decoded, imagesOnly));
+            return VideoModelFile.FromFile(decoded, Detect(decoded, imagesOnly));
         }
 
         var raw = MediaTypeDetector.ToBytes(data);
-        return VideoModelFile.File(raw, Detect(raw, imagesOnly));
+        return VideoModelFile.FromFile(raw, Detect(raw, imagesOnly));
     }
 
     private static string Detect(byte[] data, bool imagesOnly)

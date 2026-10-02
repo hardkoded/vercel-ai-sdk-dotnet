@@ -133,7 +133,7 @@ internal static class AnthropicAssertions
         var node = AnthropicJsonSchema.Sanitize(AnthropicParity.Json("{\"type\":\"object\",\"properties\":{\"slug\":{\"type\":\"string\",\"description\":\"A URL slug\",\"minLength\":1,\"maxLength\":20,\"pattern\":\"^[a-z0-9-]+$\",\"format\":\"regex\"}}}"));
         var description = node["properties"]!["slug"]!["description"]!.GetValue<string>();
         Assert.Equal("A URL slug\nmin length: 1; max length: 20; pattern: ^[a-z0-9-]+$; format: regex.", description);
-        Assert.Equal(false, node["additionalProperties"]!.GetValue<bool>());
+        Assert.False(node["additionalProperties"]!.GetValue<bool>());
     }
 
     public static void SchemaRecursive()
@@ -722,7 +722,7 @@ internal static class AnthropicAssertions
     {
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => throw new InvalidOperationException("denied")).ConfigureAwait(false);
         Assert.Equal("denied", exception.Message);
-        var wrapped = Assert.Throws<AiSdkException>(() => throw new AiSdkException("AWS credential provider failed: denied"));
+        var wrapped = await Assert.ThrowsAsync<AiSdkException>(() => Task.FromException<AiSdkException>(new AiSdkException("AWS credential provider failed: denied")));
         Assert.Contains("AWS credential provider failed", wrapped.Message);
     }
 
@@ -1455,8 +1455,7 @@ internal static class AnthropicAssertions
         var again = new List<LanguageModelStreamPart>();
         again.AddRange(duplicate.Push("{\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"m\"}}"));
         again.AddRange(duplicate.Push("{\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"m\"}}"));
-        Assert.Equal(1, again.Count);
-        Assert.IsType<ResponseMetadataStreamPart>(again[0]);
+        Assert.IsType<ResponseMetadataStreamPart>(Assert.Single(again));
     }
 
     public static void ToolResultAndCitations()
@@ -1484,7 +1483,7 @@ internal static class AnthropicAssertions
     public static void PromptMore()
     {
         var combined = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"A\"}]},{\"role\":\"tool\",\"content\":[{\"type\":\"tool-result\",\"toolCallId\":\"1\",\"toolName\":\"lookup\",\"output\":{\"type\":\"json\",\"value\":{\"ok\":true}}}]}]"));
-        Assert.Equal(1, combined.Messages.Count);
+        Assert.Single(combined.Messages);
         Assert.Contains("tool_result", combined.Messages.ToJsonString());
         var compaction = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\",\"providerOptions\":{\"anthropic\":{\"type\":\"compaction\"}}}]}]"));
         Assert.Empty(compaction.Messages);

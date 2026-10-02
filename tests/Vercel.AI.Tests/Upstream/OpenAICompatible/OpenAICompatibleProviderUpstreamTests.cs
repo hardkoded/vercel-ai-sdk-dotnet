@@ -24,7 +24,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         Assert.Equal("value", capture.Requests[0].Headers["custom-header"]);
         Assert.Contains("ai-sdk/openai-compatible/0.0.0", capture.Requests[0].Headers["User-Agent"]);
         Assert.Equal("/chat/completions", capture.Requests[0].Uri!.AbsolutePath);
-        Assert.Equal("?Custom-Param=value", capture.Requests[0].Uri.Query);
+        Assert.Equal("?Custom-Param=value", capture.Requests[0].Uri!.Query);
     }
 
     [Fact]

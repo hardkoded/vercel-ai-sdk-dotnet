@@ -134,14 +134,16 @@ public sealed class InjectJsonInstructionTests
 
         public string Text => _builder.ToString();
 
-        public void Append(char value)
+        public StringBuilderJson Append(char value)
         {
             _builder.Append(value);
+            return this;
         }
 
-        public void Append(string value)
+        public StringBuilderJson Append(string value)
         {
             _builder.Append(value);
+            return this;
         }
     }
 }
@@ -214,7 +216,7 @@ public sealed class GeneratedFileDownloadTests
         var exception = await Assert.ThrowsAsync<DownloadException>(() => Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "image" }));
         Assert.Equal("AI_DownloadError", exception.Name);
         Assert.Contains("127.0.0.1", exception.Message);
-        Assert.Equal(0, model.Calls.Count == 0 ? 0 : 1);
+        Assert.Single(model.Calls);
         Assert.Single(model.Calls);
     }
 

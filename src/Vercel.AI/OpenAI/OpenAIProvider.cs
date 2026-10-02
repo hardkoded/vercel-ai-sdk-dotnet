@@ -125,7 +125,7 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Legacy completions model. The provider id is <c>openai.completion</c>.</summary>
-    public OpenAICompletionLanguageModel CompletionModel(string modelId)
+    public new OpenAICompletionLanguageModel CompletionModel(string modelId)
     {
         return new OpenAICompletionLanguageModel(this, modelId);
     }

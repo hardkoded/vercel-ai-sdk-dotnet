@@ -25,7 +25,7 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
     {
     }
 
-    /// <summary>Creates a Responses API model. <see cref="LanguageModel"/> stays on Chat Completions.</summary>
+    /// <summary>Creates a Responses API model. <see cref="OpenAICompatibleProvider.LanguageModel(string)"/> stays on Chat Completions.</summary>
     public HuggingFaceResponsesLanguageModel ResponsesModel(string modelId)
     {
         return new HuggingFaceResponsesLanguageModel(this, modelId);

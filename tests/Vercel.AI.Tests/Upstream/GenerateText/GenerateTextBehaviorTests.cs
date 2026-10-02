@@ -87,7 +87,7 @@ public sealed class GenerateTextBehaviorTests
         GenerateTextResult? finished = null;
         var warning0 = new CallWarning("other", "step 0 warning");
         var warning1 = new CallWarning("other", "step 1 warning");
-        await TwoStepAsync(new[] { warning0 }, new[] { warning1 }, result =>
+        await TwoStepAsync(new[] { warning0 }, new[] { warning1 }, (result, _) =>
         {
             finished = result;
             return Task.CompletedTask;
@@ -135,7 +135,7 @@ public sealed class GenerateTextBehaviorTests
         await TwoStepAsync(
             files0: new[] { File("c3RlcC0w") },
             files1: new[] { File("c3RlcC0x") },
-            onFinish: result =>
+            onFinish: (result, _) =>
             {
                 finished = result;
                 return Task.CompletedTask;
@@ -331,7 +331,7 @@ public sealed class GenerateTextBehaviorTests
     public async Task On_finish_usage_is_the_sum_and_final_step_is_last()
     {
         GenerateTextResult? finished = null;
-        var result = await ToolLoopAsync(result =>
+        var result = await ToolLoopAsync((result, _) =>
         {
             finished = result;
             return Task.CompletedTask;

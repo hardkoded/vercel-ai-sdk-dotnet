@@ -3,12 +3,13 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.HuggingFace;
 
 /// <summary>
-/// Hugging Face Responses model. <see cref="HuggingFaceProvider.LanguageModel"/> stays on Chat Completions
+/// Hugging Face Responses model. <see cref="OpenAICompatibleProvider.LanguageModel(string)"/> stays on Chat Completions
 /// so existing chat clients keep working. Call <see cref="HuggingFaceProvider.ResponsesModel"/> for <c>/responses</c>.
 /// </summary>
 public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
@@ -327,11 +328,11 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
         {
             int? input = ReadInt(usageElement, "input_tokens");
-            int? output = ReadInt(usageElement, "output_tokens");
+            int? outputTokens = ReadInt(usageElement, "output_tokens");
             int? total = ReadInt(usageElement, "total_tokens");
             var cacheRead = ReadNestedInt(usageElement, "input_tokens_details", "cached_tokens") ?? 0;
             var reasoning = ReadNestedInt(usageElement, "output_tokens_details", "reasoning_tokens") ?? 0;
-            usage = new LanguageModelUsage(input, output, total, cacheRead, null, reasoning, usageElement.Clone());
+            usage = new LanguageModelUsage(input, outputTokens, total, cacheRead, null, reasoning, usageElement.Clone());
         }
 
         var sourceIndex = 0;

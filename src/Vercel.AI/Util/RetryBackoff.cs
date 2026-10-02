@@ -255,7 +255,7 @@ public static class PrepareRetries
         if (maxRetries != null)
         {
             var value = maxRetries.Value;
-            if (value != Math.Truncate(value))
+            if ((double)value != Math.Truncate((double)value))
             {
                 throw new InvalidArgumentError(parameter, value, parameter + " must be an integer");
             }

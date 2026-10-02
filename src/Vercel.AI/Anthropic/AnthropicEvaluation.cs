@@ -107,8 +107,8 @@ public sealed class AnthropicEvaluationModel : IEvaluationModel
     {
         var questions = new[] { new AnthropicEvaluationQuestion("score", "score", new[] { "low", "high" }) };
         var result = await EvaluateAsync(questions, null, cancellationToken).ConfigureAwait(false);
-        AnthropicEvaluationAnswer answer;
-        if (!result.Answers.TryGetValue("score", out answer) || answer.Score == null)
+        AnthropicEvaluationAnswer? answer;
+        if (!result.Answers.TryGetValue("score", out answer) || answer == null || answer.Score == null)
         {
             return new EvaluationResult(0, candidate);
         }
@@ -126,9 +126,14 @@ public sealed class AnthropicEvaluationModel : IEvaluationModel
         call.JsonSchema = BuildSchema(questions);
         if (call.ProviderOptions == null || !HasThinking(call))
         {
-            var providerOptions = call.ProviderOptions == null
-                ? new Dictionary<string, JsonElement>()
-                : new Dictionary<string, JsonElement>(call.ProviderOptions);
+            var providerOptions = new Dictionary<string, JsonElement>();
+            if (call.ProviderOptions != null)
+            {
+                foreach (var pair in call.ProviderOptions)
+                {
+                    providerOptions[pair.Key] = pair.Value;
+                }
+            }
             if (!providerOptions.ContainsKey("anthropic"))
             {
                 using var thinking = JsonDocument.Parse("{\"thinking\":{\"type\":\"disabled\"}}");

@@ -429,7 +429,7 @@ public sealed class McpProtocolTests
         var custom = new Dictionary<string, string> { ["CUSTOM_VAR"] = "custom_value" };
         var result = StdioEnvironment.GetEnvironment(custom);
         Assert.Equal("custom_value", custom["CUSTOM_VAR"]);
-        Assert.Equal(1, custom.Count);
+        Assert.Single(custom);
         Assert.NotSame(custom, result);
         Assert.Equal("custom_value", result["CUSTOM_VAR"]);
     }

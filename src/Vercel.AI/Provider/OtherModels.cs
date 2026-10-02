@@ -58,7 +58,7 @@ public sealed class GeneratedImage
 }
 
 /// <summary>Image generation result.</summary>
-public sealed class ImageGenerationResult
+public class ImageGenerationResult
 {
     /// <summary>Creates an image result.</summary>
     public ImageGenerationResult(IReadOnlyList<GeneratedImage> images)

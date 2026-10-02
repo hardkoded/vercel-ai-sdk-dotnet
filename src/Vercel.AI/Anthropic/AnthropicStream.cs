@@ -42,12 +42,18 @@ public sealed class AnthropicStream
             yield return new RawStreamPart(json);
         }
 
-        JsonObject? node;
+        JsonObject? node = null;
+        var invalidJson = false;
         try
         {
             node = JsonNode.Parse(json) as JsonObject;
         }
         catch (JsonException)
+        {
+            invalidJson = true;
+        }
+
+        if (invalidJson)
         {
             yield return new ErrorStreamPart("The stream event was not valid JSON.");
             yield break;
@@ -193,8 +199,8 @@ public sealed class AnthropicStream
     {
         var index = Int(node["index"]) ?? 0;
         var delta = node["delta"] as JsonObject;
-        Block block;
-        if (delta == null || !_blocks.TryGetValue(index, out block))
+        Block? block;
+        if (delta == null || !_blocks.TryGetValue(index, out block) || block == null)
         {
             yield break;
         }
@@ -221,8 +227,8 @@ public sealed class AnthropicStream
     private IEnumerable<LanguageModelStreamPart> BlockStop(JsonObject node)
     {
         var index = Int(node["index"]) ?? 0;
-        Block block;
-        if (!_blocks.TryGetValue(index, out block))
+        Block? block;
+        if (!_blocks.TryGetValue(index, out block) || block == null)
         {
             yield break;
         }
@@ -283,7 +289,7 @@ public sealed class AnthropicStream
 
     private static string? Text(JsonNode? node)
     {
-        string text;
+        string? text;
         if (node is JsonValue json && json.TryGetValue<string>(out text))
         {
             return text;
@@ -322,7 +328,7 @@ public sealed class AnthropicStream
 
         public string ToolName { get; set; }
 
-        public StringBuilder Input { get; }
+        public StringBuilder Input { get; set; }
 
         public bool HasInitialInput { get; set; }
 

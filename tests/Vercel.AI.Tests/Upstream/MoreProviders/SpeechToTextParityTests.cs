@@ -7,6 +7,7 @@ using Vercel.AI.Gladia;
 using Vercel.AI.Hume;
 using Vercel.AI.Provider;
 using Vercel.AI.RevAI;
+using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
 
@@ -354,21 +355,21 @@ public sealed class SpeechToTextParityTests
         return new AudioInput(new byte[] { 1, 2, 3, 4 }, "audio/wav", "audio.wav");
     }
 
-    private static RecordingHandler RevaiHandler(params (string Name, string Value)[] headers)
+    private static ParityHandler RevaiHandler(params (string Name, string Value)[] headers)
     {
-        return new RecordingHandler(call =>
+        return new ParityHandler(call =>
         {
             if (call.Uri.AbsolutePath.EndsWith("/transcript", StringComparison.Ordinal))
             {
-                return RecordingHandler.Json(RevTranscript, headers);
+                return ParityHandler.Json(RevTranscript, headers);
             }
 
             if (call.Method == HttpMethod.Get)
             {
-                return RecordingHandler.Json("{\"id\":\"test-id\",\"status\":\"transcribed\",\"language\":\"en\"}", headers);
+                return ParityHandler.Json("{\"id\":\"test-id\",\"status\":\"transcribed\",\"language\":\"en\"}", headers);
             }
 
-            return RecordingHandler.Json("{\"id\":\"test-id\",\"status\":\"in_progress\",\"language\":\"en\"}", headers);
+            return ParityHandler.Json("{\"id\":\"test-id\",\"status\":\"in_progress\",\"language\":\"en\"}", headers);
         });
     }
 
@@ -392,35 +393,35 @@ public sealed class SpeechToTextParityTests
             + "]}}}";
     }
 
-    private static RecordingHandler GladiaHandler(bool foreign = false, bool metadata = false)
+    private static ParityHandler GladiaHandler(bool foreign = false, bool metadata = false)
     {
         var resultUrl = foreign
             ? "https://cdn.evil.example/v2/pre-recorded/result"
             : "https://api.gladia.io/v2/pre-recorded/7b0137fd-5fd6-4d08-b9bf-4cdf9876797d";
-        return new RecordingHandler(call =>
+        return new ParityHandler(call =>
         {
             if (call.Uri.AbsolutePath.EndsWith("/upload", StringComparison.Ordinal))
             {
-                return RecordingHandler.Json("{\"audio_url\":\"https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6\"}");
+                return ParityHandler.Json("{\"audio_url\":\"https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6\"}");
             }
 
             if (call.Method == HttpMethod.Post)
             {
-                return RecordingHandler.Json("{\"id\":\"7b0137fd-5fd6-4d08-b9bf-4cdf9876797d\",\"result_url\":\"" + resultUrl + "\"}");
+                return ParityHandler.Json("{\"id\":\"7b0137fd-5fd6-4d08-b9bf-4cdf9876797d\",\"result_url\":\"" + resultUrl + "\"}");
             }
 
-            return RecordingHandler.Json(GladiaResult(metadata));
+            return ParityHandler.Json(GladiaResult(metadata));
         });
     }
 
-    private static RecordingHandler HumeHandler(byte[] audio, params (string Name, string Value)[] headers)
+    private static ParityHandler HumeHandler(byte[] audio, params (string Name, string Value)[] headers)
     {
         return HumeHandler(audio, "audio/mp3", headers);
     }
 
-    private static RecordingHandler HumeHandler(byte[] audio, string contentType, params (string Name, string Value)[] headers)
+    private static ParityHandler HumeHandler(byte[] audio, string contentType, params (string Name, string Value)[] headers)
     {
-        return new RecordingHandler(_ => RecordingHandler.Bytes(audio, contentType, headers));
+        return new ParityHandler(_ => ParityHandler.Bytes(audio, contentType, headers));
     }
 
     private static string? Header(IReadOnlyDictionary<string, string> headers, string name)

@@ -281,13 +281,14 @@ public sealed class BatchTests
         Assert.Equal("tool-call", call.Type);
         Assert.Equal("Paris", call.Input!.Value.GetProperty("city").GetString());
         Assert.True(call.ProviderExecuted);
-        Assert.Equal((int?)3, results[0].Usage!.InputTokens);
-        Assert.Equal((int?)2, results[0].Usage.NoCacheTokens);
-        Assert.Equal((int?)1, results[0].Usage.CacheReadTokens);
-        Assert.Equal((int?)5, results[0].Usage.OutputTokens);
-        Assert.Equal((int?)4, results[0].Usage.TextTokens);
-        Assert.Equal((int?)1, results[0].Usage.ReasoningTokens);
-        Assert.Equal((int?)8, results[0].Usage.TotalTokens);
+        var usage = results[0].Usage!;
+        Assert.Equal((int?)3, usage.InputTokens);
+        Assert.Equal((int?)2, usage.NoCacheTokens);
+        Assert.Equal((int?)1, usage.CacheReadTokens);
+        Assert.Equal((int?)5, usage.OutputTokens);
+        Assert.Equal((int?)4, usage.TextTokens);
+        Assert.Equal((int?)1, usage.ReasoningTokens);
+        Assert.Equal((int?)8, usage.TotalTokens);
         Assert.Equal(0, executed);
     }
 
@@ -306,8 +307,9 @@ public sealed class BatchTests
             },
         };
         var results = await Read(Batch.GetBatchResults(new BatchRequestOptions { Provider = new BatchFake { Items = new[] { item } }, Batch = new BatchReference(2, "batch-1", "test") }));
-        Assert.Equal("hello", Encoding.UTF8.GetString(results[0].Images![0].Data));
-        Assert.Equal("cat", results[0].Images[0].ProviderMetadata!.Value.GetProperty("openai").GetProperty("revised").GetString());
+        var image = results[0].Images![0];
+        Assert.Equal("hello", Encoding.UTF8.GetString(image.Data));
+        Assert.Equal("cat", image.ProviderMetadata!.Value.GetProperty("openai").GetProperty("revised").GetString());
         Assert.Equal((int?)4, results[0].ImageUsage!.InputTokens);
     }
 
@@ -338,9 +340,10 @@ public sealed class BatchTests
                 Batch = new BatchReference(2, "batch-1", "test"),
                 Download = (_, _) => Task.FromResult(new DownloadedMedia(Encoding.UTF8.GetBytes("Hello World"), "text/plain")),
             }));
-            Assert.Equal(type, results[0].Content![0].Type);
-            Assert.Equal("Hello World", Encoding.UTF8.GetString(results[0].Content[0].FileBytes!));
-            Assert.Equal("SGVsbG8gV29ybGQ=", Convert.ToBase64String(results[0].Content[0].FileBytes!));
+            var file = results[0].Content![0];
+            Assert.Equal(type, file.Type);
+            Assert.Equal("Hello World", Encoding.UTF8.GetString(file.FileBytes!));
+            Assert.Equal("SGVsbG8gV29ybGQ=", Convert.ToBase64String(file.FileBytes!));
         }
     }
 

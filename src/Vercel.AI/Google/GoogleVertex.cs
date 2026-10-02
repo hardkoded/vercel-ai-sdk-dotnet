@@ -217,7 +217,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     public VertexOptions Vertex { get; }
 
     /// <summary>Creates a provider.</summary>
-    public static new GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)
+    public static GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new GoogleVertexProvider(client, options);
@@ -258,7 +258,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
             return new GoogleVertexCloudSpeechModel(this, modelId);
         }
 
-        return new GoogleSpeechModel(this, modelId);
+        return new GoogleSpeechModel(this, modelId!);
     }
 
     /// <summary>Gemini transcription ids use generateContent. Other ids use Cloud Speech-to-Text.</summary>
@@ -274,7 +274,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
             return new GoogleVertexGeminiTranscriptionModel(this, modelId);
         }
 
-        return new GoogleVertexSpeechTranscriptionModel(this, modelId);
+        return new GoogleVertexSpeechTranscriptionModel(this, modelId!);
     }
 
     private static VertexOptions Prepare(VertexOptions? options)
@@ -286,15 +286,20 @@ public sealed class GoogleVertexProvider : GoogleProvider
             options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT") ?? string.Empty;
         }
 
-        if (string.IsNullOrEmpty(options.Region))
-        {
-            options.Region = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_LOCATION") ?? "us-central1";
-        }
-
         if (!string.IsNullOrEmpty(options.BaseUrl))
         {
             options.BaseUrl = options.BaseUrl.TrimEnd('/');
             return options;
+        }
+
+        if (options.Region != null && !HostnameParts.IsValidHostnamePart(options.Region))
+        {
+            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
+        }
+
+        if (string.IsNullOrEmpty(options.Region))
+        {
+            options.Region = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_LOCATION") ?? "us-central1";
         }
 
         if (options.UpstreamRoutes)

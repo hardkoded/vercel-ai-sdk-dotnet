@@ -96,7 +96,7 @@ public class AiSdkError : Exception, IErrorMarkers
     public static bool HasMarker(object? error, string? marker)
     {
         var markers = error as IErrorMarkers;
-        return markers != null && markers.HasMarker(marker);
+        return markers != null && marker != null && markers.HasMarker(marker);
     }
 }
 

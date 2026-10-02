@@ -70,12 +70,16 @@ public static class GoogleSpeechInput
         var custom = voice != null && (voice.StartsWith("voice_", StringComparison.Ordinal) || voice.StartsWith("voicekey_", StringComparison.Ordinal));
         if (!custom && google is { ValueKind: JsonValueKind.Object } element
             && element.TryGetProperty("multiSpeakerVoiceConfig", out var config)
+            && config.ValueKind == JsonValueKind.Object
             && config.TryGetProperty("speakerVoiceConfigs", out var speakers)
             && speakers.ValueKind == JsonValueKind.Array)
         {
             foreach (var speaker in speakers.EnumerateArray())
             {
-                if (speaker.TryGetProperty("voiceConfig", out var voiceConfig) && voiceConfig.TryGetProperty("voice", out _))
+                if (speaker.ValueKind == JsonValueKind.Object
+                    && speaker.TryGetProperty("voiceConfig", out var voiceConfig)
+                    && voiceConfig.ValueKind == JsonValueKind.Object
+                    && voiceConfig.TryGetProperty("voice", out _))
                 {
                     custom = true;
                 }

@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.Voyage;
+using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
 
@@ -90,7 +91,7 @@ public sealed class VoyageParityTests
     [UpstreamTest("packages/voyage/src/voyage-embedding-model.test.ts::doEmbed::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Embed_sends_authorization_custom_headers_and_user_agent()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json(EmbeddingJson));
+        var handler = new ParityHandler(_ => ParityHandler.Json(EmbeddingJson));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = VoyageProvider.Create(options, handler);
@@ -242,15 +243,15 @@ public sealed class VoyageParityTests
         AssertRerankBody(result);
     }
 
-    private static (VoyageProvider Provider, RecordingHandler Handler) Embedding(params (string Name, string Value)[] headers)
+    private static (VoyageProvider Provider, ParityHandler Handler) Embedding(params (string Name, string Value)[] headers)
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json(EmbeddingJson, headers));
+        var handler = new ParityHandler(_ => ParityHandler.Json(EmbeddingJson, headers));
         return (VoyageProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler), handler);
     }
 
-    private static (VoyageProvider Provider, RecordingHandler Handler) Rerank()
+    private static (VoyageProvider Provider, ParityHandler Handler) Rerank()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json(RerankJson));
+        var handler = new ParityHandler(_ => ParityHandler.Json(RerankJson));
         return (VoyageProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler), handler);
     }
 

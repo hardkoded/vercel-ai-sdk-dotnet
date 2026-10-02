@@ -66,18 +66,18 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new Speech(this, modelId);
+    public override ISpeechModel SpeechModel(string modelId) => new FishSpeechModel(this, modelId);
 
     /// <inheritdoc />
-    public override ITranscriptionModel TranscriptionModel(string modelId) => new Transcription(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
+    public override ITranscriptionModel TranscriptionModel(string modelId) => new FishTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
 
     /// <summary>Fish Audio speech model.</summary>
-    public sealed class Speech : ISpeechModel
+    public sealed class FishSpeechModel : ISpeechModel
     {
         private readonly FishAudioProvider _provider;
 
         /// <summary>Creates a speech model.</summary>
-        public Speech(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
+        public FishSpeechModel(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
 
         /// <summary>Specification version.</summary>
         public string SpecificationVersion => "v4";
@@ -103,12 +103,12 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Fish Audio transcription model.</summary>
-    public sealed class Transcription : ITranscriptionModel
+    public sealed class FishTranscriptionModel : ITranscriptionModel
     {
         private readonly FishAudioProvider _provider;
 
         /// <summary>Creates a transcription model.</summary>
-        public Transcription(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
+        public FishTranscriptionModel(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
 
         /// <summary>Specification version.</summary>
         public string SpecificationVersion => "v4";

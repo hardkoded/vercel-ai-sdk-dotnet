@@ -189,8 +189,8 @@ public static class OpenResponsesExtensions
 
     private static void Register(IDictionary<string, OpenResponsesExtension> map, string key, OpenResponsesExtension extension, string field)
     {
-        OpenResponsesExtension existing;
-        if (map.TryGetValue(key, out existing))
+        OpenResponsesExtension? existing;
+        if (map.TryGetValue(key, out existing) && existing != null)
         {
             throw new InvalidOperationException(
                 "Open Responses extension " + extension.Id + " cannot register " + field + " " + key + " because it is already registered by " + existing.Id + ".");

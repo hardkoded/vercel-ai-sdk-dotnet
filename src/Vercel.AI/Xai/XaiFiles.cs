@@ -178,7 +178,7 @@ public sealed class XaiFiles : IFileStore
     public async Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken)
     {
         var result = await UploadAsync(new XaiFileUpload { Bytes = data, FileName = fileName, MediaType = mediaType }, cancellationToken).ConfigureAwait(false);
-        string id;
+        string? id = null;
         result.ProviderReference.TryGetValue("xai", out id);
         return new UploadedFile(id ?? string.Empty, result.FileName);
     }
@@ -256,7 +256,7 @@ public sealed class XaiFiles : IFileStore
             null,
             _headers(),
             cancellationToken).ConfigureAwait(false);
-        string contentType;
+        string? contentType = null;
         string? mediaType = null;
         if (response.Headers.TryGetValue("Content-Type", out contentType) && !string.IsNullOrWhiteSpace(contentType))
         {

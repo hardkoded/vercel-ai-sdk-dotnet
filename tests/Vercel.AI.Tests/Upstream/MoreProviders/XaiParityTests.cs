@@ -3,6 +3,7 @@
 
 using System.Text;
 using Vercel.AI.Xai;
+using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
 
@@ -272,7 +273,7 @@ public sealed class XaiParityTests
     public async Task Download_gets_the_content_route()
     {
         var payload = Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n");
-        var handler = new RecordingHandler(_ => RecordingHandler.Bytes(payload, "application/octet-stream"));
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(payload, "application/octet-stream"));
         var files = Client(handler);
         var result = await files.DownloadAsync(new Dictionary<string, string?> { ["xai"] = "file-abc123" }, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("https://api.x.ai/v1/files/file-abc123/content", handler.Calls[0].Uri.AbsoluteUri);
@@ -286,7 +287,7 @@ public sealed class XaiParityTests
     [UpstreamTest("packages/xai/src/files/xai-files.test.ts::XaiFiles > downloadFile::should expose the response content type as mediaType (parameters stripped)", Coverage = UpstreamCoverage.Covered)]
     public async Task Download_strips_content_type_parameters()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Bytes(Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n"), "application/jsonl; charset=utf-8"));
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n"), "application/jsonl; charset=utf-8"));
         var result = await Client(handler).DownloadAsync(new Dictionary<string, string?> { ["xai"] = "file-abc123" }, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("application/jsonl", result.MediaType);
     }
@@ -295,7 +296,7 @@ public sealed class XaiParityTests
     [UpstreamTest("packages/xai/src/files/xai-files.test.ts::XaiFiles > downloadFile::should omit mediaType when the response has no content type", Coverage = UpstreamCoverage.Covered)]
     public async Task Download_omits_media_type_when_the_response_has_none()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Bytes(Encoding.UTF8.GetBytes("bytes"), null));
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(Encoding.UTF8.GetBytes("bytes"), null));
         var result = await Client(handler).DownloadAsync(new Dictionary<string, string?> { ["xai"] = "file-abc123" }, CancellationToken.None).ConfigureAwait(false);
         Assert.Null(result.MediaType);
     }
@@ -316,7 +317,7 @@ public sealed class XaiParityTests
     [UpstreamTest("packages/xai/src/realtime/xai-realtime-model.test.ts::XaiRealtimeModel > doCreateClientSecret::includes the model as a query param on the WebSocket URL", Coverage = UpstreamCoverage.Covered)]
     public async Task Realtime_client_secret_url_includes_the_model()
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json("{\"value\":\"secret\",\"expires_at\":123}"));
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"value\":\"secret\",\"expires_at\":123}"));
         var model = new XaiRealtimeModel("grok-voice-latest", new HttpClient(handler, disposeHandler: false), "https://api.x.ai/v1", () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" });
         var result = await model.CreateClientSecretAsync(null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("wss://api.x.ai/v1/realtime?model=grok-voice-latest", result.Url);
@@ -328,7 +329,7 @@ public sealed class XaiParityTests
     [UpstreamTest("packages/xai/src/realtime/xai-realtime-model.test.ts::XaiRealtimeModel > serializeClientEvent::drops conversation-item-truncate (unsupported over WebSocket)", Coverage = UpstreamCoverage.Covered)]
     public void Realtime_drops_conversation_item_truncate()
     {
-        var model = new XaiRealtimeModel("grok-voice-latest", new HttpClient(new RecordingHandler(), disposeHandler: false), "https://api.x.ai/v1", null);
+        var model = new XaiRealtimeModel("grok-voice-latest", new HttpClient(new ParityHandler(), disposeHandler: false), "https://api.x.ai/v1", null);
         Assert.Null(model.SerializeClientEvent("conversation-item-truncate"));
     }
 
@@ -337,18 +338,18 @@ public sealed class XaiParityTests
         return new XaiFileUpload { Bytes = data, MediaType = "application/octet-stream" };
     }
 
-    private static (XaiFiles Files, RecordingHandler Handler) Files(string json)
+    private static (XaiFiles Files, ParityHandler Handler) Files(string json)
     {
-        var handler = new RecordingHandler(_ => RecordingHandler.Json(json));
+        var handler = new ParityHandler(_ => ParityHandler.Json(json));
         return (Client(handler), handler);
     }
 
-    private static XaiFiles Client(RecordingHandler handler)
+    private static XaiFiles Client(ParityHandler handler)
     {
         return new XaiFiles(new HttpClient(handler, disposeHandler: false), "https://api.x.ai/v1", () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" });
     }
 
-    private static FormPart Part(RecordedCall call, string name)
+    private static FormPart Part(ParityCall call, string name)
     {
         foreach (var part in Parts(call))
         {
@@ -361,7 +362,7 @@ public sealed class XaiParityTests
         throw new InvalidOperationException("Missing form part " + name + ".");
     }
 
-    private static List<FormPart> Parts(RecordedCall call)
+    private static List<FormPart> Parts(ParityCall call)
     {
         var contentType = call.Header("Content-Type") ?? string.Empty;
         var marker = "boundary=";

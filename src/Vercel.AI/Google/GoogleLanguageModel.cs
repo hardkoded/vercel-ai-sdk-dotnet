@@ -99,12 +99,18 @@ public sealed class GoogleLanguageModel : ILanguageModel
                 yield return new RawStreamPart(data);
             }
 
-            JsonDocument document;
+            JsonDocument? document = null;
+            var invalidJson = false;
             try
             {
                 document = JsonDocument.Parse(data);
             }
             catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson || document == null)
             {
                 yield return new ErrorStreamPart("The Gemini stream chunk was not valid JSON.");
                 continue;

@@ -1,7 +1,6 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Vercel.AI.GenerateText;
@@ -41,11 +40,6 @@ public static class JsonInstructions
     private const string SchemaSuffix = "You MUST answer with a JSON object that matches the JSON schema above.";
     private const string GenericSuffix = "You MUST answer with JSON.";
 
-    private static readonly JsonSerializerOptions Serializer = new()
-    {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     /// <summary>Builds the instruction text appended to a prompt.</summary>
     public static string InjectJsonInstruction(
         string? prompt = null,
@@ -69,7 +63,7 @@ public static class JsonInstructions
 
         if (schema.HasValue)
         {
-            lines.Add(JsonSerializer.Serialize(schema.Value, Serializer));
+            lines.Add(schema.Value.GetRawText());
         }
 
         if (suffix != null)

@@ -46,7 +46,7 @@ public static class Collections
             return null;
         }
 
-        object value;
+        object? value;
         return obj.Properties.TryGetValue(key, out value) ? value : null;
     }
 
@@ -58,7 +58,7 @@ public static class Collections
             return null;
         }
 
-        object value;
+        object? value;
         return obj.TryGetValue(key, out value) ? value : null;
     }
 
@@ -131,8 +131,12 @@ public sealed class IdMap<T>
     /// <summary>Returns the own value, or <c>default</c> when <paramref name="key"/> is absent.</summary>
     public T? Get(string? key)
     {
-        T value;
-        return key != null && _items.TryGetValue(key, out value) ? value : default(T);
+        if (key != null && _items.TryGetValue(key, out var value))
+        {
+            return value;
+        }
+
+        return default;
     }
 
     /// <summary>Returns whether <paramref name="key"/> is an own key.</summary>

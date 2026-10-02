@@ -18,7 +18,7 @@ public static class AmazonBedrockMessages
     {
         var isMistral = AmazonBedrockToolIds.IsMistralModel(modelId);
         system = null;
-        messages = new JsonArray();
+        var built = new JsonArray();
         JsonArray? userContent = null;
         JsonArray? assistantContent = null;
         var documentCount = 0;
@@ -30,7 +30,7 @@ public static class AmazonBedrockMessages
                 return;
             }
 
-            messages.Add(new JsonObject { ["role"] = "user", ["content"] = userContent });
+            built.Add(new JsonObject { ["role"] = "user", ["content"] = userContent });
             userContent = null;
         }
 
@@ -43,7 +43,7 @@ public static class AmazonBedrockMessages
 
             if (assistantContent.Count > 0)
             {
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistantContent });
+                built.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistantContent });
             }
 
             assistantContent = null;
@@ -53,7 +53,7 @@ public static class AmazonBedrockMessages
         {
             if (message is SystemModelMessage systemMessage)
             {
-                if (messages.Count > 0 || userContent != null || assistantContent != null)
+                if (built.Count > 0 || userContent != null || assistantContent != null)
                 {
                     throw new AiSdkException("Multiple system messages that are separated by user/assistant messages are not supported.");
                 }
@@ -123,6 +123,7 @@ public static class AmazonBedrockMessages
 
         FlushUser();
         FlushAssistant();
+        messages = built;
     }
 
     private static JsonObject FileBlock(FileContentPart file, ref int documentCount)
@@ -172,7 +173,7 @@ public static class AmazonBedrockMessages
     {
         if (file.Data != null)
         {
-            return new JsonObject { ["bytes"] = Convert.ToBase64String(file.Data) };
+            return new JsonObject { ["bytes"] = System.Convert.ToBase64String(file.Data) };
         }
 
         if (!string.IsNullOrEmpty(file.Url) && file.Url!.StartsWith("s3://", StringComparison.OrdinalIgnoreCase))

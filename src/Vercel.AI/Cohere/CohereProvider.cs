@@ -26,7 +26,7 @@ public sealed class CohereProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderName = "cohere";
 
-    private readonly HttpClient _httpClient;
+    internal readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
     public CohereProvider(HttpClient httpClient, CohereOptions? options = null)

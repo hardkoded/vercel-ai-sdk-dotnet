@@ -246,12 +246,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _provider.CreateOpenAIHeaders(options.Headers),
             cancellationToken).ConfigureAwait(false))
         {
-            JsonObject? node;
+            JsonObject? node = null;
+            var invalidJson = false;
             try
             {
                 node = JsonNode.Parse(data) as JsonObject;
             }
             catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson)
             {
                 yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
                 continue;

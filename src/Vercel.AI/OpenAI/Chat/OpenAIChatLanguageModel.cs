@@ -710,12 +710,18 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 yield return new RawStreamPart(data);
             }
 
-            JsonDocument document;
+            JsonDocument? document = null;
+            var invalidJson = false;
             try
             {
                 document = JsonDocument.Parse(data);
             }
             catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson || document == null)
             {
                 _failed = true;
                 _finish = FinishReason.Error;

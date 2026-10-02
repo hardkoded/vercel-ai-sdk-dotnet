@@ -362,7 +362,7 @@ public sealed class GenerateImageTests
     {
         var result = await Generate(new ImageFake { Images = new object?[] { Png } });
         Assert.Equal(JsonValueKind.Object, result.ProviderMetadata.ValueKind);
-        Assert.Equal(0, result.ProviderMetadata.EnumerateObject().Count());
+        Assert.Empty(result.ProviderMetadata.EnumerateObject());
     }
 
     [Fact]
@@ -452,7 +452,7 @@ public sealed class GenerateImageTests
         var model = new ImageFake { Images = new object?[] { Png } };
         await GenerateImage.GenerateImageAsync(new GenerateImageRequest { Model = model, Prompt = new ImagePrompt("edit", new object?[] { Png }, "data:image/png;base64," + Png) });
         Assert.Equal("image/png", model.Calls[0].Mask!.MediaType);
-        Assert.Equal(PngBytes(), model.Calls[0].Mask.Data);
+        Assert.Equal(PngBytes(), model.Calls[0].Mask!.Data);
     }
 
     [Fact]

@@ -222,7 +222,7 @@ public static class OpenAIChatMessages
         var bytes = part.Data;
         if (bytes == null && part.Base64 != null)
         {
-            bytes = Convert.FromBase64String(part.Base64);
+            bytes = System.Convert.FromBase64String(part.Base64);
         }
 
         var fullMediaType = OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline && part.Url == null);
@@ -236,7 +236,7 @@ public static class OpenAIChatMessages
             }
             else
             {
-                var payload = part.Base64 ?? Convert.ToBase64String(bytes ?? Array.Empty<byte>());
+                var payload = part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>());
                 url = "data:" + fullMediaType + ";base64," + payload;
             }
 
@@ -279,7 +279,7 @@ public static class OpenAIChatMessages
                 ["type"] = "input_audio",
                 ["input_audio"] = new JsonObject
                 {
-                    ["data"] = part.Base64 ?? Convert.ToBase64String(bytes ?? Array.Empty<byte>()),
+                    ["data"] = part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>()),
                     ["format"] = format,
                 },
             };
@@ -304,7 +304,7 @@ public static class OpenAIChatMessages
             ["file"] = new JsonObject
             {
                 ["filename"] = fileName,
-                ["file_data"] = "data:application/pdf;base64," + (part.Base64 ?? Convert.ToBase64String(bytes ?? Array.Empty<byte>())),
+                ["file_data"] = "data:application/pdf;base64," + (part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>())),
             },
         };
         AddBreakpoint(pdf, breakpoint);
