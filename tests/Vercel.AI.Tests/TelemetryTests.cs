@@ -29,7 +29,7 @@ public sealed class TelemetryTests
             {
                 Assert.False(telemetry.Disposed);
                 started.TrySetResult(true);
-                await release.Task.ConfigureAwait(false);
+                await release.Task;
                 return new SpeechResult(new byte[] { 1 }, "audio/mpeg");
             },
         };
@@ -40,13 +40,13 @@ public sealed class TelemetryTests
             Voice = "alloy",
         });
 
-        await started.Task.ConfigureAwait(false);
+        await started.Task;
         Assert.False(telemetry.Disposed);
         Assert.Equal("generateSpeech", telemetry.Operation);
         Assert.Equal("tts-1", telemetry.ModelId);
         release.TrySetResult(true);
 
-        var result = await pending.ConfigureAwait(false);
+        var result = await pending;
         Assert.Equal(new byte[] { 1 }, result.Audio);
         Assert.True(telemetry.Disposed);
         Assert.Equal(1, telemetry.BeginCount);
@@ -61,7 +61,7 @@ public sealed class TelemetryTests
         {
             Model = model,
             Audio = new AudioInput(new byte[] { 9 }, "audio/wav", "a.wav"),
-        }).ConfigureAwait(false);
+        });
 
         Assert.Equal("noted", result.Text);
         Assert.Equal("transcribe", telemetry.Operation);
@@ -76,8 +76,8 @@ public sealed class TelemetryTests
         var telemetry = new RecordingTelemetry();
         var client = Client(telemetry);
 
-        var speech = await Assert.ThrowsAsync<AiSdkException>(() => client.GenerateSpeechAsync(new GenerateSpeechOptions())).ConfigureAwait(false);
-        var transcription = await Assert.ThrowsAsync<AiSdkException>(() => client.TranscribeAsync(new TranscribeOptions())).ConfigureAwait(false);
+        var speech = await Assert.ThrowsAsync<AiSdkException>(() => client.GenerateSpeechAsync(new GenerateSpeechOptions()));
+        var transcription = await Assert.ThrowsAsync<AiSdkException>(() => client.TranscribeAsync(new TranscribeOptions()));
 
         Assert.Contains("speech", speech.Message, StringComparison.Ordinal);
         Assert.Contains("transcription", transcription.Message, StringComparison.Ordinal);
