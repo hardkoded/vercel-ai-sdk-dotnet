@@ -141,25 +141,27 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default)
+    public async Task<SpeechResult> GenerateSpeechAsync(GenerateSpeechOptions options, CancellationToken cancellationToken = default)
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("GenerateSpeech requires a speech model.");
         }
 
-        return options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken);
+        using var scope = _telemetry?.Begin("generateSpeech", options.Model.ModelId);
+        return await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default)
+    public async Task<TranscriptionResult> TranscribeAsync(TranscribeOptions options, CancellationToken cancellationToken = default)
     {
         if (options?.Model is null)
         {
             throw new AiSdkException("Transcribe requires a transcription model.");
         }
 
-        return options.Model.DoTranscribeAsync(options.Audio, cancellationToken);
+        using var scope = _telemetry?.Begin("transcribe", options.Model.ModelId);
+        return await options.Model.DoTranscribeAsync(options.Audio, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
