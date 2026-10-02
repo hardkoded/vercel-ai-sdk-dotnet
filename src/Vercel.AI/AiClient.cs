@@ -13,6 +13,9 @@ public interface IAiTelemetry
 {
     /// <summary>Starts a span. Dispose it when the call finishes.</summary>
     IDisposable Begin(string operation, string modelId);
+
+    /// <summary>Records the final finish reason on the span opened by <see cref="Begin"/>.</summary>
+    void OnFinish(IDisposable span, FinishReason finishReason);
 }
 
 /// <summary>Core AI SDK client. Maps to the <c>ai</c> package functions.</summary>
