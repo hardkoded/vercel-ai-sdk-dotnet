@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -197,7 +198,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::throws for top-level-only application (PDF requires full resolution) with URL source", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForApplicationUrl()
     {
-        var exception = Assert.Throws<AiSdkException>(() => OpenAIChatMessages.Convert(new[] { User(File("application", url: "https://example.com/x.pdf")) }));
+        var exception = Assert.Throws<UnsupportedFunctionalityException>(() => OpenAIChatMessages.Convert(new[] { User(File("application", url: "https://example.com/x.pdf")) }));
         Assert.Equal("file of media type \"application\" must specify subtype since it is not passed as inline bytes", exception.Message);
     }
 

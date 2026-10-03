@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAI;
 
@@ -285,50 +286,6 @@ internal static class OpenAIJson
         return headers;
     }
 
-    public static string MediaTypeFromBytes(byte[] data, string topLevel)
-    {
-        if (!string.Equals(topLevel, "image", StringComparison.OrdinalIgnoreCase))
-        {
-            return topLevel;
-        }
-
-        if (StartsWith(data, 0x89, 0x50, 0x4E, 0x47))
-        {
-            return "image/png";
-        }
-
-        if (StartsWith(data, 0xFF, 0xD8))
-        {
-            return "image/jpeg";
-        }
-
-        if (StartsWith(data, 0x47, 0x49, 0x46, 0x38))
-        {
-            return "image/gif";
-        }
-
-        if (data.Length >= 12
-            && data[0] == 0x52
-            && data[1] == 0x49
-            && data[2] == 0x46
-            && data[3] == 0x46
-            && data[8] == 0x57
-            && data[9] == 0x45
-            && data[10] == 0x42
-            && data[11] == 0x50)
-        {
-            return "image/webp";
-        }
-
-        return topLevel;
-    }
-
-    public static bool IsFullMediaType(string mediaType)
-    {
-        var slash = mediaType.IndexOf('/');
-        return slash > 0 && slash < mediaType.Length - 1 && mediaType.IndexOf('*') < 0;
-    }
-
     public static string TopLevel(string mediaType)
     {
         var slash = mediaType.IndexOf('/');
@@ -337,23 +294,7 @@ internal static class OpenAIJson
 
     public static string ResolveFullMediaType(string mediaType, byte[]? data, bool inline)
     {
-        if (IsFullMediaType(mediaType))
-        {
-            return mediaType;
-        }
-
-        if (inline && data != null)
-        {
-            var detected = MediaTypeFromBytes(data, TopLevel(mediaType));
-            if (IsFullMediaType(detected))
-            {
-                return detected;
-            }
-
-            throw new AiSdkException("file of media type \"" + mediaType + "\" must specify subtype since it could not be auto-detected");
-        }
-
-        throw new AiSdkException("file of media type \"" + mediaType + "\" must specify subtype since it is not passed as inline bytes");
+        return MediaTypes.ResolveFullMediaType(mediaType, inline ? data : null);
     }
 
     public static string Extension(string mediaType)
@@ -415,24 +356,6 @@ internal static class OpenAIJson
         }
 
         return value.TryGetInt64(out var seconds) ? seconds : null;
-    }
-
-    private static bool StartsWith(byte[] data, params int[] prefix)
-    {
-        if (data.Length < prefix.Length)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < prefix.Length; i++)
-        {
-            if (data[i] != prefix[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
 

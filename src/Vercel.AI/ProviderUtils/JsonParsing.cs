@@ -174,17 +174,7 @@ public static class JsonParsing
             throw new JsonParseException(text, error);
         }
 
-        if (schema is null)
-        {
-            return value;
-        }
-
-        if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
-        {
-            throw new TypeValidationException(errorMessage ?? "Schema validation failed.", value);
-        }
-
-        return projected;
+        return schema is null ? value : ValidateTypes(value, schema);
     }
 
     /// <summary>Parses <paramref name="text"/> without throwing for invalid JSON or schema mismatches.</summary>
@@ -201,11 +191,24 @@ public static class JsonParsing
             return JsonParseResult.Fail(wrapped, null);
         }
 
-        if (schema is null)
+        return schema is null ? JsonParseResult.Ok(value, value) : SafeValidateTypes(value, schema);
+    }
+
+    /// <summary>Returns <paramref name="value"/> projected through <paramref name="schema"/>. Maps to <c>validateTypes</c>.</summary>
+    /// <exception cref="TypeValidationException">The value does not match the schema.</exception>
+    public static JsonElement ValidateTypes(JsonElement value, JsonNode schema)
+    {
+        if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
         {
-            return JsonParseResult.Ok(value, value);
+            throw new TypeValidationException(errorMessage ?? "Schema validation failed.", value);
         }
 
+        return projected;
+    }
+
+    /// <summary>Validates <paramref name="value"/> without throwing. Maps to <c>safeValidateTypes</c>.</summary>
+    public static JsonParseResult SafeValidateTypes(JsonElement value, JsonNode schema)
+    {
         if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
         {
             return JsonParseResult.Fail(new TypeValidationException(errorMessage ?? "Schema validation failed.", value), value);

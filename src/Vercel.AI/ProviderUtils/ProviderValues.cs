@@ -327,6 +327,12 @@ public static class ProviderValues
         return "runtime/unknown";
     }
 
+    /// <summary>True when the probe reports a browser <c>window</c>. Maps to <c>isBrowserRuntime</c>.</summary>
+    public static bool IsBrowserRuntime(RuntimeProbe? probe = null)
+    {
+        return probe?.Window == true;
+    }
+
     /// <summary>Inputs for <see cref="GetRuntimeEnvironmentUserAgent"/>.</summary>
     public sealed class RuntimeProbe
     {
