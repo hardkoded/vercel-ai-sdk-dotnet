@@ -104,7 +104,8 @@ public sealed class SerialJobExecutorTests
             return Task.CompletedTask;
         });
         await promise1;
-        Assert.Equal(new[] { "job1" }, results);
+        // .NET has no microtask order, so job3 may already have run here.
+        Assert.Equal("job1", results[0]);
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => promise2);
         Assert.Same(error, thrown);
         await promise3;

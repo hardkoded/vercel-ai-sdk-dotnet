@@ -334,7 +334,8 @@ public sealed class DelayParityTests
 
         public Task Wait(long milliseconds, CancellationToken cancellationToken)
         {
-            var source = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            // Inline continuations finish each due delay before Advance returns, like Vitest fake timers.
+            var source = new TaskCompletionSource<bool>();
             if (cancellationToken.IsCancellationRequested)
             {
                 source.TrySetCanceled();
@@ -357,7 +358,6 @@ public sealed class DelayParityTests
             _now += milliseconds;
             CompleteDue();
             await Task.Yield();
-            await Task.Delay(1);
         }
 
         private void CompleteDue()
