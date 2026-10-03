@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Operations;
 
@@ -681,92 +682,10 @@ public static class OperationCallbacks
 /// <summary>Detects media types from file signatures.</summary>
 public static class MediaTypeDetector
 {
-    private static readonly int?[][] ImageSignatures =
-    {
-        Prefix(0x47, 0x49, 0x46, 0x38, 0x37, 0x61),
-        Prefix(0x47, 0x49, 0x46, 0x38, 0x39, 0x61),
-        Prefix(0x89, 0x50, 0x4E, 0x47),
-        Prefix(0xFF, 0xD8),
-        Prefix(0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50),
-        Prefix(0x42, 0x4D, null, null, null, null, 0x00, 0x00, 0x00, 0x00),
-        Prefix(0x49, 0x49, 0x2A, 0x00),
-        Prefix(0x4D, 0x4D, 0x00, 0x2A),
-    };
-
-    private static readonly string[] ImageTypes =
-    {
-        "image/gif", "image/gif", "image/png", "image/jpeg", "image/webp", "image/bmp", "image/tiff", "image/tiff",
-    };
-
-    private static readonly int?[][] AudioSignatures =
-    {
-        Prefix(0xFF, 0xF0),
-        Prefix(0xFF, 0xF1),
-        Prefix(0xFF, 0xF8),
-        Prefix(0xFF, 0xF9),
-        Prefix(0xFF, 0xFB),
-        Prefix(0xFF, 0xFA),
-        Prefix(0xFF, 0xF3),
-        Prefix(0xFF, 0xF2),
-        Prefix(0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x41, 0x56, 0x45),
-        Prefix(0x4F, 0x67, 0x67, 0x53),
-        Prefix(0x66, 0x4C, 0x61, 0x43),
-        Prefix(0x00, 0x00, 0x00, null, 0x66, 0x74, 0x79, 0x70),
-    };
-
-    private static readonly string[] AudioTypes =
-    {
-        "audio/aac", "audio/aac", "audio/aac", "audio/aac", "audio/mpeg", "audio/mpeg", "audio/mpeg", "audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/mp4",
-    };
-
-    private static readonly int?[][] VideoSignatures =
-    {
-        Prefix(0x00, 0x00, 0x00, null, 0x66, 0x74, 0x79, 0x70),
-        Prefix(0x1A, 0x45, 0xDF, 0xA3),
-        Prefix(0x00, 0x00, 0x00, 0x14, 0x66, 0x74, 0x79, 0x70, 0x71, 0x74),
-    };
-
-    private static readonly string[] VideoTypes =
-    {
-        "video/mp4", "video/webm", "video/quicktime",
-    };
-
     /// <summary>Returns a media type for <paramref name="data"/>, or null when no signature matches.</summary>
     public static string? Detect(byte[]? data, string? topLevelType)
     {
-        if (data == null || data.Length == 0)
-        {
-            return null;
-        }
-
-        if (topLevelType == null || topLevelType == "audio")
-        {
-            var audio = Match(data, AudioSignatures, AudioTypes);
-            if (audio != null && (topLevelType == "audio" || audio != "audio/mp4"))
-            {
-                return audio;
-            }
-        }
-
-        if (topLevelType == null || topLevelType == "image")
-        {
-            var image = Match(data, ImageSignatures, ImageTypes);
-            if (image != null)
-            {
-                return image;
-            }
-        }
-
-        if (topLevelType == null || topLevelType == "video")
-        {
-            var video = Match(data, VideoSignatures, VideoTypes);
-            if (video != null)
-            {
-                return video;
-            }
-        }
-
-        return null;
+        return data == null || data.Length == 0 ? null : MediaTypes.DetectMediaType(data, topLevelType);
     }
 
     /// <summary>Decodes a base64 payload or returns the bytes unchanged.</summary>
@@ -789,40 +708,6 @@ public static class MediaTypeDetector
         }
 
         return Array.Empty<byte>();
-    }
-
-    private static int?[] Prefix(params int?[] bytes)
-    {
-        return bytes;
-    }
-
-    private static string? Match(byte[] data, int?[][] signatures, string[] types)
-    {
-        for (var i = 0; i < signatures.Length; i++)
-        {
-            var signature = signatures[i];
-            if (data.Length < signature.Length)
-            {
-                continue;
-            }
-
-            var matches = true;
-            for (var j = 0; j < signature.Length; j++)
-            {
-                if (signature[j] is int expected && data[j] != expected)
-                {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if (matches)
-            {
-                return types[i];
-            }
-        }
-
-        return null;
     }
 }
 
