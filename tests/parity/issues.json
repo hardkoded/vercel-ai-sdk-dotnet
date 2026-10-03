@@ -1115,9 +1115,9 @@
       "title": "Cover upstream unit tests: provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 650,
-      "covered": 328,
+      "covered": 350,
       "partial": 0,
-      "missing": 322,
+      "missing": 300,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/141"
     },
     {
