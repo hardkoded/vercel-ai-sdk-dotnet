@@ -94,6 +94,11 @@ internal sealed class ScriptedHandler : HttpMessageHandler
             return "{\"message\":{\"content\":[{\"type\":\"text\",\"text\":\"ok\"}]},\"finish_reason\":\"COMPLETE\"}";
         }
 
+        if (uri.Contains("/v1/listen"))
+        {
+            return "{\"results\":{\"channels\":[{\"alternatives\":[{\"transcript\":\"hello\"}]}]}}";
+        }
+
         if (uri.EndsWith("/embed", StringComparison.Ordinal))
         {
             return "{\"embeddings\":{\"float\":[[0.25,0.5]]}}";

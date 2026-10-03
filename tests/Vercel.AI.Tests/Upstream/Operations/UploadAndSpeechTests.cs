@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 
 namespace Vercel.AI.Tests;
 
+[Collection("WarningLog")]
 public sealed class UploadAndSpeechTests
 {
     [Fact]

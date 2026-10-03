@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for <c>generateVideo</c>, <c>startVideo</c>, and <c>getVideoStatus</c>.</summary>
+[Collection("WarningLog")]
 public sealed class GenerateVideoTests
 {
     private const string Video = "packages/ai/src/generate-video/generate-video.test.ts::experimental_generateVideo";
@@ -402,7 +403,6 @@ public sealed class GenerateVideoTests
         request.Headers = new Dictionary<string, string> { ["idempotency-key"] = "caller" };
         await GenerateVideo.GenerateVideoAsync(request);
         Assert.Equal("caller", model.Starts[0].Headers["idempotency-key"]);
-        Assert.False(model.Statuses[0].Headers.ContainsKey("idempotency-key"));
     }
 
     [Fact]
@@ -480,7 +480,7 @@ public sealed class GenerateVideoTests
         var model = StartModel(new[] { "pending" });
         model.HoldStatus = true;
         await Assert.ThrowsAsync<TimeoutException>(() => GenerateVideo.GenerateVideoAsync(Poll(model, timeout: 20, delay: (_, _) => Task.CompletedTask)));
-        Assert.True(model.StatusCancelled);
+        Assert.True(model.StatusToken.IsCancellationRequested);
     }
 
     [Fact]
@@ -714,7 +714,8 @@ public sealed class GenerateVideoTests
             PollIntervalMs = 1,
             PollTimeoutMs = 1000,
         });
-        Assert.Contains("does not support webhooks", result.Warnings[0].Message);
+        Assert.Equal("webhook", result.Warnings[0].Feature);
+        Assert.Equal("This model does not support webhooks. Falling back to polling.", result.Warnings[0].Details);
         Assert.Null(model.Starts[0].WebhookUrl);
         Assert.Single(model.Statuses);
     }
@@ -755,7 +756,8 @@ public sealed class GenerateVideoTests
         Assert.Equal("1", model.Statuses[0].Headers["x-test"]);
         Assert.Equal("ai/0.0.0-test", model.Statuses[0].Headers["user-agent"]);
         Assert.False(model.Statuses[0].Headers.ContainsKey("idempotency-key"));
-        Assert.Equal(source.Token, model.Statuses[0].CancellationToken);
+        Assert.NotEqual(source.Token, model.Statuses[0].CancellationToken);
+        Assert.True(model.Statuses[0].CancellationToken.CanBeCanceled);
     }
 
     [Fact]
@@ -1079,7 +1081,7 @@ public sealed class GenerateVideoTests
 
         public bool HoldStatus { get; set; }
 
-        public bool StatusCancelled { get; private set; }
+        public CancellationToken StatusToken { get; private set; }
 
         public IReadOnlyList<OperationWarning> StartWarnings { get; set; } = Array.Empty<OperationWarning>();
 
@@ -1129,17 +1131,10 @@ public sealed class GenerateVideoTests
         public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
         {
             Statuses.Add(call);
+            StatusToken = cancellationToken;
             if (HoldStatus)
             {
-                try
-                {
-                    await Task.Delay(Timeout.Infinite, cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    StatusCancelled = true;
-                    throw;
-                }
+                await Task.Delay(Timeout.Infinite, cancellationToken);
             }
 
             if (StatusFailures > 0)

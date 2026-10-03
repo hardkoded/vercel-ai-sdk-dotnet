@@ -47,14 +47,14 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
     public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
     {
         var inputs = values ?? Array.Empty<string>();
-        if (inputs.Count > MaxEmbeddingsPerCall)
-        {
-            throw new AiSdkException("Too many embedding values for one call. The limit is " + MaxEmbeddingsPerCall + ".");
-        }
-
         if (_provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             return await EmbedVertexAsync(inputs, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (inputs.Count > MaxEmbeddingsPerCall)
+        {
+            throw new AiSdkException("Too many embedding values for one call. The limit is " + MaxEmbeddingsPerCall + ".");
         }
 
         if (inputs.Count <= 1)

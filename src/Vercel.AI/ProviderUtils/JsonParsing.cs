@@ -226,7 +226,7 @@ public static class JsonSchemaValidator
             throw new ArgumentNullException(nameof(schema));
         }
 
-        if (!TryProject(value, schema, out var node, out error) || node is null)
+        if (!TryProject(value, schema, out var node, out error))
         {
             projected = default;
             return false;
@@ -341,7 +341,7 @@ public static class JsonSchemaValidator
             {
                 foreach (var item in value.EnumerateArray())
                 {
-                    if (!TryProject(item, itemSchema, out var projectedItem, out error) || projectedItem is null)
+                    if (!TryProject(item, itemSchema, out var projectedItem, out error))
                     {
                         return false;
                     }
@@ -356,7 +356,7 @@ public static class JsonSchemaValidator
                 {
                     if (index < tuple.Count && tuple[index] != null)
                     {
-                        if (!TryProject(item, tuple[index]!, out var projectedItem, out error) || projectedItem is null)
+                        if (!TryProject(item, tuple[index]!, out var projectedItem, out error))
                         {
                             return false;
                         }
@@ -365,7 +365,7 @@ public static class JsonSchemaValidator
                     }
                     else if (schema["additionalItems"] is JsonObject additional)
                     {
-                        if (!TryProject(item, additional, out var projectedItem, out error) || projectedItem is null)
+                        if (!TryProject(item, additional, out var projectedItem, out error))
                         {
                             return false;
                         }
@@ -427,7 +427,7 @@ public static class JsonSchemaValidator
                     continue;
                 }
 
-                if (!TryProject(child, property.Value, out var projectedChild, out error) || projectedChild is null)
+                if (!TryProject(child, property.Value, out var projectedChild, out error))
                 {
                     return false;
                 }
@@ -444,7 +444,7 @@ public static class JsonSchemaValidator
                         continue;
                     }
 
-                    if (!TryProject(child.Value, additionalSchema, out var projectedChild, out error) || projectedChild is null)
+                    if (!TryProject(child.Value, additionalSchema, out var projectedChild, out error))
                     {
                         return false;
                     }
@@ -597,9 +597,9 @@ public static class JsonSchemaValidator
         return value.TryGetValue<double>(out number);
     }
 
-    private static JsonElement JsonElementFrom(JsonNode node)
+    private static JsonElement JsonElementFrom(JsonNode? node)
     {
-        using (var document = JsonDocument.Parse(node.ToJsonString()))
+        using (var document = JsonDocument.Parse(node?.ToJsonString() ?? "null"))
         {
             return document.RootElement.Clone();
         }

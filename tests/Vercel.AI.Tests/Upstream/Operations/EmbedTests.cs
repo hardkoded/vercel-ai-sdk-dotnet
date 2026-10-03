@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for <c>embed</c> and <c>embedMany</c>.</summary>
+[Collection("WarningLog")]
 public sealed class EmbedTests
 {
     private const string EmbedFile = "packages/ai/src/embed/embed.test.ts";

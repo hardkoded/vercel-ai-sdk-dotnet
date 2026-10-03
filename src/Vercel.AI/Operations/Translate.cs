@@ -139,7 +139,7 @@ public sealed class StreamTranslateResult
         _model = model;
         _startedAt = request.Now?.Invoke() ?? DateTime.UtcNow;
         var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pipe.Token);
-        FullStreamCore = new OperationFullStream<ModelStreamPart>(() => new QueueEnumerator(this, linked.Token), () => _pipe.Cancel());
+        FullStreamCore = new OperationFullStream<ModelStreamPart>(() => new QueueEnumerator(this), () => _pipe.Cancel());
         _ = PumpAsync(request, linked.Token);
     }
 
@@ -357,13 +357,11 @@ public sealed class StreamTranslateResult
     private sealed class QueueEnumerator : IAsyncEnumerator<ModelStreamPart>
     {
         private readonly StreamTranslateResult _owner;
-        private readonly CancellationToken _cancellationToken;
         private ModelStreamPart? _current;
 
-        public QueueEnumerator(StreamTranslateResult owner, CancellationToken cancellationToken)
+        public QueueEnumerator(StreamTranslateResult owner)
         {
             _owner = owner;
-            _cancellationToken = cancellationToken;
         }
 
         public ModelStreamPart Current
@@ -373,7 +371,8 @@ public sealed class StreamTranslateResult
 
         public async ValueTask<bool> MoveNextAsync()
         {
-            if (!await _owner._queue.WaitAsync(_cancellationToken).ConfigureAwait(false))
+            // The pump completes the queue on every exit, including cancellation with the abort reason.
+            if (!await _owner._queue.WaitAsync(CancellationToken.None).ConfigureAwait(false))
             {
                 return false;
             }

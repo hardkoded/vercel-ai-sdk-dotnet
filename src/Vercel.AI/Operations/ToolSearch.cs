@@ -385,7 +385,10 @@ public static class ToolSearchGeneration
             var record = new ToolSearchStepRecord();
             foreach (var name in prepared.Keys)
             {
-                record.ToolNames.Add(name);
+                if (routing == null || !routing.TryGetValue(name, out var callers) || callers.Contains(ToolCallers.Direct))
+                {
+                    record.ToolNames.Add(name);
+                }
             }
 
             foreach (var pair in prepared)

@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for transcription.</summary>
+[Collection("WarningLog")]
 public sealed class TranscribeTests
 {
     private const string Stream = "packages/ai/src/transcribe/stream-transcribe.test.ts::experimental_streamTranscribe::";

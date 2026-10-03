@@ -204,7 +204,8 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var message = UpstreamChat.Body(capture)["messages"]![0]!;
         var call = message["tool_calls"]![0]!;
         Assert.Equal("{\"city\":\"Paris\"}", call["function"]!["arguments"]!.GetValue<string>());
-        Assert.Equal("null", message["content"]!.ToJsonString());
+        Assert.True(message.AsObject().ContainsKey("content"));
+        Assert.Null(message["content"]);
     }
 
     [Fact]

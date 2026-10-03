@@ -380,7 +380,7 @@ public sealed class FixJsonTests
             "  ],",
             "  \"b\": [",
             "    {",
-            "      \"b1\": \"n}]}",
+            "      \"b1\": \"n\"}]}",
         });
         Assert.Equal(expected, FixJson.Repair(input));
     }

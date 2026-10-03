@@ -168,7 +168,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
                 usageElement = usageDocument.RootElement.Clone();
             }
 
-            var choice = root["choices"]?[0] as JsonObject;
+            var choice = root["choices"] is JsonArray { Count: > 0 } choices ? choices[0] as JsonObject : null;
             var finishText = choice == null ? null : AsString(choice["finish_reason"]);
             if (!string.IsNullOrEmpty(finishText))
             {

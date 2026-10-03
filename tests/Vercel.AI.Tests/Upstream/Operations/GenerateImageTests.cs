@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for <c>generateImage</c>.</summary>
+[Collection("WarningLog")]
 public sealed class GenerateImageTests
 {
     private const string Prefix = "packages/ai/src/generate-image/generate-image.test.ts::";
@@ -537,16 +538,7 @@ public sealed class GenerateImageTests
                 return Task.FromResult(Next());
             }
 
-            var images = new List<object?>();
-            if (Images.Length > 0)
-            {
-                for (var i = 0; i < call.N; i++)
-                {
-                    images.Add(Images[Math.Min(i, Images.Length - 1)]);
-                }
-            }
-
-            return Task.FromResult(new ImageModelResult(images, Warnings, providerMetadata: Metadata));
+            return Task.FromResult(new ImageModelResult(Images, Warnings, providerMetadata: Metadata));
         }
     }
 }

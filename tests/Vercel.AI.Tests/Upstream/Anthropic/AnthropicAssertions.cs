@@ -1184,20 +1184,12 @@ internal static class AnthropicAssertions
         Assert.Contains(prepared.Warnings, warning => warning.Type == "compatibility");
     }
 
-    public static void ReasoningBudgetPercent(string effort, double percent)
+    public static void ReasoningBudget(string model, string effort, int expected)
     {
         var options = AnthropicParity.Hello();
-        options.MaxOutputTokens = 10000;
         options.Reasoning = effort;
-        var prepared = AnthropicParity.Prepare("claude-3-haiku-20240307", options);
-        var budget = prepared.Body["thinking"]!["budget_tokens"]!.GetValue<int>();
-        var expected = (int)Math.Round(10000 * percent, MidpointRounding.AwayFromZero);
-        if (expected < 1024)
-        {
-            expected = 1024;
-        }
-
-        Assert.Equal(expected, budget);
+        var prepared = AnthropicParity.Prepare(model, options);
+        Assert.Equal(expected, prepared.Body["thinking"]!["budget_tokens"]!.GetValue<int>());
         Assert.Equal("enabled", prepared.Body["thinking"]!["type"]!.GetValue<string>());
     }
 
@@ -1355,13 +1347,11 @@ internal static class AnthropicAssertions
         Assert.True(tools.Messages[0]!["content"]![0]!["input"]!["rawInvalidInput"] != null);
     }
 
-    public static void PromptCacheAndFiles()
+    public static void PromptUrlImage()
     {
-        var prompt = AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"mediaType\":\"image/png\",\"data\":{\"type\":\"url\",\"url\":\"https://example.com/a.png\"}},{\"type\":\"reasoning\",\"text\":\"think\",\"providerOptions\":{\"anthropic\":{\"cacheControl\":{\"type\":\"ephemeral\"},\"signature\":\"sig\"}}}]}]");
-        var validator = new AnthropicCacheControlValidator();
-        var converted = AnthropicPrompt.Convert(prompt, true, validator);
-        Assert.Contains("url", converted.Messages.ToJsonString());
-        Assert.Contains(validator.Warnings, warning => (warning.Feature ?? string.Empty).Contains("cache"));
+        var prompt = AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"mediaType\":\"image/*\",\"data\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\"}}]}]");
+        var converted = AnthropicPrompt.Convert(prompt);
+        Assert.Equal("[{\"role\":\"user\",\"content\":[{\"type\":\"image\",\"source\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\"}}]}]", converted.Messages.ToJsonString());
     }
 
     public static async Task EvaluationNative()

@@ -248,7 +248,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var bytes = new byte[] { 104, 101, 108, 108, 111 };
         model.Files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image-0.png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
-        Assert.Contains(Convert.ToBase64String(bytes), capture.Requests[0].Body);
+        Assert.Contains("hello", capture.Requests[0].Body);
     }
 
     [Fact]

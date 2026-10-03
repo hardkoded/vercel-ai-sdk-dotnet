@@ -242,7 +242,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 usageElement = usageDocument.RootElement.Clone();
             }
 
-            var choice = root["choices"]?[0] as JsonObject;
+            var choice = root["choices"] is JsonArray { Count: > 0 } choices ? choices[0] as JsonObject : null;
             if (choice == null)
             {
                 continue;
