@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.RegularExpressions;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 
@@ -14,7 +15,7 @@ public sealed class IsUrlSupportedTests
     [UpstreamTest(File + "when the model does not support any URLs::should return false", Coverage = UpstreamCoverage.Covered)]
     public void Returns_false_when_no_urls_are_supported()
     {
-        Assert.False(UrlSupport.IsUrlSupported("text/plain", "https://example.com", new Dictionary<string, UrlPattern[]>()));
+        Assert.False(UrlSupport.IsUrlSupported("text/plain", "https://example.com", new Dictionary<string, IReadOnlyList<Regex>>()));
     }
 
     [Fact]
@@ -245,7 +246,7 @@ public sealed class IsUrlSupportedTests
         Assert.False(UrlSupport.IsUrlSupported(
             "text/plain",
             "https://example.com",
-            new Dictionary<string, UrlPattern[]> { ["text/plain"] = Array.Empty<UrlPattern>() }));
+            new Dictionary<string, IReadOnlyList<Regex>> { ["text/plain"] = Array.Empty<Regex>() }));
     }
 
     [Fact]
@@ -255,10 +256,10 @@ public sealed class IsUrlSupportedTests
         Assert.True(UrlSupport.IsUrlSupported(
             "text/plain",
             "https://any.com",
-            new Dictionary<string, UrlPattern[]>
+            new Dictionary<string, IReadOnlyList<Regex>>
             {
-                ["text/plain"] = Array.Empty<UrlPattern>(),
-                ["*"] = new[] { new UrlPattern(@"https://any\.com") },
+                ["text/plain"] = Array.Empty<Regex>(),
+                ["*"] = new[] { new Regex(@"https://any\.com") },
             }));
     }
 
@@ -269,135 +270,29 @@ public sealed class IsUrlSupportedTests
         Assert.False(UrlSupport.IsUrlSupported(
             "text/plain",
             "https://another.com",
-            new Dictionary<string, UrlPattern[]>
+            new Dictionary<string, IReadOnlyList<Regex>>
             {
-                ["text/plain"] = Array.Empty<UrlPattern>(),
-                ["*"] = new[] { new UrlPattern(@"https://any\.com") },
+                ["text/plain"] = Array.Empty<Regex>(),
+                ["*"] = new[] { new Regex(@"https://any\.com") },
             }));
     }
 
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::returns the same result for repeated global-regexp checks", Coverage = UpstreamCoverage.Covered)]
-    public void Repeated_global_checks_stay_true_and_restore_last_index()
-    {
-        var pattern = new UrlPattern(@"https://example\.com/asset", global: true);
-        var supported = new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { pattern } };
-        var results = new bool[4];
-        for (var i = 0; i < results.Length; i++)
-        {
-            results[i] = UrlSupport.IsUrlSupported("image/png", "https://example.com/asset", supported);
-        }
-
-        Assert.Equal(new[] { true, true, true, true }, results);
-        Assert.Equal(0, pattern.LastIndex);
-    }
-
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::returns the same result for repeated sticky-regexp checks", Coverage = UpstreamCoverage.Covered)]
-    public void Repeated_sticky_checks_stay_true_and_restore_last_index()
-    {
-        var pattern = new UrlPattern(@"https://example\.com/asset", sticky: true);
-        var supported = new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { pattern } };
-        var results = new bool[4];
-        for (var i = 0; i < results.Length; i++)
-        {
-            results[i] = UrlSupport.IsUrlSupported("image/png", "https://example.com/asset", supported);
-        }
-
-        Assert.Equal(new[] { true, true, true, true }, results);
-        Assert.Equal(0, pattern.LastIndex);
-    }
-
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::does not depend on or mutate caller-owned lastIndex", Coverage = UpstreamCoverage.Covered)]
-    public void Caller_owned_last_index_is_restored()
-    {
-        var globalPattern = new UrlPattern(@"https://example\.com/asset", global: true) { LastIndex = 7 };
-        var stickyPattern = new UrlPattern(@"https://example\.com/asset", sticky: true) { LastIndex = 11 };
-        Assert.True(UrlSupport.IsUrlSupported(
-            "image/png",
-            "https://example.com/asset",
-            new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { globalPattern, stickyPattern } }));
-        Assert.Equal(7, globalPattern.LastIndex);
-        Assert.Equal(11, stickyPattern.LastIndex);
-
-        Assert.True(UrlSupport.IsUrlSupported(
-            "image/png",
-            "https://example.com/asset",
-            new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { stickyPattern } }));
-        Assert.Equal(7, globalPattern.LastIndex);
-        Assert.Equal(11, stickyPattern.LastIndex);
-    }
-
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::preserves state for non-matching patterns", Coverage = UpstreamCoverage.Covered)]
-    public void Non_matching_global_pattern_keeps_last_index()
-    {
-        var pattern = new UrlPattern(@"https://other\.example/asset", global: true) { LastIndex = 5 };
-        Assert.False(UrlSupport.IsUrlSupported(
-            "image/png",
-            "https://example.com/asset",
-            new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { pattern } }));
-        Assert.Equal(5, pattern.LastIndex);
-    }
-
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::restores caller-owned state when evaluation throws", Coverage = UpstreamCoverage.Covered)]
-    public void Thrown_evaluation_restores_last_index()
-    {
-        UrlPattern pattern = null!;
-        pattern = new UrlPattern(
-            @"https://example\.com/asset",
-            global: true,
-            test: _ =>
-            {
-                pattern.LastIndex = 12;
-                throw new Exception("test error");
-            })
-        {
-            LastIndex = 5,
-        };
-
-        var error = Assert.Throws<Exception>(() => UrlSupport.IsUrlSupported(
-            "image/png",
-            "https://example.com/asset",
-            new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { pattern } }));
-        Assert.Equal("test error", error.Message);
-        Assert.Equal(5, pattern.LastIndex);
-    }
-
-    [Fact]
-    [UpstreamTest(File + "stateful regular expressions::preserves frozen non-stateful regexp behavior", Coverage = UpstreamCoverage.Covered)]
-    public void Frozen_non_stateful_pattern_keeps_last_index()
-    {
-        var pattern = new UrlPattern(@"https://example\.com/asset")
-        {
-            LastIndex = 5,
-            Frozen = true,
-        };
-        Assert.True(UrlSupport.IsUrlSupported(
-            "image/png",
-            "https://example.com/asset",
-            new Dictionary<string, UrlPattern[]> { ["image/*"] = new[] { pattern } }));
-        Assert.Equal(5, pattern.LastIndex);
-    }
-
-    private static Dictionary<string, UrlPattern[]> SpecificAndWildcard()
+    private static Dictionary<string, IReadOnlyList<Regex>> SpecificAndWildcard()
     {
         return Urls(
             ("text/plain", new[] { @"https://text\.com" }),
             ("*", new[] { @"https://any\.com" }));
     }
 
-    private static Dictionary<string, UrlPattern[]> Urls(params (string Type, string[] Patterns)[] entries)
+    private static Dictionary<string, IReadOnlyList<Regex>> Urls(params (string Type, string[] Patterns)[] entries)
     {
-        var map = new Dictionary<string, UrlPattern[]>();
+        var map = new Dictionary<string, IReadOnlyList<Regex>>();
         foreach (var entry in entries)
         {
-            var patterns = new UrlPattern[entry.Patterns.Length];
+            var patterns = new Regex[entry.Patterns.Length];
             for (var i = 0; i < entry.Patterns.Length; i++)
             {
-                patterns[i] = new UrlPattern(entry.Patterns[i]);
+                patterns[i] = new Regex(entry.Patterns[i]);
             }
 
             map[entry.Type] = patterns;
