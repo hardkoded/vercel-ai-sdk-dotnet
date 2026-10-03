@@ -1,6 +1,8 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Operations;
+
 namespace Vercel.AI.ProviderUtils;
 
 /// <summary>Detects IANA media types from file signatures. Maps to <c>detectMediaType</c>.</summary>
@@ -128,6 +130,37 @@ public static class MediaTypes
 
         var subtype = mediaType.Substring(slash + 1);
         return subtype.Length > 0 && subtype != "*";
+    }
+
+    /// <summary>
+    /// Returns <paramref name="mediaType"/> when it has a subtype. Otherwise detects the subtype from <paramref name="inlineData"/>,
+    /// which is bytes or a base64 string, or null when the file is not inline. Maps to <c>resolveFullMediaType</c>.
+    /// </summary>
+    /// <exception cref="UnsupportedFunctionalityException">The subtype cannot be resolved.</exception>
+    public static string ResolveFullMediaType(string mediaType, object? inlineData)
+    {
+        if (IsFullMediaType(mediaType))
+        {
+            return mediaType;
+        }
+
+        string functionality;
+        if (inlineData != null)
+        {
+            var detected = DetectMediaType(inlineData, GetTopLevelMediaType(mediaType));
+            if (detected != null)
+            {
+                return detected;
+            }
+
+            functionality = "file of media type \"" + mediaType + "\" must specify subtype since it could not be auto-detected";
+        }
+        else
+        {
+            functionality = "file of media type \"" + mediaType + "\" must specify subtype since it is not passed as inline bytes";
+        }
+
+        throw new UnsupportedFunctionalityException(functionality, functionality);
     }
 
     private static string? Match(object data, Signature[] signatures)

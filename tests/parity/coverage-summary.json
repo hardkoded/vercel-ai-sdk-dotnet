@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2539,
+  "covered": 2548,
   "partial": 86,
-  "missing": 8444,
+  "missing": 8435,
   "features": [
     {
       "feature": "ai/agent",
@@ -899,9 +899,9 @@
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 650,
-      "covered": 320,
+      "covered": 328,
       "partial": 0,
-      "missing": 330
+      "missing": 322
     },
     {
       "feature": "provider-utils/to-json-schema/zod3-to-json-schema",
@@ -923,9 +923,9 @@
       "feature": "provider-utils/types",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 7,
-      "covered": 6,
+      "covered": 7,
       "partial": 0,
-      "missing": 1
+      "missing": 0
     },
     {
       "feature": "provider/errors",

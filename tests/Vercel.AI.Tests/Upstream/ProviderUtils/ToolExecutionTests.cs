@@ -95,6 +95,25 @@ public sealed class ToolExecutionTests
         Assert.Equal("Berlin:req-2:2", steps[2].Output);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/types/execute-tool.test.ts::executeTool::preserves `this` for a class-based tool.execute",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Execute_keeps_the_instance_of_a_method_delegate()
+    {
+        var calculator = new Calculator("calc");
+        Func<int, int, Task<string>> execute = calculator.Execute;
+        var steps = new List<ToolExecution.ToolStep<string>>();
+        await foreach (var step in ToolExecution.ExecuteAsync(() => execute(1, 2)))
+        {
+            steps.Add(step);
+        }
+
+        var result = Assert.Single(steps);
+        Assert.Equal("final", result.Type);
+        Assert.Equal("calc:3", result.Output);
+    }
+
     private static async IAsyncEnumerable<string> Stream()
     {
         yield return "Berlin:req-2:1";
@@ -103,4 +122,19 @@ public sealed class ToolExecutionTests
     }
 
     private readonly record struct Weather(string City, string RequestId);
+
+    private sealed class Calculator
+    {
+        private readonly string _prefix;
+
+        public Calculator(string prefix)
+        {
+            _prefix = prefix;
+        }
+
+        public Task<string> Execute(int a, int b)
+        {
+            return Task.FromResult(_prefix + ":" + (a + b));
+        }
+    }
 }

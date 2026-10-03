@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
+using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 
@@ -9,6 +10,8 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils;
 
 public sealed class DetectMediaTypeTests
 {
+    private const string ResolveFull = "packages/provider-utils/src/resolve-full-media-type.test.ts::resolveFullMediaType::";
+
     private static readonly byte[] Webp = Bytes(0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50, 0x38, 0x20);
     private static readonly byte[] Wav = Bytes(0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20);
     private static readonly byte[] Bmp = Bytes(0x42, 0x4d, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
@@ -570,6 +573,65 @@ public sealed class DetectMediaTypeTests
     public void Unscoped_detection_rejects_garbage()
     {
         Assert.Null(MediaTypes.DetectMediaType(Bytes(0x00, 0x01, 0x02, 0x03)));
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "returns full media type as-is", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_keeps_a_concrete_type()
+    {
+        Assert.Equal("image/jpeg", MediaTypes.ResolveFullMediaType("image/jpeg", Png));
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "detects image subtype from inline bytes for top-level-only media type", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_sniffs_an_image()
+    {
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", Png));
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "treats image/* wildcard as top-level and runs detection", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_sniffs_a_wildcard()
+    {
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image/*", Png));
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "detects application subtype (PDF)", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_sniffs_a_pdf()
+    {
+        Assert.Equal("application/pdf", MediaTypes.ResolveFullMediaType("application", Pdf));
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "throws the \"not passed as inline bytes\" message when URL source with top-level-only media type", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_rejects_a_url()
+    {
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", null));
+        Assert.Contains("not passed as inline bytes", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "throws the \"could not be auto-detected\" message when bytes are present but unrecognised", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_rejects_unknown_bytes()
+    {
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", Bytes(0x00, 0x01, 0x02)));
+        Assert.Contains("could not be auto-detected", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "throws the \"could not be auto-detected\" message when top-level segment is unsupported (e.g. text)", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_rejects_text()
+    {
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("text", "hello"));
+        Assert.Contains("could not be auto-detected", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(ResolveFull + "accepts base64 string data", Coverage = UpstreamCoverage.Covered)]
+    public void Resolve_full_media_type_accepts_base64()
+    {
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", ByteEncoding.ToBase64(Png)));
     }
 
     private static byte[] Bytes(params int[] values)
