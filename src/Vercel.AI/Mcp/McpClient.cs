@@ -69,12 +69,13 @@ public static class McpClient
         };
         using var document = JsonDocument.Parse(parameters.ToJsonString());
         var result = await transport.CallAsync("tools/call", document.RootElement, cancellationToken).ConfigureAwait(false);
-        if (result.TryGetProperty("isError", out var isError) && isError.ValueKind == JsonValueKind.True)
+        var normalized = CallToolResults.Normalize(result);
+        if (normalized.TryGetProperty("isError", out var isError) && isError.ValueKind == JsonValueKind.True)
         {
-            throw new AiSdkException(ReadText(result));
+            throw new AiSdkException(ReadText(normalized));
         }
 
-        return ReadText(result);
+        return ReadText(normalized);
     }
 
     private static string ReadText(JsonElement result)

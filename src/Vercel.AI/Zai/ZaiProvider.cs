@@ -51,7 +51,14 @@ public sealed class ZaiProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.TransformRequestBody = OpenAICompatibleTransforms.Zai;
+        options.MapFinishReason = OpenAICompatibleTransforms.ZaiFinish;
+        options.SelectErrorMessage = OpenAICompatibleTransforms.ZaiError;
         return options;
     }
 }

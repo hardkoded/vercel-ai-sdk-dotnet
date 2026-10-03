@@ -25,7 +25,7 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
             return Empty.Instance;
         }
 
-        activity.SetTag("gen_ai.operation.name", operation);
+        activity.SetTag("gen_ai.operation.name", operation == null ? null : GenAiConventions.MapOperationName(operation));
         activity.SetTag("gen_ai.request.model", modelId);
         return activity;
     }
@@ -33,7 +33,13 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
     /// <inheritdoc />
     public void OnFinish(IDisposable span, FinishReason finishReason)
     {
-        if (span is Activity activity && finishReason == FinishReason.Error)
+        if (span is not Activity activity)
+        {
+            return;
+        }
+
+        activity.SetTag("gen_ai.response.finish_reasons", new[] { GenAiConventions.FormatFinishReason(finishReason) });
+        if (finishReason == FinishReason.Error)
         {
             activity.SetStatus(ActivityStatusCode.Error);
         }
@@ -50,6 +56,8 @@ public sealed class OpenTelemetryAiTelemetry : IAiTelemetry
         SetCount(activity, "gen_ai.usage.input_tokens", usage.InputTokens);
         SetCount(activity, "gen_ai.usage.output_tokens", usage.OutputTokens);
         SetCount(activity, "gen_ai.usage.total_tokens", usage.TotalTokens);
+        SetCount(activity, "gen_ai.usage.cache_read.input_tokens", usage.CacheReadTokens);
+        SetCount(activity, "gen_ai.usage.cache_creation.input_tokens", usage.CacheWriteTokens);
     }
 
     /// <inheritdoc />

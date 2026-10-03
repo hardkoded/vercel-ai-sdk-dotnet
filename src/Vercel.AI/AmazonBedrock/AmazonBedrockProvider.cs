@@ -16,6 +16,12 @@ public sealed class AmazonBedrockOptions
     /// <summary>AWS region.</summary>
     public string Region { get; set; } = "us-east-1";
 
+    /// <summary>
+    /// Agent Runtime origin for rerank. When empty, the host is
+    /// <c>https://bedrock-agent-runtime.{region}.{suffix}</c>.
+    /// </summary>
+    public string? AgentRuntimeBaseUrl { get; set; }
+
     /// <summary>Access key. Falls back to <c>AWS_ACCESS_KEY_ID</c>.</summary>
     public string? AccessKeyId { get; set; }
 
@@ -63,6 +69,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId) => new AmazonBedrockLanguageModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IRerankingModel RerankingModel(string modelId) => new AmazonBedrockRerankingModel(this, modelId);
+
     internal Uri ConverseUri(string modelId)
     {
         if (!HostnameParts.IsValidHostnamePart(Options.Region))
@@ -98,7 +107,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var body = Build(options).ToJsonString();
+        var bodyObject = Build(options, out var warnings);
+        var body = bodyObject.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, _provider.ConverseUri(ModelId))
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),
@@ -108,25 +118,28 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw ProviderHttp.MapStatus((int)response.StatusCode, text);
+            throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
         }
 
         using var document = JsonDocument.Parse(text);
-        return Parse(document.RootElement);
+        return Parse(document.RootElement, warnings, CopyHeaders(response));
     }
 
     /// <inheritdoc />
     public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
-        {
-            yield return new TextDeltaStreamPart("text", result.Text);
-        }
-
         foreach (var part in result.Content)
         {
-            if (part is GeneratedToolCall call)
+            if (part is GeneratedText text)
+            {
+                yield return new TextDeltaStreamPart("text", text.Text);
+            }
+            else if (part is GeneratedReasoning reasoning && reasoning.Text.Length > 0)
+            {
+                yield return new ReasoningDeltaStreamPart("reasoning", reasoning.Text);
+            }
+            else if (part is GeneratedToolCall call)
             {
                 yield return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson);
             }
@@ -148,42 +161,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options)
+    private JsonObject Build(LanguageModelCallOptions options, out List<CallWarning> warnings)
     {
-        var messages = new JsonArray();
-        JsonArray? system = null;
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage systemMessage)
-            {
-                system ??= new JsonArray();
-                system.Add(new JsonObject { ["text"] = systemMessage.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var content = new JsonArray();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart text)
-                    {
-                        content.Add(new JsonObject { ["text"] = text.Text });
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = content });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var content = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    content.Add(new JsonObject { ["text"] = assistant.Text });
-                }
-
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = content });
-            }
-        }
-
+        AmazonBedrockMessages.Convert(ModelId, options.Prompt, out var system, out var messages);
         var body = new JsonObject { ["messages"] = messages };
         if (system != null)
         {
@@ -201,28 +181,36 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             inference["temperature"] = temperature;
         }
 
+        if (options.TopP is { } topP)
+        {
+            inference["topP"] = topP;
+        }
+
+        if (options.TopK is { } topK)
+        {
+            inference["topK"] = topK;
+        }
+
+        if (options.StopSequences is { Count: > 0 })
+        {
+            var stop = new JsonArray();
+            foreach (var sequence in options.StopSequences)
+            {
+                stop.Add(sequence);
+            }
+
+            inference["stopSequences"] = stop;
+        }
+
         if (inference.Count > 0)
         {
             body["inferenceConfig"] = inference;
         }
 
-        if (options.Tools is { Count: > 0 })
+        var toolConfig = AmazonBedrockTools.Prepare(ModelId, options.Tools, options.ToolChoice, out warnings);
+        if (toolConfig.Count > 0)
         {
-            var tools = new JsonArray();
-            foreach (var tool in options.Tools)
-            {
-                tools.Add(new JsonObject
-                {
-                    ["toolSpec"] = new JsonObject
-                    {
-                        ["name"] = tool.Name,
-                        ["description"] = tool.Description,
-                        ["inputSchema"] = new JsonObject { ["json"] = JsonNode.Parse(tool.InputSchema.GetRawText()) },
-                    },
-                });
-            }
-
-            body["toolConfig"] = new JsonObject { ["tools"] = tools };
+            body["toolConfig"] = toolConfig;
         }
 
         var requestMetadata = ReadRequestMetadata(options);
@@ -281,31 +269,99 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         return result;
     }
 
-    private static LanguageModelGenerateResult Parse(JsonElement root)
+    private LanguageModelGenerateResult Parse(JsonElement root, IReadOnlyList<CallWarning> warnings, IReadOnlyDictionary<string, string> headers)
     {
+        var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
         var content = new List<GeneratedContent>();
+        var jsonTool = false;
         if (root.TryGetProperty("output", out var output) && output.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var parts))
         {
             foreach (var part in parts.EnumerateArray())
             {
-                if (part.TryGetProperty("text", out var text))
+                if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                 {
                     content.Add(new GeneratedText(text.GetString() ?? string.Empty));
+                }
+                else if (part.TryGetProperty("citationsContent", out var citations) && citations.TryGetProperty("content", out var cited) && cited.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var citedPart in cited.EnumerateArray())
+                    {
+                        if (citedPart.TryGetProperty("text", out var citedText) && citedText.ValueKind == JsonValueKind.String)
+                        {
+                            content.Add(new GeneratedText(citedText.GetString() ?? string.Empty));
+                        }
+                    }
+                }
+
+                if (part.TryGetProperty("reasoningContent", out var reasoning) && reasoning.ValueKind == JsonValueKind.Object)
+                {
+                    if (reasoning.TryGetProperty("reasoningText", out var reasoningText) && reasoningText.ValueKind == JsonValueKind.Object && reasoningText.TryGetProperty("text", out var reasoningValue))
+                    {
+                        content.Add(new GeneratedReasoning(reasoningValue.GetString() ?? string.Empty));
+                    }
+                    else if (reasoning.TryGetProperty("redactedReasoning", out _) || reasoning.TryGetProperty("redactedContent", out _))
+                    {
+                        content.Add(new GeneratedReasoning(string.Empty));
+                    }
+                }
+
+                if (part.TryGetProperty("toolUse", out var toolUse) && toolUse.ValueKind == JsonValueKind.Object)
+                {
+                    var name = toolUse.TryGetProperty("name", out var nameElement) ? nameElement.GetString() ?? "tool" : "tool";
+                    if (string.Equals(name, "json", StringComparison.Ordinal))
+                    {
+                        jsonTool = true;
+                        var json = toolUse.TryGetProperty("input", out var jsonInput) ? jsonInput.GetRawText() : "{}";
+                        content.Add(new GeneratedText(json));
+                        continue;
+                    }
+
+                    var id = toolUse.TryGetProperty("toolUseId", out var idElement) ? idElement.GetString() ?? "tool" : "tool";
+                    var input = toolUse.TryGetProperty("input", out var inputElement) ? inputElement.GetRawText() : "{}";
+                    content.Add(new GeneratedToolCall(AmazonBedrockToolIds.Normalize(id, isMistral), name, input));
                 }
             }
         }
 
         var raw = root.TryGetProperty("stopReason", out var stop) ? stop.GetString() : "end_turn";
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement))
+        var mapped = raw;
+        if (jsonTool && string.Equals(raw, "tool_use", StringComparison.Ordinal))
         {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("inputTokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("outputTokens", out var outputTokens) ? outputTokens.GetInt32() : null,
-                usageElement.TryGetProperty("totalTokens", out var total) ? total.GetInt32() : null);
+            mapped = "stop";
+        }
+        else if (string.Equals(raw, "guardrail_intervened", StringComparison.Ordinal))
+        {
+            mapped = "content-filter";
         }
 
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), usage, raw);
+        JsonElement? usageElement = root.TryGetProperty("usage", out var usageProperty) ? usageProperty : null;
+        var usage = AmazonBedrockUsage.Convert(usageElement);
+        string? responseId = null;
+        if (headers.TryGetValue("x-amzn-requestid", out var requestId))
+        {
+            responseId = requestId;
+        }
+
+        return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, responseHeaders: headers);
+    }
+
+    private static Dictionary<string, string> CopyHeaders(HttpResponseMessage response)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers)
+        {
+            headers[header.Key] = string.Join(",", header.Value);
+        }
+
+        if (response.Content != null)
+        {
+            foreach (var header in response.Content.Headers)
+            {
+                headers[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
+        return headers;
     }
 }
 

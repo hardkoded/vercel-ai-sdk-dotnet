@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Xai;
 
@@ -18,10 +19,31 @@ public sealed class XaiProvider : OpenAICompatibleProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "XAI_API_KEY";
 
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public XaiProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    /// <summary>xAI file store.</summary>
+    public XaiFiles Files()
+    {
+        return new XaiFiles(_httpClient, Options.BaseUrl, () => CreateHeaders());
+    }
+
+    /// <inheritdoc />
+    public override IFileStore FileStore()
+    {
+        return Files();
+    }
+
+    /// <inheritdoc />
+    public override IRealtimeModel RealtimeModel(string modelId)
+    {
+        return new XaiRealtimeModel(modelId, _httpClient, Options.BaseUrl, () => CreateHeaders());
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>

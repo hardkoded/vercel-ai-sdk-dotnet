@@ -1,6 +1,9 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
+
 namespace Vercel.AI.OpenAICompatible;
 
 /// <summary>How the API key is sent.</summary>
@@ -67,6 +70,42 @@ public class OpenAICompatibleOptions
     /// <summary>When set, chat and embedding URLs use the Azure deployments route and this API version.</summary>
     public string? AzureApiVersion { get; set; }
 
-    /// <summary>Extra headers sent on every call.</summary>
+    /// <summary>Extra headers sent on every call. These override the API key header.</summary>
     public Dictionary<string, string> Headers { get; } = new();
+
+    /// <summary>Query parameters appended to every request URL.</summary>
+    public Dictionary<string, string> QueryParameters { get; } = new();
+
+    /// <summary>When true, streaming requests send <c>stream_options.include_usage</c>.</summary>
+    public bool IncludeUsage { get; set; }
+
+    /// <summary>When true, a JSON schema is sent as <c>json_schema</c> instead of <c>json_object</c>.</summary>
+    public bool SupportsStructuredOutputs { get; set; }
+
+    /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
+    public bool RequireApiKey { get; set; }
+
+    /// <summary>User-agent suffix. Empty uses <see cref="OpenAICompatibleInfo.UserAgent"/>.</summary>
+    public string? UserAgent { get; set; }
+
+    /// <summary>Rewrites a provider error body into the exception message.</summary>
+    public Func<string?, string?>? SelectErrorMessage { get; set; }
+
+    /// <summary>Rewrites the JSON body before it is sent. Warnings raised here are returned with the call.</summary>
+    public Func<JsonObject, IList<CallWarning>, JsonObject>? TransformRequestBody { get; set; }
+
+    /// <summary>Maps a raw finish reason before the shared mapping. Null falls through.</summary>
+    public Func<string?, FinishReason?>? MapFinishReason { get; set; }
+
+    /// <summary>Relative completions path.</summary>
+    public string CompletionsPath { get; set; } = "completions";
+
+    /// <summary>Relative rerank path.</summary>
+    public string RerankPath { get; set; } = "rerank";
+
+    /// <summary>Maximum embedding inputs in one request.</summary>
+    public int MaxEmbeddingsPerCall { get; set; } = 2048;
+
+    /// <summary>Origin for image calls when it differs from <see cref="BaseUrl"/>.</summary>
+    public string? ImageBaseUrl { get; set; }
 }

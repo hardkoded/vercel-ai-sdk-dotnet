@@ -51,7 +51,13 @@ public sealed class GmiCloudProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.IncludeUsage = true;
+        options.SelectErrorMessage = OpenAICompatibleTransforms.GmiCloudError;
         return options;
     }
 }

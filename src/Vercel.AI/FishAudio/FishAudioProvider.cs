@@ -25,6 +25,27 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <summary>Specification version reported by the Fish Audio provider.</summary>
+    public string SpecificationVersion => "v4";
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("Fish Audio does not provide language models.");
+    }
+
+    /// <summary>Creates a speech model.</summary>
+    public ISpeechModel Speech(string modelId)
+    {
+        return SpeechModel(modelId);
+    }
+
+    /// <summary>Creates the default transcription model <c>transcribe-1</c>.</summary>
+    public ITranscriptionModel Transcription()
+    {
+        return TranscriptionModel("transcribe-1");
+    }
+
     /// <summary>Creates a provider.</summary>
     public static new FishAudioProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
@@ -45,21 +66,66 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override ISpeechModel SpeechModel(string modelId) => new Speech(this, modelId);
+    public override ISpeechModel SpeechModel(string modelId) => new FishSpeechModel(this, modelId);
 
-    private sealed class Speech : ISpeechModel
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId) => new FishTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
+
+    /// <summary>Fish Audio speech model.</summary>
+    public sealed class FishSpeechModel : ISpeechModel
     {
         private readonly FishAudioProvider _provider;
-        public Speech(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "fish-audio";
+
+        /// <summary>Creates a speech model.</summary>
+        public FishSpeechModel(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
+
+        /// <summary>Specification version.</summary>
+        public string SpecificationVersion => "v4";
+
+        /// <inheritdoc />
+        public string Provider => "fish-audio.speech";
+
+        /// <inheritdoc />
         public string ModelId { get; }
+
+        /// <inheritdoc />
         public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
         {
-            var voice = options.Voice ?? "default";
-            var path = "/v1/tts".Replace("{voice}", voice);
-            var body = new JsonObject { ["text"] = options.Text, ["model_id"] = ModelId, ["model"] = ModelId };
+            var path = "/v1/tts";
+            var body = new JsonObject { ["text"] = options.Text, ["format"] = "mp3" };
+            if (!string.IsNullOrEmpty(options.Voice))
+            {
+                body["reference_id"] = options.Voice;
+            }
             var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
             return new SpeechResult(bytes, "audio/mpeg");
+        }
+    }
+
+    /// <summary>Fish Audio transcription model.</summary>
+    public sealed class FishTranscriptionModel : ITranscriptionModel
+    {
+        private readonly FishAudioProvider _provider;
+
+        /// <summary>Creates a transcription model.</summary>
+        public FishTranscriptionModel(FishAudioProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
+
+        /// <summary>Specification version.</summary>
+        public string SpecificationVersion => "v4";
+
+        /// <inheritdoc />
+        public string Provider => "fish-audio.transcription";
+
+        /// <inheritdoc />
+        public string ModelId { get; }
+
+        /// <inheritdoc />
+        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        {
+            var body = new JsonObject { ["model"] = ModelId, ["audio"] = Convert.ToBase64String(audio.Data) };
+            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/asr"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
+            var text = document.RootElement.TryGetProperty("text", out var value) ? value.GetString() ?? string.Empty : string.Empty;
+            return new TranscriptionResult(text);
         }
     }
 

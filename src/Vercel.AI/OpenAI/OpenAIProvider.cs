@@ -4,6 +4,7 @@
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -15,18 +16,69 @@ namespace Vercel.AI.OpenAI;
 /// <summary>OpenAI provider settings.</summary>
 public sealed class OpenAIOptions : OpenAICompatibleOptions
 {
-    /// <summary>Creates options aimed at <c>https://api.openai.com/v1</c>.</summary>
+    private bool _baseUrlAssigned;
+
+    /// <summary>Creates options aimed at <c>https://api.openai.com/v1</c> unless <c>OPENAI_BASE_URL</c> is set.</summary>
     public OpenAIOptions()
     {
         ProviderName = "openai";
-        BaseUrl = "https://api.openai.com/v1";
         ApiKeyEnvironmentVariable = "OPENAI_API_KEY";
         SupportsEmbeddings = true;
         SupportsImages = true;
     }
 
+    /// <summary>
+    /// API origin. An assigned value wins over <c>OPENAI_BASE_URL</c>.
+    /// A blank value is rejected when the provider is created.
+    /// </summary>
+    public new string BaseUrl
+    {
+        get => base.BaseUrl;
+        set
+        {
+            _baseUrlAssigned = true;
+            base.BaseUrl = value;
+        }
+    }
+
+    /// <summary>True when the caller assigned <see cref="BaseUrl"/>.</summary>
+    internal bool BaseUrlAssigned => _baseUrlAssigned;
+
+    /// <summary>Sets the resolved origin without marking it as an explicit option.</summary>
+    internal void UseResolvedBaseUrl(string value)
+    {
+        base.BaseUrl = value;
+    }
+
     /// <summary>When true, <see cref="OpenAIProvider.LanguageModel"/> uses the Responses API.</summary>
     public bool UseResponsesApi { get; set; }
+
+    /// <summary>Value of the <c>OpenAI-Organization</c> header.</summary>
+    public string? Organization { get; set; }
+
+    /// <summary>Value of the <c>OpenAI-Project</c> header.</summary>
+    public string? Project { get; set; }
+}
+
+/// <summary>Function tools prepared for the OpenAI Responses API.</summary>
+public sealed class PreparedResponsesTools
+{
+    /// <summary>Creates a prepared tool list.</summary>
+    public PreparedResponsesTools(JsonArray? tools, ToolChoice? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
+    {
+        Tools = tools;
+        ToolChoice = toolChoice;
+        ToolWarnings = toolWarnings ?? Array.Empty<CallWarning>();
+    }
+
+    /// <summary>Provider tool objects. Null when the request has no tools.</summary>
+    public JsonArray? Tools { get; }
+
+    /// <summary>Tool choice passed through for this request. Null when unset.</summary>
+    public ToolChoice? ToolChoice { get; }
+
+    /// <summary>Warnings produced while preparing tools.</summary>
+    public IReadOnlyList<CallWarning> ToolWarnings { get; }
 }
 
 /// <summary>OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches.</summary>
@@ -35,14 +87,22 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     /// <summary>Provider id.</summary>
     public const string ProviderId = "openai";
 
+    /// <summary>User-Agent suffix appended to every request. Tracks <c>@ai-sdk/openai</c> 4.0.73.</summary>
+    public const string UserAgentSuffix = "ai-sdk/openai/4.0.73";
+
     private readonly OpenAIOptions _openAI;
 
     /// <summary>Creates an OpenAI provider.</summary>
     public OpenAIProvider(HttpClient httpClient, OpenAIOptions? options = null)
         : base(options ?? new OpenAIOptions(), httpClient)
     {
-        _openAI = options ?? (OpenAIOptions)Options;
+        _openAI = (OpenAIOptions)Options;
+        HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        ResolveBaseUrl(_openAI);
     }
+
+    /// <summary>HTTP client used for calls that need response headers.</summary>
+    public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static OpenAIProvider Create(OpenAIOptions? options = null, HttpMessageHandler? handler = null)
@@ -52,15 +112,45 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
         return new OpenAIProvider(client, options);
     }
 
+    /// <summary>Chat Completions model. The provider id is <c>openai.chat</c>.</summary>
+    public OpenAIChatLanguageModel ChatModel(string modelId)
+    {
+        return new OpenAIChatLanguageModel(this, modelId);
+    }
+
+    /// <summary>Responses API model. The provider id is <c>openai.responses</c>.</summary>
+    public OpenAIResponsesLanguageModel ResponsesModel(string modelId)
+    {
+        return new OpenAIResponsesLanguageModel(this, modelId);
+    }
+
+    /// <summary>Legacy completions model. The provider id is <c>openai.completion</c>.</summary>
+    public new OpenAICompletionLanguageModel CompletionModel(string modelId)
+    {
+        return new OpenAICompletionLanguageModel(this, modelId);
+    }
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
         if (_openAI.UseResponsesApi)
         {
-            return new OpenAIResponsesLanguageModel(this, modelId);
+            return ResponsesModel(modelId);
         }
 
-        return base.LanguageModel(modelId);
+        return ChatModel(modelId);
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        return new OpenAIEmbeddingModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new OpenAIImageModel(this, modelId);
     }
 
     /// <inheritdoc />
@@ -72,7 +162,7 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
-        return new OpenAITranscriptionModel(this, modelId, "audio/transcriptions");
+        return new OpenAITranscriptionModel(this, modelId);
     }
 
     /// <inheritdoc />
@@ -104,387 +194,104 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     {
         return new OpenAIRealtimeModel(this, modelId);
     }
-}
-
-/// <summary>Function tools prepared for the OpenAI Responses API.</summary>
-public sealed class PreparedResponsesTools
-{
-    /// <summary>Creates a prepared tool list.</summary>
-    public PreparedResponsesTools(JsonArray? tools, ToolChoice? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
-    {
-        Tools = tools;
-        ToolChoice = toolChoice;
-        ToolWarnings = toolWarnings ?? Array.Empty<CallWarning>();
-    }
-
-    /// <summary>Provider tool objects. Null when the request has no tools.</summary>
-    public JsonArray? Tools { get; }
-
-    /// <summary>Tool choice passed through for this request. Null when unset.</summary>
-    public ToolChoice? ToolChoice { get; }
-
-    /// <summary>Warnings produced while preparing tools.</summary>
-    public IReadOnlyList<CallWarning> ToolWarnings { get; }
-}
-
-/// <summary>OpenAI Responses API language model.</summary>
-public sealed class OpenAIResponsesLanguageModel : ILanguageModel
-{
-    private readonly OpenAIProvider _provider;
-
-    /// <summary>Creates a Responses model.</summary>
-    public OpenAIResponsesLanguageModel(OpenAIProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => "openai";
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
-            Build(options, false).ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
-    }
-
-    /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
-        LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await foreach (var data in _provider.Http.SendSseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
-            Build(options, true).ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false))
-        {
-            var node = JsonNode.Parse(data) as JsonObject;
-            var type = node?["type"]?.ToString().Trim('"');
-            if (type == "response.output_text.delta")
-            {
-                var delta = node?["delta"]?.ToString().Trim('"');
-                if (!string.IsNullOrEmpty(delta))
-                {
-                    yield return new TextDeltaStreamPart("text", delta!);
-                }
-            }
-            else if (type == "response.completed")
-            {
-                yield return new FinishStreamPart(FinishReason.Stop, LanguageModelUsage.Empty);
-            }
-        }
-    }
-
-    private JsonObject Build(LanguageModelCallOptions options, bool stream)
-    {
-        var input = new JsonArray();
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage system)
-            {
-                input.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
-                }
-
-                input.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-        }
-
-        var body = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["input"] = input,
-            ["stream"] = stream,
-        };
-        if (options.MaxOutputTokens is { } max)
-        {
-            body["max_output_tokens"] = max;
-        }
-
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        var prepared = PrepareResponsesTools(options.Tools, options.ToolChoice);
-        if (prepared.Tools is { Count: > 0 })
-        {
-            body["tools"] = prepared.Tools;
-        }
-
-        return body;
-    }
 
     /// <summary>
-    /// Prepares Responses function tools. Strict is false unless the tool sets <see cref="LanguageModelTool.Strict"/>.
+    /// Builds request headers. Custom provider headers override the API key, organization, and project.
+    /// The user-agent suffix is appended after that, and per-call headers override the result.
     /// </summary>
-    public static PreparedResponsesTools PrepareResponsesTools(IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice)
+    public Dictionary<string, string?> CreateOpenAIHeaders(IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
-        if (tools == null || tools.Count == 0)
+        var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable, Options.AdditionalApiKeyEnvironmentVariables);
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            return new PreparedResponsesTools(null, null, Array.Empty<CallWarning>());
+            ["Authorization"] = "Bearer " + key,
+        };
+        if (!string.IsNullOrEmpty(_openAI.Organization))
+        {
+            headers["OpenAI-Organization"] = _openAI.Organization;
         }
 
-        var prepared = new JsonArray();
-        foreach (var tool in tools)
+        if (!string.IsNullOrEmpty(_openAI.Project))
         {
-            prepared.Add(new JsonObject
-            {
-                ["type"] = "function",
-                ["name"] = tool.Name,
-                ["description"] = tool.Description,
-                ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
-                ["strict"] = tool.Strict ?? false,
-            });
+            headers["OpenAI-Project"] = _openAI.Project;
         }
 
-        return new PreparedResponsesTools(prepared, toolChoice, Array.Empty<CallWarning>());
-    }
-
-    private static LanguageModelGenerateResult Parse(System.Text.Json.JsonElement root)
-    {
-        var content = new List<GeneratedContent>();
-        if (root.TryGetProperty("output", out var output))
+        foreach (var pair in Options.Headers)
         {
-            foreach (var item in output.EnumerateArray())
+            headers[pair.Key] = pair.Value;
+        }
+
+        headers.TryGetValue("User-Agent", out var current);
+        headers["user-agent"] = string.IsNullOrEmpty(current) ? UserAgentSuffix : current + " " + UserAgentSuffix;
+        if (callHeaders != null)
+        {
+            foreach (var pair in callHeaders)
             {
-                var type = item.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-                if (type == "message" && item.TryGetProperty("content", out var parts))
+                if (pair.Value == null)
                 {
-                    foreach (var part in parts.EnumerateArray())
-                    {
-                        if (part.TryGetProperty("text", out var text))
-                        {
-                            content.Add(new GeneratedText(text.GetString() ?? string.Empty));
-                        }
-                    }
+                    continue;
                 }
-                else if (type == "function_call")
-                {
-                    content.Add(new GeneratedToolCall(
-                        item.TryGetProperty("call_id", out var id) ? id.GetString() ?? "call" : "call",
-                        item.GetProperty("name").GetString() ?? string.Empty,
-                        item.TryGetProperty("arguments", out var args) ? args.GetString() ?? "{}" : "{}"));
-                }
+
+                headers[pair.Key] = pair.Value;
             }
         }
 
-        var usage = LanguageModelUsage.Empty;
-        if (root.TryGetProperty("usage", out var usageElement))
+        return headers;
+    }
+
+    private static void ResolveBaseUrl(OpenAIOptions options)
+    {
+        string? candidate;
+        if (options.BaseUrlAssigned)
         {
-            usage = new LanguageModelUsage(
-                usageElement.TryGetProperty("input_tokens", out var input) ? input.GetInt32() : null,
-                usageElement.TryGetProperty("output_tokens", out var outputTokens) ? outputTokens.GetInt32() : null,
-                usageElement.TryGetProperty("total_tokens", out var total) ? total.GetInt32() : null);
+            candidate = options.BaseUrl;
+        }
+        else
+        {
+            candidate = Environment.GetEnvironmentVariable("OPENAI_BASE_URL");
+            if (candidate == null)
+            {
+                return;
+            }
         }
 
-        return new LanguageModelGenerateResult(content, content.Exists(part => part is GeneratedToolCall) ? FinishReason.ToolCalls : FinishReason.Stop, usage);
-    }
-}
-
-internal sealed class OpenAISpeechModel : ISpeechModel
-{
-    private readonly OpenAIProvider _provider;
-
-    public OpenAISpeechModel(OpenAIProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    public string Provider => "openai";
-
-    public string ModelId { get; }
-
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
-    {
-        var body = new JsonObject
+        if (candidate.Trim().Length == 0)
         {
-            ["model"] = ModelId,
-            ["input"] = options.Text,
-            ["voice"] = options.Voice ?? "alloy",
-        };
-        var bytes = await _provider.Http.SendBytesAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "audio/speech"),
-            new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        return new SpeechResult(bytes, "audio/mpeg");
-    }
-}
+            throw new ArgumentException("baseURL must be a non-empty string.", "baseURL");
+        }
 
-internal sealed class OpenAITranscriptionModel : ITranscriptionModel
-{
-    private readonly OpenAIProvider _provider;
-    private readonly string _path;
-
-    public OpenAITranscriptionModel(OpenAIProvider provider, string modelId, string path)
-    {
-        _provider = provider;
-        ModelId = modelId;
-        _path = path;
+        options.UseResolvedBaseUrl(StripOneTrailingSlash(candidate));
     }
 
-    public string Provider => "openai";
-
-    public string ModelId { get; }
-
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    private static string StripOneTrailingSlash(string value)
     {
-        using var content = new MultipartFormDataContent();
-        var file = new ByteArrayContent(audio.Data);
-        file.Headers.ContentType = new MediaTypeHeaderValue(audio.MediaType);
-        content.Add(file, "file", audio.FileName ?? "audio.mp3");
-        content.Add(new StringContent(ModelId), "model");
-        var bytes = await _provider.Http.SendBytesAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, _path),
-            content,
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        using var document = System.Text.Json.JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
-        return new TranscriptionResult(document.RootElement.GetProperty("text").GetString() ?? string.Empty);
-    }
-}
-
-internal sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel
-{
-    private readonly OpenAITranscriptionModel _inner;
-
-    public OpenAISpeechTranslationModel(OpenAIProvider provider, string modelId)
-    {
-        _inner = new OpenAITranscriptionModel(provider, modelId, "audio/translations");
-        ModelId = modelId;
-    }
-
-    public string Provider => "openai";
-
-    public string ModelId { get; }
-
-    public Task<TranscriptionResult> DoTranslateAsync(AudioInput audio, CancellationToken cancellationToken)
-    {
-        return _inner.DoTranscribeAsync(audio, cancellationToken);
-    }
-}
-
-internal sealed class OpenAIFileStore : IFileStore
-{
-    private readonly OpenAIProvider _provider;
-
-    public OpenAIFileStore(OpenAIProvider provider)
-    {
-        _provider = provider;
-    }
-
-    public async Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken)
-    {
-        using var content = new MultipartFormDataContent();
-        var file = new ByteArrayContent(data);
-        file.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
-        content.Add(file, "file", fileName);
-        content.Add(new StringContent("assistants"), "purpose");
-        var bytes = await _provider.Http.SendBytesAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "files"),
-            content,
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        using var document = System.Text.Json.JsonDocument.Parse(Encoding.UTF8.GetString(bytes));
-        return new UploadedFile(document.RootElement.GetProperty("id").GetString() ?? string.Empty, fileName);
-    }
-}
-
-internal sealed class OpenAISkillStore : ISkillStore
-{
-    private readonly OpenAIProvider _provider;
-
-    public OpenAISkillStore(OpenAIProvider provider)
-    {
-        _provider = provider;
-    }
-
-    public async Task<UploadedSkill> UploadSkillAsync(string name, string instructions, CancellationToken cancellationToken)
-    {
-        var body = new JsonObject { ["name"] = name, ["instructions"] = instructions };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "skills"),
-            body.ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        var id = document.RootElement.TryGetProperty("id", out var idElement) ? idElement.GetString() ?? name : name;
-        return new UploadedSkill(id, name);
-    }
-}
-
-internal sealed class OpenAIBatchModel : IBatchModel
-{
-    private readonly OpenAIProvider _provider;
-
-    public OpenAIBatchModel(OpenAIProvider provider)
-    {
-        _provider = provider;
-    }
-
-    public string Provider => "openai";
-
-    public async Task<BatchJob> SubmitAsync(string inputFileId, string endpoint, CancellationToken cancellationToken)
-    {
-        var body = new JsonObject
+        if (value.Length > 0 && value[value.Length - 1] == '/')
         {
-            ["input_file_id"] = inputFileId,
-            ["endpoint"] = endpoint,
-            ["completion_window"] = "24h",
-        };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "batches"),
-            body.ToJsonString(),
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        return Read(document.RootElement);
+            return value.Substring(0, value.Length - 1);
+        }
+
+        return value;
+    }
+}
+
+/// <summary>A realtime client secret.</summary>
+public sealed class OpenAIRealtimeClientSecret
+{
+    internal OpenAIRealtimeClientSecret(string token, string url, long? expiresAt)
+    {
+        Token = token;
+        Url = url;
+        ExpiresAt = expiresAt;
     }
 
-    public async Task<BatchJob> GetAsync(string id, CancellationToken cancellationToken)
-    {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + id),
-            null,
-            _provider.CreateHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        return Read(document.RootElement);
-    }
+    /// <summary>Client secret value.</summary>
+    public string Token { get; }
 
-    private static BatchJob Read(System.Text.Json.JsonElement root)
-    {
-        return new BatchJob(
-            root.GetProperty("id").GetString() ?? string.Empty,
-            root.TryGetProperty("status", out var status) ? status.GetString() ?? "unknown" : "unknown");
-    }
+    /// <summary>WebSocket URL that includes the model.</summary>
+    public string Url { get; }
+
+    /// <summary>Expiry as unix seconds, when the provider sent one.</summary>
+    public long? ExpiresAt { get; }
 }
 
 /// <summary>OpenAI Realtime session URI builder and WebSocket client.</summary>
@@ -500,7 +307,7 @@ public sealed class OpenAIRealtimeModel : IRealtimeModel
     }
 
     /// <inheritdoc />
-    public string Provider => "openai";
+    public string Provider => _provider.Name;
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -511,6 +318,45 @@ public sealed class OpenAIRealtimeModel : IRealtimeModel
         var http = ApiKeys.Combine(_provider.Options.BaseUrl, "realtime");
         var builder = new UriBuilder(http) { Scheme = http.Scheme == "https" ? "wss" : "ws", Query = "model=" + Uri.EscapeDataString(ModelId) };
         return builder.Uri;
+    }
+
+    /// <summary>Requests a realtime client secret. <paramref name="expiresAfterSeconds"/> is omitted when null.</summary>
+    public async Task<OpenAIRealtimeClientSecret> CreateClientSecretAsync(int? expiresAfterSeconds, CancellationToken cancellationToken)
+    {
+        var body = new JsonObject
+        {
+            ["session"] = new JsonObject
+            {
+                ["type"] = "realtime",
+                ["model"] = ModelId,
+            },
+        };
+        if (expiresAfterSeconds != null)
+        {
+            body["expires_after"] = new JsonObject
+            {
+                ["anchor"] = "created_at",
+                ["seconds"] = expiresAfterSeconds.Value,
+            };
+        }
+
+        var response = await _provider.Http.SendJsonStringAsync(
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "realtime/client_secrets"),
+            body.ToJsonString(),
+            _provider.CreateOpenAIHeaders(),
+            cancellationToken).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(response.Body);
+        var token = document.RootElement.TryGetProperty("value", out var value) ? value.GetString() ?? string.Empty : string.Empty;
+        long? expires = null;
+        if (document.RootElement.TryGetProperty("expires_at", out var expiresElement) && expiresElement.TryGetInt64(out var seconds))
+        {
+            expires = seconds;
+        }
+
+        var host = new Uri(_provider.Options.BaseUrl).Host;
+        var url = "wss://" + host + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
+        return new OpenAIRealtimeClientSecret(token, url, expires);
     }
 
     /// <inheritdoc />
@@ -527,12 +373,60 @@ public sealed class OpenAIRealtimeModel : IRealtimeModel
     private async Task<IRealtimeSession> ConnectCoreAsync(CancellationToken cancellationToken)
     {
         var socket = new System.Net.WebSockets.ClientWebSocket();
-        socket.Options.SetRequestHeader("Authorization", _provider.CreateHeaders()["Authorization"] ?? string.Empty);
+        var headers = _provider.CreateOpenAIHeaders();
+        socket.Options.SetRequestHeader("Authorization", headers["Authorization"] ?? string.Empty);
         socket.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
         await socket.ConnectAsync(BuildUri(), cancellationToken).ConfigureAwait(false);
         return new WebSocketRealtimeSession(socket);
     }
 #endif
+}
+
+internal sealed class OpenAIBatchModel : IBatchModel
+{
+    private readonly OpenAIProvider _provider;
+
+    public OpenAIBatchModel(OpenAIProvider provider)
+    {
+        _provider = provider;
+    }
+
+    public string Provider => _provider.Name + ".batch";
+
+    public async Task<BatchJob> SubmitAsync(string inputFileId, string endpoint, CancellationToken cancellationToken)
+    {
+        var body = new JsonObject
+        {
+            ["input_file_id"] = inputFileId,
+            ["endpoint"] = endpoint,
+            ["completion_window"] = "24h",
+        };
+        using var document = await _provider.Http.SendJsonAsync(
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "batches"),
+            body.ToJsonString(),
+            _provider.CreateOpenAIHeaders(),
+            cancellationToken).ConfigureAwait(false);
+        return Read(document.RootElement);
+    }
+
+    public async Task<BatchJob> GetAsync(string id, CancellationToken cancellationToken)
+    {
+        using var document = await _provider.Http.SendJsonAsync(
+            HttpMethod.Get,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + id),
+            null,
+            _provider.CreateOpenAIHeaders(),
+            cancellationToken).ConfigureAwait(false);
+        return Read(document.RootElement);
+    }
+
+    private static BatchJob Read(JsonElement root)
+    {
+        return new BatchJob(
+            root.GetProperty("id").GetString() ?? string.Empty,
+            root.TryGetProperty("status", out var status) ? status.GetString() ?? "unknown" : "unknown");
+    }
 }
 
 internal sealed class WebSocketRealtimeSession : IRealtimeSession

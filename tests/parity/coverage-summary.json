@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 1,
-  "partial": 15,
-  "missing": 11053,
+  "covered": 2366,
+  "partial": 86,
+  "missing": 8617,
   "features": [
     {
       "feature": "ai/agent",
@@ -19,89 +19,89 @@
       "feature": "ai/batch",
       "dotnetProject": "Vercel.AI",
       "inScope": 25,
-      "covered": 0,
+      "covered": 25,
       "partial": 0,
-      "missing": 25
+      "missing": 0
     },
     {
       "feature": "ai/embed",
       "dotnetProject": "Vercel.AI",
       "inScope": 76,
-      "covered": 0,
+      "covered": 76,
       "partial": 0,
-      "missing": 76
+      "missing": 0
     },
     {
       "feature": "ai/error",
       "dotnetProject": "Vercel.AI",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "ai/evaluate",
       "dotnetProject": "Vercel.AI",
       "inScope": 20,
-      "covered": 0,
-      "partial": 0,
-      "missing": 20
+      "covered": 19,
+      "partial": 1,
+      "missing": 0
     },
     {
       "feature": "ai/generate-image",
       "dotnetProject": "Vercel.AI",
       "inScope": 40,
-      "covered": 0,
+      "covered": 40,
       "partial": 0,
-      "missing": 40
+      "missing": 0
     },
     {
       "feature": "ai/generate-object",
       "dotnetProject": "Vercel.AI",
       "inScope": 123,
-      "covered": 0,
+      "covered": 13,
       "partial": 0,
-      "missing": 123
+      "missing": 110
     },
     {
       "feature": "ai/generate-speech",
       "dotnetProject": "Vercel.AI",
       "inScope": 13,
-      "covered": 0,
+      "covered": 13,
       "partial": 0,
-      "missing": 13
+      "missing": 0
     },
     {
       "feature": "ai/generate-text",
       "dotnetProject": "Vercel.AI",
       "inScope": 1136,
-      "covered": 0,
+      "covered": 84,
       "partial": 4,
-      "missing": 1132
+      "missing": 1048
     },
     {
       "feature": "ai/generate-video",
       "dotnetProject": "Vercel.AI",
       "inScope": 80,
-      "covered": 0,
+      "covered": 79,
       "partial": 0,
-      "missing": 80
+      "missing": 1
     },
     {
       "feature": "ai/internal",
       "dotnetProject": "Vercel.AI",
       "inScope": 2,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 2
+      "missing": 0
     },
     {
       "feature": "ai/logger",
       "dotnetProject": "Vercel.AI",
       "inScope": 17,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 17
+      "missing": 0
     },
     {
       "feature": "ai/middleware",
@@ -123,9 +123,9 @@
       "feature": "ai/prompt",
       "dotnetProject": "Vercel.AI",
       "inScope": 186,
-      "covered": 0,
+      "covered": 81,
       "partial": 0,
-      "missing": 186
+      "missing": 105
     },
     {
       "feature": "ai/realtime",
@@ -147,9 +147,9 @@
       "feature": "ai/rerank",
       "dotnetProject": "Vercel.AI",
       "inScope": 32,
-      "covered": 0,
-      "partial": 0,
-      "missing": 32
+      "covered": 31,
+      "partial": 1,
+      "missing": 0
     },
     {
       "feature": "ai/telemetry",
@@ -163,185 +163,185 @@
       "feature": "ai/test",
       "dotnetProject": "Vercel.AI",
       "inScope": 8,
-      "covered": 0,
+      "covered": 8,
       "partial": 0,
-      "missing": 8
+      "missing": 0
     },
     {
       "feature": "ai/text-stream",
       "dotnetProject": "Vercel.AI",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "ai/tool-search",
       "dotnetProject": "Vercel.AI",
       "inScope": 15,
-      "covered": 0,
+      "covered": 15,
       "partial": 0,
-      "missing": 15
+      "missing": 0
     },
     {
       "feature": "ai/transcribe",
       "dotnetProject": "Vercel.AI",
       "inScope": 25,
-      "covered": 0,
+      "covered": 25,
       "partial": 0,
-      "missing": 25
+      "missing": 0
     },
     {
       "feature": "ai/translate",
       "dotnetProject": "Vercel.AI",
       "inScope": 20,
-      "covered": 0,
+      "covered": 20,
       "partial": 0,
-      "missing": 20
+      "missing": 0
     },
     {
       "feature": "ai/ui",
       "dotnetProject": "Vercel.AI",
       "inScope": 372,
-      "covered": 0,
+      "covered": 5,
       "partial": 0,
-      "missing": 372
+      "missing": 367
     },
     {
       "feature": "ai/ui-message-stream",
       "dotnetProject": "Vercel.AI",
       "inScope": 104,
-      "covered": 0,
+      "covered": 10,
       "partial": 1,
-      "missing": 103
+      "missing": 93
     },
     {
       "feature": "ai/upload-file",
       "dotnetProject": "Vercel.AI",
       "inScope": 15,
-      "covered": 0,
+      "covered": 15,
       "partial": 0,
-      "missing": 15
+      "missing": 0
     },
     {
       "feature": "ai/upload-skill",
       "dotnetProject": "Vercel.AI",
       "inScope": 5,
-      "covered": 0,
+      "covered": 5,
       "partial": 0,
-      "missing": 5
+      "missing": 0
     },
     {
       "feature": "ai/util",
       "dotnetProject": "Vercel.AI",
       "inScope": 225,
-      "covered": 0,
-      "partial": 2,
-      "missing": 223
+      "covered": 224,
+      "partial": 0,
+      "missing": 1
     },
     {
       "feature": "ai/util/download",
       "dotnetProject": "Vercel.AI",
       "inScope": 17,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 17
+      "missing": 0
     },
     {
       "feature": "alibaba",
       "dotnetProject": "Vercel.AI.Alibaba",
       "inScope": 172,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 172
+      "missing": 170
     },
     {
       "feature": "amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 428,
-      "covered": 0,
-      "partial": 2,
-      "missing": 426
+      "covered": 39,
+      "partial": 12,
+      "missing": 377
     },
     {
       "feature": "amazon-bedrock/anthropic",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 45,
-      "covered": 0,
-      "partial": 0,
-      "missing": 45
+      "covered": 13,
+      "partial": 1,
+      "missing": 31
     },
     {
       "feature": "amazon-bedrock/mantle",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 16,
-      "covered": 0,
-      "partial": 0,
-      "missing": 16
+      "covered": 7,
+      "partial": 3,
+      "missing": 6
     },
     {
       "feature": "amazon-bedrock/reranking",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 13,
-      "covered": 0,
-      "partial": 0,
-      "missing": 13
+      "covered": 5,
+      "partial": 1,
+      "missing": 7
     },
     {
       "feature": "anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 573,
-      "covered": 0,
-      "partial": 0,
-      "missing": 573
+      "covered": 120,
+      "partial": 5,
+      "missing": 448
     },
     {
       "feature": "anthropic-aws",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 50,
-      "covered": 0,
-      "partial": 0,
-      "missing": 50
+      "covered": 41,
+      "partial": 9,
+      "missing": 0
     },
     {
       "feature": "anthropic/skills",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 7,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 7
+      "missing": 0
     },
     {
       "feature": "anthropic/tool",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 2,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 2
+      "missing": 0
     },
     {
       "feature": "assemblyai",
       "dotnetProject": "Vercel.AI.AssemblyAI",
       "inScope": 21,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 21
+      "missing": 20
     },
     {
       "feature": "azure",
       "dotnetProject": "Vercel.AI.Azure",
       "inScope": 66,
-      "covered": 0,
-      "partial": 0,
-      "missing": 66
+      "covered": 4,
+      "partial": 5,
+      "missing": 57
     },
     {
       "feature": "baseten",
       "dotnetProject": "Vercel.AI.Baseten",
       "inScope": 53,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 53
+      "missing": 44
     },
     {
       "feature": "black-forest-labs",
@@ -355,25 +355,25 @@
       "feature": "bytedance",
       "dotnetProject": "Vercel.AI.ByteDance",
       "inScope": 88,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 88
+      "missing": 87
     },
     {
       "feature": "cartesia",
       "dotnetProject": "Vercel.AI.Cartesia",
       "inScope": 41,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 41
+      "missing": 39
     },
     {
       "feature": "cerebras",
       "dotnetProject": "Vercel.AI.Cerebras",
       "inScope": 16,
-      "covered": 0,
+      "covered": 10,
       "partial": 0,
-      "missing": 16
+      "missing": 6
     },
     {
       "feature": "cohere",
@@ -387,25 +387,25 @@
       "feature": "cohere/reranking",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12
+      "missing": 0
     },
     {
       "feature": "deepgram",
       "dotnetProject": "Vercel.AI.Deepgram",
       "inScope": 39,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 39
+      "missing": 37
     },
     {
       "feature": "deepinfra",
       "dotnetProject": "Vercel.AI.DeepInfra",
       "inScope": 26,
-      "covered": 0,
+      "covered": 5,
       "partial": 0,
-      "missing": 26
+      "missing": 21
     },
     {
       "feature": "deepseek/chat",
@@ -419,9 +419,9 @@
       "feature": "deepseek/files",
       "dotnetProject": "Vercel.AI.DeepSeek",
       "inScope": 20,
-      "covered": 0,
+      "covered": 11,
       "partial": 0,
-      "missing": 20
+      "missing": 9
     },
     {
       "feature": "elevenlabs",
@@ -435,89 +435,89 @@
       "feature": "fal",
       "dotnetProject": "Vercel.AI.Fal",
       "inScope": 67,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 67
+      "missing": 66
     },
     {
       "feature": "fireworks",
       "dotnetProject": "Vercel.AI.Fireworks",
       "inScope": 58,
-      "covered": 0,
+      "covered": 22,
       "partial": 0,
-      "missing": 58
+      "missing": 36
     },
     {
       "feature": "fish-audio",
       "dotnetProject": "Vercel.AI.FishAudio",
       "inScope": 46,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 46
+      "missing": 39
     },
     {
       "feature": "gateway",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 425,
-      "covered": 0,
-      "partial": 1,
-      "missing": 424
+      "covered": 8,
+      "partial": 3,
+      "missing": 414
     },
     {
       "feature": "gateway/errors",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 113,
-      "covered": 0,
+      "covered": 48,
       "partial": 0,
-      "missing": 113
+      "missing": 65
     },
     {
       "feature": "gateway/tool",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 2,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 2
+      "missing": 0
     },
     {
       "feature": "gladia",
       "dotnetProject": "Vercel.AI.Gladia",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9
+      "missing": 0
     },
     {
       "feature": "gmicloud",
       "dotnetProject": "Vercel.AI.GmiCloud",
       "inScope": 12,
-      "covered": 0,
+      "covered": 12,
       "partial": 0,
-      "missing": 12
+      "missing": 0
     },
     {
       "feature": "google",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 513,
-      "covered": 0,
+      "covered": 191,
       "partial": 0,
-      "missing": 513
+      "missing": 322
     },
     {
       "feature": "google-vertex",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 131,
-      "covered": 0,
+      "covered": 38,
       "partial": 0,
-      "missing": 131
+      "missing": 93
     },
     {
       "feature": "google-vertex/anthropic",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 23,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 23
+      "missing": 16
     },
     {
       "feature": "google-vertex/anthropic/edge",
@@ -539,17 +539,17 @@
       "feature": "google-vertex/gemini-transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 9,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 9
+      "missing": 8
     },
     {
       "feature": "google-vertex/maas",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 22,
-      "covered": 0,
+      "covered": 10,
       "partial": 0,
-      "missing": 22
+      "missing": 12
     },
     {
       "feature": "google-vertex/maas/edge",
@@ -563,9 +563,9 @@
       "feature": "google-vertex/xai",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 17,
-      "covered": 0,
+      "covered": 7,
       "partial": 0,
-      "missing": 17
+      "missing": 10
     },
     {
       "feature": "google-vertex/xai/edge",
@@ -579,17 +579,17 @@
       "feature": "google/interactions",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 194,
-      "covered": 0,
+      "covered": 10,
       "partial": 0,
-      "missing": 194
+      "missing": 184
     },
     {
       "feature": "google/realtime",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 65,
-      "covered": 0,
+      "covered": 53,
       "partial": 0,
-      "missing": 65
+      "missing": 12
     },
     {
       "feature": "google/speech-translation",
@@ -603,113 +603,113 @@
       "feature": "google/transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 15,
-      "covered": 0,
+      "covered": 3,
       "partial": 0,
-      "missing": 15
+      "missing": 12
     },
     {
       "feature": "groq",
       "dotnetProject": "Vercel.AI.Groq",
       "inScope": 104,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 104
+      "missing": 95
     },
     {
       "feature": "huggingface",
       "dotnetProject": "Vercel.AI.HuggingFace",
       "inScope": 6,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 6
+      "missing": 0
     },
     {
       "feature": "huggingface/responses",
       "dotnetProject": "Vercel.AI.HuggingFace",
       "inScope": 32,
-      "covered": 0,
-      "partial": 0,
-      "missing": 32
+      "covered": 15,
+      "partial": 7,
+      "missing": 10
     },
     {
       "feature": "hume",
       "dotnetProject": "Vercel.AI.Hume",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9
+      "missing": 0
     },
     {
       "feature": "klingai",
       "dotnetProject": "Vercel.AI.KlingAI",
       "inScope": 107,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 107
+      "missing": 106
     },
     {
       "feature": "luma",
       "dotnetProject": "Vercel.AI.Luma",
       "inScope": 29,
-      "covered": 0,
+      "covered": 1,
       "partial": 0,
-      "missing": 29
+      "missing": 28
     },
     {
       "feature": "mcp/tool",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 270,
-      "covered": 0,
+      "covered": 20,
       "partial": 2,
-      "missing": 268
+      "missing": 248
     },
     {
       "feature": "mcp/tool/mcp-stdio",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 20,
-      "covered": 0,
+      "covered": 7,
       "partial": 1,
-      "missing": 19
+      "missing": 12
     },
     {
       "feature": "mcp/util",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9
+      "missing": 0
     },
     {
       "feature": "minimax",
       "dotnetProject": "Vercel.AI.MiniMax",
       "inScope": 128,
-      "covered": 0,
+      "covered": 4,
       "partial": 0,
-      "missing": 128
+      "missing": 124
     },
     {
       "feature": "mistral",
       "dotnetProject": "Vercel.AI.Mistral",
       "inScope": 114,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 114
+      "missing": 112
     },
     {
       "feature": "moonshotai",
       "dotnetProject": "Vercel.AI.Moonshot",
       "inScope": 156,
-      "covered": 0,
+      "covered": 4,
       "partial": 0,
-      "missing": 156
+      "missing": 152
     },
     {
       "feature": "open-responses",
       "dotnetProject": "Vercel.AI.OpenResponses",
       "inScope": 5,
-      "covered": 0,
+      "covered": 5,
       "partial": 0,
-      "missing": 5
+      "missing": 0
     },
     {
       "feature": "open-responses/responses",
@@ -723,97 +723,97 @@
       "feature": "openai",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 62,
-      "covered": 0,
-      "partial": 0,
-      "missing": 62
+      "covered": 20,
+      "partial": 1,
+      "missing": 41
     },
     {
       "feature": "openai-compatible",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 12,
-      "covered": 0,
-      "partial": 0,
-      "missing": 12
+      "covered": 10,
+      "partial": 1,
+      "missing": 1
     },
     {
       "feature": "openai-compatible/chat",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 170,
-      "covered": 0,
-      "partial": 1,
-      "missing": 169
+      "covered": 56,
+      "partial": 3,
+      "missing": 111
     },
     {
       "feature": "openai-compatible/completion",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 29,
-      "covered": 0,
-      "partial": 0,
-      "missing": 29
+      "covered": 28,
+      "partial": 1,
+      "missing": 0
     },
     {
       "feature": "openai-compatible/embedding",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 9,
-      "covered": 0,
+      "covered": 9,
       "partial": 0,
-      "missing": 9
+      "missing": 0
     },
     {
       "feature": "openai-compatible/image",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 26,
-      "covered": 0,
-      "partial": 0,
-      "missing": 26
+      "covered": 17,
+      "partial": 5,
+      "missing": 4
     },
     {
       "feature": "openai-compatible/utils",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 17,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 17
+      "missing": 0
     },
     {
       "feature": "openai/chat",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 149,
-      "covered": 0,
-      "partial": 0,
-      "missing": 149
+      "covered": 117,
+      "partial": 9,
+      "missing": 23
     },
     {
       "feature": "openai/completion",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 18,
-      "covered": 0,
-      "partial": 0,
-      "missing": 18
+      "covered": 7,
+      "partial": 1,
+      "missing": 10
     },
     {
       "feature": "openai/embedding",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 8,
-      "covered": 0,
-      "partial": 0,
-      "missing": 8
+      "covered": 5,
+      "partial": 2,
+      "missing": 1
     },
     {
       "feature": "openai/files",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 22,
-      "covered": 0,
+      "covered": 11,
       "partial": 0,
-      "missing": 22
+      "missing": 11
     },
     {
       "feature": "openai/image",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 31,
-      "covered": 0,
-      "partial": 0,
-      "missing": 31
+      "covered": 14,
+      "partial": 1,
+      "missing": 16
     },
     {
       "feature": "openai/live",
@@ -827,33 +827,33 @@
       "feature": "openai/realtime",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 18,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 18
+      "missing": 16
     },
     {
       "feature": "openai/responses",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 443,
-      "covered": 0,
-      "partial": 0,
-      "missing": 443
+      "covered": 10,
+      "partial": 3,
+      "missing": 430
     },
     {
       "feature": "openai/skills",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 6,
-      "covered": 0,
+      "covered": 3,
       "partial": 0,
-      "missing": 6
+      "missing": 3
     },
     {
       "feature": "openai/speech",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 10,
-      "covered": 0,
-      "partial": 0,
-      "missing": 10
+      "covered": 9,
+      "partial": 1,
+      "missing": 0
     },
     {
       "feature": "openai/speech-translation",
@@ -867,17 +867,17 @@
       "feature": "openai/transcription",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 30,
-      "covered": 0,
-      "partial": 0,
-      "missing": 30
+      "covered": 8,
+      "partial": 1,
+      "missing": 21
     },
     {
       "feature": "otel",
       "dotnetProject": "Vercel.AI.OpenTelemetry",
       "inScope": 222,
-      "covered": 0,
+      "covered": 43,
       "partial": 0,
-      "missing": 222
+      "missing": 179
     },
     {
       "feature": "perplexity",
@@ -899,9 +899,9 @@
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 650,
-      "covered": 0,
+      "covered": 147,
       "partial": 0,
-      "missing": 650
+      "missing": 503
     },
     {
       "feature": "provider-utils/to-json-schema/zod3-to-json-schema",
@@ -915,25 +915,25 @@
       "feature": "provider-utils/to-json-schema/zod3-to-json-schema/parsers",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 109,
-      "covered": 0,
+      "covered": 73,
       "partial": 0,
-      "missing": 109
+      "missing": 36
     },
     {
       "feature": "provider-utils/types",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 7,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 7
+      "missing": 1
     },
     {
       "feature": "provider/errors",
       "dotnetProject": "Vercel.AI.Provider",
       "inScope": 16,
-      "covered": 0,
+      "covered": 16,
       "partial": 0,
-      "missing": 16
+      "missing": 0
     },
     {
       "feature": "quiverai",
@@ -947,49 +947,49 @@
       "feature": "replicate",
       "dotnetProject": "Vercel.AI.Replicate",
       "inScope": 68,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 68
+      "missing": 66
     },
     {
       "feature": "revai",
       "dotnetProject": "Vercel.AI.RevAI",
       "inScope": 6,
-      "covered": 0,
+      "covered": 6,
       "partial": 0,
-      "missing": 6
+      "missing": 0
     },
     {
       "feature": "togetherai",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 34,
-      "covered": 0,
+      "covered": 14,
       "partial": 0,
-      "missing": 34
+      "missing": 20
     },
     {
       "feature": "togetherai/reranking",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 12,
-      "covered": 0,
+      "covered": 4,
       "partial": 0,
-      "missing": 12
+      "missing": 8
     },
     {
       "feature": "voyage",
       "dotnetProject": "Vercel.AI.Voyage",
       "inScope": 11,
-      "covered": 0,
+      "covered": 11,
       "partial": 0,
-      "missing": 11
+      "missing": 0
     },
     {
       "feature": "voyage/reranking",
       "dotnetProject": "Vercel.AI.Voyage",
       "inScope": 10,
-      "covered": 0,
+      "covered": 10,
       "partial": 0,
-      "missing": 10
+      "missing": 0
     },
     {
       "feature": "xai",
@@ -1003,17 +1003,17 @@
       "feature": "xai/files",
       "dotnetProject": "Vercel.AI.Xai",
       "inScope": 25,
-      "covered": 0,
+      "covered": 25,
       "partial": 0,
-      "missing": 25
+      "missing": 0
     },
     {
       "feature": "xai/realtime",
       "dotnetProject": "Vercel.AI.Xai",
       "inScope": 2,
-      "covered": 0,
+      "covered": 2,
       "partial": 0,
-      "missing": 2
+      "missing": 0
     },
     {
       "feature": "xai/responses",
@@ -1027,9 +1027,9 @@
       "feature": "zai",
       "dotnetProject": "Vercel.AI.Zai",
       "inScope": 15,
-      "covered": 0,
+      "covered": 11,
       "partial": 0,
-      "missing": 15
+      "missing": 4
     }
   ]
 }

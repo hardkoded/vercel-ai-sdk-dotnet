@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
+using Vercel.AI.OpenTelemetry;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AspNetCore;
@@ -16,20 +17,27 @@ public static class UIMessageStreamExtensions
     /// <summary>
     /// Returns a <c>text/event-stream</c> result a JavaScript <c>useChat</c> client can consume.
     /// Emitted chunks are start, text, reasoning, tool input/output, source-url, step boundaries, finish, and error.
+    /// Finish reasons use the protocol values <c>stop</c>, <c>length</c>, <c>content-filter</c>, <c>tool-calls</c>, <c>error</c>, and <c>other</c>.
     /// </summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">
     /// Optional idle interval, in milliseconds. Null sends no SSE comments.
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
-    public static IResult ToUIMessageStreamResult(this StreamTextResult result, int? keepAliveMs = null)
+    /// <param name="onError">
+    /// Optional mapper for <c>error</c> chunk text. Null writes <see cref="ErrorPart.Message"/>.
+    /// </param>
+    public static IResult ToUIMessageStreamResult(
+        this StreamTextResult result,
+        int? keepAliveMs = null,
+        Func<string, string>? onError = null)
     {
         if (result is null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        return new UIMessageStreamResult(result, keepAliveMs);
+        return new UIMessageStreamResult(result, keepAliveMs, onError);
     }
 }
 
@@ -42,15 +50,18 @@ public sealed class UIMessageStreamResult : IResult
 
     private readonly StreamTextResult _result;
     private readonly int? _keepAliveMs;
+    private readonly Func<string, string>? _onError;
 
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null)
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes the part message.</param>
+    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
         _keepAliveMs = keepAliveMs;
+        _onError = onError;
     }
 
     /// <inheritdoc />
@@ -61,10 +72,8 @@ public sealed class UIMessageStreamResult : IResult
             throw new ArgumentNullException(nameof(httpContext));
         }
 
-        httpContext.Response.ContentType = "text/event-stream";
-        httpContext.Response.Headers["Cache-Control"] = "no-cache";
-        httpContext.Response.Headers["x-vercel-ai-ui-message-stream"] = "v1";
-        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted).ConfigureAwait(false);
+        ApplyProtocolHeaders(httpContext.Response);
+        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError).ConfigureAwait(false);
     }
 
     /// <summary>Writes the UI message stream to <paramref name="destination"/>.</summary>
@@ -75,11 +84,13 @@ public sealed class UIMessageStreamResult : IResult
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes the part message.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
         int? keepAliveMs = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, string>? onError = null)
     {
         if (result is null)
         {
@@ -94,7 +105,7 @@ public sealed class UIMessageStreamResult : IResult
         ValidateKeepAlive(keepAliveMs);
 
         using var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, cancellationToken), keepAliveMs, cancellationToken);
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, cancellationToken), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -125,8 +136,62 @@ public sealed class UIMessageStreamResult : IResult
         return KeepAlive(source, keepAliveMs.Value, cancellationToken);
     }
 
+    /// <summary>Writes protocol headers for an AI SDK UI message response.</summary>
+    /// <param name="response">The HTTP response.</param>
+    internal static void ApplyProtocolHeaders(HttpResponse response)
+    {
+        response.ContentType = "text/event-stream";
+        response.Headers["Cache-Control"] = "no-cache";
+        response.Headers["x-vercel-ai-ui-message-stream"] = "v1";
+        response.Headers["x-accel-buffering"] = "no";
+        try
+        {
+            response.Headers["Connection"] = "keep-alive";
+        }
+        catch (InvalidOperationException)
+        {
+            // Kestrel owns the hop-by-hop Connection header.
+        }
+    }
+
+    /// <summary>Writes already-built UI message chunks as SSE, then <c>data: [DONE]</c>.</summary>
+    /// <param name="chunks">Chunk objects. Each one is one <c>data:</c> frame.</param>
+    /// <param name="destination">The response body or another writable stream.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public static async Task WriteChunksAsync(
+        IReadOnlyList<JsonObject> chunks,
+        Stream destination,
+        CancellationToken cancellationToken = default)
+    {
+        if (chunks is null)
+        {
+            throw new ArgumentNullException(nameof(chunks));
+        }
+
+        if (destination is null)
+        {
+            throw new ArgumentNullException(nameof(destination));
+        }
+
+        using var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
+        foreach (var chunk in chunks)
+        {
+            if (chunk is null)
+            {
+                throw new ArgumentException("Chunks cannot contain null.", nameof(chunks));
+            }
+
+            await writer.WriteAsync(Frame(chunk).AsMemory(), cancellationToken).ConfigureAwait(false);
+            await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        await writer.WriteAsync("data: [DONE]\n\n".AsMemory(), cancellationToken).ConfigureAwait(false);
+        await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private static async IAsyncEnumerable<string> ReadSseChunks(
         StreamTextResult result,
+        Func<string, string>? onError,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var messageId = JsonValues.GenerateId("msg_");
@@ -165,13 +230,15 @@ public sealed class UIMessageStreamResult : IResult
                     yield return Frame(new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoningId, ["delta"] = reasoning.Text });
                     break;
                 case ToolCallPart call:
-                    yield return Frame(new JsonObject
+                    var toolInput = new JsonObject
                     {
                         ["type"] = "tool-input-available",
                         ["toolCallId"] = call.ToolCall.ToolCallId,
                         ["toolName"] = call.ToolCall.ToolName,
                         ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
-                    });
+                    };
+                    AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
+                    yield return Frame(toolInput);
                     break;
                 case ToolResultPart toolResult:
                     if (toolResult.Result.IsError)
@@ -195,13 +262,19 @@ public sealed class UIMessageStreamResult : IResult
 
                     break;
                 case SourcePart source:
-                    yield return Frame(new JsonObject
+                    var sourceChunk = new JsonObject
                     {
                         ["type"] = "source-url",
                         ["sourceId"] = source.Source.Id,
                         ["url"] = source.Source.Url,
-                        ["title"] = source.Source.Title,
-                    });
+                    };
+                    if (source.Source.Title != null)
+                    {
+                        sourceChunk["title"] = source.Source.Title;
+                    }
+
+                    AddProviderMetadata(sourceChunk, source.Source.ProviderMetadata);
+                    yield return Frame(sourceChunk);
                     break;
                 case StepFinishPart:
                     if (textId != null)
@@ -216,15 +289,17 @@ public sealed class UIMessageStreamResult : IResult
                         reasoningId = null;
                     }
 
-                    if (stepOpen)
+                    if (!stepOpen)
                     {
-                        yield return Frame(new JsonObject { ["type"] = "finish-step" });
-                        stepOpen = false;
+                        yield return Frame(new JsonObject { ["type"] = "start-step" });
                     }
 
+                    yield return Frame(new JsonObject { ["type"] = "finish-step" });
+                    stepOpen = false;
                     break;
                 case ErrorPart error:
-                    yield return Frame(new JsonObject { ["type"] = "error", ["errorText"] = error.Message });
+                    var errorText = onError != null ? onError(error.Message) : error.Message;
+                    yield return Frame(new JsonObject { ["type"] = "error", ["errorText"] = errorText });
                     break;
                 case FinishPart finish:
                     if (textId != null)
@@ -248,7 +323,7 @@ public sealed class UIMessageStreamResult : IResult
                     yield return Frame(new JsonObject
                     {
                         ["type"] = "finish",
-                        ["finishReason"] = finish.FinishReason.ToString().ToLowerInvariant(),
+                        ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason),
                     });
                     break;
             }
@@ -367,6 +442,20 @@ public sealed class UIMessageStreamResult : IResult
         return "data: " + payload.ToJsonString() + "\n\n";
     }
 
+    private static void AddProviderMetadata(JsonObject payload, JsonElement? metadata)
+    {
+        if (metadata is not JsonElement element || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return;
+        }
+
+        var node = JsonNode.Parse(element.GetRawText());
+        if (node != null)
+        {
+            payload["providerMetadata"] = node;
+        }
+    }
+
     private static JsonNode ParseJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -376,7 +465,14 @@ public sealed class UIMessageStreamResult : IResult
 
         try
         {
-            return JsonNode.Parse(json) ?? JsonValue.Create(json)!;
+            var node = JsonNode.Parse(json);
+            if (node != null)
+            {
+                return node;
+            }
+
+            using var document = JsonDocument.Parse(json);
+            return JsonSerializer.SerializeToNode(document.RootElement)!;
         }
         catch (JsonException)
         {

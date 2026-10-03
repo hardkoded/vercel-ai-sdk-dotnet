@@ -24,6 +24,42 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <summary>Whether <paramref name="modelId"/> accepts JSON schema responses.</summary>
+    public static bool SupportsStructuredOutputs(string modelId)
+    {
+        if (string.IsNullOrEmpty(modelId))
+        {
+            return false;
+        }
+
+        if (modelId.StartsWith("kimi-k", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        switch (modelId)
+        {
+            case "moonshot-v1-8k":
+            case "moonshot-v1-32k":
+            case "moonshot-v1-128k":
+            case "moonshot-v1-auto":
+            case "moonshot-v1-8k-vision-preview":
+            case "moonshot-v1-32k-vision-preview":
+            case "moonshot-v1-128k-vision-preview":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
+    {
+        var model = base.CreateChatModel(modelId);
+        model.SupportsStructuredOutputs = SupportsStructuredOutputs(modelId);
+        return model;
+    }
+
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static new MoonshotProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
@@ -51,7 +87,12 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
-        
+        options.RequireApiKey = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+        options.IncludeUsage = true;
         return options;
     }
 }

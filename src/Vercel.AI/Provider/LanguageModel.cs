@@ -157,7 +157,7 @@ public abstract class GeneratedContent
 }
 
 /// <summary>Generated text.</summary>
-public sealed class GeneratedText : GeneratedContent
+public class GeneratedText : GeneratedContent
 {
     /// <summary>Creates text content.</summary>
     public GeneratedText(string text)
@@ -171,7 +171,7 @@ public sealed class GeneratedText : GeneratedContent
 }
 
 /// <summary>A function tool call.</summary>
-public sealed class GeneratedToolCall : GeneratedContent
+public class GeneratedToolCall : GeneratedContent
 {
     /// <summary>Creates a tool call.</summary>
     public GeneratedToolCall(string toolCallId, string toolName, string argumentsJson, JsonElement? providerMetadata = null)
@@ -197,7 +197,7 @@ public sealed class GeneratedToolCall : GeneratedContent
 }
 
 /// <summary>Reasoning text kept separate from the answer.</summary>
-public sealed class GeneratedReasoning : GeneratedContent
+public class GeneratedReasoning : GeneratedContent
 {
     /// <summary>Creates reasoning content.</summary>
     public GeneratedReasoning(string text)
@@ -237,7 +237,7 @@ public sealed class GeneratedSource : GeneratedContent
 }
 
 /// <summary>A generated file.</summary>
-public sealed class GeneratedFile : GeneratedContent
+public class GeneratedFile : GeneratedContent
 {
     /// <summary>Creates file content.</summary>
     public GeneratedFile(byte[] data, string mediaType)

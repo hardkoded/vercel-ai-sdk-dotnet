@@ -23,3 +23,7 @@ csharp_using_directive_placement = outside_namespace:warning
 # // SPDX-License-Identifier: Apache-2.0
 file_header_template = Copyright 2023 Vercel, Inc.\nSPDX-License-Identifier: Apache-2.0
 dotnet_diagnostic.IDE0073.severity = warning
+
+# xUnit forbids ConfigureAwait inside test methods. Library code still uses it.
+[tests/**.cs]
+dotnet_diagnostic.xUnit1030.severity = none

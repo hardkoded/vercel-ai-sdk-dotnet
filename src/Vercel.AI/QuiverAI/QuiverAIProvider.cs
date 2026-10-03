@@ -24,6 +24,12 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("QuiverAI does not provide language models.");
+    }
+
     /// <summary>Creates a provider.</summary>
     public static new QuiverAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
@@ -54,8 +60,8 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
         public string ModelId { get; }
         public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
         {
-            var path = "/images/generations".Replace("{model}", ModelId);
-            var body = new JsonObject { ["prompt"] = options.Prompt, ["model"] = ModelId };
+            var path = "/svgs/generations";
+            var body = new JsonObject { ["model"] = ModelId, ["prompt"] = options.Prompt, ["n"] = options.Count, ["stream"] = false };
             using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
             return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });

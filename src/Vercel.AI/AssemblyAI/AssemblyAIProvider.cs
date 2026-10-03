@@ -1,6 +1,8 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -18,10 +20,19 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.assemblyai.com";
 
+    private readonly HttpClient _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public AssemblyAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        throw new AiSdkException("AssemblyAI does not provide language models.");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -40,24 +51,69 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.RawAuthorization;
+        options.UserAgent = ProviderExchange.UserAgent("assemblyai");
         return options;
     }
 
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId) => new Transcription(this, modelId);
 
+    /// <summary>Uploads audio, then creates a transcript.</summary>
+    public Task<TranscriptionResult> TranscribeAsync(string modelId, AudioInput audio, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    {
+        return new Transcription(this, modelId).TranscribeAsync(audio, headers, cancellationToken);
+    }
+
     private sealed class Transcription : ITranscriptionModel
     {
         private readonly AssemblyAIProvider _provider;
         public Transcription(AssemblyAIProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "assemblyai";
+        public string Provider => "assemblyai.transcription";
         public string ModelId { get; }
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
-            var body = new JsonObject { ["model"] = ModelId, ["audio"] = Convert.ToBase64String(audio.Data) };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            var text = document.RootElement.TryGetProperty("text", out var value) ? value.GetString() ?? string.Empty : string.Empty;
-            return new TranscriptionResult(text);
+            return TranscribeAsync(audio, null, cancellationToken);
+        }
+
+        public async Task<TranscriptionResult> TranscribeAsync(AudioInput audio, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+        {
+            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
+            var uploadContent = new ByteArrayContent(audio.Data);
+            uploadContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            var uploaded = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"), uploadContent, merged, cancellationToken).ConfigureAwait(false);
+            string? audioUrl;
+            using (var uploadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(uploaded.Body) ? "{}" : uploaded.Body))
+            {
+                audioUrl = ReadString(uploadDocument.RootElement, "upload_url") ?? ReadString(uploadDocument.RootElement, "url");
+            }
+
+            var body = new JsonObject();
+            if (!string.IsNullOrEmpty(audioUrl))
+            {
+                body["audio_url"] = audioUrl;
+            }
+
+            if (!string.IsNullOrEmpty(ModelId))
+            {
+                body["speech_model"] = ModelId;
+            }
+
+            var transcript = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
+            using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(transcript.Body) ? "{}" : transcript.Body))
+            {
+                var text = ReadString(document.RootElement, "text") ?? string.Empty;
+                return new TranscriptionResult(text);
+            }
+        }
+
+        private static string? ReadString(JsonElement element, string name)
+        {
+            if (element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+            {
+                return value.GetString();
+            }
+
+            return null;
         }
     }
 

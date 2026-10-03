@@ -1,6 +1,7 @@
 // Copyright 2023 Vercel, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -24,6 +25,12 @@ public sealed class AzureOpenAIOptions
 
     /// <summary>API version query parameter.</summary>
     public string ApiVersion { get; set; } = "2024-10-21";
+
+    /// <summary>Microsoft Entra token provider. Each call receives a fresh bearer token.</summary>
+    public Func<string>? TokenProvider { get; set; }
+
+    /// <summary>Headers copied onto every request.</summary>
+    public Dictionary<string, string> Headers { get; } = new();
 }
 
 /// <summary>Azure OpenAI provider. Chat calls use the deployments route and the <c>api-key</c> header.</summary>
@@ -46,26 +53,44 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// <summary>Creates a provider.</summary>
     public static AzureOpenAIProvider Create(AzureOpenAIOptions? options = null, HttpMessageHandler? handler = null)
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        options ??= new AzureOpenAIOptions();
+        HttpMessageHandler? transport = handler;
+        if (options.TokenProvider != null && string.IsNullOrEmpty(options.ApiKey))
+        {
+            transport = new AzureEntraTokenHandler(options.TokenProvider, handler ?? new HttpClientHandler());
+        }
+
+        var client = transport is null ? new HttpClient() : new HttpClient(transport, disposeHandler: false);
         return new AzureOpenAIProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options)
     {
         options ??= new AzureOpenAIOptions();
+        if (!string.IsNullOrEmpty(options.ApiKey) && options.TokenProvider != null)
+        {
+            throw new ArgumentException("Both apiKey and tokenProvider were provided. Please use only one authentication method.");
+        }
+
         var baseUrl = ResolveBaseUrl(options);
-        return new OpenAICompatibleOptions
+        var prepared = new OpenAICompatibleOptions
         {
             ProviderName = ProviderId,
             BaseUrl = baseUrl,
-            ApiKey = options.ApiKey,
+            ApiKey = options.TokenProvider == null ? options.ApiKey : "azure-ad",
             ApiKeyEnvironmentVariable = "AZURE_API_KEY",
-            ApiKeyStyle = ApiKeyStyle.ApiKeyHeader,
+            ApiKeyStyle = options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
             ApiKeyHeaderName = "api-key",
             AzureApiVersion = options.ApiVersion,
             SupportsEmbeddings = true,
             SupportsImages = false,
         };
+        foreach (var pair in options.Headers)
+        {
+            prepared.Headers[pair.Key] = pair.Value;
+        }
+
+        return prepared;
     }
 
     private static string ResolveBaseUrl(AzureOpenAIOptions options)
@@ -95,6 +120,27 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     }
 }
 
+/// <summary>Replaces the placeholder bearer value with a token from the provider on every request.</summary>
+internal sealed class AzureEntraTokenHandler : DelegatingHandler
+{
+    private readonly Func<string> _tokenProvider;
+
+    /// <summary>Creates a handler that calls <paramref name="tokenProvider"/> for each request.</summary>
+    public AzureEntraTokenHandler(Func<string> tokenProvider, HttpMessageHandler inner)
+        : base(inner)
+    {
+        _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+    }
+
+    /// <inheritdoc />
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        request.Headers.Remove("api-key");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenProvider());
+        return base.SendAsync(request, cancellationToken);
+    }
+}
+
 /// <summary>Registers Azure OpenAI.</summary>
 public static class AzureOpenAIServiceCollectionExtensions
 {
@@ -106,6 +152,11 @@ public static class AzureOpenAIServiceCollectionExtensions
         {
             var options = new AzureOpenAIOptions();
             configure?.Invoke(options);
+            if (options.TokenProvider != null)
+            {
+                return AzureOpenAIProvider.Create(options);
+            }
+
             return new AzureOpenAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(AzureOpenAIProvider.ProviderId), options);
         });
         return services;
