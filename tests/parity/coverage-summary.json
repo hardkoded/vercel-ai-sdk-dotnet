@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3159,
-  "partial": 107,
-  "missing": 7803,
+  "covered": 3196,
+  "partial": 108,
+  "missing": 7765,
   "features": [
     {
       "feature": "ai/agent",
@@ -451,9 +451,9 @@
       "feature": "fish-audio",
       "dotnetProject": "Vercel.AI.FishAudio",
       "inScope": 46,
-      "covered": 7,
-      "partial": 0,
-      "missing": 39
+      "covered": 44,
+      "partial": 1,
+      "missing": 1
     },
     {
       "feature": "gateway",
