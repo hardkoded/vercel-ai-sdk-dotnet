@@ -326,6 +326,28 @@ public static class OpenAICompatibleTransforms
         }
     }
 
+    /// <summary>
+    /// Reads a Baseten error. The Model APIs send <c>error</c> as a string; dedicated deployments send an
+    /// object with a <c>message</c>.
+    /// </summary>
+    public static string? BasetenError(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            var error = (JsonNode.Parse(body!) as JsonObject)?["error"];
+            return error is JsonObject envelope ? Text(envelope["message"]) : Text(error);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Reads a Cerebras error message from the top-level <c>message</c> field.</summary>
     public static string? CerebrasError(string? body)
     {
