@@ -417,7 +417,7 @@ public sealed class McpProtocolTests
     public void Ndjson_write_requires_a_stream()
     {
         using var document = JsonDocument.Parse("{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"test\",\"params\":{}}");
-        var error = Assert.Throws<AiSdkException>(() => McpNdjson.Write(null, document.RootElement));
+        var error = Assert.Throws<MCPClientError>(() => McpNdjson.Write(null, document.RootElement));
         Assert.Contains("StdioClientTransport not connected", error.Message);
     }
 

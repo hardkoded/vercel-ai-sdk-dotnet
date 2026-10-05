@@ -55,6 +55,37 @@ public sealed class McpTests
         Assert.Equal(0, tools.GetArrayLength());
     }
 
+    [Fact]
+    public async Task Http_transport_throws_mcp_client_error_with_http_metadata()
+    {
+        var handler = new ScriptedMcpHandler(HttpStatusCode.ServiceUnavailable, "text/plain", "Service Unavailable");
+        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        using var parameters = JsonDocument.Parse("{}");
+
+        var error = await Assert.ThrowsAsync<MCPClientError>(() => transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None));
+
+        Assert.Equal(503, error.StatusCode);
+        Assert.Equal("https://example.test/mcp", error.Url);
+        Assert.Equal("Service Unavailable", error.ResponseBody);
+        Assert.Null(error.Code);
+    }
+
+    [Fact]
+    public async Task Http_transport_throws_mcp_client_error_with_json_rpc_code()
+    {
+        var body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Method not found\",\"data\":{\"method\":\"tools/list\"}}}";
+        var handler = new ScriptedMcpHandler(HttpStatusCode.OK, "application/json", body);
+        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        using var parameters = JsonDocument.Parse("{}");
+
+        var error = await Assert.ThrowsAsync<MCPClientError>(() => transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None));
+
+        Assert.Equal("Method not found", error.Message);
+        Assert.Equal(-32601, error.Code);
+        Assert.Equal("{\"method\":\"tools/list\"}", error.Data!.Value.GetRawText());
+        Assert.Null(error.StatusCode);
+    }
+
     private sealed class FakeTransport : IMcpTransport
     {
         public List<string> Methods { get; } = new();
@@ -78,6 +109,18 @@ public sealed class McpTests
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8, "text/event-stream"),
+            };
+            return Task.FromResult(response);
+        }
+    }
+
+    private sealed class ScriptedMcpHandler(HttpStatusCode status, string mediaType, string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, mediaType),
             };
             return Task.FromResult(response);
         }
