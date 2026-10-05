@@ -61,11 +61,11 @@ public sealed class PrimaryEndpointParityTests
     {
         var handler = new ParityHandler(call => call.Uri.AbsolutePath.EndsWith("/v2/upload", StringComparison.Ordinal)
             ? ParityHandler.Json("{\"upload_url\":\"https://cdn.example/audio\"}")
-            : ParityHandler.Json("{\"text\":\"hello\"}"));
+            : ParityHandler.Json("{\"id\":\"t1\",\"status\":\"completed\",\"text\":\"hello\"}"));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = AssemblyAIProvider.Create(options, handler);
-        await provider.TranscribeAsync("best", new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav"), new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" }, CancellationToken.None).ConfigureAwait(false);
+        await provider.Transcription("best").TranscribeAsync(new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav"), new AssemblyAITranscriptionRequest { Headers = new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" } }, CancellationToken.None).ConfigureAwait(false);
         var call = handler.Calls[0];
         Assert.Equal("https://api.assemblyai.com/v2/upload", call.Uri.AbsoluteUri);
         Assert.Equal("test-api-key", call.Header("Authorization"));

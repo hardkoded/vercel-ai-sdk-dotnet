@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2690,
+  "covered": 2710,
   "partial": 78,
-  "missing": 8301,
+  "missing": 8281,
   "features": [
     {
       "feature": "ai/agent",
@@ -323,9 +323,9 @@
       "feature": "assemblyai",
       "dotnetProject": "Vercel.AI.AssemblyAI",
       "inScope": 21,
-      "covered": 1,
+      "covered": 21,
       "partial": 0,
-      "missing": 20
+      "missing": 0
     },
     {
       "feature": "azure",
