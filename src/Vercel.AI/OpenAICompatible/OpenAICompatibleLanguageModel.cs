@@ -134,7 +134,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             ? finish.GetString()
             : null;
         var usage = root.TryGetProperty("usage", out var usageElement)
-            ? OpenAICompatibleChat.ConvertUsage(usageElement)
+            ? OpenAICompatibleChat.ConvertUsage(TransformUsage(usageElement))
             : OpenAICompatibleUsage.Missing;
         var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
         var finishReason = MapFinish(raw);
@@ -369,7 +369,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             yield return new ErrorStreamPart("Response stream ended without a finish reason.");
         }
 
-        var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
+        var converted = OpenAICompatibleChat.ConvertUsage(usageElement is { } streamed ? TransformUsage(streamed) : null);
         var finishReason = !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
         if (dropToolCalls && finishRaw == "tool_calls")
         {
@@ -704,6 +704,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
     private Uri RequestUri()
     {
         return Endpoint ?? _provider.ChatUri(ModelId);
+    }
+
+    private JsonElement TransformUsage(JsonElement usage)
+    {
+        var transform = _provider.Options.TransformUsage;
+        return transform == null || usage.ValueKind != JsonValueKind.Object ? usage : transform(usage);
     }
 
     private FinishReason MapFinish(string? raw)

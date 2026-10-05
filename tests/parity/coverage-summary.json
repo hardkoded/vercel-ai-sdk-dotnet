@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2733,
+  "covered": 2754,
   "partial": 76,
-  "missing": 8260,
+  "missing": 8239,
   "features": [
     {
       "feature": "ai/agent",
@@ -403,9 +403,9 @@
       "feature": "deepinfra",
       "dotnetProject": "Vercel.AI.DeepInfra",
       "inScope": 26,
-      "covered": 5,
+      "covered": 26,
       "partial": 0,
-      "missing": 21
+      "missing": 0
     },
     {
       "feature": "deepseek/chat",
