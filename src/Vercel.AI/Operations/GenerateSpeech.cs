@@ -93,12 +93,22 @@ public interface ISpeechCaller
 public sealed class GeneratedAudio
 {
     /// <summary>Creates generated audio.</summary>
+    /// <exception cref="InvalidResponseDataException">The media type has an empty subtype, such as <c>audio/</c>.</exception>
     public GeneratedAudio(byte[] data, string mediaType)
     {
         Data = data ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mp3";
-        var slash = MediaType.IndexOf('/');
-        Format = slash > 0 && MediaType != "audio/mpeg" ? MediaType.Substring(slash + 1) : "mp3";
+        Format = "mp3";
+        var parts = MediaType.Split('/');
+        if (parts.Length == 2 && MediaType != "audio/mpeg")
+        {
+            if (parts[1].Length == 0)
+            {
+                throw new InvalidResponseDataException(MediaType, "Could not determine audio format from media type: " + MediaType);
+            }
+
+            Format = parts[1];
+        }
     }
 
     /// <summary>Audio bytes.</summary>
