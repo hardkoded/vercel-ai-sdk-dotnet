@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3287,
-  "partial": 111,
-  "missing": 7671,
+  "covered": 3306,
+  "partial": 112,
+  "missing": 7651,
   "features": [
     {
       "feature": "ai/agent",
@@ -963,9 +963,9 @@
       "feature": "togetherai",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 34,
-      "covered": 14,
-      "partial": 0,
-      "missing": 20
+      "covered": 33,
+      "partial": 1,
+      "missing": 0
     },
     {
       "feature": "togetherai/reranking",

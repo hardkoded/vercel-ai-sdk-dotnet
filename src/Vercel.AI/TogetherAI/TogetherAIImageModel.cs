@@ -14,13 +14,18 @@ public sealed class TogetherAIImageModel : IImageModel
 {
     private const string NonDiffusionModelId = "google/gemini-3-pro-image";
 
-    private readonly TogetherAIProvider _provider;
+    // Diffusion-only provider options that non-diffusion models reject.
+    private static readonly string[] DiffusionOptions = { "steps", "guidance", "negative_prompt", "disable_safety_checker" };
 
-    /// <summary>Creates an image model.</summary>
-    public TogetherAIImageModel(TogetherAIProvider provider, string modelId)
+    private readonly TogetherAIProvider _provider;
+    private readonly Func<DateTimeOffset>? _clock;
+
+    /// <summary>Creates an image model. <paramref name="clock"/> sets <see cref="LastResponseTimestamp"/> and defaults to UTC now.</summary>
+    public TogetherAIImageModel(TogetherAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _clock = clock;
     }
 
     /// <inheritdoc />
@@ -28,6 +33,9 @@ public sealed class TogetherAIImageModel : IImageModel
 
     /// <inheritdoc />
     public string ModelId { get; }
+
+    /// <summary>Together accepts one image per call.</summary>
+    public int MaxImagesPerCall => 1;
 
     /// <summary>Random seed. Omitted for non-diffusion models.</summary>
     public int? Seed { get; set; }
@@ -50,6 +58,9 @@ public sealed class TogetherAIImageModel : IImageModel
     /// <summary>HTTP response headers from the most recent call.</summary>
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
+    /// <summary>Time the most recent call started.</summary>
+    public DateTimeOffset? LastResponseTimestamp { get; private set; }
+
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
@@ -60,6 +71,7 @@ public sealed class TogetherAIImageModel : IImageModel
                 "Together AI does not support mask-based image editing. Use FLUX Kontext models (e.g., black-forest-labs/FLUX.1-kontext-pro) with a reference image and descriptive prompt instead.");
         }
 
+        var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
@@ -106,9 +118,18 @@ public sealed class TogetherAIImageModel : IImageModel
         }
 
         OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
+        if (nonDiffusion)
+        {
+            foreach (var name in DiffusionOptions)
+            {
+                body.Remove(name);
+            }
+        }
+
         var response = await _provider.PostJsonAsync(_provider.ImagesUri(), body.ToJsonString(), _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
         LastWarnings = warnings;
         LastResponseHeaders = response.Headers;
+        LastResponseTimestamp = timestamp;
         return ReadImages(response.Body);
     }
 
