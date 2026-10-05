@@ -453,6 +453,113 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should send correct multipart request with purpose", Coverage = UpstreamCoverage.Covered)]
+    public async Task SendsFileMultipart()
+    {
+        var capture = await UploadBytes("assistants", null);
+        Assert.Equal("assistants", PartText(capture, "purpose"));
+        var file = Assert.Single(capture.Parts, part => part.Name == "file");
+        Assert.Equal(new byte[] { 1, 2, 3 }, file.Data);
+        Assert.Equal("application/octet-stream", file.MediaType);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should return providerMetadata from response", Coverage = UpstreamCoverage.Covered)]
+    public async Task ReturnsUploadMetadata()
+    {
+        var capture = new OpenAICapture { ResponseJson = UploadResponse };
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", "assistants", null, CancellationToken.None);
+        Assert.Equal("file-abc123", metadata.Id);
+        Assert.Equal("test.csv", metadata.Filename);
+        Assert.Equal("assistants", metadata.Purpose);
+        Assert.Equal(1024, metadata.Bytes);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), metadata.CreatedAt);
+        Assert.Equal("processed", metadata.Status);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should omit expires_after fields when no expiry is requested", Coverage = UpstreamCoverage.Covered)]
+    public async Task OmitsFileExpiryFields()
+    {
+        var capture = await UploadBytes("assistants", null);
+        Assert.DoesNotContain(capture.Parts, part => part.Name.StartsWith("expires_after", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile::should pass auth headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesFileAuthHeaders()
+    {
+        var capture = new OpenAICapture { ResponseJson = UploadResponse };
+        var provider = OpenAIUpstream.Provider(capture, options =>
+        {
+            options.Organization = "test-org";
+            options.Project = "test-project";
+            options.Headers["Custom-Header"] = "custom-value";
+        });
+        await new OpenAIFileStore(provider).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", "assistants", null, CancellationToken.None);
+        Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "Authorization"));
+        Assert.Equal("test-org", OpenAIUpstream.Header(capture, "OpenAI-Organization"));
+        Assert.Equal("test-project", OpenAIUpstream.Header(capture, "OpenAI-Project"));
+        Assert.Equal("custom-value", OpenAIUpstream.Header(capture, "Custom-Header"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should stream a multipart upload with fields preceding the file part", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamsFileUploadAfterFields()
+    {
+        var capture = new OpenAICapture { ResponseJson = UploadResponse.Replace("file-abc123", "file-stream1") };
+        using var data = new MemoryStream(Encoding.UTF8.GetBytes("{\"a\":1}\n{\"b\":2}\n"));
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(data, "batch.jsonl", "application/jsonl", "batch", 172800, CancellationToken.None);
+        Assert.Equal("file-stream1", metadata.Id);
+        Assert.StartsWith("multipart/form-data; boundary=", OpenAIUpstream.Header(capture, "Content-Type"), StringComparison.Ordinal);
+        Assert.Contains("boundary=\"ai-sdk-multipart-", OpenAIUpstream.Header(capture, "Content-Type"), StringComparison.Ordinal);
+        Assert.Equal(new[] { "purpose", "expires_after[anchor]", "expires_after[seconds]", "file" }, capture.Parts.Select(part => part.Name));
+        Assert.Equal("batch", PartText(capture, "purpose"));
+        Assert.Equal("created_at", PartText(capture, "expires_after[anchor]"));
+        Assert.Equal("172800", PartText(capture, "expires_after[seconds]"));
+        Assert.Equal("batch.jsonl", capture.Parts[3].FileName);
+        Assert.Equal("{\"a\":1}\n{\"b\":2}\n", Encoding.UTF8.GetString(capture.Parts[3].Data));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should default the filename to \"blob\" on filename-less stream uploads", Coverage = UpstreamCoverage.Covered)]
+    public async Task DefaultsStreamFileNameToBlob()
+    {
+        var capture = await UploadStream(null);
+        Assert.Equal("blob", Assert.Single(capture.Parts, part => part.Name == "file").FileName);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (stream data)::should omit expiry fields on stream uploads without expiresAfter", Coverage = UpstreamCoverage.Covered)]
+    public async Task OmitsStreamFileExpiryFields()
+    {
+        var capture = await UploadStream("batch.jsonl");
+        Assert.DoesNotContain(capture.Parts, part => part.Name.StartsWith("expires_after", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - uploadFile (result fields)::should expose byteSize/createdAt/expiresAt from the upload response", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExposesUploadResultFields()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file-exp1\",\"object\":\"file\",\"bytes\":2048,\"created_at\":1700000000,\"filename\":\"batch.jsonl\",\"purpose\":\"batch\",\"status\":\"processed\",\"expires_at\":1700172800}" };
+        var metadata = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("batch.jsonl", new byte[] { 1, 2, 3 }, "application/jsonl", "batch", 172800, CancellationToken.None);
+        Assert.Equal(2048, metadata.Bytes);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700000000), metadata.CreatedAt);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1700172800), metadata.ExpiresAt);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - downloadFile::should download file content as a stream", Coverage = UpstreamCoverage.Partial, Note = "The GET request and the content match. DownloadAsync returns the bytes, not a stream.")]
+    public async Task DownloadsFileContent()
+    {
+        var capture = new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes("{\"result\":\"ok\"}\n"), ResponseMediaType = "application/octet-stream" };
+        var download = await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).DownloadAsync(new OpenAIFileReference("file-abc123"), CancellationToken.None);
+        Assert.Equal("GET", capture.Method);
+        Assert.EndsWith("/files/file-abc123/content", capture.Uri, StringComparison.Ordinal);
+        Assert.Equal("{\"result\":\"ok\"}\n", Encoding.UTF8.GetString(download.Data));
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should send files as multipart form data", Coverage = UpstreamCoverage.Covered)]
     public async Task UploadsSkillFiles()
     {
@@ -817,6 +924,29 @@ public sealed class OpenAIMediaUpstreamTests
         }
 
         return await OpenAIUpstream.Fields(model.Build(call)).ConfigureAwait(false);
+    }
+
+    private const string UploadResponse =
+        "{\"id\":\"file-abc123\",\"object\":\"file\",\"bytes\":1024,\"created_at\":1700000000,\"filename\":\"test.csv\",\"purpose\":\"assistants\",\"status\":\"processed\",\"expires_at\":null}";
+
+    private static string PartText(OpenAICapture capture, string name)
+    {
+        return Encoding.UTF8.GetString(Assert.Single(capture.Parts, part => part.Name == name).Data);
+    }
+
+    private static async Task<OpenAICapture> UploadBytes(string? purpose, int? seconds)
+    {
+        var capture = new OpenAICapture { ResponseJson = UploadResponse };
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync("data.bin", new byte[] { 1, 2, 3 }, "application/octet-stream", purpose, seconds, CancellationToken.None).ConfigureAwait(false);
+        return capture;
+    }
+
+    private static async Task<OpenAICapture> UploadStream(string? fileName)
+    {
+        var capture = new OpenAICapture { ResponseJson = UploadResponse };
+        using var data = new MemoryStream(Encoding.UTF8.GetBytes("x"));
+        await new OpenAIFileStore(OpenAIUpstream.Provider(capture)).UploadAsync(data, fileName, "application/jsonl", "batch", null, CancellationToken.None).ConfigureAwait(false);
+        return capture;
     }
 
     private static async Task<OpenAICapture> Upload(string? purpose, int? seconds)
