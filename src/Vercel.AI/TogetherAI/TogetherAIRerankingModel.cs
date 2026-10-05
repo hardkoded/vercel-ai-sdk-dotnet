@@ -9,7 +9,7 @@ using Vercel.AI.Provider;
 namespace Vercel.AI.TogetherAI;
 
 /// <summary>Together reranking model. Posts <c>/rerank</c> and reads <c>relevance_score</c>.</summary>
-public sealed class TogetherAIRerankingModel : IRerankingModel
+public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRerankCaller
 {
     private readonly TogetherAIProvider _provider;
 
@@ -38,38 +38,65 @@ public sealed class TogetherAIRerankingModel : IRerankingModel
     /// <inheritdoc />
     public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
     {
+        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents ?? Array.Empty<string>()), query, topN, null, null, cancellationToken);
+        var response = await DoRerankAsync(call, cancellationToken).ConfigureAwait(false);
+        return new RerankResult(response.Ranking.Select(rank => new RerankItem(rank.Index, rank.RelevanceScore)).ToList());
+    }
+
+    /// <summary>Reranks text or object documents. <c>togetherai.rankFields</c> is sent as <c>rank_fields</c>.</summary>
+    public async Task<Operations.RerankModelResponse> DoRerankAsync(Operations.RerankModelCall call, CancellationToken cancellationToken)
+    {
         var docs = new JsonArray();
-        if (documents != null)
+        foreach (var document in call.Documents.Values)
         {
-            foreach (var document in documents)
-            {
-                docs.Add(document);
-            }
+            docs.Add(JsonSerializer.SerializeToNode(document));
         }
 
         var body = new JsonObject
         {
             ["model"] = ModelId,
             ["documents"] = docs,
-            ["query"] = query ?? string.Empty,
-            ["top_n"] = topN,
+            ["query"] = call.Query,
+            ["top_n"] = call.TopN,
             ["return_documents"] = false,
         };
-        var response = await _provider.PostJsonAsync(_provider.RerankUri(), body.ToJsonString(), _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
+        if (call.ProviderOptions is { ValueKind: JsonValueKind.Object } options
+            && options.TryGetProperty("togetherai", out var together) && together.ValueKind == JsonValueKind.Object
+            && together.TryGetProperty("rankFields", out var rankFields))
+        {
+            body["rank_fields"] = JsonNode.Parse(rankFields.GetRawText());
+        }
+
+        var headers = _provider.CreateHeaders(Headers);
+        if (call.Headers != null)
+        {
+            foreach (var header in call.Headers)
+            {
+                headers[header.Key] = header.Value;
+            }
+        }
+
+        var response = await _provider.PostJsonAsync(_provider.RerankUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
         LastResponseBody = response.Body;
         LastResponseHeaders = response.Headers;
         using var parsed = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        var items = new List<RerankItem>();
-        if (parsed.RootElement.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
+        var root = parsed.RootElement;
+        var ranking = new List<Operations.RerankModelRank>();
+        if (root.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
         {
             foreach (var result in results.EnumerateArray())
             {
                 var index = result.TryGetProperty("index", out var indexElement) && indexElement.TryGetInt32(out var parsedIndex) ? parsedIndex : 0;
                 var score = result.TryGetProperty("relevance_score", out var scoreElement) && scoreElement.TryGetDouble(out var parsedScore) ? parsedScore : 0;
-                items.Add(new RerankItem(index, score));
+                ranking.Add(new Operations.RerankModelRank(index, score));
             }
         }
 
-        return new RerankResult(items);
+        return new Operations.RerankModelResponse(ranking, response: new Operations.ProviderResponse(response.Headers, root.Clone(), String(root, "id"), modelId: String(root, "model")));
+    }
+
+    private static string? String(JsonElement element, string name)
+    {
+        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 }

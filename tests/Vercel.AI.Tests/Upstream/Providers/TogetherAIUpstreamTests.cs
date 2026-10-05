@@ -2,9 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream;
 using Vercel.AI.TogetherAI;
 
 namespace Vercel.AI.Tests;
@@ -229,6 +232,104 @@ public sealed class TogetherAIUpstreamTests
         var result = await model.DoRerankAsync("query", new[] { "{\"title\":\"a\"}" }, 1, CancellationToken.None);
         Assert.Equal("{\"title\":\"a\"}", JsonNode.Parse(capture.Requests[0].Body)!["documents"]![0]!.GetValue<string>());
         Assert.Equal(0.5, result.Items[0].Score);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "json documents::should send request with stringified json documents", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_sends_object_documents_and_rank_fields()
+    {
+        var capture = RerankCapture();
+        await Rerank(capture, ObjectDocuments());
+        JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"documents\":[{\"example\":\"sunny day at the beach\"},{\"example\":\"rainy day in the city\"}],\"model\":\"Salesforce/Llama-Rank-v1\",\"query\":\"rainy day\",\"rank_fields\":[\"example\"],\"return_documents\":false,\"top_n\":2}");
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "json documents::should send request with the correct headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_sends_bearer_and_json_headers_for_object_documents()
+    {
+        var capture = RerankCapture();
+        await Rerank(capture, ObjectDocuments());
+        Assert.Equal("Bearer test-api-key", capture.Requests[0].Headers["Authorization"]);
+        Assert.StartsWith("application/json", capture.Requests[0].Headers["Content-Type"]);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "json documents::should return result with warnings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_no_warnings_for_object_documents()
+    {
+        Assert.Empty((await Rerank(RerankCapture(), ObjectDocuments())).Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "text documents::should return result without warnings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_no_warnings_for_text_documents()
+    {
+        Assert.Empty((await Rerank(RerankCapture(), TextDocuments())).Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "json documents::should not return provider metadata (use response body instead)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_no_provider_metadata_for_object_documents()
+    {
+        Assert.Null((await Rerank(RerankCapture(), ObjectDocuments())).ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "text documents::should not return provider metadata (use response body instead)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_no_provider_metadata_for_text_documents()
+    {
+        Assert.Null((await Rerank(RerankCapture(), TextDocuments())).ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "json documents::should return result with the correct response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_the_response_for_object_documents()
+    {
+        await AssertRerankResponse(ObjectDocuments());
+    }
+
+    [Fact]
+    [UpstreamTest(RerankTests + "text documents::should return result with the correct response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rerank_returns_the_response_for_text_documents()
+    {
+        await AssertRerankResponse(TextDocuments());
+    }
+
+    private const string RerankTests = "packages/togetherai/src/reranking/togetherai-reranking-model.test.ts::doRerank > ";
+
+    private const string RerankFixture = "{\"id\":\"oGs6Zt9-62bZhn-99529372487b1b0a\",\"object\":\"rerank\",\"model\":\"Salesforce/Llama-Rank-v1\",\"results\":[{\"index\":0,\"relevance_score\":0.6475887154399037,\"document\":{}},{\"index\":5,\"relevance_score\":0.6323295373206566,\"document\":{}}],\"usage\":{\"prompt_tokens\":2966,\"completion_tokens\":0,\"total_tokens\":2966}}";
+
+    private static UpstreamCapture RerankCapture()
+    {
+        return new UpstreamCapture { ResponseBody = RerankFixture };
+    }
+
+    private static RerankModelDocuments ObjectDocuments()
+    {
+        return new RerankModelDocuments("object", new object?[] { new JsonObject { ["example"] = "sunny day at the beach" }, new JsonObject { ["example"] = "rainy day in the city" } });
+    }
+
+    private static RerankModelDocuments TextDocuments()
+    {
+        return new RerankModelDocuments("text", new object?[] { "sunny day at the beach", "rainy day in the city" });
+    }
+
+    private static async Task AssertRerankResponse(RerankModelDocuments documents)
+    {
+        var capture = RerankCapture();
+        capture.ResponseHeaders["x-request-id"] = "req-1";
+        var response = (await Rerank(capture, documents)).Response!;
+        Assert.Equal("oGs6Zt9-62bZhn-99529372487b1b0a", response.Id);
+        Assert.Equal("Salesforce/Llama-Rank-v1", response.ModelId);
+        Assert.Equal("req-1", response.Headers!["x-request-id"]);
+        JsonAssert.Equal(response.Body!.Value, RerankFixture);
+    }
+
+    private static Task<RerankModelResponse> Rerank(UpstreamCapture capture, RerankModelDocuments documents)
+    {
+        var model = (TogetherAIRerankingModel)TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture).RerankingModel("Salesforce/Llama-Rank-v1");
+        using var options = JsonDocument.Parse("{\"togetherai\":{\"rankFields\":[\"example\"]}}");
+        return model.DoRerankAsync(new RerankModelCall(documents, "rainy day", 2, options.RootElement.Clone(), null, CancellationToken.None), CancellationToken.None);
     }
 
     private static TogetherAIImageModel Image(UpstreamCapture capture, string modelId)
