@@ -16,7 +16,7 @@ public sealed class BasetenUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Embed(capture, "https://model.example/sync", "embed");
-        await model.DoEmbedAsync(new[] { "hi" }, CancellationToken.None);
+        await model.DoEmbedAsync(new[] { "hi" }, null, CancellationToken.None);
         Assert.Equal("https://model.example/sync/v1/embeddings", capture.Requests[0].Uri!.AbsoluteUri);
     }
 
@@ -26,7 +26,7 @@ public sealed class BasetenUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Embed(capture, "https://model.example/sync/v1", "embed");
-        await model.DoEmbedAsync(new[] { "hi" }, CancellationToken.None);
+        await model.DoEmbedAsync(new[] { "hi" }, null, CancellationToken.None);
         Assert.Equal("https://model.example/sync/v1/embeddings", capture.Requests[0].Uri!.AbsoluteUri);
     }
 
@@ -41,7 +41,7 @@ public sealed class BasetenUpstreamTests
         }
 
         var model = Embed(new UpstreamCapture(), "https://model.example/sync/v1", "embed");
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => model.DoEmbedAsync(values, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => model.DoEmbedAsync(values, null, CancellationToken.None));
         Assert.Contains("128", error.Message);
     }
 

@@ -23,7 +23,7 @@ public sealed class OpenAIProviderUpstreamTests
                 ResponseJson = "{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":1}}",
             };
             var provider = OpenAIUpstream.Provider(capture);
-            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal("https://api.openai.com/v1/embeddings", capture.Uri);
         }).ConfigureAwait(false);
     }
@@ -38,7 +38,7 @@ public sealed class OpenAIProviderUpstreamTests
                 ResponseJson = "{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":1}}",
             };
             var provider = OpenAIUpstream.Provider(capture);
-            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal("https://proxy.openai.example/v1/embeddings", capture.Uri);
         }).ConfigureAwait(false);
     }
@@ -53,7 +53,7 @@ public sealed class OpenAIProviderUpstreamTests
                 ResponseJson = "{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":1}}",
             };
             var provider = OpenAIUpstream.Provider(capture, options => options.BaseUrl = "https://option.openai.example/v1/");
-            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+            await provider.EmbeddingModel("text-embedding-3-small").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal("https://option.openai.example/v1/embeddings", capture.Uri);
         }).ConfigureAwait(false);
     }

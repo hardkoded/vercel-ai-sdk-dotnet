@@ -111,7 +111,7 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
         {
             var result = await EmbedAsync(new AlibabaEmbeddingRequest(values), cancellationToken).ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);

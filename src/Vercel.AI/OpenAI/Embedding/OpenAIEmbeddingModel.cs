@@ -46,7 +46,7 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
     public bool SupportsParallelCalls => true;
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
         var result = await EmbedAsync(values, null, null, null, cancellationToken).ConfigureAwait(false);
         return result.Result;

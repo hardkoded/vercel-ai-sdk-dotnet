@@ -33,7 +33,7 @@ public sealed class MistralUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":4}}" };
         var model = (OpenAICompatibleEmbeddingModel)MistralProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).EmbeddingModel("mistral-embed");
-        var result = await model.DoEmbedAsync(new[] { "hello" }, CancellationToken.None);
+        var result = await model.DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None);
         Assert.Equal(0.1f, result.Embeddings[0][0]);
         Assert.Equal(4, result.Tokens);
         Assert.Equal("https://api.mistral.ai/v1/embeddings", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));

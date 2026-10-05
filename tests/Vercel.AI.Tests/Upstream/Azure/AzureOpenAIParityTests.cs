@@ -124,7 +124,7 @@ public sealed class AzureOpenAIParityTests
     {
         var handler = new UpstreamRecordingHandler("{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":2,\"total_tokens\":2}}");
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, handler);
-        await provider.EmbeddingModel("my-embedding").DoEmbedAsync(new[] { "sunny day at the beach" }, CancellationToken.None);
+        await provider.EmbeddingModel("my-embedding").DoEmbedAsync(new[] { "sunny day at the beach" }, null, CancellationToken.None);
         Assert.Contains("api-version=2024-10-21", handler.Uri);
         Assert.Contains("openai/deployments/my-embedding/embeddings", handler.Uri);
     }
