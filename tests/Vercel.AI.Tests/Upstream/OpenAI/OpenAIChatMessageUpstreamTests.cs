@@ -14,6 +14,7 @@ public sealed class OpenAIChatMessageUpstreamTests
 {
     private const string Prefix = "packages/openai/src/chat/convert-to-openai-chat-messages.test.ts::";
 
+    [Fact]
     [UpstreamTest(Prefix + "system messages::should forward system messages", Coverage = UpstreamCoverage.Covered)]
     public void ForwardsSystemMessages()
     {
@@ -22,6 +23,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Empty(result.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "system messages::should convert system messages to developer messages when requested", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsSystemMessagesToDeveloper()
     {
@@ -29,6 +31,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"developer\",\"content\":\"You are a helpful assistant.\"}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "system messages::should add a prompt cache breakpoint to a system message", Coverage = UpstreamCoverage.Covered)]
     public void AddsSystemPromptCacheBreakpoint()
     {
@@ -38,6 +41,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"system\",\"content\":[{\"type\":\"text\",\"text\":\"You are a helpful assistant.\",\"prompt_cache_breakpoint\":{\"mode\":\"explicit\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "system messages::should remove system messages when requested", Coverage = UpstreamCoverage.Covered)]
     public void RemovesSystemMessages()
     {
@@ -47,6 +51,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("system messages are removed for this model", result.Warnings[0].Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages::should convert messages with only a text part to a string content", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsSingleTextToString()
     {
@@ -54,6 +59,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":\"Hello\"}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages::should add prompt cache breakpoints to supported content blocks", Coverage = UpstreamCoverage.Covered)]
     public void AddsPromptCacheBreakpoints()
     {
@@ -75,6 +81,7 @@ public sealed class OpenAIChatMessageUpstreamTests
             + "]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages::should convert messages with image parts", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsImageParts()
     {
@@ -82,6 +89,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,AAECAw==\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages::should convert messages with Uint8Array image parts to data URLs", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsImageBytesToDataUrls()
     {
@@ -89,6 +97,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/jpeg;base64,/9j/4A==\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages::should add image detail when specified through extension", Coverage = UpstreamCoverage.Covered)]
     public void AddsImageDetail()
     {
@@ -96,6 +105,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,AAECAw==\",\"detail\":\"low\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should throw for unsupported mime types", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForUnsupportedMimeTypes()
     {
@@ -103,6 +113,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("file part media type application/something", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should throw for URL data", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForAudioUrls()
     {
@@ -110,24 +121,28 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("audio file parts with URLs", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should add audio content for audio/wav file parts", Coverage = UpstreamCoverage.Covered)]
     public void AddsWavAudio()
     {
         EqualAudio("audio/wav", "wav");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should add audio content for audio/mpeg file parts", Coverage = UpstreamCoverage.Covered)]
     public void AddsMpegAudio()
     {
         EqualAudio("audio/mpeg", "mp3");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should add audio content for audio/mp3 file parts", Coverage = UpstreamCoverage.Covered)]
     public void AddsMp3Audio()
     {
         EqualAudio("audio/mp3", "mp3");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should convert messages with PDF file parts", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsPdfFileParts()
     {
@@ -135,6 +150,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"file\":{\"filename\":\"document.pdf\",\"file_data\":\"data:application/pdf;base64,AQIDBAU=\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should convert messages with binary PDF file parts", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsBinaryPdfFileParts()
     {
@@ -142,6 +158,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"file\":{\"filename\":\"document.pdf\",\"file_data\":\"data:application/pdf;base64,AQIDBAU=\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should convert messages with PDF file parts using provider reference", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsPdfProviderReference()
     {
@@ -149,6 +166,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"file\":{\"file_id\":\"file-pdf-12345\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should convert messages with image parts using provider reference", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsImageProviderReference()
     {
@@ -156,6 +174,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"file\":{\"file_id\":\"file-img-12345\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should use default filename for PDF file parts when not provided", Coverage = UpstreamCoverage.Covered)]
     public void UsesDefaultPdfFilename()
     {
@@ -163,6 +182,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"file\":{\"filename\":\"part-0.pdf\",\"file_data\":\"data:application/pdf;base64,AQIDBAU=\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should throw error for unsupported file types", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForPlainTextFiles()
     {
@@ -170,6 +190,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("file part media type text/plain", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts::should throw error for file URLs", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForPdfUrls()
     {
@@ -177,18 +198,21 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("PDF file parts with URLs", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::detects image subtype from inline bytes for top-level \"image\"", Coverage = UpstreamCoverage.Covered)]
     public void DetectsImageSubtype()
     {
         EqualDetected("image");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::normalizes image/* wildcard via detection", Coverage = UpstreamCoverage.Covered)]
     public void NormalizesImageWildcard()
     {
         EqualDetected("image/*");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::passes through URL source for top-level-only image (provider accepts raw URL)", Coverage = UpstreamCoverage.Covered)]
     public void PassesImageUrl()
     {
@@ -196,6 +220,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"user\",\"content\":[{\"type\":\"image_url\",\"image_url\":{\"url\":\"https://example.com/x.png\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::throws for top-level-only application (PDF requires full resolution) with URL source", Coverage = UpstreamCoverage.Covered)]
     public void ThrowsForApplicationUrl()
     {
@@ -203,12 +228,14 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("file of media type \"application\" must specify subtype since it is not passed as inline bytes", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "user messages > file parts > top-level-only media type resolution::preserves full image/png pass-through", Coverage = UpstreamCoverage.Covered)]
     public void PreservesPngMediaType()
     {
         EqualDetected("image/png");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should add a prompt cache breakpoint to assistant text content", Coverage = UpstreamCoverage.Covered)]
     public void AddsAssistantPromptCacheBreakpoint()
     {
@@ -222,6 +249,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Cached assistant content\",\"prompt_cache_breakpoint\":{\"mode\":\"explicit\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should add a prompt cache breakpoint to tool text content", Coverage = UpstreamCoverage.Covered)]
     public void AddsToolPromptCacheBreakpoint()
     {
@@ -237,6 +265,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"tool\",\"tool_call_id\":\"cached-tool\",\"content\":[{\"type\":\"text\",\"text\":\"Cached tool content\",\"prompt_cache_breakpoint\":{\"mode\":\"explicit\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should stringify arguments to tool calls", Coverage = UpstreamCoverage.Covered)]
     public void StringifiesToolCallArguments()
     {
@@ -253,6 +282,7 @@ public sealed class OpenAIChatMessageUpstreamTests
             "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{\\\"foo\\\":\\\"bar123\\\"}\"}}]},{\"role\":\"tool\",\"tool_call_id\":\"quux\",\"content\":\"{\\\"oof\\\":\\\"321rab\\\"}\"}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should send empty string content for assistant messages with no tool calls", Coverage = UpstreamCoverage.Covered)]
     public void SendsEmptyAssistantContent()
     {
@@ -263,6 +293,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"assistant\",\"content\":\"\"}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should default missing tool call input to an empty object", Coverage = UpstreamCoverage.Covered)]
     public void DefaultsMissingToolInput()
     {
@@ -276,6 +307,7 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(result.Messages, "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{}\"}}]}]");
     }
 
+    [Fact]
     [UpstreamTest(Prefix + "tool calls::should normalize malformed tool call input and preserve the tool error", Coverage = UpstreamCoverage.Covered)]
     public void NormalizesMalformedToolInput()
     {

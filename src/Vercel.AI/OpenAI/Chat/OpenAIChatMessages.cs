@@ -226,8 +226,7 @@ public static class OpenAIChatMessages
             bytes = System.Convert.FromBase64String(part.Base64);
         }
 
-        var fullMediaType = OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline && part.Url == null);
-        var topLevel = OpenAIJson.TopLevel(fullMediaType);
+        var topLevel = OpenAIJson.TopLevel(mediaType);
         if (topLevel == "image")
         {
             string url;
@@ -238,7 +237,7 @@ public static class OpenAIChatMessages
             else
             {
                 var payload = part.Base64 ?? System.Convert.ToBase64String(bytes ?? Array.Empty<byte>());
-                url = "data:" + fullMediaType + ";base64," + payload;
+                url = "data:" + OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline) + ";base64," + payload;
             }
 
             var image = new JsonObject
@@ -263,6 +262,7 @@ public static class OpenAIChatMessages
                 throw new AiSdkException("audio file parts with URLs");
             }
 
+            var fullMediaType = OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline);
             string? format = fullMediaType switch
             {
                 "audio/wav" => "wav",
@@ -288,9 +288,10 @@ public static class OpenAIChatMessages
             return audio;
         }
 
-        if (fullMediaType != "application/pdf")
+        var fileMediaType = OpenAIJson.ResolveFullMediaType(mediaType, bytes, inline && part.Url == null);
+        if (fileMediaType != "application/pdf")
         {
-            throw new AiSdkException("file part media type " + fullMediaType);
+            throw new AiSdkException("file part media type " + fileMediaType);
         }
 
         if (!string.IsNullOrEmpty(part.Url))

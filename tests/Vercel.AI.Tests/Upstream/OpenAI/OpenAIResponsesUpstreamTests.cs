@@ -15,18 +15,21 @@ public sealed class OpenAIResponsesUpstreamTests
     private const string Tools = "packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > function tools strict mode::";
     private const string ToolCalls = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > tool calls::";
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode when strict is true", Coverage = UpstreamCoverage.Covered)]
     public void PassesStrictTrue()
     {
         Assert.True(Strict(true));
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode when strict is false", Coverage = UpstreamCoverage.Covered)]
     public void PassesStrictFalse()
     {
         Assert.False(Strict(false));
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should not include strict mode when strict is undefined", Coverage = UpstreamCoverage.Partial, Note = "The port sends strict false when a tool leaves strict unset.")]
     public void SendsFalseWhenStrictIsUnset()
     {
@@ -35,6 +38,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal(5, tool.Count);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode for multiple tools with different strict settings", Coverage = UpstreamCoverage.Covered)]
     public void PassesMixedStrict()
     {
@@ -49,6 +53,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.False(prepared.Tools[2]!["strict"]!.GetValue<bool>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should remove unsupported settings for o1", Coverage = UpstreamCoverage.Covered)]
     public async Task RemovesUnsupportedO1Settings()
     {
@@ -71,6 +76,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.DoesNotContain("stream", capture.Body, StringComparison.Ordinal);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should keep temperature and topP for gpt-5.1 models when reasoning effort is none", Coverage = UpstreamCoverage.Covered)]
     public void KeepsSamplingForGpt51None()
     {
@@ -88,6 +94,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Null(prepared.Body["stream"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send model id, settings, and input", Coverage = UpstreamCoverage.Covered)]
     public void SendsModelSettingsAndInput()
     {
@@ -108,6 +115,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should warn about GPT-5.6 reasoning controls on non-reasoning models", Coverage = UpstreamCoverage.Partial, Note = "reasoningEffort on a non-reasoning model warns and is omitted. The port warning text is reasoningEffort is not supported for non-reasoning models.")]
     public void WarnsForReasoningOnNonReasoningModels()
     {
@@ -120,6 +128,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal("reasoningEffort is not supported for non-reasoning models", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate::should throw a descriptive error when the response has no output", Coverage = UpstreamCoverage.Covered)]
     public async Task ThrowsWhenOutputIsMissing()
     {
@@ -130,6 +139,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal(500, exception.StatusCode);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsUsage()
     {
@@ -146,6 +156,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal("preserved", usage.Raw.Value.GetProperty("output_tokens_details").GetProperty("future_output_detail")[0].GetString());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should preserve orchestration usage fields in raw", Coverage = UpstreamCoverage.Covered)]
     public async Task PreservesOrchestrationUsage()
     {
@@ -155,6 +166,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal(25, usage.Raw.Value.GetProperty("output_tokens_details").GetProperty("orchestration_output_tokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should generate text", Coverage = UpstreamCoverage.Partial, Note = "The text is answer text. Generated text does not carry the Responses item id.")]
     public async Task GeneratesText()
     {
@@ -164,6 +176,7 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1741257730), result.ResponseTimestamp);
     }
 
+    [Fact]
     [UpstreamTest(ToolCalls + "should have tool-calls finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task UsesToolCallsFinishReason()
     {

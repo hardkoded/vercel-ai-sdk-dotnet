@@ -105,6 +105,15 @@ internal static class OpenAIUpstream
     }
 }
 
+/// <summary>Keeps tests that set <c>OPENAI_BASE_URL</c> from racing other OpenAI tests.</summary>
+[CollectionDefinition("OpenAIEnvironment", DisableParallelization = true)]
+public sealed class OpenAIEnvironmentCollection
+{
+}
+
+/// <summary>One part of a captured multipart request.</summary>
+internal sealed record OpenAIMultipartPart(string Name, string? FileName, string? MediaType, byte[] Data);
+
 /// <summary>Records one OpenAI HTTP call and returns a scripted body.</summary>
 internal sealed class OpenAICapture : HttpMessageHandler
 {
@@ -115,6 +124,8 @@ internal sealed class OpenAICapture : HttpMessageHandler
     public string Body { get; private set; } = string.Empty;
 
     public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public List<OpenAIMultipartPart> Parts { get; } = new();
 
     public string ResponseJson { get; set; } = OpenAIUpstream.ChatOk;
 
@@ -149,6 +160,20 @@ internal sealed class OpenAICapture : HttpMessageHandler
             foreach (var header in request.Content.Headers)
             {
                 Headers[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
+        Parts.Clear();
+        if (request.Content is MultipartFormDataContent multipart)
+        {
+            foreach (var part in multipart)
+            {
+                var disposition = part.Headers.ContentDisposition;
+                Parts.Add(new OpenAIMultipartPart(
+                    disposition?.Name?.Trim('"') ?? string.Empty,
+                    disposition?.FileName?.Trim('"'),
+                    part.Headers.ContentType?.MediaType,
+                    await part.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false)));
             }
         }
 
