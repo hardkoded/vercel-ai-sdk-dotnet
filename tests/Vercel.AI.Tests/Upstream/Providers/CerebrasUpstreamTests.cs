@@ -52,6 +52,74 @@ public sealed class CerebrasUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doGenerate > finish reason normalization::preserves the captured first tool-call step", Coverage = UpstreamCoverage.Covered)]
+    public async Task A_json_mode_tool_call_without_text_is_kept()
+    {
+        var result = await Chat(FixtureCapture("cerebras-structured-output-tools.1.json")).DoGenerateAsync(JsonMode(), CancellationToken.None);
+        Assert.Collection(
+            result.Content,
+            part => Assert.Equal("The user is asking about a \"magic number\". I see that I have access to a function called \"nonUsefulTool\" which \"returns a magic number\". This seems like exactly what the user is asking for. Let me call this function to get the magic number for them.", Assert.IsType<GeneratedReasoning>(part).Text),
+            part => AssertToolCall(part, "85e4fd267"));
+        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Equal("tool_calls", result.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doGenerate > finish reason normalization::drops the captured repeated tool call when structured output text is present", Coverage = UpstreamCoverage.Covered)]
+    public async Task A_json_mode_tool_call_after_text_is_dropped()
+    {
+        var result = await Chat(FixtureCapture("cerebras-structured-output-tools.2.json")).DoGenerateAsync(JsonMode(), CancellationToken.None);
+        Assert.Collection(
+            result.Content,
+            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text),
+            part => Assert.Equal(SecondStepReasoning, Assert.IsType<GeneratedReasoning>(part).Text));
+        Assert.Equal(FinishReason.Stop, result.FinishReason);
+        Assert.Equal("tool_calls", result.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doGenerate > finish reason normalization::preserves the captured mixed response without structured output", Coverage = UpstreamCoverage.Covered)]
+    public async Task A_tool_call_after_text_is_kept_without_json_mode()
+    {
+        var result = await Chat(FixtureCapture("cerebras-structured-output-tools.2.json")).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
+        Assert.Collection(
+            result.Content,
+            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text),
+            part => Assert.Equal(SecondStepReasoning, Assert.IsType<GeneratedReasoning>(part).Text),
+            part => AssertToolCall(part, "0babb4517"));
+        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Equal("tool_calls", result.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::normalizes captured streamed structured output with tool calls finish reason", Coverage = UpstreamCoverage.Partial, Note = "Finish reason, provider metadata, and token counts match. NoCacheInputTokens stays null because cache write is unset.")]
+    public async Task A_json_mode_stream_with_text_finishes_with_stop()
+    {
+        var parts = await UpstreamChat.Read(Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None));
+        var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("tool_calls", finish.RawFinishReason);
+        var metadata = finish.ProviderMetadata!.Value.GetProperty("cerebras");
+        Assert.Equal(0, metadata.GetProperty("acceptedPredictionTokens").GetInt32());
+        Assert.Equal(0, metadata.GetProperty("rejectedPredictionTokens").GetInt32());
+        Assert.Equal(433, finish.Usage.InputTokens);
+        Assert.Equal(256, finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.CacheWriteTokens);
+        Assert.Equal(122, finish.Usage.OutputTokens);
+        Assert.Equal(108, finish.Usage.ReasoningTokens);
+        Assert.Equal(14, finish.Usage.TextTokens);
+        Assert.Equal(555, finish.Usage.Raw!.Value.GetProperty("total_tokens").GetInt32());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::drops the spurious tool calls from a mixed structured-output stream", Coverage = UpstreamCoverage.Covered)]
+    public async Task A_json_mode_stream_with_text_drops_tool_calls()
+    {
+        var parts = await UpstreamChat.Read(Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None));
+        Assert.Empty(parts.OfType<ToolCallStreamPart>());
+    }
+
+    [Fact]
     [UpstreamTest("packages/cerebras/src/cerebras-provider.test.ts::CerebrasProvider > createCerebras::should create a CerebrasProvider instance with default options", Coverage = UpstreamCoverage.Covered)]
     public async Task Default_options_target_the_cerebras_api()
     {
@@ -135,6 +203,41 @@ public sealed class CerebrasUpstreamTests
         var model = CerebrasProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).CreateChatModel("gpt-oss-120b");
         Assert.Equal("cerebras.chat", model.Provider);
         Assert.Equal("gpt-oss-120b", model.ModelId);
+    }
+
+    private const string SecondStepReasoning = "The function returned 2026 as the magic number. Now I need to return this as a JSON object matching the specified schema. The schema requires a \"result\" property of type string. So I should wrap the magic number in a string.";
+
+    private static LanguageModelCallOptions JsonMode()
+    {
+        var options = UpstreamChat.Prompt();
+        options.ProviderOptions = UpstreamChat.Bag("cerebras", "{\"responseFormat\":\"json\"}");
+        return options;
+    }
+
+    private static void AssertToolCall(GeneratedContent part, string id)
+    {
+        var call = Assert.IsType<GeneratedToolCall>(part);
+        Assert.Equal(id, call.ToolCallId);
+        Assert.Equal("nonUsefulTool", call.ToolName);
+        Assert.Equal("{}", call.ArgumentsJson);
+    }
+
+    private static UpstreamCapture FixtureCapture(string name)
+    {
+        return new UpstreamCapture { ResponseBody = File.ReadAllText(Fixture(name)) };
+    }
+
+    private static UpstreamCapture StreamFixtureCapture()
+    {
+        var chunks = File.ReadAllLines(Fixture("cerebras-structured-output-tools.1.chunks.txt"))
+            .Where(line => line.Trim().Length > 0)
+            .ToArray();
+        return new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(chunks) };
+    }
+
+    private static string Fixture(string name)
+    {
+        return Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
     }
 
     private static OpenAICompatibleLanguageModel Chat(UpstreamCapture capture)

@@ -83,6 +83,9 @@ public class OpenAICompatibleOptions
     /// <summary>When true, a JSON schema is sent as <c>json_schema</c> instead of <c>json_object</c>.</summary>
     public bool SupportsStructuredOutputs { get; set; }
 
+    /// <summary>When true, a JSON-mode response that has text drops its tool calls, and a <c>tool_calls</c> finish becomes stop.</summary>
+    public bool JsonTextOverridesToolCalls { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 
