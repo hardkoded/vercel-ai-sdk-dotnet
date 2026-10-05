@@ -1446,7 +1446,7 @@ internal static class AnthropicAssertions
         var again = new List<LanguageModelStreamPart>();
         again.AddRange(duplicate.Push("{\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"m\"}}"));
         again.AddRange(duplicate.Push("{\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"m\"}}"));
-        Assert.IsType<ResponseMetadataStreamPart>(Assert.Single(again));
+        Assert.Collection(again, part => Assert.IsType<ResponseMetadataStreamPart>(part), part => Assert.IsType<CustomStreamPart>(part));
     }
 
     public static void ToolResultAndCitations()
