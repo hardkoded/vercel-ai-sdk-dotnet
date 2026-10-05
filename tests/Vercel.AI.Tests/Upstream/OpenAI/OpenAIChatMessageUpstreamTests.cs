@@ -6,6 +6,7 @@ using System.Text.Json;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Tests;
 
@@ -322,6 +323,29 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(
             result.Messages,
             "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{}\"}}]},{\"role\":\"tool\",\"tool_call_id\":\"quux\",\"content\":\"Invalid input: JSON parsing failed\"}]");
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "user messages > file parts::should throw when provider reference does not contain openai", Coverage = UpstreamCoverage.Covered)]
+    public void RejectsAProviderReferenceWithoutOpenAI()
+    {
+        var part = new OpenAIChatPromptPart("file") { MediaType = "application/pdf", ProviderReference = new Dictionary<string, string> { ["anthropic"] = "file-xyz" } };
+        var exception = Assert.Throws<NoSuchProviderReferenceError>(() => OpenAIChatMessages.Convert(new[] { User(part) }));
+        Assert.Equal("No provider reference found for provider 'openai'. Available providers: anthropic", exception.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "tool calls::should handle different tool output types", Coverage = UpstreamCoverage.Covered)]
+    public void SendsTextAndErrorToolOutputsAsContent()
+    {
+        var result = OpenAIChatMessages.Convert(new ModelMessage[]
+        {
+            new ToolModelMessage("text-tool", "text-tool", "Hello world", isError: false),
+            new ToolModelMessage("error-tool", "error-tool", "Something went wrong", isError: true),
+        });
+        OpenAIUpstream.Equal(
+            result.Messages,
+            "[{\"role\":\"tool\",\"tool_call_id\":\"text-tool\",\"content\":\"Hello world\"},{\"role\":\"tool\",\"tool_call_id\":\"error-tool\",\"content\":\"Something went wrong\"}]");
     }
 
     private static void EqualAudio(string mediaType, string format)

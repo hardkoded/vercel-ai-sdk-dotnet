@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAI;
 
@@ -69,6 +70,9 @@ public sealed class OpenAIChatPromptPart
 
     /// <summary>OpenAI file id.</summary>
     public string? FileId { get; set; }
+
+    /// <summary>File ids by provider. The <c>openai</c> entry is sent as the file id; a missing entry throws.</summary>
+    public IReadOnlyDictionary<string, string>? ProviderReference { get; set; }
 
     /// <summary>File name for PDF data.</summary>
     public string? FileName { get; set; }
@@ -207,12 +211,15 @@ public static class OpenAIChatMessages
             return TextBlock(part.Text ?? string.Empty, breakpoint);
         }
 
-        if (!string.IsNullOrEmpty(part.FileId))
+        var fileId = part.ProviderReference != null
+            ? ProviderReferences.ResolveProviderReference(part.ProviderReference, "openai")
+            : part.FileId;
+        if (!string.IsNullOrEmpty(fileId))
         {
             var reference = new JsonObject
             {
                 ["type"] = "file",
-                ["file"] = new JsonObject { ["file_id"] = part.FileId },
+                ["file"] = new JsonObject { ["file_id"] = fileId },
             };
             AddBreakpoint(reference, breakpoint);
             return reference;
