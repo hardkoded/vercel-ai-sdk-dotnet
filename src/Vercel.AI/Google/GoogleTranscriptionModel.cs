@@ -2,14 +2,16 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Google;
 
 /// <summary>Gemini transcription. Unary models post to the Interactions API.</summary>
-public sealed class GoogleTranscriptionModel : ITranscriptionModel
+public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
 {
     private readonly GoogleProvider _provider;
 
@@ -36,21 +38,107 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel
     }
 
     /// <inheritdoc />
+    public string SpecificationVersion
+    {
+        get { return "v4"; }
+    }
+
+    /// <summary>False. The Gemini Live WebSocket is not opened by this port.</summary>
+    public bool CanStream
+    {
+        get { return false; }
+    }
+
+    /// <inheritdoc />
     public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    {
+        var call = new TranscriptionModelCall(audio.Data, audio.MediaType, default, new Dictionary<string, string>(), cancellationToken);
+        var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
+        return new TranscriptionResult(result.Text, null);
+    }
+
+    /// <summary>
+    /// Transcribes audio through the Interactions API. <c>google</c> provider options become the
+    /// <c>transcription_config</c>, and <c>word_info</c> annotations become word segments.
+    /// </summary>
+    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
     {
         if (IsLive(ModelId))
         {
             throw new ArgumentException("Model '" + ModelId + "' only supports streaming transcription. Use a unary model such as 'gemini-3.5-transcribe'.", nameof(ModelId));
         }
 
-        var body = BuildRequest(ModelId, audio, null);
-        using var document = await _provider.Http.SendJsonAsync(
+        var timestamp = _provider.Clock();
+        var body = BuildRequest(ModelId, new AudioInput(call.Audio, call.MediaType, null), TranscriptionConfig(call.ProviderOptions));
+        var headers = _provider.Headers();
+        foreach (var header in call.Headers)
+        {
+            headers[header.Key] = header.Value;
+        }
+
+        var response = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "interactions"),
             GoogleJson.Write(body),
-            _provider.Headers(),
+            headers,
             cancellationToken).ConfigureAwait(false);
-        return new TranscriptionResult(ReadText(document.RootElement), null);
+        using var document = JsonDocument.Parse(response.Body);
+        var root = document.RootElement;
+        var text = string.Empty;
+        var segments = new List<TranscriptSegment>();
+        if (root.TryGetProperty("steps", out var steps) && steps.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var step in steps.EnumerateArray())
+            {
+                if (!step.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                foreach (var part in content.EnumerateArray())
+                {
+                    if (GoogleJson.String(part, "type") != "text" || GoogleJson.String(part, "text") is not { } partText)
+                    {
+                        continue;
+                    }
+
+                    text += partText;
+                    if (!part.TryGetProperty("annotations", out var annotations) || annotations.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    foreach (var annotation in annotations.EnumerateArray())
+                    {
+                        var word = GoogleJson.String(annotation, "text");
+                        var start = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(annotation, "start_offset"));
+                        var end = GoogleVertexSpeechTranscriptionModel.ParseDuration(GoogleJson.String(annotation, "end_offset"));
+                        if (GoogleJson.String(annotation, "type") == "word_info" && word != null && start != null && end != null)
+                        {
+                            segments.Add(new TranscriptSegment(word, start.Value, end.Value));
+                        }
+                    }
+                }
+            }
+        }
+
+        JsonElement? metadata = null;
+        if (GoogleJson.TryObject(root, "usage", out var usage))
+        {
+            metadata = JsonSerializer.SerializeToElement(new JsonObject { ["google"] = new JsonObject { ["usage"] = JsonNode.Parse(usage.GetRawText()) } });
+        }
+
+        return new TranscriptionModelResult(
+            text,
+            segments,
+            providerMetadata: metadata,
+            response: new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp.UtcDateTime, modelId: ModelId));
+    }
+
+    /// <summary>Returns null. The Gemini Live WebSocket is not opened by this port.</summary>
+    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    {
+        return Task.FromResult<TranscriptionStreamStart?>(null);
     }
 
     /// <summary>Builds the Interactions transcription body.</summary>
@@ -92,31 +180,45 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel
         };
     }
 
-    private static string ReadText(System.Text.Json.JsonElement root)
+    /// <summary>Maps <c>google</c> options onto <c>transcription_config</c>, or null when none are set.</summary>
+    private static JsonObject? TranscriptionConfig(JsonElement providerOptions)
     {
-        var text = string.Empty;
-        if (!root.TryGetProperty("steps", out var steps) || steps.ValueKind != System.Text.Json.JsonValueKind.Array)
+        if (!GoogleJson.TryObject(providerOptions, "google", out var options))
         {
-            return text;
+            return null;
         }
 
-        foreach (var step in steps.EnumerateArray())
+        var config = new JsonObject();
+        if (options.TryGetProperty("languageCodes", out var languages))
         {
-            if (!step.TryGetProperty("content", out var content) || content.ValueKind != System.Text.Json.JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var part in content.EnumerateArray())
-            {
-                if (GoogleJson.String(part, "type") == "text")
-                {
-                    text += GoogleJson.String(part, "text");
-                }
-            }
+            config["language_codes"] = GoogleJson.Clone(languages);
         }
 
-        return text;
+        if (options.TryGetProperty("customVocabulary", out var vocabulary))
+        {
+            config["custom_vocabulary"] = GoogleJson.Clone(vocabulary);
+        }
+
+        var mode = GoogleJson.String(options, "mode");
+        var diarization = options.TryGetProperty("diarization", out var diarizationValue) && diarizationValue.ValueKind == JsonValueKind.True;
+        var wordTimestamp = options.TryGetProperty("wordTimestamp", out var wordValue) && wordValue.ValueKind == JsonValueKind.True;
+        if (mode != null || diarization || wordTimestamp)
+        {
+            var modeObject = new JsonObject { ["type"] = (mode ?? "VERBATIM").ToLowerInvariant() };
+            if (diarization)
+            {
+                modeObject["diarization_mode"] = "speaker";
+            }
+
+            if (wordTimestamp)
+            {
+                modeObject["timestamp_granularities"] = new JsonArray("word");
+            }
+
+            config["mode"] = modeObject;
+        }
+
+        return config.Count > 0 ? config : null;
     }
 }
 
