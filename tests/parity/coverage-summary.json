@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3086,
+  "covered": 3103,
   "partial": 107,
-  "missing": 7876,
+  "missing": 7859,
   "features": [
     {
       "feature": "ai/agent",
@@ -427,9 +427,9 @@
       "feature": "elevenlabs",
       "dotnetProject": "Vercel.AI.ElevenLabs",
       "inScope": 35,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 35
+      "missing": 18
     },
     {
       "feature": "fal",
