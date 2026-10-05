@@ -58,6 +58,7 @@ public sealed class CerebrasProvider : OpenAICompatibleProvider
             options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
         }
         options.SupportsStructuredOutputs = true;
+        options.JsonTextOverridesToolCalls = true;
         options.TransformRequestBody = OpenAICompatibleTransforms.Cerebras;
         options.SelectErrorMessage = OpenAICompatibleTransforms.CerebrasError;
         return options;

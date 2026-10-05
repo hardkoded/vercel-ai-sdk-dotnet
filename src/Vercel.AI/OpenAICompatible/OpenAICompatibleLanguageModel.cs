@@ -137,9 +137,17 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             ? OpenAICompatibleChat.ConvertUsage(usageElement)
             : OpenAICompatibleUsage.Missing;
         var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
+        var finishReason = MapFinish(raw);
+        if (prepared.JsonTextOverridesToolCalls && raw == "tool_calls" && content.Any(part => part is GeneratedText { Text.Length: > 0 }))
+        {
+            // The model can repeat a tool call after valid JSON text. The text is the final answer.
+            content.RemoveAll(part => part is GeneratedToolCall);
+            finishReason = FinishReason.Stop;
+        }
+
         return new LanguageModelGenerateResult(
             content,
-            MapFinish(raw),
+            finishReason,
             usage.Usage,
             raw,
             prepared.Warnings,
@@ -171,6 +179,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         JsonElement? usageElement = null;
         var metadataSent = false;
         var textOpen = false;
+        var sawText = false;
         var reasoningOpen = false;
         var failed = false;
 
@@ -289,6 +298,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                     }
                     else
                     {
+                        sawText |= fragment.Text.Length > 0;
                         foreach (var part in OpenText(ref textOpen, ref reasoningOpen, fragment.Text))
                         {
                             yield return part;
@@ -331,8 +341,14 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         pending.Clear();
+        var dropToolCalls = prepared.JsonTextOverridesToolCalls && sawText;
         foreach (var call in toolCalls.Flush())
         {
+            if (dropToolCalls)
+            {
+                continue;
+            }
+
             if (signatures.TryGetValue(call.ToolCallId, out var signature))
             {
                 yield return new ToolCallStreamPart(
@@ -355,6 +371,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
         var finishReason = !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
+        if (dropToolCalls && finishRaw == "tool_calls")
+        {
+            finishReason = FinishReason.Stop;
+        }
+
         yield return new FinishStreamPart(
             finishReason,
             converted.Usage,
@@ -406,6 +427,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         AddSampling(body, options);
         AddResponseFormat(body, options, settings, warnings);
+        var jsonResponse = body.ContainsKey("response_format");
         if (options.StopSequences is { Count: > 0 })
         {
             var stop = new JsonArray();
@@ -461,7 +483,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             body = _provider.Options.TransformRequestBody(body, warnings) ?? body;
         }
 
-        return new PreparedRequest(body.ToJsonString(), _provider.CreateHeaders(options.Headers), warnings, metadataKey);
+        return new PreparedRequest(
+            body.ToJsonString(),
+            _provider.CreateHeaders(options.Headers),
+            warnings,
+            metadataKey,
+            jsonResponse && _provider.Options.JsonTextOverridesToolCalls);
     }
 
     private void AddResponseFormat(JsonObject body, LanguageModelCallOptions options, ChatSettings settings, List<CallWarning> warnings)
@@ -952,12 +979,13 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private sealed class PreparedRequest
     {
-        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey)
+        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls)
         {
             Json = json;
             Headers = headers;
             Warnings = warnings;
             MetadataKey = metadataKey;
+            JsonTextOverridesToolCalls = jsonTextOverridesToolCalls;
         }
 
         public string Json { get; }
@@ -967,5 +995,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         public List<CallWarning> Warnings { get; }
 
         public string MetadataKey { get; }
+
+        public bool JsonTextOverridesToolCalls { get; }
     }
 }
