@@ -77,7 +77,9 @@ public sealed class OpenAIImageGeneration
         int? outputTokens,
         int? totalTokens,
         JsonElement providerMetadata,
-        DateTimeOffset timestamp)
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers)
     {
         Images = images;
         Warnings = warnings;
@@ -86,6 +88,8 @@ public sealed class OpenAIImageGeneration
         TotalTokens = totalTokens;
         ProviderMetadata = providerMetadata;
         Timestamp = timestamp;
+        ModelId = modelId;
+        Headers = headers;
     }
 
     /// <summary>Generated images.</summary>
@@ -108,6 +112,12 @@ public sealed class OpenAIImageGeneration
 
     /// <summary>Timestamp recorded for the response.</summary>
     public DateTimeOffset Timestamp { get; }
+
+    /// <summary>Model id used for the call.</summary>
+    public string ModelId { get; }
+
+    /// <summary>HTTP response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
 }
 
 /// <summary>OpenAI image generation and edit model.</summary>
@@ -230,7 +240,7 @@ public sealed class OpenAIImageModel : IImageModel
             _provider.CreateOpenAIHeaders(call.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Read(document.RootElement, warnings, timestamp);
+        return Read(document.RootElement, warnings, timestamp, response.Headers);
     }
 
     private async Task<OpenAIImageGeneration> EditAsync(
@@ -252,12 +262,17 @@ public sealed class OpenAIImageModel : IImageModel
         Add(content, "quality", OpenAIJson.String(openai, "quality"));
         Add(content, "background", OpenAIJson.String(openai, "background"));
         Add(content, "output_format", OpenAIJson.String(openai, "outputFormat"));
+        Add(content, "output_compression", OpenAIJson.Int(openai, "outputCompression")?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Add(content, "input_fidelity", OpenAIJson.String(openai, "inputFidelity"));
         Add(content, "user", OpenAIJson.String(openai, "user"));
+
+        // Several source images are sent as an image[] array.
+        var imageField = call.Files!.Count > 1 ? "image[]" : "image";
         foreach (var file in call.Files!)
         {
             var bytes = new ByteArrayContent(file.Data);
             bytes.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.MediaType);
-            content.Add(bytes, "image", file.FileName ?? "image.png");
+            content.Add(bytes, imageField, file.FileName ?? "image.png");
         }
 
         if (call.Mask != null)
@@ -267,17 +282,20 @@ public sealed class OpenAIImageModel : IImageModel
             content.Add(mask, "mask", call.Mask.FileName ?? "mask.png");
         }
 
-        var raw = await _provider.Http.SendBytesAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "images/edits"),
-            content,
-            _provider.CreateOpenAIHeaders(call.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(System.Text.Encoding.UTF8.GetString(raw));
-        return Read(document.RootElement, warnings, timestamp);
+        using var request = new HttpRequestMessage(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "images/edits")) { Content = content };
+        OpenAIJson.ApplyHeaders(request, _provider.CreateOpenAIHeaders(call.Headers));
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw ProviderHttp.MapStatus((int)response.StatusCode, body);
+        }
+
+        using var document = JsonDocument.Parse(body);
+        return Read(document.RootElement, warnings, timestamp, OpenAIJson.CopyHeaders(response));
     }
 
-    private static OpenAIImageGeneration Read(JsonElement root, IReadOnlyList<OpenAICallWarning> warnings, DateTimeOffset timestamp)
+    private OpenAIImageGeneration Read(JsonElement root, IReadOnlyList<OpenAICallWarning> warnings, DateTimeOffset timestamp, IReadOnlyDictionary<string, string> headers)
     {
         var images = new List<GeneratedImage>();
         var metadataImages = new JsonArray();
@@ -304,6 +322,16 @@ public sealed class OpenAIImageModel : IImageModel
                     entry["revisedPrompt"] = revised.GetString();
                 }
 
+                if (root.TryGetProperty("created", out var created) && created.TryGetInt64(out var createdSeconds))
+                {
+                    entry["created"] = createdSeconds;
+                }
+
+                CopyString(root, "size", entry, "size");
+                CopyString(root, "quality", entry, "quality");
+                CopyString(root, "background", entry, "background");
+                CopyString(root, "output_format", entry, "outputFormat");
+
                 if (imageTokens != null)
                 {
                     entry["imageTokens"] = Share(imageTokens.Value, index, count);
@@ -329,7 +357,17 @@ public sealed class OpenAIImageModel : IImageModel
             output,
             total,
             OpenAIJson.ProviderMetadata(new JsonObject { ["images"] = metadataImages }),
-            timestamp);
+            timestamp,
+            ModelId,
+            headers);
+    }
+
+    private static void CopyString(JsonElement source, string sourceName, JsonObject target, string targetName)
+    {
+        if (source.TryGetProperty(sourceName, out var value) && value.ValueKind == JsonValueKind.String)
+        {
+            target[targetName] = value.GetString();
+        }
     }
 
     private static int Share(int total, int index, int count)
