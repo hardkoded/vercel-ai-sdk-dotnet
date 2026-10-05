@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2762,
+  "covered": 2790,
   "partial": 77,
-  "missing": 8230,
+  "missing": 8202,
   "features": [
     {
       "feature": "ai/agent",
@@ -651,9 +651,9 @@
       "feature": "luma",
       "dotnetProject": "Vercel.AI.Luma",
       "inScope": 29,
-      "covered": 1,
+      "covered": 29,
       "partial": 0,
-      "missing": 28
+      "missing": 0
     },
     {
       "feature": "mcp/tool",

@@ -28,7 +28,6 @@ using Vercel.AI.Groq;
 using Vercel.AI.HuggingFace;
 using Vercel.AI.Hume;
 using Vercel.AI.KlingAI;
-using Vercel.AI.Luma;
 using Vercel.AI.MiniMax;
 using Vercel.AI.Mistral;
 using Vercel.AI.Moonshot;
@@ -233,7 +232,6 @@ public sealed class ProviderRequestTests
         yield return Media("/v2/upload", "x-gladia-key", "secret", h => GladiaProvider.Create(Key(), h), "transcription");
         yield return Media("/v0/tts", "X-Hume-Api-Key", "secret", h => HumeProvider.Create(Key(), h), "speech");
         yield return Media("/v1/videos/text2video", "Authorization", "Bearer secret", h => KlingAIProvider.Create(Key(), h), "video");
-        yield return Media("/dream-machine/v1/generations/image", "Authorization", "Bearer secret", h => LumaProvider.Create(Key(), h), "image");
         yield return Media("/job", "Authorization", "Bearer secret", h => ProdiaProvider.Create(Key(), h), "image");
         yield return Media("api.quiver.ai", "Authorization", "Bearer secret", h => QuiverAIProvider.Create(Key(), h), "image");
         yield return Media("/models/m/predictions", "Authorization", "Bearer secret", h => ReplicateProvider.Create(Key(), h), "image");

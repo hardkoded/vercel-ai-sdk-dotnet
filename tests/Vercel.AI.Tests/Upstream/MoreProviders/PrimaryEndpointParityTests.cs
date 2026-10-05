@@ -11,7 +11,6 @@ using Vercel.AI.Cartesia;
 using Vercel.AI.Deepgram;
 using Vercel.AI.Fal;
 using Vercel.AI.KlingAI;
-using Vercel.AI.Luma;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -177,20 +176,6 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("https://api.example.com/v1/videos/text2video", call.Uri.AbsoluteUri);
         using var body = JsonDocument.Parse(call.Text);
         Assert.Equal("kling-v2.6-t2v", body.RootElement.GetProperty("model_name").GetString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/luma/src/luma-image-model.test.ts::LumaImageModel > doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
-    public async Task Luma_image_sends_json_and_custom_headers()
-    {
-        var handler = ImageHandler();
-        var options = HeaderOptions("https://api.example.com");
-        await LumaProvider.Create(options, handler).GenerateImageAsync("test-model", new ImageCallOptions("A cute baby sea otter"), RequestHeaders(), CancellationToken.None).ConfigureAwait(false);
-        var call = handler.Calls[0];
-        Assert.Equal("application/json", call.Header("Content-Type"));
-        Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
-        Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Equal("https://api.example.com/dream-machine/v1/generations/image", call.Uri.AbsoluteUri);
     }
 
     [Fact]
