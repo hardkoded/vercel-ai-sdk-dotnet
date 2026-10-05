@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2832,
+  "covered": 2891,
   "partial": 87,
-  "missing": 8150,
+  "missing": 8091,
   "features": [
     {
       "feature": "ai/agent",
@@ -467,9 +467,9 @@
       "feature": "gateway/errors",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 113,
-      "covered": 48,
+      "covered": 107,
       "partial": 0,
-      "missing": 65
+      "missing": 6
     },
     {
       "feature": "gateway/tool",
