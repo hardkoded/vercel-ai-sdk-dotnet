@@ -100,6 +100,11 @@ internal sealed class ScriptedHandler : HttpMessageHandler
             return "{\"results\":{\"channels\":[{\"alternatives\":[{\"transcript\":\"hello\"}]}]}}";
         }
 
+        if (uri.Contains("/svgs/"))
+        {
+            return "{\"id\":\"svg\",\"created\":1,\"data\":[{\"svg\":\"<svg/>\",\"mime_type\":\"image/svg+xml\"}]}";
+        }
+
         if (uri.EndsWith("/embed", StringComparison.Ordinal))
         {
             return "{\"embeddings\":{\"float\":[[0.25,0.5]]}}";

@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2891,
-  "partial": 87,
-  "missing": 8091,
+  "covered": 2941,
+  "partial": 90,
+  "missing": 8038,
   "features": [
     {
       "feature": "ai/agent",
@@ -939,9 +939,9 @@
       "feature": "quiverai",
       "dotnetProject": "Vercel.AI.QuiverAI",
       "inScope": 53,
-      "covered": 0,
-      "partial": 0,
-      "missing": 53
+      "covered": 50,
+      "partial": 3,
+      "missing": 0
     },
     {
       "feature": "replicate",

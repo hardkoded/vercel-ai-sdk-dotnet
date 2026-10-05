@@ -1165,9 +1165,9 @@
       "title": "Cover upstream unit tests: quiverai",
       "dotnetProject": "Vercel.AI.QuiverAI",
       "inScope": 53,
-      "covered": 0,
-      "partial": 0,
-      "missing": 53,
+      "covered": 50,
+      "partial": 3,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/146"
     },
     {
