@@ -5,8 +5,10 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.GenerateText;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Fireworks;
 
@@ -28,6 +30,9 @@ public sealed class FireworksImageModel : IImageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <summary>Fireworks returns one image per call.</summary>
+    public int MaxImagesPerCall => 1;
+
     /// <summary>Random seed sent as <c>seed</c>.</summary>
     public int? Seed { get; set; }
 
@@ -43,14 +48,20 @@ public sealed class FireworksImageModel : IImageModel
     /// <summary>When set, a warning is returned. Kontext models do not accept a mask.</summary>
     public bool Mask { get; set; }
 
-    /// <summary>Delay between async polls. Zero polls again immediately.</summary>
-    public TimeSpan PollInterval { get; set; } = TimeSpan.Zero;
+    /// <summary>Delay between async polls.</summary>
+    public TimeSpan PollInterval { get; set; } = TimeSpan.FromMilliseconds(500);
 
     /// <summary>How long async polling may run.</summary>
     public TimeSpan PollTimeout { get; set; } = TimeSpan.FromMilliseconds(120000);
 
     /// <summary>Warnings from the most recent call.</summary>
     public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
+
+    /// <summary>Clock used for <see cref="LastTimestamp"/>. Defaults to UTC now.</summary>
+    public Func<DateTimeOffset>? Clock { get; set; }
+
+    /// <summary>Time the most recent call started.</summary>
+    public DateTimeOffset? LastTimestamp { get; private set; }
 
     /// <summary>HTTP response headers from the most recent call.</summary>
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
@@ -108,7 +119,9 @@ public sealed class FireworksImageModel : IImageModel
             body["input_image"] = DataUri(Files[0]);
         }
 
+        ValidateOptions();
         OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
+        LastTimestamp = Clock != null ? Clock() : DateTimeOffset.UtcNow;
         var headers = _provider.CreateHeaders(Headers);
         LastWarnings = warnings;
         if (IsAsync(ModelId))
@@ -156,7 +169,14 @@ public sealed class FireworksImageModel : IImageModel
                     throw new AiSdkException("Fireworks poll response is Ready but missing result.sample");
                 }
 
-                var image = await _provider.GetBinaryAsync(new Uri(sample!), headers, cancellationToken).ConfigureAwait(false);
+                // The sample URL comes from the response body. Only send credentials to the provider's own origin.
+                var sameOrigin = ProviderValues.IsSameOrigin(sample!, _provider.Options.BaseUrl);
+                if (!sameOrigin)
+                {
+                    DownloadUrls.ValidateDownloadUrl(sample!);
+                }
+
+                var image = await _provider.GetBinaryAsync(new Uri(sample!), sameOrigin ? headers : null, cancellationToken).ConfigureAwait(false);
                 LastResponseHeaders = image.Headers;
                 return new ImageGenerationResult(new[] { new GeneratedImage("image/png", image.Body, sample) });
             }
@@ -166,8 +186,34 @@ public sealed class FireworksImageModel : IImageModel
                 throw new AiSdkException("Fireworks image generation failed with status: " + status);
             }
 
-            var delay = PollInterval > TimeSpan.Zero ? PollInterval : TimeSpan.FromMilliseconds(1);
-            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(PollInterval, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private void ValidateOptions()
+    {
+        if (ProviderOptions == null || !ProviderOptions.TryGetValue("fireworks", out var options) || options.ValueKind != JsonValueKind.Object)
+        {
+            return;
+        }
+
+        foreach (var property in options.EnumerateObject())
+        {
+            var value = property.Value;
+            var valid = property.Name switch
+            {
+                "guidance_scale" or "cfg_scale" => value.ValueKind == JsonValueKind.Number,
+                "num_inference_steps" or "steps" => value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out _),
+                "output_format" => value.ValueKind == JsonValueKind.String && (value.GetString() == "jpeg" || value.GetString() == "png"),
+                "webhook_url" or "webhook_secret" => value.ValueKind == JsonValueKind.String,
+                "prompt_upsampling" => value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False,
+                "safety_tolerance" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var tolerance) && tolerance >= 0 && tolerance <= 6,
+                _ => true,
+            };
+            if (!valid)
+            {
+                throw new Operations.InvalidArgumentException("providerOptions", options.GetRawText(), "invalid fireworks provider options");
+            }
         }
     }
 
