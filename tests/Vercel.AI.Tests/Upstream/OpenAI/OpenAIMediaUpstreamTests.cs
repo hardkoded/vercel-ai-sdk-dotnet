@@ -2,10 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -515,13 +517,28 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should support gpt-4o-transcribe-diarize", Coverage = UpstreamCoverage.Partial, Note = "The request sends diarized_json and chunking_strategy auto. Duration and speaker segments are not parsed.")]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should support gpt-4o-transcribe-diarize", Coverage = UpstreamCoverage.Covered)]
     public async Task SupportsDiarizeRequest()
     {
         var fields = await TranscriptionFields("gpt-4o-transcribe-diarize", null);
         Assert.Equal("diarized_json", fields["response_format"][0]);
         Assert.Equal("auto", fields["chunking_strategy"][0]);
         Assert.False(fields.ContainsKey("temperature"));
+
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"task\":\"transcribe\",\"duration\":3.2,\"text\":\"Hello from Alice. Hello from Bob.\",\"segments\":["
+                + "{\"type\":\"transcript.text.segment\",\"id\":\"seg_1\",\"start\":0,\"end\":1.5,\"text\":\"Hello from Alice.\",\"speaker\":\"A\"},"
+                + "{\"type\":\"transcript.text.segment\",\"id\":\"seg_2\",\"start\":1.5,\"end\":3.2,\"text\":\"Hello from Bob.\",\"speaker\":\"B\"}]}",
+        };
+        var call = new OpenAITranscriptionCall(new AudioInput(new byte[] { 1, 2, 3 }, "audio/mpeg", "audio.mp3"));
+        var result = await new OpenAITranscriptionModel(OpenAIUpstream.Provider(capture), "gpt-4o-transcribe-diarize").TranscribeAsync(call, CancellationToken.None);
+        Assert.Equal("Hello from Alice. Hello from Bob.", result.Text);
+        Assert.Equal(3.2, result.DurationInSeconds);
+        AssertSegments(result.Segments, ("Hello from Alice.", 0, 1.5), ("Hello from Bob.", 1.5, 3.2));
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(result.ProviderMetadata!.Value.GetRawText()),
+            "{\"openai\":{\"segments\":[{\"text\":\"Hello from Alice.\",\"startSecond\":0,\"endSecond\":1.5,\"speaker\":\"A\"},{\"text\":\"Hello from Bob.\",\"startSecond\":1.5,\"endSecond\":3.2,\"speaker\":\"B\"}]}}");
     }
 
     [Fact]
@@ -541,6 +558,136 @@ public sealed class OpenAIMediaUpstreamTests
     {
         var fields = await TranscriptionFields("gpt-4o-transcribe-diarize", "{\"chunkingStrategy\":{\"type\":\"server_vad\",\"threshold\":0.7,\"prefixPaddingMs\":400,\"silenceDurationMs\":300}}");
         Assert.Equal("{\"type\":\"server_vad\",\"threshold\":0.7,\"prefix_padding_ms\":400,\"silence_duration_ms\":300}", fields["chunking_strategy"][0]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionPassesHeaders()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" };
+        var call = new OpenAITranscriptionCall(TranscriptionAudio()) { Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" } };
+        await new OpenAITranscriptionModel(StandardProvider(capture), "whisper-1").TranscribeAsync(call, CancellationToken.None);
+        Assert.Equal("Bearer test-api-key", capture.Headers["Authorization"]);
+        Assert.StartsWith("multipart/form-data; boundary=", capture.Headers["Content-Type"], StringComparison.Ordinal);
+        Assert.Equal("provider-header-value", capture.Headers["Custom-Provider-Header"]);
+        Assert.Equal("request-header-value", capture.Headers["Custom-Request-Header"]);
+        Assert.Equal("test-organization", capture.Headers["OpenAI-Organization"]);
+        Assert.Equal("test-project", capture.Headers["OpenAI-Project"]);
+        Assert.Contains(OpenAIProvider.UserAgentSuffix, capture.Headers["User-Agent"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionRecordsTimestampModelAndHeaders()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" };
+        capture.ResponseHeaders["x-request-id"] = "test-request-id";
+        capture.ResponseHeaders["x-ratelimit-remaining"] = "123";
+        var result = await Transcribe(capture, null);
+        Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
+        Assert.Equal("whisper-1", result.Response.ModelId);
+        Assert.StartsWith("application/json", result.Response.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Equal("test-request-id", result.Response.Headers["x-request-id"]);
+        Assert.Equal("123", result.Response.Headers["x-ratelimit-remaining"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionUsesTheInjectedClock()
+    {
+        var result = await Transcribe(new OpenAICapture { ResponseJson = "{\"text\":\"Hello\"}" }, null);
+        Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
+        Assert.Equal("whisper-1", result.Response.ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should pass timestamp_granularities when specified", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesSegmentTimestampGranularity()
+    {
+        var fields = await TranscriptionFields("whisper-1", "{\"timestampGranularities\":[\"segment\"]}");
+        Assert.Equal(new[] { "model", "response_format", "temperature", "timestamp_granularities[]" }, fields.Keys.Where(key => key != "file").OrderBy(key => key, StringComparer.Ordinal));
+        Assert.Equal("whisper-1", fields["model"][0]);
+        Assert.Equal("verbose_json", fields["response_format"][0]);
+        Assert.Equal("0", fields["temperature"][0]);
+        Assert.Equal("segment", Assert.Single(fields["timestamp_granularities[]"]));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should work when no words, language, or duration are returned", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionWorksWithOnlyText()
+    {
+        const string Body = "{\"task\":\"transcribe\",\"text\":\"Hello from the Vercel AI SDK!\",\"_request_id\":\"req_1234\"}";
+        var result = await Transcribe(new OpenAICapture { ResponseJson = Body }, null);
+        Assert.Equal("Hello from the Vercel AI SDK!", result.Text);
+        Assert.Empty(result.Segments);
+        Assert.Null(result.Language);
+        Assert.Null(result.DurationInSeconds);
+        Assert.Null(result.ProviderMetadata);
+        Assert.Equal(Body, result.Response.Body);
+        Assert.Equal(Encoding.UTF8.GetByteCount(Body).ToString(CultureInfo.InvariantCulture), result.Response.Headers["content-length"]);
+        Assert.StartsWith("application/json", result.Response.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Equal("whisper-1", result.Response.ModelId);
+        Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should parse segments when provided in response", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionParsesSegments()
+    {
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world. How are you?\",\"segments\":["
+                + "{\"id\":0,\"seek\":0,\"start\":0.0,\"end\":2.5,\"text\":\"Hello world.\",\"tokens\":[1234,5678],\"temperature\":0.0,\"avg_logprob\":-0.5,\"compression_ratio\":1.2,\"no_speech_prob\":0.1},"
+                + "{\"id\":1,\"seek\":250,\"start\":2.5,\"end\":5.0,\"text\":\" How are you?\",\"tokens\":[9012,3456],\"temperature\":0.0,\"avg_logprob\":-0.6,\"compression_ratio\":1.1,\"no_speech_prob\":0.05}],"
+                + "\"language\":\"en\",\"duration\":5.0,\"_request_id\":\"req_1234\"}",
+        };
+        var result = await Transcribe(capture, "{\"timestampGranularities\":[\"segment\"]}");
+        AssertSegments(result.Segments, ("Hello world.", 0, 2.5), (" How are you?", 2.5, 5));
+        Assert.Equal("Hello world. How are you?", result.Text);
+        Assert.Equal(5.0, result.DurationInSeconds);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should fallback to words when segments are not available", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionFallsBackToWords()
+    {
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"words\":[{\"word\":\"Hello\",\"start\":0.0,\"end\":1.0},{\"word\":\"world\",\"start\":1.0,\"end\":2.0}],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}",
+        };
+        var result = await Transcribe(capture, "{\"timestampGranularities\":[\"word\"]}");
+        AssertSegments(result.Segments, ("Hello", 0, 1), ("world", 1, 2));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle empty segments array", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionHandlesEmptySegments()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Hello world\",\"segments\":[],\"language\":\"en\",\"duration\":2.0,\"_request_id\":\"req_1234\"}" };
+        var result = await Transcribe(capture, null);
+        Assert.Empty(result.Segments);
+        Assert.Equal("Hello world", result.Text);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should handle segments with missing optional fields", Coverage = UpstreamCoverage.Covered)]
+    public async Task TranscriptionHandlesSegmentsWithoutLanguageOrDuration()
+    {
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"task\":\"transcribe\",\"text\":\"Test\",\"segments\":[{\"id\":0,\"seek\":0,\"start\":0.0,\"end\":1.0,\"text\":\"Test\",\"tokens\":[1234],\"temperature\":0.0,\"avg_logprob\":-0.5,\"compression_ratio\":1.0,\"no_speech_prob\":0.1}],\"_request_id\":\"req_1234\"}",
+        };
+        var result = await Transcribe(capture, null);
+        AssertSegments(result.Segments, ("Test", 0, 1));
+        Assert.Null(result.Language);
+        Assert.Null(result.DurationInSeconds);
+    }
+
+    [Fact]
+    public async Task TranscriptionMapsKnownLanguageNames()
+    {
+        var result = await Transcribe(new OpenAICapture { ResponseJson = "{\"text\":\"Hola\",\"language\":\"spanish\"}" }, null);
+        Assert.Equal("es", result.Language);
     }
 
     [Fact]
@@ -1357,6 +1504,33 @@ public sealed class OpenAIMediaUpstreamTests
     {
         var capture = await Image(modelId, new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" });
         Assert.Null(JsonNode.Parse(capture.Body)!["response_format"]);
+    }
+
+    private static AudioInput TranscriptionAudio()
+    {
+        return new AudioInput(new byte[] { 1, 2, 3 }, "audio/wav", "audio.wav");
+    }
+
+    private static async Task<OpenAITranscriptionResult> Transcribe(OpenAICapture capture, string? openai)
+    {
+        var call = new OpenAITranscriptionCall(TranscriptionAudio());
+        if (openai != null)
+        {
+            call.ProviderOptions = OpenAIUpstream.Json("{\"openai\":" + openai + "}");
+        }
+
+        return await new OpenAITranscriptionModel(OpenAIUpstream.Provider(capture), "whisper-1", () => DateTimeOffset.UnixEpoch).TranscribeAsync(call, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private static void AssertSegments(IReadOnlyList<TranscriptSegment> actual, params (string Text, double Start, double End)[] expected)
+    {
+        Assert.Equal(expected.Length, actual.Count);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.Equal(expected[i].Text, actual[i].Text);
+            Assert.Equal(expected[i].Start, actual[i].StartSecond);
+            Assert.Equal(expected[i].End, actual[i].EndSecond);
+        }
     }
 
     private static async Task<Dictionary<string, List<string>>> TranscriptionFields(string modelId, string? openai)
