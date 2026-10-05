@@ -21,6 +21,7 @@ public sealed class OpenAIChatRequestUpstreamTests
 
     private const string Schema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
 
+    [Fact]
     [UpstreamTest(Tools + "should return undefined tools and toolChoice when tools are null", Coverage = UpstreamCoverage.Covered)]
     public void OmitsNullTools()
     {
@@ -30,6 +31,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should return undefined tools and toolChoice when tools are empty", Coverage = UpstreamCoverage.Covered)]
     public void OmitsEmptyTools()
     {
@@ -39,6 +41,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should correctly prepare function tools", Coverage = UpstreamCoverage.Covered)]
     public void PreparesFunctionTools()
     {
@@ -48,6 +51,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should remove string propertyNames from function tools and warn", Coverage = UpstreamCoverage.Covered)]
     public void RemovesToolPropertyNames()
     {
@@ -60,6 +64,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(OpenAIJsonSchema.PropertyNamesDetails, prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should remove regex lookaround patterns from function tools and warn", Coverage = UpstreamCoverage.Covered)]
     public void RemovesToolLookaround()
     {
@@ -71,6 +76,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("JSON Schema pattern with regex lookaround", prepared.Warnings[0].Feature);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should add warnings for unsupported tools", Coverage = UpstreamCoverage.Covered)]
     public void WarnsForUnsupportedTools()
     {
@@ -81,42 +87,49 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("tool type: provider", prepared.Warnings[0].Feature);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should handle tool choice \"auto\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsAutoToolChoice()
     {
         Assert.Equal("auto", Choice(ToolChoice.Auto)!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should handle tool choice \"required\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsRequiredToolChoice()
     {
         Assert.Equal("required", Choice(ToolChoice.Required)!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should handle tool choice \"none\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsNoneToolChoice()
     {
         Assert.Equal("none", Choice(ToolChoice.None)!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should handle tool choice \"tool\"", Coverage = UpstreamCoverage.Covered)]
     public void MapsNamedToolChoice()
     {
         OpenAIUpstream.Equal(Choice(ToolChoice.Tool("testFunction")), "{\"type\":\"function\",\"function\":{\"name\":\"testFunction\"}}");
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode when strict is true", Coverage = UpstreamCoverage.Covered)]
     public void PassesStrictTrue()
     {
         Assert.True(Strict(true));
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode when strict is false", Coverage = UpstreamCoverage.Covered)]
     public void PassesStrictFalse()
     {
         Assert.False(Strict(false));
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should not include strict mode when strict is undefined", Coverage = UpstreamCoverage.Covered)]
     public void OmitsUnsetStrict()
     {
@@ -124,6 +137,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(function["strict"]);
     }
 
+    [Fact]
     [UpstreamTest(Tools + "should pass through strict mode for multiple tools with different strict settings", Coverage = UpstreamCoverage.Covered)]
     public void PassesMixedStrict()
     {
@@ -138,6 +152,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(prepared.Tools[2]!["function"]!["strict"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract text response", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsText()
     {
@@ -145,6 +160,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("Hello, World!", result.Text);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract an audio transcript alongside tool calls", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsAudioTranscriptAndToolCall()
     {
@@ -156,6 +172,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("{\"value\":\"Spark\"}", call.ArgumentsJson);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should reject a response without choices", Coverage = UpstreamCoverage.Covered)]
     public async Task RejectsEmptyChoices()
     {
@@ -163,6 +180,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("Response did not contain any choices.", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Partial, Note = "cacheWrite is absent, so noCache stays null. Upstream reports noCache 20.")]
     public async Task ExtractsUsage()
     {
@@ -177,6 +195,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(20, usage.Raw!.Value.GetProperty("prompt_tokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send request body", Coverage = UpstreamCoverage.Covered)]
     public async Task SendsRequestBody()
     {
@@ -184,6 +203,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send additional response information", Coverage = UpstreamCoverage.Covered)]
     public async Task SendsResponseInformation()
     {
@@ -193,6 +213,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(123), result.ResponseTimestamp);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should support partial usage", Coverage = UpstreamCoverage.Partial, Note = "Missing completion_tokens becomes 0. cacheWrite is absent, so noCache stays null.")]
     public async Task SupportsPartialUsage()
     {
@@ -204,6 +225,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(usage.CacheWriteTokens);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract logprobs", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsLogprobs()
     {
@@ -214,6 +236,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("Hi", result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("logprobs")[0].GetProperty("token").GetString());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should extract finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsFinishReason()
     {
@@ -222,6 +245,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("stop", result.RawFinishReason);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should support unknown finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task SupportsUnknownFinishReason()
     {
@@ -230,6 +254,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("eos", result.RawFinishReason);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should expose the raw response headers", Coverage = UpstreamCoverage.Partial, Note = "The custom header is returned. Content-length follows the scripted body.")]
     public async Task ExposesResponseHeaders()
     {
@@ -239,6 +264,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("test-value", result.ResponseHeaders["test-header"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass the model and the messages", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesModelAndMessages()
     {
@@ -246,6 +272,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass settings", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesSettings()
     {
@@ -260,6 +287,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("test-user-id", body["user"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should not set reasoning_effort when reasoning is \"provider-default\"", Coverage = UpstreamCoverage.Covered)]
     public async Task OmitsProviderDefaultReasoning()
     {
@@ -267,6 +295,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(JsonNode.Parse(capture.Body)!["reasoning_effort"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass top-level reasoning as reasoning_effort", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesTopLevelReasoning()
     {
@@ -274,6 +303,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("low", JsonNode.Parse(capture.Body)!["reasoning_effort"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should prefer providerOptions reasoningEffort over top-level reasoning", Coverage = UpstreamCoverage.Covered)]
     public async Task PrefersProviderReasoningEffort()
     {
@@ -286,6 +316,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("high", JsonNode.Parse(capture.Body)!["reasoning_effort"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass textVerbosity setting from provider options", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesTextVerbosity()
     {
@@ -297,6 +328,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("low", JsonNode.Parse(capture.Body)!["verbosity"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass tools and toolChoice", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesToolsAndToolChoice()
     {
@@ -312,6 +344,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(body["tools"]![0]!["function"]!["strict"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Authorization, organization, project, and custom headers match. User-Agent is ai-sdk/openai/4.0.73 and content-type includes a charset.")]
     public async Task PassesHeaders()
     {
@@ -331,6 +364,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Contains("ai-sdk/openai/4.0.73", OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should return cached_tokens in prompt_details_tokens", Coverage = UpstreamCoverage.Covered)]
     public async Task ReturnsCachedTokens()
     {
@@ -345,6 +379,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(256, usage.Raw!.Value.GetProperty("prompt_tokens_details").GetProperty("cache_write_tokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should use developer messages for o1", Coverage = UpstreamCoverage.Covered)]
     public async Task UsesDeveloperMessagesForO1()
     {
@@ -352,6 +387,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("developer", JsonNode.Parse(capture.Body)!["messages"]![0]!["role"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should allow temperature when top-level reasoning is none on gpt-5.1", Coverage = UpstreamCoverage.Covered)]
     public async Task KeepsTemperatureForGpt51None()
     {
@@ -366,6 +402,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should still clear temperature when top-level reasoning is none on o4-mini", Coverage = UpstreamCoverage.Covered)]
     public async Task ClearsTemperatureForO4MiniNone()
     {
@@ -380,6 +417,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("temperature is not supported for reasoning models", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should convert maxOutputTokens to max_completion_tokens", Coverage = UpstreamCoverage.Covered)]
     public void ConvertsMaxOutputTokens()
     {
@@ -388,24 +426,28 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(64, prepared.Body["max_completion_tokens"]!.GetValue<int>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should remove temperature setting for gpt-4o-search-preview and add warning", Coverage = UpstreamCoverage.Covered)]
     public void RemovesSearchPreviewTemperature()
     {
         AssertSearchPreview("gpt-4o-search-preview");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should remove temperature setting for gpt-4o-mini-search-preview and add warning", Coverage = UpstreamCoverage.Covered)]
     public void RemovesMiniSearchPreviewTemperature()
     {
         AssertSearchPreview("gpt-4o-mini-search-preview");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should remove temperature setting for gpt-4o-mini-search-preview-2025-03-11 and add warning", Coverage = UpstreamCoverage.Covered)]
     public void RemovesDatedSearchPreviewTemperature()
     {
         AssertSearchPreview("gpt-4o-mini-search-preview-2025-03-11");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should show warning when using flex processing with unsupported model", Coverage = UpstreamCoverage.Covered)]
     public void WarnsForUnsupportedFlex()
     {
@@ -414,6 +456,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("flex processing is only available for o3, o4-mini, and gpt-5 models", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send serviceTier ultrafast processing setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsUltrafast()
     {
@@ -422,6 +465,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should omit legacy prompt cache retention for GPT-6 models", Coverage = UpstreamCoverage.Covered)]
     public void OmitsPromptCacheRetentionForGpt6()
     {
@@ -430,6 +474,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Format + "should not send a response_format when response format is text", Coverage = UpstreamCoverage.Covered)]
     public void OmitsTextResponseFormat()
     {
@@ -437,6 +482,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Null(prepared.Body["response_format"]);
     }
 
+    [Fact]
     [UpstreamTest(Format + "should forward json response format as \"json_object\" without schema", Coverage = UpstreamCoverage.Covered)]
     public void ForwardsJsonObject()
     {
@@ -444,6 +490,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         OpenAIUpstream.Equal(prepared.Body["response_format"], "{\"type\":\"json_object\"}");
     }
 
+    [Fact]
     [UpstreamTest(Format + "should forward json response format as \"json_object\" and include schema", Coverage = UpstreamCoverage.Covered)]
     public void ForwardsJsonSchema()
     {
@@ -455,6 +502,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Format + "should set name & description with responseFormat json", Coverage = UpstreamCoverage.Covered)]
     public void SetsSchemaNameAndDescription()
     {
@@ -463,6 +511,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("test description", prepared.Body["response_format"]!["json_schema"]!["description"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Format + "should allow for undefined schema with responseFormat json when structuredOutputs are enabled", Coverage = UpstreamCoverage.Covered)]
     public void UsesJsonObjectWithoutSchema()
     {
@@ -470,6 +519,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         OpenAIUpstream.Equal(prepared.Body["response_format"], "{\"type\":\"json_object\"}");
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should stream text after Azure content filter chunks", Coverage = UpstreamCoverage.Covered)]
     public async Task StreamsAfterAzureContentFilter()
     {
@@ -493,6 +543,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(new[] { string.Empty, "Hello" }, deltas);
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = "Text, metadata, and finish reason match. Usage noCache stays null when cache_write_tokens is absent.")]
     public async Task StreamsTextDeltas()
     {
@@ -518,6 +569,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("stop", finish.RawFinishReason);
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should throw an api error when the first stream chunk is an error", Coverage = UpstreamCoverage.Covered)]
     public async Task ThrowsEarlyStreamError()
     {
@@ -527,6 +579,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should preserve numeric status codes from early stream errors", Coverage = UpstreamCoverage.Covered)]
     public async Task PreservesNumericStreamStatus()
     {
@@ -536,6 +589,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.False(ProviderHttp.IsRetryable(exception.StatusCode));
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should forward error stream parts after output has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.")]
     public async Task ForwardsErrorAfterOutput()
     {
@@ -547,6 +601,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal(FinishReason.Error, parts.OfType<FinishStreamPart>().Single().FinishReason);
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should handle unparsable stream parts", Coverage = UpstreamCoverage.Partial, Note = "The error message is JSON parsing failed: Text: {data}. Upstream also appends a SyntaxError.")]
     public async Task HandlesUnparsableStreamParts()
     {
@@ -554,6 +609,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("JSON parsing failed: Text: not-json.", parts.OfType<ErrorStreamPart>().Single().Message);
     }
 
+    [Fact]
     [UpstreamTest(Stream + "should send request body", Coverage = UpstreamCoverage.Covered)]
     public async Task SendsStreamRequestBody()
     {

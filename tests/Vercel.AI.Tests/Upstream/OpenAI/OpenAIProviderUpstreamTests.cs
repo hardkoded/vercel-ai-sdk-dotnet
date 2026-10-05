@@ -9,10 +9,12 @@ using Vercel.AI.Provider;
 namespace Vercel.AI.Tests;
 
 /// <summary>Provider construction, base URL, and forward-compatible family defaults.</summary>
+[Collection("OpenAIEnvironment")]
 public sealed class OpenAIProviderUpstreamTests
 {
     private static readonly object EnvGate = new();
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::uses the default OpenAI base URL when not provided", Coverage = UpstreamCoverage.Covered)]
     public async Task UsesTheDefaultOpenAIBaseUrl()
     {
@@ -28,6 +30,7 @@ public sealed class OpenAIProviderUpstreamTests
         }).ConfigureAwait(false);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::uses OPENAI_BASE_URL when set", Coverage = UpstreamCoverage.Covered)]
     public async Task UsesOpenAIBaseUrlWhenSet()
     {
@@ -43,6 +46,7 @@ public sealed class OpenAIProviderUpstreamTests
         }).ConfigureAwait(false);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::prefers the baseURL option over OPENAI_BASE_URL", Coverage = UpstreamCoverage.Covered)]
     public async Task PrefersTheBaseUrlOption()
     {
@@ -58,14 +62,16 @@ public sealed class OpenAIProviderUpstreamTests
         }).ConfigureAwait(false);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::rejects an empty baseURL option during provider creation", Coverage = UpstreamCoverage.Covered)]
     public void RejectsAnEmptyBaseUrlOption()
     {
         var exception = Assert.Throws<ArgumentException>(() => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key", BaseUrl = string.Empty }));
-        Assert.Equal("baseURL must be a non-empty string.", exception.Message);
+        Assert.StartsWith("baseURL must be a non-empty string.", exception.Message, StringComparison.Ordinal);
         Assert.Equal("baseURL", exception.ParamName);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::rejects an empty OPENAI_BASE_URL during provider creation", Coverage = UpstreamCoverage.Covered)]
     public void RejectsAnEmptyOpenAIBaseUrl()
     {
@@ -76,7 +82,7 @@ public sealed class OpenAIProviderUpstreamTests
             {
                 Environment.SetEnvironmentVariable("OPENAI_BASE_URL", string.Empty);
                 var exception = Assert.Throws<ArgumentException>(() => OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }));
-                Assert.Equal("baseURL must be a non-empty string.", exception.Message);
+                Assert.StartsWith("baseURL must be a non-empty string.", exception.Message, StringComparison.Ordinal);
                 Assert.Equal("baseURL", exception.ParamName);
             }
             finally
@@ -86,6 +92,7 @@ public sealed class OpenAIProviderUpstreamTests
         }
     }
 
+    [Fact]
     [UpstreamTest(
         "packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::uses the Responses API for the default language model",
         Coverage = UpstreamCoverage.Partial,
@@ -98,6 +105,7 @@ public sealed class OpenAIProviderUpstreamTests
         Assert.Equal("https://proxy.openai.example/v1/chat/completions", capture.Uri);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-provider.test.ts::createOpenAI > baseURL configuration::uses the Chat Completions API for chat models", Coverage = UpstreamCoverage.Covered)]
     public async Task ChatModelsUseChatCompletions()
     {
@@ -107,6 +115,7 @@ public sealed class OpenAIProviderUpstreamTests
         Assert.Equal("https://proxy.openai.example/v1/chat/completions", capture.Uri);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-forward-compatible-defaults.test.ts::OpenAI forward-compatible model-family defaults::uses reasoning-safe Chat Completions request defaults for gpt-99", Coverage = UpstreamCoverage.Covered)]
     public async Task Gpt99ChatDefaultsAreReasoningSafe()
     {
@@ -140,6 +149,7 @@ public sealed class OpenAIProviderUpstreamTests
         Assert.Equal("ok", ((GeneratedText)result.Content[0]).Text);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-forward-compatible-defaults.test.ts::OpenAI forward-compatible model-family defaults::uses reasoning-safe Responses API request defaults for gpt-99", Coverage = UpstreamCoverage.Covered)]
     public async Task Gpt99ResponsesDefaultsAreReasoningSafe()
     {
@@ -165,6 +175,7 @@ public sealed class OpenAIProviderUpstreamTests
         Assert.False(body.ContainsKey("stream"));
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-forward-compatible-defaults.test.ts::OpenAI forward-compatible model-family defaults::uses GPT Image family defaults for gpt-image-99", Coverage = UpstreamCoverage.Covered)]
     public async Task GptImage99OmitsResponseFormat()
     {

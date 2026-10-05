@@ -11,6 +11,7 @@ namespace Vercel.AI.Tests;
 /// <summary>Model-family capabilities and JSON Schema normalization.</summary>
 public sealed class OpenAICapabilitiesAndSchemaTests
 {
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > isReasoningModel::%s reasoning model: %s", Coverage = UpstreamCoverage.Covered)]
     public void ReasoningModelMatrix()
     {
@@ -82,6 +83,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
             "gpt-99-mini");
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > supportsNonReasoningParameters::%s supports non-reasoning parameters: %s", Coverage = UpstreamCoverage.Covered)]
     public void NonReasoningParameterMatrix()
     {
@@ -102,6 +104,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         }
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > GPT-6 and later reasoning capabilities::%s supports async tool calling: %s", Coverage = UpstreamCoverage.Covered)]
     public void AsyncToolCallingMatrix()
     {
@@ -113,6 +116,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         }
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > GPT-6 and later reasoning capabilities::%s supports configuration updates: %s", Coverage = UpstreamCoverage.Covered)]
     public void ConfigurationUpdateMatrix()
     {
@@ -123,6 +127,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         }
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > GPT-6 and later reasoning capabilities::%s supports the expected reasoning efforts", Coverage = UpstreamCoverage.Covered)]
     public void ReasoningEffortMatrix()
     {
@@ -132,6 +137,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         Assert.Equal(expected, OpenAILanguageModelCapabilities.ForModel("gpt-99").SupportedReasoningEfforts);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > supportsFlexProcessing::%s supports flex processing: %s", Coverage = UpstreamCoverage.Covered)]
     public void FlexProcessingMatrix()
     {
@@ -146,6 +152,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         }
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > supportsPriorityProcessing::%s supports priority processing: %s", Coverage = UpstreamCoverage.Covered)]
     public void PriorityProcessingMatrix()
     {
@@ -161,6 +168,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         }
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::removes string propertyNames recursively and warns", Coverage = UpstreamCoverage.Covered)]
     public void RemovesStringPropertyNames()
     {
@@ -174,6 +182,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         Assert.NotNull(original["properties"]!["variables"]!["propertyNames"]);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::rejects non-string propertyNames schemas", Coverage = UpstreamCoverage.Covered)]
     public void RejectsNonStringPropertyNames()
     {
@@ -181,6 +190,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         Assert.Equal("JSON Schema propertyNames that does not use a string schema", exception.Message);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::removes regex lookaround patterns recursively and warns", Coverage = UpstreamCoverage.Covered)]
     public void RemovesRegexLookaround()
     {
@@ -192,6 +202,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         Assert.NotNull(original["properties"]!["email"]!["pattern"]);
     }
 
+    [Fact]
     [UpstreamTest("packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::preserves escaped and character-class lookaround-like text", Coverage = UpstreamCoverage.Covered)]
     public void PreservesEscapedLookaroundText()
     {

@@ -17,6 +17,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
     private const string Usage = "packages/openai/src/chat/convert-openai-chat-usage.test.ts::convertOpenAIChatUsage::";
     private const string ToolSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
 
+    [Fact]
     [UpstreamTest(Usage + "clamps text tokens at 0 when reasoning exceeds completion", Coverage = UpstreamCoverage.Partial, Note = "Text tokens clamp to 0 and reasoning is 6001. cacheWrite is absent, so noCache stays null instead of 891.")]
     public void ClampsTextTokens()
     {
@@ -29,6 +30,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal(6952, usage.Raw!.Value.GetProperty("total_tokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass reasoningEffort setting from provider metadata", Coverage = UpstreamCoverage.Covered)]
     public void PassesReasoningEffortFromProviderOptions()
     {
@@ -36,6 +38,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"o4-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\"low\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass reasoningEffort setting from settings", Coverage = UpstreamCoverage.Covered)]
     public void PassesReasoningEffortHigh()
     {
@@ -43,6 +46,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("high", prepared.Body["reasoning_effort"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass reasoningEffort xhigh setting", Coverage = UpstreamCoverage.Covered)]
     public void PassesReasoningEffortXhigh()
     {
@@ -50,6 +54,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"gpt-5.1-codex-max\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\"xhigh\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should pass reasoningEffort max setting", Coverage = UpstreamCoverage.Covered)]
     public void PassesReasoningEffortMax()
     {
@@ -57,6 +62,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"gpt-5.6\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\"max\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should parse tool results", Coverage = UpstreamCoverage.Covered)]
     public async Task ParsesToolResults()
     {
@@ -67,6 +73,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("{\"value\":\"Spark\"}", call.ArgumentsJson);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should parse annotations/citations", Coverage = UpstreamCoverage.Covered)]
     public async Task ParsesAnnotations()
     {
@@ -80,6 +87,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.False(string.IsNullOrEmpty(source.Id));
     }
 
+    [Fact]
     [UpstreamTest(Format + "should remove string propertyNames from response schemas and warn", Coverage = UpstreamCoverage.Covered)]
     public void RemovesPropertyNamesFromResponseSchema()
     {
@@ -90,6 +98,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal(OpenAIJsonSchema.PropertyNamesDetails, prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Format + "should use json_schema & strict with responseFormat json", Coverage = UpstreamCoverage.Covered)]
     public void UsesJsonSchemaStrict()
     {
@@ -101,6 +110,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Format + "should set strict with tool call", Coverage = UpstreamCoverage.Covered)]
     public async Task SetsToolChoiceRequired()
     {
@@ -118,6 +128,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("test-tool", Assert.IsType<GeneratedToolCall>(Assert.Single(result.Content)).ToolName);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should set strict for tool usage", Coverage = UpstreamCoverage.Covered)]
     public async Task OmitsUnsetToolStrict()
     {
@@ -135,6 +146,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("{\"value\":\"Spark\"}", call.ArgumentsJson);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should return accepted_prediction_tokens and rejected_prediction_tokens in completion_details_tokens", Coverage = UpstreamCoverage.Covered)]
     public async Task ReturnsPredictionTokens()
     {
@@ -145,6 +157,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal(456, openai.GetProperty("rejectedPredictionTokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should clear out temperature, top_p, frequency_penalty, presence_penalty and return warnings", Coverage = UpstreamCoverage.Covered)]
     public void ClearsSamplingForReasoningModels()
     {
@@ -164,6 +177,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("presencePenalty is not supported for reasoning models", prepared.Warnings[3].Details);
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should preserve disabled reasoning for %s", Coverage = UpstreamCoverage.Covered)]
     public void PreservesDisabledReasoningForSolAndLuna()
     {
@@ -176,6 +190,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         }
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should omit unsupported GPT-6 reasoning effort %s", Coverage = UpstreamCoverage.Covered)]
     public void OmitsUnsupportedGpt6Efforts()
     {
@@ -188,6 +203,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         }
     }
 
+    [Fact]
     [UpstreamTest(Reasoning + "should strip sampling and logprob settings for GPT-6 models", Coverage = UpstreamCoverage.Covered)]
     public void StripsGpt6Sampling()
     {
@@ -205,6 +221,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("topLogprobs is not supported for reasoning models", prepared.Warnings[3].Message);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow forcing reasoning behavior for unrecognized model IDs via providerOptions", Coverage = UpstreamCoverage.Covered)]
     public void ForcesReasoningForUnknownModels()
     {
@@ -220,6 +237,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("topP", prepared.Warnings[1].Feature);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should default systemMessageMode to developer when forcing reasoning", Coverage = UpstreamCoverage.Covered)]
     public void DefaultsDeveloperRoleWhenForcingReasoning()
     {
@@ -236,6 +254,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow overriding systemMessageMode via providerOptions", Coverage = UpstreamCoverage.Covered)]
     public void OverridesSystemMessageMode()
     {
@@ -252,6 +271,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should use default systemMessageMode when not overridden", Coverage = UpstreamCoverage.Covered)]
     public void UsesDefaultSystemMessageMode()
     {
@@ -267,6 +287,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should return the reasoning tokens in the provider metadata", Coverage = UpstreamCoverage.Partial, Note = "Reasoning tokens are 10 and text tokens are 10. cacheWrite is absent, so noCache stays null instead of 15.")]
     public async Task ReturnsReasoningTokens()
     {
@@ -279,6 +300,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal(10, usage.Raw!.Value.GetProperty("completion_tokens_details").GetProperty("reasoning_tokens").GetInt32());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send max_completion_tokens extension setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsMaxCompletionTokens()
     {
@@ -287,6 +309,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Null(prepared.Body["max_tokens"]);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send prediction extension setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsPrediction()
     {
@@ -294,30 +317,35 @@ public sealed class OpenAIChatSettingsUpstreamTests
         OpenAIUpstream.Equal(prepared.Body["prediction"], "{\"type\":\"content\",\"content\":\"Hello, World!\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send store extension setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsStore()
     {
         Assert.True(OpenAIChatLanguageModel.Prepare("gpt-3.5-turbo", Call("{\"store\":true}")).Body["store"]!.GetValue<bool>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send metadata extension values", Coverage = UpstreamCoverage.Covered)]
     public void SendsMetadata()
     {
         OpenAIUpstream.Equal(OpenAIChatLanguageModel.Prepare("gpt-3.5-turbo", Call("{\"metadata\":{\"custom\":\"value\"}}")).Body["metadata"], "{\"custom\":\"value\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send promptCacheKey extension value", Coverage = UpstreamCoverage.Covered)]
     public void SendsPromptCacheKey()
     {
         Assert.Equal("test-cache-key-123", OpenAIChatLanguageModel.Prepare("gpt-3.5-turbo", Call("{\"promptCacheKey\":\"test-cache-key-123\"}")).Body["prompt_cache_key"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send promptCacheRetention extension value", Coverage = UpstreamCoverage.Covered)]
     public void SendsPromptCacheRetention()
     {
         Assert.Equal("24h", OpenAIChatLanguageModel.Prepare("gpt-3.5-turbo", Call("{\"promptCacheRetention\":\"24h\"}")).Body["prompt_cache_retention"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send promptCacheOptions extension value", Coverage = UpstreamCoverage.Covered)]
     public void SendsPromptCacheOptions()
     {
@@ -326,18 +354,21 @@ public sealed class OpenAIChatSettingsUpstreamTests
             "{\"mode\":\"explicit\",\"ttl\":\"30m\"}");
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send safetyIdentifier extension value", Coverage = UpstreamCoverage.Covered)]
     public void SendsSafetyIdentifier()
     {
         Assert.Equal("test-safety-identifier-123", OpenAIChatLanguageModel.Prepare("gpt-3.5-turbo", Call("{\"safetyIdentifier\":\"test-safety-identifier-123\"}")).Body["safety_identifier"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send serviceTier flex processing setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsFlexServiceTier()
     {
         Assert.Equal("flex", OpenAIChatLanguageModel.Prepare("o4-mini", Call("{\"serviceTier\":\"flex\"}")).Body["service_tier"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow flex processing with o4-mini model without warnings", Coverage = UpstreamCoverage.Covered)]
     public void AllowsFlexOnO4Mini()
     {
@@ -346,12 +377,14 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send serviceTier priority processing setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsPriorityServiceTier()
     {
         Assert.Equal("priority", OpenAIChatLanguageModel.Prepare("gpt-4o-mini", Call("{\"serviceTier\":\"priority\"}")).Body["service_tier"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should show warning when using priority processing with unsupported model", Coverage = UpstreamCoverage.Covered)]
     public void WarnsForUnsupportedPriority()
     {
@@ -360,6 +393,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("priority processing is only available for supported models (gpt-4, gpt-5, gpt-5-mini, o3, o4-mini) and requires Enterprise access. gpt-5-nano is not supported", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow priority processing with gpt-4o model without warnings", Coverage = UpstreamCoverage.Covered)]
     public void AllowsPriorityOnGpt4o()
     {
@@ -368,6 +402,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow priority processing with o3 model without warnings", Coverage = UpstreamCoverage.Covered)]
     public void AllowsPriorityOnO3()
     {
@@ -376,12 +411,14 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Empty(prepared.Warnings);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should send serviceTier fast processing setting", Coverage = UpstreamCoverage.Covered)]
     public void SendsFastServiceTier()
     {
         Assert.Equal("fast", OpenAIChatLanguageModel.Prepare("gpt-4o-mini", Call("{\"serviceTier\":\"fast\"}")).Body["service_tier"]!.GetValue<string>());
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should show warning when using fast processing with unsupported model", Coverage = UpstreamCoverage.Covered)]
     public void WarnsForUnsupportedFast()
     {
@@ -391,6 +428,7 @@ public sealed class OpenAIChatSettingsUpstreamTests
         Assert.Equal("priority processing is only available for supported models (gpt-4, gpt-5, gpt-5-mini, o3, o4-mini) and requires Enterprise access. gpt-5-nano is not supported", prepared.Warnings[0].Details);
     }
 
+    [Fact]
     [UpstreamTest(Generate + "should allow fast processing with gpt-4o model without warnings", Coverage = UpstreamCoverage.Covered)]
     public void AllowsFastOnGpt4o()
     {
