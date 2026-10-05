@@ -226,6 +226,36 @@ public sealed class JsonSchemaShapeTests
 
     [Fact]
     [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/string.test.ts::string::should bundle multiple formats into anyOf",
+        Coverage = UpstreamCoverage.Covered)]
+    public void String_schema_groups_formats_in_any_of()
+    {
+        var anyOf = new JsonArray
+        {
+            new JsonObject { ["format"] = "ipv4" },
+            new JsonObject { ["format"] = "ipv6" },
+            new JsonObject { ["format"] = "email" },
+        };
+        JsonAssert.Equal(
+            JsonSchemas.String(anyOf: anyOf),
+            "{\"type\":\"string\",\"anyOf\":[{\"format\":\"ipv4\"},{\"format\":\"ipv6\"},{\"format\":\"email\"}]}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/string.test.ts::string::should be possible to pick format:email, format:idn-email or pattern:zod",
+        Coverage = UpstreamCoverage.Covered)]
+    public void String_schema_describes_email()
+    {
+        JsonAssert.Equal(JsonSchemas.String(format: "email"), "{\"type\":\"string\",\"format\":\"email\"}");
+        JsonAssert.Equal(JsonSchemas.String(format: "idn-email"), "{\"type\":\"string\",\"format\":\"idn-email\"}");
+        JsonAssert.Equal(
+            JsonSchemas.String(pattern: "^(?!\\.)(?!.*\\.\\.)([a-zA-Z0-9_'+\\-.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\\.)+[a-zA-Z]{2,}$"),
+            "{\"type\":\"string\",\"pattern\":\"^(?!\\\\.)(?!.*\\\\.\\\\.)([a-zA-Z0-9_'+\\\\-.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\\\\.)+[a-zA-Z]{2,}$\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/number.test.ts::number::should be possible to describe minimum number",
         Coverage = UpstreamCoverage.Covered)]
     public void Number_schema_sets_a_minimum()
@@ -258,6 +288,26 @@ public sealed class JsonSchemaShapeTests
     public void Number_schema_can_be_an_integer()
     {
         JsonAssert.Equal(JsonSchemas.Integer(), "{\"type\":\"integer\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/bigint.test.ts::bigint::should be possible to use bigint",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Long_schema_is_an_int64_integer()
+    {
+        JsonAssert.Equal(JsonSchemas.Integer(format: "int64"), "{\"type\":\"integer\",\"format\":\"int64\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/bigint.test.ts::bigint::should be possible to define gt/lt",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Long_schema_sets_inclusive_bounds()
+    {
+        JsonAssert.Equal(
+            JsonSchemas.Integer(minimum: 10, maximum: 20, format: "int64"),
+            "{\"type\":\"integer\",\"format\":\"int64\",\"minimum\":10,\"maximum\":20}");
     }
 
     [Fact]
@@ -543,6 +593,17 @@ public sealed class JsonSchemaShapeTests
 
     [Fact]
     [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/map.test.ts::map::should be possible to use additionalProperties-pattern (record)",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Record_schema_sets_a_minimum_key_length()
+    {
+        JsonAssert.Equal(
+            JsonSchemas.Record(JsonSchemas.Number(), new JsonObject { ["minLength"] = 1 }),
+            "{\"type\":\"object\",\"additionalProperties\":{\"type\":\"number\"},\"propertyNames\":{\"minLength\":1}}");
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/native-enum.test.ts::native enum::should be possible to convert a basic native number enum",
         Coverage = UpstreamCoverage.Covered)]
     public void Enum_schema_lists_numbers()
@@ -710,6 +771,19 @@ public sealed class JsonSchemaShapeTests
     public void Union_of_primitives_is_a_type_array()
     {
         JsonAssert.Equal(JsonSchemas.PrimitiveUnion("string", "number", "boolean", "null"), "{\"type\":[\"string\",\"number\",\"boolean\",\"null\"]}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/to-json-schema/zod3-to-json-schema/parsers/union.test.ts::union::Should be possible to get a simple type array with enum values from a union of literals",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Union_of_literals_is_a_type_array_with_enum_values()
+    {
+        JsonAssert.Equal(
+            JsonSchemas.Enum(
+                new JsonArray { "string", "number", "boolean", "null", "integer" },
+                new JsonArray { "string", 123, true, null, 50L }),
+            "{\"type\":[\"string\",\"number\",\"boolean\",\"null\",\"integer\"],\"enum\":[\"string\",123,true,null,50]}");
     }
 
     [Fact]

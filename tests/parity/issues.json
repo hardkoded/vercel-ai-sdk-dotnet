@@ -1135,9 +1135,9 @@
       "title": "Cover upstream unit tests: provider-utils/to-json-schema/zod3-to-json-schema/parsers",
       "dotnetProject": "Vercel.AI.ProviderUtils",
       "inScope": 109,
-      "covered": 73,
+      "covered": 79,
       "partial": 0,
-      "missing": 36,
+      "missing": 30,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/143"
     },
     {
