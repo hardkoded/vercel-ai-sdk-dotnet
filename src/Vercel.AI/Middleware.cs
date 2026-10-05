@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -73,10 +74,41 @@ public static class LanguageModelMiddlewareExtensions
     }
 }
 
-/// <summary>Splits <c>&lt;think&gt;...&lt;/think&gt;</c> out of text. Maps to <c>extractReasoningMiddleware</c>.</summary>
+/// <summary>Splits delimited reasoning, such as <c>&lt;think&gt;...&lt;/think&gt;</c>, out of text. Maps to <c>extractReasoningMiddleware</c>.</summary>
 public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
 {
-    private static readonly Regex Think = new("<think>([\\s\\S]*?)</think>", RegexOptions.Compiled);
+    private readonly string _opening;
+    private readonly string _closing;
+    private readonly string _separator;
+    private readonly bool _startWithReasoning;
+    private readonly Regex _reasoning;
+
+    /// <summary>Creates middleware for the XML tags <c>&lt;tagName&gt;</c> and <c>&lt;/tagName&gt;</c>.</summary>
+    /// <param name="tagName">Tag name without angle brackets.</param>
+    /// <param name="separator">Joins reasoning blocks, and the text around them.</param>
+    /// <param name="startWithReasoning">Prepends the opening tag when the model omits it.</param>
+    public ExtractReasoningMiddleware(string tagName = "think", string separator = "\n", bool startWithReasoning = false)
+        : this(("<" + tagName + ">", "</" + tagName + ">"), separator, startWithReasoning)
+    {
+    }
+
+    /// <summary>Creates middleware for literal delimiters, such as Gemma's thought channel.</summary>
+    /// <param name="tagName">Literal opening and closing delimiters.</param>
+    /// <param name="separator">Joins reasoning blocks, and the text around them.</param>
+    /// <param name="startWithReasoning">Prepends the opening delimiter when the model omits it.</param>
+    public ExtractReasoningMiddleware((string Opening, string Closing) tagName, string separator = "\n", bool startWithReasoning = false)
+    {
+        if (string.IsNullOrEmpty(tagName.Opening) || string.IsNullOrEmpty(tagName.Closing))
+        {
+            throw new InvalidArgumentError(nameof(tagName), tagName, "Reasoning delimiters must not be empty.");
+        }
+
+        _opening = tagName.Opening;
+        _closing = tagName.Closing;
+        _separator = separator;
+        _startWithReasoning = startWithReasoning;
+        _reasoning = new Regex(Regex.Escape(_opening) + "(.*?)" + Regex.Escape(_closing), RegexOptions.Singleline);
+    }
 
     /// <inheritdoc />
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
@@ -88,21 +120,194 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
         var content = new List<GeneratedContent>();
         foreach (var part in result.Content)
         {
-            if (part is GeneratedText text)
+            if (part is not GeneratedText generatedText)
             {
-                var match = Think.Match(text.Text);
-                if (match.Success)
-                {
-                    content.Add(new GeneratedReasoning(match.Groups[1].Value.Trim()));
-                    content.Add(new GeneratedText(Think.Replace(text.Text, string.Empty).Trim()));
-                    continue;
-                }
+                content.Add(part);
+                continue;
             }
 
-            content.Add(part);
+            var text = _startWithReasoning ? _opening + generatedText.Text : generatedText.Text;
+            var matches = _reasoning.Matches(text);
+            if (matches.Count == 0)
+            {
+                content.Add(part);
+                continue;
+            }
+
+            var reasoning = new string[matches.Count];
+            var remaining = text;
+            for (var i = matches.Count - 1; i >= 0; i--)
+            {
+                var match = matches[i];
+                reasoning[i] = match.Groups[1].Value;
+                var before = remaining.Substring(0, match.Index);
+                var after = remaining.Substring(match.Index + match.Length);
+                remaining = before + (before.Length > 0 && after.Length > 0 ? _separator : string.Empty) + after;
+            }
+
+            content.Add(new GeneratedReasoning(string.Join(_separator, reasoning)));
+            content.Add(new GeneratedText(remaining));
         }
 
         return MiddlewareResults.CopyResult(content, result);
+    }
+
+    /// <inheritdoc />
+    public override async IAsyncEnumerable<LanguageModelStreamPart> WrapStreamAsync(
+        LanguageModelCallOptions options,
+        Func<LanguageModelCallOptions, CancellationToken, IAsyncEnumerable<LanguageModelStreamPart>> next,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var extractions = new Dictionary<string, StreamExtraction>();
+
+        // Holds text-start until text is published, so it never comes before reasoning-start.
+        var delayedTextStarts = new Dictionary<string, TextStartStreamPart>();
+        var reasoningIds = 0;
+        var output = new List<LanguageModelStreamPart>();
+        await foreach (var part in next(options, cancellationToken).ConfigureAwait(false))
+        {
+            switch (part)
+            {
+                case TextStartStreamPart start:
+                    delayedTextStarts[start.Id] = start;
+                    break;
+                case TextDeltaStreamPart delta:
+                    if (!extractions.TryGetValue(delta.Id, out var extraction))
+                    {
+                        extraction = new StreamExtraction(delta.Id, _startWithReasoning);
+                        extractions[delta.Id] = extraction;
+                    }
+
+                    extraction.Buffer += delta.Delta;
+                    Extract(extraction);
+                    break;
+                case TextEndStreamPart end:
+                    if (extractions.TryGetValue(end.Id, out var ended))
+                    {
+                        Publish(ended, ended.Buffer);
+                        ended.Buffer = string.Empty;
+                    }
+
+                    FlushTextStart(end.Id);
+                    output.Add(end);
+                    break;
+                default:
+                    output.Add(part);
+                    break;
+            }
+
+            foreach (var item in output)
+            {
+                yield return item;
+            }
+
+            output.Clear();
+        }
+
+        void Extract(StreamExtraction extraction)
+        {
+            while (true)
+            {
+                var tag = extraction.IsReasoning ? _closing : _opening;
+                var startIndex = Collections.GetPotentialStartIndex(extraction.Buffer, tag);
+                if (startIndex is null)
+                {
+                    Publish(extraction, extraction.Buffer);
+                    extraction.Buffer = string.Empty;
+                    return;
+                }
+
+                Publish(extraction, extraction.Buffer.Substring(0, startIndex.Value));
+                if (startIndex.Value + tag.Length > extraction.Buffer.Length)
+                {
+                    // The buffer ends with part of a delimiter. Wait for more text.
+                    extraction.Buffer = extraction.Buffer.Substring(startIndex.Value);
+                    return;
+                }
+
+                extraction.Buffer = extraction.Buffer.Substring(startIndex.Value + tag.Length);
+                if (extraction.IsReasoning)
+                {
+                    // An empty reasoning block published no delta, so it still needs its start.
+                    if (extraction.IsFirstReasoning)
+                    {
+                        output.Add(new ReasoningStartStreamPart(ReasoningId(extraction)));
+                    }
+
+                    output.Add(new ReasoningEndStreamPart(ReasoningId(extraction)));
+                    extraction.ReasoningId = null;
+                }
+
+                extraction.IsReasoning = !extraction.IsReasoning;
+                extraction.AfterSwitch = true;
+            }
+        }
+
+        void Publish(StreamExtraction extraction, string text)
+        {
+            if (text.Length == 0)
+            {
+                return;
+            }
+
+            var isFirst = extraction.IsReasoning ? extraction.IsFirstReasoning : extraction.IsFirstText;
+            var prefix = extraction.AfterSwitch && !isFirst ? _separator : string.Empty;
+            if (extraction.IsReasoning)
+            {
+                if (extraction.AfterSwitch || extraction.IsFirstReasoning)
+                {
+                    output.Add(new ReasoningStartStreamPart(ReasoningId(extraction)));
+                }
+
+                output.Add(new ReasoningDeltaStreamPart(ReasoningId(extraction), prefix + text));
+                extraction.IsFirstReasoning = false;
+            }
+            else
+            {
+                FlushTextStart(extraction.TextId);
+                output.Add(new TextDeltaStreamPart(extraction.TextId, prefix + text));
+                extraction.IsFirstText = false;
+            }
+
+            extraction.AfterSwitch = false;
+        }
+
+        string ReasoningId(StreamExtraction extraction)
+        {
+            return extraction.ReasoningId ??= "reasoning-" + reasoningIds++;
+        }
+
+        void FlushTextStart(string id)
+        {
+            if (delayedTextStarts.TryGetValue(id, out var start))
+            {
+                output.Add(start);
+                delayedTextStarts.Remove(id);
+            }
+        }
+    }
+
+    private sealed class StreamExtraction
+    {
+        public StreamExtraction(string textId, bool isReasoning)
+        {
+            TextId = textId;
+            IsReasoning = isReasoning;
+        }
+
+        public string TextId { get; }
+
+        public bool IsReasoning { get; set; }
+
+        public bool IsFirstReasoning { get; set; } = true;
+
+        public bool IsFirstText { get; set; } = true;
+
+        public bool AfterSwitch { get; set; }
+
+        public string Buffer { get; set; } = string.Empty;
+
+        public string? ReasoningId { get; set; }
     }
 }
 
