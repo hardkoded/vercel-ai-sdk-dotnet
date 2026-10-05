@@ -32,7 +32,7 @@ public sealed class DownloadTests
         try
         {
             var firstCalls = 0;
-            Download.Fetch = delegate(string url, DownloadRequest request)
+            Download.Fetch = delegate (string url, DownloadRequest request)
             {
                 firstCalls++;
                 Assert.Null(typeof(DownloadRequest).GetProperty("Dispatcher"));
@@ -43,7 +43,7 @@ public sealed class DownloadTests
             Assert.Equal(1, firstCalls);
 
             var secondCalls = 0;
-            Download.Fetch = delegate(string url, DownloadRequest request)
+            Download.Fetch = delegate (string url, DownloadRequest request)
             {
                 secondCalls++;
                 return Task.FromResult(DownloadResponse.Text("second"));
@@ -119,7 +119,7 @@ public sealed class DownloadTests
             var redirects = new List<string>();
             var content = new byte[] { 1, 2, 3 };
             var calls = 0;
-            var result = await Download.GetAsync(new Uri("https://example.com/image.png"), fetch: delegate(string url, DownloadRequest request)
+            var result = await Download.GetAsync(new Uri("https://example.com/image.png"), fetch: delegate (string url, DownloadRequest request)
             {
                 calls++;
                 redirects.Add(request.Redirect);
@@ -174,7 +174,7 @@ public sealed class DownloadTests
     {
         var calls = new List<string>();
         var content = new byte[] { 1, 2, 3 };
-        var result = await Download.GetAsync(new Uri("https://example.com/image.png"), fetch: delegate(string url, DownloadRequest request)
+        var result = await Download.GetAsync(new Uri("https://example.com/image.png"), fetch: delegate (string url, DownloadRequest request)
         {
             calls.Add(url);
             Assert.Equal("manual", request.Redirect);
@@ -200,7 +200,7 @@ public sealed class DownloadTests
     {
         var expected = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         string? seen = null;
-        var result = await Download.GetAsync(new Uri("http://example.com/file"), fetch: delegate(string url, DownloadRequest request)
+        var result = await Download.GetAsync(new Uri("http://example.com/file"), fetch: delegate (string url, DownloadRequest request)
         {
             seen = url;
             Assert.Equal("ai-sdk/dotnet", request.Headers.Get("user-agent")!);
@@ -315,7 +315,7 @@ public sealed class DownloadTests
             CancellationToken seen = default(CancellationToken);
             var error = await Assert.ThrowsAsync<DownloadError>(delegate
             {
-                return Download.GetAsync(new Uri("http://example.com/file"), abortSignal: source.Token, fetch: delegate(string url, DownloadRequest request)
+                return Download.GetAsync(new Uri("http://example.com/file"), abortSignal: source.Token, fetch: delegate (string url, DownloadRequest request)
                 {
                     seen = request.AbortSignal;
                     throw new OperationCanceledException();
@@ -333,7 +333,7 @@ public sealed class DownloadTests
         using (var source = new CancellationTokenSource())
         {
             AssetDownloadCall? seen = null;
-            var download = DefaultDownloadFunction.Create(delegate(AssetDownloadCall call)
+            var download = DefaultDownloadFunction.Create(delegate (AssetDownloadCall call)
             {
                 seen = call;
                 return Task.FromResult(new DownloadResult(new byte[] { 1, 2, 3 }, "text/plain"));

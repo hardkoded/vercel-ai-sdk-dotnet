@@ -2,9 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Vercel.AI.TogetherAI;
 

@@ -7,8 +7,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Vercel.AI.ProviderUtils;
-using Vercel.AI.Util;
 using Vercel.AI.Tests;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.ProviderUtils;
 

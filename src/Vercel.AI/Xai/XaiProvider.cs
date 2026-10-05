@@ -74,7 +74,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = true;
-        
+
         return options;
     }
 }

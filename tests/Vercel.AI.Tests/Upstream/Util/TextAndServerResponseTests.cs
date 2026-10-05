@@ -149,16 +149,16 @@ public sealed class TextAndServerResponseTests
     {
         var response = new ServerResponse { EnableBackpressure = true };
         var flushCounts = new List<int>();
-        response.Flush = delegate(ServerResponse current)
+        response.Flush = delegate (ServerResponse current)
         {
             Assert.Same(response, current);
             flushCounts.Add(current.WrittenChunks.Count);
         };
         Action<byte[]?>? enqueue = null;
-        var stream = new ReadableStream<byte[]>(delegate(ReadableStreamController<byte[]> controller)
+        var stream = new ReadableStream<byte[]>(delegate (ReadableStreamController<byte[]> controller)
         {
             controller.Enqueue(Encoding.UTF8.GetBytes("chunk1"));
-            enqueue = delegate(byte[]? value)
+            enqueue = delegate (byte[]? value)
             {
                 if (value == null)
                 {

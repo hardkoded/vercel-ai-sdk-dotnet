@@ -245,7 +245,7 @@ public class ReadableStream<T>
     /// <summary>A stream that emits <paramref name="values"/> and then closes.</summary>
     public static ReadableStream<T> FromArray(IReadOnlyList<T>? values)
     {
-        return new ReadableStream<T>(delegate(ReadableStreamController<T> controller)
+        return new ReadableStream<T>(delegate (ReadableStreamController<T> controller)
         {
             if (values != null)
             {
@@ -442,7 +442,7 @@ public class ReadableStream<T>
             _pulling = true;
         }
 
-        pull(_controller).ContinueWith(delegate(Task task)
+        pull(_controller).ContinueWith(delegate (Task task)
         {
             var exception = task.Exception;
             if (task.IsFaulted && exception != null)
@@ -651,7 +651,7 @@ public static class AsyncIterableStreams
     {
         var reader = source.GetReader();
         var outer = new ReadableStream<T>(
-            pull: async delegate(ReadableStreamController<T> controller)
+            pull: async delegate (ReadableStreamController<T> controller)
             {
                 var read = await reader.ReadAsync().ConfigureAwait(false);
                 if (read.Rejected)

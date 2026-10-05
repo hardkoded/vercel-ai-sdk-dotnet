@@ -63,7 +63,7 @@ public static class TextStreams
     public static ReadableStream<string> ToTextStream(ReadableStream<TextStreamPart> stream)
     {
         var reader = stream.GetReader();
-        return new ReadableStream<string>(pull: async delegate(ReadableStreamController<string> controller)
+        return new ReadableStream<string>(pull: async delegate (ReadableStreamController<string> controller)
         {
             while (true)
             {
@@ -115,7 +115,7 @@ public static class TextStreams
     private static ReadableStream<byte[]> Encode(ReadableStream<string> stream)
     {
         var reader = stream.GetReader();
-        return new ReadableStream<byte[]>(pull: async delegate(ReadableStreamController<byte[]> controller)
+        return new ReadableStream<byte[]>(pull: async delegate (ReadableStreamController<byte[]> controller)
         {
             var read = await reader.ReadAsync().ConfigureAwait(false);
             if (read.Rejected)

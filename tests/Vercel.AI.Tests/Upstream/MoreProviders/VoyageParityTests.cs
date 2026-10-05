@@ -6,8 +6,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.Voyage;
 using Vercel.AI.Tests.MoreProviders;
+using Vercel.AI.Voyage;
 
 namespace Vercel.AI.Tests;
 
