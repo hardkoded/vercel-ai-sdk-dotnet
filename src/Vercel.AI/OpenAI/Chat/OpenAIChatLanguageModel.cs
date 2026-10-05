@@ -259,43 +259,17 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             body.ToJsonString(),
             _provider.CreateOpenAIHeaders(options.Headers),
             cancellationToken).GetAsyncEnumerator(cancellationToken);
-        var primed = new List<string>();
         try
         {
-            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
-            {
-                var data = enumerator.Current;
-                if (IsOutputChunk(data))
-                {
-                    primed.Add(data);
-                    break;
-                }
-
-                if (TryGetError(data, out var error))
-                {
-                    throw error;
-                }
-
-                primed.Add(data);
-                if (!IsJsonObject(data))
-                {
-                    break;
-                }
-            }
-
+            var checkedStream = await OpenAIStreamError.ThrowIfErrorBeforeOutputAsync(
+                enumerator,
+                ErrorFrame,
+                data => !IsJsonObject(data) || IsOutputChunk(data)).ConfigureAwait(false);
             yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
             var state = new StreamState();
-            foreach (var data in primed)
+            await foreach (var data in checkedStream.ConfigureAwait(false))
             {
                 foreach (var part in state.Read(data, options.IncludeRawChunks))
-                {
-                    yield return part;
-                }
-            }
-
-            while (await enumerator.MoveNextAsync().ConfigureAwait(false))
-            {
-                foreach (var part in state.Read(enumerator.Current, options.IncludeRawChunks))
                 {
                     yield return part;
                 }
@@ -668,29 +642,17 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         return false;
     }
 
-    private static bool TryGetError(string data, out Exception error)
+    private static JsonElement? ErrorFrame(string data)
     {
-        error = null!;
         if (!IsJsonObject(data))
         {
-            return false;
+            return null;
         }
 
         using var document = JsonDocument.Parse(data);
-        var root = document.RootElement;
-        if (!root.TryGetProperty("error", out var value) || value.ValueKind != JsonValueKind.Object || !value.TryGetProperty("message", out _))
-        {
-            return false;
-        }
-
-        var status = 500;
-        if (value.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.Number && code.TryGetInt32(out var numeric) && numeric >= 100 && numeric <= 599)
-        {
-            status = numeric;
-        }
-
-        error = ProviderHttp.MapStatus(status, data);
-        return true;
+        return document.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out _)
+            ? error.Clone()
+            : null;
     }
 
     private sealed class StreamState
