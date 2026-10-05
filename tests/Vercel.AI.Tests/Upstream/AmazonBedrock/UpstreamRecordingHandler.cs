@@ -40,6 +40,14 @@ internal sealed class UpstreamRecordingHandler : HttpMessageHandler
             Headers[header.Key] = string.Join(",", header.Value);
         }
 
+        if (request.Content != null)
+        {
+            foreach (var header in request.Content.Headers)
+            {
+                Headers[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
         if (request.Headers.Authorization != null)
         {
             Headers["Authorization"] = request.Headers.Authorization.ToString();

@@ -6,11 +6,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
 /// <summary>Amazon Bedrock Agent Runtime rerank model.</summary>
-public sealed class AmazonBedrockRerankingModel : IRerankingModel
+public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IRerankCaller
 {
     private readonly AmazonBedrockProvider _provider;
 
@@ -39,46 +40,45 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel
     /// </summary>
     public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, JsonElement? providerOptions, CancellationToken cancellationToken)
     {
-        var sources = new JsonArray();
-        foreach (var document in documents)
-        {
-            sources.Add(new JsonObject
-            {
-                ["type"] = "INLINE",
-                ["inlineDocumentSource"] = new JsonObject
-                {
-                    ["type"] = "TEXT",
-                    ["textDocument"] = new JsonObject { ["text"] = document },
-                },
-            });
-        }
-
-        return await PostAsync(query, sources, topN, providerOptions, cancellationToken).ConfigureAwait(false);
+        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents.ToArray()), query, topN, providerOptions, null, cancellationToken);
+        return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Reranks JSON documents. Each value is sent as an inline JSON document.</summary>
     public async Task<RerankResult> DoRerankObjectsAsync(string query, IReadOnlyList<JsonElement> documents, int? topN, JsonElement? providerOptions, CancellationToken cancellationToken)
     {
+        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("object", documents.Cast<object?>().ToArray()), query, topN, providerOptions, null, cancellationToken);
+        return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Reranks text or object documents. Call headers are sent before SigV4 signing.
+    /// The response carries the headers and raw body, with no warnings or provider metadata.
+    /// </summary>
+    public async Task<Operations.RerankModelResponse> DoRerankAsync(Operations.RerankModelCall call, CancellationToken cancellationToken)
+    {
+        call = call ?? throw new ArgumentNullException(nameof(call));
         var sources = new JsonArray();
-        foreach (var document in documents)
+        foreach (var document in call.Documents.Values)
         {
             sources.Add(new JsonObject
             {
                 ["type"] = "INLINE",
-                ["inlineDocumentSource"] = new JsonObject
-                {
-                    ["type"] = "JSON",
-                    ["jsonDocument"] = JsonNode.Parse(document.GetRawText()),
-                },
+                ["inlineDocumentSource"] = call.Documents.Type == "text"
+                    ? new JsonObject
+                    {
+                        ["type"] = "TEXT",
+                        ["textDocument"] = new JsonObject { ["text"] = (string?)document },
+                    }
+                    : new JsonObject
+                    {
+                        ["type"] = "JSON",
+                        ["jsonDocument"] = JsonSerializer.SerializeToNode(document),
+                    },
             });
         }
 
-        return await PostAsync(query, sources, topN, providerOptions, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<RerankResult> PostAsync(string query, JsonArray sources, int? topN, JsonElement? providerOptions, CancellationToken cancellationToken)
-    {
-        var options = ReadOptions(providerOptions);
+        var options = ReadOptions(call.ProviderOptions);
         var modelConfiguration = new JsonObject
         {
             ["modelArn"] = "arn:aws:bedrock:" + _provider.Options.Region + "::foundation-model/" + ModelId,
@@ -92,7 +92,7 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel
         {
             ["modelConfiguration"] = modelConfiguration,
         };
-        if (topN is { } count)
+        if (call.TopN is { } count)
         {
             configuration["numberOfResults"] = count;
         }
@@ -104,7 +104,7 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel
                 new JsonObject
                 {
                     ["type"] = "TEXT",
-                    ["textQuery"] = new JsonObject { ["text"] = query },
+                    ["textQuery"] = new JsonObject { ["text"] = call.Query },
                 },
             },
             ["rerankingConfiguration"] = new JsonObject
@@ -125,6 +125,14 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+        if (call.Headers != null)
+        {
+            foreach (var header in call.Headers)
+            {
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
@@ -142,19 +150,25 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
         }
 
-        using var document = JsonDocument.Parse(text);
-        var items = new List<RerankItem>();
-        if (document.RootElement.TryGetProperty("results", out var results))
+        using var parsed = JsonDocument.Parse(text);
+        var root = parsed.RootElement;
+        var ranking = new List<Operations.RerankModelRank>();
+        if (root.TryGetProperty("results", out var results))
         {
             foreach (var result in results.EnumerateArray())
             {
                 var index = result.TryGetProperty("index", out var indexElement) ? indexElement.GetInt32() : 0;
                 var score = result.TryGetProperty("relevanceScore", out var scoreElement) ? scoreElement.GetDouble() : 0;
-                items.Add(new RerankItem(index, score));
+                ranking.Add(new Operations.RerankModelRank(index, score));
             }
         }
 
-        return new RerankResult(items);
+        return new Operations.RerankModelResponse(ranking, response: new Operations.ProviderResponse(JsonStreams.ExtractResponseHeaders(response), root.Clone()));
+    }
+
+    private static RerankResult ToResult(Operations.RerankModelResponse response)
+    {
+        return new RerankResult(response.Ranking.Select(rank => new RerankItem(rank.Index, rank.RelevanceScore)).ToList());
     }
 
     private static RerankOptions ReadOptions(JsonElement? providerOptions)
