@@ -110,6 +110,8 @@ internal sealed class RecordingHandler : HttpMessageHandler
 {
     public List<string> Uris { get; } = new();
 
+    public string Method { get; private set; } = string.Empty;
+
     public string Body { get; private set; } = string.Empty;
 
     public Dictionary<string, string> RequestHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -130,6 +132,7 @@ internal sealed class RecordingHandler : HttpMessageHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Uris.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
+        Method = request.Method.Method;
         Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
         RequestHeaders.Clear();
         foreach (var header in request.Headers)

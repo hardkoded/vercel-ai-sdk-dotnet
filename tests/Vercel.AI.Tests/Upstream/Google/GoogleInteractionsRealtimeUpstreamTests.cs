@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Net;
 using System.Text.Json.Nodes;
 using Vercel.AI.Google;
 using Vercel.AI.Provider;
@@ -11,6 +13,8 @@ namespace Vercel.AI.Tests;
 /// <summary>Interactions finish reasons and Gemini Live event mapping.</summary>
 public sealed class GoogleInteractionsRealtimeUpstreamTests
 {
+    private const string RealtimeModel = "packages/google/src/realtime/google-realtime-model.test.ts::GoogleRealtimeModel > ";
+
     [Fact]
     [UpstreamTest("packages/google/src/interactions/map-google-interactions-finish-reason.test.ts::mapGoogleInteractionsFinishReason::maps \"completed\" without function_call to \"stop\"", Coverage = UpstreamCoverage.Covered)]
     public void Maps_completed_without_a_function_call_to_stop()
@@ -710,6 +714,145 @@ public sealed class GoogleInteractionsRealtimeUpstreamTests
             Tools = new[] { new GoogleRealtimeTool("getWeather", null, GoogleUpstream.Element("{\"type\":\"object\",\"properties\":{}}")) },
         });
         Assert.False(setup["tools"]![0]!["functionDeclarations"]![0]!.AsObject().ContainsKey("behavior"));
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::calls auth_tokens endpoint with correct payload", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_posts_the_session_setup()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"projects/123/locations/us/accessTokens/abc\",\"expireTime\":\"2026-01-01T00:05:00.000Z\"}" };
+        var secret = await Realtime(handler).CreateClientSecretAsync(new GoogleRealtimeSession { Instructions = "Be helpful", Voice = "Puck" }, null, CancellationToken.None);
+        Assert.Equal("https://generativelanguage.googleapis.com/v1alpha/auth_tokens?key=test-key", Assert.Single(handler.Uris));
+        Assert.Equal("POST", handler.Method);
+        var body = JsonNode.Parse(handler.Body)!;
+        Assert.Equal(0, (int)body["uses"]!);
+        Assert.NotNull(body["expireTime"]);
+        var setup = body["bidiGenerateContentSetup"]!;
+        Assert.Equal("models/gemini-2.0-flash-live-001", (string?)setup["model"]);
+        GoogleUpstream.JsonEqual(setup["systemInstruction"], "{\"parts\":[{\"text\":\"Be helpful\"}]}");
+        Assert.Equal("Puck", (string?)setup["generationConfig"]!["speechConfig"]!["voiceConfig"]!["prebuiltVoiceConfig"]!["voiceName"]);
+        Assert.Equal("projects/123/locations/us/accessTokens/abc", secret.Token);
+        Assert.Contains("generativelanguage.googleapis.com", secret.Url, StringComparison.Ordinal);
+        Assert.Equal(DateTimeOffset.Parse("2026-01-01T00:05:00Z", CultureInfo.InvariantCulture).ToUnixTimeSeconds(), secret.ExpiresAt);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::sets newSessionExpireTime from expiresAfterSeconds", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_opens_sessions_for_the_requested_window()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"token\"}" };
+        var now = DateTimeOffset.Parse("2026-01-01T00:00:00Z", CultureInfo.InvariantCulture);
+        var provider = GoogleUpstream.Client(handler, new GoogleOptions { ApiKey = "test-key" });
+        provider.Clock = () => now;
+        await ((GoogleRealtimeModel)provider.RealtimeModel("gemini-2.0-flash-live-001")).CreateClientSecretAsync(null, 120, CancellationToken.None);
+        var body = JsonNode.Parse(handler.Body)!;
+        var newSession = DateTimeOffset.Parse((string)body["newSessionExpireTime"]!, CultureInfo.InvariantCulture);
+        Assert.Equal(now.AddSeconds(120), newSession);
+        Assert.True(DateTimeOffset.Parse((string)body["expireTime"]!, CultureInfo.InvariantCulture) > newSession);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::uses the configured base URL for realtime endpoints", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_uses_the_configured_base_url()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"token\"}" };
+        var secret = await Realtime(handler, "https://proxy.example.com/google/v1beta").CreateClientSecretAsync(null, null, CancellationToken.None);
+        Assert.Equal("https://proxy.example.com/google/v1alpha/auth_tokens?key=test-key", Assert.Single(handler.Uris));
+        Assert.Equal("wss://proxy.example.com/google/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained", secret.Url);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::uses ws protocol for http base URLs", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_uses_ws_for_http()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"token\"}" };
+        var secret = await Realtime(handler, "http://localhost:8787/v1beta").CreateClientSecretAsync(null, null, CancellationToken.None);
+        Assert.Equal("ws://localhost:8787/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained", secret.Url);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::enables output audio transcription when configured", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_enables_output_transcription()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"token\"}" };
+        await Realtime(handler).CreateClientSecretAsync(new GoogleRealtimeSession { OutputAudioTranscription = true }, null, CancellationToken.None);
+        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body)!["bidiGenerateContentSetup"]!["outputAudioTranscription"], "{}");
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::embeds Google Live Translation config in auth token setup", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_embeds_translation_config()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"name\":\"token\"}" };
+        await Realtime(handler, modelId: "gemini-3.5-live-translate-preview").CreateClientSecretAsync(
+            new GoogleRealtimeSession { ProviderOptions = GoogleUpstream.Element("{\"google\":{\"translationConfig\":{\"targetLanguageCode\":\"pl\",\"echoTargetLanguage\":true}}}") },
+            null,
+            CancellationToken.None);
+        var setup = JsonNode.Parse(handler.Body)!["bidiGenerateContentSetup"]!;
+        GoogleUpstream.JsonEqual(setup["generationConfig"]!["translationConfig"], "{\"targetLanguageCode\":\"pl\",\"echoTargetLanguage\":true}");
+        Assert.False(setup.AsObject().ContainsKey("google"));
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::throws on missing API key", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_requires_an_api_key()
+    {
+        var handler = new RecordingHandler();
+        var provider = GoogleProvider.Create(new GoogleOptions { ApiKeyEnvironmentVariable = "VERCEL_AI_TEST_UNSET_GOOGLE_KEY" }, handler);
+        var model = (GoogleRealtimeModel)provider.RealtimeModel("gemini-2.0-flash-live-001");
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => model.CreateClientSecretAsync(null, null, CancellationToken.None));
+        Assert.Contains("API key is required", error.Message, StringComparison.Ordinal);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "doCreateClientSecret::throws on failed request", Coverage = UpstreamCoverage.Covered)]
+    public async Task Client_secret_throws_on_a_failed_request()
+    {
+        var handler = new RecordingHandler { Status = HttpStatusCode.Forbidden, ResponseText = "Forbidden", MediaType = "text/plain" };
+        var error = await Assert.ThrowsAsync<PermissionDeniedException>(() => Realtime(handler).CreateClientSecretAsync(null, null, CancellationToken.None));
+        Assert.Equal(403, error.StatusCode);
+        Assert.Equal("Forbidden", error.ResponseBody);
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "getWebSocketConfig::returns URL with access_token query param", Coverage = UpstreamCoverage.Covered)]
+    public void WebSocket_url_carries_the_access_token()
+    {
+        Assert.Equal("wss://example.com/ws?access_token=my-token", Realtime(new RecordingHandler()).GetWebSocketUrl("my-token", "wss://example.com/ws"));
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "parseServerEvent::delegates to mapper", Coverage = UpstreamCoverage.Covered)]
+    public void Model_parses_server_events()
+    {
+        var parsed = Assert.Single(Realtime(new RecordingHandler()).ParseServerEvent(GoogleUpstream.Element("{\"setupComplete\":true}")));
+        Assert.Equal("session-created", parsed.Type);
+        GoogleUpstream.JsonEqual(parsed.Raw!.Value, "{\"setupComplete\":true}");
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "serializeClientEvent::delegates to mapper", Coverage = UpstreamCoverage.Covered)]
+    public void Model_serializes_client_events()
+    {
+        var message = Realtime(new RecordingHandler()).SerializeClientEvent("input-audio-append", null, "base64", null, null, null, null);
+        GoogleUpstream.JsonEqual(message, "{\"realtimeInput\":{\"audio\":{\"data\":\"base64\",\"mimeType\":\"audio/pcm;rate=16000\"}}}");
+    }
+
+    [Fact]
+    [UpstreamTest(RealtimeModel + "serializeClientEvent::labels input audio with the configured capture rate", Coverage = UpstreamCoverage.Covered)]
+    public void Model_labels_audio_with_the_session_rate()
+    {
+        var model = Realtime(new RecordingHandler());
+        model.SerializeClientEvent("session-update", new GoogleRealtimeSession { InputAudioRate = 24000 }, null, null, null, null, null);
+        var message = model.SerializeClientEvent("input-audio-append", null, "base64", null, null, null, null);
+        GoogleUpstream.JsonEqual(message, "{\"realtimeInput\":{\"audio\":{\"data\":\"base64\",\"mimeType\":\"audio/pcm;rate=24000\"}}}");
+    }
+
+    private static GoogleRealtimeModel Realtime(RecordingHandler handler, string baseUrl = "https://generativelanguage.googleapis.com/v1beta", string modelId = "gemini-2.0-flash-live-001")
+    {
+        var provider = GoogleUpstream.Client(handler, new GoogleOptions { ApiKey = "test-key", BaseUrl = baseUrl });
+        return (GoogleRealtimeModel)provider.RealtimeModel(modelId);
     }
 
     private static GoogleRealtimeEvent One(string json)

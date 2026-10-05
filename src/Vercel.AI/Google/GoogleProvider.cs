@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -163,10 +165,33 @@ public class GoogleProvider : ProviderBase
     }
 }
 
+/// <summary>An ephemeral Gemini Live auth token and the WebSocket URL it opens.</summary>
+public sealed class GoogleRealtimeClientSecret
+{
+    internal GoogleRealtimeClientSecret(string token, string url, long? expiresAt)
+    {
+        Token = token;
+        Url = url;
+        ExpiresAt = expiresAt;
+    }
+
+    /// <summary>Auth token name.</summary>
+    public string Token { get; }
+
+    /// <summary>Constrained Live API WebSocket URL.</summary>
+    public string Url { get; }
+
+    /// <summary>Token expiry as unix seconds, when the provider sent one.</summary>
+    public long? ExpiresAt { get; }
+}
+
 /// <summary>Realtime model. Event mapping is local; opening the Live socket is not available on this runtime.</summary>
 public sealed class GoogleRealtimeModel : IRealtimeModel
 {
+    private const string ConstrainedPath = "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
+
     private readonly GoogleProvider _provider;
+    private readonly GoogleRealtime _mapper = new();
 
     /// <summary>Creates a realtime model.</summary>
     public GoogleRealtimeModel(GoogleProvider provider, string modelId)
@@ -195,6 +220,85 @@ public sealed class GoogleRealtimeModel : IRealtimeModel
     public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
     {
         throw new AiSdkException("Gemini Live WebSocket sessions are not opened by this port. Map events with GoogleRealtime instead.");
+    }
+
+    /// <summary>
+    /// Creates an ephemeral auth token that a client uses to open a Live session.
+    /// <paramref name="expiresAfterSeconds"/> is the window to open a session and defaults to 60 seconds.
+    /// The token itself lives 30 minutes longer, so the opened session has room to run.
+    /// </summary>
+    public async Task<GoogleRealtimeClientSecret> CreateClientSecretAsync(GoogleRealtimeSession? session, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    {
+        if (!_provider.Headers().TryGetValue("x-goog-api-key", out var key) || string.IsNullOrEmpty(key))
+        {
+            throw new AiSdkException("Google Generative AI API key is required for realtime token creation.");
+        }
+
+        var now = _provider.Clock();
+        var newSessionExpireTime = now.AddSeconds(expiresAfterSeconds ?? 60);
+        var body = new JsonObject
+        {
+            // 0 lets the token start any number of sessions. The default of 1 breaks reconnects.
+            ["uses"] = 0,
+            ["expireTime"] = Iso(newSessionExpireTime.AddMinutes(30)),
+            ["newSessionExpireTime"] = Iso(newSessionExpireTime),
+            ["bidiGenerateContentSetup"] = GoogleRealtime.BuildSession(WithModel(session)),
+        };
+        var uri = GoogleSpeechTranslation.LiveBaseUrl(_provider.Options.BaseUrl);
+        uri.Path = uri.Path.TrimEnd('/') + "/v1alpha/auth_tokens";
+        uri.Query = "key=" + Uri.EscapeDataString(key!);
+        var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, uri.Uri, body.ToJsonString(), null, cancellationToken).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(response.Body);
+        long? expiresAt = null;
+        if (GoogleJson.String(document.RootElement, "expireTime") is { } expireTime)
+        {
+            expiresAt = DateTimeOffset.Parse(expireTime, CultureInfo.InvariantCulture).ToUnixTimeSeconds();
+        }
+
+        return new GoogleRealtimeClientSecret(
+            GoogleJson.String(document.RootElement, "name") ?? string.Empty,
+            GoogleSpeechTranslation.LiveWebSocketUrl(_provider.Options.BaseUrl, ConstrainedPath).Uri.ToString(),
+            expiresAt);
+    }
+
+    /// <summary>The URL a client opens with a token from <see cref="CreateClientSecretAsync"/>.</summary>
+    public string GetWebSocketUrl(string token, string url)
+    {
+        return url + "?access_token=" + Uri.EscapeDataString(token);
+    }
+
+    /// <summary>Maps one server message with this model's event mapper.</summary>
+    public IReadOnlyList<GoogleRealtimeEvent> ParseServerEvent(JsonElement raw)
+    {
+        return _mapper.ParseServerEvent(raw);
+    }
+
+    /// <summary>Serializes a client event with this model's event mapper. A session update uses this model.</summary>
+    public JsonObject? SerializeClientEvent(string type, GoogleRealtimeSession? session, string? audio, string? text, string? callId, string? callName, string? callOutput)
+    {
+        return _mapper.SerializeClient(type, session == null ? null : WithModel(session), audio, text, callId, callName, callOutput);
+    }
+
+    private GoogleRealtimeSession WithModel(GoogleRealtimeSession? session)
+    {
+        session ??= new GoogleRealtimeSession();
+        return new GoogleRealtimeSession
+        {
+            ModelId = ModelId,
+            Instructions = session.Instructions,
+            Voice = session.Voice,
+            OutputModalities = session.OutputModalities,
+            Tools = session.Tools,
+            ProviderOptions = session.ProviderOptions,
+            InputAudioTranscription = session.InputAudioTranscription,
+            OutputAudioTranscription = session.OutputAudioTranscription,
+            InputAudioRate = session.InputAudioRate,
+        };
+    }
+
+    private static string Iso(DateTimeOffset value)
+    {
+        return value.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
     }
 }
 
