@@ -665,7 +665,10 @@ internal static class AnthropicAssertions
         var requestHeaders = new Dictionary<string, string?> { ["Content-Type"] = "application/json", ["X-From-Request"] = "from-request" };
         var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{\"test\": \"data\"}", null, null, null, requestHeaders, Creds(), new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
         Assert.Equal("{\"test\": \"data\"}", call.Body);
+        Assert.Equal("application/json", call.Headers["content-type"]);
         Assert.Equal("from-request", call.Headers["x-from-request"]);
+        Assert.Equal("20240315T000000Z", call.Headers["x-amz-date"]);
+        Assert.Contains("Credential=test-access-key/20240315/us-west-2/aws-external-anthropic/aws4_request", call.Headers["authorization"]);
         Assert.StartsWith("ai-sdk/anthropic-aws/" + AiSdkVersion.Version, call.Headers["user-agent"]);
         Assert.True(call.Signed);
     }
@@ -700,10 +703,12 @@ internal static class AnthropicAssertions
 
     public static void FetchHeaderList()
     {
-        var headers = new Dictionary<string, string?> { ["X-A"] = "1", ["X-B"] = "2" };
-        var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{}", null, null, headers, null, Creds());
-        Assert.Equal("1", call.Headers["x-a"]);
-        Assert.Equal("2", call.Headers["x-b"]);
+        var headers = new Dictionary<string, string?> { ["Array-Header"] = "array-value", ["Another-Header"] = "another-value" };
+        var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{\"test\": \"data\"}", null, null, headers, null, Creds(), new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
+        Assert.Equal("array-value", call.Headers["array-header"]);
+        Assert.Equal("another-value", call.Headers["another-header"]);
+        Assert.Equal("20240315T000000Z", call.Headers["x-amz-date"]);
+        Assert.Contains("Credential=test-access-key/20240315/us-west-2/aws-external-anthropic/aws4_request", call.Headers["authorization"]);
     }
 
     public static void FetchUndefinedInit()
@@ -715,17 +720,41 @@ internal static class AnthropicAssertions
 
     public static async Task FetchAsyncProvider()
     {
-        var credentials = await Task.FromResult(Creds()).ConfigureAwait(false);
-        var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{}", null, null, null, null, credentials);
-        Assert.Contains("test-access-key", call.Headers["authorization"]);
+        var handler = AnthropicParity.Ok();
+        var provider = AnthropicParity.Aws(handler, new AnthropicOptions
+        {
+            Region = "us-east-1",
+            WorkspaceId = "wrkspc_test",
+            UtcNow = () => new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero),
+            CredentialProvider = async _ =>
+            {
+                await Task.Yield();
+                return new AnthropicAwsCredentials("us-east-1", "async-access-key", "async-secret-key", "async-session-token");
+            },
+        });
+        await AnthropicParity.Generate(provider, "claude-sonnet-4-6").ConfigureAwait(false);
+        Assert.Equal("20240315T000000Z", handler.Headers["x-amz-date"]);
+        Assert.Contains("Credential=async-access-key/20240315/us-east-1/aws-external-anthropic/aws4_request", handler.Headers["Authorization"]);
+        Assert.Equal("async-session-token", handler.Headers["x-amz-security-token"]);
+        Assert.StartsWith("application/json", handler.Headers["Content-Type"], StringComparison.Ordinal);
     }
 
     public static async Task FetchAsyncReject()
     {
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => throw new InvalidOperationException("denied")).ConfigureAwait(false);
-        Assert.Equal("denied", exception.Message);
-        var wrapped = await Assert.ThrowsAsync<AiSdkException>(() => Task.FromException<AiSdkException>(new AiSdkException("AWS credential provider failed: denied")));
-        Assert.Contains("AWS credential provider failed", wrapped.Message);
+        var handler = AnthropicParity.Ok();
+        var provider = AnthropicParity.Aws(handler, new AnthropicOptions
+        {
+            Region = "us-west-2",
+            WorkspaceId = "wrkspc_test",
+            CredentialProvider = async _ =>
+            {
+                await Task.Yield();
+                throw new InvalidOperationException("Failed to get credentials");
+            },
+        });
+        var exception = await Assert.ThrowsAsync<AiSdkException>(() => AnthropicParity.Generate(provider, "claude-sonnet-4-6")).ConfigureAwait(false);
+        Assert.Contains("Failed to get credentials", exception.Message);
+        Assert.Equal(0, handler.Calls);
     }
 
     public static void ApiKeyUserAgent()

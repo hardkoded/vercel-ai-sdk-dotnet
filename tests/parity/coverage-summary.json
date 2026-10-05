@@ -3,8 +3,8 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3306,
-  "partial": 112,
+  "covered": 3315,
+  "partial": 103,
   "missing": 7651,
   "features": [
     {
@@ -299,8 +299,8 @@
       "feature": "anthropic-aws",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 50,
-      "covered": 41,
-      "partial": 9,
+      "covered": 50,
+      "partial": 0,
       "missing": 0
     },
     {
