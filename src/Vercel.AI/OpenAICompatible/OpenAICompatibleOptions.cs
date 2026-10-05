@@ -99,8 +99,8 @@ public class OpenAICompatibleOptions
     /// <summary>Rewrites the JSON body before it is sent. Warnings raised here are returned with the call.</summary>
     public Func<JsonObject, IList<CallWarning>, JsonObject>? TransformRequestBody { get; set; }
 
-    /// <summary>Rewrites the raw chat usage object before token counts are read.</summary>
-    public Func<JsonElement, JsonElement>? TransformUsage { get; set; }
+    /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
+    public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }
 
     /// <summary>Maps a raw finish reason before the shared mapping. Null falls through.</summary>
     public Func<string?, FinishReason?>? MapFinishReason { get; set; }

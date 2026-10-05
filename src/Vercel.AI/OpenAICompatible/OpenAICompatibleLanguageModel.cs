@@ -134,7 +134,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             ? finish.GetString()
             : null;
         var usage = root.TryGetProperty("usage", out var usageElement)
-            ? OpenAICompatibleChat.ConvertUsage(TransformUsage(usageElement))
+            ? OpenAICompatibleChat.ConvertUsage(usageElement)
             : OpenAICompatibleUsage.Missing;
         var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
         var finishReason = MapFinish(raw);
@@ -148,7 +148,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return new LanguageModelGenerateResult(
             content,
             finishReason,
-            usage.Usage,
+            ModelUsage(usageElement, usage),
             raw,
             prepared.Warnings,
             ResponseString(root, "id"),
@@ -369,7 +369,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             yield return new ErrorStreamPart("Response stream ended without a finish reason.");
         }
 
-        var converted = OpenAICompatibleChat.ConvertUsage(usageElement is { } streamed ? TransformUsage(streamed) : null);
+        var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
         var finishReason = !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
         if (dropToolCalls && finishRaw == "tool_calls")
         {
@@ -378,7 +378,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         yield return new FinishStreamPart(
             finishReason,
-            converted.Usage,
+            ModelUsage(usageElement, converted),
             sawFinish ? finishRaw : null,
             OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, converted.AcceptedPredictionTokens, converted.RejectedPredictionTokens));
     }
@@ -706,10 +706,10 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return Endpoint ?? _provider.ChatUri(ModelId);
     }
 
-    private JsonElement TransformUsage(JsonElement usage)
+    private LanguageModelUsage ModelUsage(JsonElement? usage, OpenAICompatibleUsage converted)
     {
-        var transform = _provider.Options.TransformUsage;
-        return transform == null || usage.ValueKind != JsonValueKind.Object ? usage : transform(usage);
+        var convert = _provider.Options.ConvertUsage;
+        return convert != null && usage is { ValueKind: JsonValueKind.Object } element ? convert(element) : converted.Usage;
     }
 
     private FinishReason MapFinish(string? raw)

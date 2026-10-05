@@ -98,7 +98,7 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
         }
         options.SupportsStructuredOutputs = true;
         options.SelectErrorMessage = DeepInfraImageModel.ReadError;
-        options.TransformUsage = FixReasoningUsage;
+        options.ConvertUsage = usage => OpenAICompatibleChat.ConvertUsage(FixReasoningUsage(usage)).Usage;
         if (string.IsNullOrEmpty(options.ImageBaseUrl))
         {
             options.ImageBaseUrl = options.BaseUrl == DefaultBaseUrl
