@@ -485,9 +485,9 @@
       "title": "Cover upstream unit tests: deepgram",
       "dotnetProject": "Vercel.AI.Deepgram",
       "inScope": 39,
-      "covered": 2,
+      "covered": 39,
       "partial": 0,
-      "missing": 37,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/78"
     },
     {

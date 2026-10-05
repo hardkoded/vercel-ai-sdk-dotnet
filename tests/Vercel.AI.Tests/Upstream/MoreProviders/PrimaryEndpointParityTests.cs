@@ -136,7 +136,7 @@ public sealed class PrimaryEndpointParityTests
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = DeepgramProvider.Create(options, handler);
-        await provider.TranscribeAsync("nova-3", new AudioInput(new byte[] { 1 }, "audio/wav", "audio.wav"), new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" }, CancellationToken.None).ConfigureAwait(false);
+        await provider.TranscribeAsync("nova-3", new AudioInput(new byte[] { 1 }, "audio/wav", "audio.wav"), new DeepgramTranscriptionRequest { Headers = new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" } }, CancellationToken.None).ConfigureAwait(false);
         var call = handler.Calls[0];
         Assert.Equal("Token test-api-key", call.Header("Authorization"));
         Assert.Equal("audio/wav", call.Header("Content-Type"));
