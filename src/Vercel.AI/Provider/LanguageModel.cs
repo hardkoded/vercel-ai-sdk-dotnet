@@ -39,7 +39,9 @@ public sealed class LanguageModelUsage
         int? cacheReadTokens = null,
         int? cacheWriteTokens = null,
         int? reasoningTokens = null,
-        JsonElement? raw = null)
+        JsonElement? raw = null,
+        int? noCacheInputTokens = null,
+        int? textTokens = null)
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
@@ -48,6 +50,8 @@ public sealed class LanguageModelUsage
         CacheWriteTokens = cacheWriteTokens;
         ReasoningTokens = reasoningTokens;
         Raw = raw;
+        NoCacheInputTokens = noCacheInputTokens;
+        TextTokens = textTokens;
     }
 
     /// <summary>Prompt tokens.</summary>
@@ -71,35 +75,11 @@ public sealed class LanguageModelUsage
     /// <summary>Provider usage object, unchanged.</summary>
     public JsonElement? Raw { get; }
 
-    /// <summary>Input tokens that were not served from cache.</summary>
-    public int? NoCacheInputTokens
-    {
-        get
-        {
-            if (InputTokens is null || CacheReadTokens is null || CacheWriteTokens is null)
-            {
-                return null;
-            }
+    /// <summary>Input tokens that were not served from cache, when the provider reports them.</summary>
+    public int? NoCacheInputTokens { get; }
 
-            var value = InputTokens.Value - CacheReadTokens.Value - CacheWriteTokens.Value;
-            return value < 0 ? 0 : value;
-        }
-    }
-
-    /// <summary>Output tokens that were not reasoning tokens.</summary>
-    public int? TextTokens
-    {
-        get
-        {
-            if (OutputTokens is null || ReasoningTokens is null)
-            {
-                return null;
-            }
-
-            var value = OutputTokens.Value - ReasoningTokens.Value;
-            return value < 0 ? 0 : value;
-        }
-    }
+    /// <summary>Output tokens that were not reasoning tokens, when the provider reports them.</summary>
+    public int? TextTokens { get; }
 
     /// <summary>Adds two usage values.</summary>
     public static LanguageModelUsage Add(LanguageModelUsage left, LanguageModelUsage right)
@@ -110,7 +90,9 @@ public sealed class LanguageModelUsage
             Sum(left.TotalTokens, right.TotalTokens),
             Sum(left.CacheReadTokens, right.CacheReadTokens),
             Sum(left.CacheWriteTokens, right.CacheWriteTokens),
-            Sum(left.ReasoningTokens, right.ReasoningTokens));
+            Sum(left.ReasoningTokens, right.ReasoningTokens),
+            noCacheInputTokens: Sum(left.NoCacheInputTokens, right.NoCacheInputTokens),
+            textTokens: Sum(left.TextTokens, right.TextTokens));
     }
 
     /// <summary>Zero usage.</summary>

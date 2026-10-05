@@ -186,7 +186,7 @@ internal static class OpenAIJson
             ? NestedInt(element, "prompt_tokens_details", "cache_write_tokens")
             : null;
         var reasoning = NestedInt(element, "completion_tokens_details", "reasoning_tokens") ?? 0;
-        return new LanguageModelUsage(prompt, completion, total, cacheRead, cacheWrite, reasoning, element.Clone());
+        return new LanguageModelUsage(prompt, completion, total, cacheRead, cacheWrite, reasoning, element.Clone(), prompt - cacheRead - (cacheWrite ?? 0), Math.Max(0, completion - reasoning));
     }
 
     public static LanguageModelUsage ResponsesUsage(JsonElement? usage)
@@ -205,7 +205,7 @@ internal static class OpenAIJson
             ? NestedInt(element, "input_tokens_details", "cache_write_tokens")
             : null;
         var reasoning = NestedInt(element, "output_tokens_details", "reasoning_tokens") ?? 0;
-        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone());
+        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone(), input - cacheRead - (cacheWrite ?? 0), output - reasoning);
     }
 
     public static LanguageModelUsage CompletionUsage(JsonElement? usage)
@@ -216,11 +216,15 @@ internal static class OpenAIJson
         }
 
         var element = usage.Value;
+        var prompt = Int(element, "prompt_tokens");
+        var completion = Int(element, "completion_tokens");
         return new LanguageModelUsage(
-            Int(element, "prompt_tokens"),
-            Int(element, "completion_tokens"),
+            prompt,
+            completion,
             Int(element, "total_tokens"),
-            raw: element.Clone());
+            raw: element.Clone(),
+            noCacheInputTokens: prompt ?? 0,
+            textTokens: completion ?? 0);
     }
 
     public static JsonElement ProviderMetadata(JsonObject openai)

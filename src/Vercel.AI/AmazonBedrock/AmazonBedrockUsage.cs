@@ -33,7 +33,7 @@ public static class AmazonBedrockUsage
         int? total = element.TryGetProperty("totalTokens", out var totalElement) && totalElement.ValueKind == JsonValueKind.Number
             ? totalElement.GetInt32()
             : null;
-        return new LanguageModelUsage(input + cacheRead + cacheWrite, output, total, cacheRead, cacheWrite, raw: element.Clone());
+        return new LanguageModelUsage(input + cacheRead + cacheWrite, output, total, cacheRead, cacheWrite, raw: element.Clone(), noCacheInputTokens: input, textTokens: output);
     }
 
     private static int ReadCache(JsonElement usage, string name)

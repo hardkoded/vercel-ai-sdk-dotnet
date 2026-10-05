@@ -80,17 +80,19 @@ public sealed class HuggingFaceUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/huggingface/src/responses/huggingface-responses-language-model.test.ts::HuggingFaceResponsesLanguageModel > doGenerate > basic text response::should extract usage", Coverage = UpstreamCoverage.Partial, Note = "Input, output, total, cache read, and reasoning tokens are mapped. noCache stays null because cache write is unset.")]
+    [UpstreamTest("packages/huggingface/src/responses/huggingface-responses-language-model.test.ts::HuggingFaceResponsesLanguageModel > doGenerate > basic text response::should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Usage_maps_input_output_and_total()
     {
         var result = await Generate("{\"usage\":{\"input_tokens\":12,\"output_tokens\":25,\"total_tokens\":37},\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello\"}]}]}");
         Assert.Equal(12, result.Usage.InputTokens);
-        Assert.Equal(25, result.Usage.OutputTokens);
-        Assert.Equal(37, result.Usage.TotalTokens);
+        Assert.Equal(12, result.Usage.NoCacheInputTokens);
         Assert.Equal(0, result.Usage.CacheReadTokens);
-        Assert.Equal(0, result.Usage.ReasoningTokens);
+        Assert.Null(result.Usage.CacheWriteTokens);
+        Assert.Equal(25, result.Usage.OutputTokens);
         Assert.Equal(25, result.Usage.TextTokens);
-        Assert.Null(result.Usage.NoCacheInputTokens);
+        Assert.Equal(0, result.Usage.ReasoningTokens);
+        Assert.Equal(37, result.Usage.TotalTokens);
+        Assert.Equal("{\"input_tokens\":12,\"output_tokens\":25,\"total_tokens\":37}", result.Usage.Raw!.Value.GetRawText());
     }
 
     [Fact]

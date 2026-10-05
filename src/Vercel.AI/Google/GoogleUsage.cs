@@ -52,7 +52,7 @@ public sealed class GoogleTokenUsage
     /// <summary>Maps onto the shared usage type. Cache writes stay unset.</summary>
     public LanguageModelUsage ToLanguageModelUsage()
     {
-        return new LanguageModelUsage(InputTotal, OutputTotal, InputTotal + OutputTotal, CacheRead, null, Reasoning, Raw);
+        return new LanguageModelUsage(InputTotal, OutputTotal, InputTotal + OutputTotal, CacheRead, null, Reasoning, Raw, NoCache, Text);
     }
 }
 

@@ -133,7 +133,9 @@ public static class OpenAICompatibleChat
             total,
             cacheReadTokens: cache,
             reasoningTokens: reasoning,
-            raw: element.Clone());
+            raw: element.Clone(),
+            noCacheInputTokens: prompt - cache,
+            textTokens: Math.Max(0, completion - reasoning));
         return new OpenAICompatibleUsage(
             modelUsage,
             ReadNestedInt(element, "completion_tokens_details", "accepted_prediction_tokens"),
@@ -148,11 +150,15 @@ public static class OpenAICompatibleChat
             return new LanguageModelUsage(null, null, null);
         }
 
+        var prompt = ReadInt(element, "prompt_tokens") ?? 0;
+        var completion = ReadInt(element, "completion_tokens") ?? 0;
         return new LanguageModelUsage(
-            ReadInt(element, "prompt_tokens") ?? 0,
-            ReadInt(element, "completion_tokens") ?? 0,
+            prompt,
+            completion,
             ReadInt(element, "total_tokens"),
-            raw: element.Clone());
+            raw: element.Clone(),
+            noCacheInputTokens: prompt,
+            textTokens: completion);
     }
 
     /// <summary>Reads <c>error.message</c> or a string <c>error</c> without appending <c>param</c>.</summary>
