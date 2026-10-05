@@ -655,9 +655,9 @@
       "title": "Cover upstream unit tests: google-vertex/edge",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 16,
-      "covered": 0,
+      "covered": 16,
       "partial": 0,
-      "missing": 16,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/95"
     },
     {

@@ -119,8 +119,8 @@ public class GoogleProvider : ProviderBase
         return new GoogleRealtimeModel(this, modelId);
     }
 
-    /// <summary>Builds request headers. An API key is required.</summary>
-    internal Dictionary<string, string?> Headers()
+    /// <summary>Builds request headers. A caller-supplied Authorization or x-goog-api-key header is kept.</summary>
+    internal async Task<Dictionary<string, string?>> HeadersAsync(CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -133,20 +133,25 @@ public class GoogleProvider : ProviderBase
             headers["user-agent"] = Options.UserAgent;
         }
 
-        var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
         if (Options.UseBearerToken)
         {
             if (!ContainsKey(headers, "Authorization"))
             {
-                headers["Authorization"] = "Bearer " + key;
+                headers["Authorization"] = "Bearer " + await BearerTokenAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         else if (!ContainsKey(headers, "x-goog-api-key"))
         {
-            headers["x-goog-api-key"] = key;
+            headers["x-goog-api-key"] = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
         }
 
         return headers;
+    }
+
+    /// <summary>Bearer token for <see cref="GoogleOptions.UseBearerToken"/>. Defaults to the API key.</summary>
+    protected internal virtual Task<string> BearerTokenAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult(ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable));
     }
 
     private static bool ContainsKey(Dictionary<string, string?> headers, string name)

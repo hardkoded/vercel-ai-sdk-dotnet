@@ -48,7 +48,7 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "interactions"),
             GoogleJson.Write(body),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(ReadText(document.RootElement), null);
     }

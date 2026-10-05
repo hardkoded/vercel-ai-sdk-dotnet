@@ -2,6 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Google;
@@ -35,6 +38,204 @@ public sealed class GoogleVertexUpstreamTests
         var provider = Upstream("test-project", "global");
         Assert.Equal("google.vertex.image", provider.ImageModel("gemini-2.5-flash-image").Provider);
         Assert.Equal("https://aiplatform.googleapis.com/v1beta1/projects/test-project/locations/global/publishers/google", provider.Options.BaseUrl);
+    }
+
+    private const string EdgeAuthTests = "packages/google-vertex/src/edge/google-vertex-auth-edge.test.ts::Google Vertex Edge Auth::";
+    private const string EdgeProviderTests = "packages/google-vertex/src/edge/google-vertex-provider-edge.test.ts::google-vertex-provider-edge::";
+    private const string TestClientEmail = "test@test.iam.gserviceaccount.com";
+    private static readonly RSA TestKey = RSA.Create(2048);
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should generate a valid JWT token", Coverage = UpstreamCoverage.Covered)]
+    public async Task Signs_a_service_account_JWT_and_returns_the_access_token()
+    {
+        var handler = new TokenHandler();
+        var token = await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials("test-key-id"), CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal("mock-auth-token", token);
+        Assert.Equal(GoogleVertexServiceAccount.TokenUrl, handler.Uris[0]);
+        Assert.Equal("urn:ietf:params:oauth:grant-type:jwt-bearer", handler.Form["grant_type"]);
+        var parts = handler.Form["assertion"].Split('.');
+        Assert.Equal(3, parts.Length);
+        var header = JsonNode.Parse(FromBase64Url(parts[0]))!;
+        Assert.Equal("RS256", header["alg"]!.GetValue<string>());
+        Assert.Equal("JWT", header["typ"]!.GetValue<string>());
+        Assert.Equal("test-key-id", header["kid"]!.GetValue<string>());
+        var payload = JsonNode.Parse(FromBase64Url(parts[1]))!;
+        Assert.Equal(TestClientEmail, payload["iss"]!.GetValue<string>());
+        Assert.Equal("https://www.googleapis.com/auth/cloud-platform", payload["scope"]!.GetValue<string>());
+        Assert.Equal("https://oauth2.googleapis.com/token", payload["aud"]!.GetValue<string>());
+        Assert.Equal(3600, payload["exp"]!.GetValue<long>() - payload["iat"]!.GetValue<long>());
+        Assert.True(TestKey.VerifyData(
+            Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]),
+            FromBase64Url(parts[2]),
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1));
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should throw error with invalid credentials", Coverage = UpstreamCoverage.Covered)]
+    public async Task Fails_when_the_token_endpoint_rejects_the_credentials()
+    {
+        var handler = new TokenHandler { Status = HttpStatusCode.BadRequest, Reason = "Bad Request" };
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials("test-key-id"), CancellationToken.None)).ConfigureAwait(false);
+        Assert.Equal("Token request failed: Bad Request", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should load credentials from environment variables", Coverage = UpstreamCoverage.Covered)]
+    public async Task Loads_service_account_credentials_from_the_environment()
+    {
+        var handler = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem(), "test-key-id", async () =>
+        {
+            Assert.Equal("mock-auth-token", await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), null, CancellationToken.None).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+        Assert.Equal(TestClientEmail, AssertionPart(handler, 1)["iss"]!.GetValue<string>());
+        Assert.Equal("test-key-id", AssertionPart(handler, 0)["kid"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should throw error when client email is missing", Coverage = UpstreamCoverage.Covered)]
+    public async Task Requires_a_client_email()
+    {
+        await WithEnvironment(null, Pem(), "test-key-id", async () =>
+        {
+            var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(new TokenHandler()), null, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Contains("Google client email setting is missing. Pass it using the 'clientEmail' parameter or the GOOGLE_CLIENT_EMAIL environment variable.", error.Message);
+        }).ConfigureAwait(false);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should throw error when private key is missing", Coverage = UpstreamCoverage.Covered)]
+    public async Task Requires_a_private_key()
+    {
+        await WithEnvironment(TestClientEmail, null, "test-key-id", async () =>
+        {
+            var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(new TokenHandler()), null, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Contains("Google private key setting is missing. Pass it using the 'privateKey' parameter or the GOOGLE_PRIVATE_KEY environment variable.", error.Message);
+        }).ConfigureAwait(false);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should work with or without private key ID", Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_environment_credentials_with_or_without_a_key_id()
+    {
+        var withKeyId = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem(), "test-key-id", async () =>
+        {
+            Assert.Equal("mock-auth-token", await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(withKeyId), null, CancellationToken.None).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+        var withoutKeyId = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem(), null, async () =>
+        {
+            Assert.Equal("mock-auth-token", await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(withoutKeyId), null, CancellationToken.None).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+        Assert.Equal("test-key-id", AssertionPart(withKeyId, 0)["kid"]!.GetValue<string>());
+        Assert.False(AssertionPart(withoutKeyId, 0).AsObject().ContainsKey("kid"));
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should handle newlines in private key from env vars", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reads_escaped_newlines_in_an_environment_private_key()
+    {
+        var handler = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem().Replace("\n", "\\n"), "test-key-id", async () =>
+        {
+            Assert.Equal("mock-auth-token", await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), null, CancellationToken.None).ConfigureAwait(false));
+        }).ConfigureAwait(false);
+        var parts = handler.Form["assertion"].Split('.');
+        Assert.True(TestKey.VerifyData(Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]), FromBase64Url(parts[2]), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should throw error on fetch failure", Coverage = UpstreamCoverage.Covered)]
+    public async Task Propagates_a_token_request_network_error()
+    {
+        var handler = new TokenHandler { Error = new HttpRequestException("Network error") };
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() => GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials("test-key-id"), CancellationToken.None)).ConfigureAwait(false);
+        Assert.Equal("Network error", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should throw error when token request fails", Coverage = UpstreamCoverage.Covered)]
+    public async Task Fails_when_the_token_request_is_unauthorized()
+    {
+        var handler = new TokenHandler { Status = HttpStatusCode.Unauthorized, Reason = "Unauthorized" };
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials("test-key-id"), CancellationToken.None)).ConfigureAwait(false);
+        Assert.Equal("Token request failed: Unauthorized", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should work without privateKeyId", Coverage = UpstreamCoverage.Covered)]
+    public async Task Omits_kid_without_a_private_key_id()
+    {
+        var handler = new TokenHandler();
+        Assert.Equal("mock-auth-token", await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials(null), CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(3, handler.Form["assertion"].Split('.').Length);
+        Assert.False(AssertionPart(handler, 0).AsObject().ContainsKey("kid"));
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeAuthTests + "should include correct user-agent header", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_the_Vertex_user_agent_to_the_token_endpoint()
+    {
+        var handler = new TokenHandler();
+        await GoogleVertexServiceAccount.GenerateAuthTokenAsync(new HttpClient(handler), Credentials("test-key-id"), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("ai-sdk/google-vertex/0.0.0-test runtime/dotnet", handler.Headers[0]["User-Agent"]);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeProviderTests + "default headers function should return auth token", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_a_service_account_token_from_the_environment_when_no_API_key_is_set()
+    {
+        var handler = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem(), null, () => Generate(new VertexOptions { Project = "test-project" }, handler)).ConfigureAwait(false);
+        Assert.Equal("Bearer mock-auth-token", handler.Headers[1]["Authorization"]);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeProviderTests + "should use custom headers in addition to auth token when provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_custom_headers_with_the_service_account_token()
+    {
+        var handler = new TokenHandler();
+        var options = new VertexOptions { Project = "test-project", GoogleCredentials = Credentials(null) };
+        options.Headers["Custom-Header"] = "custom-value";
+        await WithEnvironment(null, null, null, () => Generate(options, handler)).ConfigureAwait(false);
+        Assert.Equal("Bearer mock-auth-token", handler.Headers[1]["Authorization"]);
+        Assert.Equal("custom-value", handler.Headers[1]["Custom-Header"]);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeProviderTests + "should use edge auth token generator", Coverage = UpstreamCoverage.Covered)]
+    public async Task Requests_a_token_before_the_model_call()
+    {
+        var handler = new TokenHandler();
+        await WithEnvironment(null, null, null, () => Generate(new VertexOptions { Project = "test-project", GoogleCredentials = Credentials(null) }, handler)).ConfigureAwait(false);
+        Assert.Equal(GoogleVertexServiceAccount.TokenUrl, handler.Uris[0]);
+        Assert.EndsWith(":generateContent", handler.Uris[1]);
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeProviderTests + "passes googleCredentials to generateAuthToken", Coverage = UpstreamCoverage.Covered)]
+    public async Task Signs_the_token_with_the_configured_credentials()
+    {
+        var handler = new TokenHandler();
+        var credentials = new GoogleCredentials { ClientEmail = "test@example.com", PrivateKey = Pem() };
+        await WithEnvironment(TestClientEmail, null, null, () => Generate(new VertexOptions { Project = "test-project", GoogleCredentials = credentials }, handler)).ConfigureAwait(false);
+        Assert.Equal("test@example.com", AssertionPart(handler, 1)["iss"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(EdgeProviderTests + "should pass options through to base provider when apiKey is provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task Uses_the_API_key_without_requesting_a_token()
+    {
+        var handler = new TokenHandler();
+        await WithEnvironment(TestClientEmail, Pem(), null, () => Generate(new VertexOptions { Project = "test-project", ApiKey = "test-api-key", UpstreamRoutes = true }, handler)).ConfigureAwait(false);
+        Assert.Single(handler.Uris);
+        Assert.DoesNotContain(GoogleVertexServiceAccount.TokenUrl, handler.Uris);
+        Assert.Equal("test-api-key", handler.Headers[0]["x-goog-api-key"]);
+        Assert.False(handler.Headers[0].ContainsKey("Authorization"));
     }
 
     [Fact]
@@ -447,4 +648,109 @@ public sealed class GoogleVertexUpstreamTests
         }, handler ?? new RecordingHandler());
     }
 
+    private static string Pem()
+    {
+        return TestKey.ExportPkcs8PrivateKeyPem();
+    }
+
+    private static GoogleCredentials Credentials(string? privateKeyId)
+    {
+        return new GoogleCredentials { ClientEmail = TestClientEmail, PrivateKey = Pem(), PrivateKeyId = privateKeyId };
+    }
+
+    private static byte[] FromBase64Url(string value)
+    {
+        var base64 = value.Replace('-', '+').Replace('_', '/');
+        return Convert.FromBase64String(base64.PadRight(base64.Length + ((4 - (base64.Length % 4)) % 4), '='));
+    }
+
+    private static JsonNode AssertionPart(TokenHandler handler, int index)
+    {
+        return JsonNode.Parse(FromBase64Url(handler.Form["assertion"].Split('.')[index]))!;
+    }
+
+    private static Task Generate(VertexOptions options, TokenHandler handler)
+    {
+        return GoogleVertexProvider.Create(options, handler).LanguageModel("gemini-2.5-flash").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None);
+    }
+
+    /// <summary>Sets the service account variables and clears <c>GOOGLE_VERTEX_API_KEY</c> while <paramref name="action"/> runs.</summary>
+    private static async Task WithEnvironment(string? clientEmail, string? privateKey, string? privateKeyId, Func<Task> action)
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["GOOGLE_CLIENT_EMAIL"] = clientEmail,
+            ["GOOGLE_PRIVATE_KEY"] = privateKey,
+            ["GOOGLE_PRIVATE_KEY_ID"] = privateKeyId,
+            ["GOOGLE_VERTEX_API_KEY"] = null,
+        };
+        var previous = new Dictionary<string, string?>();
+        foreach (var pair in values)
+        {
+            previous[pair.Key] = Environment.GetEnvironmentVariable(pair.Key);
+            Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+        }
+
+        try
+        {
+            await action().ConfigureAwait(false);
+        }
+        finally
+        {
+            foreach (var pair in previous)
+            {
+                Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+            }
+        }
+    }
+
+    /// <summary>Answers the OAuth token endpoint and Gemini calls, and records each request.</summary>
+    private sealed class TokenHandler : HttpMessageHandler
+    {
+        public List<string> Uris { get; } = new();
+
+        public List<Dictionary<string, string>> Headers { get; } = new();
+
+        public Dictionary<string, string> Form { get; } = new();
+
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+
+        public string? Reason { get; set; }
+
+        public Exception? Error { get; set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri!.AbsoluteUri;
+            Uris.Add(uri);
+            var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var header in request.Headers)
+            {
+                headers[header.Key] = string.Join(" ", header.Value);
+            }
+
+            Headers.Add(headers);
+            if (uri != GoogleVertexServiceAccount.TokenUrl)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(new RecordingHandler().ResponseText, Encoding.UTF8, "application/json") };
+            }
+
+            if (Error != null)
+            {
+                throw Error;
+            }
+
+            foreach (var pair in (await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false)).Split('&'))
+            {
+                var parts = pair.Split('=');
+                Form[Uri.UnescapeDataString(parts[0])] = Uri.UnescapeDataString(parts[1].Replace('+', ' '));
+            }
+
+            return new HttpResponseMessage(Status)
+            {
+                ReasonPhrase = Reason,
+                Content = new StringContent("{\"access_token\":\"mock-auth-token\"}", Encoding.UTF8, "application/json"),
+            };
+        }
+    }
 }

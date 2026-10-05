@@ -202,6 +202,12 @@ public sealed class VertexOptions : GoogleOptions
     /// The default keeps the regional <c>v1</c> publisher URL.
     /// </summary>
     public bool UpstreamRoutes { get; set; }
+
+    /// <summary>
+    /// Service account used for the bearer token when no API key is set.
+    /// When empty, it is read from <c>GOOGLE_CLIENT_EMAIL</c>, <c>GOOGLE_PRIVATE_KEY</c>, and <c>GOOGLE_PRIVATE_KEY_ID</c>.
+    /// </summary>
+    public GoogleCredentials? GoogleCredentials { get; set; }
 }
 
 /// <summary>Google Vertex AI provider.</summary>
@@ -212,7 +218,10 @@ public sealed class GoogleVertexProvider : GoogleProvider
         : base(httpClient, Prepare(options), "google.vertex.chat")
     {
         Vertex = (VertexOptions)Options;
+        _httpClient = httpClient;
     }
+
+    private readonly HttpClient _httpClient;
 
     /// <summary>Vertex options.</summary>
     public VertexOptions Vertex { get; }
@@ -276,6 +285,15 @@ public sealed class GoogleVertexProvider : GoogleProvider
         }
 
         return new GoogleVertexSpeechTranscriptionModel(this, modelId!);
+    }
+
+    /// <summary>The API key when one is set. Otherwise a token for the service account.</summary>
+    protected internal override Task<string> BearerTokenAsync(CancellationToken cancellationToken)
+    {
+        var key = string.IsNullOrWhiteSpace(Options.ApiKey) ? Environment.GetEnvironmentVariable(Options.ApiKeyEnvironmentVariable) : Options.ApiKey;
+        return string.IsNullOrWhiteSpace(key)
+            ? GoogleVertexServiceAccount.GenerateAuthTokenAsync(_httpClient, Vertex.GoogleCredentials, cancellationToken)
+            : Task.FromResult(key!);
     }
 
     private static VertexOptions Prepare(VertexOptions? options)

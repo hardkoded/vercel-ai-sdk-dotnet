@@ -41,7 +41,7 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
     {
         var prepared = Prepare(options.Text, options.Voice, null, null, null);
         Warnings = prepared.Warnings;
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), _provider.Headers(), cancellationToken).ConfigureAwait(false);
+        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         var audio = Array.Empty<byte>();
         if (document.RootElement.TryGetProperty("audioContent", out var content) && content.ValueKind == System.Text.Json.JsonValueKind.String && !string.IsNullOrEmpty(content.GetString()))
         {
@@ -118,7 +118,7 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
     {
         var url = GoogleVertexEndpoints.RecognizeUrl(_provider.Vertex.Project, _provider.Vertex.Region);
         var body = Request(ModelId, audio.Data, null);
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(url), GoogleJson.Write(body), _provider.Headers(), cancellationToken).ConfigureAwait(false);
+        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(url), GoogleJson.Write(body), await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(ReadTranscript(document.RootElement), null);
     }
 
@@ -261,7 +261,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
             GoogleJson.Write(body),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         var text = string.Empty;
         if (document.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)

@@ -78,7 +78,7 @@ public sealed class GoogleImageModel : IImageModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
             GoogleJson.Write(body),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         var images = new List<GeneratedImage>();
         if (document.RootElement.TryGetProperty("candidates", out var candidates))
