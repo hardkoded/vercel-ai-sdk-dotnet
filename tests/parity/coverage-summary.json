@@ -3,8 +3,8 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2715,
-  "partial": 78,
+  "covered": 2716,
+  "partial": 77,
   "missing": 8276,
   "features": [
     {
@@ -851,8 +851,8 @@
       "feature": "openai/speech",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 10,
-      "covered": 9,
-      "partial": 1,
+      "covered": 10,
+      "partial": 0,
       "missing": 0
     },
     {

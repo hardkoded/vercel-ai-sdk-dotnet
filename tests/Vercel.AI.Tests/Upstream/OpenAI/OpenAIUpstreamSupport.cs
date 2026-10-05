@@ -70,7 +70,7 @@ internal static class OpenAIUpstream
         Assert.Equal("test-project", Header(capture, "OpenAI-Project"));
         Assert.Equal("provider-header-value", Header(capture, "Custom-Provider-Header"));
         Assert.Equal("request-header-value", Header(capture, "Custom-Request-Header"));
-        Assert.Contains("application/json", Header(capture, "Content-Type"), StringComparison.Ordinal);
+        Assert.Equal("application/json", MediaTypeHeaderValue.Parse(Header(capture, "Content-Type")).MediaType);
     }
 
     internal static async Task<List<LanguageModelStreamPart>> Read(IAsyncEnumerable<LanguageModelStreamPart> parts)
