@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3315,
-  "partial": 103,
-  "missing": 7651,
+  "covered": 3328,
+  "partial": 100,
+  "missing": 7641,
   "features": [
     {
       "feature": "ai/agent",
@@ -627,9 +627,9 @@
       "feature": "huggingface/responses",
       "dotnetProject": "Vercel.AI.HuggingFace",
       "inScope": 32,
-      "covered": 16,
-      "partial": 6,
-      "missing": 10
+      "covered": 29,
+      "partial": 3,
+      "missing": 0
     },
     {
       "feature": "hume",

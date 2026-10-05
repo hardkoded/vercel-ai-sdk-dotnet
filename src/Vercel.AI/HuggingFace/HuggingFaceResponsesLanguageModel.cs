@@ -2,10 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.HuggingFace;
 
@@ -16,12 +18,14 @@ namespace Vercel.AI.HuggingFace;
 public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
 {
     private readonly HuggingFaceProvider _provider;
+    private readonly Func<string> _generateId;
 
-    /// <summary>Creates a responses model.</summary>
-    public HuggingFaceResponsesLanguageModel(HuggingFaceProvider provider, string modelId)
+    /// <summary>Creates a responses model. <paramref name="generateId"/> names sources and defaults to random ids.</summary>
+    public HuggingFaceResponsesLanguageModel(HuggingFaceProvider provider, string modelId, Func<string>? generateId = null)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _generateId = generateId ?? IdGenerator.Generate;
     }
 
     /// <inheritdoc />
@@ -41,6 +45,51 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var warnings = new List<CallWarning>();
+        var body = BuildBody(options, warnings);
+        body["stream"] = false;
+        var response = await _provider.PostJsonAsync(ResponsesUri(), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        LastResponseHeaders = response.Headers;
+        var parsed = ReadResponse(response.Body);
+        return new LanguageModelGenerateResult(
+            parsed.Content,
+            MapFinishReason(parsed.IncompleteReason ?? "stop"),
+            parsed.Usage,
+            parsed.IncompleteReason,
+            warnings,
+            parsed.ResponseId,
+            ResponseMetadata(parsed.ResponseId),
+            response.Body,
+            parsed.ModelId,
+            parsed.Timestamp,
+            response.Headers);
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+        LanguageModelCallOptions options,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        options = options ?? new LanguageModelCallOptions();
+        var warnings = new List<CallWarning>();
+        var body = BuildBody(options, warnings);
+        body["stream"] = true;
+        using var sse = await _provider.PostSseAsync(ResponsesUri(), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        LastResponseHeaders = sse.Headers;
+        yield return new StreamStartStreamPart(warnings);
+        var state = new StreamState();
+        await foreach (var data in sse.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            foreach (var part in state.Read(data))
+            {
+                yield return part;
+            }
+        }
+
+        yield return state.Finish();
+    }
+
+    private JsonObject BuildBody(LanguageModelCallOptions options, List<CallWarning> warnings)
+    {
         if (options.TopK != null)
         {
             warnings.Add(new CallWarning("unsupported", "topK"));
@@ -151,29 +200,12 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             }
         }
 
-        body["stream"] = false;
-        var uri = new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/responses");
-        var response = await _provider.PostJsonAsync(uri, body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = response.Headers;
-        var parsed = ReadResponse(response.Body);
-        return new LanguageModelGenerateResult(
-            parsed.Content,
-            FinishReason.Stop,
-            parsed.Usage,
-            "stop",
-            warnings,
-            parsed.ResponseId,
-            null,
-            response.Body,
-            parsed.ModelId,
-            parsed.Timestamp,
-            response.Headers);
+        return body;
     }
 
-    /// <inheritdoc />
-    public IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private Uri ResponsesUri()
     {
-        throw new AiSdkException("Hugging Face responses streaming is not implemented.");
+        return new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/responses");
     }
 
     private static JsonArray ConvertInput(IReadOnlyList<ModelMessage> prompt, List<CallWarning> warnings)
@@ -315,92 +347,68 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         return result;
     }
 
-    private static ParsedResponse ReadResponse(string? json)
+    private ParsedResponse ReadResponse(string? json)
     {
         var content = new List<GeneratedContent>();
-        var usage = new LanguageModelUsage(null, null, null);
         if (string.IsNullOrWhiteSpace(json))
         {
-            return new ParsedResponse(content, usage, null, null, null);
+            return new ParsedResponse(content, ConvertUsage(null), null, null, null, null);
         }
 
         using var document = JsonDocument.Parse(json!);
         var root = document.RootElement;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
-        {
-            int? input = ReadInt(usageElement, "input_tokens");
-            int? outputTokens = ReadInt(usageElement, "output_tokens");
-            int? total = ReadInt(usageElement, "total_tokens");
-            var cacheRead = ReadNestedInt(usageElement, "input_tokens_details", "cached_tokens") ?? 0;
-            var reasoning = ReadNestedInt(usageElement, "output_tokens_details", "reasoning_tokens") ?? 0;
-            usage = new LanguageModelUsage(input, outputTokens, total, cacheRead, null, reasoning, usageElement.Clone(), input - cacheRead, outputTokens - reasoning);
-        }
-
-        var sourceIndex = 0;
         if (root.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in output.EnumerateArray())
             {
-                var type = item.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String
-                    ? typeElement.GetString()
-                    : null;
-                if (type == "message" || type == "reasoning")
+                switch (ReadString(item, "type"))
                 {
-                    if (!item.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
-
-                    foreach (var part in parts.EnumerateArray())
-                    {
-                        if (!part.TryGetProperty("text", out var textElement) || textElement.ValueKind != JsonValueKind.String)
+                    case "message":
+                        foreach (var part in ContentParts(item))
                         {
-                            continue;
-                        }
-
-                        var text = textElement.GetString() ?? string.Empty;
-                        content.Add(type == "reasoning" ? (GeneratedContent)new GeneratedReasoning(text) : new GeneratedText(text));
-                        if (part.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var annotation in annotations.EnumerateArray())
+                            content.Add(new HuggingFaceText(ReadString(part, "text") ?? string.Empty, ItemMetadata(ReadString(item, "id"))));
+                            if (part.TryGetProperty("annotations", out var annotations) && annotations.ValueKind == JsonValueKind.Array)
                             {
-                                var annotationType = annotation.TryGetProperty("type", out var annotationTypeElement) ? annotationTypeElement.GetString() : null;
-                                var url = annotation.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
-                                if (annotationType != "url_citation" || string.IsNullOrEmpty(url))
+                                foreach (var annotation in annotations.EnumerateArray())
                                 {
-                                    continue;
+                                    var url = ReadString(annotation, "url");
+                                    if (ReadString(annotation, "type") == "url_citation" && !string.IsNullOrEmpty(url))
+                                    {
+                                        content.Add(new GeneratedSource(_generateId(), url!, ReadString(annotation, "title")));
+                                    }
                                 }
-
-                                var title = annotation.TryGetProperty("title", out var titleElement) && titleElement.ValueKind == JsonValueKind.String
-                                    ? titleElement.GetString()
-                                    : null;
-                                content.Add(new GeneratedSource("source-" + sourceIndex.ToString(System.Globalization.CultureInfo.InvariantCulture), url!, title));
-                                sourceIndex++;
                             }
                         }
-                    }
-                }
-                else if (type == "function_call")
-                {
-                    var id = item.TryGetProperty("call_id", out var callId) && callId.ValueKind == JsonValueKind.String
-                        ? callId.GetString()
-                        : null;
-                    var name = item.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String
-                        ? nameElement.GetString()
-                        : null;
-                    var arguments = item.TryGetProperty("arguments", out var argumentsElement) && argumentsElement.ValueKind == JsonValueKind.String
-                        ? argumentsElement.GetString()
-                        : "{}";
-                    if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(name))
-                    {
-                        content.Add(new GeneratedToolCall(id!, name!, arguments ?? "{}"));
-                    }
+
+                        break;
+                    case "reasoning":
+                        foreach (var part in ContentParts(item))
+                        {
+                            content.Add(new HuggingFaceReasoning(ReadString(part, "text") ?? string.Empty, ItemMetadata(ReadString(item, "id"))));
+                        }
+
+                        break;
+                    case "mcp_call":
+                        AddToolCall(content, ReadString(item, "id"), ReadString(item, "name"), ReadString(item, "arguments"), true, OutputResult(item));
+                        break;
+                    case "mcp_list_tools":
+                        var listArguments = new JsonObject { ["server_label"] = ReadString(item, "server_label") }.ToJsonString();
+                        JsonElement? tools = null;
+                        if (item.TryGetProperty("tools", out var toolsElement) && toolsElement.ValueKind == JsonValueKind.Array)
+                        {
+                            using var toolsDocument = JsonDocument.Parse(new JsonObject { ["tools"] = JsonNode.Parse(toolsElement.GetRawText()) }.ToJsonString());
+                            tools = toolsDocument.RootElement.Clone();
+                        }
+
+                        AddToolCall(content, ReadString(item, "id"), "list_tools", listArguments, true, tools);
+                        break;
+                    case "function_call":
+                        AddToolCall(content, ReadString(item, "call_id"), ReadString(item, "name"), ReadString(item, "arguments"), false, OutputResult(item));
+                        break;
                 }
             }
         }
 
-        string? responseId = root.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String ? idElement.GetString() : null;
-        string? modelId = root.TryGetProperty("model", out var modelElement) && modelElement.ValueKind == JsonValueKind.String ? modelElement.GetString() : null;
         DateTimeOffset? timestamp = null;
         var created = ReadInt(root, "created_at");
         if (created is > 0)
@@ -408,7 +416,116 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             timestamp = DateTimeOffset.FromUnixTimeSeconds(created.Value);
         }
 
-        return new ParsedResponse(content, usage, responseId, modelId, timestamp);
+        return new ParsedResponse(
+            content,
+            ConvertUsage(root.TryGetProperty("usage", out var usage) ? usage : null),
+            ReadString(root, "id"),
+            ReadString(root, "model"),
+            timestamp,
+            IncompleteReason(root));
+    }
+
+    private static void AddToolCall(List<GeneratedContent> content, string? id, string? name, string? arguments, bool providerExecuted, JsonElement? result)
+    {
+        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+        {
+            return;
+        }
+
+        content.Add(providerExecuted
+            ? new HuggingFaceToolCall(id!, name!, arguments ?? "{}", true)
+            : new GeneratedToolCall(id!, name!, arguments ?? "{}"));
+        if (result != null)
+        {
+            content.Add(new HuggingFaceToolResult(id!, name!, result.Value));
+        }
+    }
+
+    private static IEnumerable<JsonElement> ContentParts(JsonElement item)
+    {
+        if (!item.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
+        {
+            yield break;
+        }
+
+        foreach (var part in parts.EnumerateArray())
+        {
+            if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
+            {
+                yield return part;
+            }
+        }
+    }
+
+    /// <summary>The item's non-empty <c>output</c> string, as a JSON value.</summary>
+    private static JsonElement? OutputResult(JsonElement item)
+    {
+        var output = ReadString(item, "output");
+        return string.IsNullOrEmpty(output) ? null : JsonSerializer.SerializeToElement(output);
+    }
+
+    private static string? IncompleteReason(JsonElement response)
+    {
+        return response.TryGetProperty("incomplete_details", out var details) && details.ValueKind == JsonValueKind.Object
+            ? ReadString(details, "reason")
+            : null;
+    }
+
+    private static LanguageModelUsage ConvertUsage(JsonElement? usage)
+    {
+        if (usage is not { ValueKind: JsonValueKind.Object } element)
+        {
+            return new LanguageModelUsage(null, null, null);
+        }
+
+        var input = ReadInt(element, "input_tokens");
+        var output = ReadInt(element, "output_tokens");
+        var cacheRead = ReadNestedInt(element, "input_tokens_details", "cached_tokens") ?? 0;
+        var reasoning = ReadNestedInt(element, "output_tokens_details", "reasoning_tokens") ?? 0;
+        return new LanguageModelUsage(
+            input,
+            output,
+            ReadInt(element, "total_tokens"),
+            cacheRead,
+            null,
+            reasoning,
+            element.Clone(),
+            input - cacheRead,
+            output - reasoning);
+    }
+
+    private static FinishReason MapFinishReason(string reason)
+    {
+        return reason switch
+        {
+            "stop" => FinishReason.Stop,
+            "length" => FinishReason.Length,
+            "content_filter" => FinishReason.ContentFilter,
+            "tool_calls" => FinishReason.ToolCalls,
+            "error" => FinishReason.Error,
+            _ => FinishReason.Other,
+        };
+    }
+
+    private static JsonElement ResponseMetadata(string? responseId)
+    {
+        return HuggingFaceMetadata(new JsonObject { ["responseId"] = responseId });
+    }
+
+    private static JsonElement? ItemMetadata(string? itemId)
+    {
+        return itemId == null ? null : HuggingFaceMetadata(new JsonObject { ["itemId"] = itemId });
+    }
+
+    private static JsonElement HuggingFaceMetadata(JsonObject values)
+    {
+        using var document = JsonDocument.Parse(new JsonObject { ["huggingface"] = values }.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static string? ReadString(JsonElement element, string name)
+    {
+        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 
     private static string ResolveImageMedia(string media, byte[]? data)
@@ -488,13 +605,14 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
 
     private sealed class ParsedResponse
     {
-        public ParsedResponse(List<GeneratedContent> content, LanguageModelUsage usage, string? responseId, string? modelId, DateTimeOffset? timestamp)
+        public ParsedResponse(List<GeneratedContent> content, LanguageModelUsage usage, string? responseId, string? modelId, DateTimeOffset? timestamp, string? incompleteReason)
         {
             Content = content;
             Usage = usage;
             ResponseId = responseId;
             ModelId = modelId;
             Timestamp = timestamp;
+            IncompleteReason = incompleteReason;
         }
 
         public List<GeneratedContent> Content { get; }
@@ -506,5 +624,164 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         public string? ModelId { get; }
 
         public DateTimeOffset? Timestamp { get; }
+
+        public string? IncompleteReason { get; }
+    }
+
+    private sealed class StreamState
+    {
+        private FinishReason _finish = FinishReason.Other;
+        private string? _rawFinish;
+        private string? _responseId;
+        private JsonElement? _usage;
+
+        public IEnumerable<LanguageModelStreamPart> Read(string data)
+        {
+            JsonElement chunk = default;
+            var parsed = false;
+            try
+            {
+                using var document = JsonDocument.Parse(data);
+                chunk = document.RootElement.Clone();
+                parsed = chunk.ValueKind == JsonValueKind.Object && ReadString(chunk, "type") != null;
+            }
+            catch (JsonException)
+            {
+            }
+
+            if (!parsed)
+            {
+                Fail(null);
+                yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
+                yield break;
+            }
+
+            var type = ReadString(chunk, "type");
+            if (TryReadError(chunk, type!, out var message, out var code))
+            {
+                Fail(code ?? type);
+                yield return new ErrorStreamPart(message);
+                yield break;
+            }
+
+            switch (type)
+            {
+                case "response.created":
+                    var created = chunk.GetProperty("response");
+                    _responseId = ReadString(created, "id");
+                    var seconds = ReadInt(created, "created_at");
+                    yield return new ResponseMetadataStreamPart(
+                        _responseId,
+                        ReadString(created, "model"),
+                        seconds == null ? null : DateTimeOffset.FromUnixTimeSeconds(seconds.Value));
+                    break;
+                case "response.output_item.added":
+                    var added = chunk.GetProperty("item");
+                    switch (ReadString(added, "type"))
+                    {
+                        case "message" when ReadString(added, "role") == "assistant":
+                            yield return new TextStartStreamPart(ReadString(added, "id")!, ItemMetadata(ReadString(added, "id")));
+                            break;
+                        case "function_call":
+                            yield return new ToolInputStartStreamPart(ReadString(added, "call_id")!, ReadString(added, "name")!);
+                            break;
+                        case "reasoning":
+                            yield return new ReasoningStartStreamPart(ReadString(added, "id")!, ItemMetadata(ReadString(added, "id")));
+                            break;
+                    }
+
+                    break;
+                case "response.output_item.done":
+                    var done = chunk.GetProperty("item");
+                    switch (ReadString(done, "type"))
+                    {
+                        case "message" when ReadString(done, "role") == "assistant":
+                            yield return new TextEndStreamPart(ReadString(done, "id")!);
+                            break;
+                        case "function_call":
+                            var callId = ReadString(done, "call_id")!;
+                            var name = ReadString(done, "name")!;
+                            yield return new ToolInputEndStreamPart(callId);
+                            yield return new ToolCallStreamPart(callId, name, ReadString(done, "arguments")!);
+                            if (OutputResult(done) is { } result)
+                            {
+                                yield return new ToolResultStreamPart(callId, name, result);
+                            }
+
+                            break;
+                    }
+
+                    break;
+                case "response.completed":
+                    var response = chunk.GetProperty("response");
+                    _responseId = ReadString(response, "id");
+                    _rawFinish = IncompleteReason(response);
+                    _finish = MapFinishReason(_rawFinish ?? "stop");
+                    if (response.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+                    {
+                        _usage = usage;
+                    }
+
+                    break;
+                case "response.reasoning_text.delta":
+                    yield return new ReasoningDeltaStreamPart(ReadString(chunk, "item_id")!, ReadString(chunk, "delta")!);
+                    break;
+                case "response.reasoning_text.done":
+                    yield return new ReasoningEndStreamPart(ReadString(chunk, "item_id")!);
+                    break;
+                case "response.output_text.delta":
+                    yield return new TextDeltaStreamPart(ReadString(chunk, "item_id")!, ReadString(chunk, "delta")!);
+                    break;
+            }
+        }
+
+        public FinishStreamPart Finish()
+        {
+            return new FinishStreamPart(_finish, ConvertUsage(_usage), _rawFinish, ResponseMetadata(_responseId));
+        }
+
+        /// <summary>Reads an <c>error</c> or <c>response.failed</c> event. The raw finish reason is its code, else its type.</summary>
+        private static bool TryReadError(JsonElement chunk, string type, out string message, out string? code)
+        {
+            message = string.Empty;
+            code = null;
+            JsonElement details;
+            if (type == "response.failed")
+            {
+                if (!chunk.TryGetProperty("response", out var response)
+                    || response.ValueKind != JsonValueKind.Object
+                    || !response.TryGetProperty("error", out details))
+                {
+                    return false;
+                }
+            }
+            else if (type == "error")
+            {
+                details = chunk.TryGetProperty("error", out var nested) && nested.ValueKind == JsonValueKind.Object ? nested : chunk;
+            }
+            else
+            {
+                return false;
+            }
+
+            if (details.ValueKind != JsonValueKind.Object || ReadString(details, "message") is not { } text)
+            {
+                return false;
+            }
+
+            message = text;
+            if (details.TryGetProperty("code", out var codeElement) && codeElement.ValueKind is JsonValueKind.String or JsonValueKind.Number)
+            {
+                code = codeElement.ValueKind == JsonValueKind.String ? codeElement.GetString() : codeElement.GetRawText();
+            }
+
+            return true;
+        }
+
+        private void Fail(string? raw)
+        {
+            _finish = FinishReason.Error;
+            _rawFinish = raw;
+        }
     }
 }

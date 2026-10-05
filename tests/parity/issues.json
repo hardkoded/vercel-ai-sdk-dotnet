@@ -775,9 +775,9 @@
       "title": "Cover upstream unit tests: huggingface/responses",
       "dotnetProject": "Vercel.AI.HuggingFace",
       "inScope": 32,
-      "covered": 16,
-      "partial": 6,
-      "missing": 10,
+      "covered": 29,
+      "partial": 3,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/107"
     },
     {
