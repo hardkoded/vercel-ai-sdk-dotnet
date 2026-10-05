@@ -1276,8 +1276,8 @@
       "dotnetProject": "Vercel.AI.Zai",
       "inScope": 15,
       "covered": 12,
-      "partial": 0,
-      "missing": 3,
+      "partial": 1,
+      "missing": 2,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/157"
     }
   ]
