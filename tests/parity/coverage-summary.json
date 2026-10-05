@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2687,
-  "partial": 80,
-  "missing": 8302,
+  "covered": 2690,
+  "partial": 78,
+  "missing": 8301,
   "features": [
     {
       "feature": "ai/agent",
@@ -795,9 +795,9 @@
       "feature": "openai/embedding",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 8,
-      "covered": 5,
-      "partial": 2,
-      "missing": 1
+      "covered": 8,
+      "partial": 0,
+      "missing": 0
     },
     {
       "feature": "openai/files",

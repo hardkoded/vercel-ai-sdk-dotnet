@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
@@ -12,6 +13,10 @@ namespace Vercel.AI.Tests;
 /// <summary>Embeddings, images, speech, transcription, files, skills, completions, and realtime client secrets.</summary>
 public sealed class OpenAIMediaUpstreamTests
 {
+    private const string EmbeddingFixtureJson = "{\"object\":\"list\",\"data\":[{\"object\":\"embedding\",\"index\":0,\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"object\":\"embedding\",\"index\":1,\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"model\":\"text-embedding-3-small\",\"usage\":{\"prompt_tokens\":12,\"total_tokens\":12}}";
+
+    private static readonly string[] EmbeddingValues = { "sunny day at the beach", "rainy day in the city" };
+
     [Fact]
     [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::model limits::should expose the aggregate token limit", Coverage = UpstreamCoverage.Covered)]
     public void ExposesEmbeddingByteLimit()
@@ -548,29 +553,55 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response headers", Coverage = UpstreamCoverage.Partial, Note = "test-header is returned. Content-length follows the scripted body, not the upstream fixture length.")]
+    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
     public async Task ExposesEmbeddingResponseHeaders()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":1}}" };
+        var capture = EmbeddingFixture();
         capture.ResponseHeaders["test-header"] = "test-value";
-        var result = await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), "text-embedding-3-large").EmbedAsync(new[] { "hello" }, null, null, null, CancellationToken.None);
-        Assert.Equal("test-value", result.Headers["test-header"]);
-        Assert.Contains("application/json", result.Headers["Content-Type"], StringComparison.Ordinal);
+        var result = await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(capture), "text-embedding-3-large").EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
+        Assert.Equal(
+            new Dictionary<string, string> { ["content-length"] = "327", ["content-type"] = "application/json", ["test-header"] = "test-value" },
+            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Authorization, organization, project, and custom headers match. The user-agent suffix is ai-sdk/openai/4.0.73.")]
+    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response body", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExposesEmbeddingResponseBody()
+    {
+        var result = await new OpenAIEmbeddingModel(OpenAIUpstream.Provider(EmbeddingFixture()), "text-embedding-3-large").EmbedAsync(EmbeddingValues, null, null, null, CancellationToken.None);
+        OpenAIUpstream.Equal(JsonNode.Parse(result.RawBody), EmbeddingFixtureJson);
+        Assert.Equal(
+            new Dictionary<string, string> { ["content-length"] = "327", ["content-type"] = "application/json" },
+            result.Headers.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesEmbeddingHeaders()
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":1}}" };
-        var provider = StandardProvider(capture);
-        await new OpenAIEmbeddingModel(provider, "text-embedding-3-large").EmbedAsync(
-            new[] { "hello" },
+        var capture = EmbeddingFixture();
+        await new OpenAIEmbeddingModel(StandardProvider(capture), "text-embedding-3-large").EmbedAsync(
+            EmbeddingValues,
             null,
             null,
             new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" },
             CancellationToken.None);
-        OpenAIUpstream.AssertStandardHeaders(capture);
+        // HttpClient adds Content-Length and a UTF-8 charset; the upstream test server reports neither.
+        var headers = capture.Headers
+            .Where(pair => !pair.Key.Equals("User-Agent", StringComparison.OrdinalIgnoreCase) && !pair.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value);
+        headers["content-type"] = MediaTypeHeaderValue.Parse(headers["content-type"]).MediaType!;
+        Assert.Equal(
+            new Dictionary<string, string>
+            {
+                ["authorization"] = "Bearer test-api-key",
+                ["content-type"] = "application/json",
+                ["custom-provider-header"] = "provider-header-value",
+                ["custom-request-header"] = "request-header-value",
+                ["openai-organization"] = "test-organization",
+                ["openai-project"] = "test-project",
+            },
+            headers);
         Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
     }
 
@@ -740,6 +771,11 @@ public sealed class OpenAIMediaUpstreamTests
             CancellationToken.None);
         OpenAIUpstream.Equal(JsonNode.Parse(result.ProviderMetadata!.Value.GetProperty("openai").GetProperty("logprobs").GetRawText()), logprobs);
         Assert.Equal(1, JsonNode.Parse(capture.Body)!["logprobs"]!.GetValue<int>());
+    }
+
+    private static OpenAICapture EmbeddingFixture()
+    {
+        return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(EmbeddingFixtureJson), ResponseMediaType = "application/json" };
     }
 
     private static OpenAIProvider StandardProvider(OpenAICapture capture)

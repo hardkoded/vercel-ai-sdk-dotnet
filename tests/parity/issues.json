@@ -985,9 +985,9 @@
       "title": "Cover upstream unit tests: openai/embedding",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 8,
-      "covered": 5,
-      "partial": 2,
-      "missing": 1,
+      "covered": 8,
+      "partial": 0,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/128"
     },
     {
