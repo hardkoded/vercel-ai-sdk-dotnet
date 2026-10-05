@@ -6,6 +6,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -642,7 +643,7 @@ internal static class AnthropicAssertions
         Assert.Equal("20240315T000000Z", call.Headers["x-amz-date"]);
         Assert.Contains("Credential=test-access-key/20240315/us-west-2/aws-external-anthropic/aws4_request", call.Headers["authorization"]);
         Assert.Equal("test-session-token", call.Headers["x-amz-security-token"]);
-        Assert.StartsWith("ai-sdk/anthropic-aws/0.0.0-test", call.Headers["user-agent"]);
+        Assert.StartsWith("ai-sdk/anthropic-aws/" + AiSdkVersion.Version, call.Headers["user-agent"]);
         Assert.Equal("{\"test\": \"data\"}", call.Body);
     }
 
@@ -665,7 +666,7 @@ internal static class AnthropicAssertions
         var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{\"test\": \"data\"}", null, null, null, requestHeaders, Creds(), new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
         Assert.Equal("{\"test\": \"data\"}", call.Body);
         Assert.Equal("from-request", call.Headers["x-from-request"]);
-        Assert.StartsWith("ai-sdk/anthropic-aws/0.0.0-test", call.Headers["user-agent"]);
+        Assert.StartsWith("ai-sdk/anthropic-aws/" + AiSdkVersion.Version, call.Headers["user-agent"]);
         Assert.True(call.Signed);
     }
 
@@ -1288,7 +1289,7 @@ internal static class AnthropicAssertions
         Assert.Equal("STOP", result.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("stopSequence").GetString());
         Assert.Equal("test-api-key", handler.Headers["x-api-key"]);
         Assert.Equal("2023-06-01", handler.Headers["anthropic-version"]);
-        Assert.StartsWith("ai-sdk/anthropic/0.0.0-test", handler.Headers["user-agent"]);
+        Assert.StartsWith("ai-sdk/anthropic/" + AiSdkVersion.Version, handler.Headers["user-agent"]);
     }
 
     public static async Task Overloaded()

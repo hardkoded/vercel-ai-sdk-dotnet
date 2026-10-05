@@ -4,6 +4,7 @@
 
 using Vercel.AI.Moonshot;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -19,7 +20,7 @@ public sealed class MoonshotUpstreamTests
         await ((OpenAICompatibleLanguageModel)provider.LanguageModel("kimi-k2.5")).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal("https://api.moonshot.ai/v1/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/moonshotai/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/moonshotai/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
         Assert.Equal("MOONSHOT_API_KEY", provider.Options.ApiKeyEnvironmentVariable);
         Assert.True(provider.Options.IncludeUsage);
     }

@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Zai;
 
@@ -171,7 +172,7 @@ public sealed class ZaiUpstreamTests
         await Chat(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal("https://api.z.ai/api/paas/v4/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
         Assert.Equal("Bearer test-key", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/zai/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/zai/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
     }
 
     [Fact]

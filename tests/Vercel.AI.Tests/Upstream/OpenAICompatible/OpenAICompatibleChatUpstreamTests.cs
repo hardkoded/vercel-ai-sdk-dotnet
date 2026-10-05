@@ -5,6 +5,7 @@
 using System.Text;
 using System.Text.Json;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -582,7 +583,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         Assert.Equal("yes", capture.Requests[0].Headers["X-Custom"]);
         Assert.Equal("p", capture.Requests[0].Headers["X-Provider"]);
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/openai-compatible/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/openai-compatible/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
     }
 
     [Fact]

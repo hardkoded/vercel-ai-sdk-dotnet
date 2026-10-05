@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Text;
+using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI;
@@ -32,9 +33,6 @@ internal sealed class ProviderExchangeResult
 /// <summary>Sends one provider request and keeps the response headers.</summary>
 internal static class ProviderExchange
 {
-    /// <summary>Unbundled SDK version token used in <c>User-Agent</c>.</summary>
-    public const string Version = "0.0.0-test";
-
     /// <summary>Sends <paramref name="content"/> and returns the body when the status is successful.</summary>
     public static async Task<ProviderExchangeResult> SendAsync(
         HttpClient httpClient,
@@ -135,7 +133,7 @@ internal static class ProviderExchange
     /// <summary><c>ai-sdk/{provider}/{version}</c>.</summary>
     public static string UserAgent(string provider)
     {
-        return "ai-sdk/" + provider + "/" + Version;
+        return "ai-sdk/" + provider + "/" + AiSdkVersion.Version;
     }
 
     /// <summary>Adds the SDK user agent when the caller did not set one.</summary>

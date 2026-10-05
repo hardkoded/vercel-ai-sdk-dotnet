@@ -55,7 +55,7 @@ public sealed class BatchTests
         Assert.Equal("test", page.Batches[0].Provider);
         Assert.Equal("batch-1", page.Batches[0].Id);
         Assert.Equal("next", page.NextCursor);
-        Assert.Contains("ai/0.0.0-test", api.Last.Headers["user-agent"]);
+        Assert.Contains(AiSdkVersion.UserAgent, api.Last.Headers["user-agent"]);
     }
 
     [Fact]

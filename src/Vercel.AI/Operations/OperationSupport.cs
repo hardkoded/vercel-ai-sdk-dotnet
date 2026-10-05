@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Vercel.AI.Provider;
@@ -13,11 +14,12 @@ namespace Vercel.AI.Operations;
 /// <summary>Package version used in the <c>ai/</c> user-agent suffix.</summary>
 public static class AiSdkVersion
 {
-    /// <summary>Version sent when a package version is not injected at build time.</summary>
-    public const string Version = "0.0.0-test";
+    /// <summary>Package version from the assembly informational version, without the <c>+commit</c> suffix.</summary>
+    public static readonly string Version = typeof(AiSdkVersion).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
 
     /// <summary>User-agent token appended to provider requests.</summary>
-    public const string UserAgent = "ai/" + Version;
+    public static readonly string UserAgent = "ai/" + Version;
 }
 
 /// <summary>A warning returned by a model call.</summary>

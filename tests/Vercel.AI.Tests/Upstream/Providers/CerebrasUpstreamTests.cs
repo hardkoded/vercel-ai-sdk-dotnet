@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Vercel.AI.Cerebras;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
 
@@ -127,7 +128,7 @@ public sealed class CerebrasUpstreamTests
         await Chat(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal("https://api.cerebras.ai/v1/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/cerebras/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/cerebras/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
         Assert.Equal("CEREBRAS_API_KEY", CerebrasProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).Options.ApiKeyEnvironmentVariable);
     }
 

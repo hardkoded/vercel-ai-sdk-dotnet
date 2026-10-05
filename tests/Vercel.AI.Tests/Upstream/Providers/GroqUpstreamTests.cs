@@ -4,6 +4,7 @@
 
 using Vercel.AI.Groq;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -19,7 +20,7 @@ public sealed class GroqUpstreamTests
         Assert.Equal("{\"model\":\"gemma2-9b-it\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}]}", capture.Requests[0].Body);
         Assert.Equal("api.groq.com", capture.Requests[0].Uri!.Host);
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/groq/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/groq/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
     }
 
     [Fact]
@@ -44,7 +45,7 @@ public sealed class GroqUpstreamTests
         Assert.Equal("Bearer test-api-key", capture.Requests[0].Headers["Authorization"]);
         Assert.Equal("provider-header-value", capture.Requests[0].Headers["Custom-Provider-Header"]);
         Assert.Equal("request-header-value", capture.Requests[0].Headers["Custom-Request-Header"]);
-        Assert.Contains("ai-sdk/groq/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/groq/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
     }
 
     [Fact]
