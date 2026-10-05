@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Anthropic;
 using Vercel.AI.Google;
 using Vercel.AI.Provider;
 
@@ -12,6 +13,10 @@ namespace Vercel.AI.Tests;
 /// <summary>Vertex, Anthropic, MaaS, and xAI request targets.</summary>
 public sealed class GoogleVertexUpstreamTests
 {
+    private const string AnthropicTests = "packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::";
+    private const string AnthropicNodeTests = "packages/google-vertex/src/anthropic/google-vertex-anthropic-provider-node.test.ts::google-vertex-anthropic-provider-node::";
+    private const string AnthropicResponse = "{\"type\":\"message\",\"id\":\"msg_1\",\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
+
     [Fact]
     [UpstreamTest("packages/google-vertex/src/google-vertex-provider-base.test.ts::google-vertex-provider-base::should use correct URL for global region", Coverage = UpstreamCoverage.Covered)]
     public void Uses_the_global_Vertex_host()
@@ -234,55 +239,211 @@ public sealed class GoogleVertexUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should use correct URL for global location", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicTests + "should create a language model with default settings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_Anthropic_requests_to_rawPredict_without_native_structured_output_or_strict_tools()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var provider = GoogleVertexAnthropicProvider.Create(new GoogleVertexAnthropicOptions { Project = "test-project", Location = "test-location" }, handler);
+        var model = Assert.IsType<AnthropicLanguageModel>(provider.LanguageModel("claude-sonnet-4-5@20250929"));
+        Assert.Equal("googleVertex.anthropic.messages", model.Provider);
+
+        var options = GoogleUpstream.Hello();
+        options.JsonSchema = GoogleUpstream.Element("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}");
+        options.Tools = new[] { GoogleUpstream.Function("lookup", "{\"type\":\"object\"}", strict: true) };
+        await model.DoGenerateAsync(options, CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal("https://test-location-aiplatform.googleapis.com/v1/projects/test-project/locations/test-location/publishers/anthropic/models/claude-sonnet-4-5@20250929:rawPredict", handler.Uris[0]);
+        Assert.Equal(
+            "https://test-location-aiplatform.googleapis.com/v1/projects/test-project/locations/test-location/publishers/anthropic/models/claude-sonnet-4-5@20250929:streamRawPredict",
+            provider.PredictUrl("claude-sonnet-4-5@20250929", streaming: true));
+        var body = JsonNode.Parse(handler.Body)!.AsObject();
+        Assert.False(body.ContainsKey("model"));
+        Assert.Equal("vertex-2023-10-16", body["anthropic_version"]!.GetValue<string>());
+        Assert.False(body.ContainsKey("output_config"));
+        var tools = body["tools"]!.AsArray();
+        Assert.Contains(tools, tool => tool!["name"]!.GetValue<string>() == "json");
+        Assert.All(tools, tool => Assert.False(tool!.AsObject().ContainsKey("strict")));
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should throw an error when using new keyword", Coverage = UpstreamCoverage.Covered)]
+    public void Rejects_the_new_keyword_for_Anthropic_models()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() => AnthropicOnVertex("test-project", "global").New("test-model-id"));
+        Assert.Equal("The Anthropic model function cannot be called with the new keyword.", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should use correct URL for global location", Coverage = UpstreamCoverage.Covered)]
     public void Uses_the_global_Anthropic_publisher_url()
     {
-        Assert.Equal("https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/anthropic/models", new GoogleVertexAnthropicProvider("test-project", "global").BaseUrl);
+        Assert.Equal("https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/publishers/anthropic/models", AnthropicOnVertex("test-project", "global").BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should use region-prefixed URL for non-global locations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicTests + "should use region-prefixed URL for non-global locations", Coverage = UpstreamCoverage.Covered)]
     public void Prefixes_the_Anthropic_host_with_the_region()
     {
-        Assert.Equal("https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/locations/us-central1/publishers/anthropic/models", new GoogleVertexAnthropicProvider("test-project", "us-central1").BaseUrl);
+        Assert.Equal("https://us-central1-aiplatform.googleapis.com/v1/projects/test-project/locations/us-central1/publishers/anthropic/models", AnthropicOnVertex("test-project", "us-central1").BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should use multi-region URL for eu location", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicTests + "should use multi-region URL for eu location", Coverage = UpstreamCoverage.Covered)]
     public void Uses_the_eu_Anthropic_host()
     {
-        Assert.Equal("https://aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu/publishers/anthropic/models", new GoogleVertexAnthropicProvider("test-project", "eu").BaseUrl);
+        Assert.Equal("https://aiplatform.eu.rep.googleapis.com/v1/projects/test-project/locations/eu/publishers/anthropic/models", AnthropicOnVertex("test-project", "eu").BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should use multi-region URL for us location", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicTests + "should use multi-region URL for us location", Coverage = UpstreamCoverage.Covered)]
     public void Uses_the_us_Anthropic_host()
     {
-        Assert.Equal("https://aiplatform.us.rep.googleapis.com/v1/projects/test-project/locations/us/publishers/anthropic/models", new GoogleVertexAnthropicProvider("test-project", "us").BaseUrl);
+        Assert.Equal("https://aiplatform.us.rep.googleapis.com/v1/projects/test-project/locations/us/publishers/anthropic/models", AnthropicOnVertex("test-project", "us").BaseUrl);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should pass baseURL to the model when created", Coverage = UpstreamCoverage.Covered)]
-    public void Uses_a_custom_Anthropic_base_url()
+    [UpstreamTest(AnthropicTests + "should pass baseURL to the model when created", Coverage = UpstreamCoverage.Covered)]
+    public async Task Uses_a_custom_Anthropic_base_url()
     {
-        Assert.Equal("https://example.com/anthropic", new GoogleVertexAnthropicProvider("p", "global", "https://example.com/anthropic").BaseUrl);
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var provider = GoogleVertexAnthropicProvider.Create(new GoogleVertexAnthropicOptions { Project = "p", Location = "global", BaseUrl = "https://custom-url.com" }, handler);
+        await provider.LanguageModel("test-model-id").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("https://custom-url.com/test-model-id:rawPredict", handler.Uris[0]);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should throw NoSuchModelError for textEmbeddingModel", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicTests + "should throw NoSuchModelError for textEmbeddingModel", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_Anthropic_embedding_models()
     {
-        var error = Assert.Throws<AiSdkException>(() => new GoogleVertexAnthropicProvider("p", "global").EmbeddingModel("text"));
+        var error = Assert.Throws<AiSdkException>(() => AnthropicOnVertex("p", "global").EmbeddingModel("text"));
         Assert.Contains("google.vertex.anthropic", error.Message);
     }
 
     [Fact]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::should pass custom headers to the model constructor", Coverage = UpstreamCoverage.Covered)]
-    public void Keeps_a_caller_supplied_Anthropic_authorization_header()
+    [UpstreamTest(AnthropicTests + "should include googleVertexAnthropicTools (subset of anthropicTools)", Coverage = UpstreamCoverage.Covered)]
+    public void Lists_the_Anthropic_tools_that_Vertex_accepts()
     {
-        var headers = new GoogleVertexAnthropicProvider("p", "global", accessToken: "token").Headers(new Dictionary<string, string?> { ["Authorization"] = "Bearer caller", ["X-Custom"] = "1" });
-        Assert.Equal("Bearer caller", headers["Authorization"]);
-        Assert.Equal("1", headers["X-Custom"]);
+        Assert.Equal(
+            new[]
+            {
+                "anthropic.bash_20241022",
+                "anthropic.bash_20250124",
+                "anthropic.text_editor_20241022",
+                "anthropic.text_editor_20250124",
+                "anthropic.text_editor_20250429",
+                "anthropic.text_editor_20250728",
+                "anthropic.computer_20241022",
+                "anthropic.web_search_20250305",
+                "anthropic.tool_search_regex_20251119",
+                "anthropic.tool_search_bm25_20251119",
+            },
+            GoogleVertexAnthropicProvider.Tools);
+        Assert.DoesNotContain("anthropic.code_execution_20250825", GoogleVertexAnthropicProvider.Tools);
+        Assert.DoesNotContain("anthropic.code_execution_20260120", GoogleVertexAnthropicProvider.Tools);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should pass custom headers to the model constructor", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_custom_Anthropic_headers()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var options = new GoogleVertexAnthropicOptions { Project = "p", Location = "global" };
+        options.Headers["Custom-Header"] = "custom-value";
+        await GoogleVertexAnthropicProvider.Create(options, handler).LanguageModel("test-model-id").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("custom-value", handler.RequestHeaders["Custom-Header"]);
+        Assert.False(handler.RequestHeaders.ContainsKey("Authorization"));
+        Assert.False(handler.RequestHeaders.ContainsKey("x-api-key"));
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should create a Google Vertex Anthropic provider instance with custom settings", Coverage = UpstreamCoverage.Covered)]
+    public void Creates_an_Anthropic_provider_with_custom_settings()
+    {
+        var options = new GoogleVertexAnthropicOptions { Project = "custom-project", Location = "custom-location", BaseUrl = "https://custom.base.url" };
+        options.Headers["Custom-Header"] = "value";
+        var provider = GoogleVertexAnthropicProvider.Create(options);
+        Assert.Equal("custom-project", provider.Project);
+        Assert.Equal("custom-location", provider.Location);
+        Assert.Equal("https://custom.base.url", provider.BaseUrl);
+        Assert.Equal("value", provider.Options.Headers["Custom-Header"]);
+        Assert.NotNull(provider.LanguageModel("test-model-id"));
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should not support URL sources to force base64 conversion", Coverage = UpstreamCoverage.Covered)]
+    public void Accepts_no_Anthropic_URL_sources()
+    {
+        var model = Assert.IsType<AnthropicLanguageModel>(AnthropicOnVertex("p", "global").LanguageModel("test-model-id"));
+        Assert.Empty(model.SupportedUrls);
+        Assert.False(model.SupportsUrl("image/*", "https://example.com/image.png"));
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicTests + "should support combining tools with structured outputs (inherited from Anthropic)", Coverage = UpstreamCoverage.Covered)]
+    public void Creates_Anthropic_Messages_models()
+    {
+        var model = Assert.IsType<AnthropicLanguageModel>(AnthropicOnVertex("test-project", "us-east5").LanguageModel("claude-3-5-sonnet-v2@20241022"));
+        Assert.Equal("claude-3-5-sonnet-v2@20241022", model.ModelId);
+        Assert.Equal("googleVertex.anthropic.messages", model.Provider);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicNodeTests + "uses custom generateAuthToken when provided and skips the default", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_the_generated_Anthropic_bearer_token()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var calls = 0;
+        await AnthropicWithToken(handler, _ =>
+        {
+            calls++;
+            return Task.FromResult("custom-token");
+        }).ConfigureAwait(false);
+        Assert.Equal("Bearer custom-token", handler.RequestHeaders["Authorization"]);
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicNodeTests + "merges custom generateAuthToken with user-provided headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Merges_the_generated_Anthropic_token_with_custom_headers()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        await AnthropicWithToken(handler, _ => Task.FromResult("custom-token"), new Dictionary<string, string?> { ["Custom-Header"] = "custom-value" }).ConfigureAwait(false);
+        Assert.Equal("Bearer custom-token", handler.RequestHeaders["Authorization"]);
+        Assert.Equal("custom-value", handler.RequestHeaders["Custom-Header"]);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicNodeTests + "invokes custom generateAuthToken on each headers resolution", Coverage = UpstreamCoverage.Covered)]
+    public async Task Generates_an_Anthropic_token_for_each_request()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var calls = 0;
+        var options = new GoogleVertexAnthropicOptions { Project = "test-project", Location = "global", GenerateAuthToken = _ => Task.FromResult("token-" + ++calls) };
+        var model = GoogleVertexAnthropicProvider.Create(options, handler).LanguageModel("test-model-id");
+        await model.DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("Bearer token-1", handler.RequestHeaders["Authorization"]);
+        await model.DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("Bearer token-2", handler.RequestHeaders["Authorization"]);
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicNodeTests + "propagates errors thrown from custom generateAuthToken", Coverage = UpstreamCoverage.Covered)]
+    public async Task Propagates_Anthropic_token_errors()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => AnthropicWithToken(handler, _ => throw new InvalidOperationException("token mint failed"))).ConfigureAwait(false);
+        Assert.Equal("token mint failed", error.Message);
+        Assert.Equal(0, handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(AnthropicNodeTests + "user-provided Authorization in headers overrides the generated token", Coverage = UpstreamCoverage.Covered)]
+    public async Task Keeps_a_caller_supplied_Anthropic_authorization_header()
+    {
+        var handler = new RecordingHandler { ResponseText = AnthropicResponse };
+        await AnthropicWithToken(handler, _ => Task.FromResult("custom-token"), new Dictionary<string, string?> { ["Authorization"] = "Bearer user-override" }).ConfigureAwait(false);
+        Assert.Equal("Bearer user-override", handler.RequestHeaders["Authorization"]);
     }
 
     [Fact]
@@ -435,6 +596,22 @@ public sealed class GoogleVertexUpstreamTests
         var handler = new RecordingHandler();
         Assert.Throws<ArgumentException>(() => GoogleVertexProvider.Create(new VertexOptions { Project = "p", Region = "us.central1" }, handler));
         Assert.Equal(0, handler.Calls);
+    }
+
+    private static GoogleVertexAnthropicProvider AnthropicOnVertex(string project, string location)
+    {
+        return GoogleVertexAnthropicProvider.Create(new GoogleVertexAnthropicOptions { Project = project, Location = location }, new RecordingHandler());
+    }
+
+    private static Task<LanguageModelGenerateResult> AnthropicWithToken(RecordingHandler handler, Func<CancellationToken, Task<string>> token, IReadOnlyDictionary<string, string?>? headers = null)
+    {
+        var options = new GoogleVertexAnthropicOptions { Project = "test-project", Location = "global", GenerateAuthToken = token };
+        foreach (var pair in headers ?? new Dictionary<string, string?>())
+        {
+            options.Headers[pair.Key] = pair.Value;
+        }
+
+        return GoogleVertexAnthropicProvider.Create(options, handler).LanguageModel("test-model-id").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None);
     }
 
     private static GoogleVertexProvider Upstream(string project, string location, RecordingHandler? handler = null)

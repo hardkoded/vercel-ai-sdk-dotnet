@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2639,
+  "covered": 2650,
   "partial": 91,
-  "missing": 8339,
+  "missing": 8328,
   "features": [
     {
       "feature": "ai/agent",
@@ -515,9 +515,9 @@
       "feature": "google-vertex/anthropic",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 23,
-      "covered": 7,
+      "covered": 18,
       "partial": 0,
-      "missing": 16
+      "missing": 5
     },
     {
       "feature": "google-vertex/anthropic/edge",
