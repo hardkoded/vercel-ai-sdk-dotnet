@@ -67,6 +67,7 @@ internal sealed class UpstreamCapture : HttpMessageHandler
         }
 
         Requests.Add(new CapturedRequest(request.RequestUri, request.Method.Method, body, headers));
+        cancellationToken.ThrowIfCancellationRequested();
         var payload = Bodies.Count > 0 ? Bodies.Dequeue() : ResponseBody;
         var message = new HttpResponseMessage(Status)
         {

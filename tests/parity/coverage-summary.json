@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2724,
+  "covered": 2733,
   "partial": 76,
-  "missing": 8269,
+  "missing": 8260,
   "features": [
     {
       "feature": "ai/agent",
@@ -419,9 +419,9 @@
       "feature": "deepseek/files",
       "dotnetProject": "Vercel.AI.DeepSeek",
       "inScope": 20,
-      "covered": 11,
+      "covered": 20,
       "partial": 0,
-      "missing": 9
+      "missing": 0
     },
     {
       "feature": "elevenlabs",
