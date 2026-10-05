@@ -11,8 +11,6 @@ namespace Vercel.AI.Tests.Upstream.Middleware;
 
 public sealed class ExtractReasoningMiddlewareTests
 {
-    private const string CustomDelimiters = "packages/ai/src/middleware/extract-reasoning-middleware.test.ts::extractReasoningMiddleware > custom delimiters";
-
     private static readonly (string Opening, string Closing) GemmaTags = ("<|channel>thought\n", "<channel|>");
 
     private static readonly Dictionary<string, Case> Cases = new()
@@ -58,7 +56,6 @@ public sealed class ExtractReasoningMiddlewareTests
 
     [Theory]
     [MemberData(nameof(CaseNames))]
-    [UpstreamTest(CustomDelimiters + " > $name::extracts reasoning in generateText", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsReasoningInGenerateText(string name)
     {
         var testCase = Cases[name];
@@ -79,7 +76,6 @@ public sealed class ExtractReasoningMiddlewareTests
 
     [Theory]
     [MemberData(nameof(CaseNames))]
-    [UpstreamTest(CustomDelimiters + " > $name::extracts reasoning when every delimiter character is streamed separately", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsReasoningWhenEveryDelimiterCharacterIsStreamedSeparately(string name)
     {
         var testCase = Cases[name];
@@ -116,7 +112,6 @@ public sealed class ExtractReasoningMiddlewareTests
     [Theory]
     [InlineData("", "<channel|>")]
     [InlineData("<|channel>thought\n", "")]
-    [UpstreamTest(CustomDelimiters + "::rejects empty delimiters: %j", Coverage = UpstreamCoverage.Covered)]
     public void RejectsEmptyDelimiters(string opening, string closing)
     {
         var error = Assert.Throws<InvalidArgumentError>(() => new ExtractReasoningMiddleware((opening, closing)));

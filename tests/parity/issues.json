@@ -124,8 +124,8 @@
       "feature": "ai/middleware",
       "title": "Cover upstream unit tests: ai/middleware",
       "dotnetProject": "Vercel.AI",
-      "inScope": 159,
-      "covered": 4,
+      "inScope": 156,
+      "covered": 1,
       "partial": 0,
       "missing": 155,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/42"
