@@ -665,9 +665,9 @@
       "title": "Cover upstream unit tests: google-vertex/gemini-transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 9,
-      "covered": 1,
+      "covered": 4,
       "partial": 0,
-      "missing": 8,
+      "missing": 5,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/96"
     },
     {
