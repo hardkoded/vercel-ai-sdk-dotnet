@@ -4,6 +4,7 @@ This is an independent reimplementation of the public Vercel AI SDK. Do not copy
 
 ```
 // Copyright 2023 Vercel, Inc.
+// Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 ```
 
