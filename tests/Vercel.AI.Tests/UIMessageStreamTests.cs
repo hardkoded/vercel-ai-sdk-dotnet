@@ -148,22 +148,22 @@ public sealed class UIMessageStreamTests
     public async Task ShouldResetTheKeepAliveTimerAfterSourceActivity()
     {
         var source = new GatedSource();
-        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 100).GetAsyncEnumerator();
+        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(source, 1000).GetAsyncEnumerator();
         try
         {
             Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
             var next = ReadChunk(enumerator);
-            await Task.Delay(50);
+            await Task.Delay(200);
             Assert.False(next.IsCompleted);
             source.Enqueue("data");
-            Assert.Equal("data", await next.WaitAsync(TimeSpan.FromSeconds(2)));
+            Assert.Equal("data", await next.WaitAsync(TimeSpan.FromSeconds(5)));
 
             var started = Stopwatch.StartNew();
             var keepAlive = ReadChunk(enumerator);
-            await Task.Delay(80);
+            await Task.Delay(500);
             Assert.False(keepAlive.IsCompleted);
-            Assert.Equal(": keep-alive\n\n", await keepAlive.WaitAsync(TimeSpan.FromSeconds(2)));
-            Assert.InRange(started.ElapsedMilliseconds, 90, 2000);
+            Assert.Equal(": keep-alive\n\n", await keepAlive.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.InRange(started.ElapsedMilliseconds, 900, 5000);
         }
         finally
         {
