@@ -446,6 +446,125 @@ public sealed class McpProtocolTests
         StdioEnvironment.ValidateCommand("npx", new[] { "safe\r\necho unsafe" }, windows: false);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > message handling::should handle incoming messages correctly",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Stdio_reads_the_response_line_for_the_request()
+    {
+        var input = new MemoryStream();
+        var output = new MemoryStream(Encoding.UTF8.GetBytes(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\",\"params\":{}}\n{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"ok\":true}}\n"));
+        using var transport = new StdioMcpTransport(input, output);
+        using var parameters = JsonDocument.Parse("{}");
+        var result = await transport.CallAsync("test", parameters.RootElement, CancellationToken.None);
+        JsonAssert.Equal(result, "{\"ok\":true}");
+        Assert.Equal("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"test\",\"params\":{}}\n", Encoding.UTF8.GetString(input.ToArray()));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > start::should successfully start the transport",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_start_pipes_stdin_and_stdout()
+    {
+        var options = new StdioMcpOptions(HostPath()) { Arguments = new[] { "--version" } };
+        var start = StdioMcpTransport.CreateStartInfo(options);
+        Assert.True(start.RedirectStandardInput);
+        Assert.True(start.RedirectStandardOutput);
+        Assert.False(start.UseShellExecute);
+        using var transport = StdioMcpTransport.Start(options);
+        Assert.True(transport.ProcessId > 0);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > start::should handle spawn errors",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The spawn error is thrown from Start. There is no onerror callback.")]
+    public void Stdio_start_throws_when_the_command_cannot_spawn()
+    {
+        var error = Assert.Throws<AiSdkException>(() => StdioMcpTransport.Start(new StdioMcpOptions(Path.Combine(Path.GetTempPath(), "vercel-ai-missing-mcp-command"))));
+        Assert.StartsWith("Failed to start MCP process: ", error.Message, StringComparison.Ordinal);
+        Assert.IsType<System.ComponentModel.Win32Exception>(error.InnerException);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_spawns_a_child_with_the_default_environment()
+    {
+        var options = new StdioMcpOptions(HostPath()) { Arguments = new[] { "--version" } };
+        Assert.Equal(StdioEnvironment.GetEnvironment(null), EnvironmentOf(StdioMcpTransport.CreateStartInfo(options)));
+        using var transport = StdioMcpTransport.Start(options);
+        Assert.True(transport.ProcessId > 0);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process with custom env",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_adds_the_custom_environment()
+    {
+        var custom = new Dictionary<string, string> { ["FOO"] = "bar" };
+        var environment = EnvironmentOf(StdioMcpTransport.CreateStartInfo(new StdioMcpOptions(HostPath()) { Environment = custom }));
+        Assert.Equal(StdioEnvironment.GetEnvironment(custom), environment);
+        Assert.Equal("bar", environment["FOO"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process with args",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_passes_the_command_and_arguments()
+    {
+        var start = StdioMcpTransport.CreateStartInfo(new StdioMcpOptions(HostPath()) { Arguments = new[] { "-c", "echo", "test" } });
+        Assert.Equal(HostPath(), start.FileName);
+        Assert.Equal("\"-c\" \"echo\" \"test\"", start.Arguments);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process with cwd",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_spawns_in_the_working_directory()
+    {
+        var options = new StdioMcpOptions(HostPath()) { Arguments = new[] { "--version" }, WorkingDirectory = Path.GetTempPath() };
+        Assert.Equal(Path.GetTempPath(), StdioMcpTransport.CreateStartInfo(options).WorkingDirectory);
+        using var transport = StdioMcpTransport.Start(options);
+        Assert.True(transport.ProcessId > 0);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process with stderr",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_pipes_stderr_when_asked()
+    {
+        using var piped = StdioMcpTransport.Start(new StdioMcpOptions(HostPath()) { Arguments = new[] { "--version" }, RedirectStandardError = true });
+        Assert.True(piped.ProcessId > 0);
+        Assert.NotNull(piped.StandardError);
+        using var inherited = StdioMcpTransport.Start(new StdioMcpOptions(HostPath()) { Arguments = new[] { "--version" } });
+        Assert.Null(inherited.StandardError);
+    }
+
+    private static string HostPath()
+    {
+        return System.Environment.ProcessPath!;
+    }
+
+    private static Dictionary<string, string> EnvironmentOf(System.Diagnostics.ProcessStartInfo start)
+    {
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var pair in start.Environment)
+        {
+            environment[pair.Key] = pair.Value!;
+        }
+
+        return environment;
+    }
+
     private static void AssertStructured(string value, string text)
     {
         using var document = JsonDocument.Parse("{\"structuredContent\":" + value + "}");

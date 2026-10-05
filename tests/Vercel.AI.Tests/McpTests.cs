@@ -13,19 +13,6 @@ public sealed class McpTests
 {
     [Fact]
     [UpstreamTest(
-        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > message handling::should handle incoming messages correctly",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Round-trips a Content-Length frame. Upstream delivers newline-delimited JSON.")]
-    public async Task Framing_round_trips_a_json_rpc_message()
-    {
-        var encoded = McpFraming.Encode("{\"jsonrpc\":\"2.0\"}");
-        using var stream = new MemoryStream(encoded);
-        var decoded = await McpFraming.ReadAsync(stream, CancellationToken.None);
-        Assert.Equal("{\"jsonrpc\":\"2.0\"}", decoded);
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should return serializable tool definitions via listTools()",
         Coverage = UpstreamCoverage.Partial,
         Note = "Lists one tool and calls it. Does not cover pagination.")]

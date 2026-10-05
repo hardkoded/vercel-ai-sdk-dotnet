@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3079,
+  "covered": 3086,
   "partial": 107,
-  "missing": 7883,
+  "missing": 7876,
   "features": [
     {
       "feature": "ai/agent",
@@ -667,9 +667,9 @@
       "feature": "mcp/tool/mcp-stdio",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 20,
-      "covered": 7,
+      "covered": 14,
       "partial": 1,
-      "missing": 12
+      "missing": 5
     },
     {
       "feature": "mcp/util",

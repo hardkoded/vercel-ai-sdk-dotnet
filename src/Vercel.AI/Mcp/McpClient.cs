@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -102,108 +104,106 @@ public static class McpClient
     }
 }
 
-/// <summary>Content-Length framing used by MCP stdio.</summary>
-public static class McpFraming
+/// <summary>How to start an MCP stdio server. Mirrors the upstream <c>StdioConfig</c>.</summary>
+public sealed class StdioMcpOptions
 {
-    /// <summary>Encodes one JSON-RPC message.</summary>
-    public static byte[] Encode(string json)
+    /// <summary>Creates options for <paramref name="command"/>.</summary>
+    public StdioMcpOptions(string command)
     {
-        var body = Encoding.UTF8.GetBytes(json ?? string.Empty);
-        var header = Encoding.ASCII.GetBytes("Content-Length: " + body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\r\n\r\n");
-        var message = new byte[header.Length + body.Length];
-        Buffer.BlockCopy(header, 0, message, 0, header.Length);
-        Buffer.BlockCopy(body, 0, message, header.Length, body.Length);
-        return message;
+        Command = command ?? throw new ArgumentNullException(nameof(command));
     }
 
-    /// <summary>Reads one framed message, or null at end of stream.</summary>
-    public static async Task<string?> ReadAsync(Stream stream, CancellationToken cancellationToken)
-    {
-        if (stream is null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
+    /// <summary>Executable to start.</summary>
+    public string Command { get; }
 
-        var header = new StringBuilder();
-        while (true)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var next = await ReadByteAsync(stream).ConfigureAwait(false);
-            if (next < 0)
-            {
-                if (header.Length == 0)
-                {
-                    return null;
-                }
+    /// <summary>Command arguments.</summary>
+    public IReadOnlyList<string>? Arguments { get; set; }
 
-                throw new AiSdkException("Incomplete MCP frame.");
-            }
+    /// <summary>Extra environment variables. The child gets these plus a small set of safe inherited variables.</summary>
+    public IReadOnlyDictionary<string, string>? Environment { get; set; }
 
-            header.Append((char)next);
-            var text = header.ToString();
-            if (text.EndsWith("\r\n\r\n") || text.EndsWith("\n\n"))
-            {
-                break;
-            }
-        }
+    /// <summary>Working directory. Null uses the current directory.</summary>
+    public string? WorkingDirectory { get; set; }
 
-        var length = 0;
-        foreach (var line in header.ToString().Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.Length >= 15 && string.Compare(trimmed.Substring(0, 15), "Content-Length:", StringComparison.OrdinalIgnoreCase) == 0)
-            {
-                length = int.Parse(trimmed.Substring(15).Trim(), System.Globalization.CultureInfo.InvariantCulture);
-            }
-        }
-
-        var body = new byte[length];
-        var read = 0;
-        while (read < length)
-        {
-            var count = await stream.ReadAsync(body, read, length - read).ConfigureAwait(false);
-            if (count == 0)
-            {
-                throw new AiSdkException("Incomplete MCP frame.");
-            }
-
-            read += count;
-        }
-
-        return Encoding.UTF8.GetString(body);
-    }
-
-    private static async Task<int> ReadByteAsync(Stream stream)
-    {
-        var buffer = new byte[1];
-        var count = await stream.ReadAsync(buffer, 0, 1).ConfigureAwait(false);
-        return count == 0 ? -1 : buffer[0];
-    }
+    /// <summary>True pipes stderr to <see cref="StdioMcpTransport.StandardError"/>. False lets the child inherit it.</summary>
+    public bool RedirectStandardError { get; set; }
 }
 
-/// <summary>MCP over a child process using Content-Length frames.</summary>
+/// <summary>MCP over a child process using newline-delimited JSON-RPC messages.</summary>
 public sealed class StdioMcpTransport : IMcpTransport, IDisposable
 {
-    private readonly Process _process;
+    private readonly Process? _process;
+    private readonly Stream _input;
+    private readonly Stream _output;
+    private readonly McpNdjson.Buffer _buffer = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _id;
 
     private StdioMcpTransport(Process process)
+        : this(process.StandardInput.BaseStream, process.StandardOutput.BaseStream)
     {
         _process = process;
     }
 
+    /// <summary>Speaks MCP over <paramref name="input"/> (the server's stdin) and <paramref name="output"/> (its stdout).</summary>
+    internal StdioMcpTransport(Stream input, Stream output)
+    {
+        _input = input;
+        _output = output;
+    }
+
+    /// <summary>Child process id.</summary>
+    public int ProcessId => _process?.Id ?? 0;
+
+    /// <summary>The child's stderr, when <see cref="StdioMcpOptions.RedirectStandardError"/> is true.</summary>
+    public StreamReader? StandardError => _process?.StartInfo.RedirectStandardError == true ? _process.StandardError : null;
+
     /// <summary>Starts <paramref name="fileName"/> and speaks MCP on its stdin and stdout.</summary>
     public static StdioMcpTransport Start(string fileName, IReadOnlyList<string>? arguments = null)
     {
+        return Start(new StdioMcpOptions(fileName) { Arguments = arguments });
+    }
+
+    /// <summary>Starts the server described by <paramref name="options"/>.</summary>
+    public static StdioMcpTransport Start(StdioMcpOptions options)
+    {
+        var start = CreateStartInfo(options);
+        Process? process;
+        try
+        {
+            process = Process.Start(start);
+        }
+        catch (Win32Exception exception)
+        {
+            throw new AiSdkException("Failed to start MCP process: " + exception.Message, exception);
+        }
+
+        return new StdioMcpTransport(process ?? throw new AiSdkException("Failed to start MCP process."));
+    }
+
+    /// <summary>
+    /// Builds the process start info. The environment is replaced by <see cref="StdioEnvironment.GetEnvironment"/>,
+    /// so the child does not inherit every variable of this process.
+    /// </summary>
+    public static ProcessStartInfo CreateStartInfo(StdioMcpOptions options)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        StdioEnvironment.ValidateCommand(options.Command, options.Arguments, windows);
         var start = new ProcessStartInfo
         {
-            FileName = fileName,
+            FileName = options.Command,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
+            RedirectStandardError = options.RedirectStandardError,
             UseShellExecute = false,
+            WorkingDirectory = options.WorkingDirectory ?? string.Empty,
         };
-        if (arguments != null && arguments.Count > 0)
+        if (options.Arguments is { Count: > 0 } arguments)
         {
             var quoted = new string[arguments.Count];
             for (var index = 0; index < arguments.Count; index++)
@@ -214,8 +214,13 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
             start.Arguments = string.Join(" ", quoted);
         }
 
-        var process = Process.Start(start) ?? throw new AiSdkException("Failed to start MCP process.");
-        return new StdioMcpTransport(process);
+        start.Environment.Clear();
+        foreach (var pair in StdioEnvironment.GetEnvironment(options.Environment, windows))
+        {
+            start.Environment[pair.Key] = pair.Value;
+        }
+
+        return start;
     }
 
     /// <inheritdoc />
@@ -232,17 +237,31 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var bytes = McpFraming.Encode(request.ToJsonString());
-            await _process.StandardInput.BaseStream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
-            await _process.StandardInput.BaseStream.FlushAsync().ConfigureAwait(false);
-            var payload = await McpFraming.ReadAsync(_process.StandardOutput.BaseStream, cancellationToken).ConfigureAwait(false);
-            if (payload is null)
+            using (var document = JsonDocument.Parse(request.ToJsonString()))
             {
-                throw new MCPClientError("MCP process closed the stream.");
+                McpNdjson.Write(_input, document.RootElement);
             }
 
-            using var document = JsonDocument.Parse(payload);
-            return Unwrap(document.RootElement);
+            await _input.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            // Servers may send notifications and requests before the response, so skip other messages.
+            while (true)
+            {
+                var line = await ReadLineAsync(cancellationToken).ConfigureAwait(false) ?? throw new MCPClientError("MCP process closed the stream.");
+                if (line.Trim().Length == 0)
+                {
+                    continue;
+                }
+
+                var message = JsonRpcMessages.Parse(line);
+                if (message.TryGetProperty("id", out var responseId)
+                    && responseId.ValueKind == JsonValueKind.Number
+                    && responseId.GetInt32() == id
+                    && !message.TryGetProperty("method", out _))
+                {
+                    return Unwrap(message);
+                }
+            }
         }
         finally
         {
@@ -250,15 +269,19 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>Kills the child process, if one was started.</summary>
     public void Dispose()
     {
-        if (!_process.HasExited)
+        if (_process != null)
         {
-            _process.Kill();
+            if (!_process.HasExited)
+            {
+                _process.Kill();
+            }
+
+            _process.Dispose();
         }
 
-        _process.Dispose();
         _gate.Dispose();
     }
 
@@ -278,6 +301,28 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         }
 
         return result.Clone();
+    }
+
+    private async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
+    {
+        var chunk = new byte[4096];
+        while (true)
+        {
+            if (_buffer.ReadLine() is { } line)
+            {
+                return line;
+            }
+
+            var count = await _output.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+            if (count == 0)
+            {
+                return null;
+            }
+
+            var bytes = new byte[count];
+            Array.Copy(chunk, bytes, count);
+            _buffer.Append(bytes);
+        }
     }
 }
 
