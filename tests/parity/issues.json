@@ -535,9 +535,9 @@
       "title": "Cover upstream unit tests: fal",
       "dotnetProject": "Vercel.AI.Fal",
       "inScope": 67,
-      "covered": 1,
+      "covered": 37,
       "partial": 0,
-      "missing": 66,
+      "missing": 30,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/83"
     },
     {
