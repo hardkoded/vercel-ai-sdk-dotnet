@@ -399,10 +399,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "uses custom generateAuthToken when provided and skips the default", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(AnthropicNodeTests + "default headers function should return auth token", Coverage = UpstreamCoverage.Covered)]
     [UpstreamTest(AnthropicEdgeTests + "uses custom generateAuthToken when provided and skips the default", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(AnthropicEdgeTests + "default headers function should return auth token", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(AnthropicEdgeTests + "should use edge auth token generator", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_the_generated_Anthropic_bearer_token()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -418,9 +415,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "merges custom generateAuthToken with user-provided headers", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(AnthropicNodeTests + "should use custom headers in addition to auth token when provided", Coverage = UpstreamCoverage.Covered)]
     [UpstreamTest(AnthropicEdgeTests + "merges custom generateAuthToken with user-provided headers", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(AnthropicEdgeTests + "should use custom headers in addition to auth token when provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Merges_the_generated_Anthropic_token_with_custom_headers()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -608,9 +603,6 @@ public sealed class GoogleVertexUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(VertexNodeTests + "default headers function should return auth token", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(VertexEdgeTests + "default headers function should return auth token", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(VertexEdgeTests + "should use edge auth token generator", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_the_generated_Vertex_bearer_token()
     {
         var handler = new RecordingHandler();
@@ -623,8 +615,6 @@ public sealed class GoogleVertexUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(VertexNodeTests + "should use custom headers in addition to auth token when provided", Coverage = UpstreamCoverage.Covered)]
-    [UpstreamTest(VertexEdgeTests + "should use custom headers in addition to auth token when provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_custom_Vertex_headers_with_the_generated_token()
     {
         var handler = new RecordingHandler();
