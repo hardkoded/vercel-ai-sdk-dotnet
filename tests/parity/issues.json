@@ -465,9 +465,9 @@
       "title": "Cover upstream unit tests: cohere",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 68,
-      "covered": 0,
-      "partial": 0,
-      "missing": 68,
+      "covered": 50,
+      "partial": 12,
+      "missing": 6,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/76"
     },
     {
