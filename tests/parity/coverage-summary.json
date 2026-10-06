@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2664,
-  "partial": 78,
-  "missing": 8327,
+  "covered": 2667,
+  "partial": 80,
+  "missing": 8322,
   "features": [
     {
       "feature": "ai/agent",
@@ -75,9 +75,9 @@
       "feature": "ai/generate-text",
       "dotnetProject": "Vercel.AI",
       "inScope": 1136,
-      "covered": 84,
-      "partial": 4,
-      "missing": 1048
+      "covered": 86,
+      "partial": 5,
+      "missing": 1045
     },
     {
       "feature": "ai/generate-video",
@@ -211,9 +211,9 @@
       "feature": "ai/ui-message-stream",
       "dotnetProject": "Vercel.AI",
       "inScope": 104,
-      "covered": 10,
-      "partial": 1,
-      "missing": 93
+      "covered": 11,
+      "partial": 2,
+      "missing": 91
     },
     {
       "feature": "ai/upload-file",

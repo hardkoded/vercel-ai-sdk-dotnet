@@ -141,6 +141,93 @@ public sealed class UiMessageResponseTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::maps tool input streaming parts",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "No dynamic tools, tool metadata, or tool titles in .NET. The dynamic flag comes from the provider part.")]
+    public async Task Maps_tool_input_streaming_parts()
+    {
+        using var metadata = JsonDocument.Parse("{\"testProvider\":{\"signature\":\"sig-1\"}}");
+        var frames = Frames(await Write(new LanguageModelStreamPart[]
+        {
+            new ToolInputStartStreamPart("call-1", "dynamicTool", metadata.RootElement.Clone(), providerExecuted: true, dynamic: true),
+            new ToolInputStartStreamPart("call-2", "providerTool", dynamic: true),
+            new ToolInputDeltaStreamPart("call-1", "{\"value\""),
+            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+        }));
+
+        AssertFrame(
+            "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"dynamicTool\",\"providerExecuted\":true,\"providerMetadata\":{\"testProvider\":{\"signature\":\"sig-1\"}},\"dynamic\":true}",
+            frames[2]);
+        AssertFrame("{\"type\":\"tool-input-start\",\"toolCallId\":\"call-2\",\"toolName\":\"providerTool\",\"dynamic\":true}", frames[3]);
+        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\"{\\\"value\\\"\"}", frames[4]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::returns undefined for parts that do not produce UI message chunks",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Writes_no_chunk_for_tool_input_end_or_raw_parts()
+    {
+        var frames = Frames(await Write(new LanguageModelStreamPart[]
+        {
+            new ToolInputEndStreamPart("call-1"),
+            new RawStreamPart("{\"provider\":\"raw\"}"),
+            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+        }));
+
+        Assert.Equal(new[] { "start", "start-step", "finish-step", "finish", null }, frames.Select(frame => (string?)frame?["type"]));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.toUIMessageStream::should send tool call, tool call stream start, tool call deltas, and tool result stream parts",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_tool_input_stream_and_tool_result_chunks()
+    {
+        var model = new TestLanguageModel
+        {
+            StreamParts = new LanguageModelStreamPart[]
+            {
+                new ToolInputStartStreamPart("call-1", "tool1"),
+                new ToolInputDeltaStreamPart("call-1", "{ \"value\":"),
+                new ToolInputDeltaStreamPart("call-1", " \"value\" }"),
+                new ToolInputEndStreamPart("call-1"),
+                new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
+                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13), "stop"),
+            },
+        };
+        var stream = Client().StreamTextAsync(new StreamTextOptions
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools = new[]
+            {
+                Tool.Function(
+                    "tool1",
+                    null,
+                    "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
+                    (input, _) => Task.FromResult("\"" + input.GetProperty("value").GetString() + "-result\"")),
+            },
+        });
+        using var buffer = new MemoryStream();
+        await UIMessageStreamResult.WriteAsync(stream, buffer);
+        var frames = Frames(Body(buffer));
+
+        Assert.Equal(10, frames.Count);
+        Assert.Equal("start", (string?)frames[0]?["type"]);
+        AssertFrame("{\"type\":\"start-step\"}", frames[1]);
+        AssertFrame("{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\"}", frames[2]);
+        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\"{ \\\"value\\\":\"}", frames[3]);
+        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\" \\\"value\\\" }\"}", frames[4]);
+        AssertFrame("{\"type\":\"tool-input-available\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\",\"input\":{\"value\":\"value\"}}", frames[5]);
+        AssertFrame("{\"type\":\"tool-output-available\",\"toolCallId\":\"call-1\",\"output\":\"value-result\"}", frames[6]);
+        AssertFrame("{\"type\":\"finish-step\"}", frames[7]);
+        AssertFrame("{\"type\":\"finish\",\"finishReason\":\"stop\"}", frames[8]);
+        Assert.Null(frames[9]);
+    }
+
+    [Fact]
     public async Task Writes_protocol_finish_reasons_metadata_and_null_tool_output()
     {
         using var metadataDocument = JsonDocument.Parse("{\"testProvider\":{\"signature\":\"sig-1\"}}");
@@ -254,6 +341,19 @@ public sealed class UiMessageResponseTests
     private static string Body(MemoryStream buffer)
     {
         return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
+    private static List<JsonNode?> Frames(string body)
+    {
+        return body
+            .Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(frame => frame == "data: [DONE]" ? null : JsonNode.Parse(frame.Substring("data: ".Length)))
+            .ToList();
+    }
+
+    private static void AssertFrame(string expected, JsonNode? actual)
+    {
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), actual), actual?.ToJsonString());
     }
 
     private static AiClient Client()

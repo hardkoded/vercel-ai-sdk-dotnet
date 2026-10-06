@@ -477,6 +477,83 @@ public sealed class GenerateTextBehaviorTests
         Assert.Equal("provider-default", model.Calls[0].Reasoning);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.stream::should send tool call deltas",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The .NET full stream has no start or start-step parts, and it reports a tool without execute as a tool error result.")]
+    public async Task Streams_tool_input_deltas()
+    {
+        const string id = "call_O17Uplv4lJvD6DVdIvFFeRMw";
+        var deltas = new[] { "{\"", "value", "\":\"", "Spark", "le", " Day", "\"}" };
+        var streamParts = new List<LanguageModelStreamPart> { new ToolInputStartStreamPart(id, "test-tool") };
+        streamParts.AddRange(deltas.Select(delta => new ToolInputDeltaStreamPart(id, delta)));
+        streamParts.Add(new ToolInputEndStreamPart(id));
+        streamParts.Add(new ToolCallStreamPart(id, "test-tool", "{\"value\":\"Sparkle Day\"}"));
+        streamParts.Add(new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13)));
+
+        var parts = await StreamToolInputAsync(streamParts);
+
+        Assert.Equal(
+            new[] { "tool-input-start" }
+                .Concat(deltas.Select(_ => "tool-input-delta"))
+                .Concat(new[] { "tool-input-end", "tool-call" }),
+            parts.Take(10).Select(part => part.Type));
+        var start = Assert.IsType<ToolInputStartPart>(parts[0]);
+        Assert.Equal(id, start.Id);
+        Assert.Equal("test-tool", start.ToolName);
+        Assert.False(start.Dynamic);
+        Assert.Null(start.ProviderExecuted);
+        Assert.Null(start.ProviderMetadata);
+        Assert.Equal(deltas, parts.OfType<ToolInputDeltaPart>().Select(delta => delta.Delta));
+        Assert.All(parts.OfType<ToolInputDeltaPart>(), delta => Assert.Equal(id, delta.Id));
+        Assert.Equal(id, Assert.IsType<ToolInputEndPart>(parts[8]).Id);
+        var call = Assert.IsType<ToolCallPart>(parts[9]).ToolCall;
+        Assert.Equal(id, call.ToolCallId);
+        Assert.Equal("{\"value\":\"Sparkle Day\"}", call.ArgumentsJson);
+        var finish = Assert.IsType<FinishPart>(parts[^1]);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+        Assert.Equal(13, finish.Usage.TotalTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.stream::should pass through providerMetadata on tool-input-start",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Passes_provider_metadata_on_tool_input_start()
+    {
+        using var metadata = JsonDocument.Parse("{\"testProvider\":{\"someKey\":\"someValue\"}}");
+        var parts = await StreamToolInputAsync(new LanguageModelStreamPart[]
+        {
+            new ToolInputStartStreamPart("call-1", "test-tool", metadata.RootElement.Clone()),
+            new ToolInputDeltaStreamPart("call-1", "{\"value\":\"test\"}"),
+            new ToolInputEndStreamPart("call-1"),
+            new ToolCallStreamPart("call-1", "test-tool", "{\"value\":\"test\"}"),
+            new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13)),
+        });
+
+        var start = Assert.Single(parts.OfType<ToolInputStartPart>());
+        Assert.Equal("{\"testProvider\":{\"someKey\":\"someValue\"}}", start.ProviderMetadata!.Value.GetRawText());
+    }
+
+    private static async Task<List<TextStreamPart>> StreamToolInputAsync(IReadOnlyList<LanguageModelStreamPart> streamParts)
+    {
+        var stream = Client().StreamTextAsync(new StreamTextOptions
+        {
+            Model = new TestLanguageModel { StreamParts = streamParts },
+            Prompt = "test-input",
+            Tools = new[] { Tool.Function("test-tool", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}", null) },
+            ToolChoice = ToolChoice.Required,
+        });
+        var parts = new List<TextStreamPart>();
+        await foreach (var part in stream.Stream())
+        {
+            parts.Add(part);
+        }
+
+        return parts;
+    }
+
     private static Task<GenerateTextResult> TwoStepAsync(
         IReadOnlyList<CallWarning>? warnings0 = null,
         IReadOnlyList<CallWarning>? warnings1 = null,

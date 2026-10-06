@@ -216,6 +216,20 @@ internal static class Generation
                             toolCalls.Add(call);
                             buffer.Add(new ToolCallPart(call));
                             break;
+                        case ToolInputStartStreamPart inputStart:
+                            buffer.Add(new ToolInputStartPart(
+                                inputStart.Id,
+                                inputStart.ToolName,
+                                inputStart.ProviderMetadata,
+                                inputStart.ProviderExecuted,
+                                inputStart.Dynamic ?? false));
+                            break;
+                        case ToolInputDeltaStreamPart inputDelta:
+                            buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
+                            break;
+                        case ToolInputEndStreamPart inputEnd:
+                            buffer.Add(new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata));
+                            break;
                         case SourceStreamPart source:
                             var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
                             sources.Add(generatedSource);

@@ -597,6 +597,76 @@ public sealed class ToolCallPart : TextStreamPart
     public GeneratedToolCall ToolCall { get; }
 }
 
+/// <summary>The model started streaming tool input.</summary>
+public sealed class ToolInputStartPart : TextStreamPart
+{
+    /// <summary>Creates a tool-input-start part.</summary>
+    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic)
+        : base("tool-input-start")
+    {
+        Id = id;
+        ToolName = toolName;
+        ProviderMetadata = providerMetadata;
+        ProviderExecuted = providerExecuted;
+        Dynamic = dynamic;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>Provider metadata for this tool input.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the provider executes the tool.</summary>
+    public bool? ProviderExecuted { get; }
+
+    /// <summary>True for a tool the caller did not declare.</summary>
+    public bool Dynamic { get; }
+}
+
+/// <summary>A streamed tool-input fragment.</summary>
+public sealed class ToolInputDeltaPart : TextStreamPart
+{
+    /// <summary>Creates a tool-input-delta part.</summary>
+    public ToolInputDeltaPart(string id, string delta, JsonElement? providerMetadata)
+        : base("tool-input-delta")
+    {
+        Id = id;
+        Delta = delta;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>JSON fragment.</summary>
+    public string Delta { get; }
+
+    /// <summary>Provider metadata for this fragment.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>The model finished streaming tool input.</summary>
+public sealed class ToolInputEndPart : TextStreamPart
+{
+    /// <summary>Creates a tool-input-end part.</summary>
+    public ToolInputEndPart(string id, JsonElement? providerMetadata)
+        : base("tool-input-end")
+    {
+        Id = id;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>Provider metadata for this tool input.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>A tool result.</summary>
 public sealed class ToolResultPart : TextStreamPart
 {

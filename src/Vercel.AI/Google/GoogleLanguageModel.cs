@@ -399,21 +399,3 @@ public sealed class FileStreamPart : LanguageModelStreamPart
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
 }
-
-/// <summary>A streamed tool-argument fragment.</summary>
-public sealed class ToolInputDeltaStreamPart : LanguageModelStreamPart
-{
-    /// <summary>Creates a tool-input delta.</summary>
-    public ToolInputDeltaStreamPart(string id, string delta)
-        : base("tool-input-delta")
-    {
-        Id = id ?? string.Empty;
-        Delta = delta ?? string.Empty;
-    }
-
-    /// <summary>Tool call id.</summary>
-    public string Id { get; }
-
-    /// <summary>JSON fragment.</summary>
-    public string Delta { get; }
-}
