@@ -102,19 +102,22 @@ public sealed class ServerResponse
             return true;
         }
 
-        if (WriteCallCount == 1)
+        lock (_gate)
         {
+            if (WriteCallCount == 1)
+            {
+                _hold = true;
+                return true;
+            }
+
+            if (_hold)
+            {
+                return false;
+            }
+
             _hold = true;
             return true;
         }
-
-        if (_hold)
-        {
-            return false;
-        }
-
-        _hold = true;
-        return true;
     }
 
     /// <summary>Releases a write that returned false.</summary>
@@ -135,11 +138,16 @@ public sealed class ServerResponse
         }
     }
 
-    /// <summary>Completes when <see cref="SimulateDrain"/> runs.</summary>
+    /// <summary>Completes when <see cref="SimulateDrain"/> runs, or at once when it already ran after the last held write.</summary>
     public Task WaitForDrainAsync()
     {
         lock (_gate)
         {
+            if (!_hold)
+            {
+                return Task.CompletedTask;
+            }
+
             if (_drain == null)
             {
                 _drain = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);

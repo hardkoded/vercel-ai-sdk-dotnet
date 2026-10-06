@@ -149,10 +149,12 @@ public sealed class TextAndServerResponseTests
     {
         var response = new ServerResponse { EnableBackpressure = true };
         var flushCounts = new List<int>();
+        var flushed = new SemaphoreSlim(0);
         response.Flush = delegate (ServerResponse current)
         {
             Assert.Same(response, current);
             flushCounts.Add(current.WrittenChunks.Count);
+            flushed.Release();
         };
         Action<byte[]?>? enqueue = null;
         var stream = new ReadableStream<byte[]>(delegate (ReadableStreamController<byte[]> controller)
@@ -171,19 +173,19 @@ public sealed class TextAndServerResponseTests
             };
         });
         var write = ServerResponseWriter.WriteAsync(response, stream, 200);
-        await WaitUntil(delegate { return response.WriteCallCount == 1; });
+        Assert.True(await flushed.WaitAsync(TimeSpan.FromSeconds(10)));
         Assert.Equal(new[] { 1 }, flushCounts);
         Assert.NotNull(enqueue);
         Action<byte[]?> push = enqueue!;
         push(Encoding.UTF8.GetBytes("chunk2"));
-        await WaitUntil(delegate { return response.WriteCallCount == 2; });
+        Assert.True(await flushed.WaitAsync(TimeSpan.FromSeconds(10)));
         Assert.Equal(2, response.WrittenChunks.Count);
         Assert.Equal(new[] { 1, 2 }, flushCounts);
         push(Encoding.UTF8.GetBytes("chunk3"));
         await Task.Yield();
         Assert.Equal(2, response.WriteCallCount);
         response.SimulateDrain();
-        await WaitUntil(delegate { return response.WriteCallCount == 3; });
+        Assert.True(await flushed.WaitAsync(TimeSpan.FromSeconds(10)));
         Assert.Equal(new[] { 1, 2, 3 }, flushCounts);
         push(null);
         await write;
@@ -267,20 +269,5 @@ public sealed class TextAndServerResponseTests
     private static ReadableStream<byte[]> Bytes(string text)
     {
         return ReadableStream<byte[]>.FromArray(new[] { Encoding.UTF8.GetBytes(text) });
-    }
-
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        for (var i = 0; i < 100; i++)
-        {
-            if (condition())
-            {
-                return;
-            }
-
-            await Task.Delay(10);
-        }
-
-        Assert.True(condition());
     }
 }

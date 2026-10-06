@@ -84,11 +84,13 @@ public sealed class SerialJobExecutorTests
         var executor = new SerialJobExecutor();
         var results = new List<string>();
         var error = new InvalidOperationException("test error");
+        var release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var first = executor.RunAsync(delegate { results.Add("job1"); return Task.CompletedTask; });
-        var second = executor.RunAsync(delegate { throw error; });
+        var second = executor.RunAsync(async delegate { await release.Task; throw error; });
         var third = executor.RunAsync(delegate { results.Add("job3"); return Task.CompletedTask; });
         await first;
         Assert.Equal(new[] { "job1" }, results);
+        release.SetResult(true);
         Assert.Same(error, await Assert.ThrowsAsync<InvalidOperationException>(delegate { return second; }));
         await third;
         Assert.Equal(new[] { "job1", "job3" }, results);
