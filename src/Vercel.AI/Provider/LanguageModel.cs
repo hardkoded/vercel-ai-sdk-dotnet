@@ -891,6 +891,24 @@ public sealed class RawStreamPart : LanguageModelStreamPart
     public string RawJson { get; }
 }
 
+/// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
+public sealed class CustomStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a custom part.</summary>
+    public CustomStreamPart(string kind, JsonElement? providerMetadata = null)
+        : base("custom")
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Provider-scoped kind, such as <c>anthropic.message_start</c>.</summary>
+    public string Kind { get; }
+
+    /// <summary>Provider metadata for this part, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>
 /// Language model specification V4. <c>doGenerate</c> is <see cref="DoGenerateAsync"/> and
 /// <c>doStream</c> is <see cref="DoStreamAsync"/>.

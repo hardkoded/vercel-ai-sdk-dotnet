@@ -152,8 +152,20 @@ public sealed class AnthropicStream
             _usage = ParseElement(usage.ToJsonString());
         }
 
+        var model = Text(message?["model"]);
         DateTimeOffset? timestamp = null;
-        yield return new ResponseMetadataStreamPart(id, Text(message?["model"]), timestamp);
+        yield return new ResponseMetadataStreamPart(id, model, timestamp);
+
+        var metadata = new JsonObject
+        {
+            ["anthropic"] = new JsonObject
+            {
+                ["id"] = id,
+                ["model"] = model,
+                ["usage"] = usage?.DeepClone(),
+            },
+        };
+        yield return new CustomStreamPart("anthropic.message_start", ParseElement(metadata.ToJsonString()));
     }
 
     private IEnumerable<LanguageModelStreamPart> BlockStart(JsonObject node)
