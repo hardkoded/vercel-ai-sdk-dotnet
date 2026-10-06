@@ -301,7 +301,7 @@ public static class SimulateReadableStream
     {
         var index = 0;
         var wait = delay ?? DefaultDelay;
-        return new ReadableStream<T>(pull: async delegate(ReadableStreamController<T> controller)
+        return new ReadableStream<T>(pull: async delegate (ReadableStreamController<T> controller)
         {
             if (index < chunks.Count)
             {

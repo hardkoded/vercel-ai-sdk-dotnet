@@ -687,7 +687,7 @@ public static class DefaultDownloadFunction
     /// <summary>Creates a function that downloads each URL the model does not support.</summary>
     public static Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> Create(Func<AssetDownloadCall, Task<DownloadResult>>? download = null, CancellationToken abortSignal = default)
     {
-        return async delegate(IReadOnlyList<DownloadRequestItem> requested)
+        return async delegate (IReadOnlyList<DownloadRequestItem> requested)
         {
             var tasks = new Task<DownloadResult>[requested.Count];
             for (var i = 0; i < requested.Count; i++)

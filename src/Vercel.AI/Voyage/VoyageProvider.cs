@@ -294,7 +294,7 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
                         position++;
                     }
 
-                    indexed.Sort(delegate(KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
+                    indexed.Sort(delegate (KeyValuePair<int, float[]> left, KeyValuePair<int, float[]> right)
                     {
                         return left.Key.CompareTo(right.Key);
                     });

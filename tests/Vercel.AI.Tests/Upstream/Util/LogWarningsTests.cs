@@ -71,7 +71,7 @@ public sealed class LogWarningsTests
         LogWarningsOptions? seen = null;
         try
         {
-            log.Install((Action<LogWarningsOptions>)delegate(LogWarningsOptions options) { seen = options; });
+            log.Install((Action<LogWarningsOptions>)delegate (LogWarningsOptions options) { seen = options; });
             var options = Options(new OtherWarning("Test warning"), "pp", "mm");
             LogWarnings.Log(options);
             Assert.Same(options, seen);
@@ -381,8 +381,8 @@ public sealed class LogWarningsTests
         {
             LogWarnings.ResetState();
             LogWarnings.Logger = logger;
-            LogWarnings.ProcessEmitWarning = delegate(string message, string type) { Process.Add((message, type)); };
-            LogWarnings.ConsoleWarn = delegate(string message) { Console.Add(message); };
+            LogWarnings.ProcessEmitWarning = delegate (string message, string type) { Process.Add((message, type)); };
+            LogWarnings.ConsoleWarn = delegate (string message) { Console.Add(message); };
         }
 
         public void Restore()

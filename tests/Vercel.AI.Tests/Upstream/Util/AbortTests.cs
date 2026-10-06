@@ -203,7 +203,7 @@ public sealed class AbortTests
     public void Does_not_abort_before_the_scheduled_callback()
     {
         var controller = new AbortController();
-        var fire = Capture(delegate(Action callback, int milliseconds)
+        var fire = Capture(delegate (Action callback, int milliseconds)
         {
             Assert.Equal(100, milliseconds);
             return callback;
@@ -216,7 +216,7 @@ public sealed class AbortTests
     public void Aborts_when_the_scheduled_callback_runs()
     {
         var controller = new AbortController();
-        Capture(delegate(Action callback, int milliseconds) { return callback; }, controller, "Step", 100)();
+        Capture(delegate (Action callback, int milliseconds) { return callback; }, controller, "Step", 100)();
         Assert.True(controller.Signal.Aborted);
     }
 
@@ -225,7 +225,7 @@ public sealed class AbortTests
     public void Aborts_with_a_timeout_error()
     {
         var controller = new AbortController();
-        Capture(delegate(Action callback, int milliseconds) { return callback; }, controller, "Step", 100)();
+        Capture(delegate (Action callback, int milliseconds) { return callback; }, controller, "Step", 100)();
         var reason = Assert.IsType<TimeoutError>(controller.Signal.Reason);
         Assert.Equal("TimeoutError", reason.ErrorName);
     }
@@ -235,7 +235,7 @@ public sealed class AbortTests
     public void Includes_the_label_and_duration()
     {
         var controller = new AbortController();
-        Capture(delegate(Action callback, int milliseconds) { return callback; }, controller, "Chunk", 250)();
+        Capture(delegate (Action callback, int milliseconds) { return callback; }, controller, "Chunk", 250)();
         Assert.Equal("Chunk timeout of 250ms exceeded", Assert.IsType<TimeoutError>(controller.Signal.Reason!).Message);
     }
 
@@ -245,7 +245,7 @@ public sealed class AbortTests
     {
         var controller = new AbortController();
         Action? fire = null;
-        var handle = SetAbortTimeout.Schedule(controller, "Step", 100, delegate(Action callback, int milliseconds) { fire = callback; });
+        var handle = SetAbortTimeout.Schedule(controller, "Step", 100, delegate (Action callback, int milliseconds) { fire = callback; });
         Assert.NotNull(handle);
         Assert.NotNull(fire);
         handle!.Dispose();
@@ -256,7 +256,7 @@ public sealed class AbortTests
     private static Action Capture(Func<Action, int, Action> schedule, AbortController controller, string label, int timeoutMs)
     {
         Action? captured = null;
-        SetAbortTimeout.Schedule(controller, label, timeoutMs, delegate(Action callback, int milliseconds)
+        SetAbortTimeout.Schedule(controller, label, timeoutMs, delegate (Action callback, int milliseconds)
         {
             captured = schedule(callback, milliseconds);
         });

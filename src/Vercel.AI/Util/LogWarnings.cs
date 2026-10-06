@@ -134,12 +134,12 @@ public static class LogWarnings
     private static readonly object Gate = new object();
     private static bool _hasLoggedBefore;
     private static object? _logger;
-    private static Action<string, string>? _processEmitWarning = delegate(string message, string type)
+    private static Action<string, string>? _processEmitWarning = delegate (string message, string type)
     {
         System.Diagnostics.Trace.TraceWarning(type + ": " + message);
     };
 
-    private static Action<string>? _consoleWarn = delegate(string message)
+    private static Action<string>? _consoleWarn = delegate (string message)
     {
         System.Diagnostics.Trace.TraceWarning(message);
     };

@@ -47,7 +47,7 @@ public static class Callbacks
     /// </summary>
     public static Func<TEvent, Task> MergeCallbacks<TEvent>(params Func<TEvent, Task>?[] callbacks)
     {
-        return delegate(TEvent eventValue)
+        return delegate (TEvent eventValue)
         {
             return NotifyAsync(eventValue, callbacks);
         };

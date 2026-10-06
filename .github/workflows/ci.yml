@@ -14,5 +14,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Format
+        run: dotnet format Vercel.AI.slnx --verify-no-changes
       - name: Test
         run: dotnet test Vercel.AI.slnx -c Release --nologo

@@ -77,7 +77,7 @@ public sealed class RetryTests
         var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
         {
             MaxRetries = 3,
-            Delay = delegate(int milliseconds, CancellationToken token)
+            Delay = delegate (int milliseconds, CancellationToken token)
             {
                 delays.Add(milliseconds);
                 var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -132,7 +132,7 @@ public sealed class RetryTests
         var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
         {
             UtcNow = delegate { return now; },
-            Delay = delegate(int milliseconds, CancellationToken token)
+            Delay = delegate (int milliseconds, CancellationToken token)
             {
                 delays.Add(milliseconds);
                 return gate.Task;
@@ -208,7 +208,7 @@ public sealed class RetryTests
         var calls = 0;
         var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
         {
-            Delay = delegate(int milliseconds, CancellationToken token)
+            Delay = delegate (int milliseconds, CancellationToken token)
             {
                 delays.Add(milliseconds);
                 return gate.Task;
@@ -238,7 +238,7 @@ public sealed class RetryTests
         var calls = 0;
         var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
         {
-            Delay = delegate(int milliseconds, CancellationToken token)
+            Delay = delegate (int milliseconds, CancellationToken token)
             {
                 delays.Add(milliseconds);
                 return gate.Task;
@@ -270,7 +270,7 @@ public sealed class RetryTests
         var calls = 0;
         var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new RetryOptions
         {
-            Delay = delegate(int milliseconds, CancellationToken token)
+            Delay = delegate (int milliseconds, CancellationToken token)
             {
                 delays.Add(milliseconds);
                 return gate.Task;

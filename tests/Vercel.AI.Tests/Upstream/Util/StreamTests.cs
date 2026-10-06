@@ -96,7 +96,7 @@ public sealed class StreamTests
     {
         var cancelled = false;
         var source = new ReadableStream<string>(
-            delegate(ReadableStreamController<string> controller)
+            delegate (ReadableStreamController<string> controller)
             {
                 controller.Enqueue("chunk1");
                 controller.Enqueue("chunk2");
@@ -138,7 +138,7 @@ public sealed class StreamTests
     public async Task Propagates_a_source_error()
     {
         ReadableStreamController<string>? controller = null;
-        var source = new ReadableStream<string>(delegate(ReadableStreamController<string> start)
+        var source = new ReadableStream<string>(delegate (ReadableStreamController<string> start)
         {
             controller = start;
             start.Enqueue("chunk1");
@@ -352,7 +352,7 @@ public sealed class StreamTests
     {
         var stitch = new StitchableStream<int>();
         stitch.AddStream(ReadableStream<int>.FromArray(new[] { 1, 2 }));
-        stitch.AddStream(new ReadableStream<int>(delegate(ReadableStreamController<int> controller)
+        stitch.AddStream(new ReadableStream<int>(delegate (ReadableStreamController<int> controller)
         {
             controller!.Error(new InvalidOperationException("Test error"));
         }));
@@ -370,8 +370,8 @@ public sealed class StreamTests
         var failure = new InvalidOperationException("Test error");
         object? received = null;
         stitch.AddStream(
-            new ReadableStream<int>(delegate(ReadableStreamController<int> controller) { controller!.Error(failure); }),
-            delegate(object error) { received = error; });
+            new ReadableStream<int>(delegate (ReadableStreamController<int> controller) { controller!.Error(failure); }),
+            delegate (object error) { received = error; });
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(delegate { return stitch.Stream.ToArrayAsync(); });
         Assert.Same(failure, thrown);
         Assert.Same(failure, received);
@@ -472,7 +472,7 @@ public sealed class StreamTests
     public async Task Records_initial_and_chunk_delays()
     {
         var delays = new List<int?>();
-        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, 500, 100, delegate(int? milliseconds)
+        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, 500, 100, delegate (int? milliseconds)
         {
             delays.Add(milliseconds);
             return Task.CompletedTask;
@@ -506,7 +506,7 @@ public sealed class StreamTests
     public async Task Passes_null_when_both_delays_are_null()
     {
         var delays = new List<int?>();
-        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, null, null, delegate(int? milliseconds)
+        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, null, null, delegate (int? milliseconds)
         {
             delays.Add(milliseconds);
             return Task.CompletedTask;
@@ -519,7 +519,7 @@ public sealed class StreamTests
     public async Task Skips_only_the_initial_delay()
     {
         var delays = new List<int?>();
-        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, null, 100, delegate(int? milliseconds)
+        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, null, 100, delegate (int? milliseconds)
         {
             delays.Add(milliseconds);
             return Task.CompletedTask;
@@ -532,7 +532,7 @@ public sealed class StreamTests
     public async Task Skips_only_the_chunk_delays()
     {
         var delays = new List<int?>();
-        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, 500, null, delegate(int? milliseconds)
+        await SimulateReadableStream.Create(new[] { 1, 2, 3 }, 500, null, delegate (int? milliseconds)
         {
             delays.Add(milliseconds);
             return Task.CompletedTask;
@@ -546,7 +546,7 @@ public sealed class StreamTests
         var cancelCalls = 0;
         ReadableStreamController<string>? controller = null;
         var stream = create(new ReadableStream<string>(
-            delegate(ReadableStreamController<string> start) { controller = start; },
+            delegate (ReadableStreamController<string> start) { controller = start; },
             cancel: delegate { cancelCalls++; return Task.CompletedTask; }));
         var iterator = stream.GetIterator();
         var failed = iterator.NextAsync();
@@ -568,7 +568,7 @@ public sealed class StreamTests
     private static async Task AssertUndefinedError(Func<ReadableStream<string>, AsyncIterableStream<string>> create)
     {
         ReadableStreamController<string>? controller = null;
-        var stream = create(new ReadableStream<string>(delegate(ReadableStreamController<string> start) { controller = start; }));
+        var stream = create(new ReadableStream<string>(delegate (ReadableStreamController<string> start) { controller = start; }));
         var iterator = stream.GetIterator();
         var failed = iterator.NextAsync();
         controller!.Error(null);
@@ -584,7 +584,7 @@ public sealed class StreamTests
         var cancelCalls = 0;
         ReadableStreamController<string>? controller = null;
         var stream = create(new ReadableStream<string>(
-            delegate(ReadableStreamController<string> start) { controller = start; },
+            delegate (ReadableStreamController<string> start) { controller = start; },
             cancel: delegate { cancelCalls++; return Task.CompletedTask; }));
         var iterator = stream.GetIterator();
         var first = iterator.NextAsync();
@@ -600,7 +600,7 @@ public sealed class StreamTests
     private static ReadableStream<T> OpenStream<T>(IReadOnlyList<T> values, Action onCancel)
     {
         return new ReadableStream<T>(
-            delegate(ReadableStreamController<T> controller)
+            delegate (ReadableStreamController<T> controller)
             {
                 for (var i = 0; i < values.Count; i++)
                 {

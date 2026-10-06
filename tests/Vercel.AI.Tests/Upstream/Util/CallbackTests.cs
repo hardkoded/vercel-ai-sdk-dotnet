@@ -13,7 +13,7 @@ public sealed class CallbackTests
     public async Task Notifies_one_callback()
     {
         var calls = new List<string>();
-        await Callbacks.NotifyAsync(new EventValue("hello"), delegate(EventValue value)
+        await Callbacks.NotifyAsync(new EventValue("hello"), delegate (EventValue value)
         {
             calls.Add(value.Value);
             return Task.CompletedTask;
@@ -153,7 +153,7 @@ public sealed class CallbackTests
     public async Task Preserves_the_event_shape()
     {
         WeatherEvent? received = null;
-        var callback = new Func<WeatherEvent, Task>(delegate(WeatherEvent value)
+        var callback = new Func<WeatherEvent, Task>(delegate (WeatherEvent value)
         {
             received = value;
             return Task.CompletedTask;
@@ -182,7 +182,7 @@ public sealed class CallbackTests
             Model = new ModelRef { Provider = "openai", ModelId = "gpt-4o" },
             Usage = new Usage { InputTokens = 100, OutputTokens = 50 },
             Steps = new[] { new Step { StepNumber = 0 }, new Step { StepNumber = 1 } },
-        }, delegate(ModelEvent value)
+        }, delegate (ModelEvent value)
         {
             provider = value.Model.Provider;
             steps = value.Steps.Length;
@@ -197,7 +197,7 @@ public sealed class CallbackTests
     public async Task Reuses_a_callback()
     {
         var events = new List<string>();
-        Func<string, Task> callback = delegate(string value)
+        Func<string, Task> callback = delegate (string value)
         {
             events.Add(value);
             return Task.CompletedTask;
@@ -215,7 +215,7 @@ public sealed class CallbackTests
         var calls = new List<string>();
         var gate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var merged = Callbacks.MergeCallbacks<EventValue>(
-            delegate(EventValue value)
+            delegate (EventValue value)
             {
                 calls.Add("first start: " + value.Value);
                 return WaitThen(gate.Task, delegate { calls.Add("first end"); });
@@ -226,7 +226,7 @@ public sealed class CallbackTests
                 calls.Add("second before throw");
                 throw new InvalidOperationException("callback error");
             },
-            delegate(EventValue value)
+            delegate (EventValue value)
             {
                 calls.Add("third: " + value.Value);
                 return Task.CompletedTask;
@@ -246,12 +246,12 @@ public sealed class CallbackTests
     {
         var calls = new List<string>();
         var merged = Callbacks.MergeCallbacks<EventValue>(
-            delegate(EventValue value)
+            delegate (EventValue value)
             {
                 calls.Add("first before reject: " + value.Value);
                 return Task.FromException(new InvalidOperationException("callback error"));
             },
-            delegate(EventValue value)
+            delegate (EventValue value)
             {
                 calls.Add("second: " + value.Value);
                 return Task.CompletedTask;
@@ -267,7 +267,7 @@ public sealed class CallbackTests
         var calls = new List<string>();
         var merged = Callbacks.MergeCallbacks<EventValue>(
             null,
-            delegate(EventValue value)
+            delegate (EventValue value)
             {
                 calls.Add(value.Value);
                 return Task.CompletedTask;
