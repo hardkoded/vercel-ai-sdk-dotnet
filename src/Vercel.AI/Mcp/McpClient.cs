@@ -238,7 +238,7 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
             var payload = await McpFraming.ReadAsync(_process.StandardOutput.BaseStream, cancellationToken).ConfigureAwait(false);
             if (payload is null)
             {
-                throw new AiSdkException("MCP process closed the stream.");
+                throw new MCPClientError("MCP process closed the stream.");
             }
 
             using var document = JsonDocument.Parse(payload);
@@ -267,12 +267,14 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         if (root.TryGetProperty("error", out var error))
         {
             var message = error.TryGetProperty("message", out var text) ? text.GetString() : error.ToString();
-            throw new AiSdkException(message ?? "MCP call failed.");
+            int? code = error.TryGetProperty("code", out var codeElement) && codeElement.TryGetInt32(out var value) ? value : null;
+            JsonElement? data = error.TryGetProperty("data", out var dataElement) ? dataElement.Clone() : null;
+            throw new MCPClientError(message ?? "MCP call failed.", code: code, data: data);
         }
 
         if (!root.TryGetProperty("result", out var result))
         {
-            throw new AiSdkException("MCP response did not include a result.");
+            throw new MCPClientError("MCP response did not include a result.");
         }
 
         return result.Clone();
@@ -314,7 +316,11 @@ public sealed class HttpMcpTransport : IMcpTransport
         var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw new AiSdkException("MCP HTTP call failed with status " + (int)response.StatusCode + ".");
+            throw new MCPClientError(
+                "MCP HTTP call failed with status " + (int)response.StatusCode + ".",
+                statusCode: (int)response.StatusCode,
+                url: _endpoint.ToString(),
+                responseBody: body);
         }
 
         var json = ExtractJson(body, response.Content.Headers.ContentType?.MediaType);

@@ -4,8 +4,8 @@
 
 using System.Globalization;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -576,7 +576,7 @@ public static class McpNdjson
     {
         if (output is null)
         {
-            throw new AiSdkException("StdioClientTransport not connected");
+            throw new MCPClientError("StdioClientTransport not connected");
         }
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(Serialize(message));
