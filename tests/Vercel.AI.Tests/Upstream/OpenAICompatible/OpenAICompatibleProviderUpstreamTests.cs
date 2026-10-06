@@ -125,13 +125,19 @@ public sealed class OpenAICompatibleProviderUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > includeUsage setting::should pass includeUsage: undefined to all model types when not specified in provider settings", Coverage = UpstreamCoverage.Partial, Note = "IncludeUsage is a bool and defaults to false. Unset and false both omit stream_options.")]
+    [UpstreamTest("packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > includeUsage setting::should pass includeUsage: undefined to all model types when not specified in provider settings", Coverage = UpstreamCoverage.Covered)]
     public async Task Unset_include_usage_omits_stream_options()
     {
         var capture = Stream();
         var provider = Provider(capture, "test-provider", "k", "https://api.example.com");
         Assert.False(provider.Options.IncludeUsage);
-        await UpstreamChat.Read(((OpenAICompatibleLanguageModel)provider.LanguageModel("chat")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read(provider.CreateChatModel("chat-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        Assert.Null(UpstreamChat.Body(capture)["stream_options"]);
+        capture.Requests.Clear();
+        await UpstreamChat.Read(provider.CompletionModel("completion-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["stream_options"]);
+        capture.Requests.Clear();
+        await UpstreamChat.Read(((OpenAICompatibleLanguageModel)provider.LanguageModel("model-id")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
         Assert.Null(UpstreamChat.Body(capture)["stream_options"]);
     }
 

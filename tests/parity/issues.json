@@ -905,8 +905,8 @@
       "title": "Cover upstream unit tests: openai-compatible",
       "dotnetProject": "Vercel.AI.OpenAICompatible",
       "inScope": 12,
-      "covered": 10,
-      "partial": 1,
+      "covered": 11,
+      "partial": 0,
       "missing": 1,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/120"
     },
