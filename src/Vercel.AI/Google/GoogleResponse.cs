@@ -259,7 +259,7 @@ public static class GoogleResponse
         return root.TryGetProperty("promptFeedback", out var feedback) ? feedback : null;
     }
 
-    private static JsonElement? SignatureMetadata(JsonElement part, GoogleParseContext context)
+    internal static JsonElement? SignatureMetadata(JsonElement part, GoogleParseContext context)
     {
         var signature = GoogleJson.String(part, "thoughtSignature");
         if (signature == null)

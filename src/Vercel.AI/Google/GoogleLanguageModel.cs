@@ -88,10 +88,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var clientTool = false;
         string? confirmedBlock = null;
         var seenSources = new HashSet<string>(StringComparer.Ordinal);
-        var accumulator = (GoogleJsonAccumulator?)null;
-        string? streamingCallId = null;
-        string? streamingCallName = null;
-        JsonElement? streamingMetadata = null;
+        var callContext = Context(prepared);
+        var activeCalls = new List<StreamingCall>();
 
         await foreach (var data in _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(prepared.Body), Headers(options, prepared), cancellationToken).ConfigureAwait(false))
         {
@@ -168,51 +166,6 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     }
                 }
 
-                if (candidates[0].TryGetProperty("content", out var body) && body.TryGetProperty("parts", out var parts))
-                {
-                    foreach (var part in parts.EnumerateArray())
-                    {
-                        if (part.TryGetProperty("partialArgs", out var partial) && partial.ValueKind == JsonValueKind.Array)
-                        {
-                            accumulator ??= new GoogleJsonAccumulator();
-                            var updates = new List<GooglePartialArgument>();
-                            foreach (var item in partial.EnumerateArray())
-                            {
-                                updates.Add(ReadPartial(item));
-                            }
-
-                            var update = accumulator.Process(updates);
-                            if (streamingCallId == null)
-                            {
-                                streamingCallId = contextId(part);
-                                streamingCallName = GoogleJson.String(part, "name") ?? "tool";
-                            }
-
-                            if (update.TextDelta.Length > 0)
-                            {
-                                yield return new ToolInputDeltaStreamPart(streamingCallId, update.TextDelta);
-                            }
-
-                            continue;
-                        }
-
-                        if (accumulator != null && streamingCallId != null)
-                        {
-                            var final = accumulator.Finalize();
-                            if (final.ClosingDelta.Length > 0)
-                            {
-                                yield return new ToolInputDeltaStreamPart(streamingCallId, final.ClosingDelta);
-                            }
-
-                            yield return new ToolCallStreamPart(streamingCallId, streamingCallName ?? "tool", final.FinalJson, streamingMetadata);
-                            clientTool = true;
-                            accumulator = null;
-                            streamingCallId = null;
-                        }
-
-                    }
-                }
-
                 foreach (var generated in parsed.Content)
                 {
                     if (generated is GoogleReasoning reasoning)
@@ -249,14 +202,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                         yield return new TextDeltaStreamPart(textId, text.Text);
                     }
-                    else if (generated is GeneratedToolCall tool)
+                    else if (generated is GoogleToolCall tool)
                     {
-                        var executed = tool is GoogleToolCall google && google.ProviderExecuted;
-                        if (!executed)
-                        {
-                            clientTool = true;
-                        }
-
+                        // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
                         yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata);
                     }
                     else if (generated is GoogleGeneratedFile file)
@@ -264,19 +212,16 @@ public sealed class GoogleLanguageModel : ILanguageModel
                         yield return new FileStreamPart(file.Data, file.MediaType);
                     }
                 }
-            }
-        }
 
-        if (accumulator != null && streamingCallId != null)
-        {
-            var final = accumulator.Finalize();
-            if (final.ClosingDelta.Length > 0)
-            {
-                yield return new ToolInputDeltaStreamPart(streamingCallId, final.ClosingDelta);
+                if (candidates[0].TryGetProperty("content", out var body) && body.TryGetProperty("parts", out var parts) && parts.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var toolPart in FunctionCallParts(parts, callContext, activeCalls))
+                    {
+                        clientTool |= toolPart is ToolCallStreamPart;
+                        yield return toolPart;
+                    }
+                }
             }
-
-            yield return new ToolCallStreamPart(streamingCallId, streamingCallName ?? "tool", final.FinalJson, streamingMetadata);
-            clientTool = true;
         }
 
         if (textId != null)
@@ -344,9 +289,106 @@ public sealed class GoogleLanguageModel : ILanguageModel
         return warnings;
     }
 
-    private string contextId(JsonElement part)
+    // Gemini sends a function call whole, without arguments, or streamed: a named
+    // chunk with willContinue, then partialArgs chunks, then an empty terminal chunk.
+    private static IEnumerable<LanguageModelStreamPart> FunctionCallParts(JsonElement parts, GoogleParseContext context, List<StreamingCall> active)
     {
-        return GoogleJson.String(part, "id") ?? (_provider.Options.GenerateId?.Invoke() ?? "call");
+        foreach (var part in parts.EnumerateArray())
+        {
+            if (!part.TryGetProperty("functionCall", out var call) || call.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            var metadata = GoogleResponse.SignatureMetadata(part, context);
+            var name = GoogleJson.String(call, "name");
+            var hasArgs = call.TryGetProperty("args", out var args) && args.ValueKind != JsonValueKind.Null;
+            var hasPartial = call.TryGetProperty("partialArgs", out var partial) && partial.ValueKind == JsonValueKind.Array;
+            bool? willContinue = call.TryGetProperty("willContinue", out var cont) && (cont.ValueKind == JsonValueKind.True || cont.ValueKind == JsonValueKind.False)
+                ? cont.GetBoolean()
+                : null;
+
+            if (hasPartial || (name != null && willContinue == true))
+            {
+                StreamingCall? current = null;
+                if (name != null)
+                {
+                    current = new StreamingCall(CallId(call, context), name, metadata);
+                    active.Add(current);
+                    yield return new ToolInputStartStreamPart(current.Id, name, metadata);
+                }
+                else if (active.Count > 0)
+                {
+                    current = active[active.Count - 1];
+                }
+
+                if (hasPartial && current != null)
+                {
+                    var updates = new List<GooglePartialArgument>();
+                    foreach (var item in partial.EnumerateArray())
+                    {
+                        updates.Add(ReadPartial(item));
+                    }
+
+                    var update = current.Accumulator.Process(updates);
+                    if (update.TextDelta.Length > 0)
+                    {
+                        yield return new ToolInputDeltaStreamPart(current.Id, update.TextDelta, metadata);
+                    }
+
+                    if (willContinue != true && updates.All(argument => argument.WillContinue != true))
+                    {
+                        foreach (var finished in FinishCall(active))
+                        {
+                            yield return finished;
+                        }
+                    }
+                }
+            }
+            else if (name == null && !hasArgs && willContinue == null && active.Count > 0)
+            {
+                foreach (var finished in FinishCall(active))
+                {
+                    yield return finished;
+                }
+            }
+            else if (name != null && hasArgs)
+            {
+                var id = CallId(call, context);
+                var input = args.ValueKind == JsonValueKind.String ? args.GetString() ?? string.Empty : args.GetRawText();
+                yield return new ToolInputStartStreamPart(id, name, metadata);
+                yield return new ToolInputDeltaStreamPart(id, input, metadata);
+                yield return new ToolInputEndStreamPart(id, metadata);
+                yield return new ToolCallStreamPart(id, name, input, metadata);
+            }
+            else if (name != null && willContinue != true)
+            {
+                var id = CallId(call, context);
+                yield return new ToolInputStartStreamPart(id, name, metadata);
+                yield return new ToolInputEndStreamPart(id, metadata);
+                yield return new ToolCallStreamPart(id, name, "{}", metadata);
+            }
+        }
+    }
+
+    private static IEnumerable<LanguageModelStreamPart> FinishCall(List<StreamingCall> active)
+    {
+        var call = active[active.Count - 1];
+        active.RemoveAt(active.Count - 1);
+        var final = call.Accumulator.Finalize();
+        if (final.ClosingDelta.Length > 0)
+        {
+            yield return new ToolInputDeltaStreamPart(call.Id, final.ClosingDelta, call.Metadata);
+        }
+
+        yield return new ToolInputEndStreamPart(call.Id, call.Metadata);
+        yield return new ToolCallStreamPart(call.Id, call.Name, final.FinalJson, call.Metadata);
+    }
+
+    private static string CallId(JsonElement call, GoogleParseContext context)
+    {
+        var id = GoogleJson.String(call, "id");
+        return string.IsNullOrEmpty(id) ? context.NextId() : id!;
     }
 
     private static GooglePartialArgument ReadPartial(JsonElement item)
@@ -380,6 +422,24 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
         return argument;
     }
+
+    private sealed class StreamingCall
+    {
+        public StreamingCall(string id, string name, JsonElement? metadata)
+        {
+            Id = id;
+            Name = name;
+            Metadata = metadata;
+        }
+
+        public string Id { get; }
+
+        public string Name { get; }
+
+        public JsonElement? Metadata { get; }
+
+        public GoogleJsonAccumulator Accumulator { get; } = new();
+    }
 }
 
 /// <summary>A streamed file part. The shared stream model has no file delta, so this carries the bytes.</summary>
@@ -398,22 +458,4 @@ public sealed class FileStreamPart : LanguageModelStreamPart
 
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
-}
-
-/// <summary>A streamed tool-argument fragment.</summary>
-public sealed class ToolInputDeltaStreamPart : LanguageModelStreamPart
-{
-    /// <summary>Creates a tool-input delta.</summary>
-    public ToolInputDeltaStreamPart(string id, string delta)
-        : base("tool-input-delta")
-    {
-        Id = id ?? string.Empty;
-        Delta = delta ?? string.Empty;
-    }
-
-    /// <summary>Tool call id.</summary>
-    public string Id { get; }
-
-    /// <summary>JSON fragment.</summary>
-    public string Delta { get; }
 }

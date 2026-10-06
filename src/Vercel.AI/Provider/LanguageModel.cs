@@ -697,6 +697,86 @@ public sealed class ToolCallStreamPart : LanguageModelStreamPart
     public JsonElement? ProviderMetadata { get; }
 }
 
+/// <summary>Marks the start of streamed tool input.</summary>
+public sealed class ToolInputStartStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a tool-input-start part.</summary>
+    public ToolInputStartStreamPart(
+        string id,
+        string toolName,
+        JsonElement? providerMetadata = null,
+        bool? providerExecuted = null,
+        bool? dynamic = null,
+        string? title = null)
+        : base("tool-input-start")
+    {
+        Id = id ?? string.Empty;
+        ToolName = toolName ?? string.Empty;
+        ProviderMetadata = providerMetadata;
+        ProviderExecuted = providerExecuted;
+        Dynamic = dynamic;
+        Title = title;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>Provider metadata for this tool input.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the provider executes the tool.</summary>
+    public bool? ProviderExecuted { get; }
+
+    /// <summary>True for a tool the caller did not declare.</summary>
+    public bool? Dynamic { get; }
+
+    /// <summary>Optional tool title.</summary>
+    public string? Title { get; }
+}
+
+/// <summary>A streamed tool-argument fragment.</summary>
+public sealed class ToolInputDeltaStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a tool-input-delta part.</summary>
+    public ToolInputDeltaStreamPart(string id, string delta, JsonElement? providerMetadata = null)
+        : base("tool-input-delta")
+    {
+        Id = id ?? string.Empty;
+        Delta = delta ?? string.Empty;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>JSON fragment.</summary>
+    public string Delta { get; }
+
+    /// <summary>Provider metadata for this fragment.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>Marks the end of streamed tool input.</summary>
+public sealed class ToolInputEndStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a tool-input-end part.</summary>
+    public ToolInputEndStreamPart(string id, JsonElement? providerMetadata = null)
+        : base("tool-input-end")
+    {
+        Id = id ?? string.Empty;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>Provider metadata for this tool input.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>A cited URL.</summary>
 public sealed class SourceStreamPart : LanguageModelStreamPart
 {

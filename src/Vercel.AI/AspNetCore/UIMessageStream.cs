@@ -230,6 +230,34 @@ public sealed class UIMessageStreamResult : IResult
 
                     yield return Frame(new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoningId, ["delta"] = reasoning.Text });
                     break;
+                case ToolInputStartPart inputStart:
+                    var inputStartChunk = new JsonObject
+                    {
+                        ["type"] = "tool-input-start",
+                        ["toolCallId"] = inputStart.Id,
+                        ["toolName"] = inputStart.ToolName,
+                    };
+                    if (inputStart.ProviderExecuted is bool providerExecuted)
+                    {
+                        inputStartChunk["providerExecuted"] = providerExecuted;
+                    }
+
+                    AddProviderMetadata(inputStartChunk, inputStart.ProviderMetadata);
+                    if (inputStart.Dynamic)
+                    {
+                        inputStartChunk["dynamic"] = true;
+                    }
+
+                    yield return Frame(inputStartChunk);
+                    break;
+                case ToolInputDeltaPart inputDelta:
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "tool-input-delta",
+                        ["toolCallId"] = inputDelta.Id,
+                        ["inputTextDelta"] = inputDelta.Delta,
+                    });
+                    break;
                 case ToolCallPart call:
                     var toolInput = new JsonObject
                     {
