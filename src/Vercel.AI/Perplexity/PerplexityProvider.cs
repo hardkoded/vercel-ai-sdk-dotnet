@@ -11,7 +11,7 @@ namespace Vercel.AI.Perplexity;
 
 /// <summary>
 /// Perplexity provider. Language generation uses the Agent API at <c>{base}/v1/agent</c>.
-/// Embeddings stay on the OpenAI-compatible embeddings route. Preset ids are
+/// Embeddings use <c>{base}/v1/embeddings</c>. Preset ids are
 /// <c>fast</c>, <c>low</c>, <c>medium</c>, <c>high</c>, and <c>xhigh</c>; any other id is sent as a model id.
 /// Legacy Sonar model ids are not aliased and Sonar provider options are not translated.
 /// Sonar PDF input, video input, and image or video results have no Agent API equivalent.
@@ -55,6 +55,12 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
         return new PerplexityLanguageModel(this, modelId);
     }
 
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        return new PerplexityEmbeddingModel(this, modelId);
+    }
+
     /// <summary>Agent API URL. A custom base URL is prefixed to <c>v1/agent</c>.</summary>
     public Uri AgentUri()
     {
@@ -81,6 +87,11 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
+        }
+
         if (!ContainsHeader(options.Headers, IntegrationHeader))
         {
             options.Headers[IntegrationHeader] = DefaultIntegration;

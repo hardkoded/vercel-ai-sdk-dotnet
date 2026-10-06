@@ -1095,9 +1095,9 @@
       "title": "Cover upstream unit tests: perplexity",
       "dotnetProject": "Vercel.AI.Perplexity",
       "inScope": 46,
-      "covered": 0,
-      "partial": 0,
-      "missing": 46,
+      "covered": 8,
+      "partial": 1,
+      "missing": 37,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/139"
     },
     {
