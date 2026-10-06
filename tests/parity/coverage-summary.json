@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3384,
-  "partial": 99,
-  "missing": 7586,
+  "covered": 3469,
+  "partial": 100,
+  "missing": 7500,
   "features": [
     {
       "feature": "ai/agent",
@@ -355,9 +355,9 @@
       "feature": "bytedance",
       "dotnetProject": "Vercel.AI.ByteDance",
       "inScope": 88,
-      "covered": 1,
-      "partial": 0,
-      "missing": 87
+      "covered": 86,
+      "partial": 1,
+      "missing": 1
     },
     {
       "feature": "cartesia",
