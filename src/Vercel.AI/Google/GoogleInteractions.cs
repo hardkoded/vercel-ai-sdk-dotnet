@@ -205,7 +205,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             HttpMethod.Post,
             ProviderUtils.ApiKeys.Combine(InteractionsBase(_provider.Options.BaseUrl), "interactions"),
             GoogleJson.Write(input),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         var parsed = GoogleInteractionsOutput.Parse(JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject());
         var status = document.RootElement.TryGetProperty("status", out var value) ? value.GetString() : null;

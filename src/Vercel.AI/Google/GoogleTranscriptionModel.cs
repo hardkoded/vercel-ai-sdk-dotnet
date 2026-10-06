@@ -70,7 +70,7 @@ public sealed class GoogleTranscriptionModel : ITranscriptionModel, ITranscripti
 
         var timestamp = _provider.Clock();
         var body = BuildRequest(ModelId, new AudioInput(call.Audio, call.MediaType, null), TranscriptionConfig(call.ProviderOptions));
-        var headers = _provider.Headers();
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         foreach (var header in call.Headers)
         {
             headers[header.Key] = header.Value;

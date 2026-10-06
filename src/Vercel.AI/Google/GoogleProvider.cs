@@ -121,8 +121,8 @@ public class GoogleProvider : ProviderBase
         return new GoogleRealtimeModel(this, modelId);
     }
 
-    /// <summary>Builds request headers. An API key is required.</summary>
-    internal Dictionary<string, string?> Headers()
+    /// <summary>Builds request headers. An API key or a bearer token is required.</summary>
+    internal async Task<Dictionary<string, string?>> HeadersAsync(CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -135,20 +135,30 @@ public class GoogleProvider : ProviderBase
             headers["user-agent"] = Options.UserAgent;
         }
 
-        var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
         if (Options.UseBearerToken)
         {
+            var token = await BearerTokenAsync(cancellationToken).ConfigureAwait(false);
             if (!ContainsKey(headers, "Authorization"))
             {
-                headers["Authorization"] = "Bearer " + key;
+                headers["Authorization"] = "Bearer " + token;
             }
         }
-        else if (!ContainsKey(headers, "x-goog-api-key"))
+        else
         {
-            headers["x-goog-api-key"] = key;
+            var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
+            if (!ContainsKey(headers, "x-goog-api-key"))
+            {
+                headers["x-goog-api-key"] = key;
+            }
         }
 
         return headers;
+    }
+
+    /// <summary>Token sent when <see cref="GoogleOptions.UseBearerToken"/> is set. Defaults to the API key.</summary>
+    private protected virtual Task<string> BearerTokenAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult(ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable));
     }
 
     private static bool ContainsKey(Dictionary<string, string?> headers, string name)
@@ -229,7 +239,8 @@ public sealed class GoogleRealtimeModel : IRealtimeModel
     /// </summary>
     public async Task<GoogleRealtimeClientSecret> CreateClientSecretAsync(GoogleRealtimeSession? session, int? expiresAfterSeconds, CancellationToken cancellationToken)
     {
-        if (!_provider.Headers().TryGetValue("x-goog-api-key", out var key) || string.IsNullOrEmpty(key))
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        if (!headers.TryGetValue("x-goog-api-key", out var key) || string.IsNullOrEmpty(key))
         {
             throw new AiSdkException("Google Generative AI API key is required for realtime token creation.");
         }
