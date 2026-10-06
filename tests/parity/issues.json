@@ -165,9 +165,9 @@
       "title": "Cover upstream unit tests: ai/registry",
       "dotnetProject": "Vercel.AI",
       "inScope": 100,
-      "covered": 0,
-      "partial": 1,
-      "missing": 99,
+      "covered": 71,
+      "partial": 5,
+      "missing": 24,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/46"
     },
     {

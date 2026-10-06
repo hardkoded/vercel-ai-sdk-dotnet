@@ -127,8 +127,7 @@ public sealed class CoreTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/registry/provider-registry.test.ts::languageModel::should return language model from provider",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Resolves provider:model. Does not cover missing provider or model errors.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Registry_resolves_provider_and_model()
     {
         var model = new TestLanguageModel("echo");
