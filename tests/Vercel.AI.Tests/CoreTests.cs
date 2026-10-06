@@ -117,7 +117,7 @@ public sealed class CoreTests
     {
         var model = new TestLanguageModel
         {
-            OnGenerate = _ => TestLanguageModel.Text("<think>because</think> answer"),
+            OnGenerate = _ => TestLanguageModel.Text("<think>because</think>answer"),
         }.WrapLanguageModel(new ExtractReasoningMiddleware());
         var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "why" });
         Assert.Equal("answer", result.Text);
