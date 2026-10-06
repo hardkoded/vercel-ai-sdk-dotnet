@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3355,
+  "covered": 3384,
   "partial": 99,
-  "missing": 7615,
+  "missing": 7586,
   "features": [
     {
       "feature": "ai/agent",
@@ -947,9 +947,9 @@
       "feature": "replicate",
       "dotnetProject": "Vercel.AI.Replicate",
       "inScope": 68,
-      "covered": 2,
+      "covered": 31,
       "partial": 0,
-      "missing": 66
+      "missing": 37
     },
     {
       "feature": "revai",
