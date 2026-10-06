@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2667,
+  "covered": 2672,
   "partial": 80,
-  "missing": 8322,
+  "missing": 8317,
   "features": [
     {
       "feature": "ai/agent",
@@ -499,9 +499,9 @@
       "feature": "google",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 513,
-      "covered": 191,
+      "covered": 196,
       "partial": 0,
-      "missing": 322
+      "missing": 317
     },
     {
       "feature": "google-vertex",
