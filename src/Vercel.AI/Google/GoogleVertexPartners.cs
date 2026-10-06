@@ -3,61 +3,89 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json.Nodes;
+using Vercel.AI.Anthropic;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Google;
 
-/// <summary>Anthropic on Vertex. Builds the rawPredict URL and the <c>anthropic_version</c> body field.</summary>
-public sealed class GoogleVertexAnthropicProvider
+/// <summary>Settings for Anthropic on Vertex.</summary>
+public sealed class GoogleVertexAnthropicOptions
 {
+    /// <summary>Project id.</summary>
+    public string? Project { get; set; }
+
+    /// <summary>Location. One DNS label.</summary>
+    public string? Location { get; set; }
+
+    /// <summary>Publisher base URL. When empty, it is built from the project and location.</summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>Headers merged into every request. A caller-supplied Authorization value wins over the generated token.</summary>
+    public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Returns a bearer token. Called once per request. Without it, no Authorization header is added.</summary>
+    public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
+}
+
+/// <summary>
+/// Anthropic on Vertex. Sends the Anthropic Messages body to <c>rawPredict</c> with <c>anthropic_version</c> in the body.
+/// Vertex does not accept URL sources, the native output format, or strict tools.
+/// </summary>
+public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
+{
+    /// <summary>Provider id reported by language models.</summary>
+    public const string ModelProviderName = "googleVertex.anthropic.messages";
+
+    private static readonly IReadOnlyDictionary<string, string> NoUrls = new Dictionary<string, string>();
+
+    private readonly GoogleVertexAnthropicOptions _vertex;
+
     /// <summary>Creates a provider.</summary>
-    public GoogleVertexAnthropicProvider(string? project, string? location, string? baseUrl = null, string? accessToken = null)
+    public GoogleVertexAnthropicProvider(HttpClient httpClient, GoogleVertexAnthropicOptions? options = null)
+        : base(httpClient, Anthropic(options ??= new GoogleVertexAnthropicOptions()))
     {
-        Project = project;
-        Location = location;
-        BaseUrl = GoogleVertexEndpoints.AnthropicBaseUrl(project, location, baseUrl);
-        AccessToken = accessToken;
+        _vertex = options;
     }
 
+    /// <summary>Provider tool ids that Vertex accepts. A subset of the Anthropic tools.</summary>
+    public static IReadOnlyList<string> Tools { get; } = new[]
+    {
+        "anthropic.bash_20241022",
+        "anthropic.bash_20250124",
+        "anthropic.text_editor_20241022",
+        "anthropic.text_editor_20250124",
+        "anthropic.text_editor_20250429",
+        "anthropic.text_editor_20250728",
+        "anthropic.computer_20241022",
+        "anthropic.web_search_20250305",
+        "anthropic.tool_search_regex_20251119",
+        "anthropic.tool_search_bm25_20251119",
+    };
+
     /// <summary>Project id.</summary>
-    public string? Project { get; }
+    public string? Project => _vertex.Project;
 
     /// <summary>Location.</summary>
-    public string? Location { get; }
+    public string? Location => _vertex.Location;
 
     /// <summary>Publisher base URL.</summary>
-    public string BaseUrl { get; }
+    public string BaseUrl => Options.BaseUrl;
 
-    /// <summary>Bearer token, when the caller already has one.</summary>
-    public string? AccessToken { get; }
+    /// <inheritdoc />
+    protected internal override bool SupportsNativeStructuredOutput => false;
 
-    /// <summary>Headers. A caller-supplied Authorization value is kept.</summary>
-    public IReadOnlyDictionary<string, string?> Headers(IReadOnlyDictionary<string, string?>? extra = null, Func<string?>? token = null)
+    /// <inheritdoc />
+    protected internal override bool SupportsStrictTools => false;
+
+    /// <inheritdoc />
+    protected internal override IReadOnlyDictionary<string, string> SupportedUrls => NoUrls;
+
+    /// <summary>Creates a provider. Pass a handler from tests.</summary>
+    public static GoogleVertexAnthropicProvider Create(GoogleVertexAnthropicOptions? options = null, HttpMessageHandler? handler = null)
     {
-        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrEmpty(AccessToken))
-        {
-            headers["Authorization"] = "Bearer " + AccessToken;
-        }
-        else if (token != null)
-        {
-            var value = token();
-            if (!string.IsNullOrEmpty(value))
-            {
-                headers["Authorization"] = "Bearer " + value;
-            }
-        }
-
-        if (extra != null)
-        {
-            foreach (var pair in extra)
-            {
-                headers[pair.Key] = pair.Value;
-            }
-        }
-
-        return headers;
+        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        return new GoogleVertexAnthropicProvider(client, options);
     }
 
     /// <summary><c>rawPredict</c> or <c>streamRawPredict</c> URL for a model.</summary>
@@ -75,10 +103,62 @@ public sealed class GoogleVertexAnthropicProvider
         return clone;
     }
 
+    /// <summary>Generated bearer token, then configured headers, call headers, and beta flags.</summary>
+    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    {
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (_vertex.GenerateAuthToken != null)
+        {
+            headers["Authorization"] = "Bearer " + await _vertex.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var pair in Options.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        if (callHeaders != null)
+        {
+            foreach (var pair in callHeaders)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        if (betas.Count > 0)
+        {
+            headers["anthropic-beta"] = string.Join(",", betas);
+        }
+
+        return headers;
+    }
+
     /// <summary>Embedding models are not available on this provider.</summary>
-    public IEmbeddingModel EmbeddingModel(string modelId)
+    public override IEmbeddingModel EmbeddingModel(string modelId)
     {
         throw new AiSdkException("Provider 'google.vertex.anthropic' does not support embedding model '" + modelId + "'.");
+    }
+
+    /// <inheritdoc />
+    protected internal override Uri RequestUri(string modelId, bool streaming)
+    {
+        return new Uri(PredictUrl(modelId, streaming));
+    }
+
+    private static AnthropicOptions Anthropic(GoogleVertexAnthropicOptions vertex)
+    {
+        var options = new AnthropicOptions
+        {
+            BaseUrl = GoogleVertexEndpoints.AnthropicBaseUrl(vertex.Project, vertex.Location, vertex.BaseUrl),
+            Name = ModelProviderName,
+            TransformRequestBody = TransformBody,
+        };
+        foreach (var pair in vertex.Headers)
+        {
+            options.Headers[pair.Key] = pair.Value;
+        }
+
+        return options;
     }
 }
 

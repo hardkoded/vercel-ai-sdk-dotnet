@@ -179,6 +179,25 @@ public class AnthropicProvider : ProviderBase
         return new Uri(baseUrl + "/v1/messages");
     }
 
+    /// <summary>URL for one model call. Defaults to <see cref="MessagesUri"/>.</summary>
+    protected internal virtual Uri RequestUri(string modelId, bool streaming)
+    {
+        return MessagesUri();
+    }
+
+    /// <summary>False when the host does not accept the native output format. Structured output then uses the JSON tool.</summary>
+    protected internal virtual bool SupportsNativeStructuredOutput => true;
+
+    /// <summary>False when the host does not accept <c>strict</c> on tool definitions.</summary>
+    protected internal virtual bool SupportsStrictTools => true;
+
+    /// <summary>URL patterns that models of this provider accept for images and PDFs.</summary>
+    protected internal virtual IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["image/*"] = "^https?://",
+        ["application/pdf"] = "^https?://",
+    };
+
     /// <summary>Resolved API origin, including <c>/v1</c> when the host is the public Anthropic API or a regional AWS host.</summary>
     public string NormalizedBase()
     {
@@ -209,7 +228,7 @@ public class AnthropicProvider : ProviderBase
     }
 
     /// <summary>Headers for a Messages call. Signs the body when AWS credentials are used.</summary>
-    public async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public virtual async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -387,11 +406,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <summary>URL patterns the model accepts for images and PDFs.</summary>
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://",
-        ["application/pdf"] = "^https?://",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls => _provider.SupportedUrls;
 
     /// <summary>True when <paramref name="url"/> is an http or https URL for a supported media type.</summary>
     public bool SupportsUrl(string mediaType, string url)
@@ -406,7 +421,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         var prepared = Prepare(options, false);
         var body = prepared.Body.ToJsonString();
         var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
-        var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.MessagesUri(), body, headers, cancellationToken).ConfigureAwait(false);
+        var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
@@ -421,7 +436,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
         yield return new StreamStartStreamPart(Warnings(prepared));
         var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool);
-        await foreach (var data in _provider.Http.SendSseAsync(_provider.MessagesUri(), body, headers, cancellationToken).ConfigureAwait(false))
+        await foreach (var data in _provider.Http.SendSseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))
             {
@@ -432,7 +447,13 @@ public sealed class AnthropicLanguageModel : ILanguageModel
 
     private AnthropicPreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
     {
-        var prepared = AnthropicMessagesRequest.Prepare(ModelId, options ?? new LanguageModelCallOptions(), stream, Provider);
+        var prepared = AnthropicMessagesRequest.Prepare(
+            ModelId,
+            options ?? new LanguageModelCallOptions(),
+            stream,
+            Provider,
+            _provider.SupportsNativeStructuredOutput,
+            _provider.SupportsStrictTools);
         if (_provider.Options.TransformRequestBody == null)
         {
             return prepared;

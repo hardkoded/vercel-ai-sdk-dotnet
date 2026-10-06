@@ -50,8 +50,17 @@ public sealed class AnthropicPreparedRequest
 /// <summary>Builds an Anthropic Messages request from SDK call options.</summary>
 public static class AnthropicMessagesRequest
 {
-    /// <summary>Prepares the request. <paramref name="stream"/> adds <c>stream: true</c> and eager tool streaming.</summary>
-    public static AnthropicPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerName)
+    /// <summary>
+    /// Prepares the request. <paramref name="stream"/> adds <c>stream: true</c> and eager tool streaming.
+    /// Hosts without the output format or strict tools turn them off with the last two flags.
+    /// </summary>
+    public static AnthropicPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        bool stream,
+        string providerName,
+        bool supportsNativeStructuredOutput = true,
+        bool supportsStrictTools = true)
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -96,7 +105,7 @@ public static class AnthropicMessagesRequest
         var usedCustom = custom != null;
         var anthropic = Merge(canonical, custom);
         var mode = String(anthropic, "structuredOutputMode") ?? "auto";
-        var supportsStructured = capabilities.SupportsStructuredOutput;
+        var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
         var useStructured = mode == "outputFormat" || (mode == "auto" && supportsStructured);
         if (!useStructured && capabilities.RejectsForcedToolUse && supportsStructured && options.JsonSchema != null)
         {
@@ -289,7 +298,7 @@ public static class AnthropicMessagesRequest
             disableParallel,
             validator,
             usesJsonTool ? false : supportsStructured,
-            capabilities.SupportsStructuredOutput,
+            supportsStrictTools && capabilities.SupportsStructuredOutput,
             eagerDefault,
             capabilities.RejectsForcedToolUse);
         warnings.AddRange(preparedTools.Warnings);

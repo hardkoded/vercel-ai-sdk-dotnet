@@ -635,9 +635,9 @@
       "title": "Cover upstream unit tests: google-vertex/anthropic",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 23,
-      "covered": 7,
+      "covered": 18,
       "partial": 0,
-      "missing": 16,
+      "missing": 5,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/93"
     },
     {
