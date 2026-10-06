@@ -25,7 +25,7 @@ public sealed class VoyageParityTests
     public async Task Embed_returns_the_fixture_vectors_in_index_order()
     {
         var (provider, _) = Embedding();
-        var result = await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, CancellationToken.None).ConfigureAwait(false);
+        var result = await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, null, CancellationToken.None).ConfigureAwait(false);
         AssertVector(result.Embeddings[0], 0.000344163, -0.022529466, 0.010127448, 0.063431956, 0.016145896);
         AssertVector(result.Embeddings[1], 0.018987041, -0.029901529, -0.005134966, 0.082804598, -0.008740067);
     }
@@ -48,7 +48,7 @@ public sealed class VoyageParityTests
     public async Task Embed_reads_total_tokens()
     {
         var (provider, _) = Embedding();
-        var result = await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, CancellationToken.None).ConfigureAwait(false);
+        var result = await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(12, result.Tokens);
     }
 
@@ -57,7 +57,7 @@ public sealed class VoyageParityTests
     public async Task Embed_sends_input_and_model_only()
     {
         var (provider, handler) = Embedding();
-        await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, CancellationToken.None).ConfigureAwait(false);
+        await provider.EmbeddingModel("voyage-3.5").DoEmbedAsync(Values, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("{\"input\":[\"sunny day at the beach\",\"rainy day in the city\"],\"model\":\"voyage-3.5\"}", handler.Calls[0].Text);
         Assert.Equal("https://api.voyageai.com/v1/embeddings", handler.Calls[0].Uri.AbsoluteUri);
     }

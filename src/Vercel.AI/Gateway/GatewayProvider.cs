@@ -231,8 +231,14 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <inheritdoc />
+    /// <summary>Embeds values without provider options.</summary>
     public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    {
+        return DoEmbedAsync(values, null, null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
         return DoEmbedAsync(values, null, null, cancellationToken);
     }

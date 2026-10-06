@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+
 namespace Vercel.AI.Provider;
 
 /// <summary>Embedding vector result.</summary>
@@ -33,8 +35,8 @@ public interface IEmbeddingModel
     /// <summary>Model id.</summary>
     string ModelId { get; }
 
-    /// <summary>Embeds each value. Maps to <c>doEmbed</c>.</summary>
-    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken);
+    /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id.</summary>
+    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken);
 }
 
 /// <summary>One generated image.</summary>

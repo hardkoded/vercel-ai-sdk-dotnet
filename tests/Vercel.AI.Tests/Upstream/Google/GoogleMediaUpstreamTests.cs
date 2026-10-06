@@ -17,7 +17,7 @@ public sealed class GoogleMediaUpstreamTests
     public async Task Extracts_a_single_embedding_vector()
     {
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1,2,3]}}" };
-        var result = await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny day" }, CancellationToken.None).ConfigureAwait(false);
+        var result = await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny day" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(new[] { 1f, 2f, 3f }, result.Embeddings[0]);
     }
 
@@ -26,7 +26,7 @@ public sealed class GoogleMediaUpstreamTests
     public async Task Sends_the_embedding_model_and_text()
     {
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1]}}" };
-        await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny day" }, CancellationToken.None).ConfigureAwait(false);
+        await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny day" }, null, CancellationToken.None).ConfigureAwait(false);
         GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body), "{\"model\":\"models/embedding-001\",\"content\":{\"parts\":[{\"text\":\"sunny day\"}]}}");
         Assert.Contains(":embedContent", handler.Uris[0]);
     }
@@ -38,7 +38,7 @@ public sealed class GoogleMediaUpstreamTests
         var options = Key();
         options.EmbeddingProviderOptions = GoogleUpstream.Element("{\"outputDimensionality\":256}");
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1]}}" };
-        await GoogleProvider.Create(options, handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny" }, CancellationToken.None).ConfigureAwait(false);
+        await GoogleProvider.Create(options, handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(256, JsonNode.Parse(handler.Body)!["outputDimensionality"]!.GetValue<int>());
     }
 
@@ -49,7 +49,7 @@ public sealed class GoogleMediaUpstreamTests
         var options = Key();
         options.EmbeddingProviderOptions = GoogleUpstream.Element("{\"taskType\":\"RETRIEVAL_DOCUMENT\"}");
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1]}}" };
-        await GoogleProvider.Create(options, handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny" }, CancellationToken.None).ConfigureAwait(false);
+        await GoogleProvider.Create(options, handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "sunny" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("RETRIEVAL_DOCUMENT", (string?)JsonNode.Parse(handler.Body)!["taskType"]);
     }
 
@@ -59,7 +59,7 @@ public sealed class GoogleMediaUpstreamTests
     {
         var handler = new RecordingHandler();
         var values = Enumerable.Range(0, 101).Select(index => "v" + index).ToArray();
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(values, CancellationToken.None)).ConfigureAwait(false);
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(values, null, CancellationToken.None)).ConfigureAwait(false);
         Assert.Contains("100", error.Message);
         Assert.Equal(0, handler.Calls);
     }
@@ -76,7 +76,7 @@ public sealed class GoogleMediaUpstreamTests
     public async Task Uses_batchEmbedContents_for_several_values()
     {
         var handler = new RecordingHandler { ResponseText = "{\"embeddings\":[{\"values\":[1]},{\"values\":[2]}]}" };
-        var result = await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "a", "b" }, CancellationToken.None).ConfigureAwait(false);
+        var result = await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "a", "b" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Contains(":batchEmbedContents", handler.Uris[0]);
         Assert.Equal(2, result.Embeddings.Count);
     }
@@ -86,7 +86,7 @@ public sealed class GoogleMediaUpstreamTests
     public async Task Uses_embedContent_for_one_value()
     {
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1]}}" };
-        await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "a" }, CancellationToken.None).ConfigureAwait(false);
+        await GoogleProvider.Create(Key(), handler).EmbeddingModel("embedding-001").DoEmbedAsync(new[] { "a" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Contains(":embedContent", handler.Uris[0]);
         Assert.DoesNotContain("batchEmbedContents", handler.Uris[0]);
     }
@@ -300,7 +300,7 @@ public sealed class GoogleMediaUpstreamTests
         var handler = new RecordingHandler();
         var provider = GoogleVertexProvider.Create(new VertexOptions { Project = "p", Region = "us-central1", ApiKey = "k" }, handler);
         var values = Enumerable.Range(0, 251).Select(index => "v").ToArray();
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.EmbeddingModel("text-embedding-005").DoEmbedAsync(values, CancellationToken.None)).ConfigureAwait(false);
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.EmbeddingModel("text-embedding-005").DoEmbedAsync(values, null, CancellationToken.None)).ConfigureAwait(false);
         Assert.Contains("250", error.Message);
         Assert.Equal(0, handler.Calls);
     }
@@ -311,7 +311,7 @@ public sealed class GoogleMediaUpstreamTests
     {
         var handler = new RecordingHandler();
         var provider = GoogleVertexProvider.Create(new VertexOptions { Project = "p", Region = "us-central1", ApiKey = "k" }, handler);
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.EmbeddingModel("gemini-embedding-2").DoEmbedAsync(new[] { "a", "b" }, CancellationToken.None)).ConfigureAwait(false);
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.EmbeddingModel("gemini-embedding-2").DoEmbedAsync(new[] { "a", "b" }, null, CancellationToken.None)).ConfigureAwait(false);
         Assert.Contains("1", error.Message);
         Assert.Equal(0, handler.Calls);
     }
@@ -322,7 +322,7 @@ public sealed class GoogleMediaUpstreamTests
     {
         var handler = new RecordingHandler { ResponseText = "{\"embedding\":{\"values\":[1,2]}}" };
         var provider = GoogleVertexProvider.Create(new VertexOptions { Project = "p", Region = "us-central1", ApiKey = "k" }, handler);
-        var result = await provider.EmbeddingModel("gemini-embedding-2").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+        var result = await provider.EmbeddingModel("gemini-embedding-2").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Contains(":embedContent", handler.Uris[0]);
         Assert.Equal(new[] { 1f, 2f }, result.Embeddings[0]);
     }
@@ -333,7 +333,7 @@ public sealed class GoogleMediaUpstreamTests
     {
         var handler = new RecordingHandler { ResponseText = "{\"predictions\":[{\"embeddings\":{\"values\":[1,2]}},{\"embeddings\":{\"values\":[3]}}]}" };
         var provider = GoogleVertexProvider.Create(new VertexOptions { Project = "p", Region = "us-central1", ApiKey = "k" }, handler);
-        var result = await provider.EmbeddingModel("text-embedding-005").DoEmbedAsync(new[] { "a", "b" }, CancellationToken.None).ConfigureAwait(false);
+        var result = await provider.EmbeddingModel("text-embedding-005").DoEmbedAsync(new[] { "a", "b" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Contains(":predict", handler.Uris[0]);
         Assert.Equal(2, result.Embeddings.Count);
         Assert.Equal(3f, result.Embeddings[1][0]);

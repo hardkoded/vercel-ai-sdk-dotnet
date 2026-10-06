@@ -548,7 +548,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
         return DoEmbedAsync(values, null, null, cancellationToken);
     }

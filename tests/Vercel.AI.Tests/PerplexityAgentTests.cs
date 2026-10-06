@@ -125,7 +125,7 @@ public sealed class PerplexityAgentTests
         var handler = new AgentHandler(SampleResponse());
         var provider = Create(handler);
 
-        var result = await provider.EmbeddingModel("pplx-embed-v1-4b").DoEmbedAsync(new[] { "hello" }, CancellationToken.None);
+        var result = await provider.EmbeddingModel("pplx-embed-v1-4b").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None);
 
         Assert.Contains("/embeddings", handler.Uri);
         Assert.DoesNotContain("/v1/agent", handler.Uri);

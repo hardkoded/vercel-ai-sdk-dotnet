@@ -124,7 +124,7 @@ public sealed class AiClient : IAiClient
         }
 
         var model = options.Model ?? _gateway.EmbeddingModel(Require(options.ModelId, "embedding"));
-        return model.DoEmbedAsync(options.Values, cancellationToken);
+        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -303,6 +303,9 @@ public sealed class EmbedOptions
 
     /// <summary>Values to embed.</summary>
     public IReadOnlyList<string> Values { get; set; } = Array.Empty<string>();
+
+    /// <summary>Provider options keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
 /// <summary>Rerank options.</summary>

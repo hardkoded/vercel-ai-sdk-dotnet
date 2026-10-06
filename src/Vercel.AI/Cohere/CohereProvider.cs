@@ -196,27 +196,27 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
+        var embeddingType = EmbeddingType(providerOptions);
         var texts = new JsonArray();
         foreach (var value in values)
         {
             texts.Add(value);
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["texts"] = texts, ["input_type"] = "search_document" };
+        var body = new JsonObject { ["model"] = ModelId, ["texts"] = texts, ["embedding_types"] = new JsonArray(embeddingType), ["input_type"] = "search_document" };
         using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
         var root = document.RootElement;
-        JsonElement vectorsElement;
-        if (root.TryGetProperty("embeddings", out var embeddings) && embeddings.ValueKind == JsonValueKind.Object && embeddings.TryGetProperty("float", out var floats))
+        var embeddings = root.GetProperty("embeddings");
+        var vectorsElement = embeddings;
+        var found = embeddings.ValueKind == JsonValueKind.Object ? embeddings.TryGetProperty(embeddingType, out vectorsElement) : embeddingType == "float";
+        if (!found)
         {
-            vectorsElement = floats;
-        }
-        else
-        {
-            vectorsElement = root.GetProperty("embeddings");
+            throw new AiSdkException("Cohere response has no " + embeddingType + " embeddings.");
         }
 
+        // Integer and packed binary formats are returned as-is, not scaled or unpacked.
         var vectors = new List<float[]>();
         foreach (var embedding in vectorsElement.EnumerateArray())
         {
@@ -224,13 +224,32 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             var index = 0;
             foreach (var number in embedding.EnumerateArray())
             {
+                if (number.ValueKind != JsonValueKind.Number)
+                {
+                    throw new AiSdkException("Cohere " + embeddingType + " embeddings must contain only numbers.");
+                }
+
                 vector[index++] = number.GetSingle();
             }
 
             vectors.Add(vector);
         }
 
-        return new EmbeddingResult(vectors, null);
+        int? tokens = root.TryGetProperty("meta", out var meta) && meta.TryGetProperty("billed_units", out var billed) && billed.TryGetProperty("input_tokens", out var inputTokens) ? inputTokens.GetInt32() : null;
+        return new EmbeddingResult(vectors, tokens);
+    }
+
+    private static string EmbeddingType(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        if (providerOptions == null || !providerOptions.TryGetValue(CohereProvider.ProviderName, out var options) || options.ValueKind != JsonValueKind.Object || !options.TryGetProperty("embeddingType", out var value))
+        {
+            return "float";
+        }
+
+        var type = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return type is "float" or "int8" or "uint8" or "binary" or "ubinary"
+            ? type
+            : throw new AiSdkException("invalid cohere provider options: embeddingType must be float, int8, uint8, binary, or ubinary.");
     }
 }
 

@@ -286,10 +286,10 @@ public sealed class ProviderRequestTests
                 await provider.VideoModel("m").DoGenerateAsync(new VideoCallOptions("a wave"), CancellationToken.None).ConfigureAwait(false);
                 break;
             case "embedding":
-                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
                 break;
             case "gateway-embed":
-                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, CancellationToken.None).ConfigureAwait(false);
+                await provider.EmbeddingModel("m").DoEmbedAsync(new[] { "hello" }, null, CancellationToken.None).ConfigureAwait(false);
                 break;
             case "gateway-image":
                 await provider.ImageModel("m").DoGenerateAsync(new ImageCallOptions("a cat"), CancellationToken.None).ConfigureAwait(false);
