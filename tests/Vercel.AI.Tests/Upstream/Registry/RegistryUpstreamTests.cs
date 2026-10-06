@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 using Vercel.AI.Util;
@@ -531,7 +532,7 @@ public sealed class RegistryUpstreamTests
 
         public string ModelId { get; }
 
-        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
 
