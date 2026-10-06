@@ -11,3 +11,4 @@ docs/api/
 *.DotSettings.user
 .env
 agent-tools/
+__pycache__/
