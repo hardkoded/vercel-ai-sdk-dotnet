@@ -31,78 +31,76 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert basic usage without cache tokens",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Input total, no-cache, and zero cache counts match. Output text tokens stay unset because reasoning tokens are not reported, and TotalTokens is the sum.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Converts_basic_usage_without_cache_tokens()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50}"));
+        const string json = "{\"inputTokens\":100,\"outputTokens\":50}";
+        var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(100, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
         Assert.Equal(0, usage.CacheReadTokens);
         Assert.Equal(0, usage.CacheWriteTokens);
-        Assert.Equal(50, usage.OutputTokens);
-        Assert.Equal(100, usage.Raw!.Value.GetProperty("inputTokens").GetInt32());
-        Assert.Equal(50, usage.Raw.Value.GetProperty("outputTokens").GetInt32());
+        AssertOutputAndRaw(usage, json);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with cache read tokens",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Input total is 180 and no-cache stays 100. Output text tokens stay unset.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Converts_usage_with_cache_read_tokens()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80}"));
+        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80}";
+        var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(180, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
         Assert.Equal(80, usage.CacheReadTokens);
         Assert.Equal(0, usage.CacheWriteTokens);
-        Assert.Equal(50, usage.OutputTokens);
+        AssertOutputAndRaw(usage, json);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with cache write tokens",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Input total is 160 and no-cache stays 100. Output text tokens stay unset.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Converts_usage_with_cache_write_tokens()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"cacheWriteInputTokens\":60}"));
+        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheWriteInputTokens\":60}";
+        var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(160, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
         Assert.Equal(0, usage.CacheReadTokens);
         Assert.Equal(60, usage.CacheWriteTokens);
+        AssertOutputAndRaw(usage, json);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with both cache read and write tokens",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Input total is 240 and no-cache stays 100. Output text tokens stay unset.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Converts_usage_with_both_cache_counts()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}"));
+        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}";
+        var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(240, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
         Assert.Equal(80, usage.CacheReadTokens);
         Assert.Equal(60, usage.CacheWriteTokens);
-        Assert.Equal(50, usage.OutputTokens);
+        AssertOutputAndRaw(usage, json);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should handle null cache tokens",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Null cache counts are treated as zero and the raw object keeps the nulls.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Handles_null_cache_tokens()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":null,\"cacheWriteInputTokens\":null}"));
+        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":null,\"cacheWriteInputTokens\":null}";
+        var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(100, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
         Assert.Equal(0, usage.CacheReadTokens);
         Assert.Equal(0, usage.CacheWriteTokens);
-        Assert.Equal(JsonValueKind.Null, usage.Raw!.Value.GetProperty("cacheReadInputTokens").ValueKind);
-        Assert.Equal(JsonValueKind.Null, usage.Raw.Value.GetProperty("cacheWriteInputTokens").ValueKind);
+        AssertOutputAndRaw(usage, json);
     }
 
     [Fact]
@@ -155,6 +153,14 @@ public sealed class AmazonBedrockUsageMappingTests
         Assert.Equal(150, raw.GetProperty("totalTokens").GetInt32());
         Assert.Equal(80, raw.GetProperty("cacheReadInputTokens").GetInt32());
         Assert.Equal(60, raw.GetProperty("cacheWriteInputTokens").GetInt32());
+    }
+
+    private static void AssertOutputAndRaw(LanguageModelUsage usage, string raw)
+    {
+        Assert.Equal(50, usage.OutputTokens);
+        Assert.Equal(50, usage.TextTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(raw, usage.Raw!.Value.GetRawText());
     }
 
     private static JsonElement Json(string json)

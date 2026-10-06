@@ -74,6 +74,32 @@ public sealed class ZaiUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::parses text, reasoning, tool calls, cached usage, and finish reason", Coverage = UpstreamCoverage.Covered)]
+    public async Task Generate_parses_text_reasoning_tool_calls_and_cached_usage()
+    {
+        var capture = new UpstreamCapture
+        {
+            ResponseBody = "{\"id\":\"chatcmpl-123\",\"request_id\":\"request-123\",\"created\":1777000000,\"model\":\"glm-5.3\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"The answer is 42.\",\"reasoning_content\":\"I should calculate the answer.\",\"tool_calls\":[{\"id\":\"call-1\",\"type\":\"function\",\"function\":{\"name\":\"calculator\",\"arguments\":\"{\\\"value\\\":42}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":7,\"prompt_tokens_details\":{\"cached_tokens\":3},\"total_tokens\":17}}",
+        };
+        var result = await Chat(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
+        Assert.Equal(3, result.Content.Count);
+        Assert.Equal("The answer is 42.", Assert.IsType<GeneratedText>(result.Content[0]).Text);
+        Assert.Equal("I should calculate the answer.", Assert.IsType<GeneratedReasoning>(result.Content[1]).Text);
+        var call = Assert.IsType<GeneratedToolCall>(result.Content[2]);
+        Assert.Equal("call-1", call.ToolCallId);
+        Assert.Equal("calculator", call.ToolName);
+        Assert.Equal("{\"value\":42}", call.ArgumentsJson);
+        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Equal("tool_calls", result.RawFinishReason);
+        Assert.Equal(10, result.Usage.InputTokens);
+        Assert.Equal(3, result.Usage.CacheReadTokens);
+        Assert.Equal(7, result.Usage.NoCacheInputTokens);
+        Assert.Equal("chatcmpl-123", result.ResponseId);
+        Assert.Equal("glm-5.3", result.ResponseModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1777000000), result.ResponseTimestamp);
+    }
+
+    [Fact]
     [UpstreamTest("packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::maps the %s finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task Provider_finish_reasons_are_mapped()
     {

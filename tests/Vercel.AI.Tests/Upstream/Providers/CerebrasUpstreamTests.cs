@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Cerebras;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream;
 
 namespace Vercel.AI.Tests;
 
@@ -92,23 +93,22 @@ public sealed class CerebrasUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::normalizes captured streamed structured output with tool calls finish reason", Coverage = UpstreamCoverage.Partial, Note = "Finish reason, provider metadata, and token counts match. NoCacheInputTokens stays null because cache write is unset.")]
+    [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::normalizes captured streamed structured output with tool calls finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task A_json_mode_stream_with_text_finishes_with_stop()
     {
         var parts = await UpstreamChat.Read(Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None));
         var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal("tool_calls", finish.RawFinishReason);
-        var metadata = finish.ProviderMetadata!.Value.GetProperty("cerebras");
-        Assert.Equal(0, metadata.GetProperty("acceptedPredictionTokens").GetInt32());
-        Assert.Equal(0, metadata.GetProperty("rejectedPredictionTokens").GetInt32());
+        JsonAssert.Equal(finish.ProviderMetadata!.Value, "{\"cerebras\":{\"acceptedPredictionTokens\":0,\"rejectedPredictionTokens\":0}}");
         Assert.Equal(433, finish.Usage.InputTokens);
+        Assert.Equal(177, finish.Usage.NoCacheInputTokens);
         Assert.Equal(256, finish.Usage.CacheReadTokens);
         Assert.Null(finish.Usage.CacheWriteTokens);
         Assert.Equal(122, finish.Usage.OutputTokens);
         Assert.Equal(108, finish.Usage.ReasoningTokens);
         Assert.Equal(14, finish.Usage.TextTokens);
-        Assert.Equal(555, finish.Usage.Raw!.Value.GetProperty("total_tokens").GetInt32());
+        JsonAssert.Equal(finish.Usage.Raw!.Value, "{\"completion_tokens\":122,\"completion_tokens_details\":{\"accepted_prediction_tokens\":0,\"reasoning_tokens\":108,\"rejected_prediction_tokens\":0},\"prompt_tokens\":433,\"prompt_tokens_details\":{\"cached_tokens\":256},\"total_tokens\":555}");
     }
 
     [Fact]

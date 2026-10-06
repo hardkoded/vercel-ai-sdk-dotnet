@@ -18,16 +18,19 @@ public sealed class OpenAIChatSettingsUpstreamTests
     private const string ToolSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
 
     [Fact]
-    [UpstreamTest(Usage + "clamps text tokens at 0 when reasoning exceeds completion", Coverage = UpstreamCoverage.Partial, Note = "Text tokens clamp to 0 and reasoning is 6001. cacheWrite is absent, so noCache stays null instead of 891.")]
+    [UpstreamTest(Usage + "clamps text tokens at 0 when reasoning exceeds completion", Coverage = UpstreamCoverage.Covered)]
     public void ClampsTextTokens()
     {
-        var usage = OpenAIJson.ChatUsage(OpenAIUpstream.Json("{\"prompt_tokens\":951,\"completion_tokens\":6000,\"total_tokens\":6952,\"prompt_tokens_details\":{\"cached_tokens\":60},\"completion_tokens_details\":{\"reasoning_tokens\":6001}}"));
+        const string json = "{\"prompt_tokens\":951,\"completion_tokens\":6000,\"total_tokens\":6952,\"prompt_tokens_details\":{\"cached_tokens\":60},\"completion_tokens_details\":{\"reasoning_tokens\":6001}}";
+        var usage = OpenAIJson.ChatUsage(OpenAIUpstream.Json(json));
         Assert.Equal(951, usage.InputTokens);
+        Assert.Equal(891, usage.NoCacheInputTokens);
         Assert.Equal(60, usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
         Assert.Equal(6000, usage.OutputTokens);
         Assert.Equal(6001, usage.ReasoningTokens);
         Assert.Equal(0, usage.TextTokens);
-        Assert.Equal(6952, usage.Raw!.Value.GetProperty("total_tokens").GetInt32());
+        Assert.Equal(json, usage.Raw!.Value.GetRawText());
     }
 
     [Fact]
@@ -288,16 +291,19 @@ public sealed class OpenAIChatSettingsUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Generate + "should return the reasoning tokens in the provider metadata", Coverage = UpstreamCoverage.Partial, Note = "Reasoning tokens are 10 and text tokens are 10. cacheWrite is absent, so noCache stays null instead of 15.")]
+    [UpstreamTest(Generate + "should return the reasoning tokens in the provider metadata", Coverage = UpstreamCoverage.Covered)]
     public async Task ReturnsReasoningTokens()
     {
         const string json = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":15,\"completion_tokens\":20,\"total_tokens\":35,\"completion_tokens_details\":{\"reasoning_tokens\":10}}}";
         var usage = (await SendResult("o4-mini", OpenAIUpstream.Hello(), json)).Usage;
         Assert.Equal(15, usage.InputTokens);
+        Assert.Equal(15, usage.NoCacheInputTokens);
+        Assert.Equal(0, usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
         Assert.Equal(20, usage.OutputTokens);
         Assert.Equal(10, usage.ReasoningTokens);
         Assert.Equal(10, usage.TextTokens);
-        Assert.Equal(10, usage.Raw!.Value.GetProperty("completion_tokens_details").GetProperty("reasoning_tokens").GetInt32());
+        Assert.Equal("{\"prompt_tokens\":15,\"completion_tokens\":20,\"total_tokens\":35,\"completion_tokens_details\":{\"reasoning_tokens\":10}}", usage.Raw!.Value.GetRawText());
     }
 
     [Fact]

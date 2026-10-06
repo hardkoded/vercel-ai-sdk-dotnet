@@ -311,7 +311,7 @@ internal static class PerplexityAgent
             reasoning = ReadIntValue(reasoningElement);
         }
 
-        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone());
+        return new LanguageModelUsage(input, output, total, cacheRead, cacheWrite, reasoning, element.Clone(), input - cacheRead - cacheWrite, output - reasoning);
     }
 
     public static JsonElement ProviderMetadata(JsonElement? usage)

@@ -181,18 +181,19 @@ public sealed class OpenAIChatRequestUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Partial, Note = "cacheWrite is absent, so noCache stays null. Upstream reports noCache 20.")]
+    [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsUsage()
     {
         var usage = (await GenerateText("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"total_tokens\":25,\"completion_tokens\":5}}")).Usage;
         Assert.Equal(20, usage.InputTokens);
+        Assert.Equal(20, usage.NoCacheInputTokens);
         Assert.Equal(5, usage.OutputTokens);
         Assert.Equal(25, usage.TotalTokens);
         Assert.Equal(0, usage.CacheReadTokens);
         Assert.Null(usage.CacheWriteTokens);
         Assert.Equal(0, usage.ReasoningTokens);
         Assert.Equal(5, usage.TextTokens);
-        Assert.Equal(20, usage.Raw!.Value.GetProperty("prompt_tokens").GetInt32());
+        Assert.Equal("{\"prompt_tokens\":20,\"total_tokens\":25,\"completion_tokens\":5}", usage.Raw!.Value.GetRawText());
     }
 
     [Fact]
@@ -214,15 +215,19 @@ public sealed class OpenAIChatRequestUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Generate + "should support partial usage", Coverage = UpstreamCoverage.Partial, Note = "Missing completion_tokens becomes 0. cacheWrite is absent, so noCache stays null.")]
+    [UpstreamTest(Generate + "should support partial usage", Coverage = UpstreamCoverage.Covered)]
     public async Task SupportsPartialUsage()
     {
         var usage = (await GenerateText("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"total_tokens\":20}}")).Usage;
         Assert.Equal(20, usage.InputTokens);
-        Assert.Equal(0, usage.OutputTokens);
-        Assert.Equal(20, usage.TotalTokens);
-        Assert.Equal(0, usage.TextTokens);
+        Assert.Equal(20, usage.NoCacheInputTokens);
+        Assert.Equal(0, usage.CacheReadTokens);
         Assert.Null(usage.CacheWriteTokens);
+        Assert.Equal(0, usage.OutputTokens);
+        Assert.Equal(0, usage.TextTokens);
+        Assert.Equal(0, usage.ReasoningTokens);
+        Assert.Equal(20, usage.TotalTokens);
+        Assert.Equal("{\"prompt_tokens\":20,\"total_tokens\":20}", usage.Raw!.Value.GetRawText());
     }
 
     [Fact]
@@ -544,7 +549,7 @@ public sealed class OpenAIChatRequestUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Stream + "should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = "Text, metadata, and finish reason match. Usage noCache stays null when cache_write_tokens is absent.")]
+    [UpstreamTest(Stream + "should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = "Text, metadata, finish reason, and usage match. The finish chunk has no logprobs, so the logprobs provider metadata is not checked.")]
     public async Task StreamsTextDeltas()
     {
         var parts = await StreamChunks(
@@ -567,6 +572,13 @@ public sealed class OpenAIChatRequestUpstreamTests
         var finish = parts.OfType<FinishStreamPart>().Single();
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal("stop", finish.RawFinishReason);
+        Assert.Equal(17, finish.Usage.InputTokens);
+        Assert.Equal(17, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(0, finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.CacheWriteTokens);
+        Assert.Equal(227, finish.Usage.OutputTokens);
+        Assert.Equal(227, finish.Usage.TextTokens);
+        Assert.Equal(0, finish.Usage.ReasoningTokens);
     }
 
     [Fact]

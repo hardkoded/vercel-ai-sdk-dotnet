@@ -333,7 +333,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             int? total = ReadInt(usageElement, "total_tokens");
             var cacheRead = ReadNestedInt(usageElement, "input_tokens_details", "cached_tokens") ?? 0;
             var reasoning = ReadNestedInt(usageElement, "output_tokens_details", "reasoning_tokens") ?? 0;
-            usage = new LanguageModelUsage(input, outputTokens, total, cacheRead, null, reasoning, usageElement.Clone());
+            usage = new LanguageModelUsage(input, outputTokens, total, cacheRead, null, reasoning, usageElement.Clone(), input - cacheRead, outputTokens - reasoning);
         }
 
         var sourceIndex = 0;

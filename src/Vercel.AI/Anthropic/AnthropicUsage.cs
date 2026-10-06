@@ -58,7 +58,7 @@ public static class AnthropicUsage
             raw = usage.Clone();
         }
 
-        return new LanguageModelUsage(input + cacheWrite + cacheRead, output, null, cacheRead, cacheWrite, reasoning, raw);
+        return new LanguageModelUsage(input + cacheWrite + cacheRead, output, null, cacheRead, cacheWrite, reasoning, raw, input, output - reasoning);
     }
 
     private static bool ServedByFallback(JsonElement iterations)

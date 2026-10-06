@@ -44,14 +44,19 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai-compatible/src/completion/openai-compatible-completion-language-model.test.ts::doGenerate::should extract usage", Coverage = UpstreamCoverage.Partial, Note = "Prompt and completion tokens are mapped. NoCacheInputTokens stays unset because cache write is unset.")]
+    [UpstreamTest("packages/openai-compatible/src/completion/openai-compatible-completion-language-model.test.ts::doGenerate::should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_extracts_completion_usage()
     {
         var result = await Generate("{\"choices\":[{\"text\":\"Hi\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}}");
         Assert.Equal(20, result.Usage.InputTokens);
+        Assert.Equal(20, result.Usage.NoCacheInputTokens);
+        Assert.Null(result.Usage.CacheReadTokens);
+        Assert.Null(result.Usage.CacheWriteTokens);
         Assert.Equal(5, result.Usage.OutputTokens);
+        Assert.Equal(5, result.Usage.TextTokens);
+        Assert.Null(result.Usage.ReasoningTokens);
         Assert.Equal(25, result.Usage.TotalTokens);
-        Assert.Equal(20, result.Usage.Raw!.Value.GetProperty("prompt_tokens").GetInt32());
+        Assert.Equal("{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}", result.Usage.Raw!.Value.GetRawText());
     }
 
     [Fact]

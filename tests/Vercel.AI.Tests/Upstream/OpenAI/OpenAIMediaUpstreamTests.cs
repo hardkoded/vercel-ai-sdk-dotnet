@@ -501,16 +501,19 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract usage", Coverage = UpstreamCoverage.Partial, Note = "Input 20 and output 5 are mapped. Text tokens and noCache stay null because completion usage does not report cache or reasoning.")]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsCompletionUsage()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}}" };
         var usage = (await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None)).Usage;
         Assert.Equal(20, usage.InputTokens);
+        Assert.Equal(20, usage.NoCacheInputTokens);
+        Assert.Null(usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
         Assert.Equal(5, usage.OutputTokens);
-        Assert.Equal(25, usage.TotalTokens);
-        Assert.Null(usage.TextTokens);
-        Assert.Null(usage.NoCacheInputTokens);
+        Assert.Equal(5, usage.TextTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal("{\"prompt_tokens\":20,\"completion_tokens\":5,\"total_tokens\":25}", usage.Raw!.Value.GetRawText());
     }
 
     [Fact]
