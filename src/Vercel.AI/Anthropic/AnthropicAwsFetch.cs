@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 
 namespace Vercel.AI.Anthropic;
 
@@ -70,7 +71,7 @@ public sealed class AnthropicAwsPreparedCall
 public static class AnthropicAwsFetch
 {
     /// <summary>User agent sent on every AWS request. The runtime segment is dotnet.</summary>
-    public const string UserAgent = "ai-sdk/anthropic-aws/0.0.0-test runtime/dotnet";
+    public static readonly string UserAgent = "ai-sdk/anthropic-aws/" + AiSdkVersion.Version + " runtime/dotnet";
 
     /// <summary>SigV4 service name.</summary>
     public const string Service = "aws-external-anthropic";

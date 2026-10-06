@@ -38,7 +38,7 @@ public sealed class TranslateTests
         Assert.Equal("mp3", model.Call.OutputAudioFormat);
         Assert.False(model.Call.IncludeRawChunks);
         Assert.Equal("1", model.Call.Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", model.Call.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Call.Headers["user-agent"]);
         Assert.Equal("hola", await result.TranslationText);
     }
 

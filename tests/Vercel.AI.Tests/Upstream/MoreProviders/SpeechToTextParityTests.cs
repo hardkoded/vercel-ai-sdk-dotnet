@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Gladia;
 using Vercel.AI.Hume;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.RevAI;
 using Vercel.AI.Tests.MoreProviders;
@@ -64,7 +65,7 @@ public sealed class SpeechToTextParityTests
         Assert.StartsWith("multipart/form-data", call.Header("Content-Type"), StringComparison.OrdinalIgnoreCase);
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/revai/0.0.0-test", call.Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/revai/" + AiSdkVersion.Version, call.Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -158,7 +159,7 @@ public sealed class SpeechToTextParityTests
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/gladia/0.0.0-test", handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/gladia/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -273,7 +274,7 @@ public sealed class SpeechToTextParityTests
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/hume/0.0.0-test", call.Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/hume/" + AiSdkVersion.Version, call.Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]

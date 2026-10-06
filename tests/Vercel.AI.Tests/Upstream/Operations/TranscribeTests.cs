@@ -37,7 +37,7 @@ public sealed class TranscribeTests
         Assert.True(model.Call.IncludeRawChunks);
         Assert.True(model.Call.ProviderOptions.GetProperty("p").GetBoolean());
         Assert.Equal("1", model.Call.Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", model.Call.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Call.Headers["user-agent"]);
         Assert.Equal("hello", await result.Text);
     }
 
@@ -216,7 +216,7 @@ public sealed class TranscribeTests
         Assert.Equal("audio/wav", model.Generated.MediaType);
         Assert.True(model.Generated.ProviderOptions.GetProperty("p").GetBoolean());
         Assert.Equal("1", model.Generated.Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", model.Generated.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Generated.Headers["user-agent"]);
     }
 
     [Fact]

@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Voyage;
@@ -103,7 +104,7 @@ public sealed class VoyageParityTests
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/voyage/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/voyage/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]

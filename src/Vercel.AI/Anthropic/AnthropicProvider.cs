@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -67,7 +68,7 @@ public class AnthropicProvider : ProviderBase
     public const string ProviderName = "anthropic";
 
     /// <summary>User agent for the Messages API.</summary>
-    public const string UserAgent = "ai-sdk/anthropic/0.0.0-test";
+    public static readonly string UserAgent = "ai-sdk/anthropic/" + AiSdkVersion.Version;
 
     /// <summary>Creates a provider.</summary>
     public AnthropicProvider(HttpClient httpClient, AnthropicOptions? options = null)

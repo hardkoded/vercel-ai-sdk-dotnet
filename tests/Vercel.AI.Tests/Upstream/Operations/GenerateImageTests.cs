@@ -44,7 +44,7 @@ public sealed class GenerateImageTests
         Assert.Equal((int?)12345, call.Seed);
         Assert.Equal("vivid", call.ProviderOptions!.Value.GetProperty("mock-provider").GetProperty("style").GetString());
         Assert.Equal("request-header-value", call.Headers["custom-request-header"]);
-        Assert.Equal("ai/0.0.0-test", call.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, call.Headers["user-agent"]);
         Assert.Equal(source.Token, call.CancellationToken);
     }
 

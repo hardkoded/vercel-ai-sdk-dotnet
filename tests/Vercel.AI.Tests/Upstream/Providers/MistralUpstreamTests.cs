@@ -4,6 +4,7 @@
 
 using Vercel.AI.Mistral;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -24,7 +25,7 @@ public sealed class MistralUpstreamTests
         Assert.Equal("Bearer test-api-key", capture.Requests[0].Headers["Authorization"]);
         Assert.Equal("provider-header-value", capture.Requests[0].Headers["Custom-Provider-Header"]);
         Assert.Equal("request-header-value", capture.Requests[0].Headers["Custom-Request-Header"]);
-        Assert.Contains("ai-sdk/mistral/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/mistral/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
     }
 
     [Fact]

@@ -4,6 +4,7 @@
 
 using Vercel.AI.GmiCloud;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -100,7 +101,7 @@ public sealed class GmiCloudUpstreamTests
             Assert.Equal("GMI_CLOUD_APIKEY", provider.Options.ApiKeyEnvironmentVariable);
             Assert.Equal("https://api.gmi-serving.com/v1/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
             Assert.Equal("Bearer mock-api-key", capture.Requests[0].Headers["Authorization"]);
-            Assert.Contains("ai-sdk/gmicloud/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+            Assert.Contains("ai-sdk/gmicloud/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
         }
         finally
         {

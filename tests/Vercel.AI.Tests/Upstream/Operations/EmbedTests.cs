@@ -78,7 +78,7 @@ public sealed class EmbedTests
         var model = new EmbedFake();
         await Embed.EmbedAsync(new EmbedRequest { Model = model, Value = "value", Headers = new Dictionary<string, string> { ["Custom-Header"] = "custom-value" } });
         Assert.Equal("custom-value", model.Calls[0].Headers["custom-header"]);
-        Assert.Equal("ai/0.0.0-test", model.Calls[0].Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Calls[0].Headers["user-agent"]);
     }
 
     [Fact]
@@ -574,7 +574,7 @@ public sealed class EmbedTests
         var model = new EmbedFake();
         await EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = model, Values = new[] { "a" }, Headers = new Dictionary<string, string> { ["X-Test"] = "1" } });
         Assert.Equal("1", model.Calls[0].Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", model.Calls[0].Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Calls[0].Headers["user-agent"]);
     }
 
     [Fact]

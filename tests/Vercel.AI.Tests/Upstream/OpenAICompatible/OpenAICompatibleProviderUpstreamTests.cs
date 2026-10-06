@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -23,7 +24,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         Assert.Equal("test-provider.chat", model.Provider);
         Assert.Equal("Bearer test-api-key", capture.Requests[0].Headers["Authorization"]);
         Assert.Equal("value", capture.Requests[0].Headers["custom-header"]);
-        Assert.Contains("ai-sdk/openai-compatible/0.0.0", capture.Requests[0].Headers["User-Agent"]);
+        Assert.Contains("ai-sdk/openai-compatible/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"]);
         Assert.Equal("/chat/completions", capture.Requests[0].Uri!.AbsolutePath);
         Assert.Equal("?Custom-Param=value", capture.Requests[0].Uri!.Query);
     }
@@ -37,7 +38,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         var headers = provider.CreateHeaders();
         Assert.False(headers.ContainsKey("Authorization"));
         Assert.Equal("value", headers["custom-header"]);
-        Assert.Equal("ai-sdk/openai-compatible/0.0.0", headers["User-Agent"]);
+        Assert.Equal("ai-sdk/openai-compatible/" + AiSdkVersion.Version, headers["User-Agent"]);
     }
 
     [Fact]

@@ -222,7 +222,7 @@ public sealed class UploadAndSpeechTests
         Assert.Equal("Hello", model.Call!.Text);
         Assert.Equal("alloy", model.Call.Voice);
         Assert.Equal((double?)0.8, model.Call.Speed);
-        Assert.Contains("ai/0.0.0-test", model.Call.Headers["user-agent"]);
+        Assert.Contains(AiSdkVersion.UserAgent, model.Call.Headers["user-agent"]);
         Assert.Equal("yes", model.Call.Headers["x-test"]);
     }
 

@@ -13,6 +13,7 @@ using Vercel.AI.Fal;
 using Vercel.AI.KlingAI;
 using Vercel.AI.Luma;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Replicate;
 using Vercel.AI.Tests.MoreProviders;
@@ -51,7 +52,7 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/alibaba/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/alibaba/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -71,7 +72,7 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("application/octet-stream", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/assemblyai/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/assemblyai/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
         Assert.Equal(new byte[] { 1, 2, 3 }, call.Body);
     }
 
@@ -112,7 +113,7 @@ public sealed class PrimaryEndpointParityTests
         var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[8], "audio/mpeg"));
         var provider = CartesiaProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler);
         await provider.GenerateSpeechAsync("sonic-3.5", new SpeechCallOptions("Hello, world!") { Voice = "test-voice-id" }, null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Contains("ai-sdk/cartesia/0.0.0-test", handler.Calls[0].Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/cartesia/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -143,7 +144,7 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("audio/wav", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/deepgram/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/deepgram/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -237,7 +238,7 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
         Assert.Equal("wait", call.Header("Prefer"));
-        Assert.Contains("ai-sdk/replicate/0.0.0-test", call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/replicate/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     private static ParityHandler ImageHandler()

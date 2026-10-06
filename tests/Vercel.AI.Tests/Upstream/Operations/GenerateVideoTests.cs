@@ -46,7 +46,7 @@ public sealed class GenerateVideoTests
         Assert.True(call.GenerateAudio);
         Assert.Equal("cinematic", call.ProviderOptions.GetProperty("p").GetProperty("style").GetString());
         Assert.Equal("1", call.Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", call.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, call.Headers["user-agent"]);
     }
 
     [Fact]
@@ -755,7 +755,7 @@ public sealed class GenerateVideoTests
         request.CancellationToken = source.Token;
         await GenerateVideo.GenerateVideoAsync(request);
         Assert.Equal("1", model.Statuses[0].Headers["x-test"]);
-        Assert.Equal("ai/0.0.0-test", model.Statuses[0].Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, model.Statuses[0].Headers["user-agent"]);
         Assert.False(model.Statuses[0].Headers.ContainsKey("idempotency-key"));
         Assert.NotEqual(source.Token, model.Statuses[0].CancellationToken);
         Assert.True(model.Statuses[0].CancellationToken.CanBeCanceled);
@@ -876,7 +876,7 @@ public sealed class GenerateVideoTests
         Assert.Equal("a cat", call.Prompt);
         Assert.Equal("image/png", call.Image!.MediaType);
         Assert.Equal("16:9", call.AspectRatio);
-        Assert.Equal("ai/0.0.0-test", call.Headers["user-agent"]);
+        Assert.Equal(AiSdkVersion.UserAgent, call.Headers["user-agent"]);
         Assert.StartsWith("aisdk_vid_", call.Headers["idempotency-key"]);
     }
 
