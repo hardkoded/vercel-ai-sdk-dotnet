@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2941,
-  "partial": 90,
-  "missing": 8038,
+  "covered": 2993,
+  "partial": 94,
+  "missing": 7982,
   "features": [
     {
       "feature": "ai/agent",
@@ -891,9 +891,9 @@
       "feature": "prodia",
       "dotnetProject": "Vercel.AI.Prodia",
       "inScope": 56,
-      "covered": 0,
-      "partial": 0,
-      "missing": 56
+      "covered": 52,
+      "partial": 4,
+      "missing": 0
     },
     {
       "feature": "provider-utils",
