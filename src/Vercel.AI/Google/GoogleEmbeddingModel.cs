@@ -159,7 +159,7 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + method),
             GoogleJson.Write(body),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
     }
 

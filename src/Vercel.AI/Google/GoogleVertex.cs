@@ -202,6 +202,12 @@ public sealed class VertexOptions : GoogleOptions
     /// The default keeps the regional <c>v1</c> publisher URL.
     /// </summary>
     public bool UpstreamRoutes { get; set; }
+
+    /// <summary>
+    /// Returns a bearer token. Called once per request when <see cref="GoogleOptions.ApiKey"/> is empty.
+    /// A caller-supplied Authorization header wins over the generated token.
+    /// </summary>
+    public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
 }
 
 /// <summary>Google Vertex AI provider.</summary>
@@ -276,6 +282,17 @@ public sealed class GoogleVertexProvider : GoogleProvider
         }
 
         return new GoogleVertexSpeechTranscriptionModel(this, modelId!);
+    }
+
+    /// <summary>Uses <see cref="VertexOptions.GenerateAuthToken"/> unless an API key is set.</summary>
+    private protected override Task<string> BearerTokenAsync(CancellationToken cancellationToken)
+    {
+        if (Vertex.GenerateAuthToken != null && string.IsNullOrEmpty(Options.ApiKey))
+        {
+            return Vertex.GenerateAuthToken(cancellationToken);
+        }
+
+        return base.BearerTokenAsync(cancellationToken);
     }
 
     private static VertexOptions Prepare(VertexOptions? options)

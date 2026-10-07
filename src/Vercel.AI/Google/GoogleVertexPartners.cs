@@ -28,6 +28,25 @@ public sealed class GoogleVertexAnthropicOptions
     public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
 }
 
+/// <summary>Settings for the OpenAI-compatible MaaS and xAI endpoints on Vertex.</summary>
+public sealed class GoogleVertexPartnerOptions
+{
+    /// <summary>Project id.</summary>
+    public string? Project { get; set; }
+
+    /// <summary>Location. One DNS label. Defaults to <c>global</c>.</summary>
+    public string? Location { get; set; }
+
+    /// <summary>OpenAI-compatible base URL. When empty, it is built from the project and location.</summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>Headers set on every request. They replace request headers with the same name.</summary>
+    public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Returns a bearer token. Called once per request. The token replaces any Authorization header.</summary>
+    public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
+}
+
 /// <summary>
 /// Anthropic on Vertex. Sends the Anthropic Messages body to <c>rawPredict</c> with <c>anthropic_version</c> in the body.
 /// Vertex does not accept URL sources, the native output format, or strict tools.
@@ -171,12 +190,21 @@ public sealed class GoogleVertexMaasProvider
         ["meta/llama-4-scout-17b-16e-instruct-maas"] = 8192,
     };
 
+    private readonly GoogleVertexPartnerOptions _options;
+
     /// <summary>Creates a provider. The OpenAI-compatible client is created on first use.</summary>
     public GoogleVertexMaasProvider(string project, string? location, string? baseUrl = null, HttpMessageHandler? handler = null)
+        : this(new GoogleVertexPartnerOptions { Project = project, Location = location, BaseUrl = baseUrl }, handler)
     {
-        Project = project ?? throw new ArgumentNullException(nameof(project));
-        Location = string.IsNullOrEmpty(location) ? "global" : location!;
-        BaseUrl = GoogleVertexEndpoints.MaasBaseUrl(Project, Location, baseUrl);
+    }
+
+    /// <summary>Creates a provider. <paramref name="handler"/> sends the request after the auth headers are added.</summary>
+    public GoogleVertexMaasProvider(GoogleVertexPartnerOptions options, HttpMessageHandler? handler = null)
+    {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        Project = options.Project ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
+        Location = string.IsNullOrEmpty(options.Location) ? "global" : options.Location!;
+        BaseUrl = GoogleVertexEndpoints.MaasBaseUrl(Project, Location, options.BaseUrl);
         Handler = handler;
     }
 
@@ -200,12 +228,11 @@ public sealed class GoogleVertexMaasProvider
     public ILanguageModel LanguageModel(string modelId)
     {
         ClientCreated = true;
-        _client ??= OpenAICompatibleProvider.Create(new OpenAICompatibleOptions
+        _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
         {
             BaseUrl = BaseUrl,
-            ApiKey = "vertex",
             ProviderName = "vertex.maas",
-        }, Handler);
+        }, _options, Handler);
         return _client.LanguageModel(modelId);
     }
 
@@ -225,12 +252,21 @@ public sealed class GoogleVertexMaasProvider
 /// <summary>xAI Grok models hosted on Vertex.</summary>
 public sealed class GoogleVertexXaiProvider
 {
+    private readonly GoogleVertexPartnerOptions _options;
+
     /// <summary>Creates a provider.</summary>
     public GoogleVertexXaiProvider(string project, string? location, string? baseUrl = null, HttpMessageHandler? handler = null)
+        : this(new GoogleVertexPartnerOptions { Project = project, Location = location, BaseUrl = baseUrl }, handler)
     {
-        Project = project ?? throw new ArgumentNullException(nameof(project));
-        Location = string.IsNullOrEmpty(location) ? "global" : location!;
-        BaseUrl = GoogleVertexEndpoints.XaiBaseUrl(Project, Location, baseUrl);
+    }
+
+    /// <summary>Creates a provider. <paramref name="handler"/> sends the request after the auth headers are added.</summary>
+    public GoogleVertexXaiProvider(GoogleVertexPartnerOptions options, HttpMessageHandler? handler = null)
+    {
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        Project = options.Project ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
+        Location = string.IsNullOrEmpty(options.Location) ? "global" : options.Location!;
+        BaseUrl = GoogleVertexEndpoints.XaiBaseUrl(Project, Location, options.BaseUrl);
         Handler = handler;
     }
 
@@ -254,12 +290,14 @@ public sealed class GoogleVertexXaiProvider
     public ILanguageModel LanguageModel(string modelId)
     {
         ClientCreated = true;
-        _client ??= OpenAICompatibleProvider.Create(new OpenAICompatibleOptions
+        _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
         {
             BaseUrl = BaseUrl,
-            ApiKey = "vertex",
             ProviderName = "googleVertex.xai",
-        }, Handler);
+            IncludeUsage = true,
+            SupportsStructuredOutputs = true,
+            TransformRequestBody = (body, _) => TransformBody(body),
+        }, _options, Handler);
         return _client.LanguageModel(modelId);
     }
 
@@ -287,5 +325,57 @@ public sealed class GoogleVertexXaiProvider
     public IEmbeddingModel EmbeddingModel(string modelId)
     {
         throw new AiSdkException("Provider 'google.vertex.xai' does not support embedding model '" + modelId + "'.");
+    }
+}
+
+/// <summary>OpenAI-compatible client for Vertex. Vertex authenticates with <see cref="GoogleVertexAuthHandler"/>, never an API key.</summary>
+internal sealed class GoogleVertexOpenAICompatibleProvider : OpenAICompatibleProvider
+{
+    public GoogleVertexOpenAICompatibleProvider(OpenAICompatibleOptions options, GoogleVertexPartnerOptions vertex, HttpMessageHandler? handler)
+        : base(options, new HttpClient(new GoogleVertexAuthHandler(vertex, handler ?? new HttpClientHandler()), disposeHandler: false))
+    {
+    }
+
+    /// <summary>Returns no key, so an <c>OPENAI_API_KEY</c> in the environment is never sent to Vertex.</summary>
+    protected override string? ResolveApiKey()
+    {
+        return null;
+    }
+}
+
+/// <summary>Sets the configured headers, then a generated bearer token, on each request.</summary>
+internal sealed class GoogleVertexAuthHandler : DelegatingHandler
+{
+    private readonly GoogleVertexPartnerOptions _options;
+
+    public GoogleVertexAuthHandler(GoogleVertexPartnerOptions options, HttpMessageHandler inner)
+        : base(inner)
+    {
+        _options = options;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var token = _options.GenerateAuthToken == null ? null : await _options.GenerateAuthToken(cancellationToken).ConfigureAwait(false);
+        foreach (var pair in _options.Headers)
+        {
+            Set(request, pair.Key, pair.Value);
+        }
+
+        if (token != null)
+        {
+            Set(request, "Authorization", "Bearer " + token);
+        }
+
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void Set(HttpRequestMessage request, string name, string? value)
+    {
+        request.Headers.Remove(name);
+        if (value != null)
+        {
+            request.Headers.TryAddWithoutValidation(name, value);
+        }
     }
 }

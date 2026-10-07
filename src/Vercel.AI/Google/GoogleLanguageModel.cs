@@ -50,7 +50,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
             HttpMethod.Post,
             Url(":generateContent"),
             GoogleJson.Write(prepared.Body),
-            Headers(options, prepared),
+            await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var result = GoogleResponse.Parse(document.RootElement, Context(prepared));
@@ -91,7 +91,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var callContext = Context(prepared);
         var activeCalls = new List<StreamingCall>();
 
-        await foreach (var data in _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(prepared.Body), Headers(options, prepared), cancellationToken).ConfigureAwait(false))
+        var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
+        await foreach (var data in _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(prepared.Body), headers, cancellationToken).ConfigureAwait(false))
         {
             if (options.IncludeRawChunks)
             {
@@ -254,9 +255,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
         return ApiKeys.Combine(baseUrl, GoogleModelPath.Get(ModelId) + method);
     }
 
-    private Dictionary<string, string?> Headers(LanguageModelCallOptions? options, GooglePreparedRequest prepared)
+    private async Task<Dictionary<string, string?>> HeadersAsync(LanguageModelCallOptions? options, GooglePreparedRequest prepared, CancellationToken cancellationToken)
     {
-        var headers = _provider.Headers();
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         if (options?.Headers != null)
         {
             foreach (var pair in options.Headers)

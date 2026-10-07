@@ -15,6 +15,16 @@ public sealed class GoogleVertexUpstreamTests
 {
     private const string AnthropicTests = "packages/google-vertex/src/anthropic/google-vertex-anthropic-provider.test.ts::google-vertex-anthropic-provider::";
     private const string AnthropicNodeTests = "packages/google-vertex/src/anthropic/google-vertex-anthropic-provider-node.test.ts::google-vertex-anthropic-provider-node::";
+    private const string AnthropicEdgeTests = "packages/google-vertex/src/anthropic/edge/google-vertex-anthropic-provider-edge.test.ts::google-vertex-anthropic-provider-edge::";
+    private const string VertexNodeTests = "packages/google-vertex/src/google-vertex-provider.test.ts::google-vertex-provider::";
+    private const string VertexEdgeTests = "packages/google-vertex/src/edge/google-vertex-provider-edge.test.ts::google-vertex-provider-edge::";
+    private const string MaasTests = "packages/google-vertex/src/maas/google-vertex-maas-provider.test.ts::google-vertex-maas-provider::";
+    private const string MaasNodeTests = "packages/google-vertex/src/maas/google-vertex-maas-provider-node.test.ts::google-vertex-maas-provider-node::";
+    private const string MaasEdgeTests = "packages/google-vertex/src/maas/edge/google-vertex-maas-provider-edge.test.ts::google-vertex-maas-provider-edge::";
+    private const string XaiTests = "packages/google-vertex/src/xai/google-vertex-xai-provider.test.ts::google-vertex-xai-provider::";
+    private const string XaiNodeTests = "packages/google-vertex/src/xai/google-vertex-xai-provider-node.test.ts::google-vertex-xai-provider-node::";
+    private const string XaiEdgeTests = "packages/google-vertex/src/xai/edge/google-vertex-xai-provider-edge.test.ts::google-vertex-xai-provider-edge::";
+    private const string ChatResponse = "{\"id\":\"chatcmpl-1\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}";
     private const string AnthropicResponse = "{\"type\":\"message\",\"id\":\"msg_1\",\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
 
     [Fact]
@@ -389,6 +399,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "uses custom generateAuthToken when provided and skips the default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicEdgeTests + "uses custom generateAuthToken when provided and skips the default", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_the_generated_Anthropic_bearer_token()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -404,6 +415,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "merges custom generateAuthToken with user-provided headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicEdgeTests + "merges custom generateAuthToken with user-provided headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Merges_the_generated_Anthropic_token_with_custom_headers()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -414,6 +426,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "invokes custom generateAuthToken on each headers resolution", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicEdgeTests + "invokes custom generateAuthToken on each headers resolution", Coverage = UpstreamCoverage.Covered)]
     public async Task Generates_an_Anthropic_token_for_each_request()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -429,6 +442,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "propagates errors thrown from custom generateAuthToken", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicEdgeTests + "propagates errors thrown from custom generateAuthToken", Coverage = UpstreamCoverage.Covered)]
     public async Task Propagates_Anthropic_token_errors()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -439,6 +453,7 @@ public sealed class GoogleVertexUpstreamTests
 
     [Fact]
     [UpstreamTest(AnthropicNodeTests + "user-provided Authorization in headers overrides the generated token", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(AnthropicEdgeTests + "user-provided Authorization in headers overrides the generated token", Coverage = UpstreamCoverage.Covered)]
     public async Task Keeps_a_caller_supplied_Anthropic_authorization_header()
     {
         var handler = new RecordingHandler { ResponseText = AnthropicResponse };
@@ -587,6 +602,152 @@ public sealed class GoogleVertexUpstreamTests
         Assert.True(provider.ClientCreated);
     }
 
+    [Fact]
+    public async Task Sends_the_generated_Vertex_bearer_token()
+    {
+        var handler = new RecordingHandler();
+        var calls = 0;
+        var options = new VertexOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token-" + ++calls) };
+        await GoogleVertexProvider.Create(options, handler).LanguageModel("gemini-2.5-flash").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("Bearer mock-auth-token-1", handler.RequestHeaders["Authorization"]);
+        Assert.False(handler.RequestHeaders.ContainsKey("x-goog-api-key"));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task Sends_custom_Vertex_headers_with_the_generated_token()
+    {
+        var handler = new RecordingHandler();
+        var options = new VertexOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token") };
+        options.Headers["Custom-Header"] = "custom-value";
+        await GoogleVertexProvider.Create(options, handler).LanguageModel("gemini-2.5-flash").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("Bearer mock-auth-token", handler.RequestHeaders["Authorization"]);
+        Assert.Equal("custom-value", handler.RequestHeaders["Custom-Header"]);
+    }
+
+    [Fact]
+    [UpstreamTest(VertexNodeTests + "should pass options through to base provider when apiKey is provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(VertexEdgeTests + "should pass options through to base provider when apiKey is provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task Uses_the_Vertex_api_key_instead_of_the_token_generator()
+    {
+        var handler = new RecordingHandler();
+        var calls = 0;
+        var options = new VertexOptions
+        {
+            Project = "test-project",
+            ApiKey = "test-api-key",
+            UpstreamRoutes = true,
+            GenerateAuthToken = _ => Task.FromResult("token-" + ++calls),
+        };
+        await GoogleVertexProvider.Create(options, handler).LanguageModel("gemini-2.5-flash").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("test-api-key", handler.RequestHeaders["x-goog-api-key"]);
+        Assert.False(handler.RequestHeaders.ContainsKey("Authorization"));
+        Assert.Equal(0, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(MaasNodeTests + "should create provider with auth wrapper", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasNodeTests + "should generate auth token and add to request headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasEdgeTests + "should create provider with auth wrapper", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasEdgeTests + "should generate auth token and add to request headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiNodeTests + "should create provider with auth wrapper", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiNodeTests + "should generate auth token and add to request headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiEdgeTests + "should create provider with auth wrapper", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiEdgeTests + "should generate auth token and add to request headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_the_generated_token_to_partner_endpoints(bool xai)
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        var calls = 0;
+        var options = new GoogleVertexPartnerOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token-" + ++calls) };
+        await Partner(xai, options, handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("https://aiplatform.googleapis.com/v1/projects/test-project/locations/global/endpoints/openapi/chat/completions", handler.Uris.Single());
+        Assert.Equal("Bearer mock-auth-token-1", handler.RequestHeaders["Authorization"]);
+        Assert.StartsWith("application/json", handler.RequestHeaders["Content-Type"]);
+        Assert.Equal(1, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(MaasNodeTests + "should merge custom headers with auth header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasEdgeTests + "should merge custom headers with auth header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiNodeTests + "should merge custom headers with auth header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiEdgeTests + "should merge custom headers with auth header", Coverage = UpstreamCoverage.Covered)]
+    public async Task Merges_custom_headers_with_the_partner_token(bool xai)
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        var options = new GoogleVertexPartnerOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token") };
+        options.Headers["X-Custom"] = "header-value";
+        options.Headers["Authorization"] = "Bearer user-value";
+        await Partner(xai, options, handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("header-value", handler.RequestHeaders["X-Custom"]);
+        Assert.Equal("Bearer mock-auth-token", handler.RequestHeaders["Authorization"]);
+        Assert.StartsWith("application/json", handler.RequestHeaders["Content-Type"]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(MaasTests + "should pass custom fetch to openai-compatible provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasNodeTests + "should use custom fetch when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasEdgeTests + "should use custom fetch when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiNodeTests + "should use custom fetch when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(XaiEdgeTests + "should use custom fetch when provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_partner_requests_through_the_custom_handler(bool xai)
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        var options = new GoogleVertexPartnerOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token") };
+        var result = await Partner(xai, options, handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(1, handler.Calls);
+        Assert.Equal("Bearer mock-auth-token", handler.RequestHeaders["Authorization"]);
+        Assert.NotEmpty(result.Content);
+    }
+
+    [Fact]
+    [UpstreamTest(MaasNodeTests + "should preserve headers from init parameter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(MaasEdgeTests + "should preserve headers from init parameter", Coverage = UpstreamCoverage.Covered)]
+    public async Task Keeps_call_headers_on_MaaS_requests()
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        var options = new GoogleVertexPartnerOptions { Project = "test-project", GenerateAuthToken = _ => Task.FromResult("mock-auth-token") };
+        var call = GoogleUpstream.Hello();
+        call.Headers = new Dictionary<string, string?> { ["User-Agent"] = "test-agent", ["X-Request-ID"] = "test-id" };
+        await Partner(false, options, handler).DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("test-agent", handler.RequestHeaders["User-Agent"]);
+        Assert.Equal("test-id", handler.RequestHeaders["X-Request-ID"]);
+        Assert.Equal("Bearer mock-auth-token", handler.RequestHeaders["Authorization"]);
+    }
+
+    [Fact]
+    public async Task Sends_no_authorization_to_partners_without_a_token_generator()
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        await Partner(true, new GoogleVertexPartnerOptions { Project = "test-project" }, handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None).ConfigureAwait(false);
+        Assert.False(handler.RequestHeaders.ContainsKey("Authorization"));
+    }
+
+    [Fact]
+    [UpstreamTest(XaiTests + "should configure OpenAI-compatible behavior for Vertex Grok", Note = "Usage conversion and supported URLs are not wired yet.")]
+    public async Task Configures_the_xAI_chat_model_for_Vertex_Grok()
+    {
+        var handler = new RecordingHandler { ResponseText = ChatResponse };
+        var model = Partner(true, new GoogleVertexPartnerOptions { Project = "test-project" }, handler);
+        Assert.Equal("googleVertex.xai.chat", model.Provider);
+        var call = GoogleUpstream.Hello();
+        call.Reasoning = "high";
+        call.JsonSchema = JsonDocument.Parse("{\"type\":\"object\"}").RootElement;
+        await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        var body = JsonNode.Parse(handler.Body)!.AsObject();
+        Assert.False(body.ContainsKey("reasoning_effort"));
+        Assert.Equal("json_schema", body["response_format"]!["type"]!.GetValue<string>());
+
+        handler.MediaType = "text/event-stream";
+        handler.ResponseText = "data: [DONE]\n\n";
+        await GoogleUpstream.Collect(model.DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+        Assert.True(JsonNode.Parse(handler.Body)!["stream_options"]!["include_usage"]!.GetValue<bool>());
+    }
 
     [Fact]
     public void Rejects_locations_that_would_rewrite_the_host()
@@ -612,6 +773,13 @@ public sealed class GoogleVertexUpstreamTests
         }
 
         return GoogleVertexAnthropicProvider.Create(options, handler).LanguageModel("test-model-id").DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None);
+    }
+
+    private static ILanguageModel Partner(bool xai, GoogleVertexPartnerOptions options, RecordingHandler handler)
+    {
+        return xai
+            ? new GoogleVertexXaiProvider(options, handler).LanguageModel("xai/grok-4.1-fast-reasoning")
+            : new GoogleVertexMaasProvider(options, handler).LanguageModel("meta/llama-3.1-8b-instruct-maas");
     }
 
     private static GoogleVertexProvider Upstream(string project, string location, RecordingHandler? handler = null)

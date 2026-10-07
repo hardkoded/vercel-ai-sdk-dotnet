@@ -43,7 +43,8 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
     {
         var prepared = Prepare(options.Text, options.Voice, null, null, null);
         Warnings = prepared.Warnings;
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), _provider.Headers(), cancellationToken).ConfigureAwait(false);
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), headers, cancellationToken).ConfigureAwait(false);
         var audio = Array.Empty<byte>();
         if (document.RootElement.TryGetProperty("audioContent", out var content) && content.ValueKind == System.Text.Json.JsonValueKind.String && !string.IsNullOrEmpty(content.GetString()))
         {
@@ -120,7 +121,8 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
     {
         var url = GoogleVertexEndpoints.RecognizeUrl(_provider.Vertex.Project, _provider.Vertex.Region);
         var body = Request(ModelId, audio.Data, null);
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(url), GoogleJson.Write(body), _provider.Headers(), cancellationToken).ConfigureAwait(false);
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(url), GoogleJson.Write(body), headers, cancellationToken).ConfigureAwait(false);
         return new TranscriptionResult(ReadTranscript(document.RootElement), null);
     }
 
@@ -289,7 +291,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
             body["generationConfig"] = new JsonObject { ["audioTranscriptionConfig"] = config };
         }
 
-        var headers = _provider.Headers();
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         foreach (var header in call.Headers)
         {
             headers[header.Key] = header.Value;

@@ -152,7 +152,7 @@ public sealed class GoogleSpeechModel : ISpeechModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
             GoogleJson.Write(prepared.Body),
-            _provider.Headers(),
+            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         var audio = Array.Empty<byte>();
         var media = "audio/wav";
