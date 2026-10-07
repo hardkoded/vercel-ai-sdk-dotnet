@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3352,
+  "covered": 3355,
   "partial": 99,
-  "missing": 7618,
+  "missing": 7615,
   "features": [
     {
       "feature": "ai/agent",
@@ -603,9 +603,9 @@
       "feature": "google/transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 15,
-      "covered": 3,
+      "covered": 6,
       "partial": 0,
-      "missing": 12
+      "missing": 9
     },
     {
       "feature": "groq",

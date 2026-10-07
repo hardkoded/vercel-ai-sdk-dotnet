@@ -266,6 +266,50 @@ public sealed class GoogleMediaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google/src/transcription/google-transcription-model.test.ts::doGenerate::transcribes audio via the Interactions API with transcription_config", Coverage = UpstreamCoverage.Covered)]
+    public async Task Transcription_sends_options_as_transcription_config()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"id\":\"interactions/test\",\"status\":\"completed\",\"steps\":[{\"type\":\"model_output\",\"content\":[{\"type\":\"text\",\"text\":\"Hello world.\"}]}],\"usage\":{\"total_tokens\":10,\"total_input_tokens\":10,\"total_output_tokens\":0}}" };
+        var result = await Transcribe(handler, "{\"google\":{\"customVocabulary\":[\"Gemini\",\"Kubernetes\"],\"languageCodes\":[\"es-ES\"],\"mode\":\"SMART\"}}");
+        Assert.Equal("Hello world.", result.Text);
+        GoogleUpstream.JsonEqual(
+            JsonNode.Parse(handler.Body),
+            "{\"model\":\"gemini-3.5-transcribe\",\"input\":[{\"type\":\"audio\",\"data\":\"AQIDBA==\",\"mime_type\":\"audio/wav\"}],\"generation_config\":{\"transcription_config\":{\"language_codes\":[\"es-ES\"],\"custom_vocabulary\":[\"Gemini\",\"Kubernetes\"],\"mode\":{\"type\":\"smart\"}}}}");
+        Assert.Equal("test-api-key", handler.RequestHeaders["x-goog-api-key"]);
+        GoogleUpstream.JsonEqual(result.ProviderMetadata!.Value, "{\"google\":{\"usage\":{\"total_tokens\":10,\"total_input_tokens\":10,\"total_output_tokens\":0}}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/transcription/google-transcription-model.test.ts::doGenerate::maps diarization and word timestamps into the mode object", Coverage = UpstreamCoverage.Covered)]
+    public async Task Transcription_maps_diarization_and_word_timestamps_into_the_mode()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"status\":\"completed\",\"steps\":[]}" };
+        await Transcribe(handler, "{\"google\":{\"diarization\":true,\"wordTimestamp\":true}}");
+        GoogleUpstream.JsonEqual(
+            JsonNode.Parse(handler.Body)!["generation_config"]!["transcription_config"],
+            "{\"mode\":{\"type\":\"verbatim\",\"diarization_mode\":\"speaker\",\"timestamp_granularities\":[\"word\"]}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/transcription/google-transcription-model.test.ts::doGenerate::extracts word segments from word_info annotations", Coverage = UpstreamCoverage.Covered)]
+    public async Task Transcription_reads_word_segments_from_annotations()
+    {
+        var handler = new RecordingHandler
+        {
+            ResponseText = "{\"id\":\"interactions/test\",\"status\":\"completed\",\"steps\":[{\"type\":\"model_output\",\"content\":[{\"type\":\"text\",\"text\":\"The quick brown fox.\",\"annotations\":["
+                + "{\"type\":\"word_info\",\"text\":\"The\",\"speaker\":\"spk:0\",\"start_offset\":\"0.100s\",\"end_offset\":\"0.100s\"},"
+                + "{\"type\":\"word_info\",\"text\":\"quick\",\"speaker\":\"spk:0\",\"start_offset\":\"0.100s\",\"end_offset\":\"0.400s\"},"
+                + "{\"type\":\"word_info\",\"text\":\"brown\",\"speaker\":\"spk:0\",\"start_offset\":\"0.400s\",\"end_offset\":\"0.700s\"},"
+                + "{\"type\":\"word_info\",\"text\":\"fox.\",\"speaker\":\"spk:0\",\"start_offset\":\"0.700s\",\"end_offset\":\"1s\"}]}]}],\"usage\":{\"total_input_tokens\":64}}",
+        };
+        var result = await Transcribe(handler, "{}");
+        Assert.Equal("The quick brown fox.", result.Text);
+        Assert.Equal(
+            new[] { ("The", 0.1, 0.1), ("quick", 0.1, 0.4), ("brown", 0.4, 0.7), ("fox.", 0.7, 1.0) },
+            result.Segments.Select(segment => (segment.Text, segment.StartSecond, segment.EndSecond)));
+    }
+
+    [Fact]
     [UpstreamTest("packages/google/src/transcription/google-transcription-model.test.ts::doGenerate::rejects unary transcription on live model ids", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_unary_transcription_for_a_live_model()
     {
@@ -463,6 +507,13 @@ public sealed class GoogleMediaUpstreamTests
 
 
     private const string VertexTranscriptionBaseUrl = "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/test-project/locations/us-central1/publishers/google";
+
+    private static Task<TranscriptionModelResult> Transcribe(RecordingHandler handler, string providerOptions)
+    {
+        var model = (GoogleTranscriptionModel)GoogleProvider.Create(Key(), handler).TranscriptionModel("gemini-3.5-transcribe");
+        var call = new TranscriptionModelCall(new byte[] { 1, 2, 3, 4 }, "audio/wav", GoogleUpstream.Element(providerOptions), new Dictionary<string, string>(), CancellationToken.None);
+        return model.DoGenerateAsync(call, CancellationToken.None);
+    }
 
     private static GoogleOptions Key()
     {
