@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2796,
+  "covered": 2808,
   "partial": 77,
-  "missing": 8196,
+  "missing": 8184,
   "features": [
     {
       "feature": "ai/agent",
@@ -587,9 +587,9 @@
       "feature": "google/realtime",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 65,
-      "covered": 53,
+      "covered": 65,
       "partial": 0,
-      "missing": 12
+      "missing": 0
     },
     {
       "feature": "google/speech-translation",

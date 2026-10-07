@@ -129,6 +129,18 @@ public static class GoogleSpeechTranslation
     /// <summary>Builds a <c>wss</c> URL and strips a trailing <c>/v1beta</c> or <c>/v1alpha</c> segment.</summary>
     public static Uri WebSocketUrl(string baseUrl, string? apiKey)
     {
+        var builder = LiveWebSocketUrl(baseUrl, LivePath);
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            builder.Query = "key=" + Uri.EscapeDataString(apiKey!);
+        }
+
+        return builder.Uri;
+    }
+
+    /// <summary>The Live API base URL: <paramref name="baseUrl"/> without a trailing <c>/v1beta</c> or <c>/v1alpha</c>.</summary>
+    internal static UriBuilder LiveBaseUrl(string baseUrl)
+    {
         var url = new Uri(baseUrl, UriKind.Absolute);
         var path = url.AbsolutePath.TrimEnd('/');
         if (path.EndsWith("/v1beta", StringComparison.Ordinal) || path.EndsWith("/v1alpha", StringComparison.Ordinal))
@@ -136,22 +148,16 @@ public static class GoogleSpeechTranslation
             path = path.Substring(0, path.LastIndexOf('/'));
         }
 
-        if (path.Length == 0)
-        {
-            path = string.Empty;
-        }
+        return new UriBuilder(url) { Path = path };
+    }
 
-        var builder = new UriBuilder(url)
-        {
-            Scheme = url.Scheme == "https" ? "wss" : "ws",
-            Path = path + "/ws/" + LivePath,
-        };
-        if (!string.IsNullOrEmpty(apiKey))
-        {
-            builder.Query = "key=" + Uri.EscapeDataString(apiKey!);
-        }
-
-        return builder.Uri;
+    /// <summary>A <c>wss</c> (or <c>ws</c> for http) Live API URL for the given bidi service path.</summary>
+    internal static UriBuilder LiveWebSocketUrl(string baseUrl, string servicePath)
+    {
+        var builder = LiveBaseUrl(baseUrl);
+        builder.Scheme = builder.Scheme == "https" ? "wss" : "ws";
+        builder.Path = builder.Path.TrimEnd('/') + "/ws/" + servicePath;
+        return builder;
     }
 
     /// <summary>Warnings for options the Live translation API does not accept.</summary>
