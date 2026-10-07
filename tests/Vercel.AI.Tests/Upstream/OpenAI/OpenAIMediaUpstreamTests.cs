@@ -15,6 +15,8 @@ public sealed class OpenAIMediaUpstreamTests
 {
     private const string EmbeddingFixtureJson = "{\"object\":\"list\",\"data\":[{\"object\":\"embedding\",\"index\":0,\"embedding\":[0.0057293195,-0.012727811,0.020042092,-0.013437585,0.022833068]},{\"object\":\"embedding\",\"index\":1,\"embedding\":[-0.037104916,-0.05178114,-0.008340587,0.001164541,-0.0035253682]}],\"model\":\"text-embedding-3-small\",\"usage\":{\"prompt_tokens\":12,\"total_tokens\":12}}";
 
+    private const string SkillCreateJson = "{\"id\":\"skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5\",\"object\":\"skill\",\"name\":\"test-capture-skill\",\"description\":\"A test skill for fixture capture\",\"default_version\":\"1\",\"latest_version\":\"1\",\"created_at\":1772078479}";
+
     private static readonly string[] EmbeddingValues = { "sunny day at the beach", "rainy day in the city" };
 
     [Fact]
@@ -573,11 +575,11 @@ public sealed class OpenAIMediaUpstreamTests
     [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should emit unsupported warning for displayTitle", Coverage = UpstreamCoverage.Covered)]
     public async Task WarnsForSkillDisplayTitle()
     {
-        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5\",\"name\":\"test-capture-skill\",\"description\":\"A test skill for fixture capture\",\"latest_version\":1,\"default_version\":1,\"created_at\":1772078479}"), ResponseMediaType = "application/json" };
+        var capture = SkillFixture();
         var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") }, "Title", CancellationToken.None);
         Assert.Equal("displayTitle", result.Warnings[0].Feature);
         Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
-        Assert.Equal(1, result.LatestVersion);
+        Assert.Equal("1", result.LatestVersion);
         Assert.Equal(1772078479, result.CreatedAt);
     }
 
@@ -588,6 +590,43 @@ public sealed class OpenAIMediaUpstreamTests
         var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes("{\"id\":\"skill_1\"}"), ResponseMediaType = "application/json" };
         var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { new OpenAISkillFile("SKILL.md", new byte[] { 1 }, "text/markdown") }, null, CancellationToken.None);
         Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should pass authorization headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesSkillAuthorization()
+    {
+        var capture = SkillFixture();
+        await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(new[] { SkillSourceFile() }, null, CancellationToken.None);
+        Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "Authorization"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should map response to providerReference", Coverage = UpstreamCoverage.Covered)]
+    public async Task MapsSkillUploadResponse()
+    {
+        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(SkillFixture())).UploadAsync(new[] { SkillSourceFile() }, null, CancellationToken.None);
+        Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
+        Assert.Equal("test-capture-skill", result.Name);
+        Assert.Equal("A test skill for fixture capture", result.Description);
+        Assert.Equal("1", result.LatestVersion);
+        Assert.Equal("1", result.DefaultVersion);
+        Assert.Equal(1772078479, result.CreatedAt);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/skills/openai-skills.test.ts::OpenAISkills > uploadSkill::should handle Uint8Array file content", Coverage = UpstreamCoverage.Covered)]
+    public async Task UploadsBinarySkillFiles()
+    {
+        var capture = SkillFixture();
+        var result = await new OpenAISkillStore(OpenAIUpstream.Provider(capture)).UploadAsync(
+            new[] { new OpenAISkillFile("data.bin", new byte[] { 0x48, 0x65, 0x6c, 0x6c, 0x6f }, "application/octet-stream") },
+            null,
+            CancellationToken.None);
+        Assert.Equal("skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5", result.Id);
+        var part = Assert.Single(capture.Parts, part => part.Name == "files[]");
+        Assert.Equal("data.bin", part.FileName);
+        Assert.Equal(new byte[] { 0x48, 0x65, 0x6c, 0x6c, 0x6f }, part.Data);
     }
 
     [Fact]
@@ -883,6 +922,16 @@ public sealed class OpenAIMediaUpstreamTests
     private static OpenAICapture EmbeddingFixture()
     {
         return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(EmbeddingFixtureJson), ResponseMediaType = "application/json" };
+    }
+
+    private static OpenAICapture SkillFixture()
+    {
+        return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(SkillCreateJson), ResponseMediaType = "application/json" };
+    }
+
+    private static OpenAISkillFile SkillSourceFile()
+    {
+        return new OpenAISkillFile("index.ts", Encoding.UTF8.GetBytes("console.log(\"hello\")"), "application/octet-stream");
     }
 
     private static OpenAIProvider StandardProvider(OpenAICapture capture)

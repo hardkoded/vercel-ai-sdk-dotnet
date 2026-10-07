@@ -34,7 +34,7 @@ public sealed class OpenAISkillFile
 /// <summary>Skill upload result.</summary>
 public sealed class OpenAISkillUpload
 {
-    internal OpenAISkillUpload(string id, string? name, string? description, int? latestVersion, int? defaultVersion, long? createdAt, IReadOnlyList<OpenAICallWarning> warnings)
+    internal OpenAISkillUpload(string id, string? name, string? description, string? latestVersion, string? defaultVersion, long? createdAt, IReadOnlyList<OpenAICallWarning> warnings)
     {
         Id = id;
         Name = name;
@@ -55,10 +55,10 @@ public sealed class OpenAISkillUpload
     public string? Description { get; }
 
     /// <summary>Latest version.</summary>
-    public int? LatestVersion { get; }
+    public string? LatestVersion { get; }
 
     /// <summary>Default version.</summary>
-    public int? DefaultVersion { get; }
+    public string? DefaultVersion { get; }
 
     /// <summary>Creation time as unix seconds.</summary>
     public long? CreatedAt { get; }
@@ -119,8 +119,8 @@ public sealed class OpenAISkillStore : ISkillStore
         var description = root.TryGetProperty("description", out var descriptionElement) && descriptionElement.ValueKind == JsonValueKind.String
             ? descriptionElement.GetString()
             : null;
-        int? latest = root.TryGetProperty("latest_version", out var latestElement) && latestElement.TryGetInt32(out var latestValue) ? latestValue : null;
-        int? defaultVersion = root.TryGetProperty("default_version", out var defaultElement) && defaultElement.TryGetInt32(out var defaultValue) ? defaultValue : null;
+        var latest = root.TryGetProperty("latest_version", out var latestElement) && latestElement.ValueKind == JsonValueKind.String ? latestElement.GetString() : null;
+        var defaultVersion = root.TryGetProperty("default_version", out var defaultElement) && defaultElement.ValueKind == JsonValueKind.String ? defaultElement.GetString() : null;
         long? created = OpenAIJson.Unix(root, "created_at");
         return new OpenAISkillUpload(id, name, description, latest, defaultVersion, created, warnings);
     }
