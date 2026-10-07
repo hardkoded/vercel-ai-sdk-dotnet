@@ -943,7 +943,7 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = "Parts, metadata, logprobs, and token totals match. Usage noCache and text stay null because the completion API reports no cache or reasoning tokens.")]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should stream text deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task StreamsCompletionTextDeltas()
     {
         const string logprobs = "{\"tokens\":[\" ever\",\" after\",\".\\n\\n\",\"The\",\" end\",\".\"],\"token_logprobs\":[-0.0664508,-0.014520033,-1.3820221,-0.7890417,-0.5323165,-0.10247037],\"top_logprobs\":[{\" ever\":-0.0664508},{\" after\":-0.014520033},{\".\\n\\n\":-1.3820221},{\"The\":-0.7890417},{\" end\":-0.5323165},{\".\":-0.10247037}]}";
@@ -967,7 +967,9 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Equal("stop", finish.RawFinishReason);
         OpenAIUpstream.Equal(JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()), "{\"openai\":{\"logprobs\":" + logprobs + "}}");
         Assert.Equal(10, finish.Usage.InputTokens);
+        Assert.Equal(10, finish.Usage.NoCacheInputTokens);
         Assert.Equal(362, finish.Usage.OutputTokens);
+        Assert.Equal(362, finish.Usage.TextTokens);
         Assert.Null(finish.Usage.CacheReadTokens);
         Assert.Null(finish.Usage.CacheWriteTokens);
         Assert.Null(finish.Usage.ReasoningTokens);

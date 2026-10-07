@@ -3,8 +3,8 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3286,
-  "partial": 112,
+  "covered": 3287,
+  "partial": 111,
   "missing": 7671,
   "features": [
     {
@@ -787,8 +787,8 @@
       "feature": "openai/completion",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 18,
-      "covered": 14,
-      "partial": 3,
+      "covered": 15,
+      "partial": 2,
       "missing": 1
     },
     {
