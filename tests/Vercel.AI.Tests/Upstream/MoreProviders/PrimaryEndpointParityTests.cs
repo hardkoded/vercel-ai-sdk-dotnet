@@ -9,7 +9,6 @@ using Vercel.AI.AssemblyAI;
 using Vercel.AI.ByteDance;
 using Vercel.AI.Cartesia;
 using Vercel.AI.Deepgram;
-using Vercel.AI.Fal;
 using Vercel.AI.KlingAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
@@ -144,20 +143,6 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
         Assert.Contains("ai-sdk/deepgram/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/fal/src/fal-image-model.test.ts::FalImageModel > doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
-    public async Task Fal_image_sends_json_and_custom_headers()
-    {
-        var handler = ImageHandler();
-        var options = HeaderOptions("https://api.example.com");
-        await FalProvider.Create(options, handler).GenerateImageAsync("fal-ai/qwen-image", new ImageCallOptions("A cute baby sea otter"), RequestHeaders(), CancellationToken.None).ConfigureAwait(false);
-        var call = handler.Calls[0];
-        Assert.Equal("application/json", call.Header("Content-Type"));
-        Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
-        Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Equal("https://api.example.com/fal-ai/qwen-image", call.Uri.AbsoluteUri);
     }
 
     [Fact]

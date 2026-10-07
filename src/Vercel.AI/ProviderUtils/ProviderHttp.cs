@@ -114,7 +114,12 @@ public sealed class ProviderHttp
     /// <summary>Maps an HTTP status onto the SDK exception hierarchy.</summary>
     public static ApiException MapStatus(int statusCode, string? body)
     {
-        var message = JsonValues.ExtractErrorMessage(body, statusCode);
+        return MapStatus(statusCode, JsonValues.ExtractErrorMessage(body, statusCode), body);
+    }
+
+    /// <summary>Maps an HTTP status onto the SDK exception hierarchy with a provider-specific <paramref name="message"/>.</summary>
+    public static ApiException MapStatus(int statusCode, string message, string? body)
+    {
         return statusCode switch
         {
             400 => new BadRequestException(message, body),

@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2993,
+  "covered": 3029,
   "partial": 94,
-  "missing": 7982,
+  "missing": 7946,
   "features": [
     {
       "feature": "ai/agent",
@@ -435,9 +435,9 @@
       "feature": "fal",
       "dotnetProject": "Vercel.AI.Fal",
       "inScope": 67,
-      "covered": 1,
+      "covered": 37,
       "partial": 0,
-      "missing": 66
+      "missing": 30
     },
     {
       "feature": "fireworks",

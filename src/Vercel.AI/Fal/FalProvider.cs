@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.GenerateText;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -56,36 +56,48 @@ public sealed class FalProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new Image(this, modelId);
+    public override IImageModel ImageModel(string modelId) => new FalImageModel(this, modelId);
 
-    /// <summary>Posts <paramref name="options"/> to <c>{base}/{modelId}</c>.</summary>
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId) => new FalSpeechModel(this, modelId);
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId) => new FalTranscriptionModel(this, modelId);
+
+    /// <summary>Posts <paramref name="options"/> to <c>{base}/{modelId}</c>. <paramref name="headers"/> override the provider headers.</summary>
     public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        return new Image(this, modelId).GenerateAsync(options, headers, cancellationToken);
+        return new FalImageModel(this, modelId).GenerateAsync(options, headers, cancellationToken);
     }
 
-    private sealed class Image : IImageModel
+    internal Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        private readonly FalProvider _provider;
-        public Image(FalProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "fal";
-        public string ModelId { get; }
-        public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
-        {
-            return GenerateAsync(options, null, cancellationToken);
-        }
-
-        public async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
-        {
-            var body = new JsonObject { ["prompt"] = options.Prompt, ["num_images"] = options.Count };
-            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
-            var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/" + ModelId), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-            var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
-        }
+        return ProviderExchange.SendAsync(_httpClient, method, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken);
     }
 
+    /// <summary>Downloads a generated file. A URL outside <paramref name="trustedOrigin"/> must pass download validation.</summary>
+    internal async Task<byte[]> DownloadAsync(string url, string trustedOrigin, CancellationToken cancellationToken)
+    {
+        if (!ProviderValues.IsSameOrigin(url, trustedOrigin))
+        {
+            DownloadUrls.ValidateDownloadUrl(url);
+        }
+
+        var response = await ProviderExchange.SendAsync(_httpClient, HttpMethod.Get, new Uri(url), null, null, cancellationToken).ConfigureAwait(false);
+        return response.Bytes;
+    }
+
+    internal static JsonElement? FalOptions(JsonElement? providerOptions)
+    {
+        if (providerOptions is { ValueKind: JsonValueKind.Object } options
+            && options.TryGetProperty(ProviderId, out var fal)
+            && fal.ValueKind == JsonValueKind.Object)
+        {
+            return fal;
+        }
+
+        return null;
+    }
 }
 
 /// <summary>Registers Fal.</summary>

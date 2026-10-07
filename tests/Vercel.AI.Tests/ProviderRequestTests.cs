@@ -17,7 +17,6 @@ using Vercel.AI.Deepgram;
 using Vercel.AI.DeepInfra;
 using Vercel.AI.DeepSeek;
 using Vercel.AI.ElevenLabs;
-using Vercel.AI.Fal;
 using Vercel.AI.Fireworks;
 using Vercel.AI.FishAudio;
 using Vercel.AI.Gateway;
@@ -227,7 +226,6 @@ public sealed class ProviderRequestTests
         yield return Media("/tts/bytes", "Authorization", "Bearer secret", h => CartesiaProvider.Create(Key(), h), "speech");
         yield return Media("/v1/listen", "Authorization", "Token secret", h => DeepgramProvider.Create(Key(), h), "transcription");
         yield return Media("/v1/text-to-speech/", "xi-api-key", "secret", h => ElevenLabsProvider.Create(Key(), h), "speech");
-        yield return Media("fal.run/m", "Authorization", "Key secret", h => FalProvider.Create(Key(), h), "image");
         yield return Media("/v1/tts", "Authorization", "Bearer secret", h => FishAudioProvider.Create(Key(), h), "speech");
         yield return Media("/v2/upload", "x-gladia-key", "secret", h => GladiaProvider.Create(Key(), h), "transcription");
         yield return Media("/v0/tts", "X-Hume-Api-Key", "secret", h => HumeProvider.Create(Key(), h), "speech");
