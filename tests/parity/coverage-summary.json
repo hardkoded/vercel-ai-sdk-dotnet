@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2679,
+  "covered": 2687,
   "partial": 80,
-  "missing": 8310,
+  "missing": 8302,
   "features": [
     {
       "feature": "ai/agent",
@@ -971,9 +971,9 @@
       "feature": "togetherai/reranking",
       "dotnetProject": "Vercel.AI.TogetherAI",
       "inScope": 12,
-      "covered": 4,
+      "covered": 12,
       "partial": 0,
-      "missing": 8
+      "missing": 0
     },
     {
       "feature": "voyage",
