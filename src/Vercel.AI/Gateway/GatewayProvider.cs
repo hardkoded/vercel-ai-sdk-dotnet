@@ -101,17 +101,7 @@ public sealed class GatewayProvider : ProviderBase
 
     internal static Exception MapFailure(Exception exception)
     {
-        if (exception is ApiException api)
-        {
-            return GatewayErrors.FromResponseBody(api.ResponseBody, api.StatusCode, "api-key", api);
-        }
-
-        if (exception is ApiTimeoutException timeout)
-        {
-            return GatewayTimeoutError.Create(timeout.Message, timeout);
-        }
-
-        return exception;
+        return GatewayErrors.AsGatewayError(exception, "api-key");
     }
 
     internal Uri Route(string path)

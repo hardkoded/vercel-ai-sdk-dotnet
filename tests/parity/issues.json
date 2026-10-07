@@ -575,9 +575,9 @@
       "title": "Cover upstream unit tests: gateway/errors",
       "dotnetProject": "Vercel.AI.Gateway",
       "inScope": 113,
-      "covered": 48,
+      "covered": 107,
       "partial": 0,
-      "missing": 65,
+      "missing": 6,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/87"
     },
     {

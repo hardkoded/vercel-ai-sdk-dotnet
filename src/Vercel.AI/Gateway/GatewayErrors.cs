@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net.Sockets;
 using System.Text.Json;
 using Vercel.AI.Provider;
 
@@ -278,6 +279,8 @@ public sealed class GatewayTimeoutError : GatewayError
 /// <summary>Parses Gateway auth headers and error bodies.</summary>
 public static class GatewayErrors
 {
+    private static readonly JsonElement EmptyObject = JsonSerializer.SerializeToElement(new Dictionary<string, object>());
+
     /// <summary>Header that carries <c>api-key</c> or <c>oidc</c>.</summary>
     public const string AuthMethodHeader = "ai-gateway-auth-method";
 
@@ -300,8 +303,74 @@ public static class GatewayErrors
         return null;
     }
 
+    /// <summary>
+    /// Maps any failure to a Gateway error. Gateway errors pass through, transport timeouts become <see cref="GatewayTimeoutError"/>,
+    /// and API call errors are read as Gateway error bodies. Maps to <c>asGatewayError</c>.
+    /// </summary>
+    public static GatewayError AsGatewayError(Exception? error, string? authMethod = null)
+    {
+        if (error is GatewayError gateway)
+        {
+            return gateway;
+        }
+
+        if (IsTimeout(error))
+        {
+            return GatewayTimeoutError.Create(error!.Message, error);
+        }
+
+        if (error is Util.ApiCallError api)
+        {
+            if (IsTimeout(api.Cause))
+            {
+                return GatewayTimeoutError.Create(api.Message, api);
+            }
+
+            var retryable = api.IsRetryable && (api.StatusCode == null || api.StatusCode < 400) ? true : (bool?)null;
+            return Create(ExtractApiCallResponse(api), api.StatusCode ?? 500, authMethod, "Gateway request failed", api, retryable);
+        }
+
+        if (error is ApiException http)
+        {
+            return FromResponseBody(http.ResponseBody, http.StatusCode, authMethod, http);
+        }
+
+        return Create(EmptyObject, 500, authMethod, error == null ? "Unknown Gateway error" : "Gateway request failed: " + error.Message, error);
+    }
+
+    /// <summary>
+    /// Returns <see cref="Util.ApiCallError.Data"/> when set, else the response body parsed as JSON, else the raw body as a JSON string.
+    /// A missing body yields an empty object. Maps to <c>extractApiCallResponse</c>.
+    /// </summary>
+    public static JsonElement ExtractApiCallResponse(Util.ApiCallError error)
+    {
+        if (error == null)
+        {
+            throw new ArgumentNullException(nameof(error));
+        }
+
+        if (error.Data != null)
+        {
+            return error.Data is JsonElement data ? data : JsonSerializer.SerializeToElement(error.Data);
+        }
+
+        if (error.ResponseBody == null)
+        {
+            return EmptyObject;
+        }
+
+        try
+        {
+            return ProviderUtils.SecureJson.Parse(error.ResponseBody);
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(error.ResponseBody);
+        }
+    }
+
     /// <summary>Maps a Gateway JSON body to a typed error. Invalid bodies become <see cref="GatewayResponseError"/>.</summary>
-    public static GatewayError Create(JsonElement response, int statusCode, string? authMethod = null, string defaultMessage = "Gateway request failed", Exception? cause = null)
+    public static GatewayError Create(JsonElement response, int statusCode, string? authMethod = null, string defaultMessage = "Gateway request failed", Exception? cause = null, bool? isRetryable = null)
     {
         if (!TryRead(response, out var message, out var type, out var param, out var generationId, out var validationError))
         {
@@ -311,7 +380,7 @@ public static class GatewayErrors
                 malformedGeneration = rawGeneration.GetString();
             }
 
-            return new GatewayResponseError("Invalid error response format: " + defaultMessage, statusCode, response.ValueKind == JsonValueKind.Undefined ? null : response.Clone(), validationError, cause, malformedGeneration);
+            return new GatewayResponseError("Invalid error response format: " + defaultMessage, statusCode, response.ValueKind == JsonValueKind.Undefined ? null : response.Clone(), validationError, cause, malformedGeneration, isRetryable);
         }
 
         switch (type)
@@ -398,6 +467,13 @@ public static class GatewayErrors
 
         validationError = string.Empty;
         return true;
+    }
+
+    private static bool IsTimeout(Exception? error)
+    {
+        return error is ApiTimeoutException
+            || error is TimeoutException
+            || (error is SocketException socket && socket.SocketErrorCode == SocketError.TimedOut);
     }
 
     private static string? ReadStringProperty(JsonElement element, string name)
