@@ -4,8 +4,8 @@
   "inScope": 11069,
   "outOfScope": 2779,
   "covered": 3079,
-  "partial": 106,
-  "missing": 7884,
+  "partial": 107,
+  "missing": 7883,
   "features": [
     {
       "feature": "ai/agent",
@@ -1028,8 +1028,8 @@
       "dotnetProject": "Vercel.AI.Zai",
       "inScope": 15,
       "covered": 12,
-      "partial": 0,
-      "missing": 3
+      "partial": 1,
+      "missing": 2
     }
   ]
 }

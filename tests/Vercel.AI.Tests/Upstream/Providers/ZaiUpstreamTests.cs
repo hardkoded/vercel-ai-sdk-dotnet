@@ -101,6 +101,31 @@ public sealed class ZaiUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::streams incremental tool-call arguments", Coverage = UpstreamCoverage.Partial, Note = "The argument fragments are joined into one tool call. The shared stream model does not emit tool-input start, delta, and end parts.")]
+    public async Task Streamed_tool_call_arguments_are_joined()
+    {
+        var capture = new UpstreamCapture
+        {
+            MediaType = "text/event-stream",
+            ResponseBody = UpstreamChat.Sse(
+                "{\"id\":\"chatcmpl-tool\",\"created\":1777000000,\"model\":\"glm-5.3\",\"choices\":[{\"delta\":{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call-weather\",\"function\":{\"name\":\"weather\",\"arguments\":\"{\\\"city\\\"\"}}]},\"finish_reason\":null}]}",
+                "{\"id\":\"chatcmpl-tool\",\"created\":1777000000,\"model\":\"glm-5.3\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\":\\\"Paris\\\"}\"}}]},\"finish_reason\":null}]}",
+                "{\"id\":\"chatcmpl-tool\",\"created\":1777000000,\"model\":\"glm-5.3\",\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":4,\"total_tokens\":9}}"),
+        };
+        var options = UpstreamChat.Prompt();
+        options.Tools = new[] { new LanguageModelTool("weather", null, UpstreamChat.Json("{\"type\":\"object\",\"properties\":{}}")) };
+        options.ProviderOptions = UpstreamChat.Bag("zai", "{\"toolStream\":true}");
+        var parts = await UpstreamChat.Read(Chat(capture).DoStreamAsync(options, CancellationToken.None));
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal("call-weather", call.ToolCallId);
+        Assert.Equal("weather", call.ToolName);
+        Assert.Equal("{\"city\":\"Paris\"}", call.ArgumentsJson);
+        var finish = (FinishStreamPart)parts[parts.Count - 1];
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+        Assert.Equal("tool_calls", finish.RawFinishReason);
+    }
+
+    [Fact]
     [UpstreamTest("packages/zai/src/zai-chat-language-model.test.ts::ZaiChatLanguageModel::maps the %s finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task Provider_finish_reasons_are_mapped()
     {
