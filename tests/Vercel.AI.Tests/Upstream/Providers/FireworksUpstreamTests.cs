@@ -495,7 +495,7 @@ public sealed class FireworksUpstreamTests
         Assert.Equal("FIREWORKS_API_KEY", provider.Options.ApiKeyEnvironmentVariable);
         Assert.Equal("https://api.fireworks.ai/inference/v1/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
-        Assert.Contains("ai-sdk/fireworks/0.0.0", capture.Requests[0].Headers["User-Agent"], StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/fireworks/" + AiSdkVersion.Version, capture.Requests[0].Headers["User-Agent"], StringComparison.Ordinal);
     }
 
     [Fact]
