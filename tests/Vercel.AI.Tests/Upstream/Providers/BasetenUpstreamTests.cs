@@ -114,7 +114,7 @@ public sealed class BasetenUpstreamTests
     public async Task Embeddings_are_read_from_the_response()
     {
         var model = Embed(EmbeddingCapture(), SyncUrl, null);
-        var result = await model.DoEmbedAsync(TestValues, CancellationToken.None);
+        var result = await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
         Assert.Equal(new[] { 0.1f, 0.2f, 0.3f }, result.Embeddings[0]);
         Assert.Equal(new[] { 0.4f, 0.5f, 0.6f }, result.Embeddings[1]);
     }
@@ -123,7 +123,7 @@ public sealed class BasetenUpstreamTests
     [UpstreamTest(Embedding + "::should extract usage from prompt_tokens", Coverage = UpstreamCoverage.Covered)]
     public async Task Embedding_usage_comes_from_prompt_tokens()
     {
-        var result = await Embed(EmbeddingCapture(), SyncUrl, null).DoEmbedAsync(TestValues, CancellationToken.None);
+        var result = await Embed(EmbeddingCapture(), SyncUrl, null).DoEmbedAsync(TestValues, null, CancellationToken.None);
         Assert.Equal(8, result.Tokens);
     }
 
@@ -132,7 +132,7 @@ public sealed class BasetenUpstreamTests
     public async Task Embeddings_send_the_values_and_the_default_model()
     {
         var capture = EmbeddingCapture();
-        await Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, CancellationToken.None);
+        await Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, null, CancellationToken.None);
         JsonAssert.Equal(UpstreamChat.Body(capture), "{\"input\":[\"sunny day at the beach\",\"rainy day in the city\"],\"model\":\"embeddings\",\"encoding_format\":\"float\"}");
     }
 
@@ -141,7 +141,7 @@ public sealed class BasetenUpstreamTests
     public async Task Embeddings_send_a_bearer_token()
     {
         var capture = EmbeddingCapture();
-        await Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, CancellationToken.None);
+        await Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, null, CancellationToken.None);
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
     }
 
@@ -152,7 +152,7 @@ public sealed class BasetenUpstreamTests
         var capture = EmbeddingCapture();
         capture.ResponseHeaders["x-request-id"] = "abc123";
         var model = Embed(capture, SyncUrl, null);
-        await model.DoEmbedAsync(TestValues, CancellationToken.None);
+        await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
         Assert.Equal("abc123", model.LastResponseHeaders["x-request-id"]);
     }
 
@@ -169,7 +169,7 @@ public sealed class BasetenUpstreamTests
         }
 
         var capture = new UpstreamCapture { ResponseBody = "{\"object\":\"list\",\"data\":[" + string.Join(",", data) + "]}" };
-        var result = await Embed(capture, SyncUrl, null).DoEmbedAsync(values, CancellationToken.None);
+        var result = await Embed(capture, SyncUrl, null).DoEmbedAsync(values, null, CancellationToken.None);
         Assert.Equal(128, result.Embeddings.Count);
     }
 
@@ -178,7 +178,7 @@ public sealed class BasetenUpstreamTests
     public async Task Embeddings_surface_a_string_error()
     {
         var capture = new UpstreamCapture { Status = HttpStatusCode.Forbidden, ResponseBody = "{\"error\":\"please check the api-key you provided\"}" };
-        var error = await Assert.ThrowsAnyAsync<ApiException>(() => Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, CancellationToken.None));
+        var error = await Assert.ThrowsAnyAsync<ApiException>(() => Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, null, CancellationToken.None));
         Assert.Contains("please check the api-key you provided", error.Message, StringComparison.Ordinal);
     }
 
@@ -191,7 +191,7 @@ public sealed class BasetenUpstreamTests
             Status = HttpStatusCode.NotFound,
             ResponseBody = "{\"error\":{\"code\":404,\"message\":\"The model `not-a-real-model` does not exist.\",\"param\":\"model\",\"type\":\"NotFoundError\"}}",
         };
-        var error = await Assert.ThrowsAnyAsync<ApiException>(() => Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, CancellationToken.None));
+        var error = await Assert.ThrowsAnyAsync<ApiException>(() => Embed(capture, SyncUrl, null).DoEmbedAsync(TestValues, null, CancellationToken.None));
         Assert.Contains("The model `not-a-real-model` does not exist.", error.Message, StringComparison.Ordinal);
     }
 
@@ -336,7 +336,7 @@ public sealed class BasetenUpstreamTests
     {
         var capture = EmbeddingCapture();
         var model = Embed(capture, SyncUrl, null);
-        await model.DoEmbedAsync(TestValues, CancellationToken.None);
+        await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
         Assert.Equal("embeddings", model.ModelId);
         Assert.Equal("baseten.embedding", model.Provider);
         Assert.Equal(SyncUrl + "/v1/embeddings", capture.Requests[0].Uri!.AbsoluteUri);
