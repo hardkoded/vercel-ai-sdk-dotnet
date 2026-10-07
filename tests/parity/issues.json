@@ -825,9 +825,9 @@
       "title": "Cover upstream unit tests: mcp/tool/mcp-stdio",
       "dotnetProject": "Vercel.AI.Mcp",
       "inScope": 20,
-      "covered": 7,
+      "covered": 14,
       "partial": 1,
-      "missing": 12,
+      "missing": 5,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/112"
     },
     {
