@@ -525,9 +525,9 @@
       "title": "Cover upstream unit tests: elevenlabs",
       "dotnetProject": "Vercel.AI.ElevenLabs",
       "inScope": 35,
-      "covered": 0,
+      "covered": 17,
       "partial": 0,
-      "missing": 35,
+      "missing": 18,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/82"
     },
     {
