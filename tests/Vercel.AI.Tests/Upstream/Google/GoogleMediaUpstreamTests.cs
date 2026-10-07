@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Google;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
@@ -294,6 +295,48 @@ public sealed class GoogleMediaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::transcribes audio via Vertex generateContent with audioTranscriptionConfig", Coverage = UpstreamCoverage.Covered)]
+    public async Task Transcribes_Vertex_audio_with_an_audio_transcription_config()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello \"},{\"text\":\"world.\"}]}}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":4}}" };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{\"googleVertex\":{\"customVocabulary\":[\"Gemini\",\"Kubernetes\"],\"languageCodes\":[\"es-ES\"],\"mode\":\"SMART\"}}"), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("Hello world.", result.Text);
+        Assert.Equal(VertexTranscriptionBaseUrl + "/models/gemini-3.5-transcribe:generateContent", handler.Uris[0]);
+        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body), "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"inlineData\":{\"mimeType\":\"audio/wav\",\"data\":\"AQIDBA==\"}}]}],\"generationConfig\":{\"audioTranscriptionConfig\":{\"languageCodes\":[\"es-ES\"],\"customVocabulary\":[\"Gemini\",\"Kubernetes\"],\"mode\":\"SMART\"}}}");
+        Assert.Equal("Bearer test-oauth-token", handler.RequestHeaders["Authorization"]);
+        GoogleUpstream.JsonEqual(result.ProviderMetadata!.Value, "{\"google\":{\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":4}}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::accepts options under the google namespace as a fallback", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reads_Vertex_transcription_options_from_the_google_namespace()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello world.\"}]}}]}" };
+        await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{\"google\":{\"mode\":\"SMART\"}}"), CancellationToken.None).ConfigureAwait(false);
+        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body)!["generationConfig"], "{\"audioTranscriptionConfig\":{\"mode\":\"SMART\"}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::extracts text, language, and word segments from the audioTranscription part", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reads_Vertex_text_language_and_word_segments_from_the_audio_transcription()
+    {
+        var handler = new RecordingHandler
+        {
+            ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"audioTranscription\":{\"text\":\"The quick brown fox.\",\"languageCode\":\"en-US\",\"speakerLabel\":\"spk:0\",\"words\":["
+                + "{\"word\":\"The\",\"startOffset\":\"0.100s\",\"endOffset\":\"0.100s\"},"
+                + "{\"word\":\"quick\",\"startOffset\":\"0.100s\",\"endOffset\":\"0.400s\"},"
+                + "{\"word\":\"brown\",\"startOffset\":\"0.400s\",\"endOffset\":\"0.700s\"},"
+                + "{\"word\":\"fox.\",\"startOffset\":\"0.700s\",\"endOffset\":\"1s\"}]}}]}}],\"usageMetadata\":{\"promptTokenCount\":64}}",
+        };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}"), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("The quick brown fox.", result.Text);
+        Assert.Equal("en-US", result.Language);
+        Assert.Equal(
+            new[] { ("The", 0.1, 0.1), ("quick", 0.1, 0.4), ("brown", 0.4, 0.7), ("fox.", 0.7, 1d) },
+            result.Segments.Select(segment => (segment.Text, segment.StartSecond, segment.EndSecond)));
+    }
+
+    [Fact]
     [UpstreamTest("packages/google-vertex/src/google-vertex-embedding-model.test.ts::GoogleVertexEmbeddingModel > embedding > maxEmbeddingsPerCall::should limit predict endpoint models to 250 values per call", Coverage = UpstreamCoverage.Covered)]
     public async Task Limits_Vertex_predict_embeddings_to_250_values()
     {
@@ -419,9 +462,23 @@ public sealed class GoogleMediaUpstreamTests
     }
 
 
+    private const string VertexTranscriptionBaseUrl = "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/test-project/locations/us-central1/publishers/google";
+
     private static GoogleOptions Key()
     {
         return new GoogleOptions { ApiKey = "test-api-key" };
+    }
+
+    private static GoogleVertexGeminiTranscriptionModel VertexGeminiTranscription(RecordingHandler handler)
+    {
+        var provider = GoogleVertexProvider.Create(new VertexOptions { Project = "test-project", Region = "us-central1", BaseUrl = VertexTranscriptionBaseUrl, ApiKey = "test-oauth-token" }, handler);
+        return (GoogleVertexGeminiTranscriptionModel)provider.TranscriptionModel("gemini-3.5-transcribe");
+    }
+
+    private static TranscriptionModelCall TranscriptionCall(string providerOptions)
+    {
+        using var options = JsonDocument.Parse(providerOptions);
+        return new TranscriptionModelCall(new byte[] { 1, 2, 3, 4 }, "audio/wav", options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None);
     }
 
 }

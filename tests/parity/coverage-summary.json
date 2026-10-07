@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2673,
+  "covered": 2676,
   "partial": 79,
-  "missing": 8317,
+  "missing": 8314,
   "features": [
     {
       "feature": "ai/agent",
@@ -539,9 +539,9 @@
       "feature": "google-vertex/gemini-transcription",
       "dotnetProject": "Vercel.AI.Google",
       "inScope": 9,
-      "covered": 1,
+      "covered": 4,
       "partial": 0,
-      "missing": 8
+      "missing": 5
     },
     {
       "feature": "google-vertex/maas",
