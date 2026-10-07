@@ -191,7 +191,7 @@ public sealed class CartesiaUpstreamTests
         Assert.StartsWith("multipart/form-data; boundary=", call.Header("Content-Type"), StringComparison.Ordinal);
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/cartesia/0.0.0-test", call.Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/cartesia/" + AiSdkVersion.Version, call.Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
