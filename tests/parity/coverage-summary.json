@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3103,
+  "covered": 3123,
   "partial": 107,
-  "missing": 7859,
+  "missing": 7839,
   "features": [
     {
       "feature": "ai/agent",
@@ -363,9 +363,9 @@
       "feature": "cartesia",
       "dotnetProject": "Vercel.AI.Cartesia",
       "inScope": 41,
-      "covered": 2,
+      "covered": 22,
       "partial": 0,
-      "missing": 39
+      "missing": 19
     },
     {
       "feature": "cerebras",
