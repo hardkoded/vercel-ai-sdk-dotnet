@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3328,
+  "covered": 3342,
   "partial": 100,
-  "missing": 7641,
+  "missing": 7627,
   "features": [
     {
       "feature": "ai/agent",
@@ -811,9 +811,9 @@
       "feature": "openai/image",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 31,
-      "covered": 14,
+      "covered": 28,
       "partial": 1,
-      "missing": 16
+      "missing": 2
     },
     {
       "feature": "openai/live",

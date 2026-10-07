@@ -18,6 +18,8 @@ public sealed class OpenAIMediaUpstreamTests
 
     private const string SkillCreateJson = "{\"id\":\"skill_699fc58f408c8191825d8d06ae75fd5c06de7b381a5db7f5\",\"object\":\"skill\",\"name\":\"test-capture-skill\",\"description\":\"A test skill for fixture capture\",\"default_version\":\"1\",\"latest_version\":\"1\",\"created_at\":1772078479}";
 
+    private const string ImageTests = "packages/openai/src/image/openai-image-model.test.ts::";
+
     private static readonly string[] EmbeddingValues = { "sunny day at the beach", "rainy day in the city" };
 
     [Fact]
@@ -216,6 +218,205 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Contains("/images/edits", capture.Uri, StringComparison.Ordinal);
         Assert.Contains(capture.Parts, part => part.Name == "image" && part.FileName == "otter.png");
         Assert.Contains(capture.Parts, part => part.Name == "prompt" && Encoding.UTF8.GetString(part.Data) == "edit");
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate::should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Request headers match. The user-agent suffix is ai-sdk/openai/4.0.73, and content-type includes a charset.")]
+    public async Task PassesImageHeaders()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        await new OpenAIImageModel(StandardProvider(capture), "dall-e-3").GenerateAsync(new OpenAIImageCall("A cute baby sea otter")
+        {
+            Size = "1024x1024",
+            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
+            Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" },
+        }, CancellationToken.None);
+        OpenAIUpstream.AssertStandardHeaders(capture);
+        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    public async Task UsesTheCurrentTimeForImages()
+    {
+        var before = DateTimeOffset.UtcNow;
+        var result = await ImageResult("dall-e-3", "{\"data\":[{\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+        Assert.InRange(result.Timestamp, before, DateTimeOffset.UtcNow);
+        Assert.Equal("dall-e-3", result.ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate::should handle null revised_prompt responses", Coverage = UpstreamCoverage.Covered)]
+    public async Task IgnoresNullRevisedPrompts()
+    {
+        var result = await ImageResult("gpt-image-1", "{\"created\":1733837122,\"data\":[{\"revised_prompt\":null,\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+        Assert.Equal(new byte[] { 1, 2, 3 }, result.Images.Single().Data!);
+        Assert.Empty(result.Warnings);
+        OpenAIUpstream.Equal(JsonNode.Parse(result.ProviderMetadata.GetRawText()), "{\"openai\":{\"images\":[{\"created\":1733837122}]}}");
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate::should return image meta data", Coverage = UpstreamCoverage.Covered)]
+    public async Task ReturnsImageMetadata()
+    {
+        const string json = "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"output_format\":\"png\",\"data\":[{\"revised_prompt\":\"A small and adorable baby sea otter.\",\"b64_json\":\"AQID\"},{\"b64_json\":\"BAUG\"}]}";
+        var result = await ImageResult("dall-e-3", json, new OpenAIImageCall("A cute baby sea otter")
+        {
+            Size = "1024x1024",
+            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"style\":\"vivid\"}}"),
+        });
+        OpenAIUpstream.Equal(
+            JsonNode.Parse(result.ProviderMetadata.GetRawText()),
+            "{\"openai\":{\"images\":["
+                + "{\"revisedPrompt\":\"A small and adorable baby sea otter.\",\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"outputFormat\":\"png\"},"
+                + "{\"created\":1770935200,\"size\":\"1024x1024\",\"quality\":\"high\",\"background\":\"opaque\",\"outputFormat\":\"png\"}]}}");
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate::should map OpenAI usage to usage", Coverage = UpstreamCoverage.Covered)]
+    public async Task MapsImageUsage()
+    {
+        var result = await ImageResult(
+            "gpt-image-1",
+            "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":0,\"total_tokens\":12,\"input_tokens_details\":{\"image_tokens\":7,\"text_tokens\":5}}}",
+            new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024" });
+        Assert.Equal(12, result.InputTokens);
+        Assert.Equal(0, result.OutputTokens);
+        Assert.Equal(12, result.TotalTokens);
+        var image = result.ProviderMetadata.GetProperty("openai").GetProperty("images")[0];
+        Assert.Equal(7, image.GetProperty("imageTokens").GetInt32());
+        Assert.Equal(5, image.GetProperty("textTokens").GetInt32());
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing > %s quality::should pass %s quality", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesGptImageEditQualities()
+    {
+        foreach (var modelId in new[] { "gpt-image-2.5-flare", "gpt-image-2.5-sunburst" })
+        {
+            foreach (var quality in new[] { "xhigh", "max" })
+            {
+                var fields = await EditFields(modelId, new OpenAIImageCall("A cute baby sea otter")
+                {
+                    Size = "1024x1024",
+                    Files = new[] { Png() },
+                    ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"quality\":\"" + quality + "\"}}"),
+                });
+                Assert.Equal(modelId, fields["model"]);
+                Assert.Equal(quality, fields["quality"]);
+            }
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should send image as form data with Uint8Array input", Coverage = UpstreamCoverage.Covered)]
+    public async Task SendsEditFormFields()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Size = "1024x1024", Files = new[] { Png() } }, CancellationToken.None);
+        var fields = Fields(capture);
+        Assert.Equal("gpt-image-1", fields["model"]);
+        Assert.Equal("A cute baby sea otter", fields["prompt"]);
+        Assert.Equal("1", fields["n"]);
+        Assert.Equal("1024x1024", fields["size"]);
+        var image = Assert.Single(capture.Parts, part => part.Name == "image");
+        Assert.Equal(new byte[] { 137, 80, 78, 71 }, image.Data);
+        Assert.Equal("image/png", image.MediaType);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should send multiple images as form data array", Coverage = UpstreamCoverage.Covered)]
+    public async Task SendsSeveralEditImagesAsAnArray()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1").GenerateAsync(new OpenAIImageCall("A cute baby sea otter")
+        {
+            Files = new[] { Png(), new OpenAIImageFile(new byte[] { 255, 216, 255, 224 }, "image/jpeg", "image.jpg") },
+        }, CancellationToken.None);
+        Assert.Equal(2, capture.Parts.Count(part => part.Name == "image[]"));
+        Assert.DoesNotContain(capture.Parts, part => part.Name == "image");
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should pass provider options in form data", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesEditProviderOptions()
+    {
+        var fields = await EditFields("gpt-image-1", new OpenAIImageCall("A cute baby sea otter")
+        {
+            Size = "1024x1024",
+            Files = new[] { Png() },
+            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"quality\":\"high\",\"background\":\"transparent\"}}"),
+        });
+        Assert.Equal("high", fields["quality"]);
+        Assert.Equal("transparent", fields["background"]);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should map provider options to snake_case for /images/edits", Coverage = UpstreamCoverage.Covered)]
+    public async Task MapsEditProviderOptions()
+    {
+        var fields = await EditFields("gpt-image-1", new OpenAIImageCall("A cute baby sea otter")
+        {
+            Size = "1024x1024",
+            Files = new[] { Png() },
+            ProviderOptions = OpenAIUpstream.Json("{\"openai\":{\"inputFidelity\":\"high\",\"outputFormat\":\"webp\",\"outputCompression\":80,\"user\":\"user-123\"}}"),
+        });
+        Assert.Equal("high", fields["input_fidelity"]);
+        Assert.Equal("webp", fields["output_format"]);
+        Assert.Equal("80", fields["output_compression"]);
+        Assert.Equal("user-123", fields["user"]);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should extract the edited images from response", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExtractsEditedImages()
+    {
+        var result = await ImageResult("gpt-image-1", "{\"data\":[{\"b64_json\":\"BAUG\"}]}", new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } });
+        Assert.Equal(new byte[] { 4, 5, 6 }, result.Images.Single().Data!);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should include response metadata for edited images", Coverage = UpstreamCoverage.Covered)]
+    public async Task RecordsEditResponseMetadata()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        capture.ResponseHeaders["x-request-id"] = "edit-request-id";
+        var stamp = new DateTimeOffset(2024, 3, 15, 12, 0, 0, TimeSpan.Zero);
+        var result = await new OpenAIImageModel(OpenAIUpstream.Provider(capture), "gpt-image-1", () => stamp).GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } }, CancellationToken.None);
+        Assert.Equal(stamp, result.Timestamp);
+        Assert.Equal("gpt-image-1", result.ModelId);
+        Assert.Equal("edit-request-id", result.Headers["x-request-id"]);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should return warnings for unsupported settings in edit mode", Coverage = UpstreamCoverage.Covered)]
+    public async Task WarnsForEditAspectRatioAndSeed()
+    {
+        var result = await ImageResult("gpt-image-1", "{\"data\":[{\"b64_json\":\"AQID\"}]}", new OpenAIImageCall("A cute baby sea otter")
+        {
+            Size = "1024x1024",
+            AspectRatio = "16:9",
+            Seed = 42,
+            Files = new[] { Png() },
+        });
+        Assert.Equal(2, result.Warnings.Count);
+        Assert.Equal("aspectRatio", result.Warnings[0].Feature);
+        Assert.Equal("This model does not support aspect ratio. Use `size` instead.", result.Warnings[0].Details);
+        Assert.Equal("seed", result.Warnings[1].Feature);
+        Assert.Null(result.Warnings[1].Details);
+    }
+
+    [Fact]
+    [UpstreamTest(ImageTests + "doGenerate - image editing::should return usage information for edited images", Coverage = UpstreamCoverage.Covered)]
+    public async Task MapsEditUsage()
+    {
+        var result = await ImageResult(
+            "gpt-image-1",
+            "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":25,\"output_tokens\":0,\"total_tokens\":25}}",
+            new OpenAIImageCall("A cute baby sea otter") { Files = new[] { Png() } });
+        Assert.Equal(25, result.InputTokens);
+        Assert.Equal(0, result.OutputTokens);
+        Assert.Equal(25, result.TotalTokens);
     }
 
     [Fact]
@@ -769,15 +970,20 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Partial, Note = "The injected clock is stored on the result. The image result does not carry model id or response headers.")]
+    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
     public async Task RecordsImageTimestamp()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        capture.ResponseHeaders["x-request-id"] = "test-request-id";
+        capture.ResponseHeaders["x-ratelimit-remaining"] = "123";
         var stamp = new DateTimeOffset(2024, 3, 15, 12, 0, 0, TimeSpan.Zero);
         var model = new OpenAIImageModel(OpenAIUpstream.Provider(capture), "dall-e-3", () => stamp);
         var result = await model.GenerateAsync(new OpenAIImageCall("A cute baby sea otter") { Count = 1, Size = "1024x1024" }, CancellationToken.None);
         Assert.Equal(stamp, result.Timestamp);
-        Assert.Equal("dall-e-3", model.ModelId);
+        Assert.Equal("dall-e-3", result.ModelId);
+        Assert.Contains("application/json", result.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Equal("test-request-id", result.Headers["x-request-id"]);
+        Assert.Equal("123", result.Headers["x-ratelimit-remaining"]);
     }
 
     [Fact]
@@ -1123,6 +1329,28 @@ public sealed class OpenAIMediaUpstreamTests
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
         await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId).GenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
         return capture;
+    }
+
+    private static async Task<OpenAIImageGeneration> ImageResult(string modelId, string json, OpenAIImageCall call)
+    {
+        var capture = new OpenAICapture { ResponseJson = json };
+        return await new OpenAIImageModel(OpenAIUpstream.Provider(capture), modelId).GenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private static async Task<Dictionary<string, string>> EditFields(string modelId, OpenAIImageCall call)
+    {
+        var capture = await Image(modelId, call).ConfigureAwait(false);
+        return Fields(capture);
+    }
+
+    private static Dictionary<string, string> Fields(OpenAICapture capture)
+    {
+        return capture.Parts.Where(part => part.FileName == null).ToDictionary(part => part.Name, part => Encoding.UTF8.GetString(part.Data));
+    }
+
+    private static OpenAIImageFile Png()
+    {
+        return new OpenAIImageFile(new byte[] { 137, 80, 78, 71 }, "image/png", "image.png");
     }
 
     private static async Task AssertNoResponseFormat(string modelId)
