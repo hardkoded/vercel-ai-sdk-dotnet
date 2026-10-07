@@ -2,6 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
@@ -14,6 +17,12 @@ namespace Vercel.AI.Tests;
 
 public sealed class TogetherAIUpstreamTests
 {
+    private const string Prompt = "A cute baby sea otter";
+
+    private const string DiffusionModel = "stabilityai/stable-diffusion-xl";
+
+    private const string ImageResponse = "{\"id\":\"test-id\",\"data\":[{\"index\":0,\"b64_json\":\"dGVzdA==\"}],\"model\":\"stabilityai/stable-diffusion-xl\",\"object\":\"list\"}";
+
     [Fact]
     [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate::should pass the correct parameters including size and seed", Coverage = UpstreamCoverage.Covered)]
     public async Task Image_generation_sends_width_height_and_seed()
@@ -332,6 +341,246 @@ public sealed class TogetherAIUpstreamTests
         return model.DoRerankAsync(new RerankModelCall(documents, "rainy day", 2, options.RootElement.Clone(), null, CancellationToken.None), CancellationToken.None);
     }
 
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate::should omit diffusion options for non-diffusion models", Coverage = UpstreamCoverage.Partial, Note = "Upstream also warns about aspectRatio whenever size is set; .NET warns only when AspectRatio is set.")]
+    public async Task Non_diffusion_models_drop_diffusion_options_and_seed()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Image(capture, "google/gemini-3-pro-image");
+        model.Seed = 42;
+        model.ProviderOptions = Options("{\"steps\":20,\"guidance\":3.5,\"negative_prompt\":\"blurry\",\"disable_safety_checker\":true,\"additional_param\":\"value\"}");
+        await model.DoGenerateAsync(new ImageCallOptions(Prompt) { Size = "1264x848" }, CancellationToken.None);
+        Assert.Equal(
+            "{\"model\":\"google/gemini-3-pro-image\",\"prompt\":\"A cute baby sea otter\",\"response_format\":\"base64\",\"width\":1264,\"height\":848,\"additional_param\":\"value\"}",
+            capture.Requests[0].Body);
+        var warning = Assert.Single(model.LastWarnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("The google/gemini-3-pro-image model does not support the `seed` option.", warning.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate::should handle API errors", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_errors_use_the_provider_message()
+    {
+        var capture = new UpstreamCapture { Status = HttpStatusCode.BadRequest, ResponseBody = "{\"error\":{\"message\":\"Bad Request\"}}" };
+        var error = await Assert.ThrowsAnyAsync<ApiException>(() => Image(capture, DiffusionModel).DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None));
+        Assert.Equal("Bad Request", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate::should respect the abort signal", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_generation_honors_cancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var provider = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, new PendingHandler());
+        var generating = provider.ImageModel(DiffusionModel).DoGenerateAsync(new ImageCallOptions(Prompt), cancellation.Token);
+        cancellation.Cancel();
+        await Assert.ThrowsAsync<ApiUserAbortException>(() => generating);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate > response metadata::should include timestamp, headers and modelId in response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_generation_records_timestamp_headers_and_model_id()
+    {
+        var stamp = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var provider = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, new UpstreamCapture { ResponseBody = ImageResponse });
+        var model = new TogetherAIImageModel(provider, DiffusionModel, () => stamp);
+        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal(stamp, model.LastResponseTimestamp);
+        Assert.Equal(DiffusionModel, model.ModelId);
+        Assert.NotEmpty(model.LastResponseHeaders);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::doGenerate > response metadata::should include response headers from API call", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_generation_returns_the_response_headers()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        capture.ResponseHeaders["x-request-id"] = "test-request-id";
+        var model = Image(capture, DiffusionModel);
+        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal("test-request-id", model.LastResponseHeaders["x-request-id"]);
+        Assert.StartsWith("application/json", model.LastResponseHeaders["content-type"], StringComparison.Ordinal);
+        Assert.Equal(Encoding.UTF8.GetByteCount(ImageResponse).ToString(CultureInfo.InvariantCulture), model.LastResponseHeaders["content-length"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::constructor::should expose correct provider and model information", Coverage = UpstreamCoverage.Covered)]
+    public void Image_model_exposes_provider_model_and_limit()
+    {
+        var model = Image(new UpstreamCapture(), DiffusionModel);
+        Assert.Equal("togetherai.image", model.Provider);
+        Assert.Equal(DiffusionModel, model.ModelId);
+        Assert.Equal(1, model.MaxImagesPerCall);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::Image Editing::should send image_url when URL file is provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task A_url_file_is_sent_as_image_url()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Image(capture, DiffusionModel);
+        model.Files = new[] { new OpenAICompatibleImageFile("image/jpeg", null, "https://example.com/input.jpg", null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Make the shirt yellow"), CancellationToken.None);
+        Assert.Equal(
+            "{\"model\":\"stabilityai/stable-diffusion-xl\",\"prompt\":\"Make the shirt yellow\",\"response_format\":\"base64\",\"image_url\":\"https://example.com/input.jpg\"}",
+            capture.Requests[0].Body);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::Image Editing::should convert Uint8Array file to data URI", Coverage = UpstreamCoverage.Covered)]
+    public async Task File_bytes_are_sent_as_a_data_uri()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Image(capture, DiffusionModel);
+        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, null, null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Transform this image"), CancellationToken.None);
+        var body = JsonNode.Parse(capture.Requests[0].Body)!;
+        Assert.StartsWith("data:image/png;base64,", body["image_url"]!.GetValue<string>(), StringComparison.Ordinal);
+        Assert.Equal("Transform this image", body["prompt"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::Image Editing::should convert file with base64 string data to data URI", Coverage = UpstreamCoverage.Covered)]
+    public async Task Base64_file_data_round_trips_into_the_data_uri()
+    {
+        const string Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Image(capture, DiffusionModel);
+        model.Files = new[] { new OpenAICompatibleImageFile("image/png", Convert.FromBase64String(Png), null, null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this"), CancellationToken.None);
+        Assert.Equal("data:image/png;base64," + Png, JsonNode.Parse(capture.Requests[0].Body)!["image_url"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-image-model.test.ts::Image Editing::should pass provider options with image editing", Coverage = UpstreamCoverage.Covered)]
+    public async Task Provider_options_are_merged_into_an_edit()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Image(capture, DiffusionModel);
+        model.Files = new[] { new OpenAICompatibleImageFile("image/jpeg", null, "https://example.com/input.jpg", null) };
+        model.ProviderOptions = Options("{\"steps\":28,\"guidance\":3.5}");
+        await model.DoGenerateAsync(new ImageCallOptions("Transform the style"), CancellationToken.None);
+        Assert.Equal(
+            "{\"model\":\"stabilityai/stable-diffusion-xl\",\"prompt\":\"Transform the style\",\"response_format\":\"base64\",\"image_url\":\"https://example.com/input.jpg\",\"steps\":28,\"guidance\":3.5}",
+            capture.Requests[0].Body);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should create a TogetherAIProvider instance with default options", Coverage = UpstreamCoverage.Covered)]
+    public void Default_options_read_the_together_api_key()
+    {
+        WithEnvironment("TOGETHER_AI_API_KEY", null, () =>
+        {
+            WithEnvironment("TOGETHER_API_KEY", "env-key", () =>
+            {
+                var provider = TogetherAIProvider.Create();
+                Assert.Equal("TOGETHER_API_KEY", provider.Options.ApiKeyEnvironmentVariable);
+                Assert.Equal("Bearer env-key", provider.CreateHeaders()["Authorization"]);
+            });
+        });
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should create a TogetherAIProvider instance with custom options", Coverage = UpstreamCoverage.Covered)]
+    public void Custom_options_set_the_key_base_url_and_headers()
+    {
+        var options = new OpenAICompatibleOptions { ApiKey = "custom-key", BaseUrl = "https://custom.url" };
+        options.Headers["Custom-Header"] = "value";
+        var provider = TogetherAIProvider.Create(options);
+        var headers = provider.CreateHeaders();
+        Assert.Equal("Bearer custom-key", headers["Authorization"]);
+        Assert.Equal("value", headers["Custom-Header"]);
+        Assert.Equal("https://custom.url", provider.Options.BaseUrl);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should return a chat model when called as a function", Coverage = UpstreamCoverage.Covered)]
+    public void The_default_language_model_is_a_chat_model()
+    {
+        Assert.IsType<OpenAICompatibleLanguageModel>(TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).LanguageModel("foo-model-id"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > chatModel::should construct a chat model with correct configuration", Coverage = UpstreamCoverage.Covered)]
+    public void Chat_models_use_the_openai_compatible_chat_model()
+    {
+        var model = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).CreateChatModel("together-chat-model");
+        Assert.IsType<OpenAICompatibleLanguageModel>(model);
+        Assert.Equal("together-chat-model", model.ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > completionModel::should construct a completion model with correct configuration", Coverage = UpstreamCoverage.Covered)]
+    public void Completion_models_use_the_openai_compatible_completion_model()
+    {
+        var model = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).CompletionModel("together-completion-model");
+        Assert.IsType<OpenAICompatibleCompletionLanguageModel>(model);
+        Assert.Equal("together-completion-model", model.ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > completionModel::should set includeUsage so streaming responses report token usage", Coverage = UpstreamCoverage.Covered)]
+    public async Task Completion_streams_request_usage()
+    {
+        var capture = new UpstreamCapture
+        {
+            MediaType = "text/event-stream",
+            ResponseBody = UpstreamChat.Sse("{\"choices\":[{\"text\":\"Hi\",\"finish_reason\":\"stop\"}]}"),
+        };
+        var model = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).CompletionModel("together-completion-model");
+        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > embeddingModel::should construct a text embedding model with correct configuration", Coverage = UpstreamCoverage.Covered)]
+    public void Embedding_models_use_the_openai_compatible_embedding_model()
+    {
+        var model = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).EmbeddingModel("together-embedding-model");
+        Assert.IsType<OpenAICompatibleEmbeddingModel>(model);
+        Assert.Equal("together-embedding-model", model.ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > image::should construct an image model with correct configuration", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_models_use_the_together_image_model_and_base_url()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var model = Assert.IsType<TogetherAIImageModel>(TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).ImageModel(DiffusionModel));
+        Assert.Equal("togetherai.image", model.Provider);
+        Assert.Equal(DiffusionModel, model.ModelId);
+        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal("https://api.together.xyz/v1/images/generations", capture.Requests[0].Uri!.AbsoluteUri);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > image::should pass custom baseURL to image model", Coverage = UpstreamCoverage.Covered)]
+    public async Task Image_models_use_a_custom_base_url()
+    {
+        var capture = new UpstreamCapture { ResponseBody = ImageResponse };
+        var provider = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret", BaseUrl = "https://custom.url/" }, capture);
+        await provider.ImageModel(DiffusionModel).DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal("https://custom.url/images/generations", capture.Requests[0].Uri!.AbsoluteUri);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > rerankingModel::should construct a reranking model with correct configuration", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reranking_models_use_the_together_reranking_model_and_base_url()
+    {
+        var capture = new UpstreamCapture { ResponseBody = "{\"results\":[]}" };
+        var model = Assert.IsType<TogetherAIRerankingModel>(TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).RerankingModel("Salesforce/Llama-Rank-v1"));
+        Assert.Equal("Salesforce/Llama-Rank-v1", model.ModelId);
+        await model.DoRerankAsync("query", new[] { "a" }, 1, CancellationToken.None);
+        Assert.Equal("https://api.together.xyz/v1/rerank", capture.Requests[0].Uri!.AbsoluteUri);
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement> Options(string togetherai)
+    {
+        using var document = JsonDocument.Parse(togetherai);
+        return new Dictionary<string, JsonElement> { ["togetherai"] = document.RootElement.Clone() };
+    }
+
     private static TogetherAIImageModel Image(UpstreamCapture capture, string modelId)
     {
         return (TogetherAIImageModel)TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).ImageModel(modelId);
@@ -357,6 +606,15 @@ public sealed class TogetherAIUpstreamTests
         finally
         {
             Environment.SetEnvironmentVariable(name, previous);
+        }
+    }
+
+    private sealed class PendingHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            throw new InvalidOperationException("The request was not cancelled.");
         }
     }
 }
