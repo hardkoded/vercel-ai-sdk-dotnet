@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Web;
 using Vercel.AI.Deepgram;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Util;
@@ -67,7 +68,7 @@ public sealed class DeepgramParityTests
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/deepgram/0.0.0-test", call.Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/deepgram/" + AiSdkVersion.Version, call.Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
