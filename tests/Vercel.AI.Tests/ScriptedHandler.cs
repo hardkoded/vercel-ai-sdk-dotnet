@@ -105,6 +105,6 @@ internal sealed class ScriptedHandler : HttpMessageHandler
             return "{\"embeddings\":{\"float\":[[0.25,0.5]]}}";
         }
 
-        return "{\"text\":\"hello\",\"url\":\"https://example.test/out.bin\",\"id\":\"id_1\",\"status\":\"completed\",\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2},\"data\":[{\"embedding\":[0.25,0.5]}],\"results\":[{\"index\":0,\"relevance_score\":0.9}]}";
+        return "{\"text\":\"hello\",\"url\":\"https://example.test/out.bin\",\"upload_url\":\"https://example.test/upload\",\"id\":\"id_1\",\"status\":\"completed\",\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2},\"data\":[{\"embedding\":[0.25,0.5]}],\"results\":[{\"index\":0,\"relevance_score\":0.9}]}";
     }
 }
