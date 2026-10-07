@@ -93,16 +93,47 @@ public sealed class OpenAIFileStore : IFileStore
         CancellationToken cancellationToken)
     {
         using var content = new MultipartFormDataContent();
-        var file = new ByteArrayContent(data);
+        content.Add(FileContent(new ByteArrayContent(data), mediaType), "file", fileName);
+        AddFields(content, purpose, expiresAfterSeconds);
+        return await SendUploadAsync(content, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Uploads a file from a stream without buffering it, and disposes the stream.
+    /// The fields precede the file part, and the file name defaults to <c>blob</c>.
+    /// </summary>
+    public async Task<OpenAIFileMetadata> UploadAsync(
+        Stream data,
+        string? fileName,
+        string mediaType,
+        string? purpose,
+        int? expiresAfterSeconds,
+        CancellationToken cancellationToken)
+    {
+        using var content = new MultipartFormDataContent("ai-sdk-multipart-" + Guid.NewGuid().ToString("N"));
+        AddFields(content, purpose, expiresAfterSeconds);
+        content.Add(FileContent(new StreamContent(data), mediaType), "file", string.IsNullOrEmpty(fileName) ? "blob" : fileName);
+        return await SendUploadAsync(content, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static HttpContent FileContent(HttpContent file, string mediaType)
+    {
         file.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType);
-        content.Add(file, "file", fileName);
+        return file;
+    }
+
+    private static void AddFields(MultipartFormDataContent content, string? purpose, int? expiresAfterSeconds)
+    {
         content.Add(new StringContent(string.IsNullOrEmpty(purpose) ? "assistants" : purpose!), "purpose");
         if (expiresAfterSeconds != null)
         {
             content.Add(new StringContent("created_at"), "expires_after[anchor]");
             content.Add(new StringContent(expiresAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)), "expires_after[seconds]");
         }
+    }
 
+    private async Task<OpenAIFileMetadata> SendUploadAsync(MultipartFormDataContent content, CancellationToken cancellationToken)
+    {
         var bytes = await _provider.Http.SendBytesAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "files"),
