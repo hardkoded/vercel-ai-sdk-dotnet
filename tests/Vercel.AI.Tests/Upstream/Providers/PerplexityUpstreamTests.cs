@@ -103,7 +103,7 @@ public sealed class PerplexityUpstreamTests
         Assert.StartsWith("application/json", headers["Content-Type"], StringComparison.Ordinal);
         Assert.Equal("provider-header-value", headers["Custom-Provider-Header"]);
         Assert.Equal("request-header-value", headers["Custom-Request-Header"]);
-        Assert.Contains("ai-sdk/perplexity/0.0.0", headers["User-Agent"], StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/perplexity/" + AiSdkVersion.Version, headers["User-Agent"], StringComparison.Ordinal);
     }
 
     [Fact]

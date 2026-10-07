@@ -54,9 +54,9 @@ public sealed class PerplexityEmbeddingModel : IEmbeddingModel, IEmbeddingCaller
     }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
-        var response = await DoEmbedAsync(new EmbeddingModelCall(values, new Dictionary<string, string>(), null, cancellationToken), cancellationToken).ConfigureAwait(false);
+        var response = await DoEmbedAsync(new EmbeddingModelCall(values, new Dictionary<string, string>(), providerOptions == null ? null : JsonSerializer.SerializeToElement(providerOptions), cancellationToken), cancellationToken).ConfigureAwait(false);
         var vectors = new List<float[]>();
         foreach (var embedding in response.Embeddings)
         {
