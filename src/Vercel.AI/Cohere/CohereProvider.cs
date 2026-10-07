@@ -2,7 +2,6 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +18,9 @@ public sealed class CohereOptions
 
     /// <summary>Explicit key.</summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>Headers sent with every request. Call headers override them.</summary>
+    public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>Cohere provider for chat, embeddings, and rerank.</summary>
@@ -60,117 +62,26 @@ public sealed class CohereProvider : ProviderBase
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId) => new CohereRerankingModel(this, modelId);
 
-    internal Dictionary<string, string?> Headers()
+    internal Dictionary<string, string?> Headers(IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
-        return new Dictionary<string, string?>
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] = "Bearer " + ApiKeys.Require(Options.ApiKey, "COHERE_API_KEY"),
         };
-    }
-}
-
-/// <summary>Cohere v2 chat model.</summary>
-public sealed class CohereLanguageModel : ILanguageModel
-{
-    private readonly CohereProvider _provider;
-
-    /// <summary>Creates a model.</summary>
-    public CohereLanguageModel(CohereProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => CohereProvider.ProviderName;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "chat"), Build(options).ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
-        return Parse(document.RootElement);
-    }
-
-    /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
+        foreach (var pair in Options.Headers)
         {
-            yield return new TextDeltaStreamPart("text", result.Text);
+            headers[pair.Key] = pair.Value;
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
-    }
-
-    private JsonObject Build(LanguageModelCallOptions options)
-    {
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
+        if (callHeaders != null)
         {
-            if (message is SystemModelMessage system)
+            foreach (var pair in callHeaders)
             {
-                messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistant.Text });
+                headers[pair.Key] = pair.Value;
             }
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["messages"] = messages };
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        if (options.MaxOutputTokens is { } max)
-        {
-            body["max_tokens"] = max;
-        }
-
-        return body;
-    }
-
-    private static LanguageModelGenerateResult Parse(JsonElement root)
-    {
-        var text = new StringBuilder();
-        if (root.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var part in content.EnumerateArray())
-            {
-                if (part.TryGetProperty("text", out var partText))
-                {
-                    text.Append(partText.GetString());
-                }
-            }
-        }
-        else if (root.TryGetProperty("text", out var legacy))
-        {
-            text.Append(legacy.GetString());
-        }
-
-        var raw = root.TryGetProperty("finish_reason", out var finish) ? finish.GetString() : "COMPLETE";
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(text.ToString()) }, FinishReasons.Parse(raw), LanguageModelUsage.Empty, raw);
+        return headers;
     }
 }
 
@@ -205,7 +116,23 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             texts.Add(value);
         }
 
-        var body = new JsonObject { ["model"] = ModelId, ["texts"] = texts, ["embedding_types"] = new JsonArray(embeddingType), ["input_type"] = "search_document" };
+        var body = new JsonObject
+        {
+            ["model"] = ModelId,
+            ["texts"] = texts,
+            ["embedding_types"] = new JsonArray(embeddingType),
+            ["input_type"] = Option(providerOptions, "inputType")?.GetString() ?? "search_query",
+        };
+        if (Option(providerOptions, "truncate") is { } truncate)
+        {
+            body["truncate"] = truncate.GetString();
+        }
+
+        if (Option(providerOptions, "outputDimension") is { } outputDimension)
+        {
+            body["output_dimension"] = outputDimension.GetInt32();
+        }
+
         using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
         var root = document.RootElement;
         var embeddings = root.GetProperty("embeddings");
@@ -250,6 +177,17 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
         return type is "float" or "int8" or "uint8" or "binary" or "ubinary"
             ? type
             : throw new AiSdkException("invalid cohere provider options: embeddingType must be float, int8, uint8, binary, or ubinary.");
+    }
+
+    private static JsonElement? Option(IReadOnlyDictionary<string, JsonElement>? providerOptions, string name)
+    {
+        return providerOptions != null
+            && providerOptions.TryGetValue(CohereProvider.ProviderName, out var options)
+            && options.ValueKind == JsonValueKind.Object
+            && options.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            ? value
+            : null;
     }
 }
 

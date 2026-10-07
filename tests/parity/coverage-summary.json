@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3029,
-  "partial": 94,
-  "missing": 7946,
+  "covered": 3079,
+  "partial": 106,
+  "missing": 7884,
   "features": [
     {
       "feature": "ai/agent",
@@ -379,9 +379,9 @@
       "feature": "cohere",
       "dotnetProject": "Vercel.AI.Cohere",
       "inScope": 68,
-      "covered": 0,
-      "partial": 0,
-      "missing": 68
+      "covered": 50,
+      "partial": 12,
+      "missing": 6
     },
     {
       "feature": "cohere/reranking",
