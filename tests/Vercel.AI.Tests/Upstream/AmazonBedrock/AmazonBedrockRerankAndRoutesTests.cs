@@ -372,6 +372,67 @@ public sealed class BedrockMantleRouteTests
     }
 
     [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should create a chat model with default settings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Creates_a_chat_model_with_default_settings()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var provider = BedrockMantleProvider.Create(SignedOptions(), handler);
+        var model = provider.LanguageModel("openai.gpt-oss-20b");
+        Assert.Equal("bedrock-mantle.chat", model.Provider);
+        Assert.Equal("openai.gpt-oss-20b", model.ModelId);
+        await model.DoGenerateAsync(Hi(), CancellationToken.None);
+        Assert.Equal("https://bedrock-mantle.us-east-1.api.aws/v1/chat/completions", handler.Uri);
+        Assert.Contains("us-east-1/bedrock-mantle/aws4_request", handler.Headers["Authorization"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should create a chat model via .chat()", Coverage = UpstreamCoverage.Covered)]
+    public async Task Creates_a_chat_model_via_chat()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var model = BedrockMantleProvider.Create(SignedOptions(), handler).Chat("openai.gpt-oss-20b");
+        Assert.Equal("bedrock-mantle.chat", model.Provider);
+        Assert.Equal("openai.gpt-oss-20b", model.ModelId);
+        await model.DoGenerateAsync(Hi(), CancellationToken.None);
+        Assert.Equal("https://bedrock-mantle.us-east-1.api.aws/v1/chat/completions", handler.Uri);
+        Assert.Contains("us-east-1/bedrock-mantle/aws4_request", handler.Headers["Authorization"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should pass custom baseURL to the model when created", Coverage = UpstreamCoverage.Covered)]
+    public async Task Passes_a_custom_base_url_to_the_model()
+    {
+        var options = SignedOptions();
+        options.BaseUrl = "https://custom-mantle.example.com/v1";
+        foreach (var modelId in new[] { "test-model", "openai.gpt-6-sol" })
+        {
+            var handler = new UpstreamRecordingHandler(ChatResponse);
+            await BedrockMantleProvider.Create(options, handler).LanguageModel(modelId).DoGenerateAsync(Hi(), CancellationToken.None);
+            Assert.Equal("https://custom-mantle.example.com/v1/chat/completions", handler.Uri);
+        }
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should include custom headers with user-agent suffix", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_custom_headers_with_the_user_agent_suffix()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var options = SignedOptions();
+        options.Headers["Custom-Header"] = "custom-value";
+        await BedrockMantleProvider.Create(options, handler).LanguageModel("test-model").DoGenerateAsync(Hi(), CancellationToken.None);
+        Assert.Equal("custom-value", handler.Headers["Custom-Header"]);
+        Assert.Contains("ai-sdk/amazon-bedrock/", handler.Headers["User-Agent"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should provide languageModel as alias for responses", Coverage = UpstreamCoverage.Covered)]
+    public void Provides_a_language_model()
+    {
+        var provider = BedrockMantleProvider.Create(SignedOptions());
+        Assert.NotNull(provider.LanguageModel("test-model"));
+    }
+
+    [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should alias .languageModel() to chat model", Coverage = UpstreamCoverage.Covered)]
     public void Aliases_language_model_to_chat()
     {
@@ -423,5 +484,22 @@ public sealed class BedrockMantleRouteTests
         var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "k", SecretAccessKey = "s" });
         var exception = Assert.Throws<AiSdkException>(() => provider.ImageModel("invalid-model-id"));
         Assert.Contains("image", exception.Message);
+    }
+
+    private const string ChatResponse = "{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}";
+
+    private static BedrockMantleOptions SignedOptions()
+    {
+        return new BedrockMantleOptions
+        {
+            Region = "us-east-1",
+            AccessKeyId = "test-key",
+            SecretAccessKey = "test-secret",
+        };
+    }
+
+    private static LanguageModelCallOptions Hi()
+    {
+        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hi") } };
     }
 }

@@ -5,6 +5,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -33,6 +34,9 @@ public sealed class BedrockMantleOptions
 
     /// <summary>Clock used for signing.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
+
+    /// <summary>Extra headers sent on every call. The SDK user-agent suffix is appended.</summary>
+    public Dictionary<string, string> Headers { get; } = new();
 }
 
 /// <summary>Mantle URL rules. Some model ids are served under <c>/openai/v1</c>.</summary>
@@ -165,6 +169,12 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+        var headers = _provider.Options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
+        foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
+        {
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
         var apiKey = _provider.Options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
         AmazonBedrockSigner.Apply(
             request,

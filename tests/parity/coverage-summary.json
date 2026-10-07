@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2710,
+  "covered": 2715,
   "partial": 78,
-  "missing": 8281,
+  "missing": 8276,
   "features": [
     {
       "feature": "ai/agent",
@@ -275,9 +275,9 @@
       "feature": "amazon-bedrock/mantle",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 16,
-      "covered": 7,
+      "covered": 12,
       "partial": 3,
-      "missing": 6
+      "missing": 1
     },
     {
       "feature": "amazon-bedrock/reranking",
