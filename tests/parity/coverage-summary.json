@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3196,
+  "covered": 3233,
   "partial": 108,
-  "missing": 7765,
+  "missing": 7728,
   "features": [
     {
       "feature": "ai/agent",
@@ -395,9 +395,9 @@
       "feature": "deepgram",
       "dotnetProject": "Vercel.AI.Deepgram",
       "inScope": 39,
-      "covered": 2,
+      "covered": 39,
       "partial": 0,
-      "missing": 37
+      "missing": 0
     },
     {
       "feature": "deepinfra",
