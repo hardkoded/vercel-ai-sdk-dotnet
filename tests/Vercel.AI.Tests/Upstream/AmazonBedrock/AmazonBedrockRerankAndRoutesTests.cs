@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream;
 
 namespace Vercel.AI.Tests;
 
@@ -78,14 +79,86 @@ public sealed class AmazonBedrockRerankTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > text documents::should send request with the correct headers",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The request is signed with SigV4 for the bedrock service. The upstream test injects an x-amz-auth header instead of signing.")]
-    public async Task Signs_the_rerank_request()
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > json documents::should send request with the correct headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Json_documents_send_call_headers_and_are_signed()
     {
-        var handler = await PostText();
+        var (handler, _) = await Call(objects: true);
+        Assert.Equal("config-value", handler.Headers["config-header"]);
+        Assert.Equal("config-shared", handler.Headers["shared-header"]);
+        Assert.StartsWith("application/json", handler.Headers["Content-Type"]);
         Assert.Contains("us-west-2/bedrock/aws4_request", handler.Headers["Authorization"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > json documents::should return result with warnings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Json_documents_return_no_warnings()
+    {
+        var (_, response) = await Call(objects: true);
+        Assert.Empty(response.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > json documents::should not return provider metadata (use response body instead)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Json_documents_return_no_provider_metadata()
+    {
+        var (_, response) = await Call(objects: true);
+        Assert.Null(response.ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > json documents::should return result with the correct response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Json_documents_return_the_response_body_and_headers()
+    {
+        var (_, response) = await Call(objects: true);
+        JsonAssert.Equal(response.Response!.Body!.Value, Ranking);
+        Assert.StartsWith("application/json", response.Response.Headers!["content-type"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > text documents::should send request with the correct headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Text_documents_send_call_headers_and_are_signed()
+    {
+        var (handler, _) = await Call(objects: false);
+        Assert.Equal("config-value", handler.Headers["config-header"]);
+        Assert.Equal("config-shared", handler.Headers["shared-header"]);
+        Assert.StartsWith("application/json", handler.Headers["Content-Type"]);
+        Assert.Contains("us-west-2/bedrock/aws4_request", handler.Headers["Authorization"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > text documents::should return result without warnings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Text_documents_return_no_warnings()
+    {
+        var (_, response) = await Call(objects: false);
+        Assert.Empty(response.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > text documents::should not return provider metadata (use response body instead)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Text_documents_return_no_provider_metadata()
+    {
+        var (_, response) = await Call(objects: false);
+        Assert.Null(response.ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/reranking/amazon-bedrock-reranking-model.test.ts::doRerank > text documents::should return result with the correct response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Text_documents_return_the_response_body_and_headers()
+    {
+        var (_, response) = await Call(objects: false);
+        JsonAssert.Equal(response.Response!.Body!.Value, Ranking);
+        Assert.StartsWith("application/json", response.Response.Headers!["content-type"]);
+    }
+
+    private static async Task<(UpstreamRecordingHandler Handler, Operations.RerankModelResponse Response)> Call(bool objects)
+    {
+        var handler = new UpstreamRecordingHandler(Ranking);
+        var documents = objects
+            ? new Operations.RerankModelDocuments("object", Documents().Cast<object?>().ToArray())
+            : new Operations.RerankModelDocuments("text", new object?[] { "sunny day at the beach", "rainy day in the city" });
+        var headers = new Dictionary<string, string> { ["config-header"] = "config-value", ["shared-header"] = "config-shared" };
+        var response = await Model(handler).DoRerankAsync(new Operations.RerankModelCall(documents, "rainy day", 2, Options(), headers, CancellationToken.None), CancellationToken.None);
+        return (handler, response);
     }
 
     private static async Task<RerankResult> Rank(bool json)

@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2716,
-  "partial": 77,
-  "missing": 8276,
+  "covered": 2724,
+  "partial": 76,
+  "missing": 8269,
   "features": [
     {
       "feature": "ai/agent",
@@ -283,9 +283,9 @@
       "feature": "amazon-bedrock/reranking",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
       "inScope": 13,
-      "covered": 5,
-      "partial": 1,
-      "missing": 7
+      "covered": 13,
+      "partial": 0,
+      "missing": 0
     },
     {
       "feature": "anthropic",
