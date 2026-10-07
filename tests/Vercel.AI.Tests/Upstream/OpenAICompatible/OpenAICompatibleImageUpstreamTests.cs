@@ -143,6 +143,44 @@ public sealed class OpenAICompatibleImageUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > doGenerate::should return the raw b64_json content", Coverage = UpstreamCoverage.Partial, Note = "Both images are returned in order. Generated images are decoded bytes, so the raw base64 string is not returned.")]
+    public async Task Generate_returns_every_b64_image()
+    {
+        var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"b64_json\":\"test1234\"},{\"b64_json\":\"test5678\"}]}" };
+        var result = await Image(capture).DoGenerateAsync(new ImageCallOptions("draw") { Count = 2 }, CancellationToken.None);
+        Assert.Collection(
+            result.Images,
+            image => Assert.Equal(Convert.FromBase64String("test1234"), image.Data),
+            image => Assert.Equal(Convert.FromBase64String("test5678"), image.Data));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > doGenerate > response metadata::should include timestamp, headers and modelId in response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Generate_records_timestamp_headers_and_model_id()
+    {
+        var stamp = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
+        capture.ResponseHeaders["x-request-id"] = "req-1";
+        var model = Image(capture, clock: () => stamp);
+        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Equal(stamp, model.LastResponseTimestamp);
+        Assert.Equal("dall-e-3", model.ModelId);
+        Assert.Equal("req-1", model.LastResponseHeaders["x-request-id"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > doGenerate::should use real date when no custom date provider is specified", Coverage = UpstreamCoverage.Covered)]
+    public async Task Generate_uses_the_current_time_without_a_clock()
+    {
+        var model = Image(new UpstreamCapture { ResponseBody = "{\"data\":[]}" });
+        var before = DateTimeOffset.UtcNow;
+        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        var after = DateTimeOffset.UtcNow;
+        Assert.InRange(model.LastResponseTimestamp!.Value, before, after);
+        Assert.Equal("dall-e-3", model.ModelId);
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > doGenerate > usage::should map the usage object reported by the provider", Coverage = UpstreamCoverage.Covered)]
     public async Task Image_usage_maps_input_output_and_total()
     {
@@ -270,6 +308,22 @@ public sealed class OpenAICompatibleImageUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > Image Editing::should include response metadata for edit requests", Coverage = UpstreamCoverage.Covered)]
+    public async Task Edits_record_timestamp_headers_and_model_id()
+    {
+        var stamp = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var capture = EditCapture();
+        capture.ResponseHeaders["x-request-id"] = "req-1";
+        var model = Image(capture, clock: () => stamp);
+        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, "image.png") };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
+        Assert.Equal(stamp, model.LastResponseTimestamp);
+        Assert.Equal("dall-e-3", model.ModelId);
+        Assert.Equal("req-1", model.LastResponseHeaders["x-request-id"]);
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::OpenAICompatibleImageModel > Image Editing::should map usage for edit requests", Coverage = UpstreamCoverage.Covered)]
     public async Task Edit_usage_is_mapped()
     {
@@ -297,7 +351,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
         return new UpstreamCapture { ResponseBody = "{\"data\":[{\"b64_json\":\"aGVsbG8=\"}]}" };
     }
 
-    private static OpenAICompatibleImageModel Image(UpstreamCapture capture, string name = "openai-compatible", Action<OpenAICompatibleOptions>? configure = null)
+    private static OpenAICompatibleImageModel Image(UpstreamCapture capture, string name = "openai-compatible", Action<OpenAICompatibleOptions>? configure = null, Func<DateTimeOffset>? clock = null)
     {
         var options = new OpenAICompatibleOptions
         {
@@ -307,6 +361,6 @@ public sealed class OpenAICompatibleImageUpstreamTests
             SupportsImages = true,
         };
         configure?.Invoke(options);
-        return (OpenAICompatibleImageModel)OpenAICompatibleProvider.Create(options, capture).ImageModel("dall-e-3");
+        return new OpenAICompatibleImageModel(OpenAICompatibleProvider.Create(options, capture), "dall-e-3", clock);
     }
 }

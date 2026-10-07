@@ -731,12 +731,14 @@ public sealed class OpenAICompatibleImageFile
 public sealed class OpenAICompatibleImageModel : IImageModel
 {
     private readonly OpenAICompatibleProvider _provider;
+    private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates an image model.</summary>
-    public OpenAICompatibleImageModel(OpenAICompatibleProvider provider, string modelId)
+    public OpenAICompatibleImageModel(OpenAICompatibleProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _clock = clock;
     }
 
     /// <inheritdoc />
@@ -769,10 +771,14 @@ public sealed class OpenAICompatibleImageModel : IImageModel
     /// <summary>HTTP response headers from the most recent call.</summary>
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
+    /// <summary>Time the most recent call started.</summary>
+    public DateTimeOffset? LastResponseTimestamp { get; private set; }
+
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
+        var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
@@ -806,6 +812,7 @@ public sealed class OpenAICompatibleImageModel : IImageModel
 
         LastWarnings = warnings;
         LastResponseHeaders = response.Headers;
+        LastResponseTimestamp = timestamp;
         return ReadImages(response.Body);
     }
 
