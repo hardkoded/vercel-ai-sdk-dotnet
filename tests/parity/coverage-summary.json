@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3123,
+  "covered": 3159,
   "partial": 107,
-  "missing": 7839,
+  "missing": 7803,
   "features": [
     {
       "feature": "ai/agent",
@@ -443,9 +443,9 @@
       "feature": "fireworks",
       "dotnetProject": "Vercel.AI.Fireworks",
       "inScope": 58,
-      "covered": 22,
+      "covered": 58,
       "partial": 0,
-      "missing": 36
+      "missing": 0
     },
     {
       "feature": "fish-audio",
