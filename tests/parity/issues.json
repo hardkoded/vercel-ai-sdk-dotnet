@@ -555,9 +555,9 @@
       "title": "Cover upstream unit tests: fish-audio",
       "dotnetProject": "Vercel.AI.FishAudio",
       "inScope": 46,
-      "covered": 7,
-      "partial": 0,
-      "missing": 39,
+      "covered": 44,
+      "partial": 1,
+      "missing": 1,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/85"
     },
     {
