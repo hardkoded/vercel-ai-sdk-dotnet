@@ -1087,7 +1087,7 @@ public sealed class PerplexityAgentTests
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent("{\"data\":[{\"embedding\":[0.25,0.5]}]}", Encoding.UTF8, "application/json"),
+                    Content = new StringContent("{\"data\":[{\"embedding\":\"AQI=\"}]}", Encoding.UTF8, "application/json"),
                 };
             }
 

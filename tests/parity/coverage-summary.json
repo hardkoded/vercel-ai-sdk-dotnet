@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3269,
-  "partial": 108,
-  "missing": 7692,
+  "covered": 3277,
+  "partial": 109,
+  "missing": 7683,
   "features": [
     {
       "feature": "ai/agent",
@@ -883,9 +883,9 @@
       "feature": "perplexity",
       "dotnetProject": "Vercel.AI.Perplexity",
       "inScope": 46,
-      "covered": 0,
-      "partial": 0,
-      "missing": 46
+      "covered": 8,
+      "partial": 1,
+      "missing": 37
     },
     {
       "feature": "prodia",
