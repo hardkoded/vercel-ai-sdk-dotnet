@@ -5,6 +5,7 @@
 using System.Net;
 using Vercel.AI.Baseten;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
 
@@ -419,7 +420,7 @@ public sealed class BasetenUpstreamTests
     [UpstreamTest(Provider + "Headers::should include user-agent with version", Coverage = UpstreamCoverage.Covered)]
     public void Headers_include_the_sdk_user_agent()
     {
-        Assert.Contains("ai-sdk/baseten/0.0.0", BasetenProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).CreateHeaders()["User-Agent"], StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/baseten/" + AiSdkVersion.Version, BasetenProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).CreateHeaders()["User-Agent"], StringComparison.Ordinal);
     }
 
     [Fact]
