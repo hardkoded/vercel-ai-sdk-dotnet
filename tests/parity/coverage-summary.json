@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3342,
-  "partial": 100,
-  "missing": 7627,
+  "covered": 3352,
+  "partial": 99,
+  "missing": 7618,
   "features": [
     {
       "feature": "ai/agent",
@@ -867,9 +867,9 @@
       "feature": "openai/transcription",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 30,
-      "covered": 8,
-      "partial": 1,
-      "missing": 21
+      "covered": 18,
+      "partial": 0,
+      "missing": 12
     },
     {
       "feature": "otel",

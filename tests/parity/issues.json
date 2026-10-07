@@ -1075,9 +1075,9 @@
       "title": "Cover upstream unit tests: openai/transcription",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 30,
-      "covered": 8,
-      "partial": 1,
-      "missing": 21,
+      "covered": 18,
+      "partial": 0,
+      "missing": 12,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/137"
     },
     {
