@@ -365,8 +365,8 @@
       "title": "Cover upstream unit tests: anthropic-aws",
       "dotnetProject": "Vercel.AI.Anthropic",
       "inScope": 50,
-      "covered": 41,
-      "partial": 9,
+      "covered": 50,
+      "partial": 0,
       "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/66"
     },

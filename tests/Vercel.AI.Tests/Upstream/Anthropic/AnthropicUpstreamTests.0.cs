@@ -23,42 +23,42 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0003()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0004()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::shold handle a POST request with a Request object").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0005()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should sign when input is a POST Request with body and no init").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0006()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle non-string body by stringifying it").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0007()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle Uint8Array body").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0008()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle ArrayBuffer body").ConfigureAwait(false);
@@ -72,7 +72,7 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0010()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle headers provided as an array").ConfigureAwait(false);
@@ -86,14 +86,14 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0012()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should correctly handle async credential providers").ConfigureAwait(false);
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0013()
     {
         await AnthropicCases.Run("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should handle async credential providers that reject").ConfigureAwait(false);
