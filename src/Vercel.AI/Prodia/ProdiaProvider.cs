@@ -2,7 +2,6 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -23,7 +22,11 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
     public ProdiaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
+
+    /// <summary>HTTP client used for job requests and image downloads.</summary>
+    public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider.</summary>
     public static new ProdiaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
@@ -32,37 +35,27 @@ public sealed class ProdiaProvider : OpenAICompatibleProvider
         return new ProdiaProvider(client, options);
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId) => new ProdiaLanguageModel(this, modelId);
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId) => new ProdiaImageModel(this, modelId);
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId) => new ProdiaVideoModel(this, modelId);
+
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options ??= new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl = (string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl).TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "PRODIA_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        options.UserAgent = ProviderExchange.UserAgent("prodia");
         return options;
     }
-
-    /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new Image(this, modelId);
-
-    private sealed class Image : IImageModel
-    {
-        private readonly ProdiaProvider _provider;
-        public Image(ProdiaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "prodia";
-        public string ModelId { get; }
-        public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
-        {
-            var path = "/job?price=true";
-            var body = new JsonObject { ["type"] = ModelId, ["config"] = new JsonObject { ["prompt"] = options.Prompt } };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
-            var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
-        }
-    }
-
 }
 
 /// <summary>Registers Prodia.</summary>

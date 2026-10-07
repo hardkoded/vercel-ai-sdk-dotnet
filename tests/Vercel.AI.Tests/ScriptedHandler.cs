@@ -36,11 +36,25 @@ internal sealed class ScriptedHandler : HttpMessageHandler
         }
 
         var status = Statuses.Count > 0 ? Statuses[Math.Min(Calls - 1, Statuses.Count - 1)] : HttpStatusCode.OK;
+        if (status == HttpStatusCode.OK && Uri.Contains("/job?price=true"))
+        {
+            return new HttpResponseMessage(status) { Content = ProdiaJob() };
+        }
+
         var json = status == HttpStatusCode.OK ? BodyFor(Uri) : "{\"error\":{\"message\":\"nope\"}}";
         return new HttpResponseMessage(status)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+    }
+
+    private static StringContent ProdiaJob()
+    {
+        var content = new StringContent(
+            "--b\r\nContent-Disposition: form-data; name=\"job\"\r\n\r\n{\"id\":\"job\"}\r\n--b\r\nContent-Disposition: form-data; name=\"output\"\r\nContent-Type: image/png\r\n\r\npng\r\n--b--\r\n",
+            Encoding.UTF8);
+        content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("multipart/form-data; boundary=b");
+        return content;
     }
 
     private static string BodyFor(string uri)
