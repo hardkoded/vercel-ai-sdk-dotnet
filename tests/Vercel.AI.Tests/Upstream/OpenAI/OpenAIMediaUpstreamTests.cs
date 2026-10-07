@@ -647,7 +647,7 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Request headers match. The user-agent suffix is ai-sdk/openai/4.0.73, and content-type includes a charset.")]
+    [UpstreamTest("packages/openai/src/speech/openai-speech-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesSpeechHeaders()
     {
         var capture = new OpenAICapture { ResponseBytes = new byte[] { 1 } };
