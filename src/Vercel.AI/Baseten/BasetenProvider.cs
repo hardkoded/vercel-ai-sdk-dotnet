@@ -36,8 +36,9 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
             throw new AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.");
         }
 
-        var model = base.CreateChatModel(string.IsNullOrEmpty(modelId) ? "chat" : modelId);
-        if (!string.IsNullOrEmpty(url) && url!.IndexOf("/sync/v1", StringComparison.Ordinal) >= 0)
+        var deployment = !string.IsNullOrEmpty(url) && url!.IndexOf("/sync/v1", StringComparison.Ordinal) >= 0;
+        var model = base.CreateChatModel(string.IsNullOrEmpty(modelId) ? (deployment ? "placeholder" : "chat") : modelId);
+        if (deployment)
         {
             model.Endpoint = ApiKeys.Combine(url!, "chat/completions");
         }
@@ -49,8 +50,12 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
         var url = (Options as BasetenOptions)?.ModelUrl;
-        if (string.IsNullOrEmpty(url)
-            || url!.IndexOf("/sync", StringComparison.Ordinal) < 0
+        if (string.IsNullOrEmpty(url))
+        {
+            throw new AiSdkException("No model URL provided for embeddings. Please set modelURL option for embeddings.");
+        }
+
+        if (url!.IndexOf("/sync", StringComparison.Ordinal) < 0
             || url.IndexOf("/predict", StringComparison.Ordinal) >= 0)
         {
             throw new AiSdkException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.");
@@ -62,7 +67,7 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
             baseUrl = baseUrl.TrimEnd('/') + "/v1";
         }
 
-        var model = new OpenAICompatibleEmbeddingModel(this, string.IsNullOrEmpty(modelId) ? "embedding" : modelId);
+        var model = new OpenAICompatibleEmbeddingModel(this, string.IsNullOrEmpty(modelId) ? "embeddings" : modelId);
         model.Endpoint = ApiKeys.Combine(baseUrl, "embeddings");
         model.MaxEmbeddingsPerCall = 128;
         return model;
@@ -101,6 +106,7 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
             options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
         }
         options.IncludeUsage = true;
+        options.SelectErrorMessage = OpenAICompatibleTransforms.BasetenError;
         options.SupportsStructuredOutputs = true;
         options.MaxEmbeddingsPerCall = 128;
         return options;

@@ -415,9 +415,9 @@
       "title": "Cover upstream unit tests: baseten",
       "dotnetProject": "Vercel.AI.Baseten",
       "inScope": 53,
-      "covered": 9,
+      "covered": 45,
       "partial": 0,
-      "missing": 44,
+      "missing": 8,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/71"
     },
     {

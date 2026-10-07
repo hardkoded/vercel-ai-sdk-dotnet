@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 3233,
+  "covered": 3269,
   "partial": 108,
-  "missing": 7728,
+  "missing": 7692,
   "features": [
     {
       "feature": "ai/agent",
@@ -339,9 +339,9 @@
       "feature": "baseten",
       "dotnetProject": "Vercel.AI.Baseten",
       "inScope": 53,
-      "covered": 9,
+      "covered": 45,
       "partial": 0,
-      "missing": 44
+      "missing": 8
     },
     {
       "feature": "black-forest-labs",
