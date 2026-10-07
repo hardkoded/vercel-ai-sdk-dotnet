@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
@@ -18,6 +19,13 @@ public sealed class OpenAIChatRequestUpstreamTests
     private const string Format = "packages/openai/src/chat/openai-chat-language-model.test.ts::doGenerate > response format::";
     private const string Reasoning = "packages/openai/src/chat/openai-chat-language-model.test.ts::doGenerate > reasoning models::";
     private const string Stream = "packages/openai/src/chat/openai-chat-language-model.test.ts::doStream::";
+    private const string StreamReasoning = "packages/openai/src/chat/openai-chat-language-model.test.ts::doStream > reasoning models::";
+    private const string StreamRaw = "packages/openai/src/chat/openai-chat-language-model.test.ts::doStream > raw chunks::";
+    private const string ToolInputNote = "The tool call, finish, and usage match. The .NET stream has no tool-input-start, tool-input-delta, or tool-input-end parts.";
+    private const string NoCacheNote = "Parts and token counts match. Usage noCache stays null when cache_write_tokens is absent.";
+    private const string SparkleHead = "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1711357598,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":0,\"delta\":";
+    private const string SparkleUsage = "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1711357598,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[],\"usage\":{\"prompt_tokens\":53,\"completion_tokens\":17,\"total_tokens\":70}}";
+    private const string TextStream = "data: {\"id\":\"c\",\"created\":1,\"model\":\"m\",\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
 
     private const string Schema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
 
@@ -646,6 +654,396 @@ public sealed class OpenAIChatRequestUpstreamTests
         {
             Prompt = OpenAIUpstream.Hello().Prompt,
             ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(openai),
+        };
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should stream annotations/citations", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamsAnnotationsAsSources()
+    {
+        var parts = await StreamChunks(UpstreamChat.Sse(
+            "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+            "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":1,\"delta\":{\"content\":\"Based on search results\"},\"finish_reason\":null}]}",
+            "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":1,\"delta\":{\"annotations\":[{\"type\":\"url_citation\",\"url_citation\":{\"start_index\":24,\"end_index\":29,\"url\":\"https://example.com/doc1.pdf\",\"title\":\"Document 1\"}}]},\"finish_reason\":null}]}",
+            "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}",
+            "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0125\",\"choices\":[],\"usage\":{\"prompt_tokens\":17,\"completion_tokens\":227,\"total_tokens\":244}}"));
+        Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
+        Assert.Equal("chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP", Assert.IsType<ResponseMetadataStreamPart>(parts[1]).Id);
+        Assert.Equal("0", Assert.IsType<TextStartStreamPart>(parts[2]).Id);
+        Assert.Equal(string.Empty, Assert.IsType<TextDeltaStreamPart>(parts[3]).Delta);
+        Assert.Equal("Based on search results", Assert.IsType<TextDeltaStreamPart>(parts[4]).Delta);
+        var source = Assert.IsType<SourceStreamPart>(parts[5]);
+        Assert.False(string.IsNullOrEmpty(source.Id));
+        Assert.Equal("https://example.com/doc1.pdf", source.Url);
+        Assert.Equal("Document 1", source.Title);
+        Assert.Equal("0", Assert.IsType<TextEndStreamPart>(parts[6]).Id);
+        var finish = Assert.IsType<FinishStreamPart>(parts[7]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("stop", finish.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should stream tool deltas", Coverage = UpstreamCoverage.Partial, Note = ToolInputNote)]
+    public async Task StreamsToolDeltas()
+    {
+        var parts = await StreamTool("test-tool", SparkleStream(string.Empty, "{\"", "value", "\":\"", "Spark", "le", " Day", "\"}"));
+        AssertSparkleToolCall(parts);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should stream tool call deltas when tool call arguments are passed in the first chunk", Coverage = UpstreamCoverage.Partial, Note = ToolInputNote)]
+    public async Task StreamsToolDeltasWithArgumentsInTheFirstChunk()
+    {
+        var parts = await StreamTool("test-tool", SparkleStream("{\"", "va", "lue", "\":\"", "Spark", "le", " Day", "\"}"));
+        AssertSparkleToolCall(parts);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should not duplicate tool calls when there is an additional empty chunk after the tool call has been completed", Coverage = UpstreamCoverage.Partial, Note = ToolInputNote)]
+    public async Task EmptyArgumentsAfterACompletedToolCallDoNotDuplicateIt()
+    {
+        const string Head = "{\"id\":\"chat-2267f7e2910a4254bac0650ba74cfc1c\",\"created\":1733162241,\"model\":\"meta/llama-3.1-8b-instruct:fp8\",\"choices\":[{\"index\":0,\"delta\":";
+        var parts = await StreamTool("searchGoogle", UpstreamChat.Sse(
+            Head + "{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":226,\"completion_tokens\":0}}",
+            Head + "{\"tool_calls\":[{\"id\":\"chatcmpl-tool-b3b307239370432d9910d4b79b4dbbaa\",\"type\":\"function\",\"index\":0,\"function\":{\"name\":\"searchGoogle\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":233,\"completion_tokens\":7}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"query\\\": \\\"\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":241,\"completion_tokens\":15}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"latest\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":242,\"completion_tokens\":16}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\" news\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":243,\"completion_tokens\":17}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\" on\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":244,\"completion_tokens\":18}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\" ai\\\"}\"}}]},\"finish_reason\":null}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":245,\"completion_tokens\":19}}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\"}}]},\"finish_reason\":\"tool_calls\",\"stop_reason\":128008}],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":246,\"completion_tokens\":20}}",
+            "{\"id\":\"chat-2267f7e2910a4254bac0650ba74cfc1c\",\"created\":1733162241,\"model\":\"meta/llama-3.1-8b-instruct:fp8\",\"choices\":[],\"usage\":{\"prompt_tokens\":226,\"total_tokens\":246,\"completion_tokens\":20}}"));
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
+        Assert.Equal("meta/llama-3.1-8b-instruct:fp8", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.Parse("2024-12-02T17:57:21Z"), metadata.Timestamp);
+        Assert.Equal(string.Empty, Assert.IsType<TextDeltaStreamPart>(parts[3]).Delta);
+        Assert.IsType<TextEndStreamPart>(parts[4]);
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal("chatcmpl-tool-b3b307239370432d9910d4b79b4dbbaa", call.ToolCallId);
+        Assert.Equal("searchGoogle", call.ToolName);
+        Assert.Equal("{\"query\": \"latest news on ai\"}", call.ArgumentsJson);
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+        Assert.Equal(226, finish.Usage.InputTokens);
+        Assert.Equal(20, finish.Usage.OutputTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should not finalize tool call early when partial JSON is coincidentally parsable", Coverage = UpstreamCoverage.Covered)]
+    public async Task ParsableArgumentsMidStreamDoNotFinishTheToolCall()
+    {
+        const string Head = "{\"id\":\"chatcmpl-early\",\"created\":1733162241,\"model\":\"gpt-4\",\"choices\":[{\"index\":0,\"delta\":";
+        var parts = await StreamTool("search", UpstreamChat.Sse(
+            Head + "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"index\":0,\"id\":\"call_early123\",\"type\":\"function\",\"function\":{\"name\":\"search\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"query\\\": \\\"test\\\"}\"}}]},\"finish_reason\":null}]}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\"}}]},\"finish_reason\":null}]}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\", \\\"limit\\\": 10}\"}}]},\"finish_reason\":null}]}",
+            Head + "{},\"finish_reason\":\"tool_calls\"}]}"));
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal("call_early123", call.ToolCallId);
+        Assert.Equal("search", call.ToolName);
+        Assert.Equal("{\"query\": \"test\"}, \"limit\": 10}", call.ArgumentsJson);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should stream tool call with missing type field (Azure AI Foundry / Mistral)", Coverage = UpstreamCoverage.Partial, Note = ToolInputNote)]
+    public async Task StreamsToolCallsWithoutATypeField()
+    {
+        const string Head = "{\"id\":\"chatcmpl-azure-001\",\"created\":1711357598,\"model\":\"mistral-large\",\"choices\":[{\"index\":0,\"delta\":";
+        var parts = await StreamTool("test-tool", UpstreamChat.Sse(
+            Head + "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"index\":0,\"id\":\"call_abc123\",\"function\":{\"name\":\"test-tool\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"value\\\"\"}}]},\"finish_reason\":null}]}",
+            Head + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\":\\\"hello\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}"));
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal("call_abc123", call.ToolCallId);
+        Assert.Equal("test-tool", call.ToolName);
+        Assert.Equal("{\"value\":\"hello\"}", call.ArgumentsJson);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should stream tool call that is sent in one chunk", Coverage = UpstreamCoverage.Partial, Note = ToolInputNote)]
+    public async Task StreamsAToolCallSentInOneChunk()
+    {
+        var parts = await StreamTool("test-tool", UpstreamChat.Sse(
+            SparkleHead + "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"index\":0,\"id\":\"call_O17Uplv4lJvD6DVdIvFFeRMw\",\"type\":\"function\",\"function\":{\"name\":\"test-tool\",\"arguments\":\"{\\\"value\\\":\\\"Sparkle Day\\\"}\"}}]},\"logprobs\":null,\"finish_reason\":null}]}",
+            SparkleHead + "{},\"logprobs\":null,\"finish_reason\":\"tool_calls\"}]}",
+            SparkleUsage));
+        AssertSparkleToolCall(parts);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should pass the messages and the model", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamSendsMessagesAndModel()
+    {
+        var capture = new OpenAICapture { ServerSentEvents = TextStream };
+        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Authorization, organization, project, and custom headers match. Content-type includes a charset.")]
+    public async Task StreamPassesHeaders()
+    {
+        var capture = new OpenAICapture { ServerSentEvents = TextStream };
+        var provider = OpenAIUpstream.Provider(capture, options =>
+        {
+            options.Organization = "test-organization";
+            options.Project = "test-project";
+            options.Headers["Custom-Provider-Header"] = "provider-header-value";
+        });
+        var call = OpenAIUpstream.Hello();
+        call.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        await OpenAIUpstream.Read(provider.ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None));
+        Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "authorization"));
+        Assert.StartsWith("application/json", OpenAIUpstream.Header(capture, "content-type"), StringComparison.Ordinal);
+        Assert.Equal("provider-header-value", OpenAIUpstream.Header(capture, "custom-provider-header"));
+        Assert.Equal("request-header-value", OpenAIUpstream.Header(capture, "custom-request-header"));
+        Assert.Equal("test-organization", OpenAIUpstream.Header(capture, "openai-organization"));
+        Assert.Equal("test-project", OpenAIUpstream.Header(capture, "openai-project"));
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should return cached tokens in providerMetadata", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamReturnsCachedTokens()
+    {
+        var capture = new OpenAICapture { ServerSentEvents = UsageStream("{\"prompt_tokens\":2000,\"completion_tokens\":20,\"total_tokens\":2020,\"prompt_tokens_details\":{\"cached_tokens\":1152,\"cache_write_tokens\":256}}") };
+        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("stop", finish.RawFinishReason);
+        Assert.Equal("{\"openai\":{}}", finish.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(2000, finish.Usage.InputTokens);
+        Assert.Equal(1152, finish.Usage.CacheReadTokens);
+        Assert.Equal(256, finish.Usage.CacheWriteTokens);
+        Assert.Equal(592, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(20, finish.Usage.OutputTokens);
+        Assert.Equal(20, finish.Usage.TextTokens);
+        Assert.Equal(0, finish.Usage.ReasoningTokens);
+        OpenAIUpstream.Equal(JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()), "{\"prompt_tokens\":2000,\"completion_tokens\":20,\"total_tokens\":2020,\"prompt_tokens_details\":{\"cached_tokens\":1152,\"cache_write_tokens\":256}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should return accepted_prediction_tokens and rejected_prediction_tokens in providerMetadata", Coverage = UpstreamCoverage.Partial, Note = NoCacheNote)]
+    public async Task StreamReturnsPredictionTokens()
+    {
+        var parts = await StreamChunks(UsageStream("{\"prompt_tokens\":15,\"completion_tokens\":20,\"total_tokens\":35,\"completion_tokens_details\":{\"accepted_prediction_tokens\":123,\"rejected_prediction_tokens\":456}}"));
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal("{\"openai\":{\"acceptedPredictionTokens\":123,\"rejectedPredictionTokens\":456}}", finish.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(15, finish.Usage.InputTokens);
+        Assert.Equal(0, finish.Usage.CacheReadTokens);
+        Assert.Equal(20, finish.Usage.TextTokens);
+        Assert.Equal(0, finish.Usage.ReasoningTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should send store extension setting", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamSendsStore()
+    {
+        var capture = await StreamWithOptions("gpt-3.5-turbo", "{\"store\":true}");
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"store\":true,\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should send metadata extension values", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamSendsMetadata()
+    {
+        var capture = await StreamWithOptions("gpt-3.5-turbo", "{\"metadata\":{\"custom\":\"value\"}}");
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"metadata\":{\"custom\":\"value\"},\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should send serviceTier flex processing setting in streaming", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamSendsFlexServiceTier()
+    {
+        var capture = await StreamWithOptions("o4-mini", "{\"serviceTier\":\"flex\"}");
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"o4-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"service_tier\":\"flex\",\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should send serviceTier priority processing setting in streaming", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamSendsPriorityServiceTier()
+    {
+        var capture = await StreamWithOptions("gpt-4o-mini", "{\"serviceTier\":\"priority\"}");
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"service_tier\":\"priority\",\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest(Stream + "should set .modelId for model-router request", Coverage = UpstreamCoverage.Partial, Note = NoCacheNote)]
+    public async Task StreamReportsTheRoutedModelId()
+    {
+        var chunks = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "azure-model-router.1.chunks.txt")).Where(line => line.Trim().Length > 0).ToArray();
+        var capture = new OpenAICapture { ServerSentEvents = UpstreamChat.Sse(chunks) };
+        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("test-azure-model-router").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
+        Assert.Equal("chatcmpl-CYPS1lijGoK8gd9lYzY3r9Sx50nbt", metadata.Id);
+        Assert.Equal("gpt-5-nano-2025-08-07", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.Parse("2025-11-05T04:30:21Z"), metadata.Timestamp);
+        Assert.IsType<TextStartStreamPart>(parts[2]);
+        Assert.Equal(new[] { string.Empty, "Capital", " of", " Denmark", "." }, parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta));
+        Assert.IsType<TextEndStreamPart>(parts[^2]);
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("{\"openai\":{\"acceptedPredictionTokens\":0,\"rejectedPredictionTokens\":0}}", finish.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(15, finish.Usage.InputTokens);
+        Assert.Equal(0, finish.Usage.CacheReadTokens);
+        Assert.Equal(78, finish.Usage.OutputTokens);
+        Assert.Equal(64, finish.Usage.ReasoningTokens);
+        Assert.Equal(14, finish.Usage.TextTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(StreamReasoning + "should stream text delta", Coverage = UpstreamCoverage.Partial, Note = NoCacheNote)]
+    public async Task ReasoningModelsStreamTextDeltas()
+    {
+        var parts = await StreamReasoningModel("{\"prompt_tokens\":17,\"total_tokens\":244,\"completion_tokens\":227}");
+        AssertReasoningText(parts);
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(227, finish.Usage.OutputTokens);
+        Assert.Equal(227, finish.Usage.TextTokens);
+        Assert.Equal(0, finish.Usage.ReasoningTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(StreamReasoning + "should send reasoning tokens", Coverage = UpstreamCoverage.Partial, Note = NoCacheNote)]
+    public async Task ReasoningModelsStreamReasoningTokens()
+    {
+        var parts = await StreamReasoningModel("{\"prompt_tokens\":15,\"completion_tokens\":20,\"total_tokens\":35,\"completion_tokens_details\":{\"reasoning_tokens\":10}}");
+        AssertReasoningText(parts);
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(20, finish.Usage.OutputTokens);
+        Assert.Equal(10, finish.Usage.TextTokens);
+        Assert.Equal(10, finish.Usage.ReasoningTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(StreamRaw + "should include raw chunks when includeRawChunks is enabled", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamIncludesRawChunksWhenAsked()
+    {
+        var chunks = RawChunks();
+        var capture = new OpenAICapture { ServerSentEvents = UpstreamChat.Sse(chunks) };
+        var call = OpenAIUpstream.Hello();
+        call.IncludeRawChunks = true;
+        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None));
+        Assert.Equal(chunks, parts.OfType<RawStreamPart>().Select(part => part.RawJson));
+    }
+
+    [Fact]
+    [UpstreamTest(StreamRaw + "should not include raw chunks when includeRawChunks is false", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamOmitsRawChunksByDefault()
+    {
+        var parts = await StreamChunks(UpstreamChat.Sse(RawChunks()));
+        Assert.Empty(parts.OfType<RawStreamPart>());
+    }
+
+    private static async Task<List<LanguageModelStreamPart>> StreamTool(string toolName, string events)
+    {
+        var capture = new OpenAICapture { ServerSentEvents = events };
+        var call = OpenAIUpstream.Hello();
+        call.Tools = new[] { OpenAIUpstream.Tool(toolName, null, schema: Schema) };
+        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None)).ConfigureAwait(false);
+    }
+
+    private static string SparkleStream(params string[] argumentDeltas)
+    {
+        var events = new List<string>
+        {
+            SparkleHead + "{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"index\":0,\"id\":\"call_O17Uplv4lJvD6DVdIvFFeRMw\",\"type\":\"function\",\"function\":{\"name\":\"test-tool\",\"arguments\":" + JsonSerializer.Serialize(argumentDeltas[0]) + "}}]},\"logprobs\":null,\"finish_reason\":null}]}",
+        };
+        foreach (var delta in argumentDeltas.Skip(1))
+        {
+            events.Add(SparkleHead + "{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":" + JsonSerializer.Serialize(delta) + "}}]},\"logprobs\":null,\"finish_reason\":null}]}");
+        }
+
+        events.Add(SparkleHead + "{},\"logprobs\":null,\"finish_reason\":\"tool_calls\"}]}");
+        events.Add(SparkleUsage);
+        return UpstreamChat.Sse(events.ToArray());
+    }
+
+    private static void AssertSparkleToolCall(List<LanguageModelStreamPart> parts)
+    {
+        Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
+        Assert.Equal("chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP", metadata.Id);
+        Assert.Equal("gpt-3.5-turbo-0125", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.Parse("2024-03-25T09:06:38Z"), metadata.Timestamp);
+        var call = Assert.IsType<ToolCallStreamPart>(parts[2]);
+        Assert.Equal("call_O17Uplv4lJvD6DVdIvFFeRMw", call.ToolCallId);
+        Assert.Equal("test-tool", call.ToolName);
+        Assert.Equal("{\"value\":\"Sparkle Day\"}", call.ArgumentsJson);
+        var finish = Assert.IsType<FinishStreamPart>(parts[3]);
+        Assert.Equal(4, parts.Count);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+        Assert.Equal("tool_calls", finish.RawFinishReason);
+        Assert.Equal("{\"openai\":{}}", finish.ProviderMetadata!.Value.GetRawText());
+        Assert.Equal(53, finish.Usage.InputTokens);
+        Assert.Equal(0, finish.Usage.CacheReadTokens);
+        Assert.Equal(17, finish.Usage.OutputTokens);
+        Assert.Equal(17, finish.Usage.TextTokens);
+        Assert.Equal(0, finish.Usage.ReasoningTokens);
+    }
+
+    private static string UsageStream(string usage)
+    {
+        const string Head = "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0613\",";
+        return UpstreamChat.Sse(
+            Head + "\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+            Head + "\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\",\"logprobs\":null}]}",
+            Head + "\"choices\":[],\"usage\":" + usage + "}");
+    }
+
+    private static async Task<OpenAICapture> StreamWithOptions(string modelId, string openai)
+    {
+        var capture = new OpenAICapture { ServerSentEvents = TextStream };
+        var call = OpenAIUpstream.Hello();
+        call.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(openai);
+        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel(modelId).DoStreamAsync(call, CancellationToken.None)).ConfigureAwait(false);
+        return capture;
+    }
+
+    private static async Task<List<LanguageModelStreamPart>> StreamReasoningModel(string usage)
+    {
+        const string Head = "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"created\":1702657020,\"model\":\"o4-mini\",";
+        var capture = new OpenAICapture
+        {
+            ServerSentEvents = UpstreamChat.Sse(
+                Head + "\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+                Head + "\"choices\":[{\"index\":1,\"delta\":{\"content\":\"Hello, World!\"},\"finish_reason\":null}]}",
+                Head + "\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\",\"logprobs\":null}]}",
+                Head + "\"choices\":[],\"usage\":" + usage + "}"),
+        };
+        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("o4-mini").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+    }
+
+    private static void AssertReasoningText(List<LanguageModelStreamPart> parts)
+    {
+        Assert.Equal(7, parts.Count);
+        Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
+        Assert.Equal("chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP", metadata.Id);
+        Assert.Equal("o4-mini", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.Parse("2023-12-15T16:17:00Z"), metadata.Timestamp);
+        Assert.Equal("0", Assert.IsType<TextStartStreamPart>(parts[2]).Id);
+        Assert.Equal(string.Empty, Assert.IsType<TextDeltaStreamPart>(parts[3]).Delta);
+        Assert.Equal("Hello, World!", Assert.IsType<TextDeltaStreamPart>(parts[4]).Delta);
+        Assert.Equal("0", Assert.IsType<TextEndStreamPart>(parts[5]).Id);
+        var finish = Assert.IsType<FinishStreamPart>(parts[6]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("stop", finish.RawFinishReason);
+        Assert.Equal("{\"openai\":{}}", finish.ProviderMetadata!.Value.GetRawText());
+    }
+
+    private static string[] RawChunks()
+    {
+        const string Head = "{\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"object\":\"chat.completion.chunk\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0613\",";
+        return new[]
+        {
+            Head + "\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}",
+            Head + "\"system_fingerprint\":null,\"choices\":[{\"index\":1,\"delta\":{\"content\":\"Hello\"},\"finish_reason\":null}]}",
+            Head + "\"system_fingerprint\":null,\"choices\":[{\"index\":1,\"delta\":{\"content\":\" World!\"},\"finish_reason\":null}]}",
+            Head + "\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\",\"logprobs\":null}]}",
+            Head + "\"system_fingerprint\":\"fp_3bc1b5746c\",\"choices\":[],\"usage\":{\"prompt_tokens\":17,\"total_tokens\":244,\"completion_tokens\":227}}",
         };
     }
 

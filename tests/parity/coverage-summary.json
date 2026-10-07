@@ -3,9 +3,9 @@
   "unitTests": 13848,
   "inScope": 11069,
   "outOfScope": 2779,
-  "covered": 2820,
-  "partial": 77,
-  "missing": 8172,
+  "covered": 2832,
+  "partial": 87,
+  "missing": 8150,
   "features": [
     {
       "feature": "ai/agent",
@@ -779,9 +779,9 @@
       "feature": "openai/chat",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 149,
-      "covered": 121,
-      "partial": 5,
-      "missing": 23
+      "covered": 133,
+      "partial": 15,
+      "missing": 1
     },
     {
       "feature": "openai/completion",
