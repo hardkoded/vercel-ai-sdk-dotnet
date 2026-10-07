@@ -2,8 +2,6 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -61,37 +59,17 @@ public sealed class LumaProvider : OpenAICompatibleProvider
         return options;
     }
 
+    /// <summary>HTTP client shared by the models.</summary>
+    internal HttpClient HttpClient => _httpClient;
+
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new Image(this, modelId);
+    public override IImageModel ImageModel(string modelId) => new LumaImageModel(this, modelId);
 
-    /// <summary>Posts an image generation to Dream Machine.</summary>
-    public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
+    /// <summary>Generates one image with Dream Machine.</summary>
+    public Task<LumaImageGeneration> GenerateImageAsync(string modelId, LumaImageRequest request, CancellationToken cancellationToken)
     {
-        return new Image(this, modelId).GenerateAsync(options, headers, cancellationToken);
+        return new LumaImageModel(this, modelId).GenerateAsync(request, cancellationToken);
     }
-
-    private sealed class Image : IImageModel
-    {
-        private readonly LumaProvider _provider;
-        public Image(LumaProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "luma.image";
-        public string ModelId { get; }
-        public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
-        {
-            return GenerateAsync(options, null, cancellationToken);
-        }
-
-        public async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
-        {
-            var body = new JsonObject { ["prompt"] = options.Prompt, ["model"] = ModelId };
-            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
-            var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations/image"), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-            var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
-        }
-    }
-
 }
 
 /// <summary>Registers Luma.</summary>

@@ -805,9 +805,9 @@
       "title": "Cover upstream unit tests: luma",
       "dotnetProject": "Vercel.AI.Luma",
       "inScope": 29,
-      "covered": 1,
+      "covered": 29,
       "partial": 0,
-      "missing": 28,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/110"
     },
     {
