@@ -31,6 +31,14 @@ public class ApiException : AiSdkException
         ResponseBody = responseBody;
     }
 
+    /// <summary>Creates an API exception caused by <paramref name="innerException"/>.</summary>
+    public ApiException(string message, int statusCode, string? responseBody, Exception innerException)
+        : base(message, innerException)
+    {
+        StatusCode = statusCode;
+        ResponseBody = responseBody;
+    }
+
     /// <summary>HTTP status code.</summary>
     public int StatusCode { get; }
 

@@ -4,12 +4,17 @@
 
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.DeepSeek;
 
 /// <summary>Uploads images to <c>POST /files</c> with purpose <c>user_data</c>.</summary>
-public sealed class DeepSeekFileStore : IFileStore
+public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileStore
 {
     /// <summary>Maximum upload size, 64 MiB.</summary>
     public const long MaxBytes = 64L * 1024L * 1024L;
@@ -37,42 +42,163 @@ public sealed class DeepSeekFileStore : IFileStore
     /// <summary>Headers for the next upload.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 
+    /// <summary>Provider id.</summary>
+    public string Provider => "deepseek.files";
+
+    /// <summary>Files specification version.</summary>
+    public string SpecificationVersion => "v4";
+
     /// <inheritdoc />
     public async Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken)
     {
-        Validate(data == null ? 0 : data.LongLength, fileName, mediaType ?? string.Empty, data);
-        if (ExpiresAfterSeconds is { } expiry && (expiry < MinExpirySeconds || expiry > MaxExpirySeconds))
+        var result = await UploadAsync(data ?? Array.Empty<byte>(), mediaType, fileName, ExpiresAfterSeconds, null, cancellationToken).ConfigureAwait(false);
+        return new UploadedFile(result.ProviderReference.Id, result.Filename ?? fileName);
+    }
+
+    /// <summary>
+    /// Uploads inline data. Streams are rejected. <c>deepseek.expiresAfter</c> overrides <see cref="ExpiresAfterSeconds"/>.
+    /// </summary>
+    public Task<UploadFileModelResult> UploadFileAsync(UploadFileCall call, CancellationToken cancellationToken)
+    {
+        if (call == null)
         {
-            throw new AiSdkException("DeepSeek expiresAfter must be an integer from " + MinExpirySeconds.ToString(CultureInfo.InvariantCulture) + " to " + MaxExpirySeconds.ToString(CultureInfo.InvariantCulture) + ".");
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        return UploadAsync(InlineBytes(call.Data), call.MediaType, call.Filename, ExpiresAfter(call.ProviderOptions) ?? ExpiresAfterSeconds, call.Headers, cancellationToken);
+    }
+
+    private async Task<UploadFileModelResult> UploadAsync(byte[] data, string? mediaType, string? fileName, int? expiresAfter, IReadOnlyDictionary<string, string>? callHeaders, CancellationToken cancellationToken)
+    {
+        Validate(data.LongLength, fileName, mediaType ?? string.Empty, data);
+        if (expiresAfter is { } expiry && (expiry < MinExpirySeconds || expiry > MaxExpirySeconds))
+        {
+            throw ExpiryError();
         }
 
         var form = new MultipartFormDataContent();
-        var file = new ByteArrayContent(data ?? Array.Empty<byte>());
+        var file = new ByteArrayContent(data);
         file.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType);
         form.Add(file, "file", string.IsNullOrEmpty(fileName) ? "file" : fileName);
         form.Add(new StringContent("user_data"), "purpose");
-        if (ExpiresAfterSeconds is { } seconds)
+        if (expiresAfter is { } seconds)
         {
             form.Add(new StringContent("created_at"), "expires_after[anchor]");
             form.Add(new StringContent(seconds.ToString(CultureInfo.InvariantCulture)), "expires_after[seconds]");
         }
 
-        var uri = new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/files");
-        var response = await _provider.PostMultipartAsync(uri, form, _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
-        using var document = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        var root = document.RootElement;
-        var id = root.TryGetProperty("id", out var idElement) && idElement.ValueKind == System.Text.Json.JsonValueKind.String
-            ? idElement.GetString()
-            : null;
-        if (string.IsNullOrEmpty(id))
+        var headers = _provider.CreateHeaders(Headers);
+        if (callHeaders != null)
         {
-            throw new AiSdkException("DeepSeek file response did not contain an id.");
+            foreach (var header in callHeaders)
+            {
+                headers[header.Key] = header.Value;
+            }
         }
 
-        var returnedName = root.TryGetProperty("filename", out var nameElement) && nameElement.ValueKind == System.Text.Json.JsonValueKind.String
-            ? nameElement.GetString()
-            : null;
-        return new UploadedFile(id!, string.IsNullOrEmpty(returnedName) ? fileName : returnedName);
+        var uri = new Uri(_provider.Options.BaseUrl.TrimEnd('/') + "/files");
+        var response = await _provider.PostMultipartAsync(uri, form, headers, cancellationToken).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var root = document.RootElement;
+        if (!root.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
+        {
+            throw InvalidResponse("id", response.Body, root);
+        }
+
+        var metadata = new JsonObject();
+        AddLiteral(metadata, root, "object", "object", "file", response.Body);
+        AddFilename(metadata, root, response.Body);
+        AddLiteral(metadata, root, "purpose", "purpose", "user_data", response.Body);
+        AddCount(metadata, root, "bytes", "bytes", response.Body);
+        AddCount(metadata, root, "created_at", "createdAt", response.Body);
+        AddCount(metadata, root, "expires_at", "expiresAt", response.Body);
+        var returnedName = metadata["filename"]?.GetValue<string>();
+        return new UploadFileModelResult(
+            new ProviderFileReference(id.GetString()!, "deepseek"),
+            mediaType,
+            string.IsNullOrEmpty(returnedName) ? (string.IsNullOrEmpty(fileName) ? null : fileName) : returnedName,
+            providerMetadata: JsonSerializer.SerializeToElement(new JsonObject { ["deepseek"] = metadata }));
+    }
+
+    private static byte[] InlineBytes(UploadData data)
+    {
+        switch (data.Type)
+        {
+            case "data":
+                return data.Data as byte[] ?? ByteEncoding.FromBase64(data.Data as string ?? string.Empty);
+            case "text":
+                return Encoding.UTF8.GetBytes(data.Data as string ?? string.Empty);
+            default:
+                throw new UnsupportedFunctionalityException("stream file data", "DeepSeek file uploads do not support stream data. Pass bytes or base64 data instead.");
+        }
+    }
+
+    private static int? ExpiresAfter(JsonElement? providerOptions)
+    {
+        if (providerOptions is not { ValueKind: JsonValueKind.Object } options
+            || !options.TryGetProperty("deepseek", out var deepseek) || deepseek.ValueKind != JsonValueKind.Object
+            || !deepseek.TryGetProperty("expiresAfter", out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var seconds) ? seconds : throw ExpiryError();
+    }
+
+    private static AiSdkException ExpiryError()
+    {
+        return new AiSdkException("DeepSeek expiresAfter must be an integer from " + MinExpirySeconds.ToString(CultureInfo.InvariantCulture) + " to " + MaxExpirySeconds.ToString(CultureInfo.InvariantCulture) + ".");
+    }
+
+    private static void AddLiteral(JsonObject metadata, JsonElement root, string field, string name, string expected, string body)
+    {
+        if (!root.TryGetProperty(field, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.String || value.GetString() != expected)
+        {
+            throw InvalidResponse(field, body, root);
+        }
+
+        metadata[name] = expected;
+    }
+
+    private static void AddFilename(JsonObject metadata, JsonElement root, string body)
+    {
+        if (!root.TryGetProperty("filename", out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            throw InvalidResponse("filename", body, root);
+        }
+
+        metadata["filename"] = value.GetString();
+    }
+
+    private static void AddCount(JsonObject metadata, JsonElement root, string field, string name, string body)
+    {
+        if (!root.TryGetProperty(field, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var count) || count < 0)
+        {
+            throw InvalidResponse(field, body, root);
+        }
+
+        metadata[name] = count;
+    }
+
+    private static ApiException InvalidResponse(string field, string body, JsonElement root)
+    {
+        var cause = new TypeValidationException("Invalid DeepSeek file response: \"" + field + "\" is missing or has an unexpected value.", root.Clone());
+        return new ApiException("Invalid JSON response", 200, body, cause);
     }
 
     /// <summary>Checks size, filename, media type, and magic bytes before any request is sent.</summary>
