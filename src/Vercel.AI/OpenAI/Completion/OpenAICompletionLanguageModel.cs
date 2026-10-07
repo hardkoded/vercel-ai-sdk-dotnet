@@ -266,73 +266,66 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var prepared = Prepare(ModelId, options, true);
-        yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var started = false;
-        var finish = FinishReason.Other;
-        string? raw = null;
-        LanguageModelUsage? usage = null;
-        await foreach (var data in _provider.Http.SendSseAsync(
+        var enumerator = _provider.Http.SendSseAsync(
             ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
             prepared.Body.ToJsonString(),
             _provider.CreateOpenAIHeaders(options.Headers),
-            cancellationToken).ConfigureAwait(false))
+            cancellationToken).GetAsyncEnumerator(cancellationToken);
+        try
         {
-            JsonDocument? document = null;
-            var invalidJson = false;
-            try
+            var checkedStream = await OpenAIStreamError.ThrowIfErrorBeforeOutputAsync(
+                enumerator,
+                OpenAIChatLanguageModel.ErrorFrame,
+                data => !OpenAIChatLanguageModel.IsJsonObject(data) || IsOutputChunk(data)).ConfigureAwait(false);
+            yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
+            var state = new StreamState();
+            await foreach (var data in checkedStream.ConfigureAwait(false))
             {
-                document = JsonDocument.Parse(data);
-            }
-            catch (JsonException)
-            {
-                invalidJson = true;
-            }
-
-            if (invalidJson || document == null)
-            {
-                yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
-                continue;
+                foreach (var part in state.Read(data, options.IncludeRawChunks))
+                {
+                    yield return part;
+                }
             }
 
-            using (document)
+            foreach (var part in state.Finish())
             {
-                var root = document.RootElement;
-                if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
-                {
-                    usage = OpenAIJson.CompletionUsage(usageElement);
-                }
-
-                if (!root.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-                {
-                    continue;
-                }
-
-                var choice = choices[0];
-                if (choice.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String)
-                {
-                    if (!started)
-                    {
-                        started = true;
-                        yield return new TextStartStreamPart("0");
-                    }
-
-                    yield return new TextDeltaStreamPart("0", textElement.GetString() ?? string.Empty);
-                }
-
-                if (choice.TryGetProperty("finish_reason", out var finishElement) && finishElement.ValueKind == JsonValueKind.String)
-                {
-                    raw = finishElement.GetString();
-                    finish = FinishReasons.Parse(raw);
-                }
+                yield return part;
             }
         }
-
-        if (started)
+        finally
         {
-            yield return new TextEndStreamPart("0");
+            await enumerator.DisposeAsync().ConfigureAwait(false);
         }
+    }
 
-        yield return new FinishStreamPart(finish, usage ?? new LanguageModelUsage(null, null, null), raw);
+    private static bool IsOutputChunk(string data)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(data);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || root.TryGetProperty("error", out _)
+                || !root.TryGetProperty("choices", out var choices)
+                || choices.ValueKind != JsonValueKind.Array)
+            {
+                return false;
+            }
+
+            foreach (var choice in choices.EnumerateArray())
+            {
+                if (choice.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String && (text.GetString() ?? string.Empty).Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static string? StringOrNull(JsonElement element, string name)
@@ -355,6 +348,110 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
         }
 
         return result;
+    }
+
+    private sealed class StreamState
+    {
+        private readonly JsonObject _metadata = new JsonObject();
+        private bool _started;
+        private FinishReason _finish = FinishReason.Other;
+        private string? _rawFinish;
+        private LanguageModelUsage? _usage;
+
+        public IEnumerable<LanguageModelStreamPart> Read(string data, bool includeRaw)
+        {
+            if (includeRaw)
+            {
+                yield return new RawStreamPart(data);
+            }
+
+            JsonDocument? document = null;
+            var invalidJson = false;
+            try
+            {
+                document = JsonDocument.Parse(data);
+            }
+            catch (JsonException)
+            {
+                invalidJson = true;
+            }
+
+            if (invalidJson || document == null)
+            {
+                Fail();
+                yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
+                yield break;
+            }
+
+            using (document)
+            {
+                var root = document.RootElement;
+                if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                {
+                    Fail();
+                    yield return new ErrorStreamPart(StringOrNull(error, "message") ?? "stream error");
+                    yield break;
+                }
+
+                if (!_started)
+                {
+                    _started = true;
+                    yield return new ResponseMetadataStreamPart(
+                        StringOrNull(root, "id"),
+                        StringOrNull(root, "model"),
+                        OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created")));
+                    yield return new TextStartStreamPart("0");
+                }
+
+                if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+                {
+                    _usage = OpenAIJson.CompletionUsage(usage);
+                }
+
+                if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
+                {
+                    yield break;
+                }
+
+                var choice = choices[0];
+                if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
+                {
+                    _rawFinish = finish.GetString();
+                    _finish = FinishReasons.Parse(_rawFinish);
+                }
+
+                if (choice.TryGetProperty("logprobs", out var logprobs) && logprobs.ValueKind != JsonValueKind.Null)
+                {
+                    _metadata["logprobs"] = JsonNode.Parse(logprobs.GetRawText());
+                }
+
+                var text = StringOrNull(choice, "text");
+                if (text != null)
+                {
+                    yield return new TextDeltaStreamPart("0", text);
+                }
+            }
+        }
+
+        public IEnumerable<LanguageModelStreamPart> Finish()
+        {
+            if (_started)
+            {
+                yield return new TextEndStreamPart("0");
+            }
+
+            yield return new FinishStreamPart(
+                _finish,
+                _usage ?? new LanguageModelUsage(null, null, null),
+                _rawFinish,
+                OpenAIJson.ProviderMetadata(_metadata));
+        }
+
+        private void Fail()
+        {
+            _finish = FinishReason.Error;
+            _rawFinish = null;
+        }
     }
 }
 

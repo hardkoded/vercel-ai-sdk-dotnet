@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Tests;
 
@@ -919,6 +920,126 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Equal(1, JsonNode.Parse(capture.Body)!["logprobs"]!.GetValue<int>());
     }
 
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExposesCompletionResponseHeaders()
+    {
+        const string json = "{\"id\":\"cmpl-96cAM1v77r4jXa4qb2NSmRREV5oWB\",\"object\":\"text_completion\",\"created\":1711363706,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"\",\"index\":0,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":4,\"total_tokens\":34,\"completion_tokens\":30}}";
+        var capture = new OpenAICapture { ResponseBytes = System.Text.Encoding.UTF8.GetBytes(json) };
+        capture.ResponseHeaders["test-header"] = "test-value";
+        var result = await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+        Assert.Equal(
+            new Dictionary<string, string> { ["content-length"] = "250", ["content-type"] = "application/json", ["test-header"] = "test-value" },
+            result.ResponseHeaders.ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesCompletionHeaders()
+    {
+        var capture = new OpenAICapture { ResponseJson = "{\"choices\":[{\"text\":\"\",\"finish_reason\":\"stop\"}]}" };
+        await StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoGenerateAsync(CompletionCall(), CancellationToken.None);
+        AssertCompletionHeaders(capture);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should stream text deltas", Coverage = UpstreamCoverage.Covered)]
+    public async Task StreamsCompletionTextDeltas()
+    {
+        const string logprobs = "{\"tokens\":[\" ever\",\" after\",\".\\n\\n\",\"The\",\" end\",\".\"],\"token_logprobs\":[-0.0664508,-0.014520033,-1.3820221,-0.7890417,-0.5323165,-0.10247037],\"top_logprobs\":[{\" ever\":-0.0664508},{\" after\":-0.014520033},{\".\\n\\n\":-1.3820221},{\"The\":-0.7890417},{\" end\":-0.5323165},{\".\":-0.10247037}]}";
+        var parts = await StreamCompletion(
+            "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"Hello\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+            + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\", \",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+            + "data: {\"id\":\"cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"World!\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+            + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"choices\":[{\"text\":\"\",\"index\":0,\"logprobs\":" + logprobs + ",\"finish_reason\":\"stop\"}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+            + "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"model\":\"gpt-3.5-turbo-instruct\",\"usage\":{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362},\"choices\":[]}\n\n"
+            + "data: [DONE]\n\n");
+        Assert.Equal(new[] { "stream-start", "response-metadata", "text-start", "text-delta", "text-delta", "text-delta", "text-end", "finish" }, parts.Select(part => part.Type));
+        Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
+        Assert.Equal("cmpl-96c64EdfhOw8pjFFgVpLuT8k2MtdT", metadata.Id);
+        Assert.Equal("gpt-3.5-turbo-instruct", metadata.ModelId);
+        Assert.Equal(DateTimeOffset.Parse("2024-03-25T10:44:00Z", System.Globalization.CultureInfo.InvariantCulture), metadata.Timestamp);
+        Assert.Equal(new[] { "Hello", ", ", "World!" }, parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta));
+        Assert.All(parts.OfType<TextDeltaStreamPart>(), part => Assert.Equal("0", part.Id));
+        var finish = Assert.IsType<FinishStreamPart>(parts[7]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("stop", finish.RawFinishReason);
+        OpenAIUpstream.Equal(JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()), "{\"openai\":{\"logprobs\":" + logprobs + "}}");
+        Assert.Equal(10, finish.Usage.InputTokens);
+        Assert.Equal(10, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(362, finish.Usage.OutputTokens);
+        Assert.Equal(362, finish.Usage.TextTokens);
+        Assert.Null(finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.CacheWriteTokens);
+        Assert.Null(finish.Usage.ReasoningTokens);
+        OpenAIUpstream.Equal(JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()), "{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should throw an api error when the first stream chunk is an error", Coverage = UpstreamCoverage.Covered)]
+    public async Task ThrowsEarlyCompletionStreamError()
+    {
+        const string message = "The server had an error processing your request. Sorry about that! You can retry your request, or contact us through our help center at help.openai.com if you keep seeing this error.";
+        var exception = await Assert.ThrowsAsync<InternalServerException>(() => StreamCompletion("data: {\"error\":{\"message\":\"" + message + "\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\ndata: [DONE]\n\n"));
+        Assert.Equal(message, exception.Message);
+        Assert.Equal(500, exception.StatusCode);
+        Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should forward error stream parts after output has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.")]
+    public async Task ForwardsCompletionErrorAfterOutput()
+    {
+        var parts = await StreamCompletion(
+            "data: {\"id\":\"cmpl-error-after-output\",\"object\":\"text_completion\",\"created\":1711363440,\"choices\":[{\"text\":\"Hello\",\"index\":0,\"logprobs\":null,\"finish_reason\":null}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n"
+            + "data: {\"error\":{\"message\":\"stream failed after output\",\"type\":\"server_error\",\"param\":null,\"code\":null}}\n\n"
+            + "data: [DONE]\n\n");
+        Assert.Equal(new[] { "stream-start", "response-metadata", "text-start", "text-delta", "error", "text-end", "finish" }, parts.Select(part => part.Type));
+        Assert.Equal("cmpl-error-after-output", Assert.IsType<ResponseMetadataStreamPart>(parts[1]).Id);
+        Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(parts[3]).Delta);
+        Assert.Equal("stream failed after output", Assert.IsType<ErrorStreamPart>(parts[4]).Message);
+        AssertCompletionErrorFinish(parts[6]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should handle unparsable stream parts", Coverage = UpstreamCoverage.Partial, Note = "The error message is JSON parsing failed: Text: {data}. Upstream also appends a SyntaxError.")]
+    public async Task HandlesUnparsableCompletionStreamParts()
+    {
+        var parts = await StreamCompletion("data: {unparsable}\n\ndata: [DONE]\n\n");
+        Assert.Equal(new[] { "stream-start", "error", "finish" }, parts.Select(part => part.Type));
+        Assert.Equal("JSON parsing failed: Text: {unparsable}.", Assert.IsType<ErrorStreamPart>(parts[1]).Message);
+        AssertCompletionErrorFinish(parts[2]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should send request body", Coverage = UpstreamCoverage.Covered)]
+    public void SendsCompletionStreamRequestBody()
+    {
+        var prepared = OpenAICompletionLanguageModel.Prepare("gpt-3.5-turbo-instruct", OpenAIUpstream.Hello(), true);
+        OpenAIUpstream.Equal(prepared.Body, "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass the model and the prompt", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesCompletionStreamPrompt()
+    {
+        var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
+        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
+        Assert.EndsWith("/completions", capture.Uri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task PassesCompletionStreamHeaders()
+    {
+        var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
+        await OpenAIUpstream.Read(StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(CompletionCall(), CancellationToken.None));
+        AssertCompletionHeaders(capture);
+        Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
+    }
+
     private static OpenAICapture EmbeddingFixture()
     {
         return new OpenAICapture { ResponseBytes = Encoding.UTF8.GetBytes(EmbeddingFixtureJson), ResponseMediaType = "application/json" };
@@ -942,6 +1063,53 @@ public sealed class OpenAIMediaUpstreamTests
             options.Project = "test-project";
             options.Headers["Custom-Provider-Header"] = "provider-header-value";
         });
+    }
+
+    private const string CompletionStreamOk =
+        "data: {\"id\":\"cmpl\",\"created\":1,\"model\":\"gpt-3.5-turbo-instruct\",\"choices\":[{\"text\":\"ok\",\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
+
+    private static LanguageModelCallOptions CompletionCall()
+    {
+        var call = OpenAIUpstream.Hello();
+        call.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        return call;
+    }
+
+    private static void AssertCompletionHeaders(OpenAICapture capture)
+    {
+        // Upstream reads the user agent separately, and HttpClient adds Content-Length at the transport.
+        var headers = capture.Headers
+            .Where(pair => pair.Key is not ("User-Agent" or "Content-Length"))
+            .ToDictionary(pair => pair.Key.ToLowerInvariant(), pair => pair.Value);
+        headers["content-type"] = headers["content-type"].Split(';')[0];
+        Assert.Equal(
+            new Dictionary<string, string>
+            {
+                ["authorization"] = "Bearer test-api-key",
+                ["content-type"] = "application/json",
+                ["custom-provider-header"] = "provider-header-value",
+                ["custom-request-header"] = "request-header-value",
+                ["openai-organization"] = "test-organization",
+                ["openai-project"] = "test-project",
+            },
+            headers);
+    }
+
+    private static void AssertCompletionErrorFinish(LanguageModelStreamPart part)
+    {
+        var finish = Assert.IsType<FinishStreamPart>(part);
+        Assert.Equal(FinishReason.Error, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+        OpenAIUpstream.Equal(JsonNode.Parse(finish.ProviderMetadata!.Value.GetRawText()), "{\"openai\":{}}");
+        Assert.Null(finish.Usage.InputTokens);
+        Assert.Null(finish.Usage.OutputTokens);
+        Assert.Null(finish.Usage.Raw);
+    }
+
+    private static async Task<List<LanguageModelStreamPart>> StreamCompletion(string events)
+    {
+        var capture = new OpenAICapture { ServerSentEvents = events };
+        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
     }
 
     private static async Task<OpenAIEmbeddingCallResult> Embed(string json, string modelId, IReadOnlyList<string> values)

@@ -584,7 +584,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         return string.IsNullOrEmpty(text) ? null : text;
     }
 
-    private static bool IsJsonObject(string data)
+    internal static bool IsJsonObject(string data)
     {
         try
         {
@@ -642,7 +642,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         return false;
     }
 
-    private static JsonElement? ErrorFrame(string data)
+    internal static JsonElement? ErrorFrame(string data)
     {
         if (!IsJsonObject(data))
         {
