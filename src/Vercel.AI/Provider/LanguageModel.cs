@@ -777,6 +777,28 @@ public sealed class ToolInputEndStreamPart : LanguageModelStreamPart
     public JsonElement? ProviderMetadata { get; }
 }
 
+/// <summary>A tool result the provider reported.</summary>
+public sealed class ToolResultStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a tool-result part.</summary>
+    public ToolResultStreamPart(string toolCallId, string toolName, JsonElement result)
+        : base("tool-result")
+    {
+        ToolCallId = toolCallId ?? string.Empty;
+        ToolName = toolName ?? string.Empty;
+        Result = result;
+    }
+
+    /// <summary>Matching tool call id.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>Result value.</summary>
+    public JsonElement Result { get; }
+}
+
 /// <summary>A cited URL.</summary>
 public sealed class SourceStreamPart : LanguageModelStreamPart
 {
@@ -865,14 +887,18 @@ public sealed class StreamStartStreamPart : LanguageModelStreamPart
 public sealed class TextStartStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a text-start part.</summary>
-    public TextStartStreamPart(string id)
+    public TextStartStreamPart(string id, JsonElement? providerMetadata = null)
         : base("text-start")
     {
         Id = id ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Text block id.</summary>
     public string Id { get; }
+
+    /// <summary>Provider metadata for this block.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Marks the end of one text block.</summary>
@@ -893,14 +919,18 @@ public sealed class TextEndStreamPart : LanguageModelStreamPart
 public sealed class ReasoningStartStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning-start part.</summary>
-    public ReasoningStartStreamPart(string id)
+    public ReasoningStartStreamPart(string id, JsonElement? providerMetadata = null)
         : base("reasoning-start")
     {
         Id = id ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning block id.</summary>
     public string Id { get; }
+
+    /// <summary>Provider metadata for this block.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Marks the end of one reasoning block.</summary>
