@@ -77,7 +77,7 @@ public sealed class PrimaryEndpointParityTests
     [UpstreamTest("packages/bytedance/src/bytedance-image-model.test.ts::ByteDanceImageModel > doGenerate::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task ByteDance_image_sends_json_and_custom_headers()
     {
-        var handler = ImageHandler();
+        var handler = new ParityHandler(_ => ParityHandler.Json("{\"data\":[{\"b64_json\":\"aGVsbG8=\"}]}"));
         var options = HeaderOptions("https://api.example.com");
         await ByteDanceProvider.Create(options, handler).GenerateImageAsync("seedream-5-0-260128", new ImageCallOptions("A salamander in a forest pond at dusk surrounded by fireflies"), RequestHeaders(), CancellationToken.None).ConfigureAwait(false);
         var call = handler.Calls[0];
