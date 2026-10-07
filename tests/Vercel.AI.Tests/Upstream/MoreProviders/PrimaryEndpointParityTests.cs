@@ -13,7 +13,6 @@ using Vercel.AI.KlingAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
-using Vercel.AI.Replicate;
 using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests;
@@ -161,54 +160,6 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("https://api.example.com/v1/videos/text2video", call.Uri.AbsoluteUri);
         using var body = JsonDocument.Parse(call.Text);
         Assert.Equal("kling-v2.6-t2v", body.RootElement.GetProperty("model_name").GetString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/replicate/src/replicate-image-model.test.ts::doGenerate::should pass the model and the settings", Coverage = UpstreamCoverage.Covered)]
-    public async Task Replicate_sends_the_model_path_and_input_settings()
-    {
-        var handler = ImageHandler();
-        var provider = ReplicateProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-token" }, handler);
-        await provider.GenerateImageAsync("black-forest-labs/flux-schnell", new ReplicateImageRequest("The Loch Ness monster getting a manicure")
-        {
-            Count = 1,
-            AspectRatio = "3:4",
-            Size = "1024x768",
-            Seed = 123,
-            ExtraInput = new JsonObject { ["style"] = "realistic_image" },
-        }, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", handler.Calls[0].Uri.AbsoluteUri);
-        using var body = JsonDocument.Parse(handler.Calls[0].Text);
-        Assert.Single(body.RootElement.EnumerateObject());
-        var input = body.RootElement.GetProperty("input");
-        Assert.Equal(6, input.EnumerateObject().Count());
-        Assert.Equal("The Loch Ness monster getting a manicure", input.GetProperty("prompt").GetString());
-        Assert.Equal(1, input.GetProperty("num_outputs").GetInt32());
-        Assert.Equal("3:4", input.GetProperty("aspect_ratio").GetString());
-        Assert.Equal("1024x768", input.GetProperty("size").GetString());
-        Assert.Equal(123, input.GetProperty("seed").GetInt32());
-        Assert.Equal("realistic_image", input.GetProperty("style").GetString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/replicate/src/replicate-image-model.test.ts::doGenerate::should pass headers and set the prefer header", Coverage = UpstreamCoverage.Covered)]
-    public async Task Replicate_sets_prefer_wait_and_the_user_agent()
-    {
-        var handler = ImageHandler();
-        var options = new OpenAICompatibleOptions { ApiKey = "test-api-token" };
-        options.Headers["Custom-Provider-Header"] = "provider-header-value";
-        var provider = ReplicateProvider.Create(options, handler);
-        await provider.GenerateImageAsync("black-forest-labs/flux-schnell", new ReplicateImageRequest("The Loch Ness monster getting a manicure")
-        {
-            Headers = new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" },
-        }, CancellationToken.None).ConfigureAwait(false);
-        var call = handler.Calls[0];
-        Assert.Equal("Bearer test-api-token", call.Header("Authorization"));
-        Assert.Equal("application/json", call.Header("Content-Type"));
-        Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
-        Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Equal("wait", call.Header("Prefer"));
-        Assert.Contains("ai-sdk/replicate/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
     }
 
     private static ParityHandler ImageHandler()

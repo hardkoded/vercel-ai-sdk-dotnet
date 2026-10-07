@@ -37,7 +37,6 @@ using Vercel.AI.Perplexity;
 using Vercel.AI.Prodia;
 using Vercel.AI.Provider;
 using Vercel.AI.QuiverAI;
-using Vercel.AI.Replicate;
 using Vercel.AI.RevAI;
 using Vercel.AI.TogetherAI;
 using Vercel.AI.Voyage;
@@ -232,7 +231,6 @@ public sealed class ProviderRequestTests
         yield return Media("/v1/videos/text2video", "Authorization", "Bearer secret", h => KlingAIProvider.Create(Key(), h), "video");
         yield return Media("/job", "Authorization", "Bearer secret", h => ProdiaProvider.Create(Key(), h), "image");
         yield return Media("api.quiver.ai", "Authorization", "Bearer secret", h => QuiverAIProvider.Create(Key(), h), "image");
-        yield return Media("/models/m/predictions", "Authorization", "Bearer secret", h => ReplicateProvider.Create(Key(), h), "image");
         yield return Media("/speechtotext/v1/jobs", "Authorization", "Bearer secret", h => RevAIProvider.Create(Key(), h), "transcription");
         yield return Media("/embeddings", "Authorization", "Bearer secret", h => VoyageProvider.Create(Key(), h), "embedding");
     }

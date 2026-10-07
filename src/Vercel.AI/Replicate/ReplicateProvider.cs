@@ -2,9 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.GenerateText;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -46,7 +45,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     {
         options ??= new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl = options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : ProviderValues.ValidateBaseUrl(options.BaseUrl) ?? DefaultBaseUrl;
         options.ApiKeyEnvironmentVariable = "REPLICATE_API_TOKEN";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -56,100 +55,29 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override IImageModel ImageModel(string modelId) => new Image(this, modelId);
+    public override IImageModel ImageModel(string modelId) => new ReplicateImageModel(this, modelId);
 
-    /// <summary>Posts a prediction. Slashes in <paramref name="modelId"/> stay in the path.</summary>
-    public Task<ImageGenerationResult> GenerateImageAsync(string modelId, ReplicateImageRequest request, CancellationToken cancellationToken)
+    /// <summary>Sends a request with the provider headers. <paramref name="headers"/> override them.</summary>
+    internal Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        return new Image(this, modelId).GenerateAsync(request, cancellationToken);
+        return ProviderExchange.SendAsync(_httpClient, method, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken);
     }
 
-    private sealed class Image : IImageModel
+    /// <summary>
+    /// Gets a URL taken from a response body. A URL off the provider origin must pass download validation.
+    /// <paramref name="headers"/> and the provider headers go only to the provider origin; null sends no headers.
+    /// </summary>
+    internal Task<ProviderExchangeResult> GetResponseUrlAsync(string url, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        private readonly ReplicateProvider _provider;
-        public Image(ReplicateProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "replicate.image";
-        public string ModelId { get; }
-        public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+        var sameOrigin = ProviderValues.IsSameOrigin(url, Options.BaseUrl);
+        if (!sameOrigin)
         {
-            return GenerateAsync(new ReplicateImageRequest(options.Prompt) { Count = options.Count, Size = options.Size, AspectRatio = options.AspectRatio }, cancellationToken);
+            DownloadUrls.ValidateDownloadUrl(url);
         }
 
-        public async Task<ImageGenerationResult> GenerateAsync(ReplicateImageRequest request, CancellationToken cancellationToken)
-        {
-            var input = new JsonObject { ["prompt"] = request.Prompt, ["num_outputs"] = request.Count };
-            if (request.AspectRatio != null)
-            {
-                input["aspect_ratio"] = request.AspectRatio;
-            }
-
-            if (request.Size != null)
-            {
-                input["size"] = request.Size;
-            }
-
-            if (request.Seed is { } seed)
-            {
-                input["seed"] = seed;
-            }
-
-            if (request.ExtraInput != null)
-            {
-                foreach (var pair in request.ExtraInput)
-                {
-                    input[pair.Key] = pair.Value == null ? null : JsonNode.Parse(pair.Value.ToJsonString());
-                }
-            }
-
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
-            headers["Prefer"] = string.IsNullOrEmpty(request.Prefer) ? "wait" : request.Prefer;
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/models/" + ModelId + "/predictions"),
-                ProviderExchange.Json(new JsonObject { ["input"] = input }.ToJsonString()),
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-            var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
-        }
+        var outgoing = sameOrigin && headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
+        return ProviderExchange.SendAsync(_httpClient, HttpMethod.Get, new Uri(url), null, outgoing, cancellationToken);
     }
-}
-
-/// <summary>Replicate image prediction.</summary>
-public sealed class ReplicateImageRequest
-{
-    /// <summary>Creates a prediction for <paramref name="prompt"/>.</summary>
-    public ReplicateImageRequest(string prompt)
-    {
-        Prompt = prompt ?? string.Empty;
-    }
-
-    /// <summary>Prompt sent as <c>input.prompt</c>.</summary>
-    public string Prompt { get; }
-
-    /// <summary><c>input.num_outputs</c>.</summary>
-    public int Count { get; set; } = 1;
-
-    /// <summary><c>input.aspect_ratio</c>, when set.</summary>
-    public string? AspectRatio { get; set; }
-
-    /// <summary><c>input.size</c>, when set.</summary>
-    public string? Size { get; set; }
-
-    /// <summary><c>input.seed</c>, when set.</summary>
-    public int? Seed { get; set; }
-
-    /// <summary>Additional <c>input</c> fields, such as <c>style</c>.</summary>
-    public JsonObject? ExtraInput { get; set; }
-
-    /// <summary><c>Prefer</c> header. Defaults to <c>wait</c>.</summary>
-    public string Prefer { get; set; } = "wait";
-
-    /// <summary>Headers merged over the provider headers.</summary>
-    public IDictionary<string, string>? Headers { get; set; }
-
 }
 
 /// <summary>Registers Replicate.</summary>
