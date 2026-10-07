@@ -495,9 +495,9 @@
       "title": "Cover upstream unit tests: deepinfra",
       "dotnetProject": "Vercel.AI.DeepInfra",
       "inScope": 26,
-      "covered": 5,
+      "covered": 26,
       "partial": 0,
-      "missing": 21,
+      "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/79"
     },
     {

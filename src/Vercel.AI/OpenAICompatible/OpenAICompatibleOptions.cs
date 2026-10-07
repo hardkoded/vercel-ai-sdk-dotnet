@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 
@@ -97,6 +98,9 @@ public class OpenAICompatibleOptions
 
     /// <summary>Rewrites the JSON body before it is sent. Warnings raised here are returned with the call.</summary>
     public Func<JsonObject, IList<CallWarning>, JsonObject>? TransformRequestBody { get; set; }
+
+    /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
+    public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }
 
     /// <summary>Maps a raw finish reason before the shared mapping. Null falls through.</summary>
     public Func<string?, FinishReason?>? MapFinishReason { get; set; }

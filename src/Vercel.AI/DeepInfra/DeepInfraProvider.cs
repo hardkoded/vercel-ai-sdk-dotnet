@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -39,6 +41,36 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
         return new DeepInfraProvider(client, options);
     }
 
+    /// <summary>
+    /// DeepInfra leaves reasoning tokens out of <c>completion_tokens</c> for some models (for example Gemini and Gemma).
+    /// When reasoning exceeds completion tokens, the reasoning tokens are added to the completion and total counts.
+    /// </summary>
+    public static JsonElement FixReasoningUsage(JsonElement usage)
+    {
+        var completion = usage.TryGetProperty("completion_tokens", out var completionValue) && completionValue.ValueKind == JsonValueKind.Number
+            ? completionValue.GetInt32()
+            : 0;
+        if (!usage.TryGetProperty("completion_tokens_details", out var details)
+            || details.ValueKind != JsonValueKind.Object
+            || !details.TryGetProperty("reasoning_tokens", out var reasoningValue)
+            || reasoningValue.ValueKind != JsonValueKind.Number
+            || reasoningValue.GetInt32() <= completion)
+        {
+            return usage;
+        }
+
+        var reasoning = reasoningValue.GetInt32();
+        var fixedUsage = JsonNode.Parse(usage.GetRawText())!.AsObject();
+        fixedUsage["completion_tokens"] = completion + reasoning;
+        if (usage.TryGetProperty("total_tokens", out var total) && total.ValueKind == JsonValueKind.Number)
+        {
+            fixedUsage["total_tokens"] = total.GetInt32() + reasoning;
+        }
+
+        using var document = JsonDocument.Parse(fixedUsage.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options ??= new OpenAICompatibleOptions();
@@ -66,6 +98,7 @@ public sealed class DeepInfraProvider : OpenAICompatibleProvider
         }
         options.SupportsStructuredOutputs = true;
         options.SelectErrorMessage = DeepInfraImageModel.ReadError;
+        options.ConvertUsage = usage => OpenAICompatibleChat.ConvertUsage(FixReasoningUsage(usage)).Usage;
         if (string.IsNullOrEmpty(options.ImageBaseUrl))
         {
             options.ImageBaseUrl = options.BaseUrl == DefaultBaseUrl
