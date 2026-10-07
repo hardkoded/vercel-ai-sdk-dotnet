@@ -134,7 +134,7 @@ public sealed class ElevenLabsParityTests
     {
         var handler = SpeechHandler();
         await SpeechModel(handler).GenerateAsync(new ElevenLabsSpeechRequest("Hello, world!") { Voice = "test-voice-id" }, CancellationToken.None);
-        Assert.Contains("ai-sdk/elevenlabs/0.0.0-test", handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/elevenlabs/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public sealed class ElevenLabsParityTests
         Assert.StartsWith("multipart/form-data; boundary=", call.Header("Content-Type"), StringComparison.Ordinal);
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/elevenlabs/0.0.0-test", call.Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/elevenlabs/" + AiSdkVersion.Version, call.Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
