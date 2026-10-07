@@ -241,7 +241,7 @@ public sealed class FishAudioParityTests
     {
         var (model, handler) = SpeechModel();
         await model.DoGenerateAsync(SpeechCall(), CancellationToken.None);
-        Assert.Contains("ai-sdk/fish-audio/0.0.0-test", handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/fish-audio/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -401,7 +401,7 @@ public sealed class FishAudioParityTests
     {
         var (model, handler) = TranscriptionModel();
         await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
-        Assert.Contains("ai-sdk/fish-audio/0.0.0-test", handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
+        Assert.Contains("ai-sdk/fish-audio/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
     }
 
     [Fact]
