@@ -150,7 +150,13 @@ internal static class Generation
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var abort = new StreamAbort();
         var signal = options.AbortSignal;
-        signal?.AddAbortHandler(() => abort.Fire(signal.Reason as Exception ?? new OperationCanceledException(signal.Reason?.ToString()), textSource, finishSource, usageSource, stepsSource));
+        if (signal != null)
+        {
+            Action onSignal = () => abort.Fire(signal.Reason as Exception ?? new OperationCanceledException(signal.Reason?.ToString()), textSource, finishSource, usageSource, stepsSource);
+            signal.AddAbortHandler(onSignal);
+            abort.SignalCleanup = () => signal.RemoveAbortHandler(onSignal);
+        }
+
         if (cancellationToken.CanBeCanceled)
         {
             abort.Registration = cancellationToken.Register(() => abort.Fire(new OperationCanceledException(cancellationToken), textSource, finishSource, usageSource, stepsSource));
@@ -212,9 +218,10 @@ internal static class Generation
                 var disposal = abort.Track(enumerator);
                 try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     while (true)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+
                         // A model stream can ignore the token, so race each read against the abort.
                         var next = enumerator.MoveNextAsync().AsTask();
                         if (await Task.WhenAny(next, abort.Signal).ConfigureAwait(false) != next)
@@ -319,7 +326,7 @@ internal static class Generation
 
             if (!abort.TryFinish())
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                throw abort.Error!;
             }
 
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
@@ -362,6 +369,7 @@ internal static class Generation
         finally
         {
             abort.Registration.Dispose();
+            abort.SignalCleanup?.Invoke();
         }
     }
 
@@ -622,6 +630,8 @@ internal sealed class StreamAbort
 
     public CancellationTokenRegistration Registration { get; set; }
 
+    public Action? SignalCleanup { get; set; }
+
     public Exception? Error => _outcome as Exception;
 
     public bool TryFinish() => Interlocked.CompareExchange(ref _outcome, Done, null) == null;
@@ -650,9 +660,19 @@ internal sealed class StreamAbort
         finishReason.TrySetException(error);
         usage.TrySetException(error);
         steps.TrySetException(error);
-        _cancellation.Cancel();
-        Volatile.Read(ref _disposal)?.Abandon();
-        _signal.TrySetResult(true);
+        try
+        {
+            _cancellation.Cancel();
+        }
+        catch (AggregateException)
+        {
+            // A token callback threw. The call is aborted either way.
+        }
+        finally
+        {
+            Volatile.Read(ref _disposal)?.Abandon();
+            _signal.TrySetResult(true);
+        }
     }
 
     // Waits for the provider to dispose, unless an abort arrives first. A model stream may never finish disposing.
