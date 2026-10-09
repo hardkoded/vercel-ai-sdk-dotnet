@@ -8,6 +8,7 @@ using WarningLog = Vercel.AI.Util.LogWarnings;
 namespace Vercel.AI.Tests.Upstream.Logger.LogWarnings;
 
 /// <summary>Port of <c>log-warnings.test.ts</c> &gt; <c>logWarnings &gt; deprecation warnings</c>.</summary>
+[Collection("LogWarnings")]
 public sealed class LogWarningsDeprecationWarningsTests
 {
     private const string Message = "AI SDK Warning: Deprecated: \"generateObject\". Use generateText with an output setting instead.";

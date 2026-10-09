@@ -8,6 +8,7 @@ using WarningLog = Vercel.AI.Util.LogWarnings;
 namespace Vercel.AI.Tests.Upstream.Logger.LogWarningsNode;
 
 /// <summary>Port of <c>log-warnings.node.test.ts</c> &gt; <c>Node deprecation warning behavior</c>.</summary>
+[Collection("LogWarnings")]
 public sealed class NodeDeprecationWarningBehaviorTests
 {
     [Fact]
