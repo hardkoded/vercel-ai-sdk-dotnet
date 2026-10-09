@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild tests/parity/coverage-summary.json from UpstreamTest attributes.
+"""Rebuild tests/parity/generated/coverage-summary.json from UpstreamTest attributes.
 
 The summary is checked by UpstreamParityTests. Issue bodies for features that
 still have missing or partial upstream tests are written as JSON lines when
@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PARITY = ROOT / "tests" / "parity"
+GENERATED = PARITY / "generated"
 TEST_DIR = ROOT / "tests" / "Vercel.AI.Tests"
 
 ATTR = re.compile(
@@ -159,7 +160,7 @@ def issue_body(feature: dict[str, object], rows: list[dict[str, object]], links:
         '[UpstreamTest("packages/.../file.test.ts::suite::title", Coverage = UpstreamCoverage.Covered)]',
         "```",
         "",
-        "`UpstreamParityTests` fails if the id is unknown or `tests/parity/coverage-summary.json` is stale. "
+        "`UpstreamParityTests` fails if the id is unknown. "
         "Rebuild the summary with `python3 build/parity-report.py`.",
         "",
         "Do not copy the TypeScript. Reimplement the public behavior and assert the same outcomes.",
@@ -196,7 +197,7 @@ def issue_body(feature: dict[str, object], rows: list[dict[str, object]], links:
 
 
 def write_issue_index(summary: dict[str, object]) -> None:
-    path = PARITY / "issues.json"
+    path = GENERATED / "issues.json"
     existing: dict[str, str] = {}
     if path.exists():
         previous = json.loads(path.read_text(encoding="utf-8"))
@@ -234,7 +235,8 @@ def main() -> None:
     if missing_ids:
         raise SystemExit("Unknown upstream ids:\n" + "\n".join(missing_ids))
     summary = summarize(rows, links, str(manifest["upstreamCommit"]))
-    (PARITY / "coverage-summary.json").write_text(
+    GENERATED.mkdir(exist_ok=True)
+    (GENERATED / "coverage-summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
