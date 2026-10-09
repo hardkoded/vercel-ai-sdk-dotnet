@@ -70,7 +70,7 @@ public static class DecisionState
             case "url":
                 var downloaded = await Download.GetAsync(converted.Url!, abortSignal: cancellationToken).ConfigureAwait(false);
                 var contentType = downloaded.MediaType?.Split(';')[0].Trim();
-                if (!MediaTypes.IsFullMediaType(mediaType) && contentType != null && MediaTypes.IsFullMediaType(contentType))
+                if (!MediaTypes.IsFullMediaType(mediaType) && contentType != null && MediaTypes.IsFullMediaType(contentType) && MediaTypes.GetTopLevelMediaType(contentType) == mediaType)
                 {
                     mediaType = contentType;
                 }
