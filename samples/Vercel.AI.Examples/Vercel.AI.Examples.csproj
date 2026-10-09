@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <Description>Compiled code that the docs include as snippets through MarkdownSnippets.MsBuild.</Description>
+    <MarkdownSnippetsRoot>$(MSBuildThisFileDirectory)..\..\</MarkdownSnippetsRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Vercel.AI\Vercel.AI.csproj" />
+    <PackageReference Include="MarkdownSnippets.MsBuild" Version="27.0.2" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
