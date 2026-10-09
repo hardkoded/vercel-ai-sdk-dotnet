@@ -38,12 +38,6 @@ internal sealed class UpstreamManifest
     public string UpstreamRepo { get; set; } = string.Empty;
 
     public string UpstreamCommit { get; set; } = string.Empty;
-
-    public int UnitTestCount { get; set; }
-
-    public int InScopeCount { get; set; }
-
-    public int OutOfScopeCount { get; set; }
 }
 
 internal sealed class UpstreamLink
