@@ -95,6 +95,26 @@ public sealed class OpenAIResponsesUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest(Generate + "should preserve sampling parameters when reasoning is disabled for %s", Coverage = UpstreamCoverage.Covered)]
+    public void PreservesSamplingParametersWhenReasoningIsDisabledForSolAndLuna()
+    {
+        foreach (var modelId in new[] { "gpt-6-sol", "gpt-6-luna" })
+        {
+            var prepared = OpenAIResponsesLanguageModel.Prepare(modelId, new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Temperature = 0,
+                TopP = 0.9,
+                Reasoning = "none",
+            }, false);
+            Assert.Equal("none", prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
+            Assert.Equal(0, prepared.Body["temperature"]!.GetValue<double>());
+            Assert.Equal(0.9, prepared.Body["top_p"]!.GetValue<double>());
+            Assert.Empty(prepared.Warnings);
+        }
+    }
+
+    [Fact]
     [UpstreamTest(Generate + "should send model id, settings, and input", Coverage = UpstreamCoverage.Covered)]
     public void SendsModelSettingsAndInput()
     {
