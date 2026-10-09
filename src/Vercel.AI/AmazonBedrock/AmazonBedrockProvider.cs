@@ -87,6 +87,8 @@ public sealed class AmazonBedrockProvider : ProviderBase
 /// <summary>Bedrock Converse language model.</summary>
 public sealed class AmazonBedrockLanguageModel : ILanguageModel
 {
+    private const string JsonToolName = "json";
+
     private readonly AmazonBedrockProvider _provider;
 
     /// <summary>Creates a model.</summary>
@@ -108,7 +110,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var bodyObject = Build(options, out var warnings);
+        var bodyObject = Build(options, out var warnings, out var usesJsonTool);
         var body = bodyObject.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, _provider.ConverseUri(ModelId))
         {
@@ -123,7 +125,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         using var document = JsonDocument.Parse(text);
-        return Parse(document.RootElement, warnings, CopyHeaders(response));
+        return Parse(document.RootElement, warnings, CopyHeaders(response), usesJsonTool);
     }
 
     /// <inheritdoc />
@@ -162,7 +164,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options, out List<CallWarning> warnings)
+    private JsonObject Build(LanguageModelCallOptions options, out List<CallWarning> warnings, out bool usesJsonTool)
     {
         AmazonBedrockMessages.Convert(ModelId, options.Prompt, out var system, out var messages);
         var body = new JsonObject { ["messages"] = messages };
@@ -208,7 +210,21 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["inferenceConfig"] = inference;
         }
 
-        var toolConfig = AmazonBedrockTools.Prepare(ModelId, options.Tools, options.ToolChoice, out warnings);
+        // Structured output goes through a forced `json` tool. Its input becomes the response text.
+        usesJsonTool = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Null && schema.ValueKind != JsonValueKind.Undefined;
+        var tools = options.Tools;
+        var toolChoice = options.ToolChoice;
+        if (usesJsonTool)
+        {
+            var list = new List<LanguageModelTool>(tools ?? Array.Empty<LanguageModelTool>())
+            {
+                new LanguageModelTool(JsonToolName, "Respond with a JSON object.", options.JsonSchema!.Value),
+            };
+            tools = list;
+            toolChoice = ToolChoice.Required;
+        }
+
+        var toolConfig = AmazonBedrockTools.Prepare(ModelId, tools, toolChoice, out warnings);
         if (toolConfig.Count > 0)
         {
             body["toolConfig"] = toolConfig;
@@ -270,7 +286,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         return result;
     }
 
-    private LanguageModelGenerateResult Parse(JsonElement root, IReadOnlyList<CallWarning> warnings, IReadOnlyDictionary<string, string> headers)
+    private LanguageModelGenerateResult Parse(JsonElement root, IReadOnlyList<CallWarning> warnings, IReadOnlyDictionary<string, string> headers, bool usesJsonTool)
     {
         var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
         var content = new List<GeneratedContent>();
@@ -309,7 +325,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                 if (part.TryGetProperty("toolUse", out var toolUse) && toolUse.ValueKind == JsonValueKind.Object)
                 {
                     var name = toolUse.TryGetProperty("name", out var nameElement) ? nameElement.GetString() ?? "tool" : "tool";
-                    if (string.Equals(name, "json", StringComparison.Ordinal))
+                    if (usesJsonTool && string.Equals(name, JsonToolName, StringComparison.Ordinal))
                     {
                         jsonTool = true;
                         var json = toolUse.TryGetProperty("input", out var jsonInput) ? jsonInput.GetRawText() : "{}";
@@ -343,7 +359,27 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             responseId = requestId;
         }
 
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, responseHeaders: headers);
+        JsonElement? providerMetadata = null;
+        if (jsonTool)
+        {
+            string? stopSequence = null;
+            if (root.TryGetProperty("additionalModelResponseFields", out var extra)
+                && extra.ValueKind == JsonValueKind.Object
+                && extra.TryGetProperty("delta", out var delta)
+                && delta.ValueKind == JsonValueKind.Object
+                && delta.TryGetProperty("stop_sequence", out var stopValue)
+                && stopValue.ValueKind == JsonValueKind.String)
+            {
+                stopSequence = stopValue.GetString();
+            }
+
+            var payload = new JsonObject { ["isJsonResponseFromTool"] = true, ["stopSequence"] = stopSequence };
+            var metadata = new JsonObject { ["amazonBedrock"] = payload, ["bedrock"] = payload.DeepClone() };
+            using var document = JsonDocument.Parse(metadata.ToJsonString());
+            providerMetadata = document.RootElement.Clone();
+        }
+
+        return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, providerMetadata, responseHeaders: headers);
     }
 
     private static Dictionary<string, string> CopyHeaders(HttpResponseMessage response)
