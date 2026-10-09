@@ -1,10 +1,10 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13856,
-  "inScope": 11077,
+  "unitTests": 13867,
+  "inScope": 11088,
   "outOfScope": 2779,
-  "covered": 3503,
-  "partial": 101,
+  "covered": 3513,
+  "partial": 102,
   "missing": 7473,
   "features": [
     {
@@ -290,8 +290,8 @@
     {
       "feature": "anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 581,
-      "covered": 128,
+      "inScope": 582,
+      "covered": 129,
       "partial": 5,
       "missing": 448
     },
@@ -458,8 +458,8 @@
     {
       "feature": "gateway",
       "dotnetProject": "Vercel.AI.Gateway",
-      "inScope": 425,
-      "covered": 8,
+      "inScope": 426,
+      "covered": 9,
       "partial": 3,
       "missing": 414
     },
@@ -498,8 +498,8 @@
     {
       "feature": "google",
       "dotnetProject": "Vercel.AI.Google",
-      "inScope": 513,
-      "covered": 196,
+      "inScope": 514,
+      "covered": 197,
       "partial": 0,
       "missing": 317
     },
@@ -722,8 +722,8 @@
     {
       "feature": "openai",
       "dotnetProject": "Vercel.AI.OpenAI",
-      "inScope": 62,
-      "covered": 32,
+      "inScope": 63,
+      "covered": 33,
       "partial": 1,
       "missing": 29
     },
@@ -898,9 +898,9 @@
     {
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
-      "inScope": 650,
-      "covered": 344,
-      "partial": 0,
+      "inScope": 657,
+      "covered": 350,
+      "partial": 1,
       "missing": 306
     },
     {

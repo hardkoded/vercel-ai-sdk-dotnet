@@ -14,6 +14,9 @@ namespace Vercel.AI.Gateway;
 /// <summary>AI Gateway settings. The default base URL is <c>https://ai-gateway.vercel.sh/v4/ai</c>.</summary>
 public sealed class GatewayOptions
 {
+    /// <summary>Settings for downloading JSON Lines batch results.</summary>
+    public BatchResultDownloads? BatchResultDownloads { get; set; }
+
     /// <summary>Gateway origin for the V4 routes.</summary>
     public string BaseUrl { get; set; } = "https://ai-gateway.vercel.sh/v4/ai";
 
@@ -25,7 +28,7 @@ public sealed class GatewayOptions
 /// Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes
 /// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>).
 /// </summary>
-public sealed class GatewayProvider : ProviderBase
+public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "gateway";
@@ -43,6 +46,12 @@ public sealed class GatewayProvider : ProviderBase
 
     /// <summary>Options.</summary>
     public GatewayOptions Options { get; }
+
+    /// <summary>Gateway batch API. Downloads batch results.</summary>
+    public Operations.IBatchApi? ExperimentalBatch()
+    {
+        return new GatewayBatchApi(this);
+    }
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
@@ -88,6 +97,26 @@ public sealed class GatewayProvider : ProviderBase
             headers["ai-language-model-streaming"] = value ? "true" : "false";
         }
 
+        if (extra != null)
+        {
+            foreach (var pair in extra)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return headers;
+    }
+
+    internal Dictionary<string, string?> BatchHeaders(IReadOnlyDictionary<string, string?>? extra)
+    {
+        var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Authorization"] = "Bearer " + key,
+            ["ai-gateway-protocol-version"] = "0.0.1",
+            ["ai-gateway-auth-method"] = "api-key",
+        };
         if (extra != null)
         {
             foreach (var pair in extra)

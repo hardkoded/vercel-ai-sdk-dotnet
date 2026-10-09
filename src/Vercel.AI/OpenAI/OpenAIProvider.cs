@@ -19,6 +19,9 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
 {
     private bool _baseUrlAssigned;
 
+    /// <summary>Settings for downloading JSON Lines batch results.</summary>
+    public BatchResultDownloads? BatchResultDownloads { get; set; }
+
     /// <summary>Creates options aimed at <c>https://api.openai.com/v1</c> unless <c>OPENAI_BASE_URL</c> is set.</summary>
     public OpenAIOptions()
     {
@@ -83,7 +86,7 @@ public sealed class PreparedResponsesTools
 }
 
 /// <summary>OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches.</summary>
-public sealed class OpenAIProvider : OpenAICompatibleProvider
+public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatchProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "openai";
@@ -171,6 +174,14 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider
     {
         return new OpenAISpeechTranslationModel(this, modelId);
     }
+
+    /// <summary>Batch API. Downloads batch results.</summary>
+    public Operations.IBatchApi? ExperimentalBatch()
+    {
+        return new OpenAIBatchApi(this);
+    }
+
+    internal long? MaxBatchLineBytes => _openAI.BatchResultDownloads?.MaxLineBytes;
 
     /// <inheritdoc />
     public override IBatchModel BatchModel()

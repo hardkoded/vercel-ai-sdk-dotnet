@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -15,6 +14,9 @@ namespace Vercel.AI.Anthropic;
 /// <summary>Anthropic Messages API settings.</summary>
 public class AnthropicOptions
 {
+    /// <summary>Settings for downloading JSON Lines batch results.</summary>
+    public BatchResultDownloads? BatchResultDownloads { get; set; }
+
     /// <summary>API origin. The official host is normalized to <c>/v1</c>. Message calls append <c>/messages</c>.</summary>
     public string BaseUrl { get; set; } = "https://api.anthropic.com";
 
@@ -62,13 +64,13 @@ public class AnthropicOptions
 }
 
 /// <summary>Anthropic Messages provider.</summary>
-public class AnthropicProvider : ProviderBase
+public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
 {
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
 
     /// <summary>User agent for the Messages API.</summary>
-    public static readonly string UserAgent = "ai-sdk/anthropic/" + AiSdkVersion.Version;
+    public static readonly string UserAgent = "ai-sdk/anthropic/" + Operations.AiSdkVersion.Version;
 
     /// <summary>Creates a provider.</summary>
     public AnthropicProvider(HttpClient httpClient, AnthropicOptions? options = null)
@@ -154,6 +156,12 @@ public class AnthropicProvider : ProviderBase
     public override IEvaluationModel EvaluationModel(string modelId)
     {
         return new AnthropicEvaluationModel(this, modelId);
+    }
+
+    /// <summary>Message Batches API. Downloads batch results.</summary>
+    public Operations.IBatchApi? ExperimentalBatch()
+    {
+        return new AnthropicBatchApi(this);
     }
 
     /// <summary>Files API client.</summary>

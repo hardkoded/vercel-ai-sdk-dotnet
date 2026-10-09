@@ -14,6 +14,9 @@ namespace Vercel.AI.Google;
 /// <summary>Gemini settings.</summary>
 public class GoogleOptions
 {
+    /// <summary>Settings for downloading JSON Lines batch results.</summary>
+    public BatchResultDownloads? BatchResultDownloads { get; set; }
+
     /// <summary>API origin.</summary>
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -40,7 +43,7 @@ public class GoogleOptions
 }
 
 /// <summary>Google Gemini provider.</summary>
-public class GoogleProvider : ProviderBase
+public class GoogleProvider : ProviderBase, Operations.IBatchProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderName = "google";
@@ -62,6 +65,12 @@ public class GoogleProvider : ProviderBase
 
     /// <summary>Options.</summary>
     public GoogleOptions Options { get; }
+
+    /// <summary>Gemini Batch API. Downloads batch results.</summary>
+    public Operations.IBatchApi? ExperimentalBatch()
+    {
+        return new GoogleBatchApi(this);
+    }
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }

@@ -657,16 +657,28 @@ public static class JsonStreams
         return new JsonBody(parsed.Value.Value, parsed.RawValue.Value, ExtractResponseHeaders(response));
     }
 
+    /// <summary>Default limit for one JSON Lines row: 64 MiB of UTF-8 bytes.</summary>
+    public const long DefaultMaxJsonLineBytes = 64L * 1024 * 1024;
+
     /// <summary>
     /// Yields one JSON value per non-empty line. Lines may be split across reads.
     /// A final line without a newline is still yielded. Early disposal cancels <paramref name="onCancel"/>.
+    /// A row longer than <paramref name="maxLineBytes"/> UTF-8 bytes, excluding the LF, throws a
+    /// <see cref="Vercel.AI.Util.DownloadError"/> for <paramref name="url"/> and cancels the body.
     /// </summary>
     public static async IAsyncEnumerable<JsonElement> ReadJsonLinesAsync(
         Stream? stream,
         JsonNode? schema = null,
         Action? onCancel = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        long maxLineBytes = DefaultMaxJsonLineBytes,
+        string url = "")
     {
+        if (maxLineBytes <= 0)
+        {
+            throw new Vercel.AI.Operations.InvalidArgumentException("maxLineBytes", maxLineBytes, "maxLineBytes must be a positive safe integer.");
+        }
+
         if (stream is null)
         {
             throw new InvalidOperationException("Empty response body");
@@ -675,40 +687,79 @@ public static class JsonStreams
         var finished = false;
         try
         {
-            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            var line = new MemoryStream();
+            var chunk = new byte[1024];
+            while (true)
             {
-                var buffer = new StringBuilder();
-                var chunk = new char[256];
-                while (true)
+                cancellationToken.ThrowIfCancellationRequested();
+                var count = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+                if (count == 0)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var count = await reader.ReadAsync(chunk, 0, chunk.Length).ConfigureAwait(false);
-                    if (count == 0)
+                    finished = true;
+                    break;
+                }
+
+                var offset = 0;
+                while (offset < count)
+                {
+                    var lineEnd = Array.IndexOf(chunk, (byte)10, offset, count - offset);
+                    var segmentEnd = lineEnd < 0 ? count : lineEnd;
+
+                    // Bound each line before decoding it, excluding the newline byte.
+                    if (line.Length + (segmentEnd - offset) > maxLineBytes)
                     {
-                        finished = true;
+                        throw new Vercel.AI.Util.DownloadError(url, "JSON Lines response exceeded maximum line size of " + maxLineBytes + " bytes.");
+                    }
+
+                    line.Write(chunk, offset, segmentEnd - offset);
+                    if (lineEnd < 0)
+                    {
                         break;
                     }
 
-                    buffer.Append(chunk, 0, count);
-                    foreach (var line in DrainLines(buffer, final: false))
+                    offset = lineEnd + 1;
+                    var text = DecodeLine(line);
+                    line.SetLength(0);
+                    if (text.Trim().Length > 0)
                     {
-                        yield return JsonParsing.Parse(line, schema);
+                        yield return JsonParsing.Parse(text, schema);
                     }
                 }
+            }
 
-                foreach (var line in DrainLines(buffer, final: true))
-                {
-                    yield return JsonParsing.Parse(line, schema);
-                }
+            var tail = DecodeLine(line);
+            if (tail.Trim().Length > 0)
+            {
+                yield return JsonParsing.Parse(tail, schema);
             }
         }
         finally
         {
             if (!finished && onCancel != null)
             {
-                onCancel();
+                try
+                {
+                    onCancel();
+                }
+                catch (Exception)
+                {
+                    // A failing cancellation must not hide the error that stopped the download.
+                }
             }
         }
+    }
+
+    private static string DecodeLine(MemoryStream line)
+    {
+        var bytes = line.ToArray();
+        var start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        var length = bytes.Length - start;
+        if (length > 0 && bytes[bytes.Length - 1] == 13)
+        {
+            length--;
+        }
+
+        return Encoding.UTF8.GetString(bytes, start, length);
     }
 
     /// <summary>
@@ -751,52 +802,6 @@ public static class JsonStreams
                     yield return JsonParsing.SafeParse(message.Data, schema);
                 }
             }
-        }
-    }
-
-    private static IEnumerable<string> DrainLines(StringBuilder buffer, bool final)
-    {
-        var text = buffer.ToString();
-        var start = 0;
-        while (true)
-        {
-            var newline = text.IndexOf('\n', start);
-            if (newline < 0)
-            {
-                break;
-            }
-
-            var line = text.Substring(start, newline - start);
-            if (line.EndsWith("\r", StringComparison.Ordinal))
-            {
-                line = line.Substring(0, line.Length - 1);
-            }
-
-            if (line.Trim().Length > 0)
-            {
-                yield return line;
-            }
-
-            start = newline + 1;
-        }
-
-        buffer.Clear();
-        if (final)
-        {
-            var tail = text.Substring(start);
-            if (tail.EndsWith("\r", StringComparison.Ordinal))
-            {
-                tail = tail.Substring(0, tail.Length - 1);
-            }
-
-            if (tail.Trim().Length > 0)
-            {
-                yield return tail;
-            }
-        }
-        else if (start < text.Length)
-        {
-            buffer.Append(text, start, text.Length - start);
         }
     }
 
