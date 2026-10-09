@@ -636,7 +636,10 @@ public static class JsonStreams
         public IReadOnlyDictionary<string, string> Headers { get; }
     }
 
-    /// <summary>Reads a JSON response. Unknown object properties are removed when the schema says so.</summary>
+    /// <summary>
+    /// Reads a JSON response. Unknown object properties are removed when the schema says so.
+    /// A body above <see cref="Util.Download.DefaultMaxBytes"/> throws a <see cref="Util.DownloadError"/> before it is read.
+    /// </summary>
     public static async Task<JsonBody> ReadJsonAsync(HttpResponseMessage response, JsonNode? schema, CancellationToken cancellationToken = default)
     {
         if (response is null)
@@ -644,10 +647,9 @@ public static class JsonStreams
             throw new ArgumentNullException(nameof(response));
         }
 
-        var text = response.Content == null
-            ? string.Empty
-            : await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        cancellationToken.ThrowIfCancellationRequested();
+        var url = response.RequestMessage?.RequestUri?.ToString() ?? string.Empty;
+        var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var text = ResponseEncoding(response).GetString(bytes).TrimStart('\uFEFF');
         var parsed = JsonParsing.SafeParse(text, schema);
         if (!parsed.Success || parsed.Value is null || parsed.RawValue is null)
         {
@@ -655,6 +657,24 @@ public static class JsonStreams
         }
 
         return new JsonBody(parsed.Value.Value, parsed.RawValue.Value, ExtractResponseHeaders(response));
+    }
+
+    private static Encoding ResponseEncoding(HttpResponseMessage response)
+    {
+        var charset = response.Content?.Headers.ContentType?.CharSet?.Trim('"', '\'', ' ');
+        if (!string.IsNullOrEmpty(charset))
+        {
+            try
+            {
+                return Encoding.GetEncoding(charset);
+            }
+            catch (ArgumentException)
+            {
+                // An unknown charset falls back to UTF-8.
+            }
+        }
+
+        return Encoding.UTF8;
     }
 
     /// <summary>Default largest JSON Lines row, in UTF-8 bytes.</summary>
