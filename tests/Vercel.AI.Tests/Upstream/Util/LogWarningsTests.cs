@@ -381,7 +381,7 @@ public sealed class LogWarningsTests
         {
             LogWarnings.ResetState();
             LogWarnings.Logger = logger;
-            LogWarnings.ProcessEmitWarning = delegate (string message, string type) { Process.Add((message, type)); };
+            LogWarnings.ProcessEmitWarning = delegate (string message, string type, string? code) { Process.Add((message, type)); };
             LogWarnings.ConsoleWarn = delegate (string message) { Console.Add(message); };
         }
 

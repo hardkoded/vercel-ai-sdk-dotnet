@@ -132,11 +132,12 @@ public static class LogWarnings
     public const string FirstWarningInfoMessage = "AI SDK Warning System: To turn off warning logging, set the AI_SDK_LOG_WARNINGS global to false.";
 
     private static readonly object Gate = new object();
+    private static readonly HashSet<string> EmittedDeprecationCodes = new HashSet<string>(StringComparer.Ordinal);
     private static bool _hasLoggedBefore;
     private static object? _logger;
-    private static Action<string, string>? _processEmitWarning = delegate (string message, string type)
+    private static Action<string, string, string?>? _processEmitWarning = delegate (string message, string type, string? code)
     {
-        System.Diagnostics.Trace.TraceWarning(type + ": " + message);
+        System.Diagnostics.Trace.TraceWarning((code == null ? string.Empty : "[" + code + "] ") + type + ": " + message);
     };
 
     private static Action<string>? _consoleWarn = delegate (string message)
@@ -168,10 +169,10 @@ public static class LogWarnings
     }
 
     /// <summary>
-    /// Node <c>process.emitWarning</c> stand-in. Arguments are the message and the warning type.
-    /// <c>null</c> falls back to <see cref="ConsoleWarn"/>.
+    /// Node <c>process.emitWarning</c> stand-in. Arguments are the message, the warning type, and the
+    /// deprecation code (<c>null</c> for ordinary warnings). <c>null</c> falls back to <see cref="ConsoleWarn"/>.
     /// </summary>
-    public static Action<string, string>? ProcessEmitWarning
+    public static Action<string, string, string?>? ProcessEmitWarning
     {
         get
         {
@@ -210,12 +211,13 @@ public static class LogWarnings
         }
     }
 
-    /// <summary>Clears the first-call note so the next non-empty log emits it again.</summary>
+    /// <summary>Clears the first-call note and the emitted deprecation codes so the next log emits them again.</summary>
     public static void ResetState()
     {
         lock (Gate)
         {
             _hasLoggedBefore = false;
+            EmittedDeprecationCodes.Clear();
         }
     }
 
@@ -257,19 +259,32 @@ public static class LogWarnings
 
         if (first)
         {
-            Emit(FirstWarningInfoMessage, "Warning");
+            Emit(FirstWarningInfoMessage, "Warning", null);
         }
 
         for (var i = 0; i < options.Warnings.Count; i++)
         {
             var warning = options.Warnings[i];
-            Emit(FormatWarning(warning, options.Provider, options.Model), warning.Type == "deprecated" ? "DeprecationWarning" : "Warning");
+            var deprecated = warning as DeprecatedWarning;
+            var code = deprecated == null ? null : Deprecations.GetDeprecationCode(deprecated.Setting, options.Provider);
+            if (code != null)
+            {
+                lock (Gate)
+                {
+                    if (!EmittedDeprecationCodes.Add(code))
+                    {
+                        continue;
+                    }
+                }
+            }
+
+            Emit(FormatWarning(warning, options.Provider, options.Model), deprecated == null ? "Warning" : "DeprecationWarning", code);
         }
     }
 
-    private static void Emit(string message, string type)
+    private static void Emit(string message, string type, string? code)
     {
-        Action<string, string>? processEmit;
+        Action<string, string, string?>? processEmit;
         Action<string>? consoleWarn;
         lock (Gate)
         {
@@ -279,13 +294,13 @@ public static class LogWarnings
 
         if (processEmit != null)
         {
-            processEmit(message, type);
+            processEmit(message, type, code);
             return;
         }
 
         if (consoleWarn != null)
         {
-            consoleWarn(message);
+            consoleWarn(code == null ? message : "[" + code + "] " + message);
         }
     }
 
