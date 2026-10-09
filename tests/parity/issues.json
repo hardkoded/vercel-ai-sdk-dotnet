@@ -354,8 +354,8 @@
       "feature": "anthropic",
       "title": "Cover upstream unit tests: anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 574,
-      "covered": 121,
+      "inScope": 582,
+      "covered": 129,
       "partial": 5,
       "missing": 448,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/65"
