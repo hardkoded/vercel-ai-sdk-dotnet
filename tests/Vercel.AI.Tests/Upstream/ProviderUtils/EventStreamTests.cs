@@ -199,7 +199,9 @@ public sealed class EventStreamTests
             values.Add(value);
         }
 
-        Assert.Single(values);
+        var single = Assert.Single(values);
+        Assert.Equal(JsonValueKind.Object, single.ValueKind);
+        Assert.Empty(single.EnumerateObject());
     }
 
     [Theory]
@@ -285,7 +287,9 @@ public sealed class EventStreamTests
             values.Add(value);
         }
 
-        Assert.Single(values);
+        var single = Assert.Single(values);
+        Assert.Equal(JsonValueKind.Object, single.ValueKind);
+        Assert.Empty(single.EnumerateObject());
     }
 
     [Fact]
@@ -294,10 +298,12 @@ public sealed class EventStreamTests
         Coverage = UpstreamCoverage.Covered)]
     public async Task Accepts_a_chunk_larger_than_the_limit_when_each_line_is_below_the_limit()
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("{}\n", 9))));
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("     {}\n", 9))));
         var count = 0;
-        await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 8))
+        await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 64))
         {
+            Assert.Equal(JsonValueKind.Object, value.ValueKind);
+            Assert.Empty(value.EnumerateObject());
             count++;
         }
 
