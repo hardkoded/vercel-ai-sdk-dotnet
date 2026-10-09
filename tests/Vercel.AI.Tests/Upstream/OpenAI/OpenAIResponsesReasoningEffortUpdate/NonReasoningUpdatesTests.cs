@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using static Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate.ReasoningEffortUpdateSupport;
 
 namespace Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate;
 
@@ -12,8 +13,6 @@ namespace Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate;
 public sealed class NonReasoningUpdatesTests
 {
     private const string Prefix = "packages/openai/src/responses/openai-responses-reasoning-effort-update.test.ts::positioned reasoning effort updates (%s) > non-reasoning updates for %s::";
-
-    private const string WireUser = "{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Question\"}]}";
 
     private static readonly string[] Methods = { "generate", "stream" };
 
@@ -54,7 +53,7 @@ public sealed class NonReasoningUpdatesTests
 
     [Theory]
     [MemberData(nameof(SamplingCases))]
-    [UpstreamTest(Prefix + "handles sampling and logprobs when $name", Coverage = UpstreamCoverage.Covered, Note = "The port has no reasoningSummary default, so reasoningSummary: null is not sent.")]
+    [UpstreamTest(Prefix + "handles sampling and logprobs when $name", Coverage = UpstreamCoverage.Covered)]
     public async Task Handles_sampling_and_logprobs_when_name(
         string method,
         string modelId,
@@ -76,6 +75,7 @@ public sealed class NonReasoningUpdatesTests
             options["reasoningEffortUpdate"] = reasoningEffortUpdate;
         }
 
+        options["reasoningSummary"] = null;
         options["logprobs"] = 2;
         options["include"] = new JsonArray("message.output_text.logprobs", "reasoning.encrypted_content");
 
@@ -108,13 +108,13 @@ public sealed class NonReasoningUpdatesTests
 
     [Theory]
     [MemberData(nameof(MethodAndModel))]
-    [UpstreamTest(Prefix + "preserves positioned none updates and the initial reasoning effort", Coverage = UpstreamCoverage.Covered, Note = "The port has no reasoningSummary default, so reasoningSummary: null is not sent.")]
+    [UpstreamTest(Prefix + "preserves positioned none updates and the initial reasoning effort", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_positioned_none_updates_and_the_initial_reasoning_effort(string method, string modelId)
     {
         var prompt = Build(new[] { "user", "none", "user", "low", "user" });
         var original = prompt.ToArray();
 
-        var (body, warnings) = await Request(method, prompt, new JsonObject { ["reasoningEffort"] = "low" }, modelId);
+        var (body, warnings) = await Request(method, prompt, new JsonObject { ["reasoningEffort"] = "low", ["reasoningSummary"] = null }, modelId);
 
         OpenAIUpstream.Equal(
             body["input"],
@@ -153,76 +153,5 @@ public sealed class NonReasoningUpdatesTests
 
         OpenAIUpstream.Equal(body["input"], "[" + WireUpdate("none") + "," + WireUser + "]");
         Assert.Empty(warnings);
-    }
-
-    private static string WireUpdate(string effort) =>
-        "{\"type\":\"configuration_update\",\"reasoning\":{\"effort\":\"" + effort + "\"}}";
-
-    private static UserModelMessage User() => new("Question");
-
-    private static SystemModelMessage Update(string effort) =>
-        new(string.Empty, new Dictionary<string, JsonElement>
-        {
-            ["openai"] = OpenAIUpstream.Json("{\"reasoningEffortUpdate\":\"" + effort + "\"}"),
-        });
-
-    private static List<ModelMessage> Build(IEnumerable<string> kinds)
-    {
-        var prompt = new List<ModelMessage>();
-        foreach (var kind in kinds)
-        {
-            prompt.Add(kind == "user" ? User() : Update(kind));
-        }
-
-        return prompt;
-    }
-
-    private static async Task<(JsonNode Body, IReadOnlyList<CallWarning> Warnings)> Request(
-        string method,
-        IReadOnlyList<ModelMessage> prompt,
-        JsonObject options,
-        string modelId,
-        double? temperature = null,
-        double? topP = null)
-    {
-        const string response = "{\"id\":\"resp_test\",\"created_at\":0,\"model\":\"m\",\"output\":[]}";
-        var capture = new OpenAICapture();
-        if (method == "generate")
-        {
-            capture.ResponseJson = response;
-        }
-        else
-        {
-            capture.ServerSentEvents = "data: {\"type\":\"response.completed\",\"response\":" + response + "}\n\ndata: [DONE]\n\n";
-        }
-
-        var callOptions = new LanguageModelCallOptions
-        {
-            Prompt = prompt,
-            Temperature = temperature,
-            TopP = topP,
-            ProviderOptions = new Dictionary<string, JsonElement> { ["openai"] = OpenAIUpstream.Json(options.ToJsonString()) },
-        };
-        var model = OpenAIUpstream.Provider(capture).ResponsesModel(modelId);
-        IReadOnlyList<CallWarning> warnings;
-        if (method == "generate")
-        {
-            warnings = (await model.DoGenerateAsync(callOptions, CancellationToken.None)).Warnings;
-        }
-        else
-        {
-            var parts = new List<LanguageModelStreamPart>();
-            await foreach (var part in model.DoStreamAsync(callOptions, CancellationToken.None))
-            {
-                parts.Add(part);
-            }
-
-            Assert.Empty(parts.OfType<ErrorStreamPart>());
-            warnings = parts.OfType<StreamStartStreamPart>().First().Warnings;
-        }
-
-        var body = JsonNode.Parse(capture.Body)!;
-        Assert.Equal(method == "stream" ? true : (bool?)null, body["stream"]?.GetValue<bool>());
-        return (body, warnings);
     }
 }

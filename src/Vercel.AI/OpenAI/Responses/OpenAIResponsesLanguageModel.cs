@@ -208,9 +208,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         Copy(body, "truncation", OpenAIJson.String(openai, "truncation"));
-        if (reasoning && effort != null)
+        var reasoningSummary = OpenAIJson.String(openai, "reasoningSummary");
+        if (reasoning && (effort != null || reasoningSummary != null))
         {
-            body["reasoning"] = new JsonObject { ["effort"] = effort };
+            var reasoningBody = new JsonObject();
+            if (effort != null)
+            {
+                reasoningBody["effort"] = effort;
+            }
+
+            if (reasoningSummary != null)
+            {
+                reasoningBody["summary"] = reasoningSummary;
+            }
+
+            body["reasoning"] = reasoningBody;
         }
         else if (!reasoning && OpenAIJson.String(openai, "reasoningEffort") != null)
         {
