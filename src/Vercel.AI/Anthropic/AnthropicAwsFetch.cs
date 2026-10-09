@@ -176,6 +176,11 @@ public static class AnthropicAwsFetch
         var signed = new StringBuilder();
         foreach (var name in names)
         {
+            if (!IsAscii(headers[name]))
+            {
+                continue;
+            }
+
             canonicalHeaders.Append(name).Append(':').Append(headers[name].Trim()).Append('\n');
             if (signed.Length > 0)
             {
@@ -192,6 +197,20 @@ public static class AnthropicAwsFetch
         var key = Hmac(Hmac(Hmac(Hmac(Encoding.UTF8.GetBytes("AWS4" + credentials.SecretAccessKey), dateStamp), credentials.Region), Service), "aws4_request");
         var signature = Hex(Hmac(key, stringToSign));
         headers["authorization"] = "AWS4-HMAC-SHA256 Credential=" + credentials.AccessKeyId + "/" + scope + ", SignedHeaders=" + signed + ", Signature=" + signature;
+    }
+
+    // SigV4 header values must be ASCII. Other values are sent but left out of the signature.
+    private static bool IsAscii(string value)
+    {
+        foreach (var c in value)
+        {
+            if (c > 0x7F)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static byte[] Sha256(byte[] data)
