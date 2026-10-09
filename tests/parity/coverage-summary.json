@@ -1,9 +1,9 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13855,
-  "inScope": 11076,
+  "unitTests": 13863,
+  "inScope": 11084,
   "outOfScope": 2779,
-  "covered": 3502,
+  "covered": 3510,
   "partial": 101,
   "missing": 7473,
   "features": [
@@ -290,8 +290,8 @@
     {
       "feature": "anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 573,
-      "covered": 120,
+      "inScope": 581,
+      "covered": 128,
       "partial": 5,
       "missing": 448
     },
