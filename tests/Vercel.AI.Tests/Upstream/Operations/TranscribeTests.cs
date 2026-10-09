@@ -290,10 +290,21 @@ public sealed class TranscribeTests
     }
 
     [Fact]
+    [UpstreamTest(Once + "should return an empty transcript", Coverage = UpstreamCoverage.Covered)]
+    public async Task Returns_an_empty_transcript()
+    {
+        var result = await Transcribe.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Text = string.Empty, Language = "en", Duration = 0 }, Audio = new byte[] { 1 } });
+        Assert.Equal(string.Empty, result.Text);
+        Assert.Empty(result.Segments);
+        Assert.Equal("en", result.Language);
+        Assert.Equal((double?)0, result.DurationInSeconds);
+    }
+
+    [Fact]
     [UpstreamTest(Error + "should throw NoTranscriptGeneratedError when no transcript is returned", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_no_transcript_is_returned()
     {
-        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() => Transcribe.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Text = string.Empty }, Audio = new byte[] { 1 } }));
+        var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() => Transcribe.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Text = null }, Audio = new byte[] { 1 } }));
         Assert.Equal("No transcript generated.", error.Message);
     }
 
@@ -301,7 +312,7 @@ public sealed class TranscribeTests
     [UpstreamTest(Error + "should include response headers in error when no transcript generated", Coverage = UpstreamCoverage.Covered)]
     public async Task Includes_response_headers_when_no_transcript_is_generated()
     {
-        var model = new TranscriptFake { Text = string.Empty, Response = new ProviderResponse(new Dictionary<string, string> { ["x-request-id"] = "req" }) };
+        var model = new TranscriptFake { Text = null, Response = new ProviderResponse(new Dictionary<string, string> { ["x-request-id"] = "req" }) };
         var error = await Assert.ThrowsAsync<NoTranscriptGeneratedException>(() => Transcribe.TranscribeAsync(new TranscribeRequest { Model = model, Audio = new byte[] { 1 } }));
         Assert.Equal("req", error.Responses[0].Headers!["x-request-id"]);
     }
@@ -349,7 +360,7 @@ public sealed class TranscribeTests
 
         public bool CanStream { get; set; } = true;
 
-        public string Text { get; set; } = "hello";
+        public string? Text { get; set; } = "hello";
 
         public string? Language { get; set; }
 
