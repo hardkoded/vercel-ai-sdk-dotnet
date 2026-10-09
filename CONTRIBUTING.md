@@ -30,3 +30,7 @@ Warnings are errors. `dotnet test Vercel.AI.slnx -c Release` is the check that h
 Provider tests should mock `HttpMessageHandler` and assert the request URL and authentication header. Live calls belong in `[SkippableFact]` tests that skip when the provider’s environment variable is empty.
 
 When the upstream commit in `COMPATIBILITY.md` moves, update that file and the provider notes in the same change.
+
+## Documentation examples
+
+Code in `docs/articles` comes from compiled projects. Put the code in `samples/Vercel.AI.Examples` between `#region name` and `#endregion`, then reference it in a markdown file with `<!-- snippet: name -->` and `<!-- endSnippet -->`. [MarkdownSnippets.MsBuild](https://github.com/SimonCropp/MarkdownSnippets) rewrites the markdown on build, so the examples cannot drift from the API.
