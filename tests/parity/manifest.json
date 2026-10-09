@@ -1,8 +1,8 @@
 {
   "upstreamRepo": "https://github.com/vercel/ai",
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTestCount": 13849,
-  "inScopeCount": 11070,
+  "unitTestCount": 13857,
+  "inScopeCount": 11078,
   "outOfScopeCount": 2779,
   "excludedFiles": [
     {

@@ -18,6 +18,7 @@ public sealed class AnthropicModelCapabilities
         bool supportsXhighEffort,
         bool rejectsThinkingDisabledAboveHighEffort,
         bool rejectsThinkingDisabled,
+        bool rejectsBudgetThinking,
         bool rejectsForcedToolUse,
         bool isKnownModel)
     {
@@ -28,6 +29,7 @@ public sealed class AnthropicModelCapabilities
         SupportsXhighEffort = supportsXhighEffort;
         RejectsThinkingDisabledAboveHighEffort = rejectsThinkingDisabledAboveHighEffort;
         RejectsThinkingDisabled = rejectsThinkingDisabled;
+        RejectsBudgetThinking = rejectsBudgetThinking;
         RejectsForcedToolUse = rejectsForcedToolUse;
         IsKnownModel = isKnownModel;
     }
@@ -50,8 +52,11 @@ public sealed class AnthropicModelCapabilities
     /// <summary>Thinking cannot be disabled at effort above <c>high</c>.</summary>
     public bool RejectsThinkingDisabledAboveHighEffort { get; }
 
-    /// <summary>The model always thinks and rejects <c>disabled</c> and budget thinking.</summary>
+    /// <summary>The model always thinks and rejects <c>disabled</c> thinking.</summary>
     public bool RejectsThinkingDisabled { get; }
+
+    /// <summary>Budget-based thinking is rejected and sent as adaptive thinking.</summary>
+    public bool RejectsBudgetThinking { get; }
 
     /// <summary>Forced tool choice is rejected.</summary>
     public bool RejectsForcedToolUse { get; }
@@ -64,75 +69,80 @@ public sealed class AnthropicModelCapabilities
     {
         if (modelId.IndexOf("claude-opus-5-5", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, true, true, true, true, true);
+            return Known(128000, true, true, true, true, true, true, true, true);
         }
 
         if (modelId.IndexOf("claude-opus-5", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, true, true, true, false, false);
+            return Known(128000, true, true, true, true, true, false, false, false);
         }
 
         if (modelId.IndexOf("claude-fable-5-1", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, true, true, false, true, true);
+            return Known(128000, true, true, true, true, false, true, true, true);
         }
 
         if (modelId.IndexOf("claude-fable-5", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, true, true, false, true, false);
+            return Known(128000, true, true, true, true, false, true, true, false);
+        }
+
+        if (modelId.IndexOf("claude-haiku-5-5", StringComparison.Ordinal) >= 0)
+        {
+            return Known(128000, true, true, true, true, true, false, true, false);
         }
 
         if (modelId.IndexOf("claude-opus-4-8", StringComparison.Ordinal) >= 0
             || modelId.IndexOf("claude-opus-4-7", StringComparison.Ordinal) >= 0
             || modelId.IndexOf("claude-sonnet-5", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, true, true, false, false, false);
+            return Known(128000, true, true, true, true, false, false, false, false);
         }
 
         if (modelId.IndexOf("claude-sonnet-4-6", StringComparison.Ordinal) >= 0
             || modelId.IndexOf("claude-opus-4-6", StringComparison.Ordinal) >= 0)
         {
-            return Known(128000, true, true, false, false, false, false, false);
+            return Known(128000, true, true, false, false, false, false, false, false);
         }
 
         if (modelId.IndexOf("claude-sonnet-4-5", StringComparison.Ordinal) >= 0
             || modelId.IndexOf("claude-opus-4-5", StringComparison.Ordinal) >= 0
             || modelId.IndexOf("claude-haiku-4-5", StringComparison.Ordinal) >= 0)
         {
-            return Known(64000, true, false, false, false, false, false, false);
+            return Known(64000, true, false, false, false, false, false, false, false);
         }
 
         if (modelId.IndexOf("claude-opus-4-1", StringComparison.Ordinal) >= 0)
         {
-            return Known(32000, true, false, false, false, false, false, false);
+            return Known(32000, true, false, false, false, false, false, false, false);
         }
 
         if (Regex.IsMatch(modelId, "claude-sonnet-4(?:-|@)", RegexOptions.CultureInvariant))
         {
-            return Known(64000, false, false, false, false, false, false, false);
+            return Known(64000, false, false, false, false, false, false, false, false);
         }
 
         if (Regex.IsMatch(modelId, "claude-opus-4(?:-|@)", RegexOptions.CultureInvariant))
         {
-            return Known(32000, false, false, false, false, false, false, false);
+            return Known(32000, false, false, false, false, false, false, false, false);
         }
 
         if (modelId.IndexOf("claude-3-haiku", StringComparison.Ordinal) >= 0)
         {
-            return Known(4096, false, false, false, false, false, false, false);
+            return Known(4096, false, false, false, false, false, false, false, false);
         }
 
         if (Regex.IsMatch(modelId, "claude-(?:instant(?:-|$)|v?2(?=$|[-.:])|3(?=$|[-.]))", RegexOptions.CultureInvariant))
         {
-            return Unknown(4096, false, false, false, false, false, false, false);
+            return Unknown(4096, false, false, false, false, false, false, false, false);
         }
 
         if (modelId.IndexOf("claude-", StringComparison.Ordinal) >= 0)
         {
-            return Unknown(128000, true, true, true, true, true, false, false);
+            return Unknown(128000, true, true, true, true, true, false, false, false);
         }
 
-        return Unknown(4096, false, false, false, false, false, false, false);
+        return Unknown(4096, false, false, false, false, false, false, false, false);
     }
 
     private static AnthropicModelCapabilities Known(
@@ -143,9 +153,10 @@ public sealed class AnthropicModelCapabilities
         bool xhigh,
         bool rejectDisabledAboveHigh,
         bool rejectDisabled,
+        bool rejectBudget,
         bool rejectForced)
     {
-        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectForced, true);
+        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectBudget, rejectForced, true);
     }
 
     private static AnthropicModelCapabilities Unknown(
@@ -156,8 +167,9 @@ public sealed class AnthropicModelCapabilities
         bool xhigh,
         bool rejectDisabledAboveHigh,
         bool rejectDisabled,
+        bool rejectBudget,
         bool rejectForced)
     {
-        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectForced, false);
+        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectBudget, rejectForced, false);
     }
 }
