@@ -87,6 +87,7 @@ internal static class AnthropicParity
         Assert.Equal(rejectDisabled, caps.RejectsThinkingDisabled);
         Assert.Equal(rejectBudget, caps.RejectsBudgetThinking);
         Assert.Equal(rejectForced, caps.RejectsForcedToolUse);
+        Assert.False(caps.SupportsBetweenToolsThinking);
     }
 
     public static LanguageModelUsage ConvertUsage(string usage, string? raw = null)

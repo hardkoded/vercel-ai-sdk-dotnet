@@ -20,7 +20,8 @@ public sealed class AnthropicModelCapabilities
         bool rejectsThinkingDisabled,
         bool rejectsBudgetThinking,
         bool rejectsForcedToolUse,
-        bool isKnownModel)
+        bool isKnownModel,
+        bool supportsBetweenToolsThinking = false)
     {
         MaxOutputTokens = maxOutputTokens;
         SupportsStructuredOutput = supportsStructuredOutput;
@@ -32,6 +33,7 @@ public sealed class AnthropicModelCapabilities
         RejectsBudgetThinking = rejectsBudgetThinking;
         RejectsForcedToolUse = rejectsForcedToolUse;
         IsKnownModel = isKnownModel;
+        SupportsBetweenToolsThinking = supportsBetweenToolsThinking;
     }
 
     /// <summary>Model output token ceiling.</summary>
@@ -61,12 +63,20 @@ public sealed class AnthropicModelCapabilities
     /// <summary>Forced tool choice is rejected.</summary>
     public bool RejectsForcedToolUse { get; }
 
+    /// <summary>Thinking type <c>between_tools</c> is accepted. It is the lowest thinking setting on models that reject disabled thinking.</summary>
+    public bool SupportsBetweenToolsThinking { get; }
+
     /// <summary>The id is a recognized Claude model rather than a forward-compatible guess.</summary>
     public bool IsKnownModel { get; }
 
     /// <summary>Resolves capabilities from a model id, including Bedrock-style prefixes.</summary>
     public static AnthropicModelCapabilities Get(string modelId)
     {
+        if (modelId.IndexOf("claude-sonnet-5-5", StringComparison.Ordinal) >= 0)
+        {
+            return Known(128000, true, true, true, true, true, true, true, true, true);
+        }
+
         if (modelId.IndexOf("claude-opus-5-5", StringComparison.Ordinal) >= 0)
         {
             return Known(128000, true, true, true, true, true, true, true, true);
@@ -154,9 +164,10 @@ public sealed class AnthropicModelCapabilities
         bool rejectDisabledAboveHigh,
         bool rejectDisabled,
         bool rejectBudget,
-        bool rejectForced)
+        bool rejectForced,
+        bool betweenTools = false)
     {
-        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectBudget, rejectForced, true);
+        return new AnthropicModelCapabilities(max, structured, adaptive, rejectSampling, xhigh, rejectDisabledAboveHigh, rejectDisabled, rejectBudget, rejectForced, true, betweenTools);
     }
 
     private static AnthropicModelCapabilities Unknown(

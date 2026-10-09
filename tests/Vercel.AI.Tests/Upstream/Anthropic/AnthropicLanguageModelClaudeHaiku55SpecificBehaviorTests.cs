@@ -14,7 +14,7 @@ public sealed class AnthropicLanguageModelClaudeHaiku55SpecificBehaviorTests
     private const string Prefix = "packages/anthropic/src/anthropic-language-model.test.ts::claude-haiku-5-5 specific behavior::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should return known capabilities that allow disabling thinking up to high effort", Coverage = UpstreamCoverage.Covered, Note = "The port has no supportsBetweenToolsThinking property, so the upstream snapshot field is not asserted.")]
+    [UpstreamTest(Prefix + "should return known capabilities that allow disabling thinking up to high effort", Coverage = UpstreamCoverage.Covered)]
     public void Should_return_known_capabilities_that_allow_disabling_thinking_up_to_high_effort()
     {
         var caps = AnthropicModelCapabilities.Get(Model);
@@ -27,6 +27,7 @@ public sealed class AnthropicLanguageModelClaudeHaiku55SpecificBehaviorTests
         Assert.False(caps.RejectsThinkingDisabled);
         Assert.True(caps.RejectsThinkingDisabledAboveHighEffort);
         Assert.True(caps.SupportsAdaptiveThinking);
+        Assert.False(caps.SupportsBetweenToolsThinking);
         Assert.True(caps.SupportsStructuredOutput);
         Assert.True(caps.SupportsXhighEffort);
     }
