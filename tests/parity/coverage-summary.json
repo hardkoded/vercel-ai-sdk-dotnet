@@ -1,9 +1,9 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13856,
-  "inScope": 11077,
+  "unitTests": 13863,
+  "inScope": 11084,
   "outOfScope": 2779,
-  "covered": 3503,
+  "covered": 3510,
   "partial": 101,
   "missing": 7473,
   "features": [
@@ -898,8 +898,8 @@
     {
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
-      "inScope": 650,
-      "covered": 344,
+      "inScope": 657,
+      "covered": 351,
       "partial": 0,
       "missing": 306
     },
