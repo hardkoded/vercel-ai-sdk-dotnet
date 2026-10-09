@@ -314,8 +314,8 @@
       "feature": "amazon-bedrock",
       "title": "Cover upstream unit tests: amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
-      "inScope": 428,
-      "covered": 44,
+      "inScope": 429,
+      "covered": 45,
       "partial": 7,
       "missing": 377,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/61"
@@ -354,8 +354,8 @@
       "feature": "anthropic",
       "title": "Cover upstream unit tests: anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 581,
-      "covered": 128,
+      "inScope": 582,
+      "covered": 129,
       "partial": 5,
       "missing": 448,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/65"
@@ -1035,9 +1035,9 @@
       "title": "Cover upstream unit tests: openai/responses",
       "dotnetProject": "Vercel.AI.OpenAI",
       "inScope": 443,
-      "covered": 11,
+      "covered": 10,
       "partial": 3,
-      "missing": 429,
+      "missing": 430,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/133"
     },
     {
@@ -1114,8 +1114,8 @@
       "feature": "provider-utils",
       "title": "Cover upstream unit tests: provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
-      "inScope": 650,
-      "covered": 344,
+      "inScope": 657,
+      "covered": 351,
       "partial": 0,
       "missing": 306,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/141"
