@@ -71,7 +71,8 @@ internal sealed class StreamingToolCallTracker
         var index = toolCallDelta.Index;
         var arguments = toolCallDelta.HasArguments ? toolCallDelta.Arguments : null;
         var hasExplicitCallStart = name != null && StreamingToolCallArgumentState.StartsWithStructuredValue(arguments);
-        var resolution = ResolveToolCall(wireId, index, name, hasExplicitCallStart);
+        var hasEmptyArguments = string.IsNullOrWhiteSpace(arguments);
+        var resolution = ResolveToolCall(wireId, index, name, hasExplicitCallStart, hasEmptyArguments);
         if (resolution.Kind == ToolCallResolutionKind.Ambiguous)
         {
             return;
@@ -130,7 +131,7 @@ internal sealed class StreamingToolCallTracker
         return parts;
     }
 
-    private ToolCallResolution ResolveToolCall(string? wireId, int? index, string? name, bool hasExplicitCallStart)
+    private ToolCallResolution ResolveToolCall(string? wireId, int? index, string? name, bool hasExplicitCallStart, bool hasEmptyArguments)
     {
         List<TrackedToolCall>? indexed = null;
         if (index != null && _byIndex.TryGetValue(index.Value, out var indexedCalls))
@@ -193,12 +194,12 @@ internal sealed class StreamingToolCallTracker
 
             if (matchingIndexed.Count > 0)
             {
-                // An unseen id plus a fresh object or array is a new call. An ordinary
-                // fragment keeps the call already stored under that index and name, including
-                // when the continuation's id differs from the first id.
+                // An unseen id plus a fresh object or array is a new call. Empty arguments can
+                // also occur when a continuation changes its id. Keep the incomplete matching
+                // call then, and start a new call only after its structured arguments are complete.
                 return hasExplicitCallStart
                     ? ToolCallResolution.New()
-                    : ResolveMatchingToolCall(matchingIndexed, false);
+                    : ResolveMatchingToolCall(matchingIndexed, name != null && hasEmptyArguments);
             }
 
             return ToolCallResolution.New();
@@ -214,12 +215,16 @@ internal sealed class StreamingToolCallTracker
             return ToolCallResolution.New();
         }
 
-        if (_calls.Count == 1)
+        var unfinished = new List<TrackedToolCall>();
+        foreach (var call in _calls)
         {
-            return ToolCallResolution.Existing(_calls[0]);
+            if (!call.HasFinished)
+            {
+                unfinished.Add(call);
+            }
         }
 
-        return _calls.Count > 1 ? ToolCallResolution.Ambiguous() : ToolCallResolution.New();
+        return ResolveMatchingToolCall(unfinished, false);
     }
 
     private static ToolCallResolution ResolveMatchingToolCall(List<TrackedToolCall> calls, bool hasExplicitCallStart)
@@ -229,26 +234,29 @@ internal sealed class StreamingToolCallTracker
             return ToolCallResolution.New();
         }
 
-        if (!hasExplicitCallStart)
-        {
-            return calls.Count == 1 ? ToolCallResolution.Existing(calls[0]) : ToolCallResolution.Ambiguous();
-        }
-
-        var open = new List<TrackedToolCall>();
+        // A repeated name can occur on continuations. A fresh structured argument prefix is
+        // evidence of another call only after the matching call has completed its own structured
+        // argument payload. A sole call is the only viable continuation target when labels are missing.
+        var continuable = new List<TrackedToolCall>();
         foreach (var call in calls)
         {
             if (!call.ArgumentState.HasCompleteStructuredValue)
             {
-                open.Add(call);
+                continuable.Add(call);
             }
         }
 
-        if (open.Count == 1)
+        if (!hasExplicitCallStart && calls.Count == 1)
         {
-            return ToolCallResolution.Existing(open[0]);
+            return ToolCallResolution.Existing(calls[0]);
         }
 
-        return open.Count > 1 ? ToolCallResolution.Ambiguous() : ToolCallResolution.New();
+        if (continuable.Count == 1)
+        {
+            return ToolCallResolution.Existing(continuable[0]);
+        }
+
+        return continuable.Count > 1 || !hasExplicitCallStart ? ToolCallResolution.Ambiguous() : ToolCallResolution.New();
     }
 
     private static List<TrackedToolCall> FilterToolCallsByName(List<TrackedToolCall>? calls, string? name)
