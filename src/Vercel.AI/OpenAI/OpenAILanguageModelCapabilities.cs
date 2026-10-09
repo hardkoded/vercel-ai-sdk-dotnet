@@ -71,9 +71,10 @@ public sealed class OpenAILanguageModelCapabilities
             || (gpt != null && gpt.Value.Major >= 5 && !isGptNano && !isGptChat)
             || (oSeries != null && oSeries >= 3);
         var isReasoning = oSeries != null || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
-        var supportsNonReasoning = !isGpt6OrLater
-            && gpt != null
-            && (gpt.Value.Major > 5 || (gpt.Value.Major == 5 && (gpt.Value.Minor ?? 0) >= 1));
+        var supportsNonReasoning = isGpt6SolOrLuna
+            || (!isGpt6OrLater
+                && gpt != null
+                && (gpt.Value.Major > 5 || (gpt.Value.Major == 5 && (gpt.Value.Minor ?? 0) >= 1)));
         IReadOnlyList<string>? efforts = isGpt6SolOrLuna
             ? new[] { "none", "low", "medium", "high", "xhigh", "max" }
             : isGpt6OrLater
