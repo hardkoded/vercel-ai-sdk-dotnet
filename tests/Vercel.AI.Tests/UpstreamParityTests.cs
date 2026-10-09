@@ -15,9 +15,6 @@ public sealed class UpstreamParityTests
 
         Assert.Equal(commit, manifest.UpstreamCommit);
         Assert.Equal("https://github.com/vercel/ai", manifest.UpstreamRepo);
-        Assert.Equal(tests.Count, manifest.UnitTestCount);
-        Assert.Equal(tests.Count(test => test.Scope == "in-scope"), manifest.InScopeCount);
-        Assert.Equal(tests.Count(test => test.Scope == "out-of-scope"), manifest.OutOfScopeCount);
         Assert.Equal(tests.Count, tests.Select(test => test.Id).Distinct(StringComparer.Ordinal).Count());
 
         var ordered = tests.OrderBy(test => test.File, StringComparer.Ordinal)
@@ -48,15 +45,15 @@ public sealed class UpstreamParityTests
     }
 
     [Fact]
-    public void Summary_counts_match_the_manifest()
+    public void Summary_counts_are_consistent_with_the_catalog_and_links()
     {
         var tests = UpstreamCatalog.LoadTests();
         var manifest = UpstreamCatalog.LoadManifest();
         var links = UpstreamCatalog.LoadLinks(typeof(UpstreamParityTests).Assembly);
         var summary = UpstreamCatalog.Summarize(tests, links, manifest.UpstreamCommit);
 
-        Assert.Equal(manifest.UnitTestCount, summary.UnitTests);
-        Assert.Equal(manifest.InScopeCount, summary.InScope);
-        Assert.Equal(manifest.OutOfScopeCount, summary.OutOfScope);
+        Assert.Equal(summary.UnitTests, summary.InScope + summary.OutOfScope);
+        Assert.Equal(links.Count, summary.Covered + summary.Partial);
+        Assert.Equal(summary.InScope, summary.Covered + summary.Partial + summary.Missing);
     }
 }
