@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -110,8 +111,58 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var systemMode = OpenAIJson.String(openai, "systemMessageMode") ?? (reasoning ? "developer" : capabilities.SystemMessageMode);
         var explicitItem = OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
-        var converted = ConvertInput(options.Prompt, systemMode, explicitItem);
+        var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(capabilities, openai);
+        var converted = ConvertInput(options.Prompt, systemMode, explicitItem, configurationUpdateUnsupportedReason);
         warnings.AddRange(converted.Warnings);
+
+        // The schema accepts update efforts supported by any model. Check this model's list.
+        string? UpdateEffortUnsupportedReason(string? updateEffort) =>
+            updateEffort != null
+            && capabilities.SupportedReasoningEfforts != null
+            && !Contains(capabilities.SupportedReasoningEfforts, updateEffort)
+                ? modelId + " only supports the following reasoning efforts: " + string.Join(", ", capabilities.SupportedReasoningEfforts)
+                : null;
+
+        foreach (var item in converted.Input)
+        {
+            if (item is JsonObject { } update && update["type"]?.GetValue<string>() == "configuration_update")
+            {
+                var reason = UpdateEffortUnsupportedReason(update["reasoning"]!["effort"]!.GetValue<string>());
+                if (reason != null)
+                {
+                    throw new UnsupportedFunctionalityException("Message-level reasoningEffortUpdate", reason);
+                }
+            }
+        }
+
+        var effortUpdate = OpenAIJson.String(openai, "reasoningEffortUpdate");
+        if (effortUpdate != null)
+        {
+            ValidateUpdateEffort(effortUpdate);
+            var requestReason = configurationUpdateUnsupportedReason ?? UpdateEffortUnsupportedReason(effortUpdate);
+            if (requestReason != null)
+            {
+                warnings.Add(new OpenAICallWarning("unsupported", "reasoningEffortUpdate", requestReason));
+            }
+            else if (!(converted.Input.Count > 0
+                && converted.Input[0] is JsonObject { } first
+                && first["type"]?.GetValue<string>() == "configuration_update"
+                && first["reasoning"]!["effort"]!.GetValue<string>() == effortUpdate))
+            {
+                // An identical first item would otherwise leave two adjacent updates, which OpenAI rejects.
+                converted.Input.Insert(0, ConfigurationUpdate(effortUpdate));
+            }
+        }
+
+        for (var i = 1; i < converted.Input.Count; i++)
+        {
+            if (IsConfigurationUpdate(converted.Input[i - 1]) && IsConfigurationUpdate(converted.Input[i]))
+            {
+                throw new UnsupportedFunctionalityException(
+                    "Adjacent reasoning effort configuration updates",
+                    "Adjacent reasoning effort configuration updates are not supported.");
+            }
+        }
         var body = new JsonObject
         {
             ["model"] = modelId,
@@ -157,9 +208,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         Copy(body, "truncation", OpenAIJson.String(openai, "truncation"));
-        if (reasoning && effort != null)
+        var reasoningSummary = OpenAIJson.String(openai, "reasoningSummary");
+        if (reasoning && (effort != null || reasoningSummary != null))
         {
-            body["reasoning"] = new JsonObject { ["effort"] = effort };
+            var reasoningBody = new JsonObject();
+            if (effort != null)
+            {
+                reasoningBody["effort"] = effort;
+            }
+
+            if (reasoningSummary != null)
+            {
+                reasoningBody["summary"] = reasoningSummary;
+            }
+
+            body["reasoning"] = reasoningBody;
         }
         else if (!reasoning && OpenAIJson.String(openai, "reasoningEffort") != null)
         {
@@ -178,10 +241,78 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 "promptCacheRetention is not supported by GPT-6 and later models; use promptCacheOptions instead"));
         }
 
-        if (reasoning && !(effort == "none" && capabilities.SupportsNonReasoningParameters))
+        var topLogprobs = OpenAIJson.Int(openai, "logprobs") ?? (OpenAIJson.Bool(openai, "logprobs") == true ? 20 : null);
+        var include = new List<string>();
+        if (OpenAIJson.Child(openai, "include") is { ValueKind: JsonValueKind.Array } includeValues)
         {
-            Remove(body, warnings, "temperature", "temperature", "temperature is not supported for reasoning models");
-            Remove(body, warnings, "top_p", "topP", "topP is not supported for reasoning models");
+            foreach (var value in includeValues.EnumerateArray())
+            {
+                if (value.ValueKind == JsonValueKind.String && !include.Contains(value.GetString()!))
+                {
+                    include.Add(value.GetString()!);
+                }
+            }
+        }
+
+        if (topLogprobs is > 0)
+        {
+            body["top_logprobs"] = topLogprobs;
+            if (!include.Contains("message.output_text.logprobs"))
+            {
+                include.Add("message.output_text.logprobs");
+            }
+        }
+
+        if (include.Count > 0)
+        {
+            var includeArray = new JsonArray();
+            foreach (var value in include)
+            {
+                includeArray.Add(value);
+            }
+
+            body["include"] = includeArray;
+        }
+
+        if (reasoning)
+        {
+            // Input updates change the effort used to validate sampling parameters.
+            var effectiveEffort = effort;
+            foreach (var item in converted.Input)
+            {
+                if (IsConfigurationUpdate(item))
+                {
+                    effectiveEffort = item!["reasoning"]!["effort"]!.GetValue<string>();
+                }
+            }
+
+            if (!(effectiveEffort == "none" && capabilities.SupportsNonReasoningParameters))
+            {
+                Remove(body, warnings, "temperature", "temperature", "temperature is not supported for reasoning models");
+                Remove(body, warnings, "top_p", "topP", "topP is not supported for reasoning models");
+                if (capabilities.SupportedReasoningEfforts != null
+                    && (body["top_logprobs"] != null || include.Contains("message.output_text.logprobs")))
+                {
+                    body.Remove("top_logprobs");
+                    include.Remove("message.output_text.logprobs");
+                    if (include.Count == 0)
+                    {
+                        body.Remove("include");
+                    }
+                    else
+                    {
+                        var kept = new JsonArray();
+                        foreach (var value in include)
+                        {
+                            kept.Add(value);
+                        }
+
+                        body["include"] = kept;
+                    }
+
+                    warnings.Add(new OpenAICallWarning("unsupported", "logprobs", "logprobs is not supported for reasoning models"));
+                }
+            }
         }
 
         var serviceTier = OpenAIJson.String(openai, "serviceTier");
@@ -427,7 +558,41 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             headers);
     }
 
-    private static ResponsesInput ConvertInput(IReadOnlyList<ModelMessage> prompt, string systemMessageMode, bool explicitItem)
+    private static readonly string[] UpdateEfforts = { "none", "low", "medium", "high", "xhigh", "max" };
+
+    private static string? GetConfigurationUpdateUnsupportedReason(OpenAILanguageModelCapabilities capabilities, JsonElement? openai)
+    {
+        if (!capabilities.SupportsConfigurationUpdate)
+        {
+            return "reasoningEffortUpdate is only supported by GPT-6 and later models";
+        }
+
+        if (OpenAIJson.String(openai, "truncation") == "auto")
+        {
+            return "reasoningEffortUpdate requires standard reasoning mode without automatic compaction or automatic truncation";
+        }
+
+        return null;
+    }
+
+    private static void ValidateUpdateEffort(string effort)
+    {
+        if (Array.IndexOf(UpdateEfforts, effort) < 0)
+        {
+            throw new InvalidArgumentException("providerOptions", effort, "invalid openai provider options");
+        }
+    }
+
+    private static JsonObject ConfigurationUpdate(string effort) => new()
+    {
+        ["type"] = "configuration_update",
+        ["reasoning"] = new JsonObject { ["effort"] = effort },
+    };
+
+    private static bool IsConfigurationUpdate(JsonNode? item) =>
+        item is JsonObject obj && obj["type"]?.GetValue<string>() == "configuration_update";
+
+    private static ResponsesInput ConvertInput(IReadOnlyList<ModelMessage> prompt, string systemMessageMode, bool explicitItem, string? configurationUpdateUnsupportedReason)
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -436,6 +601,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             switch (message)
             {
                 case SystemModelMessage system:
+                    var messageEffort = OpenAIJson.String(OpenAIJson.Provider(system.ProviderOptions), "reasoningEffortUpdate");
+                    if (messageEffort != null)
+                    {
+                        ValidateUpdateEffort(messageEffort);
+                        var reason = system.Content != string.Empty
+                            ? "Message-level reasoningEffortUpdate requires empty system message content."
+                            : configurationUpdateUnsupportedReason;
+                        if (reason != null)
+                        {
+                            throw new UnsupportedFunctionalityException("Message-level reasoningEffortUpdate", reason);
+                        }
+
+                        // The control is independent of systemMessageMode's text handling.
+                        input.Add(ConfigurationUpdate(messageEffort));
+                        break;
+                    }
+
                     if (systemMessageMode == "remove")
                     {
                         warnings.Add(new OpenAICallWarning("other", null, null, "system messages are removed for this model"));
