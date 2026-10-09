@@ -12,3 +12,4 @@ docs/api/
 .env
 agent-tools/
 __pycache__/
+tests/parity/generated/
