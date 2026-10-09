@@ -250,7 +250,7 @@ public sealed class EventStreamTests
         Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_an_oversized_line_in_one_chunk(bool trailingNewline)
     {
-        var limit = JsonStreams.DefaultMaxLineBytes;
+        const int limit = 1024;
         var bytes = new byte[limit + 1 + (trailingNewline ? 1 : 0)];
         Array.Fill(bytes, (byte)' ', 0, limit + 1);
         bytes[limit - 2] = (byte)'{';
@@ -263,7 +263,7 @@ public sealed class EventStreamTests
         using var stream = new ChunkedStream(bytes);
         await Assert.ThrowsAsync<DownloadError>(async () =>
         {
-            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream))
+            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: limit))
             {
             }
         });

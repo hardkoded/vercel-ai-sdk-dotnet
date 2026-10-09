@@ -688,6 +688,7 @@ public static class JsonStreams
         try
         {
             var line = new MemoryStream();
+            var first = true;
             var chunk = new byte[4096];
             while (true)
             {
@@ -725,7 +726,7 @@ public static class JsonStreams
                         break;
                     }
 
-                    var text = DecodeLine(line);
+                    var text = DecodeLine(line, ref first);
                     if (text != null)
                     {
                         yield return JsonParsing.Parse(text, schema);
@@ -735,7 +736,7 @@ public static class JsonStreams
                 }
             }
 
-            var tail = DecodeLine(line);
+            var tail = DecodeLine(line, ref first);
             if (tail != null)
             {
                 yield return JsonParsing.Parse(tail, schema);
@@ -793,17 +794,18 @@ public static class JsonStreams
         }
     }
 
-    private static string? DecodeLine(MemoryStream line)
+    private static string? DecodeLine(MemoryStream line, ref bool first)
     {
         var bytes = line.GetBuffer();
         var length = (int)line.Length;
         line.SetLength(0);
-        var offset = length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        var offset = first && length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
         if (length > offset && bytes[length - 1] == (byte)'\r')
         {
             length--;
         }
 
+        first = false;
         var text = Encoding.UTF8.GetString(bytes, offset, length - offset);
         return text.Trim().Length > 0 ? text : null;
     }
