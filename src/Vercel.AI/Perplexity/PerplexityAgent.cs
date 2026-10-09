@@ -6,6 +6,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Perplexity;
 
@@ -14,6 +16,16 @@ internal static class PerplexityAgent
 {
     private static readonly string[] Presets = { "fast", "low", "medium", "high", "xhigh" };
     private static readonly string[] Efforts = { "minimal", "low", "medium", "high", "xhigh" };
+    private static readonly Dictionary<string, string> EffortMap = new Dictionary<string, string>
+    {
+        { "minimal", "minimal" },
+        { "low", "low" },
+        { "medium", "medium" },
+        { "high", "high" },
+        { "xhigh", "xhigh" },
+        { "max", "xhigh" },
+    };
+
     private static readonly string[] Recency = { "hour", "day", "week", "month", "year" };
     private static readonly string[] ContextSizes = { "low", "medium", "high" };
     private static readonly string[] BuiltinSkills = { "office", "office/docx", "office/pdf", "office/pptx", "office/xlsx" };
@@ -45,13 +57,20 @@ internal static class PerplexityAgent
             return null;
         }
 
-        if (!Contains(Efforts, reasoning))
+        if (!EffortMap.ContainsKey(reasoning))
         {
             warnings.Add(new CallWarning("unsupported", "reasoning \"" + reasoning + "\""));
             return null;
         }
 
-        return reasoning;
+        var mappingWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning, EffortMap, mappingWarnings);
+        foreach (var warning in mappingWarnings.OfType<CompatibilityWarning>())
+        {
+            warnings.Add(new CallWarning(warning.Type, warning.Details ?? string.Empty));
+        }
+
+        return effort;
     }
 
     public static void ValidateProviderOptions(JsonElement options)

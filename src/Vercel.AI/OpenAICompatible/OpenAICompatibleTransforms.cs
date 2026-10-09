@@ -12,7 +12,7 @@ public static class OpenAICompatibleTransforms
 {
     /// <summary>
     /// Maps Groq reasoning levels. <c>none</c> is kept only for <c>qwen/qwen3.6-27b</c>.
-    /// <c>minimal</c> becomes <c>low</c> and <c>xhigh</c> becomes <c>high</c>.
+    /// <c>minimal</c> becomes <c>low</c> and <c>xhigh</c> and <c>max</c> become <c>high</c>.
     /// </summary>
     public static JsonObject Groq(JsonObject body, IList<CallWarning> warnings)
     {
@@ -39,10 +39,10 @@ public static class OpenAICompatibleTransforms
             body["reasoning_effort"] = "low";
             warnings.Add(new CallWarning("compatibility", "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."));
         }
-        else if (effort == "xhigh")
+        else if (effort == "xhigh" || effort == "max")
         {
             body["reasoning_effort"] = "high";
-            warnings.Add(new CallWarning("compatibility", "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\"."));
+            warnings.Add(new CallWarning("compatibility", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"high\"."));
         }
 
         return body;
@@ -79,7 +79,7 @@ public static class OpenAICompatibleTransforms
         return body;
     }
 
-    /// <summary>Maps Fireworks thinking, cache, service tier, and reasoning effort.</summary>
+    /// <summary>Maps Fireworks thinking, cache, service tier, and reasoning effort. Fireworks supports <c>low</c>, <c>medium</c>, and <c>high</c>.</summary>
     public static JsonObject Fireworks(JsonObject body, IList<CallWarning> warnings)
     {
         var thinking = body["thinking"] as JsonObject;
@@ -93,7 +93,12 @@ public static class OpenAICompatibleTransforms
         body.Remove("serviceTier");
         if (effort != null)
         {
-            body["reasoning_effort"] = effort == "minimal" ? "low" : effort == "xhigh" ? "high" : effort;
+            var mapped = effort == "minimal" ? "low" : effort == "xhigh" || effort == "max" ? "high" : effort;
+            body["reasoning_effort"] = mapped;
+            if (mapped != effort)
+            {
+                warnings.Add(new CallWarning("compatibility", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
+            }
         }
 
         if (promptCacheKey != null)

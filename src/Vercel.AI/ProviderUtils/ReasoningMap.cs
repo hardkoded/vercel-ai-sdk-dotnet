@@ -16,6 +16,7 @@ public static class ReasoningMap
         { "medium", 0.3 },
         { "high", 0.6 },
         { "xhigh", 0.9 },
+        { "max", 0.95 },
     };
 
     /// <summary>True for every reasoning value except omitted and <c>provider-default</c>. Maps to <c>isCustomReasoning</c>.</summary>

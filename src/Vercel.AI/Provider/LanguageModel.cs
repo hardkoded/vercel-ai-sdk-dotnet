@@ -542,7 +542,7 @@ public sealed class LanguageModelCallOptions
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 
     /// <summary>
-    /// Reasoning effort for providers that accept it: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, or <c>xhigh</c>.
+    /// Reasoning effort for providers that accept it: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, or <c>max</c>.
     /// </summary>
     public string? Reasoning { get; set; }
 
