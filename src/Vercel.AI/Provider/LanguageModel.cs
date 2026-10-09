@@ -466,14 +466,38 @@ public sealed class AssistantModelMessage : ModelMessage
 /// <summary>A tool result fed back to the model.</summary>
 public sealed class ToolModelMessage : ModelMessage
 {
-    /// <summary>Creates a tool result message.</summary>
+    private static readonly string[] OutputTypes = { "text", "json", "error-text", "error-json", "execution-denied" };
+
+    /// <summary>Creates a tool result message. The output type comes from <paramref name="isError"/> and from whether <paramref name="outputJson"/> is valid JSON.</summary>
     public ToolModelMessage(string toolCallId, string toolName, string outputJson, bool isError, JsonElement? providerMetadata = null)
+        : this(toolCallId, toolName, outputJson, isError, null, providerMetadata)
+    {
+    }
+
+    /// <summary>
+    /// Creates a tool result message. <paramref name="outputType"/> is <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>,
+    /// or <c>execution-denied</c>. When it is null, the type comes from <paramref name="isError"/> and from whether
+    /// <paramref name="outputJson"/> is valid JSON. When it is set, it decides <see cref="IsError"/> and <paramref name="isError"/> is ignored.
+    /// For <c>execution-denied</c>, <paramref name="outputJson"/> is the reason, or null for none.
+    /// </summary>
+    public ToolModelMessage(string toolCallId, string toolName, string? outputJson, bool isError, string? outputType, JsonElement? providerMetadata = null)
         : base("tool")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
-        OutputJson = outputJson ?? "null";
-        IsError = isError;
+        if (outputType != null && Array.IndexOf(OutputTypes, outputType) < 0)
+        {
+            throw new ArgumentException("Unknown tool output type '" + outputType + "'.", nameof(outputType));
+        }
+
+        if ((outputType == "json" || outputType == "error-json") && !IsJson(outputJson))
+        {
+            throw new ArgumentException("Output type '" + outputType + "' needs valid JSON.", nameof(outputJson));
+        }
+
+        OutputType = outputType ?? (isError ? (IsJson(outputJson) ? "error-json" : "error-text") : (IsJson(outputJson) ? "json" : "text"));
+        OutputJson = outputJson ?? (OutputType == "execution-denied" ? string.Empty : "null");
+        IsError = OutputType != "text" && OutputType != "json";
         ProviderMetadata = providerMetadata;
     }
 
@@ -483,14 +507,35 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>Tool name.</summary>
     public string ToolName { get; }
 
-    /// <summary>JSON result.</summary>
+    /// <summary>JSON result. For <c>text</c> and <c>error-text</c> it is the text itself. For <c>execution-denied</c> it is the reason, or empty for none.</summary>
     public string OutputJson { get; }
 
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
 
+    /// <summary>Output type: <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>, or <c>execution-denied</c>.</summary>
+    public string OutputType { get; }
+
     /// <summary>Provider metadata carried on this tool result, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    private static bool IsJson(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(value!);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 }
 
 /// <summary>Settings for one language-model call. Property names follow the V4 call options.</summary>

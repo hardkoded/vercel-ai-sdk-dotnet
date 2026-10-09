@@ -670,7 +670,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     {
                         ["type"] = "function_call_output",
                         ["call_id"] = tool.ToolCallId,
-                        ["output"] = tool.OutputJson ?? string.Empty,
+                        ["output"] = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputJson),
                     });
                     break;
                 default:

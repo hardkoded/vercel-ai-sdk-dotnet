@@ -87,6 +87,12 @@ public sealed class ExecutedTool
 
     /// <summary>Whether execution failed or was denied.</summary>
     public bool IsError { get; }
+
+    /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
+    internal string? ModelOutputType { get; init; }
+
+    /// <summary>The output sent to the model, such as an error message. Null means <see cref="OutputJson"/>.</summary>
+    internal string? ModelOutput { get; init; }
 }
 
 /// <summary>One language-model step, including any tool results from that step.</summary>

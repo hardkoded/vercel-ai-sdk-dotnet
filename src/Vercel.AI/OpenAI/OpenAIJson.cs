@@ -13,6 +13,27 @@ namespace Vercel.AI.OpenAI;
 
 internal static class OpenAIJson
 {
+    private static readonly JsonSerializerOptions ToolOutputOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    /// <summary>
+    /// The text OpenAI receives for a tool result. <c>error-text</c> and <c>error-json</c> are wrapped as <c>{"error": value}</c>.
+    /// <c>execution-denied</c> stays the reason. Other types, and a null type, pass through.
+    /// </summary>
+    public static string ToolOutputText(string? outputType, string? output)
+    {
+        switch (outputType)
+        {
+            case "error-text":
+                return new JsonObject { ["error"] = output ?? string.Empty }.ToJsonString(ToolOutputOptions);
+            case "error-json":
+                return new JsonObject { ["error"] = JsonNode.Parse(output ?? "null") }.ToJsonString(ToolOutputOptions);
+            case "execution-denied":
+                return string.IsNullOrEmpty(output) ? "Tool call execution denied." : output!;
+            default:
+                return output ?? string.Empty;
+        }
+    }
+
     public static JsonElement Clone(JsonElement element)
     {
         return element.Clone();

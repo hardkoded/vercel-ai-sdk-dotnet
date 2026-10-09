@@ -37,6 +37,12 @@ public sealed class OpenAIChatPromptMessage
     /// <summary>Tool result text.</summary>
     public string? ToolOutput { get; set; }
 
+    /// <summary>
+    /// Tool result type: <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>, or <c>execution-denied</c>.
+    /// Error types are sent as <c>{"error": value}</c>. When it is null, <see cref="ToolOutput"/> is sent as is.
+    /// </summary>
+    public string? ToolOutputType { get; set; }
+
     /// <summary>Provider options for this message. The <c>openai</c> object is read.</summary>
     public JsonElement? ProviderOptions { get; set; }
 }
@@ -126,6 +132,7 @@ public static class OpenAIChatMessages
                     {
                         ToolCallId = tool.ToolCallId,
                         ToolOutput = tool.OutputJson,
+                        ToolOutputType = tool.OutputType,
                         ProviderOptions = tool.ProviderMetadata,
                     });
                     break;
@@ -412,9 +419,10 @@ public static class OpenAIChatMessages
     private static JsonObject ConvertTool(OpenAIChatPromptMessage message)
     {
         var breakpoint = OpenAIJson.PromptCacheBreakpoint(message.ProviderOptions);
+        var text = OpenAIJson.ToolOutputText(message.ToolOutputType, message.ToolOutput);
         JsonNode content = breakpoint == null
-            ? JsonValue.Create(message.ToolOutput ?? string.Empty)!
-            : new JsonArray(TextBlock(message.ToolOutput ?? string.Empty, breakpoint));
+            ? JsonValue.Create(text)!
+            : new JsonArray(TextBlock(text, breakpoint));
         return new JsonObject
         {
             ["role"] = "tool",
