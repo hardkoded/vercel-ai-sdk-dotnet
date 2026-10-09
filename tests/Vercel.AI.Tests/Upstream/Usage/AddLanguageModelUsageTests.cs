@@ -5,7 +5,7 @@
 using System.Text.Json;
 using Vercel.AI.Provider;
 
-namespace Vercel.AI.Tests.Upstream.Types;
+namespace Vercel.AI.Tests.Upstream.Usage;
 
 public sealed class AddLanguageModelUsageTests
 {
