@@ -11,7 +11,7 @@ namespace Vercel.AI.ProviderUtils;
 public sealed class BatchResultDownloads
 {
     /// <summary>Maximum UTF-8 bytes per row, excluding the LF delimiter. Defaults to 64 MiB. Must be positive.</summary>
-    public long? MaxLineBytes { get; set; }
+    public int? MaxLineBytes { get; set; }
 }
 
 /// <summary>Batch API that only downloads results. Start, status, cancel, and list are not implemented.</summary>

@@ -120,13 +120,13 @@ public sealed class ProviderHttp
         Uri uri,
         string? jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
-        long? maxLineBytes,
+        int? maxLineBytes,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var limit = maxLineBytes ?? JsonStreams.DefaultMaxJsonLineBytes;
+        var limit = maxLineBytes ?? JsonStreams.DefaultMaxLineBytes;
         if (limit <= 0)
         {
-            throw new Operations.InvalidArgumentException("maxLineBytes", limit, "maxLineBytes must be a positive safe integer.");
+            throw new Util.InvalidArgumentError("maxLineBytes", limit, "maxLineBytes must be a positive safe integer.");
         }
 
         using var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);

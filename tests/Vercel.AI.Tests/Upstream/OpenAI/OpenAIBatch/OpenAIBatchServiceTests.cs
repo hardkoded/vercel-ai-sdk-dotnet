@@ -2,10 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
-using Vercel.AI.OpenAI;
 
 namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIBatch;
 
@@ -15,7 +15,7 @@ public sealed class OpenAIBatchServiceTests
     [InlineData(16L)]
     [InlineData(4096L)]
     [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Applies_the_factory_maxLineBytes_setting(long maxLineBytes)
+    public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {
         const string outputUrl = "https://api.openai.com/v1/files/file-output/content";
         var handler = new RoutedHandler()

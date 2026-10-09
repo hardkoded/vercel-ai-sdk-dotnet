@@ -181,7 +181,7 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         return new OpenAIBatchApi(this);
     }
 
-    internal long? MaxBatchLineBytes => _openAI.BatchResultDownloads?.MaxLineBytes;
+    internal int? MaxBatchLineBytes => _openAI.BatchResultDownloads?.MaxLineBytes;
 
     /// <inheritdoc />
     public override IBatchModel BatchModel()

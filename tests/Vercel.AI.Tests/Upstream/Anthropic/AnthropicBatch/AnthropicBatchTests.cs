@@ -2,10 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Anthropic;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
-using Vercel.AI.Anthropic;
 
 namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicBatch;
 
@@ -15,7 +15,7 @@ public sealed class AnthropicBatchTests
     [InlineData(16L)]
     [InlineData(4096L)]
     [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Applies_the_factory_maxLineBytes_setting(long maxLineBytes)
+    public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {
         const string resultsUrl = "https://api.anthropic.com/v1/messages/batches/msgbatch_123/results";
         var handler = new RoutedHandler()

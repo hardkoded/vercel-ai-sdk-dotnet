@@ -657,26 +657,26 @@ public static class JsonStreams
         return new JsonBody(parsed.Value.Value, parsed.RawValue.Value, ExtractResponseHeaders(response));
     }
 
-    /// <summary>Default limit for one JSON Lines row: 64 MiB of UTF-8 bytes.</summary>
-    public const long DefaultMaxJsonLineBytes = 64L * 1024 * 1024;
+    /// <summary>Default largest JSON Lines row, in UTF-8 bytes.</summary>
+    public const int DefaultMaxLineBytes = 64 * 1024 * 1024;
 
     /// <summary>
     /// Yields one JSON value per non-empty line. Lines may be split across reads.
     /// A final line without a newline is still yielded. Early disposal cancels <paramref name="onCancel"/>.
-    /// A row longer than <paramref name="maxLineBytes"/> UTF-8 bytes, excluding the LF, throws a
-    /// <see cref="Vercel.AI.Util.DownloadError"/> for <paramref name="url"/> and cancels the body.
+    /// A row longer than <paramref name="maxLineBytes"/> UTF-8 bytes (the newline excluded) throws a
+    /// <see cref="Util.DownloadError"/> for <paramref name="url"/> and cancels the body.
     /// </summary>
     public static async IAsyncEnumerable<JsonElement> ReadJsonLinesAsync(
         Stream? stream,
         JsonNode? schema = null,
         Action? onCancel = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default,
-        long maxLineBytes = DefaultMaxJsonLineBytes,
+        int maxLineBytes = DefaultMaxLineBytes,
         string url = "")
     {
         if (maxLineBytes <= 0)
         {
-            throw new Vercel.AI.Operations.InvalidArgumentException("maxLineBytes", maxLineBytes, "maxLineBytes must be a positive safe integer.");
+            throw new Util.InvalidArgumentError("maxLineBytes", maxLineBytes, "maxLineBytes must be a positive safe integer.");
         }
 
         if (stream is null)
@@ -688,7 +688,8 @@ public static class JsonStreams
         try
         {
             var line = new MemoryStream();
-            var chunk = new byte[1024];
+            var first = true;
+            var chunk = new byte[4096];
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -699,36 +700,44 @@ public static class JsonStreams
                     break;
                 }
 
-                var offset = 0;
-                while (offset < count)
+                var start = 0;
+                while (start < count)
                 {
-                    var lineEnd = Array.IndexOf(chunk, (byte)10, offset, count - offset);
-                    var segmentEnd = lineEnd < 0 ? count : lineEnd;
-
-                    // Bound each line before decoding it, excluding the newline byte.
-                    if (line.Length + (segmentEnd - offset) > maxLineBytes)
+                    var newline = Array.IndexOf(chunk, (byte)'\n', start, count - start);
+                    var end = newline < 0 ? count : newline;
+                    if (line.Length + (end - start) > maxLineBytes)
                     {
-                        throw new Vercel.AI.Util.DownloadError(url, "JSON Lines response exceeded maximum line size of " + maxLineBytes + " bytes.");
+                        finished = true;
+                        try
+                        {
+                            onCancel?.Invoke();
+                        }
+                        catch (Exception)
+                        {
+                            // The size error is the one the caller needs to see.
+                        }
+
+                        throw new Util.DownloadError(url, "JSON Lines response exceeded maximum line size of " + maxLineBytes + " bytes.");
                     }
 
-                    line.Write(chunk, offset, segmentEnd - offset);
-                    if (lineEnd < 0)
+                    line.Write(chunk, start, end - start);
+                    if (newline < 0)
                     {
                         break;
                     }
 
-                    offset = lineEnd + 1;
-                    var text = DecodeLine(line);
-                    line.SetLength(0);
-                    if (text.Trim().Length > 0)
+                    var text = DecodeLine(line, ref first);
+                    if (text != null)
                     {
                         yield return JsonParsing.Parse(text, schema);
                     }
+
+                    start = newline + 1;
                 }
             }
 
-            var tail = DecodeLine(line);
-            if (tail.Trim().Length > 0)
+            var tail = DecodeLine(line, ref first);
+            if (tail != null)
             {
                 yield return JsonParsing.Parse(tail, schema);
             }
@@ -737,29 +746,9 @@ public static class JsonStreams
         {
             if (!finished && onCancel != null)
             {
-                try
-                {
-                    onCancel();
-                }
-                catch (Exception)
-                {
-                    // A failing cancellation must not hide the error that stopped the download.
-                }
+                onCancel();
             }
         }
-    }
-
-    private static string DecodeLine(MemoryStream line)
-    {
-        var bytes = line.ToArray();
-        var start = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
-        var length = bytes.Length - start;
-        if (length > 0 && bytes[bytes.Length - 1] == 13)
-        {
-            length--;
-        }
-
-        return Encoding.UTF8.GetString(bytes, start, length);
     }
 
     /// <summary>
@@ -803,6 +792,22 @@ public static class JsonStreams
                 }
             }
         }
+    }
+
+    private static string? DecodeLine(MemoryStream line, ref bool first)
+    {
+        var bytes = line.GetBuffer();
+        var length = (int)line.Length;
+        line.SetLength(0);
+        var offset = first && length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        if (length > offset && bytes[length - 1] == (byte)'\r')
+        {
+            length--;
+        }
+
+        first = false;
+        var text = Encoding.UTF8.GetString(bytes, offset, length - offset);
+        return text.Trim().Length > 0 ? text : null;
     }
 
     private static void Copy(Dictionary<string, string> target, System.Net.Http.Headers.HttpHeaders headers)

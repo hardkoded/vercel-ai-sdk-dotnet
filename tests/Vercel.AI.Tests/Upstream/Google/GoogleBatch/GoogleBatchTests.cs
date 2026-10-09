@@ -2,10 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Google;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
-using Vercel.AI.Google;
 
 namespace Vercel.AI.Tests.Upstream.Google.GoogleBatch;
 
@@ -15,7 +15,7 @@ public sealed class GoogleBatchTests
     [InlineData(16L)]
     [InlineData(4096L)]
     [UpstreamTest("packages/google/src/google-batch.test.ts::GoogleBatch::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Applies_the_factory_maxLineBytes_setting(long maxLineBytes)
+    public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {
         const string outputUrl = "https://generativelanguage.googleapis.com/download/v1beta/files/batch-output:download?alt=media";
         var handler = new RoutedHandler()

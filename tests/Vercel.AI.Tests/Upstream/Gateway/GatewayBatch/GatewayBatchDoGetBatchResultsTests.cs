@@ -2,10 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
-using Vercel.AI.Gateway;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayBatch;
 
@@ -15,7 +15,7 @@ public sealed class GatewayBatchDoGetBatchResultsTests
     [InlineData(16L)]
     [InlineData(4096L)]
     [UpstreamTest("packages/gateway/src/gateway-batch.test.ts::GatewayBatch > doGetBatchResults::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Applies_the_factory_maxLineBytes_setting(long maxLineBytes)
+    public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {
         var handler = new RoutedHandler()
             .Add("https://api.test.com/batch/results", "{\"type\":\"text\",\"id\":\"req-1\",\"status\":\"succeeded\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"pong 1\"}],\"finishReason\":{\"unified\":\"stop\"},\"response\":{\"modelId\":\"openai/gpt-5.6-luna\",\"timestamp\":\"2026-08-18T00:00:00.000Z\"},\"usage\":{\"inputTokens\":{\"total\":4,\"noCache\":4},\"outputTokens\":{\"total\":2,\"text\":2}},\"warnings\":[]}}\n");

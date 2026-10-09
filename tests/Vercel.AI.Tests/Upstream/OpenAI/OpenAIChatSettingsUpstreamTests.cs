@@ -186,8 +186,16 @@ public sealed class OpenAIChatSettingsUpstreamTests
     {
         foreach (var modelId in new[] { "gpt-6-sol", "gpt-6-luna" })
         {
-            var prepared = OpenAIChatLanguageModel.Prepare(modelId, Call("{\"reasoningEffort\":\"none\"}"));
+            var prepared = OpenAIChatLanguageModel.Prepare(modelId, new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Temperature = 0,
+                TopP = 0.9,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("{\"reasoningEffort\":\"none\"}"),
+            });
             Assert.Equal("none", prepared.Body["reasoning_effort"]!.GetValue<string>());
+            Assert.Equal(0, prepared.Body["temperature"]!.GetValue<double>());
+            Assert.Equal(0.9, prepared.Body["top_p"]!.GetValue<double>());
             Assert.Equal(modelId, prepared.Body["model"]!.GetValue<string>());
             Assert.Empty(prepared.Warnings);
         }
