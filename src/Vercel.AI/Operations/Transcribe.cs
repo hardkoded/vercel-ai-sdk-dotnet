@@ -58,7 +58,7 @@ public sealed class TranscriptionModelResult
     /// <summary>Creates a result.</summary>
     public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
     {
-        Text = text ?? string.Empty;
+        Text = text;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
         Language = language;
         DurationInSeconds = durationInSeconds;
@@ -67,8 +67,8 @@ public sealed class TranscriptionModelResult
         Response = response ?? new ProviderResponse();
     }
 
-    /// <summary>Transcript text.</summary>
-    public string Text { get; }
+    /// <summary>Transcript text, or <see langword="null"/> when the model returned none. An empty string is a valid transcript.</summary>
+    public string? Text { get; }
 
     /// <summary>Segments.</summary>
     public IReadOnlyList<TranscriptSegment> Segments { get; }
@@ -554,7 +554,7 @@ public static class Transcribe
         var mediaType = MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
         var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct), ct), null).ConfigureAwait(false);
         WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
-        if (string.IsNullOrEmpty(result.Text))
+        if (result.Text is null)
         {
             throw new NoTranscriptGeneratedException(new[] { result.Response });
         }

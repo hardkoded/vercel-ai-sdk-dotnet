@@ -329,7 +329,7 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
 
             var call = new TranscriptionModelCall(audio.Data, audio.MediaType, JsonValues.EmptyObject(), new Dictionary<string, string>(), cancellationToken);
             var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
-            return new TranscriptionResult(result.Text);
+            return new TranscriptionResult(result.Text ?? string.Empty);
         }
 
         /// <inheritdoc />
