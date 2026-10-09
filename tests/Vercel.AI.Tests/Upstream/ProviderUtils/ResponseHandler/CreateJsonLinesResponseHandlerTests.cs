@@ -93,7 +93,7 @@ public sealed class CreateJsonLinesResponseHandlerTests
     [InlineData(-1)]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an invalid maxLineBytes: %s",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Partial)]
     public async Task Rejects_an_invalid_maxLineBytes(int maxLineBytes)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}\n"));
