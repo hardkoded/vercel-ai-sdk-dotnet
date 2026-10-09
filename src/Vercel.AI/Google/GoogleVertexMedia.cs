@@ -251,7 +251,7 @@ public sealed class GoogleVertexGeminiTranscriptionModel : ITranscriptionModel, 
     {
         var call = new TranscriptionModelCall(audio.Data, audio.MediaType, default, new Dictionary<string, string>(), cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
-        return new TranscriptionResult(result.Text, null);
+        return new TranscriptionResult(result.Text ?? string.Empty, null);
     }
 
     /// <summary>

@@ -1,9 +1,9 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13848,
-  "inScope": 11069,
+  "unitTests": 13849,
+  "inScope": 11070,
   "outOfScope": 2779,
-  "covered": 3495,
+  "covered": 3496,
   "partial": 101,
   "missing": 7473,
   "features": [
@@ -186,8 +186,8 @@
     {
       "feature": "ai/transcribe",
       "dotnetProject": "Vercel.AI",
-      "inScope": 25,
-      "covered": 25,
+      "inScope": 26,
+      "covered": 26,
       "partial": 0,
       "missing": 0
     },

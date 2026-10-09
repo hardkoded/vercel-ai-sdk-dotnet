@@ -224,8 +224,8 @@
       "feature": "ai/transcribe",
       "title": "Cover upstream unit tests: ai/transcribe",
       "dotnetProject": "Vercel.AI",
-      "inScope": 25,
-      "covered": 25,
+      "inScope": 26,
+      "covered": 26,
       "partial": 0,
       "missing": 0,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/52"
