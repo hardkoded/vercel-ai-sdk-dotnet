@@ -1,9 +1,9 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13848,
-  "inScope": 11069,
+  "unitTests": 13850,
+  "inScope": 11071,
   "outOfScope": 2779,
-  "covered": 3495,
+  "covered": 3497,
   "partial": 101,
   "missing": 7473,
   "features": [
@@ -258,8 +258,8 @@
     {
       "feature": "amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
-      "inScope": 428,
-      "covered": 44,
+      "inScope": 429,
+      "covered": 45,
       "partial": 7,
       "missing": 377
     },
@@ -290,8 +290,8 @@
     {
       "feature": "anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 573,
-      "covered": 120,
+      "inScope": 574,
+      "covered": 121,
       "partial": 5,
       "missing": 448
     },

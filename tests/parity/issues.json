@@ -314,8 +314,8 @@
       "feature": "amazon-bedrock",
       "title": "Cover upstream unit tests: amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
-      "inScope": 428,
-      "covered": 44,
+      "inScope": 429,
+      "covered": 45,
       "partial": 7,
       "missing": 377,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/61"
@@ -354,8 +354,8 @@
       "feature": "anthropic",
       "title": "Cover upstream unit tests: anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 573,
-      "covered": 120,
+      "inScope": 574,
+      "covered": 121,
       "partial": 5,
       "missing": 448,
       "url": "https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/65"
