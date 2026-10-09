@@ -445,6 +445,34 @@ public class GenerateTextOptions
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>
 public sealed class StreamTextOptions : GenerateTextOptions
 {
+    /// <summary>
+    /// Aborts the call and carries the reason. Use it instead of the <see cref="CancellationToken"/> when the reason matters.
+    /// A reason that is an <see cref="Exception"/> faults the results as is. Maps to <c>abortSignal</c>.
+    /// </summary>
+    public Vercel.AI.Util.AbortSignal? AbortSignal { get; set; }
+
+    /// <summary>
+    /// Called after the call is aborted, with the steps that finished before it. It does not delay the rejection of the
+    /// results. <see cref="GenerateTextOptions.OnError"/> and <see cref="GenerateTextOptions.OnFinish"/> are not called. Maps to <c>onAbort</c>.
+    /// </summary>
+    public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
+}
+
+/// <summary>Passed to <see cref="StreamTextOptions.OnAbort"/>.</summary>
+public sealed class StreamAbortContext
+{
+    /// <summary>Creates a context.</summary>
+    public StreamAbortContext(IReadOnlyList<StepResult> steps, Exception exception)
+    {
+        Steps = steps;
+        Exception = exception;
+    }
+
+    /// <summary>Steps that finished before the abort.</summary>
+    public IReadOnlyList<StepResult> Steps { get; }
+
+    /// <summary>The cancellation exception, or the abort reason when it is an exception.</summary>
+    public Exception Exception { get; }
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
@@ -721,6 +749,20 @@ public sealed class ErrorPart : TextStreamPart
 
     /// <summary>Error message.</summary>
     public string Message { get; }
+}
+
+/// <summary>The call was aborted. It is the last part of the stream.</summary>
+public sealed class AbortPart : TextStreamPart
+{
+    /// <summary>Creates an abort part.</summary>
+    public AbortPart(string? reason)
+        : base("abort")
+    {
+        Reason = reason;
+    }
+
+    /// <summary>Abort reason.</summary>
+    public string? Reason { get; }
 }
 
 /// <summary>The full stream finished.</summary>

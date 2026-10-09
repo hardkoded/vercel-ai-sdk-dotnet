@@ -80,6 +80,15 @@ public sealed class AbortSignal
         }
     }
 
+    /// <summary>Removes a handler added by <see cref="AddAbortHandler"/>.</summary>
+    public void RemoveAbortHandler(Action handler)
+    {
+        lock (_handlers)
+        {
+            _handlers.Remove(handler);
+        }
+    }
+
     /// <summary>Signal that aborts with <see cref="TimeoutError"/> after <paramref name="timeoutMs"/>.</summary>
     public static AbortSignal Timeout(int timeoutMs, Action<Action, int>? schedule = null)
     {

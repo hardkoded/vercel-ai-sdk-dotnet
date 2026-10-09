@@ -148,7 +148,21 @@ internal static class Generation
         var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, textSource, finishSource, usageSource, stepsSource, cancellationToken));
+        var abort = new StreamAbort();
+        var signal = options.AbortSignal;
+        if (signal != null)
+        {
+            Action onSignal = () => abort.Fire(signal.Reason as Exception ?? new OperationCanceledException(signal.Reason?.ToString()), textSource, finishSource, usageSource, stepsSource);
+            signal.AddAbortHandler(onSignal);
+            abort.SignalCleanup = () => signal.RemoveAbortHandler(onSignal);
+        }
+
+        if (cancellationToken.CanBeCanceled)
+        {
+            abort.Registration = cancellationToken.Register(() => abort.Fire(new OperationCanceledException(cancellationToken), textSource, finishSource, usageSource, stepsSource));
+        }
+
+        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, textSource, finishSource, usageSource, stepsSource));
         return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task);
     }
 
@@ -157,17 +171,18 @@ internal static class Generation
         StreamTextOptions options,
         IAiTelemetry? telemetry,
         PartBuffer buffer,
+        StreamAbort abort,
         TaskCompletionSource<string> textSource,
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
-        TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
-        CancellationToken cancellationToken)
+        TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource)
     {
+        var steps = new List<StepResult>();
+        var cancellationToken = abort.Token;
         try
         {
             using var scope = telemetry?.Begin("streamText", model.ModelId);
             var messages = BuildPrompt(options);
-            var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             while (steps.Count < HardStepCap)
@@ -199,55 +214,80 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Empty;
-                await foreach (var part in current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false))
+                var enumerator = current.DoStreamAsync(callOptions, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                var disposal = abort.Track(enumerator);
+                try
                 {
-                    switch (part)
+                    while (true)
                     {
-                        case TextDeltaStreamPart delta:
-                            text.Append(delta.Delta);
-                            buffer.Add(new TextDeltaPart(delta.Delta));
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // A model stream can ignore the token, so race each read against the abort.
+                        var next = enumerator.MoveNextAsync().AsTask();
+                        if (await Task.WhenAny(next, abort.Signal).ConfigureAwait(false) != next)
+                        {
+                            _ = next.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+
+                        if (!await next.ConfigureAwait(false))
+                        {
                             break;
-                        case ReasoningDeltaStreamPart reasoningDelta:
-                            reasoning.Append(reasoningDelta.Delta);
-                            buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
-                            break;
-                        case ToolCallStreamPart toolCall:
-                            var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata);
-                            toolCalls.Add(call);
-                            buffer.Add(new ToolCallPart(call));
-                            break;
-                        case ToolInputStartStreamPart inputStart:
-                            buffer.Add(new ToolInputStartPart(
-                                inputStart.Id,
-                                inputStart.ToolName,
-                                inputStart.ProviderMetadata,
-                                inputStart.ProviderExecuted,
-                                inputStart.Dynamic ?? false));
-                            break;
-                        case ToolInputDeltaStreamPart inputDelta:
-                            buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
-                            break;
-                        case ToolInputEndStreamPart inputEnd:
-                            buffer.Add(new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata));
-                            break;
-                        case SourceStreamPart source:
-                            var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
-                            sources.Add(generatedSource);
-                            buffer.Add(new SourcePart(generatedSource));
-                            break;
-                        case FinishStreamPart done:
-                            finish = done.FinishReason;
-                            rawFinish = done.RawFinishReason;
-                            usage = done.Usage;
-                            providerMetadata = done.ProviderMetadata;
-                            break;
-                        case ErrorStreamPart error:
-                            buffer.Add(new ErrorPart(error.Message));
-                            throw new AiSdkException(error.Message);
-                        case StreamStartStreamPart start:
-                            warnings = start.Warnings;
-                            break;
+                        }
+
+                        var part = enumerator.Current;
+                        switch (part)
+                        {
+                            case TextDeltaStreamPart delta:
+                                text.Append(delta.Delta);
+                                buffer.Add(new TextDeltaPart(delta.Delta));
+                                break;
+                            case ReasoningDeltaStreamPart reasoningDelta:
+                                reasoning.Append(reasoningDelta.Delta);
+                                buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
+                                break;
+                            case ToolCallStreamPart toolCall:
+                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata);
+                                toolCalls.Add(call);
+                                buffer.Add(new ToolCallPart(call));
+                                break;
+                            case ToolInputStartStreamPart inputStart:
+                                buffer.Add(new ToolInputStartPart(
+                                    inputStart.Id,
+                                    inputStart.ToolName,
+                                    inputStart.ProviderMetadata,
+                                    inputStart.ProviderExecuted,
+                                    inputStart.Dynamic ?? false));
+                                break;
+                            case ToolInputDeltaStreamPart inputDelta:
+                                buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
+                                break;
+                            case ToolInputEndStreamPart inputEnd:
+                                buffer.Add(new ToolInputEndPart(inputEnd.Id, inputEnd.ProviderMetadata));
+                                break;
+                            case SourceStreamPart source:
+                                var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
+                                sources.Add(generatedSource);
+                                buffer.Add(new SourcePart(generatedSource));
+                                break;
+                            case FinishStreamPart done:
+                                finish = done.FinishReason;
+                                rawFinish = done.RawFinishReason;
+                                usage = done.Usage;
+                                providerMetadata = done.ProviderMetadata;
+                                break;
+                            case ErrorStreamPart error:
+                                buffer.Add(new ErrorPart(error.Message));
+                                throw new AiSdkException(error.Message);
+                            case StreamStartStreamPart start:
+                                warnings = start.Warnings;
+                                break;
+                        }
                     }
+                }
+                finally
+                {
+                    await abort.DisposeAsync(disposal).ConfigureAwait(false);
                 }
 
                 var generated = new LanguageModelGenerateResult(
@@ -284,6 +324,11 @@ internal static class Generation
                 telemetry.OnFinish(scope, result.FinishReason);
             }
 
+            if (!abort.TryFinish())
+            {
+                throw abort.Error!;
+            }
+
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
             buffer.Complete();
             textSource.TrySetResult(result.Text);
@@ -297,6 +342,13 @@ internal static class Generation
         }
         catch (Exception exception)
         {
+            abort.TryFinish();
+            if (abort.Error is { } abortError)
+            {
+                await FinishAbortAsync(options, buffer, steps, abortError).ConfigureAwait(false);
+                return;
+            }
+
             buffer.Fail(exception);
             textSource.TrySetException(exception);
             finishSource.TrySetException(exception);
@@ -313,6 +365,31 @@ internal static class Generation
                     buffer.Fail(callback);
                 }
             }
+        }
+        finally
+        {
+            abort.Registration.Dispose();
+            abort.SignalCleanup?.Invoke();
+        }
+    }
+
+    // The result tasks are already faulted when the abort fires. This closes the stream and reports the abort.
+    private static async Task FinishAbortAsync(StreamTextOptions options, PartBuffer buffer, List<StepResult> steps, Exception error)
+    {
+        buffer.Add(new AbortPart(error is JsError ? error.ToString() : error.Message));
+        buffer.Complete();
+        if (options.OnAbort == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await options.OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception callback)
+        {
+            buffer.Fail(callback);
         }
     }
 
@@ -535,6 +612,114 @@ internal static class Generation
         }
 
         return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata);
+    }
+}
+
+// Settles a streamText call exactly once: as aborted, or as finished. Whichever comes first wins.
+internal sealed class StreamAbort
+{
+    private static readonly object Done = new();
+    private readonly CancellationTokenSource _cancellation = new();
+    private readonly TaskCompletionSource<bool> _signal = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private object? _outcome;
+    private EnumeratorDisposal? _disposal;
+
+    public CancellationToken Token => _cancellation.Token;
+
+    public Task Signal => _signal.Task;
+
+    public CancellationTokenRegistration Registration { get; set; }
+
+    public Action? SignalCleanup { get; set; }
+
+    public Exception? Error => _outcome as Exception;
+
+    public bool TryFinish() => Interlocked.CompareExchange(ref _outcome, Done, null) == null;
+
+    public EnumeratorDisposal Track(IAsyncDisposable enumerator)
+    {
+        var disposal = new EnumeratorDisposal(enumerator);
+        Volatile.Write(ref _disposal, disposal);
+        return disposal;
+    }
+
+    // Rejects the results first, so no callback or provider cleanup can delay them.
+    public void Fire(
+        Exception error,
+        TaskCompletionSource<string> text,
+        TaskCompletionSource<FinishReason> finishReason,
+        TaskCompletionSource<LanguageModelUsage> usage,
+        TaskCompletionSource<IReadOnlyList<StepResult>> steps)
+    {
+        if (Interlocked.CompareExchange(ref _outcome, error, null) != null)
+        {
+            return;
+        }
+
+        text.TrySetException(error);
+        finishReason.TrySetException(error);
+        usage.TrySetException(error);
+        steps.TrySetException(error);
+        try
+        {
+            _cancellation.Cancel();
+        }
+        catch (AggregateException)
+        {
+            // A token callback threw. The call is aborted either way.
+        }
+        finally
+        {
+            Volatile.Read(ref _disposal)?.Abandon();
+            _signal.TrySetResult(true);
+        }
+    }
+
+    // Waits for the provider to dispose, unless an abort arrives first. A model stream may never finish disposing.
+    public async Task DisposeAsync(EnumeratorDisposal disposal)
+    {
+        var dispose = disposal.DisposeAsync();
+        if (await Task.WhenAny(dispose, Signal).ConfigureAwait(false) == dispose)
+        {
+            await dispose.ConfigureAwait(false);
+        }
+        else
+        {
+            disposal.Abandon();
+        }
+    }
+}
+
+internal sealed class EnumeratorDisposal
+{
+    private readonly IAsyncDisposable _enumerator;
+    private readonly object _gate = new();
+    private Task? _task;
+
+    public EnumeratorDisposal(IAsyncDisposable enumerator)
+    {
+        _enumerator = enumerator;
+    }
+
+    public Task DisposeAsync()
+    {
+        lock (_gate)
+        {
+            return _task ??= _enumerator.DisposeAsync().AsTask();
+        }
+    }
+
+    // Starts the disposal without waiting. Nobody observes the outcome, so a failure is dropped.
+    public void Abandon()
+    {
+        try
+        {
+            _ = DisposeAsync().ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        }
+        catch (Exception)
+        {
+            // The enumerator threw while starting to dispose. The call is already aborted.
+        }
     }
 }
 
