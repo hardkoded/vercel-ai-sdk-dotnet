@@ -73,6 +73,7 @@ internal static class AnthropicParity
         bool xhigh,
         bool rejectAboveHigh,
         bool rejectDisabled,
+        bool rejectBudget,
         bool rejectForced)
     {
         var caps = AnthropicModelCapabilities.Get(model);
@@ -84,6 +85,7 @@ internal static class AnthropicParity
         Assert.Equal(xhigh, caps.SupportsXhighEffort);
         Assert.Equal(rejectAboveHigh, caps.RejectsThinkingDisabledAboveHighEffort);
         Assert.Equal(rejectDisabled, caps.RejectsThinkingDisabled);
+        Assert.Equal(rejectBudget, caps.RejectsBudgetThinking);
         Assert.Equal(rejectForced, caps.RejectsForcedToolUse);
     }
 
