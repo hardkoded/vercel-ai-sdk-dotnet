@@ -516,22 +516,31 @@ internal static class Generation
         }
     }
 
+    private static Tool? FindTool(GenerateTextOptions options, string name)
+    {
+        if (options.Tools != null)
+        {
+            foreach (var candidate in options.Tools)
+            {
+                if (string.Equals(candidate.Name, name, StringComparison.Ordinal))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
     // A tool without an execute function leaves its call for the caller, so the loop ends without asking the stop condition.
     private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
     {
-        if (options.Tools == null)
-        {
-            return false;
-        }
-
         foreach (var call in step.ToolCalls)
         {
-            foreach (var tool in options.Tools)
+            var tool = FindTool(options, call.ToolName);
+            if (tool != null && tool.Execute == null)
             {
-                if (tool.Execute == null && string.Equals(tool.Name, call.ToolName, StringComparison.Ordinal))
-                {
-                    return true;
-                }
+                return true;
             }
         }
 
@@ -540,18 +549,7 @@ internal static class Generation
 
     private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
     {
-        Tool? tool = null;
-        if (options.Tools != null)
-        {
-            foreach (var candidate in options.Tools)
-            {
-                if (string.Equals(candidate.Name, call.ToolName, StringComparison.Ordinal))
-                {
-                    tool = candidate;
-                    break;
-                }
-            }
-        }
+        var tool = FindTool(options, call.ToolName);
 
         if (tool?.Execute == null)
         {
