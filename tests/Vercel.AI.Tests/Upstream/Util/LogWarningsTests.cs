@@ -6,6 +6,7 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
+[Collection("LogWarnings")]
 public sealed class LogWarningsTests
 {
     [UpstreamTest("packages/ai/src/logger/log-warnings.test.ts::logWarnings > when AI_SDK_LOG_WARNINGS is false::should not log any warnings (single)", Coverage = UpstreamCoverage.Covered)]
@@ -381,7 +382,7 @@ public sealed class LogWarningsTests
         {
             LogWarnings.ResetState();
             LogWarnings.Logger = logger;
-            LogWarnings.ProcessEmitWarning = delegate (string message, string type) { Process.Add((message, type)); };
+            LogWarnings.ProcessEmitWarning = delegate (string message, string type, string? code) { Process.Add((message, type)); };
             LogWarnings.ConsoleWarn = delegate (string message) { Console.Add(message); };
         }
 
