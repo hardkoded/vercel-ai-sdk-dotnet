@@ -140,8 +140,8 @@ public sealed partial class AnthropicUpstreamTests
     [UpstreamTest("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools > strict mode for function tools::should omit strict without warning when strict is false and strict tools are unsupported", Coverage = UpstreamCoverage.Covered)]
     public void Omits_strict_without_warning_when_strict_is_false_and_strict_tools_are_unsupported()
     {
-        var schema = AnthropicParity.Json("{\"type\":\"object\"}");
-        var prepared = AnthropicToolPreparer.Prepare(new[] { new AnthropicToolDefinition { Name = "testFunction", InputSchema = schema, Strict = false } }, null, null, null, null, false, false);
+        var schema = AnthropicParity.Json("{\"type\":\"object\",\"properties\":{}}");
+        var prepared = AnthropicToolPreparer.Prepare(new[] { new AnthropicToolDefinition { Name = "testFunction", Description = "A test function", InputSchema = schema, Strict = false } }, null, null, null, null, false, false);
         Assert.Null(prepared.Tools![0]!["strict"]);
         Assert.Empty(prepared.Warnings);
     }
