@@ -32,6 +32,32 @@ public sealed class GoogleLanguageUpstreamTests
         Assert.Equal("system messages are only supported at the beginning of the conversation", error.Message);
     }
 
+    [Theory]
+    [InlineData("text", "deployed", null, "{\"content\":\"deployed\"}")]
+    [InlineData("json", "{\"version\":\"1.0\"}", null, "{\"content\":{\"version\":\"1.0\"}}")]
+    [InlineData("error-text", "migration failed", null, "{\"error\":\"migration failed\"}")]
+    [InlineData("error-json", "{\"code\":\"E_MIGRATION\"}", null, "{\"error\":{\"code\":\"E_MIGRATION\"}}")]
+    [InlineData("error-json", "{\"$ref\":\"#/$defs/Error\"}", null, "{\"error\":\"{\\\"$ref\\\":\\\"#/$defs/Error\\\"}\"}")]
+    [InlineData("execution-denied", null, "User declined.", "{\"error\":\"User declined.\"}")]
+    [InlineData("execution-denied", null, null, "{\"error\":\"Tool call execution denied.\"}")]
+    [UpstreamTest("packages/google/src/convert-to-google-messages.test.ts::tool messages::should preserve the status of tool output $output", Coverage = UpstreamCoverage.Covered)]
+    public void Should_preserve_the_status_of_tool_output(string outputType, string? output, string? reason, string response)
+    {
+        var result = new GoogleToolResultPart("deploy") { ToolCallId = "call-deploy", OutputKind = outputType, Output = output, DenialReason = reason };
+        var prompt = Convert(new GoogleMessageOptions(), new GoogleToolTurn(new[] { result }));
+        var body = JsonNode.Parse(response)!.AsObject();
+        body.Add("name", "deploy");
+        var expected = new JsonArray(new JsonObject
+        {
+            ["role"] = "user",
+            ["parts"] = new JsonArray(new JsonObject
+            {
+                ["functionResponse"] = new JsonObject { ["id"] = "call-deploy", ["name"] = "deploy", ["response"] = body },
+            }),
+        });
+        GoogleUpstream.JsonEqual(prompt.Contents, expected.ToJsonString());
+    }
+
     [Fact]
     [UpstreamTest("packages/google/src/convert-to-google-messages.test.ts::thought signatures::should preserve thought signatures in assistant messages", Coverage = UpstreamCoverage.Covered)]
     public void Preserves_thought_signatures_on_assistant_parts()

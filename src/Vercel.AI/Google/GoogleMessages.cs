@@ -259,7 +259,7 @@ public sealed class GoogleToolResultPart
     /// <summary>Matching tool-call id.</summary>
     public string? ToolCallId { get; set; }
 
-    /// <summary><c>json</c>, <c>text</c>, <c>content</c>, or <c>execution-denied</c>.</summary>
+    /// <summary><c>json</c>, <c>text</c>, <c>content</c>, <c>error-text</c>, <c>error-json</c>, or <c>execution-denied</c>. The last three are sent on <c>response.error</c>.</summary>
     public string OutputKind { get; set; } = "json";
 
     /// <summary>JSON or text payload.</summary>
@@ -505,9 +505,9 @@ public static class GoogleMessages
                 var result = new GoogleToolResultPart(tool.ToolName)
                 {
                     ToolCallId = tool.ToolCallId,
-                    OutputKind = tool.IsError ? "execution-denied" : "json",
+                    OutputKind = tool.OutputType,
                     Output = tool.OutputJson,
-                    DenialReason = tool.IsError ? tool.OutputJson : null,
+                    DenialReason = tool.OutputType == "execution-denied" && tool.OutputJson.Length > 0 ? tool.OutputJson : null,
                 };
                 if (tool.ProviderMetadata is { } metadata)
                 {
@@ -730,10 +730,27 @@ public static class GoogleMessages
             return;
         }
 
-        var payload = result.OutputKind == "execution-denied"
-            ? (result.DenialReason ?? "Tool call execution denied.")
-            : ParseLoose(result.Output);
-        var function = new JsonObject { ["name"] = result.ToolName, ["response"] = new JsonObject { ["name"] = result.ToolName, ["content"] = payload } };
+        var body = new JsonObject { ["name"] = result.ToolName };
+        switch (result.OutputKind)
+        {
+            case "execution-denied":
+                body["error"] = result.DenialReason ?? "Tool call execution denied.";
+                break;
+            case "error-text":
+                body["error"] = result.Output ?? string.Empty;
+                break;
+            case "error-json":
+                body["error"] = SerializeFunctionResponseContent(ParseLoose(result.Output));
+                break;
+            case "text":
+                body["content"] = result.Output ?? string.Empty;
+                break;
+            default:
+                body["content"] = SerializeFunctionResponseContent(ParseLoose(result.Output));
+                break;
+        }
+
+        var function = new JsonObject { ["name"] = result.ToolName, ["response"] = body };
         if (includeIds && !string.IsNullOrEmpty(result.ToolCallId))
         {
             function["id"] = result.ToolCallId;
@@ -824,6 +841,42 @@ public static class GoogleMessages
             {
                 parts.Add(new JsonObject { ["text"] = JsonSerializer.Serialize(new { type = part.Type, url = part.Url }, GoogleJson.Options) });
             }
+        }
+    }
+
+    // Google reserves { $ref: displayName } in structured function responses for multimodal parts.
+    // That conflicts with JSON Schema $ref, so a result that holds one is sent as a JSON string.
+    private static JsonNode SerializeFunctionResponseContent(JsonNode value)
+    {
+        return ContainsSchemaReference(value) ? JsonValue.Create(value.ToJsonString(GoogleJson.Options))! : value;
+    }
+
+    private static bool ContainsSchemaReference(JsonNode? value)
+    {
+        switch (value)
+        {
+            case JsonArray array:
+                foreach (var item in array)
+                {
+                    if (ContainsSchemaReference(item))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            case JsonObject obj:
+                foreach (var property in obj)
+                {
+                    if (property.Key == "$ref" || ContainsSchemaReference(property.Value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            default:
+                return false;
         }
     }
 
