@@ -195,7 +195,16 @@ public static class AnthropicMessagesRequest
             blockBinding = BlockBinding(anthropic!.Value);
         }
 
-        if (capabilities.RejectsThinkingDisabled && thinkingType == "disabled")
+        if (capabilities.RejectsThinkingDisabled && capabilities.SupportsBetweenToolsThinking && thinkingType == "disabled")
+        {
+            warnings.Add(new AnthropicWarning(
+                "unsupported",
+                "providerOptions.anthropic.thinking",
+                "thinking cannot be disabled for " + modelId + ". Using 'between_tools' thinking, the lowest thinking setting, instead."));
+            thinkingType = "between_tools";
+            budget = null;
+        }
+        else if (capabilities.RejectsThinkingDisabled && thinkingType == "disabled")
         {
             warnings.Add(new AnthropicWarning(
                 "unsupported",
@@ -223,7 +232,16 @@ public static class AnthropicMessagesRequest
             effort = "high";
         }
 
-        var isThinking = thinkingType == "enabled" || thinkingType == "adaptive";
+        if (thinkingType == "between_tools" && (effort == "xhigh" || effort == "max"))
+        {
+            warnings.Add(new AnthropicWarning(
+                "unsupported",
+                "providerOptions.anthropic.effort",
+                "effort '" + effort + "' is not supported with 'between_tools' thinking. The effort has been lowered to 'high'."));
+            effort = "high";
+        }
+
+        var isThinking = thinkingType == "enabled" || thinkingType == "adaptive" || thinkingType == "between_tools";
         var sendThinking = isThinking || thinkingType == "disabled" || blockBinding != null;
         var maxTokens = options.MaxOutputTokens ?? capabilities.MaxOutputTokens;
         if (isThinking && thinkingType == "enabled" && budget == null)

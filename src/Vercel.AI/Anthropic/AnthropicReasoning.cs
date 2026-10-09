@@ -52,6 +52,11 @@ public static class AnthropicReasoning
 
         if (reasoning == "none")
         {
+            if (capabilities.SupportsBetweenToolsThinking)
+            {
+                return new AnthropicReasoningConfig("between_tools", null, null, null);
+            }
+
             if (capabilities.RejectsThinkingDisabled)
             {
                 warnings.Add(new AnthropicWarning(
