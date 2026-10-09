@@ -1,9 +1,9 @@
 {
   "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
-  "unitTests": 13857,
-  "inScope": 11078,
+  "unitTests": 13865,
+  "inScope": 11086,
   "outOfScope": 2779,
-  "covered": 3504,
+  "covered": 3512,
   "partial": 101,
   "missing": 7473,
   "features": [
@@ -186,8 +186,8 @@
     {
       "feature": "ai/transcribe",
       "dotnetProject": "Vercel.AI",
-      "inScope": 26,
-      "covered": 26,
+      "inScope": 25,
+      "covered": 25,
       "partial": 0,
       "missing": 0
     },
@@ -258,8 +258,8 @@
     {
       "feature": "amazon-bedrock",
       "dotnetProject": "Vercel.AI.AmazonBedrock",
-      "inScope": 428,
-      "covered": 44,
+      "inScope": 429,
+      "covered": 45,
       "partial": 7,
       "missing": 377
     },
@@ -290,8 +290,8 @@
     {
       "feature": "anthropic",
       "dotnetProject": "Vercel.AI.Anthropic",
-      "inScope": 581,
-      "covered": 128,
+      "inScope": 582,
+      "covered": 129,
       "partial": 5,
       "missing": 448
     },
@@ -898,8 +898,8 @@
     {
       "feature": "provider-utils",
       "dotnetProject": "Vercel.AI.ProviderUtils",
-      "inScope": 650,
-      "covered": 344,
+      "inScope": 657,
+      "covered": 351,
       "partial": 0,
       "missing": 306
     },

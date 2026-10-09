@@ -111,12 +111,12 @@ public static class AnthropicToolPreparer
                 callers = JsonNode.Parse(callerValue.GetRawText()) as JsonArray;
             }
 
-            if (!supportsStrictTools && tool.Strict != null)
+            if (!supportsStrictTools && tool.Strict == true)
             {
                 warnings.Add(new AnthropicWarning(
                     "unsupported",
                     "strict",
-                    "Tool '" + tool.Name + "' has strict: " + (tool.Strict.Value ? "true" : "false") + ", but strict mode is not supported by this provider. The strict property will be ignored."));
+                    "Tool '" + tool.Name + "' has strict: true, but strict mode is not supported by this provider. The strict property will be ignored."));
             }
 
             var node = new JsonObject { ["name"] = tool.Name };
