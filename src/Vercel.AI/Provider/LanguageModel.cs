@@ -349,13 +349,23 @@ public sealed class SystemModelMessage : ModelMessage
 {
     /// <summary>Creates a system message.</summary>
     public SystemModelMessage(string content)
+        : this(content, null)
+    {
+    }
+
+    /// <summary>Creates a system message with provider options, such as an OpenAI <c>reasoningEffortUpdate</c>.</summary>
+    public SystemModelMessage(string content, IReadOnlyDictionary<string, JsonElement>? providerOptions)
         : base("system")
     {
         Content = content ?? string.Empty;
+        ProviderOptions = providerOptions;
     }
 
     /// <summary>Instruction text.</summary>
     public string Content { get; }
+
+    /// <summary>Provider-specific options for this message.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
 }
 
 /// <summary>A user content part.</summary>
