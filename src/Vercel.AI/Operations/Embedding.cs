@@ -46,13 +46,17 @@ public sealed class EmbeddingModelResponse
 public sealed class EmbeddingModelCall
 {
     /// <summary>Creates a model call.</summary>
-    public EmbeddingModelCall(IReadOnlyList<string> values, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, CancellationToken cancellationToken)
+    public EmbeddingModelCall(IReadOnlyList<string> values, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
         Values = values ?? Array.Empty<string>();
         Headers = headers ?? new Dictionary<string, string>();
         ProviderOptions = providerOptions;
         CancellationToken = cancellationToken;
+        Dimensions = dimensions;
     }
+
+    /// <summary>Requested output dimensions. Null when the caller did not ask for any.</summary>
+    public int? Dimensions { get; }
 
     /// <summary>Values in this call.</summary>
     public IReadOnlyList<string> Values { get; }
@@ -99,7 +103,7 @@ public interface IEmbeddingCaller
 public sealed class EmbedStartEvent
 {
     /// <summary>Creates a start event.</summary>
-    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions)
+    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -107,6 +111,7 @@ public sealed class EmbedStartEvent
         Provider = provider;
         ModelId = modelId;
         Value = value;
+        Dimensions = dimensions;
         MaxRetries = maxRetries;
         Headers = headers;
         ProviderOptions = providerOptions;
@@ -129,6 +134,9 @@ public sealed class EmbedStartEvent
 
     /// <summary>A string for embed, or the value list for embedMany.</summary>
     public object Value { get; }
+
+    /// <summary>Requested output dimensions, when specified.</summary>
+    public int? Dimensions { get; }
 
     /// <summary>Resolved retry limit.</summary>
     public int MaxRetries { get; }
@@ -219,7 +227,7 @@ public sealed class EmbedTelemetry
 public sealed class EmbeddingModelCallEvent
 {
     /// <summary>Creates the event.</summary>
-    public EmbeddingModelCallEvent(string callId, string embedCallId, string operationId, string provider, string modelId, IReadOnlyList<string> values, IReadOnlyList<double[]>? embeddings, OperationUsage? usage)
+    public EmbeddingModelCallEvent(string callId, string embedCallId, string operationId, string provider, string modelId, IReadOnlyList<string> values, IReadOnlyList<double[]>? embeddings, OperationUsage? usage, int? dimensions = null)
     {
         CallId = callId;
         EmbedCallId = embedCallId;
@@ -227,6 +235,7 @@ public sealed class EmbeddingModelCallEvent
         Provider = provider;
         ModelId = modelId;
         Values = values;
+        Dimensions = dimensions;
         Embeddings = embeddings;
         Usage = usage;
     }
@@ -248,6 +257,9 @@ public sealed class EmbeddingModelCallEvent
 
     /// <summary>Values in this call.</summary>
     public IReadOnlyList<string> Values { get; }
+
+    /// <summary>Requested output dimensions, when specified.</summary>
+    public int? Dimensions { get; }
 
     /// <summary>Embeddings, on the end event.</summary>
     public IReadOnlyList<double[]>? Embeddings { get; }
@@ -331,6 +343,9 @@ public sealed class EmbedRequest : OperationRequest
     /// <summary>Value to embed.</summary>
     public string Value { get; set; } = string.Empty;
 
+    /// <summary>Requested output dimensions. Must be a positive integer. Support depends on the model.</summary>
+    public int? Dimensions { get; set; }
+
     /// <summary>Called before the model.</summary>
     public Func<EmbedStartEvent, Task>? OnStart { get; set; }
 
@@ -358,6 +373,9 @@ public sealed class EmbedManyRequest : OperationRequest
 
     /// <summary>Values to embed.</summary>
     public IReadOnlyList<string> Values { get; set; } = Array.Empty<string>();
+
+    /// <summary>Requested output dimensions. Must be a positive integer. Support depends on the model.</summary>
+    public int? Dimensions { get; set; }
 
     /// <summary>Concurrent chunks when the model supports parallel calls. Null means unlimited.</summary>
     public int? MaxParallelCalls { get; set; }
@@ -392,6 +410,7 @@ public static class Embed
             throw new ArgumentNullException(nameof(request));
         }
 
+        ValidateEmbeddingDimensions(request.Dimensions);
         var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
@@ -401,7 +420,7 @@ public static class Embed
         var context = request.RuntimeContext ?? EmptyContext;
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
-        var start = new EmbedStartEvent(callId, "ai.embed", context, model.Provider, model.ModelId, request.Value, maxRetries, headers, request.ProviderOptions);
+        var start = new EmbedStartEvent(callId, "ai.embed", context, model.Provider, model.ModelId, request.Value, maxRetries, headers, request.ProviderOptions, request.Dimensions);
         await OperationCallbacks.NotifyAsync(start, onStart, TelemetryStart(telemetry)).ConfigureAwait(false);
         try
         {
@@ -409,10 +428,10 @@ public static class Embed
             {
                 var embedCallId = (request.GenerateCallId ?? DefaultCallId)();
                 var values = new[] { request.Value };
-                await NotifyModelAsync(telemetry, new EmbeddingModelCallEvent(callId, embedCallId, "ai.embed.doEmbed", model.Provider, model.ModelId, values, null, null), true).ConfigureAwait(false);
-                var response = await model.DoEmbedAsync(new EmbeddingModelCall(values, headers, request.ProviderOptions, ct), ct).ConfigureAwait(false);
+                await NotifyModelAsync(telemetry, new EmbeddingModelCallEvent(callId, embedCallId, "ai.embed.doEmbed", model.Provider, model.ModelId, values, null, null, request.Dimensions), true).ConfigureAwait(false);
+                var response = await model.DoEmbedAsync(new EmbeddingModelCall(values, headers, request.ProviderOptions, ct, request.Dimensions), ct).ConfigureAwait(false);
                 var usage = new OperationUsage(tokens: response.Tokens);
-                await NotifyModelAsync(telemetry, new EmbeddingModelCallEvent(callId, embedCallId, "ai.embed.doEmbed", model.Provider, model.ModelId, values, response.Embeddings, usage), false).ConfigureAwait(false);
+                await NotifyModelAsync(telemetry, new EmbeddingModelCallEvent(callId, embedCallId, "ai.embed.doEmbed", model.Provider, model.ModelId, values, response.Embeddings, usage, request.Dimensions), false).ConfigureAwait(false);
                 if (response.Embeddings.Count == 0)
                 {
                     throw new InvalidResponseDataException(response.Embeddings, "No embedding generated.");
@@ -438,6 +457,15 @@ public static class Embed
         }
     }
 
+    /// <summary>Throws when <paramref name="dimensions"/> is set and is not a positive integer.</summary>
+    public static void ValidateEmbeddingDimensions(double? dimensions)
+    {
+        if (dimensions is double value && (double.IsNaN(value) || double.IsInfinity(value) || value != Math.Floor(value) || value <= 0))
+        {
+            throw new InvalidArgumentException("dimensions", value, "dimensions must be a positive integer");
+        }
+    }
+
     internal static string DefaultCallId()
     {
         return "call-" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture).Substring(0, 24);
@@ -447,7 +475,7 @@ public static class Embed
 
     internal static EmbedStartEvent Filter(EmbedStartEvent source, EmbedTelemetry telemetry)
     {
-        return new EmbedStartEvent(source.CallId, source.OperationId, FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Value, source.MaxRetries, source.Headers, source.ProviderOptions);
+        return new EmbedStartEvent(source.CallId, source.OperationId, FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Value, source.MaxRetries, source.Headers, source.ProviderOptions, source.Dimensions);
     }
 
     internal static EmbedEndEvent Filter(EmbedEndEvent source, EmbedTelemetry telemetry)
@@ -523,6 +551,7 @@ public static class EmbedMany
             throw new ArgumentNullException(nameof(request));
         }
 
+        Embed.ValidateEmbeddingDimensions(request.Dimensions);
         var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
@@ -533,7 +562,7 @@ public static class EmbedMany
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
         var values = request.Values ?? Array.Empty<string>();
-        var start = new EmbedStartEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, maxRetries, headers, request.ProviderOptions);
+        var start = new EmbedStartEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, maxRetries, headers, request.ProviderOptions, request.Dimensions);
         await OperationCallbacks.NotifyAsync(start, onStart, Embed.TelemetryStart(telemetry)).ConfigureAwait(false);
         try
         {
@@ -542,7 +571,7 @@ public static class EmbedMany
             var hasByteLimit = byteLimit is double bytes && !double.IsPositiveInfinity(bytes) && !double.IsNaN(bytes);
             if (!hasCountLimit && !hasByteLimit)
             {
-                var single = await CallAsync(model, request, values, headers, request.ProviderOptions, token, callId, "ai.embedMany.doEmbed", telemetry).ConfigureAwait(false);
+                var single = await CallAsync(model, request, values, headers, request.ProviderOptions, token, callId, "ai.embedMany.doEmbed", telemetry, request.Dimensions).ConfigureAwait(false);
                 ValidateCount(single.Embeddings, values);
                 WarningLog.Write(single.Warnings, model.Provider, model.ModelId);
                 var usage = new OperationUsage(tokens: single.Tokens);
@@ -613,12 +642,12 @@ public static class EmbedMany
     private static async Task<ChunkOutcome> RunChunkAsync(IEmbeddingCaller model, EmbedManyRequest request, IReadOnlyList<string> values, IReadOnlyList<string> chunk, int startIndex, IReadOnlyDictionary<string, string> headers, CancellationToken token, string callId, EmbedTelemetry? telemetry)
     {
         var options = await model.TransformProviderOptionsAsync(request.ProviderOptions, values, startIndex, startIndex + chunk.Count, token).ConfigureAwait(false);
-        var response = await CallAsync(model, request, chunk, headers, options, token, callId, "ai.embedMany.doEmbed", telemetry).ConfigureAwait(false);
+        var response = await CallAsync(model, request, chunk, headers, options, token, callId, "ai.embedMany.doEmbed", telemetry, request.Dimensions).ConfigureAwait(false);
         ValidateCount(response.Embeddings, chunk);
         return new ChunkOutcome(response);
     }
 
-    private static Task<EmbeddingModelResponse> CallAsync(IEmbeddingCaller model, OperationRequest request, IReadOnlyList<string> values, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, CancellationToken token, string callId, string operationId, EmbedTelemetry? telemetry)
+    private static Task<EmbeddingModelResponse> CallAsync(IEmbeddingCaller model, OperationRequest request, IReadOnlyList<string> values, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, CancellationToken token, string callId, string operationId, EmbedTelemetry? telemetry, int? dimensions)
     {
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         return OperationRetry.ExecuteAsync(maxRetries, token, request.AbortReason, async ct =>
@@ -626,13 +655,13 @@ public static class EmbedMany
             var embedCallId = (request.GenerateCallId ?? Embed.DefaultCallId)();
             if (telemetry?.OnEmbedStart != null)
             {
-                await telemetry.OnEmbedStart(new EmbeddingModelCallEvent(callId, embedCallId, operationId, model.Provider, model.ModelId, values, null, null)).ConfigureAwait(false);
+                await telemetry.OnEmbedStart(new EmbeddingModelCallEvent(callId, embedCallId, operationId, model.Provider, model.ModelId, values, null, null, dimensions)).ConfigureAwait(false);
             }
 
-            var response = await model.DoEmbedAsync(new EmbeddingModelCall(values, headers, providerOptions, ct), ct).ConfigureAwait(false);
+            var response = await model.DoEmbedAsync(new EmbeddingModelCall(values, headers, providerOptions, ct, dimensions), ct).ConfigureAwait(false);
             if (telemetry?.OnEmbedEnd != null)
             {
-                await telemetry.OnEmbedEnd(new EmbeddingModelCallEvent(callId, embedCallId, operationId, model.Provider, model.ModelId, values, response.Embeddings, new OperationUsage(tokens: response.Tokens))).ConfigureAwait(false);
+                await telemetry.OnEmbedEnd(new EmbeddingModelCallEvent(callId, embedCallId, operationId, model.Provider, model.ModelId, values, response.Embeddings, new OperationUsage(tokens: response.Tokens), dimensions)).ConfigureAwait(false);
             }
 
             return response;

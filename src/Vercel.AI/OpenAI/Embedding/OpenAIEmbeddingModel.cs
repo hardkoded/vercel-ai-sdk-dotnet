@@ -46,10 +46,22 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
     public bool SupportsParallelCalls => true;
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
-        var result = await EmbedAsync(values, null, null, null, cancellationToken).ConfigureAwait(false);
+        var result = await EmbedAsync(values, ProviderDimensions(providerOptions) ?? dimensions, null, null, cancellationToken).ConfigureAwait(false);
         return result.Result;
+    }
+
+    private static int? ProviderDimensions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        return providerOptions != null
+            && providerOptions.TryGetValue("openai", out var options)
+            && options.ValueKind == JsonValueKind.Object
+            && options.TryGetProperty("dimensions", out var width)
+            && width.ValueKind == JsonValueKind.Number
+            && width.TryGetInt32(out var parsed)
+            ? parsed
+            : null;
     }
 
     /// <summary>Embeds <paramref name="values"/>, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set.</summary>

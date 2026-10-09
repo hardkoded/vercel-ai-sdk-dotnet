@@ -225,9 +225,17 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
         {
-            var result = await EmbedAsync(new VoyageEmbeddingRequest(values), cancellationToken).ConfigureAwait(false);
+            var outputDimension = providerOptions != null
+                && providerOptions.TryGetValue("voyage", out var options)
+                && options.ValueKind == JsonValueKind.Object
+                && options.TryGetProperty("outputDimension", out var width)
+                && width.ValueKind == JsonValueKind.Number
+                && width.TryGetInt32(out var parsed)
+                ? parsed
+                : dimensions;
+            var result = await EmbedAsync(new VoyageEmbeddingRequest(values) { OutputDimension = outputDimension }, cancellationToken).ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);
         }
 

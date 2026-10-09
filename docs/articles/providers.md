@@ -50,3 +50,23 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 ```
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
+
+## Embedding dimensions
+
+`Embed.EmbedAsync`, `EmbedMany.EmbedManyAsync`, and `AiClient.EmbedAsync` / `EmbedManyAsync` take an optional `Dimensions` setting. It requests an output vector size and must be a positive integer. Any other value throws an `InvalidArgumentException` for parameter `dimensions` before the model runs. `EmbedMany` sends the same value to every chunk and every retry, and the start events and the `OnEmbedStart` telemetry callback carry it. `AiClient` calls the model once and does not retry or raise those events. Provider options are not changed.
+
+A provider option for the same setting wins over `Dimensions`. When both are unset, the field is left out of the request.
+
+| Model | Provider option | Request field |
+| --- | --- | --- |
+| OpenAI | `openai.dimensions` | `dimensions` |
+| OpenAI-compatible | `dimensions` on the compatible options | `dimensions` |
+| Cohere | `cohere.outputDimension` | `output_dimension` |
+| Google (non-Vertex) | `google.outputDimensionality` | `outputDimensionality` |
+| Perplexity | `perplexity.dimensions` | `dimensions` |
+| Voyage | `voyage.outputDimension` | `output_dimension` |
+| Alibaba | `alibaba.dimension` | `parameters.dimension` |
+
+Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them. Amazon Bedrock, Google Vertex, and Mistral ignore `Dimensions` for now.
+
+`IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. Custom models must add the parameter.

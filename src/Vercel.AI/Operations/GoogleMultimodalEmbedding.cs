@@ -89,7 +89,7 @@ public sealed class GoogleMultimodalEmbedding : IEmbeddingCaller
         }
 
         ValidateContent(content);
-        var dimensionality = Dimensionality(google);
+        var dimensionality = Dimensionality(google) ?? call.Dimensions;
         var single = call.Values.Count == 1;
         var body = single
             ? SingleBody(call.Values[0], content, dimensionality)
