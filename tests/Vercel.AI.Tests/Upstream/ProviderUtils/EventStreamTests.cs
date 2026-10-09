@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.ProviderUtils;
 
@@ -139,6 +140,171 @@ public sealed class EventStreamTests
         Assert.Contains("Empty response body", error.Message);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an invalid maxLineBytes: %s",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_an_invalid_maxLineBytes(int maxLineBytes)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}\n"));
+        var error = await Assert.ThrowsAsync<InvalidArgumentError>(async () =>
+        {
+            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: maxLineBytes))
+            {
+            }
+        });
+        Assert.Contains("maxLineBytes must be a positive safe integer.", error.Message);
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(4)]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::applies a custom byte limit of %s to each UTF-8 row",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Applies_a_custom_byte_limit_to_each_UTF8_row(int limit)
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("\"é\"\n\"é\"\n"));
+        var values = new List<string?>();
+        var read = async () =>
+        {
+            await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: limit))
+            {
+                values.Add(value.GetString());
+            }
+        };
+        if (limit == 3)
+        {
+            await Assert.ThrowsAsync<DownloadError>(read);
+        }
+        else
+        {
+            await read();
+            Assert.Equal(new[] { "é", "é" }, values);
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::allows raising the limit above the default",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Allows_raising_the_limit_above_the_default()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("{}"));
+        var values = new List<JsonElement>();
+        await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: JsonStreams.DefaultMaxLineBytes + 1))
+        {
+            values.Add(value);
+        }
+
+        Assert.Single(values);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an oversized %s line across chunks and cancels the body",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_an_oversized_line_across_chunks_and_cancels_the_body(bool utf8)
+    {
+        var chunks = Enumerable.Range(0, 6)
+            .Select(_ => utf8
+                ? Enumerable.Repeat(new byte[] { 0xC3, 0xB1 }, 8).SelectMany(b => b).ToArray()
+                : Enumerable.Repeat((byte)0x41, 16).ToArray())
+            .ToArray();
+        foreach (var throwOnCancel in new[] { false, true })
+        {
+            var cancelled = false;
+            using var stream = new ChunkedStream(chunks);
+            var error = await Assert.ThrowsAsync<DownloadError>(async () =>
+            {
+                await foreach (var _ in JsonStreams.ReadJsonLinesAsync(
+                    stream,
+                    onCancel: () =>
+                    {
+                        cancelled = true;
+                        if (throwOnCancel)
+                        {
+                            throw new InvalidOperationException("cancel failed");
+                        }
+                    },
+                    maxLineBytes: 64,
+                    url: "test-url"))
+                {
+                }
+            });
+            Assert.Contains("maximum line size of 64 bytes", error.Message);
+            Assert.Equal("test-url", error.Url);
+            Assert.True(cancelled);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::rejects an oversized line in one chunk (trailing newline: %s)",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_an_oversized_line_in_one_chunk(bool trailingNewline)
+    {
+        var limit = JsonStreams.DefaultMaxLineBytes;
+        var bytes = new byte[limit + 1 + (trailingNewline ? 1 : 0)];
+        Array.Fill(bytes, (byte)' ', 0, limit + 1);
+        bytes[limit - 2] = (byte)'{';
+        bytes[limit - 1] = (byte)'}';
+        if (trailingNewline)
+        {
+            bytes[limit + 1] = (byte)'\n';
+        }
+
+        using var stream = new ChunkedStream(bytes);
+        await Assert.ThrowsAsync<DownloadError>(async () =>
+        {
+            await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream))
+            {
+            }
+        });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::accepts a line at the byte limit (trailing newline: %s)",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_a_line_at_the_byte_limit(bool trailingNewline)
+    {
+        var bytes = Encoding.UTF8.GetBytes(new string(' ', 62) + "{}" + (trailingNewline ? "\n" : string.Empty));
+        using var stream = new MemoryStream(bytes);
+        var values = new List<JsonElement>();
+        await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 64))
+        {
+            values.Add(value);
+        }
+
+        Assert.Single(values);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/response-handler.test.ts::createJsonLinesResponseHandler::accepts a chunk larger than the limit when each line is below the limit",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_a_chunk_larger_than_the_limit_when_each_line_is_below_the_limit()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("{}\n", 9))));
+        var count = 0;
+        await foreach (var _ in JsonStreams.ReadJsonLinesAsync(stream, maxLineBytes: 8))
+        {
+            count++;
+        }
+
+        Assert.Equal(9, count);
+    }
+
+
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonResponseHandler::should return both parsed value and rawValue",
@@ -173,5 +339,61 @@ public sealed class EventStreamTests
     private static KeyValuePair<string, JsonNode> Pair(string name, JsonNode schema)
     {
         return new KeyValuePair<string, JsonNode>(name, schema);
+    }
+
+    private sealed class ChunkedStream : Stream
+    {
+        private readonly byte[][] _chunks;
+        private int _chunk;
+        private int _offset;
+
+        public ChunkedStream(params byte[][] chunks)
+        {
+            _chunks = chunks;
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_chunk >= _chunks.Length)
+            {
+                return 0;
+            }
+
+            var current = _chunks[_chunk];
+            var take = Math.Min(count, current.Length - _offset);
+            Array.Copy(current, _offset, buffer, offset, take);
+            _offset += take;
+            if (_offset == current.Length)
+            {
+                _chunk++;
+                _offset = 0;
+            }
+
+            return take;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

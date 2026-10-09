@@ -657,16 +657,28 @@ public static class JsonStreams
         return new JsonBody(parsed.Value.Value, parsed.RawValue.Value, ExtractResponseHeaders(response));
     }
 
+    /// <summary>Default largest JSON Lines row, in UTF-8 bytes.</summary>
+    public const int DefaultMaxLineBytes = 64 * 1024 * 1024;
+
     /// <summary>
     /// Yields one JSON value per non-empty line. Lines may be split across reads.
     /// A final line without a newline is still yielded. Early disposal cancels <paramref name="onCancel"/>.
+    /// A row longer than <paramref name="maxLineBytes"/> UTF-8 bytes (the newline excluded) throws a
+    /// <see cref="Util.DownloadError"/> for <paramref name="url"/> and cancels the body.
     /// </summary>
     public static async IAsyncEnumerable<JsonElement> ReadJsonLinesAsync(
         Stream? stream,
         JsonNode? schema = null,
         Action? onCancel = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default,
+        int maxLineBytes = DefaultMaxLineBytes,
+        string url = "")
     {
+        if (maxLineBytes <= 0)
+        {
+            throw new Util.InvalidArgumentError("maxLineBytes", maxLineBytes, "maxLineBytes must be a positive safe integer.");
+        }
+
         if (stream is null)
         {
             throw new InvalidOperationException("Empty response body");
@@ -675,31 +687,58 @@ public static class JsonStreams
         var finished = false;
         try
         {
-            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            var line = new MemoryStream();
+            var chunk = new byte[4096];
+            while (true)
             {
-                var buffer = new StringBuilder();
-                var chunk = new char[256];
-                while (true)
+                cancellationToken.ThrowIfCancellationRequested();
+                var count = await stream.ReadAsync(chunk, 0, chunk.Length, cancellationToken).ConfigureAwait(false);
+                if (count == 0)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var count = await reader.ReadAsync(chunk, 0, chunk.Length).ConfigureAwait(false);
-                    if (count == 0)
+                    finished = true;
+                    break;
+                }
+
+                var start = 0;
+                while (start < count)
+                {
+                    var newline = Array.IndexOf(chunk, (byte)'\n', start, count - start);
+                    var end = newline < 0 ? count : newline;
+                    if (line.Length + (end - start) > maxLineBytes)
                     {
                         finished = true;
+                        try
+                        {
+                            onCancel?.Invoke();
+                        }
+                        catch (Exception)
+                        {
+                            // The size error is the one the caller needs to see.
+                        }
+
+                        throw new Util.DownloadError(url, "JSON Lines response exceeded maximum line size of " + maxLineBytes + " bytes.");
+                    }
+
+                    line.Write(chunk, start, end - start);
+                    if (newline < 0)
+                    {
                         break;
                     }
 
-                    buffer.Append(chunk, 0, count);
-                    foreach (var line in DrainLines(buffer, final: false))
+                    var text = DecodeLine(line);
+                    if (text != null)
                     {
-                        yield return JsonParsing.Parse(line, schema);
+                        yield return JsonParsing.Parse(text, schema);
                     }
-                }
 
-                foreach (var line in DrainLines(buffer, final: true))
-                {
-                    yield return JsonParsing.Parse(line, schema);
+                    start = newline + 1;
                 }
+            }
+
+            var tail = DecodeLine(line);
+            if (tail != null)
+            {
+                yield return JsonParsing.Parse(tail, schema);
             }
         }
         finally
@@ -754,50 +793,19 @@ public static class JsonStreams
         }
     }
 
-    private static IEnumerable<string> DrainLines(StringBuilder buffer, bool final)
+    private static string? DecodeLine(MemoryStream line)
     {
-        var text = buffer.ToString();
-        var start = 0;
-        while (true)
+        var bytes = line.GetBuffer();
+        var length = (int)line.Length;
+        line.SetLength(0);
+        var offset = length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF ? 3 : 0;
+        if (length > offset && bytes[length - 1] == (byte)'\r')
         {
-            var newline = text.IndexOf('\n', start);
-            if (newline < 0)
-            {
-                break;
-            }
-
-            var line = text.Substring(start, newline - start);
-            if (line.EndsWith("\r", StringComparison.Ordinal))
-            {
-                line = line.Substring(0, line.Length - 1);
-            }
-
-            if (line.Trim().Length > 0)
-            {
-                yield return line;
-            }
-
-            start = newline + 1;
+            length--;
         }
 
-        buffer.Clear();
-        if (final)
-        {
-            var tail = text.Substring(start);
-            if (tail.EndsWith("\r", StringComparison.Ordinal))
-            {
-                tail = tail.Substring(0, tail.Length - 1);
-            }
-
-            if (tail.Trim().Length > 0)
-            {
-                yield return tail;
-            }
-        }
-        else if (start < text.Length)
-        {
-            buffer.Append(text, start, text.Length - start);
-        }
+        var text = Encoding.UTF8.GetString(bytes, offset, length - offset);
+        return text.Trim().Length > 0 ? text : null;
     }
 
     private static void Copy(Dictionary<string, string> target, System.Net.Http.Headers.HttpHeaders headers)
