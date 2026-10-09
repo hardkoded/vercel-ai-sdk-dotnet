@@ -14,7 +14,7 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 });
 Console.WriteLine(result.Text);
 ```
-<sup><a href='/samples/Vercel.AI.Examples/QuickstartExample.cs#L21-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-quickstart' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/Vercel.AI.Examples/QuickstartExample.cs#L20-L29' title='Snippet source file'>snippet source</a> | <a href='#snippet-quickstart' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 `AiClient` is only required for the high-level helpers. Pass `Model` when you already have an `ILanguageModel`. Pass `ModelId` (`openai/gpt-4.1-mini`) when the Gateway should resolve it.

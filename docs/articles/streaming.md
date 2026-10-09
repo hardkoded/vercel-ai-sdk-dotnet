@@ -19,7 +19,7 @@ await foreach (var delta in stream.TextStream())
 Console.WriteLine();
 Console.WriteLine(await stream.FinishReason);
 ```
-<sup><a href='/samples/Vercel.AI.Examples/StreamingExample.cs#L19-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/Vercel.AI.Examples/StreamingExample.cs#L18-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## UI message stream
