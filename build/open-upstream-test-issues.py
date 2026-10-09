@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open the feature issues listed in tests/parity/issues.json.
+"""Open the feature issues listed in tests/parity/generated/issues.json.
 
 Uses the GitHub CLI (`gh`) against hardkoded/vercel-ai-sdk-dotnet. Issues that
 already have a url are left alone. Bodies come from the same generator as
@@ -22,7 +22,7 @@ parity = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(parity)
 
 REPO = "hardkoded/vercel-ai-sdk-dotnet"
-ISSUES = ROOT / "tests" / "parity" / "issues.json"
+ISSUES = ROOT / "tests" / "parity" / "generated" / "issues.json"
 
 
 def create_issue(title: str, body: str) -> str:

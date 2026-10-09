@@ -6,8 +6,7 @@ This directory tracks vitest unit tests from [vercel/ai](https://github.com/verc
 | --- | --- |
 | `upstream-unit-tests.jsonl` | One upstream `it` / `test` per line. `id` is `path::suite::title`. |
 | `manifest.json` | Commit, counts, and excluded files. |
-| `coverage-summary.json` | In-scope totals per feature. `UpstreamParityTests` checks it. |
-| `issues.json` | One GitHub issue per feature that still has missing or partial tests. `url` is filled by `build/open-upstream-test-issues.py`. |
+| `generated/` | Ignored by git. `build/parity-report.py` writes `coverage-summary.json` (in-scope totals per feature) and `issues.json` (one GitHub issue per feature with missing or partial tests; `url` is filled by `build/open-upstream-test-issues.py`). |
 
 A .NET test that asserts the same behavior links the upstream id:
 
@@ -18,7 +17,7 @@ A .NET test that asserts the same behavior links the upstream id:
     Note = "Asserts identical vectors only.")]
 ```
 
-`Covered` means that upstream case is implemented. `Partial` means a .NET test overlaps it and the rest of the case is still open. An in-scope id with no attribute is missing. `python3 build/parity-report.py` rewrites `coverage-summary.json` and `issues.json` after attributes change.
+`Covered` means that upstream case is implemented. `Partial` means a .NET test overlaps it and the rest of the case is still open. An in-scope id with no attribute is missing. `python3 build/parity-report.py` writes both files into `generated/` on demand. They are not committed, so PRs that add tests do not conflict on them.
 
 `python3 build/open-upstream-test-issues.py` opens one GitHub issue per feature that does not yet have a `url`. It needs `gh auth login` on `hardkoded/vercel-ai-sdk-dotnet`.
 
