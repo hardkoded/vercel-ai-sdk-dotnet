@@ -5,6 +5,7 @@ Native wire protocols have their own request mappers:
 - Gateway (`AI_GATEWAY_API_KEY`) posts V4 call options to `/language-model`, `/embedding-model`, and `/image-model`.
 - OpenAI speaks Chat Completions, the Responses API, embeddings, images, speech, and transcription.
 - Anthropic speaks the Messages API. `AnthropicAwsProvider` points that body at the AWS external endpoint.
+  - `claude-haiku-5-5` supports every effort level, including `xhigh`. It uses adaptive thinking and rejects thinking token budgets: `thinking: { type: "enabled", budgetTokens }` is sent as `{ type: "adaptive" }` with a warning, so use `effort` to control how much it thinks. Unlike `claude-sonnet-5-5`, thinking can be disabled, but only at `low`, `medium`, and `high` effort. At `xhigh` or `max` the effort is lowered to `high` with a warning. Structured output uses native `output_config.format`.
 - Google speaks Gemini `generateContent`. `GoogleVertexProvider` changes the base URL and sends a bearer token.
 - Azure OpenAI uses `api-key` and `/openai/deployments/{model}/chat/completions`.
 - Amazon Bedrock signs a Converse request with Signature Version 4.
