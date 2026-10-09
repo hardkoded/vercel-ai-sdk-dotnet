@@ -618,9 +618,6 @@ def collect(checkout: Path) -> tuple[list[dict[str, object]], dict[str, object]]
     manifest: dict[str, object] = {
         "upstreamRepo": "https://github.com/vercel/ai",
         "upstreamCommit": sha,
-        "unitTestCount": len(rows),
-        "inScopeCount": sum(1 for row in rows if row["scope"] == "in-scope"),
-        "outOfScopeCount": sum(1 for row in rows if row["scope"] == "out-of-scope"),
         "excludedFiles": excluded,
         "dotnetProjects": DOTNET_PROJECTS,
         "notPortedPackages": sorted(NOT_PORTED),
@@ -669,7 +666,8 @@ def main() -> None:
     )
     print(
         f"Wrote {len(rows)} unit tests "
-        f"({manifest['inScopeCount']} in scope, {manifest['outOfScopeCount']} out of scope) "
+        f"({sum(1 for row in rows if row['scope'] == 'in-scope')} in scope, "
+        f"{sum(1 for row in rows if row['scope'] == 'out-of-scope')} out of scope) "
         f"from {manifest['upstreamCommit']}"
     )
 

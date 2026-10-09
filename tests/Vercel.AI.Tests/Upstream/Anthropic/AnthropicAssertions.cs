@@ -711,6 +711,16 @@ internal static class AnthropicAssertions
         Assert.Contains("Credential=test-access-key/20240315/us-west-2/aws-external-anthropic/aws4_request", call.Headers["authorization"]);
     }
 
+    public static void FetchNonAsciiHeader()
+    {
+        var headers = new Dictionary<string, string?> { ["x-ascii"] = "plain", ["x-title"] = "Example \u00B7 App" };
+        var call = AnthropicAwsFetch.Prepare("http://example.com", "POST", "{\"test\": \"data\"}", null, null, headers, null, Creds(), new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
+        var signedHeaders = System.Text.RegularExpressions.Regex.Match(call.Headers["authorization"], "SignedHeaders=([^,]+)").Groups[1].Value.Split(';');
+        Assert.Equal(new[] { "host", "user-agent", "x-amz-date", "x-ascii" }, signedHeaders);
+        Assert.Equal("plain", call.Headers["x-ascii"]);
+        Assert.Equal("Example \u00B7 App", call.Headers["x-title"]);
+    }
+
     public static void FetchUndefinedInit()
     {
         var call = AnthropicAwsFetch.Prepare("http://example.com", null, null, null, null, null, null, Creds());

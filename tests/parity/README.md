@@ -5,9 +5,8 @@ This directory tracks vitest unit tests from [vercel/ai](https://github.com/verc
 | File | Role |
 | --- | --- |
 | `upstream-unit-tests.jsonl` | One upstream `it` / `test` per line. `id` is `path::suite::title`. |
-| `manifest.json` | Commit, counts, and excluded files. |
-| `coverage-summary.json` | In-scope totals per feature. `UpstreamParityTests` checks it. |
-| `issues.json` | One GitHub issue per feature that still has missing or partial tests. `url` is filled by `build/open-upstream-test-issues.py`. |
+| `manifest.json` | Commit and excluded files. It holds no counts. Count the catalog (`build/parity-report.py` does) so PRs that add tests do not conflict here. |
+| `generated/` | Ignored by git. `build/parity-report.py` writes `coverage-summary.json` (in-scope totals per feature) and `issues.json` (one GitHub issue per feature with missing or partial tests; `url` is filled by `build/open-upstream-test-issues.py`, which reuses an issue with the same title). |
 
 A .NET test that asserts the same behavior links the upstream id:
 
@@ -18,7 +17,7 @@ A .NET test that asserts the same behavior links the upstream id:
     Note = "Asserts identical vectors only.")]
 ```
 
-`Covered` means that upstream case is implemented. `Partial` means a .NET test overlaps it and the rest of the case is still open. An in-scope id with no attribute is missing. `python3 build/parity-report.py` rewrites `coverage-summary.json` and `issues.json` after attributes change.
+`Covered` means that upstream case is implemented. `Partial` means a .NET test overlaps it and the rest of the case is still open. An in-scope id with no attribute is missing. `python3 build/parity-report.py` writes both files into `generated/` on demand. They are not committed, so PRs that add tests do not conflict on them.
 
 `python3 build/open-upstream-test-issues.py` opens one GitHub issue per feature that does not yet have a `url`. It needs `gh auth login` on `hardkoded/vercel-ai-sdk-dotnet`.
 
@@ -32,3 +31,5 @@ git -C /tmp/vercel-ai sparse-checkout set packages
 python3 build/collect-upstream-tests.py /tmp/vercel-ai
 python3 build/parity-report.py
 ```
+
+Run `build/parity-report.py` before `build/open-upstream-test-issues.py`. The opener needs `generated/issues.json` and stops with an error if it is missing.

@@ -151,6 +151,16 @@ public sealed class AmazonBedrockPrepareToolsTests
         Assert.Contains("additionalProperties: false", warnings[0].Message);
     }
 
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should omit strict without warning when strict is false and strict mode is unsupported", Coverage = UpstreamCoverage.Covered)]
+    public void Omits_strict_without_warning_when_strict_is_false_and_strict_mode_is_unsupported()
+    {
+        var tool = Tool("testFunction", "A test function", strict: false);
+        var config = AmazonBedrockTools.Prepare("us.anthropic.claude-opus-4-7", new[] { tool }, null, out var warnings);
+        Assert.Null(config["tools"]![0]!["toolSpec"]!["strict"]);
+        Assert.Empty(warnings);
+    }
+
     private static JsonNode Spec(LanguageModelTool tool)
     {
         var config = AmazonBedrockTools.Prepare(Anthropic, new[] { tool }, null, out _);

@@ -100,6 +100,13 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createSigV4FetchFunction::should send non-ASCII header values without signing them", Coverage = UpstreamCoverage.Covered)]
+    public void Should_send_non_ASCII_header_values_without_signing_them()
+    {
+        AnthropicAssertions.FetchNonAsciiHeader();
+    }
+
+    [Fact]
     [UpstreamTest("packages/anthropic-aws/src/anthropic-aws-fetch.test.ts::createApiKeyFetchFunction::should add x-api-key header with user-agent", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0014()
     {
