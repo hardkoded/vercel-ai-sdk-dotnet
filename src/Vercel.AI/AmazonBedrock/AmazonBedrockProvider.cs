@@ -362,8 +362,21 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         JsonElement? providerMetadata = null;
         if (jsonTool)
         {
-            using var metadata = JsonDocument.Parse("{\"amazonBedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null},\"bedrock\":{\"isJsonResponseFromTool\":true,\"stopSequence\":null}}");
-            providerMetadata = metadata.RootElement.Clone();
+            string? stopSequence = null;
+            if (root.TryGetProperty("additionalModelResponseFields", out var extra)
+                && extra.ValueKind == JsonValueKind.Object
+                && extra.TryGetProperty("delta", out var delta)
+                && delta.ValueKind == JsonValueKind.Object
+                && delta.TryGetProperty("stop_sequence", out var stopValue)
+                && stopValue.ValueKind == JsonValueKind.String)
+            {
+                stopSequence = stopValue.GetString();
+            }
+
+            var payload = new JsonObject { ["isJsonResponseFromTool"] = true, ["stopSequence"] = stopSequence };
+            var metadata = new JsonObject { ["amazonBedrock"] = payload, ["bedrock"] = payload.DeepClone() };
+            using var document = JsonDocument.Parse(metadata.ToJsonString());
+            providerMetadata = document.RootElement.Clone();
         }
 
         return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, providerMetadata, responseHeaders: headers);

@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -42,7 +43,7 @@ public static class AwsSigV4
             }
         }
 
-        headers["host"] = request.RequestUri.Host;
+        headers["host"] = HostHeader(request.RequestUri);
         headers["x-amz-date"] = amzDate;
         if (!string.IsNullOrEmpty(sessionToken))
         {
@@ -50,7 +51,7 @@ public static class AwsSigV4
         }
 
         request.Headers.TryAddWithoutValidation("x-amz-date", amzDate);
-        request.Headers.TryAddWithoutValidation("host", request.RequestUri.Host);
+        request.Headers.TryAddWithoutValidation("host", headers["host"]);
         if (!string.IsNullOrEmpty(sessionToken))
         {
             request.Headers.TryAddWithoutValidation("x-amz-security-token", sessionToken);
@@ -79,7 +80,7 @@ public static class AwsSigV4
                 continue;
             }
 
-            canonicalHeaders.Append(name).Append(':').Append(headers[name].Trim()).Append('\n');
+            canonicalHeaders.Append(name).Append(':').Append(Regex.Replace(headers[name].Trim(), "\\s+", " ")).Append('\n');
             if (signed.Length > 0)
             {
                 signed.Append(';');
@@ -97,6 +98,9 @@ public static class AwsSigV4
         var signature = ToHex(Hmac(signingKey, stringToSign));
         return "AWS4-HMAC-SHA256 Credential=" + accessKey + "/" + scope + ", SignedHeaders=" + signed + ", Signature=" + signature;
     }
+
+    /// <summary>The <c>Host</c> header value, which includes the port when it is not the default.</summary>
+    internal static string HostHeader(Uri uri) => uri.IsDefaultPort ? uri.Host : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
 
     // SigV4 header values must be ASCII. Other values are sent but left out of the signature.
     private static bool IsAscii(string value)

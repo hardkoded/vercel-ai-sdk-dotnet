@@ -103,7 +103,7 @@ public static class AmazonBedrockFetch
             text = objectBody.ToJsonString();
         }
 
-        merged["user-agent"] = UserAgent;
+        merged["user-agent"] = WithUserAgent(merged);
         if (verb != "POST" || string.IsNullOrEmpty(text))
         {
             return new AmazonBedrockPreparedCall(verb, url, text, merged, false);
@@ -126,10 +126,14 @@ public static class AmazonBedrockFetch
     {
         var merged = new Dictionary<string, string>(StringComparer.Ordinal);
         Copy(merged, headers);
-        merged["user-agent"] = UserAgent;
+        merged["user-agent"] = WithUserAgent(merged);
         merged["authorization"] = "Bearer " + (apiKey ?? string.Empty);
         return new AmazonBedrockPreparedCall(method ?? string.Empty, url, body, merged, false);
     }
+
+    // Appends the SDK user agent to a caller-supplied one.
+    private static string WithUserAgent(Dictionary<string, string> headers) =>
+        headers.TryGetValue("user-agent", out var existing) ? existing + " " + UserAgent : UserAgent;
 
     private static Dictionary<string, string> Merge(IReadOnlyDictionary<string, string?>? headers, IReadOnlyDictionary<string, string?>? requestHeaders)
     {
@@ -160,7 +164,7 @@ public static class AmazonBedrockFetch
     private static void Sign(string url, string body, Dictionary<string, string> headers, AmazonBedrockCredentials credentials, string service, DateTimeOffset utcNow)
     {
         var uri = new Uri(url);
-        headers["host"] = uri.IsDefaultPort ? uri.Host : uri.Host + ":" + uri.Port.ToString(CultureInfo.InvariantCulture);
+        headers["host"] = AwsSigV4.HostHeader(uri);
         headers["x-amz-date"] = utcNow.UtcDateTime.ToString("yyyyMMdd'T'HHmmss'Z'", CultureInfo.InvariantCulture);
         if (!string.IsNullOrEmpty(credentials.SessionToken))
         {
