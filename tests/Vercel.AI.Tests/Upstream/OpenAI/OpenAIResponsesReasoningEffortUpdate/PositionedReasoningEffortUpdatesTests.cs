@@ -101,6 +101,62 @@ public sealed class PositionedReasoningEffortUpdatesTests
         Assert.Equal(AstraEfforts, warning.Message);
     }
 
+    public static TheoryData<string, string, string, string> AzureMessages()
+    {
+        var data = new TheoryData<string, string, string, string>();
+        foreach (var method in new[] { "generate", "stream" })
+        {
+            data.Add(method, "Azure options", "{\"azure\":{\"reasoningEffortUpdate\":\"high\"}}", WireUpdate("high"));
+            data.Add(method, "OpenAI options fallback", "{\"openai\":{\"reasoningEffortUpdate\":\"high\"}}", WireUpdate("high"));
+            data.Add(method, "Azure options taking precedence", "{\"azure\":{\"reasoningEffortUpdate\":\"low\"},\"openai\":{\"reasoningEffortUpdate\":\"high\"}}", WireUpdate("low"));
+            data.Add(method, "explicit empty Azure options", "{\"azure\":{},\"openai\":{\"reasoningEffortUpdate\":\"high\"}}", "{\"role\":\"developer\",\"content\":\"\"}");
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(AzureMessages))]
+    [UpstreamTest(Prefix + "supports $name on Azure messages", Coverage = UpstreamCoverage.Covered)]
+    public async Task Supports_name_on_Azure_messages(string method, string name, string providerOptionsJson, string expected)
+    {
+        var providerOptions = new Dictionary<string, JsonElement>();
+        foreach (var property in OpenAIUpstream.Json(providerOptionsJson).EnumerateObject())
+        {
+            providerOptions[property.Name] = property.Value.Clone();
+        }
+
+        var (body, _) = await Request(
+            method,
+            new ModelMessage[] { User(), new SystemModelMessage(string.Empty, providerOptions), User() },
+            new JsonObject(),
+            "gpt-6-astra",
+            provider: "azure.responses");
+
+        OpenAIUpstream.Equal(body["input"], "[" + WireUser + "," + expected + "," + WireUser + "]");
+        Assert.NotEmpty(name);
+    }
+
+    [Theory]
+    [MemberData(nameof(Methods))]
+    [UpstreamTest(Prefix + "rejects unsupported Azure configurations when using OpenAI message options", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_unsupported_Azure_configurations_when_using_OpenAI_message_options(string method)
+    {
+        var capture = new OpenAICapture();
+
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(
+            () => Request(
+                method,
+                Build(new[] { "user", "high", "user" }),
+                new JsonObject { ["truncation"] = "auto" },
+                "gpt-6-astra",
+                capture: capture,
+                provider: "azure.responses"));
+
+        Assert.Equal("Message-level reasoningEffortUpdate", error.Functionality);
+        Assert.Equal(0, capture.Calls);
+    }
+
     [Theory]
     [MemberData(nameof(Methods))]
     [UpstreamTest(Prefix + "keeps the request-level update prepended and historical updates positioned", Coverage = UpstreamCoverage.Covered)]
@@ -258,6 +314,21 @@ public sealed class PositionedReasoningEffortUpdatesTests
             "gpt-6-astra");
 
         OpenAIUpstream.Equal(body["input"], "[{\"role\":\"developer\",\"content\":\"\"}," + WireUser + "]");
+    }
+
+    [Theory]
+    [MemberData(nameof(Methods))]
+    [UpstreamTest(Prefix + "allows explicit compaction with standard mode and disabled truncation", Coverage = UpstreamCoverage.Covered)]
+    public async Task Allows_explicit_compaction_with_standard_mode_and_disabled_truncation(string method)
+    {
+        var (body, warnings) = await Request(
+            method,
+            Build(new[] { "high", "user" }),
+            new JsonObject { ["reasoningMode"] = "standard", ["truncation"] = "disabled", ["compactionTrigger"] = true },
+            "gpt-6-astra");
+
+        OpenAIUpstream.Equal(body["input"], "[" + WireUpdate("high") + "," + WireUser + ",{\"type\":\"compaction_trigger\"}]");
+        Assert.Empty(warnings);
     }
 
     public static TheoryData<string, string, string[]> AdjacentCases()
