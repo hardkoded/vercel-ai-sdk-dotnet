@@ -195,26 +195,23 @@ public static class AnthropicMessagesRequest
             blockBinding = BlockBinding(anthropic!.Value);
         }
 
-        if (capabilities.RejectsThinkingDisabled && thinkingType != null)
+        if (capabilities.RejectsThinkingDisabled && thinkingType == "disabled")
         {
-            if (thinkingType == "disabled")
-            {
-                warnings.Add(new AnthropicWarning(
-                    "unsupported",
-                    "providerOptions.anthropic.thinking",
-                    "thinking cannot be disabled for " + modelId + "; it always uses adaptive thinking. The thinking setting has been removed. Lower 'effort' to reduce thinking."));
-                thinkingType = null;
-                budget = null;
-            }
-            else if (thinkingType == "enabled")
-            {
-                warnings.Add(new AnthropicWarning(
-                    "unsupported",
-                    "providerOptions.anthropic.thinking",
-                    "budget-based thinking is not supported by " + modelId + "; it always uses adaptive thinking. Using adaptive thinking instead. Use 'effort' to control how much the model thinks."));
-                thinkingType = "adaptive";
-                budget = null;
-            }
+            warnings.Add(new AnthropicWarning(
+                "unsupported",
+                "providerOptions.anthropic.thinking",
+                "thinking cannot be disabled for " + modelId + "; it always uses adaptive thinking. The thinking setting has been removed. Lower 'effort' to reduce thinking."));
+            thinkingType = null;
+            budget = null;
+        }
+        else if (capabilities.RejectsBudgetThinking && thinkingType == "enabled")
+        {
+            warnings.Add(new AnthropicWarning(
+                "unsupported",
+                "providerOptions.anthropic.thinking",
+                "budget-based thinking is not supported by " + modelId + (capabilities.RejectsThinkingDisabled ? "; it always uses adaptive thinking. " : ". ") + "Using adaptive thinking instead. Use 'effort' to control how much the model thinks."));
+            thinkingType = "adaptive";
+            budget = null;
         }
 
         if (capabilities.RejectsThinkingDisabledAboveHighEffort && thinkingType == "disabled" && (effort == "xhigh" || effort == "max"))
