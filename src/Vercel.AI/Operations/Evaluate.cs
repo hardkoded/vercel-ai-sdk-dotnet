@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
@@ -76,7 +77,7 @@ public sealed class EvaluationAnswer
         Probabilities = probabilities;
     }
 
-    /// <summary>Answer type.</summary>
+    /// <summary>Answer type. It is the question type, or <c>refusal</c> when the model declined the question.</summary>
     public string Type { get; }
 
     /// <summary>Selected choice.</summary>
@@ -464,6 +465,12 @@ public static class Evaluate
             }, null).ConfigureAwait(false);
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
             ValidateAnswers(questions, result.Answers, result.Rounding);
+            var refused = questions.Keys.Where(id => result.Answers[id].Type == "refusal").ToArray();
+            if (refused.Length > 0)
+            {
+                throw new DecisionRefusalError(refused, model.Provider, model.ModelId);
+            }
+
             if (enabled)
             {
                 await OperationCallbacks.NotifyAsync(new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, request.State, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnModelEnd).ConfigureAwait(false);
@@ -592,9 +599,14 @@ public static class Evaluate
 
         foreach (var pair in questions)
         {
-            if (!answers.TryGetValue(pair.Key, out var answer) || answer == null || answer.Type != pair.Value.Type)
+            if (!answers.TryGetValue(pair.Key, out var answer) || answer == null || (answer.Type != pair.Value.Type && answer.Type != "refusal"))
             {
                 throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" returned an answer with the wrong type.");
+            }
+
+            if (answer.Type == "refusal")
+            {
+                continue;
             }
 
             switch (pair.Value.Type)

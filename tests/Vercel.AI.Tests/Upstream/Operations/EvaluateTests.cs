@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -475,6 +476,28 @@ public sealed class EvaluateTests
         Assert.Equal("evaluation failed", error.Message);
         Assert.Equal("test-call-id", callId);
         Assert.Same(error, seen);
+    }
+
+    [Theory]
+    [InlineData("topic")]
+    [InlineData("severity")]
+    [InlineData("refund")]
+    [InlineData("topic", "refund")]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects refused questions with a refusal error without retrying (%s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_refused_questions_with_a_refusal_error_without_retrying(params string[] refused)
+    {
+        var answers = SampleAnswers();
+        foreach (var id in refused)
+        {
+            answers[id] = new EvaluationAnswer("refusal");
+        }
+
+        var model = new EvalModel { Result = new EvaluationModelResult(answers, Array.Empty<OperationWarning>()) };
+        var error = await Assert.ThrowsAsync<DecisionRefusalError>(() => Evaluate.EvaluateAsync(new EvaluateRequest { Model = model, State = "text", Questions = SampleQuestions(), MaxRetries = 2 }));
+        Assert.Equal(refused, error.QuestionIds);
+        Assert.Equal("mock-provider", error.Provider);
+        Assert.Equal("mock-model-id", error.ModelId);
+        Assert.Single(model.Calls);
     }
 
     private static Dictionary<string, EvaluationQuestion> SampleQuestions()
