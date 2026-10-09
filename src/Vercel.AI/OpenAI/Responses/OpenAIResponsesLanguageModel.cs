@@ -579,7 +579,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         if (Array.IndexOf(UpdateEfforts, effort) < 0)
         {
-            throw new InvalidArgumentException("reasoningEffortUpdate", effort, "Expected one of: " + string.Join(", ", UpdateEfforts));
+            throw new InvalidArgumentException("providerOptions", effort, "invalid openai provider options");
         }
     }
 

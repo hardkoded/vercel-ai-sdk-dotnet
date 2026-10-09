@@ -312,9 +312,11 @@ public sealed class PositionedReasoningEffortUpdatesTests
             ["openai"] = OpenAIUpstream.Json("{\"reasoningEffortUpdate\":\"minimal\"}"),
         });
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(
             () => Request(method, new ModelMessage[] { minimal, User() }, new JsonObject(), "gpt-6-luna", capture: capture));
 
+        Assert.Equal("providerOptions", error.Parameter);
+        Assert.Equal("Invalid argument for parameter providerOptions: invalid openai provider options", error.Message);
         Assert.Equal(string.Empty, capture.Body);
     }
 
@@ -325,9 +327,11 @@ public sealed class PositionedReasoningEffortUpdatesTests
     {
         var capture = new OpenAICapture();
 
-        await Assert.ThrowsAsync<InvalidArgumentException>(
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(
             () => Request(method, new ModelMessage[] { User() }, new JsonObject { ["reasoningEffortUpdate"] = "minimal" }, "gpt-6-luna", capture: capture));
 
+        Assert.Equal("providerOptions", error.Parameter);
+        Assert.Equal("Invalid argument for parameter providerOptions: invalid openai provider options", error.Message);
         Assert.Equal(string.Empty, capture.Body);
     }
 }
