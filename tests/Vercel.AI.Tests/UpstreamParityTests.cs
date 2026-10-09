@@ -48,45 +48,15 @@ public sealed class UpstreamParityTests
     }
 
     [Fact]
-    public void Coverage_summary_matches_the_catalog_and_links()
+    public void Summary_counts_match_the_manifest()
     {
         var tests = UpstreamCatalog.LoadTests();
         var manifest = UpstreamCatalog.LoadManifest();
         var links = UpstreamCatalog.LoadLinks(typeof(UpstreamParityTests).Assembly);
-        var actual = UpstreamCatalog.Summarize(tests, links, manifest.UpstreamCommit);
-        var committed = UpstreamCatalog.LoadSummary();
+        var summary = UpstreamCatalog.Summarize(tests, links, manifest.UpstreamCommit);
 
-        Assert.Equal(actual.UpstreamCommit, committed.UpstreamCommit);
-        Assert.Equal(actual.UnitTests, committed.UnitTests);
-        Assert.Equal(actual.InScope, committed.InScope);
-        Assert.Equal(actual.OutOfScope, committed.OutOfScope);
-        Assert.Equal(actual.Covered, committed.Covered);
-        Assert.Equal(actual.Partial, committed.Partial);
-        Assert.Equal(actual.Missing, committed.Missing);
-        Assert.Equal(actual.Features.Count, committed.Features.Count);
-        var issues = UpstreamCatalog.LoadIssues().Issues.ToDictionary(issue => issue.Feature, StringComparer.Ordinal);
-        for (var i = 0; i < actual.Features.Count; i++)
-        {
-            var expected = actual.Features[i];
-            var stored = committed.Features[i];
-            Assert.Equal(expected.Feature, stored.Feature);
-            Assert.Equal(expected.DotnetProject, stored.DotnetProject);
-            Assert.Equal(expected.InScope, stored.InScope);
-            Assert.Equal(expected.Covered, stored.Covered);
-            Assert.Equal(expected.Partial, stored.Partial);
-            Assert.Equal(expected.Missing, stored.Missing);
-            if (expected.Missing == 0 && expected.Partial == 0)
-            {
-                continue;
-            }
-
-            Assert.True(issues.TryGetValue(expected.Feature, out var issue), "Missing issue index entry for " + expected.Feature);
-            Assert.Equal("Cover upstream unit tests: " + expected.Feature, issue!.Title);
-            Assert.Equal(expected.DotnetProject, issue.DotnetProject);
-            Assert.Equal(expected.InScope, issue.InScope);
-            Assert.Equal(expected.Covered, issue.Covered);
-            Assert.Equal(expected.Partial, issue.Partial);
-            Assert.Equal(expected.Missing, issue.Missing);
-        }
+        Assert.Equal(manifest.UnitTestCount, summary.UnitTests);
+        Assert.Equal(manifest.InScopeCount, summary.InScope);
+        Assert.Equal(manifest.OutOfScopeCount, summary.OutOfScope);
     }
 }

@@ -72,30 +72,6 @@ internal sealed class FeatureCoverage
     public int Missing { get; set; }
 }
 
-internal sealed class FeatureIssue
-{
-    public string Feature { get; set; } = string.Empty;
-
-    public string Title { get; set; } = string.Empty;
-
-    public string DotnetProject { get; set; } = string.Empty;
-
-    public int InScope { get; set; }
-
-    public int Covered { get; set; }
-
-    public int Partial { get; set; }
-
-    public int Missing { get; set; }
-
-    public string? Url { get; set; }
-}
-
-internal sealed class IssueIndex
-{
-    public List<FeatureIssue> Issues { get; set; } = new();
-}
-
 internal sealed class CoverageSummary
 {
     public string UpstreamCommit { get; set; } = string.Empty;
@@ -153,20 +129,6 @@ internal static class UpstreamCatalog
         var path = Path.Combine(ParityDirectory, "manifest.json");
         return JsonSerializer.Deserialize<UpstreamManifest>(File.ReadAllText(path), JsonOptions)
             ?? throw new InvalidOperationException("manifest.json is empty.");
-    }
-
-    public static IssueIndex LoadIssues()
-    {
-        var path = Path.Combine(ParityDirectory, "issues.json");
-        return JsonSerializer.Deserialize<IssueIndex>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidOperationException("issues.json is empty.");
-    }
-
-    public static CoverageSummary LoadSummary()
-    {
-        var path = Path.Combine(ParityDirectory, "coverage-summary.json");
-        return JsonSerializer.Deserialize<CoverageSummary>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidOperationException("coverage-summary.json is empty.");
     }
 
     public static string ReadCompatibilityCommit()
