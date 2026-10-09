@@ -39,7 +39,7 @@ public sealed class OpenAIDecisionTests
             { null, "Refund?" },
             { "{}", "Refund?" },
             { "{\"true\":null,\"false\":null}", "Refund?" },
-            { "{\"true\":\"Money back\",\"false\":null}", "Refund?\n\nCriteria for true:\nMoney back" },
+            { "{\"true\":\"Money back\"}", "Refund?\n\nCriteria for true:\nMoney back" },
             { "{\"false\":[\"Status request\"]}", "Refund?\n\nCriteria for false:\n[\"Status request\"]" },
         };
     }
@@ -79,7 +79,7 @@ public sealed class OpenAIDecisionTests
         JsonAssert.Equal(RequestBody(capture), """
             {
               "model": "gpt-6-luna",
-              "input": "A billing issue with a workaround.",
+              "input": [{ "role": "user", "content": [{ "type": "input_text", "text": "A billing issue with a workaround." }] }],
               "questions": [
                 {
                   "type": "choice",
@@ -159,11 +159,11 @@ public sealed class OpenAIDecisionTests
                     ["false"] = "The customer only asks about refund status.",
                 }),
         };
-        await model.DoDecideAsync(Call(questions, new Dictionary<string, object?> { ["ticket"] = new List<object?> { "charged twice" } }));
+        await model.DoDecideAsync(Call(questions, new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["ticket"] = new List<object?> { "charged twice" } } } }));
         JsonAssert.Equal(RequestBody(capture), """
             {
               "model": "gpt-6-luna",
-              "input": "{\"ticket\":[\"charged twice\"]}",
+              "input": [{ "role": "user", "content": [{ "type": "input_text", "text": "{\"ticket\":[\"charged twice\"]}" }] }],
               "questions": [
                 {
                   "name": "department",
@@ -369,8 +369,8 @@ public sealed class OpenAIDecisionTests
 
     [Theory]
     [MemberData(nameof(BooleanCriteria))]
-    [UpstreamTest(Prefix + "formats only supplied non-null boolean criteria", Coverage = UpstreamCoverage.Covered)]
-    public async Task Formats_only_supplied_non_null_boolean_criteria(string? criteria, string expected)
+    [UpstreamTest(Prefix + "formats only supplied boolean criteria", Coverage = UpstreamCoverage.Covered)]
+    public async Task Formats_only_supplied_boolean_criteria(string? criteria, string expected)
     {
         var (model, capture) = Setup();
         object? parsed = null;
@@ -451,6 +451,64 @@ public sealed class OpenAIDecisionTests
 
         Assert.False(refused.ProviderMetadata!.Value.GetProperty("openai").GetProperty("confidence").TryGetProperty(name, out _));
         Assert.Equal(1, capture.Calls);
+    }
+
+    public static TheoryData<object> InlineImages()
+    {
+        return new TheoryData<object> { "iVBORw==", new byte[] { 0x89, 0x50, 0x4e, 0x47 } };
+    }
+
+    public static TheoryData<string, string, object?> UnsupportedFiles()
+    {
+        return new TheoryData<string, string, object?>
+        {
+            { "audio/wav", "data", "AAAA" },
+            { "image/svg+xml", "data", "AAAA" },
+            { "image/png", "reference", new Dictionary<string, string> { ["openai"] = "file-123" } },
+            { "image/png", "url", new Uri("https://example.com/image.png") },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(InlineImages))]
+    [UpstreamTest(Prefix + "maps ordered state parts to native text and inline images", Coverage = UpstreamCoverage.Covered)]
+    public async Task Maps_ordered_state_parts_to_native_text_and_inline_images(object data)
+    {
+        var (model, capture) = Setup();
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Inspect this package." },
+            new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { "glass vase", null } },
+            new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data } },
+            new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Look for cracks." },
+        };
+        await model.DoDecideAsync(Call(state: state));
+        JsonAssert.Equal(RequestBody(capture)["input"], """
+            [
+              {
+                "role": "user",
+                "content": [
+                  { "type": "input_text", "text": "Inspect this package." },
+                  { "type": "input_text", "text": "[\"glass vase\",null]" },
+                  { "type": "input_image", "image_url": "data:image/png;base64,iVBORw==" },
+                  { "type": "input_text", "text": "Look for cracks." }
+                ]
+              }
+            ]
+            """);
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsupportedFiles))]
+    [UpstreamTest(Prefix + "rejects unsupported decision files before the API call: %j", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_unsupported_decision_files_before_the_API_call(string mediaType, string dataType, object? value)
+    {
+        var (model, capture) = Setup();
+        var data = new Dictionary<string, object?> { ["type"] = dataType };
+        data[dataType] = value;
+        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = mediaType, ["data"] = data } };
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => model.DoDecideAsync(Call(state: state)));
+        Assert.Empty(capture.Body);
     }
 
     [Fact]

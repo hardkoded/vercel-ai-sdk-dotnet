@@ -66,7 +66,7 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
             questions[pair.Key] = question;
         }
 
-        var body = new JsonObject { ["state"] = ToNode(call.State), ["questions"] = questions };
+        var body = new JsonObject { ["state"] = ToNode(LegacyState(call.State)), ["questions"] = questions };
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.EnumerateObject().Any())
         {
             body["providerOptions"] = JsonNode.Parse(call.ProviderOptions.GetRawText());
@@ -184,6 +184,29 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
     private static string? Text(JsonElement element, string name)
     {
         return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    }
+
+    /// <summary>Keeps the legacy Gateway state format: a string, a JSON object, or a JSON array.</summary>
+    private static object? LegacyState(object? state)
+    {
+        var values = new List<object?>();
+        foreach (var item in (IEnumerable<object?>)state!)
+        {
+            var part = (IDictionary<string, object?>)item!;
+            switch ((string)part["type"]!)
+            {
+                case "file":
+                    throw new UnsupportedFunctionalityException("Gateway decision file input", "'Gateway decision file input' functionality not supported.");
+                case "text":
+                    values.Add(part["text"]);
+                    break;
+                default:
+                    values.Add(part["value"]);
+                    break;
+            }
+        }
+
+        return values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values;
     }
 
     private static JsonNode? ToNode(object? value)
