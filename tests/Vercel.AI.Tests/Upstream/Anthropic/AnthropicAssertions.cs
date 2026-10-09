@@ -180,27 +180,27 @@ internal static class AnthropicAssertions
 
     public static void Opus48()
     {
-        AnthropicParity.AssertCapability("claude-opus-4-8", 128000, true, true, true, true, true, false, false, false);
+        AnthropicParity.AssertCapability("claude-opus-4-8", 128000, true, true, true, true, true, false, false, false, false);
     }
 
     public static void Fable5()
     {
-        AnthropicParity.AssertCapability("claude-fable-5", 128000, true, true, true, true, true, false, true, false);
+        AnthropicParity.AssertCapability("claude-fable-5", 128000, true, true, true, true, true, false, true, true, false);
     }
 
     public static void Fable51()
     {
-        AnthropicParity.AssertCapability("claude-fable-5-1", 128000, true, true, true, true, true, false, true, true);
+        AnthropicParity.AssertCapability("claude-fable-5-1", 128000, true, true, true, true, true, false, true, true, true);
     }
 
     public static void Opus47()
     {
-        AnthropicParity.AssertCapability("claude-opus-4-7", 128000, true, true, true, true, true, false, false, false);
+        AnthropicParity.AssertCapability("claude-opus-4-7", 128000, true, true, true, true, true, false, false, false, false);
     }
 
     public static void Sonnet5()
     {
-        AnthropicParity.AssertCapability("claude-sonnet-5", 128000, true, true, true, true, true, false, false, false);
+        AnthropicParity.AssertCapability("claude-sonnet-5", 128000, true, true, true, true, true, false, false, false, false);
     }
 
     public static void Opus46()
@@ -221,17 +221,17 @@ internal static class AnthropicAssertions
 
     public static void Opus5()
     {
-        AnthropicParity.AssertCapability("claude-opus-5", 128000, true, true, true, true, true, true, false, false);
+        AnthropicParity.AssertCapability("claude-opus-5", 128000, true, true, true, true, true, true, false, false, false);
     }
 
     public static void UnknownClaude()
     {
-        AnthropicParity.AssertCapability("claude-future-9", 128000, false, true, true, true, true, true, false, false);
+        AnthropicParity.AssertCapability("claude-future-9", 128000, false, true, true, true, true, true, false, false, false);
     }
 
     public static void PrefixedUnknown()
     {
-        AnthropicParity.AssertCapability("us.anthropic.claude-future-9-20990101-v1:0", 128000, false, true, true, true, true, true, false, false);
+        AnthropicParity.AssertCapability("us.anthropic.claude-future-9-20990101-v1:0", 128000, false, true, true, true, true, true, false, false, false);
     }
 
     public static void LegacyClaude()
@@ -244,13 +244,13 @@ internal static class AnthropicAssertions
             "anthropic.claude-instant-v1",
         })
         {
-            AnthropicParity.AssertCapability(model, 4096, false, false, false, false, false, false, false, false);
+            AnthropicParity.AssertCapability(model, 4096, false, false, false, false, false, false, false, false, false);
         }
     }
 
     public static void KnownBeforeFallback()
     {
-        AnthropicParity.AssertCapability("claude-opus-4-5", 64000, true, true, false, false, false, false, false, false);
+        AnthropicParity.AssertCapability("claude-opus-4-5", 64000, true, true, false, false, false, false, false, false, false);
     }
 
     public static void VertexIds()
@@ -265,7 +265,7 @@ internal static class AnthropicAssertions
 
     public static void NonClaude()
     {
-        AnthropicParity.AssertCapability("third-party-future-model", 4096, false, false, false, false, false, false, false, false);
+        AnthropicParity.AssertCapability("third-party-future-model", 4096, false, false, false, false, false, false, false, false, false);
     }
 
     public static async Task DefaultBaseUrl()
