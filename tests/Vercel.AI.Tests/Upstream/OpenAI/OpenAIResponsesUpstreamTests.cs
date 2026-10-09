@@ -96,7 +96,7 @@ public sealed class OpenAIResponsesUpstreamTests
 
     [Fact]
     [UpstreamTest(Generate + "should preserve sampling parameters when reasoning is disabled for %s", Coverage = UpstreamCoverage.Covered)]
-    public void PreservesDisabledReasoningForSolAndLuna()
+    public void PreservesSamplingParametersWhenReasoningIsDisabledForSolAndLuna()
     {
         foreach (var modelId in new[] { "gpt-6-sol", "gpt-6-luna" })
         {
