@@ -6,7 +6,7 @@ This directory tracks vitest unit tests from [vercel/ai](https://github.com/verc
 | --- | --- |
 | `upstream-unit-tests.jsonl` | One upstream `it` / `test` per line. `id` is `path::suite::title`. |
 | `manifest.json` | Commit, counts, and excluded files. |
-| `generated/` | Ignored by git. `build/parity-report.py` writes `coverage-summary.json` (in-scope totals per feature) and `issues.json` (one GitHub issue per feature with missing or partial tests; `url` is filled by `build/open-upstream-test-issues.py`). |
+| `generated/` | Ignored by git. `build/parity-report.py` writes `coverage-summary.json` (in-scope totals per feature) and `issues.json` (one GitHub issue per feature with missing or partial tests; `url` is filled by `build/open-upstream-test-issues.py`, which reuses an issue with the same title). |
 
 A .NET test that asserts the same behavior links the upstream id:
 
