@@ -134,6 +134,12 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         return new OpenAICompletionLanguageModel(this, modelId);
     }
 
+    /// <summary>Decisions API model. The provider id is <c>openai.decision</c>.</summary>
+    public OpenAIDecisionModel DecisionModel(string modelId)
+    {
+        return new OpenAIDecisionModel(this, modelId);
+    }
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {

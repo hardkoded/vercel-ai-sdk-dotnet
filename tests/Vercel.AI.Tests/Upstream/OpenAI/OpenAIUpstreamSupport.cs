@@ -119,6 +119,8 @@ internal sealed class OpenAICapture : HttpMessageHandler
 {
     public string Method { get; private set; } = string.Empty;
 
+    public int Calls { get; private set; }
+
     public string Uri { get; private set; } = string.Empty;
 
     public string Body { get; private set; } = string.Empty;
@@ -141,6 +143,7 @@ internal sealed class OpenAICapture : HttpMessageHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        Calls++;
         Method = request.Method.Method;
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
         Body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

@@ -81,6 +81,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider
         return new GatewayImageModel(this, modelId);
     }
 
+    /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
+    public GatewayDecisionModel DecisionModel(string modelId)
+    {
+        return new GatewayDecisionModel(this, modelId);
+    }
+
     internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming, IReadOnlyDictionary<string, string?>? extra = null)
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
