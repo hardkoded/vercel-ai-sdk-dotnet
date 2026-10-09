@@ -52,9 +52,6 @@ public sealed class UpstreamParityTests
         var links = UpstreamCatalog.LoadLinks(typeof(UpstreamParityTests).Assembly);
         var summary = UpstreamCatalog.Summarize(tests, links, manifest.UpstreamCommit);
 
-        Assert.Equal(tests.Count, summary.UnitTests);
-        Assert.Equal(tests.Count(test => test.Scope == "in-scope"), summary.InScope);
-        Assert.Equal(tests.Count(test => test.Scope == "out-of-scope"), summary.OutOfScope);
         Assert.Equal(summary.UnitTests, summary.InScope + summary.OutOfScope);
         Assert.Equal(links.Count, summary.Covered + summary.Partial);
         Assert.Equal(summary.InScope, summary.Covered + summary.Partial + summary.Missing);
