@@ -62,6 +62,8 @@ def main() -> None:
     rows, manifest = parity.load_catalog()
     links = parity.load_links()
     commit = str(manifest["upstreamCommit"])
+    if not ISSUES.exists():
+        raise SystemExit(f"{ISSUES} is missing. Run build/parity-report.py first.")
     index = json.loads(ISSUES.read_text(encoding="utf-8"))
     features = {item["feature"]: item for item in parity.summarize(rows, links, commit)["features"]}
     existing = existing_issue_urls()

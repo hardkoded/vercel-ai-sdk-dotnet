@@ -31,3 +31,5 @@ git -C /tmp/vercel-ai sparse-checkout set packages
 python3 build/collect-upstream-tests.py /tmp/vercel-ai
 python3 build/parity-report.py
 ```
+
+Run `build/parity-report.py` before `build/open-upstream-test-issues.py`. The opener needs `generated/issues.json` and stops with an error if it is missing.
