@@ -322,7 +322,7 @@ public sealed class AmazonBedrockConverseResponseTests
     {
         const string json = "{\"elements\":[{\"location\":\"San Francisco\",\"temperature\":-5,\"condition\":\"snowy\"},{\"location\":\"London\",\"temperature\":0,\"condition\":\"snowy\"}]}";
         var body = "{\"output\":{\"message\":{\"content\":[{\"toolUse\":{\"name\":\"json\",\"toolUseId\":\"tool\",\"input\":" + json + "}}]}},\"stopReason\":\"tool_use\"}";
-        var result = await Generate(body);
+        var result = await Generate(body, jsonSchema: true);
         Assert.Equal(json, result.Text);
         Assert.IsType<GeneratedText>(Assert.Single(result.Content));
     }
@@ -331,7 +331,7 @@ public sealed class AmazonBedrockConverseResponseTests
     [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate > json schema response format with json tool response::should send stop finish reason when json tool is used", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_stop_when_the_json_tool_is_used()
     {
-        var result = await Generate("{\"output\":{\"message\":{\"content\":[{\"toolUse\":{\"name\":\"json\",\"toolUseId\":\"tool\",\"input\":{}}}]}},\"stopReason\":\"tool_use\"}");
+        var result = await Generate("{\"output\":{\"message\":{\"content\":[{\"toolUse\":{\"name\":\"json\",\"toolUseId\":\"tool\",\"input\":{}}}]}},\"stopReason\":\"tool_use\"}", jsonSchema: true);
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.Equal("tool_use", result.RawFinishReason);
     }
@@ -349,7 +349,7 @@ public sealed class AmazonBedrockConverseResponseTests
         Assert.Equal("Sorry, the model cannot answer this question.", result.Text);
     }
 
-    private static async Task<LanguageModelGenerateResult> Generate(string response)
+    private static async Task<LanguageModelGenerateResult> Generate(string response, bool jsonSchema = false)
     {
         var handler = new UpstreamRecordingHandler(response);
         var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
@@ -361,6 +361,7 @@ public sealed class AmazonBedrockConverseResponseTests
         return await provider.LanguageModel("anthropic.claude-sonnet-4-5-20250929-v1:0").DoGenerateAsync(new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+            JsonSchema = jsonSchema ? JsonDocument.Parse("{\"type\":\"object\"}").RootElement.Clone() : null,
         }, CancellationToken.None);
     }
 }

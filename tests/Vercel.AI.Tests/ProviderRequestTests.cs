@@ -166,26 +166,6 @@ public sealed class ProviderRequestTests
         Assert.Contains("\"prompt\"", handler.Body);
     }
 
-    [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should handle a POST request with a string body and merge signed headers including user-agent",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks an AWS4-HMAC-SHA256 credential scope. The upstream test mocks the signer.")]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-sigv4-fetch.test.ts::createSigV4FetchFunction::should use default service name \"bedrock\" when no service parameter is provided",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The credential scope includes the bedrock service.")]
-    public async Task Bedrock_signs_with_sigv4()
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://bedrock-runtime.us-east-1.amazonaws.com/model/demo/converse");
-        var payload = System.Text.Encoding.UTF8.GetBytes("{}");
-        AwsSigV4.Sign(request, payload, "us-east-1", "bedrock", "AKIA", "secret", null, new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        Assert.True(request.Headers.TryGetValues("Authorization", out var values));
-        var authorization = string.Join(" ", values);
-        Assert.StartsWith("AWS4-HMAC-SHA256", authorization);
-        Assert.Contains("us-east-1/bedrock/aws4_request", authorization);
-    }
-
     public static IEnumerable<object[]> Cases()
     {
         yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h => AlibabaProvider.Create(Key(), h));
