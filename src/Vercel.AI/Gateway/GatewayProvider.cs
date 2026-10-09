@@ -263,9 +263,9 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     }
 
     /// <inheritdoc />
-    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions)
     {
-        return DoEmbedAsync(values, null, null, cancellationToken);
+        return DoEmbedAsync(values, null, null, cancellationToken, dimensions);
     }
 
     /// <summary>Embeds values and sends <paramref name="providerOptions"/> when it is a JSON object.</summary>
@@ -275,7 +275,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     }
 
     /// <summary>Embeds values. Call headers are merged onto the Gateway V4 headers.</summary>
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, JsonElement? providerOptions, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken, int? dimensions = null)
     {
         var input = new JsonArray();
         foreach (var value in values)
@@ -284,6 +284,11 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         }
 
         var body = new JsonObject { ["values"] = input };
+        if (dimensions is { } width)
+        {
+            body["dimensions"] = width;
+        }
+
         if (providerOptions is { ValueKind: JsonValueKind.Object } options)
         {
             body["providerOptions"] = JsonNode.Parse(options.GetRawText());

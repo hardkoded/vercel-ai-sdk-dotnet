@@ -532,7 +532,7 @@ public sealed class RegistryUpstreamTests
 
         public string ModelId { get; }
 
-        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null) => throw new NotSupportedException();
 
         public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
 

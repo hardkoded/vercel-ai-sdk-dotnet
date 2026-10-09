@@ -107,7 +107,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
         var embeddingType = EmbeddingType(providerOptions);
         var texts = new JsonArray();
@@ -131,6 +131,10 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
         if (Option(providerOptions, "outputDimension") is { } outputDimension)
         {
             body["output_dimension"] = outputDimension.GetInt32();
+        }
+        else if (dimensions is { } width)
+        {
+            body["output_dimension"] = width;
         }
 
         using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
