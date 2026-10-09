@@ -99,6 +99,9 @@ public static class AnthropicReasoning
             case "xhigh":
                 mapped = supportsXhigh ? "xhigh" : "max";
                 break;
+            case "max":
+                mapped = "max";
+                break;
             default:
                 warnings.Add(new AnthropicWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
                 return null;
@@ -135,6 +138,9 @@ public static class AnthropicReasoning
                 break;
             case "xhigh":
                 percent = 0.9;
+                break;
+            case "max":
+                percent = 0.95;
                 break;
             default:
                 warnings.Add(new AnthropicWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));

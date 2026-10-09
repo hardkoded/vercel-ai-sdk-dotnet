@@ -54,6 +54,7 @@ public static class GoogleThinking
             "medium" => "medium",
             "high" => "high",
             "xhigh" => "high",
+            "max" => "high",
             _ => null,
         };
         if (mapped == null)
@@ -104,6 +105,7 @@ public static class GoogleThinking
             "medium" => 0.3,
             "high" => 0.6,
             "xhigh" => 0.9,
+            "max" => 0.95,
             _ => null,
         };
         if (percent == null)

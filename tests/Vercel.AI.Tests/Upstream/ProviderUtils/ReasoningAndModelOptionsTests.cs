@@ -91,7 +91,7 @@ public sealed class ReasoningAndModelOptionsTests
     [UpstreamTest(Reasoning + "isCustomReasoning::returns true for all reasoning levels", Coverage = UpstreamCoverage.Covered)]
     public void Named_reasoning_levels_are_custom()
     {
-        foreach (var value in new[] { "minimal", "low", "medium", "high", "xhigh" })
+        foreach (var value in new[] { "minimal", "low", "medium", "high", "xhigh", "max" })
         {
             Assert.True(ReasoningMap.IsCustomReasoning(value));
         }

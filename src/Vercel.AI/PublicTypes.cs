@@ -409,7 +409,7 @@ public class GenerateTextOptions
     public int? Seed { get; set; }
 
     /// <summary>
-    /// Reasoning effort: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, or <c>xhigh</c>.
+    /// Reasoning effort: <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, or <c>max</c>.
     /// A provider option with the same setting wins when both are set.
     /// </summary>
     public string? Reasoning { get; set; }
