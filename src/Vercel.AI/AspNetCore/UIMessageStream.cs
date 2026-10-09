@@ -204,7 +204,7 @@ public sealed class UIMessageStreamResult : IResult
 
         await foreach (var part in result.Stream(cancellationToken).ConfigureAwait(false))
         {
-            if (part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && !stepOpen)
+            if (part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && part is not AbortPart && !stepOpen)
             {
                 yield return Frame(new JsonObject { ["type"] = "start-step" });
                 stepOpen = true;
@@ -325,6 +325,9 @@ public sealed class UIMessageStreamResult : IResult
 
                     yield return Frame(new JsonObject { ["type"] = "finish-step" });
                     stepOpen = false;
+                    break;
+                case AbortPart abortPart:
+                    yield return Frame(new JsonObject { ["type"] = "abort", ["reason"] = abortPart.Reason });
                     break;
                 case ErrorPart error:
                     var errorText = onError != null ? onError(error.Message) : error.Message;

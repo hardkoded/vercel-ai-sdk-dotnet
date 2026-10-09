@@ -33,8 +33,8 @@ public sealed class Agent
         return _client.GenerateTextAsync(CreateOptions(prompt), cancellationToken);
     }
 
-    /// <summary>Streams a reply to <paramref name="prompt"/>.</summary>
-    public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default)
+    /// <summary>Streams a reply to <paramref name="prompt"/>. <paramref name="abortSignal"/> aborts the stream and carries the reason.</summary>
+    public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null)
     {
         return _client.StreamTextAsync(new StreamTextOptions
         {
@@ -46,6 +46,8 @@ public sealed class Agent
             StopWhen = Options.StopWhen ?? StopWhen.IsStepCount(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
+            AbortSignal = abortSignal,
+            OnAbort = Options.OnAbort,
         }, cancellationToken);
     }
 
@@ -88,6 +90,9 @@ public sealed class AgentOptions
 
     /// <summary>Maximum output tokens.</summary>
     public int? MaxOutputTokens { get; set; }
+
+    /// <summary>Called after <see cref="Agent.Stream"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
+    public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }
 
 /// <summary>
