@@ -308,6 +308,75 @@ public sealed class StreamingToolCallTrackerTests
         Assert.Equal(new[] { "first", "second" }, Names(tracker.Flush()));
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker::should keep same-name calls with empty opening arguments distinct when continuations repeat their ids",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_their_ids()
+    {
+        var tracker = new StreamingToolCallTracker();
+        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
+        tracker.ProcessDelta(Delta(0, "call_1", null, "{\"city\":\"Berlin\"}"));
+        tracker.ProcessDelta(Delta(0, "call_2", "get_weather", ""));
+        tracker.ProcessDelta(Delta(0, "call_2", null, "{\"city\":\"Paris\"}"));
+        var calls = tracker.Flush();
+        Assert.Equal(2, calls.Count);
+        AssertCall(calls[0], "call_1", "get_weather", "{\"city\":\"Berlin\"}");
+        AssertCall(calls[1], "call_2", "get_weather", "{\"city\":\"Paris\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker::should keep same-name calls with empty opening arguments distinct when continuations omit their ids",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_omit_their_ids()
+    {
+        var tracker = new StreamingToolCallTracker();
+        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
+        tracker.ProcessDelta(Delta(0, null, null, "{\"city\":\"Berlin\"}"));
+        tracker.ProcessDelta(Delta(0, "call_2", "get_weather", ""));
+        tracker.ProcessDelta(Delta(0, null, null, "{\"city\":\"Paris\"}"));
+        var calls = tracker.Flush();
+        Assert.Equal(2, calls.Count);
+        AssertCall(calls[0], "call_1", "get_weather", "{\"city\":\"Berlin\"}");
+        AssertCall(calls[1], "call_2", "get_weather", "{\"city\":\"Paris\"}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" \n")]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker::should retain an incomplete call when its id changes on a named fragment with arguments %j",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The tracker returns tool calls only. It does not emit the tool-input-start part.")]
+    public void Should_retain_an_incomplete_call_when_its_id_changes_on_a_named_fragment(string? argumentsDelta)
+    {
+        var tracker = new StreamingToolCallTracker();
+        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", "{\"city\":"));
+        tracker.ProcessDelta(Delta(0, "alias", "get_weather", argumentsDelta));
+        tracker.ProcessDelta(Delta(0, "alias", null, "\"Berlin\"}"));
+        var call = Assert.Single(tracker.Flush());
+        AssertCall(call, "call_1", "get_weather", "{\"city\":" + argumentsDelta + "\"Berlin\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker::should use an unlabeled continuation for the only call without complete structured arguments",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_use_an_unlabeled_continuation_for_the_only_call_without_complete_structured_arguments()
+    {
+        var tracker = new StreamingToolCallTracker();
+        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
+        tracker.ProcessDelta(Delta(null, null, null, "{\"city\":\"Berlin\"}"));
+        tracker.ProcessDelta(Delta(1, "call_2", "get_weather", ""));
+        tracker.ProcessDelta(Delta(null, null, null, "{\"city\":\"Paris\"}"));
+        var calls = tracker.Flush();
+        Assert.Equal(2, calls.Count);
+        AssertCall(calls[0], "call_1", "get_weather", "{\"city\":\"Berlin\"}");
+        AssertCall(calls[1], "call_2", "get_weather", "{\"city\":\"Paris\"}");
+    }
+
     private static void AssertSameNameCallsStayDistinct(string? id, string secondArguments)
     {
         var tracker = new StreamingToolCallTracker(() => "generated-id");
