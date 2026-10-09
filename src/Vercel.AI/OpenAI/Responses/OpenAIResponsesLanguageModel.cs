@@ -30,20 +30,54 @@ public sealed class OpenAIResponsesPreparedRequest
 /// <summary>OpenAI Responses API language model.</summary>
 public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 {
-    private readonly OpenAIProvider _provider;
+    private readonly ProviderHttp _http;
+    private readonly string _providerName;
+    private readonly string _providerOptionsName;
+    private readonly Func<Uri> _url;
+    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
     /// <summary>Creates a Responses model.</summary>
     public OpenAIResponsesLanguageModel(OpenAIProvider provider, string modelId)
     {
-        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _providerOptionsName = "openai";
+        _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "responses");
+        _headers = provider.CreateOpenAIHeaders;
+    }
+
+    /// <summary>
+    /// Creates an Azure OpenAI Responses model. Message and request options are read from the
+    /// <c>azure</c> provider options first and fall back to <c>openai</c> when <c>azure</c> is absent.
+    /// </summary>
+    public OpenAIResponsesLanguageModel(Azure.AzureOpenAIProvider provider, string modelId)
+    {
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
+        ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _providerOptionsName = "azure";
+        _url = () => ApiKeys.Combine(
+            provider.Options.BaseUrl,
+            "openai/v1/responses?api-version=" + provider.Options.AzureApiVersion);
+        _headers = provider.CreateHeaders;
     }
 
     /// <inheritdoc />
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public string Provider => _provider.Name + ".responses";
+    public string Provider => _providerName + ".responses";
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -84,9 +118,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <summary>Builds the Responses body for <paramref name="modelId"/>. Generate calls omit <c>stream</c>.</summary>
     public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream)
     {
+        return Prepare(modelId, options, stream, "openai");
+    }
+
+    /// <summary>
+    /// Builds the Responses body. Options come from <paramref name="providerOptionsName"/> and fall back to
+    /// <c>openai</c> when that key is absent.
+    /// </summary>
+    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName)
+    {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
-        var openai = OpenAIJson.Provider(options.ProviderOptions);
+        var openai = ProviderOptionsFor(options.ProviderOptions, providerOptionsName);
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
         var effort = OpenAIJson.String(openai, "reasoningEffort");
         if (effort == null && !string.IsNullOrEmpty(options.Reasoning) && options.Reasoning != "provider-default")
@@ -103,7 +146,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             effort = null;
         }
 
+        // An explicit null reasoningSummary turns the default off.
+        var summaryExplicit = openai is { ValueKind: JsonValueKind.Object } summaryHolder
+            && summaryHolder.TryGetProperty("reasoningSummary", out _);
+        var reasoningSummary = summaryExplicit
+            ? OpenAIJson.String(openai, "reasoningSummary")
+            : effort != null && effort != "none" ? "detailed" : null;
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
+        if (OpenAIJson.String(openai, "conversation") != null && OpenAIJson.String(openai, "previousResponseId") != null)
+        {
+            warnings.Add(new OpenAICallWarning(
+                "unsupported",
+                "conversation",
+                "conversation and previousResponseId cannot be used together"));
+        }
+
         if (options.TopK != null)
         {
             warnings.Add(new OpenAICallWarning("unsupported", "topK", null));
@@ -112,7 +169,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var systemMode = OpenAIJson.String(openai, "systemMessageMode") ?? (reasoning ? "developer" : capabilities.SystemMessageMode);
         var explicitItem = OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
         var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(capabilities, openai);
-        var converted = ConvertInput(options.Prompt, systemMode, explicitItem, configurationUpdateUnsupportedReason);
+        var hasContinuation = OpenAIJson.String(openai, "conversation") != null || OpenAIJson.String(openai, "previousResponseId") != null;
+        var converted = ConvertInput(
+            options.Prompt,
+            systemMode,
+            explicitItem,
+            configurationUpdateUnsupportedReason,
+            providerOptionsName,
+            hasContinuation,
+            OpenAIJson.Bool(openai, "store") ?? true);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -163,6 +228,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     "Adjacent reasoning effort configuration updates are not supported.");
             }
         }
+        // A compaction trigger is a request control and must be the final input item.
+        if (OpenAIJson.Bool(openai, "compactionTrigger") == true)
+        {
+            converted.Input.Add(new JsonObject { ["type"] = "compaction_trigger" });
+        }
+
         var body = new JsonObject
         {
             ["model"] = modelId,
@@ -194,6 +265,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             body["parallel_tool_calls"] = parallel;
         }
 
+        Copy(body, "conversation", OpenAIJson.String(openai, "conversation"));
         Copy(body, "previous_response_id", OpenAIJson.String(openai, "previousResponseId"));
         if (OpenAIJson.Bool(openai, "store") is { } store)
         {
@@ -208,8 +280,26 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         Copy(body, "truncation", OpenAIJson.String(openai, "truncation"));
-        var reasoningSummary = OpenAIJson.String(openai, "reasoningSummary");
-        if (reasoning && (effort != null || reasoningSummary != null))
+        if (OpenAIJson.Child(openai, "contextManagement") is { ValueKind: JsonValueKind.Array } contextManagement)
+        {
+            var managed = new JsonArray();
+            foreach (var entry in contextManagement.EnumerateArray())
+            {
+                var managedEntry = new JsonObject { ["type"] = OpenAIJson.String(entry, "type") };
+                if (OpenAIJson.Child(entry, "compactThreshold") is { } threshold)
+                {
+                    managedEntry["compact_threshold"] = OpenAIJson.Node(threshold);
+                }
+
+                managed.Add(managedEntry);
+            }
+
+            body["context_management"] = managed;
+        }
+
+        var reasoningMode = OpenAIJson.String(openai, "reasoningMode");
+        var reasoningContext = OpenAIJson.String(openai, "reasoningContext");
+        if (reasoning && (effort != null || reasoningSummary != null || reasoningMode != null || reasoningContext != null))
         {
             var reasoningBody = new JsonObject();
             if (effort != null)
@@ -222,6 +312,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 reasoningBody["summary"] = reasoningSummary;
             }
 
+            if (reasoningMode != null)
+            {
+                reasoningBody["mode"] = reasoningMode;
+            }
+
+            if (reasoningContext != null)
+            {
+                reasoningBody["context"] = reasoningContext;
+            }
+
             body["reasoning"] = reasoningBody;
         }
         else if (!reasoning && OpenAIJson.String(openai, "reasoningEffort") != null)
@@ -230,6 +330,33 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 "unsupported",
                 "reasoningEffort",
                 "reasoningEffort is not supported for non-reasoning models"));
+        }
+
+        if (!reasoning)
+        {
+            if (summaryExplicit && reasoningSummary != null)
+            {
+                warnings.Add(new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningSummary",
+                    "reasoningSummary is not supported for non-reasoning models"));
+            }
+
+            if (reasoningMode != null)
+            {
+                warnings.Add(new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningMode",
+                    "reasoningMode is not supported for non-reasoning models"));
+            }
+
+            if (reasoningContext != null)
+            {
+                warnings.Add(new OpenAICallWarning(
+                    "unsupported",
+                    "reasoningContext",
+                    "reasoningContext is not supported for non-reasoning models"));
+            }
         }
 
         if (capabilities.SupportsConfigurationUpdate && body["prompt_cache_retention"] != null)
@@ -353,12 +480,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, false);
-        var response = await _provider.Http.SendJsonStringAsync(
+        var prepared = Prepare(ModelId, options, false, _providerOptionsName);
+        var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
+            _url(),
             prepared.Body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(options.Headers),
+            _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers);
@@ -369,13 +496,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         LanguageModelCallOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, true);
+        var prepared = Prepare(ModelId, options, true, _providerOptionsName);
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
         var text = false;
-        await foreach (var data in _provider.Http.SendSseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
+        await foreach (var data in _http.SendSseAsync(
+            _url(),
             prepared.Body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(options.Headers),
+            _headers(options.Headers),
             cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;
@@ -567,7 +694,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             return "reasoningEffortUpdate is only supported by GPT-6 and later models";
         }
 
-        if (OpenAIJson.String(openai, "truncation") == "auto")
+        if (OpenAIJson.String(openai, "reasoningMode") == "pro"
+            || OpenAIJson.Child(openai, "contextManagement") != null
+            || OpenAIJson.String(openai, "truncation") == "auto")
         {
             return "reasoningEffortUpdate requires standard reasoning mode without automatic compaction or automatic truncation";
         }
@@ -592,7 +721,32 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private static bool IsConfigurationUpdate(JsonNode? item) =>
         item is JsonObject obj && obj["type"]?.GetValue<string>() == "configuration_update";
 
-    private static ResponsesInput ConvertInput(IReadOnlyList<ModelMessage> prompt, string systemMessageMode, bool explicitItem, string? configurationUpdateUnsupportedReason)
+    private static JsonElement? ProviderOptionsFor(IReadOnlyDictionary<string, JsonElement>? providerOptions, string name)
+    {
+        if (providerOptions != null)
+        {
+            if (providerOptions.TryGetValue(name, out var named))
+            {
+                return named;
+            }
+
+            if (name != "openai" && providerOptions.TryGetValue("openai", out var fallback))
+            {
+                return fallback;
+            }
+        }
+
+        return null;
+    }
+
+    private static ResponsesInput ConvertInput(
+        IReadOnlyList<ModelMessage> prompt,
+        string systemMessageMode,
+        bool explicitItem,
+        string? configurationUpdateUnsupportedReason,
+        string providerOptionsName,
+        bool hasContinuation,
+        bool store)
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -601,7 +755,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             switch (message)
             {
                 case SystemModelMessage system:
-                    var messageEffort = OpenAIJson.String(OpenAIJson.Provider(system.ProviderOptions), "reasoningEffortUpdate");
+                    var messageEffort = OpenAIJson.String(ProviderOptionsFor(system.ProviderOptions, providerOptionsName), "reasoningEffortUpdate");
                     if (messageEffort != null)
                     {
                         ValidateUpdateEffort(messageEffort);
@@ -648,6 +802,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     input.Add(MessageItem("user", parts, explicitItem));
                     break;
                 case AssistantModelMessage assistant:
+                    AddStoredReasoning(input, assistant, providerOptionsName, hasContinuation, store);
                     if (!string.IsNullOrEmpty(assistant.Text))
                     {
                         input.Add(MessageItem("assistant", JsonValue.Create(assistant.Text)!, explicitItem));
@@ -679,6 +834,38 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return new ResponsesInput(input, warnings);
+    }
+
+    // Reasoning already held by a conversation or previous response is filtered out.
+    private static void AddStoredReasoning(JsonArray input, AssistantModelMessage assistant, string providerOptionsName, bool hasContinuation, bool store)
+    {
+        var options = ProviderOptionsFor(assistant.ReasoningProviderOptions, providerOptionsName);
+        var itemId = OpenAIJson.String(options, "itemId");
+        if (itemId == null || hasContinuation)
+        {
+            return;
+        }
+
+        if (store)
+        {
+            input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            return;
+        }
+
+        var summary = new JsonArray();
+        if (!string.IsNullOrEmpty(assistant.Reasoning))
+        {
+            summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = assistant.Reasoning });
+        }
+
+        var item = new JsonObject { ["type"] = "reasoning", ["id"] = itemId };
+        if (OpenAIJson.String(options, "reasoningEncryptedContent") is { } encrypted)
+        {
+            item["encrypted_content"] = encrypted;
+        }
+
+        item["summary"] = summary;
+        input.Add(item);
     }
 
     private static JsonObject ConvertFile(FileContentPart file)
