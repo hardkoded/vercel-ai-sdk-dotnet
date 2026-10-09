@@ -12,8 +12,8 @@ namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicBatch;
 public sealed class AnthropicBatchTests
 {
     [Theory]
-    [InlineData(16L)]
-    [InlineData(4096L)]
+    [InlineData(16)]
+    [InlineData(4096)]
     [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {

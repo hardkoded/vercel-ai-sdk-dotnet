@@ -61,7 +61,11 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         switch (Str(result, "type"))
         {
             case "succeeded":
-                var message = result.GetProperty("message");
+                if (!result.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object)
+                {
+                    return new BatchItem("text", id, "failed") { ErrorCode = "invalid_response", ErrorMessage = "Anthropic returned an invalid Message batch result." };
+                }
+
                 var texts = new List<string>();
                 if (message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
                 {

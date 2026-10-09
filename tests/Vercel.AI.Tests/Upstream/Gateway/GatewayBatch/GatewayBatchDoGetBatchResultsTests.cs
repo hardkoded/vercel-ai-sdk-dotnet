@@ -12,8 +12,8 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayBatch;
 public sealed class GatewayBatchDoGetBatchResultsTests
 {
     [Theory]
-    [InlineData(16L)]
-    [InlineData(4096L)]
+    [InlineData(16)]
+    [InlineData(4096)]
     [UpstreamTest("packages/gateway/src/gateway-batch.test.ts::GatewayBatch > doGetBatchResults::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {

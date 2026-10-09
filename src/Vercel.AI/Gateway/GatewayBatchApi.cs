@@ -32,7 +32,7 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
             var lines = await CollectAsync(_provider.Http.SendJsonLinesAsync(HttpMethod.Post, _provider.Route("batch/results"), body, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken), cancellationToken).ConfigureAwait(false);
             return lines.Select(Convert).ToList();
         }
-        catch (Exception exception) when (!(exception is OperationCanceledException) && !Util.DownloadError.IsInstance(exception) && !(exception is Operations.InvalidArgumentException))
+        catch (Exception exception) when (!(exception is OperationCanceledException) && !Util.DownloadError.IsInstance(exception) && !(exception is Util.InvalidArgumentError) && !(exception is Operations.InvalidArgumentException))
         {
             throw GatewayProvider.MapFailure(exception);
         }

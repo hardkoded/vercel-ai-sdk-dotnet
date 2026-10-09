@@ -12,8 +12,8 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIBatch;
 public sealed class OpenAIBatchServiceTests
 {
     [Theory]
-    [InlineData(16L)]
-    [InlineData(4096L)]
+    [InlineData(16)]
+    [InlineData(4096)]
     [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::applies the factory maxLineBytes setting of %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Applies_the_factory_maxLineBytes_setting(int maxLineBytes)
     {

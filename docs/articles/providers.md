@@ -25,7 +25,7 @@ Speech, transcription, image, video, and Voyage each have a package that calls t
 
   Settings for downloading JSON Lines batch results. For Google, the setting applies to file-based results.
 
-  - **MaxLineBytes** _long?_
+  - **MaxLineBytes** _int?_
 
     Maximum UTF-8 bytes per row, excluding the LF delimiter. Defaults to 64 MiB (67,108,864 bytes). Must be positive. Oversized rows throw a `DownloadError` and cancel the download.
 

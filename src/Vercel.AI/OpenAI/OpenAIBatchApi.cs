@@ -71,6 +71,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         if (line.TryGetProperty("response", out var response) && response.ValueKind == JsonValueKind.Object
             && response.TryGetProperty("body", out var body) && response.TryGetProperty("status_code", out var code) && code.ValueKind == JsonValueKind.Number && code.GetInt32() < 400)
         {
+            // Upstream converts only the Responses API shape (output[].content[].output_text) for OpenAI batches.
             var texts = new List<string>();
             if (body.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Array)
             {
