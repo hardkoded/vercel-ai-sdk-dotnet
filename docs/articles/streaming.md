@@ -2,7 +2,9 @@
 
 `StreamTextAsync` returns immediately. Enumerate `TextStream` for text deltas, or `Stream` for tool calls, tool results, sources, and the finish part.
 
-```csharp
+<!-- snippet: streaming -->
+<a id='snippet-streaming'></a>
+```cs
 var stream = client.StreamTextAsync(new StreamTextOptions
 {
     Model = model,
@@ -17,6 +19,8 @@ await foreach (var delta in stream.TextStream())
 Console.WriteLine();
 Console.WriteLine(await stream.FinishReason);
 ```
+<sup><a href='/samples/Vercel.AI.Examples/StreamingExample.cs#L19-L31' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 ## UI message stream
 

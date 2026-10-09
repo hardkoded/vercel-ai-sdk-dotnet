@@ -2,7 +2,9 @@
 
 A tool has a name, a JSON Schema, and an `Execute` delegate. The model receives the schema. The SDK runs `Execute` when the model calls the tool, then feeds the JSON result back as a tool message.
 
-```csharp
+<!-- snippet: tools -->
+<a id='snippet-tools'></a>
+```cs
 var weather = Tool.Function(
     "weather",
     "Returns a short forecast.",
@@ -21,6 +23,8 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
     StopWhen = StopWhen.IsStepCount(4),
 });
 ```
+<sup><a href='/samples/Vercel.AI.Examples/ToolsExample.cs#L30-L46' title='Snippet source file'>snippet source</a> | <a href='#snippet-tools' title='Start of snippet'>anchor</a></sup>
+<!-- endSnippet -->
 
 The default stop condition is one step. That step’s tool calls still run, and the loop stops before a second model call. Raise `IsStepCount`, or use `HasToolCall` / `IsLoopFinished`, when the model should see the tool result.
 
