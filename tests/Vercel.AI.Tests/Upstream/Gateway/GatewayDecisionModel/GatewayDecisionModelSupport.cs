@@ -49,10 +49,15 @@ internal static class GatewayDecisionModelSupport
         };
     }
 
-    internal static EvaluationModelCall Call(string providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null)
+    internal static List<object?> State(string text)
+    {
+        return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = text } };
+    }
+
+    internal static EvaluationModelCall Call(string providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null, object? state = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new EvaluationModelCall(TestState, Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), CancellationToken.None);
+        return new EvaluationModelCall(state ?? State(TestState), Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), CancellationToken.None);
     }
 
     /// <summary>Builds a model whose requests are answered with <paramref name="body"/> (a decision-model response).</summary>

@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using Vercel.AI.Prompt;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
@@ -156,7 +157,7 @@ public sealed class EvaluationModelCall
         CancellationToken = cancellationToken;
     }
 
-    /// <summary>Shared state.</summary>
+    /// <summary>Shared state as an ordered list of <c>text</c>, <c>json</c>, and <c>file</c> part dictionaries. See <see cref="DecisionState"/>.</summary>
     public object? State { get; }
 
     /// <summary>Questions.</summary>
@@ -230,7 +231,7 @@ public sealed class EvaluateEvent
     /// <summary>Model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>State.</summary>
+    /// <summary>The public state, as the caller passed it.</summary>
     public object? State { get; }
 
     /// <summary>Questions.</summary>
@@ -295,7 +296,7 @@ public sealed class EvaluateModelEvent
     /// <summary>Model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>State.</summary>
+    /// <summary>The normalized list of state parts the model receives.</summary>
     public object? State { get; }
 
     /// <summary>Questions.</summary>
@@ -390,7 +391,10 @@ public sealed class EvaluateRequest : OperationRequest
     /// <summary>Evaluation model.</summary>
     public IEvaluationCaller? Model { get; set; }
 
-    /// <summary>Shared JSON state.</summary>
+    /// <summary>
+    /// Shared state: a string, a JSON object (<c>IDictionary&lt;string, object?&gt;</c>), or a list of parts (<c>IList&lt;object?&gt;</c>).
+    /// A JSON array is not valid state. Wrap it in an object or in a <c>json</c> part. See <see cref="DecisionState"/>.
+    /// </summary>
     public object? State { get; set; }
 
     /// <summary>Nonempty question map.</summary>
@@ -451,7 +455,8 @@ public static class Evaluate
 
         try
         {
-            var modelEvent = new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, request.State, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
+            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State, token).ConfigureAwait(false);
+            var modelEvent = new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
             if (enabled)
             {
                 await OperationCallbacks.NotifyAsync(modelEvent, telemetry?.OnModelStart).ConfigureAwait(false);
@@ -461,7 +466,7 @@ public static class Evaluate
             var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
             {
                 OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                return await model.DoEvaluateAsync(new EvaluationModelCall(request.State, questions, providerOptions, headers, ct), ct).ConfigureAwait(false);
+                return await model.DoEvaluateAsync(new EvaluationModelCall(preparedState, questions, providerOptions, headers, ct), ct).ConfigureAwait(false);
             }, null).ConfigureAwait(false);
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
             ValidateAnswers(questions, result.Answers, result.Rounding);
@@ -473,7 +478,7 @@ public static class Evaluate
 
             if (enabled)
             {
-                await OperationCallbacks.NotifyAsync(new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, request.State, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnModelEnd).ConfigureAwait(false);
+                await OperationCallbacks.NotifyAsync(new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, preparedState, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnModelEnd).ConfigureAwait(false);
             }
 
             WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
@@ -513,9 +518,12 @@ public static class Evaluate
     /// <summary>Validates state and questions before any model call.</summary>
     public static void ValidateInput(object? state, IReadOnlyDictionary<string, EvaluationQuestion>? questions)
     {
-        if (!IsInput(state, new HashSet<object>(ReferenceComparer.Instance)))
+        var validState = state is IList<object?> parts
+            ? parts.All(IsStatePart)
+            : (state is string || state is IDictionary<string, object?>) && IsJson(state, new HashSet<object>(ReferenceComparer.Instance));
+        if (!validState)
         {
-            throw new InvalidArgumentException("state", state, "must be a JSON-compatible string, object, or array");
+            throw new InvalidArgumentException("state", state, "must be a string, JSON object, or array of text, file, or json parts");
         }
 
         if (questions == null || questions.Count == 0)
@@ -691,6 +699,28 @@ public static class Evaluate
 
         var set = new HashSet<string>(leftList);
         return rightList.All(set.Contains);
+    }
+
+    private static bool IsStatePart(object? value)
+    {
+        if (value is not IDictionary<string, object?> part || !part.TryGetValue("type", out var type))
+        {
+            return false;
+        }
+
+        switch (type as string)
+        {
+            case "text":
+                return part.TryGetValue("text", out var text) && text is string;
+            case "json":
+                return part.TryGetValue("value", out var json) && IsJson(json, new HashSet<object>(ReferenceComparer.Instance));
+            case "file":
+                return part.TryGetValue("mediaType", out var mediaType) && mediaType is string
+                    && part.TryGetValue("data", out var data) && (data is FilePartInput || data is byte[] || data is Uri || data is string)
+                    && (!part.TryGetValue("filename", out var filename) || filename == null || filename is string);
+            default:
+                return false;
+        }
     }
 
     private static bool IsInput(object? value, HashSet<object> ancestors)

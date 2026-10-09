@@ -26,6 +26,10 @@ OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, an
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
 
+## Decision state
+
+`EvaluateRequest.State` is a string, a JSON object, or a list of parts. A raw JSON array is not state. Wrap it in an object or in a `json` part. Each part is a dictionary: `{ type: "text", text }`, `{ type: "json", value }`, or `{ type: "file", mediaType, data, filename? }`. `Evaluate.EvaluateAsync` normalizes the state with `DecisionState.PrepareDecisionStateAsync` before the model call. A string becomes one text part, an object becomes one json part, and a file part gets a full media type. A URL file is downloaded. A failed download throws `DownloadError` before any model call. `EvaluationModelCall.State` and `EvaluateModelEvent.State` hold the normalized parts. `EvaluateEvent.State` keeps the public value. `OpenAIDecisionModel` sends text and json parts as `input_text` and inline PNG, JPEG, WebP, or GIF files as `input_image`. It throws `UnsupportedFunctionalityException` for other files. `GatewayDecisionModel` keeps its legacy state format: one text part or one json object is sent as a string or object, and anything else as an array of values. It throws `UnsupportedFunctionalityException` for any file part.
+
 ## Gateway decision fallbacks
 
 `providerOptions.gateway.models` for a decision request may start with one conditional entry, `{ "model": "...", "when": { ... } }`, followed by plain model ids. `when` is `confidenceBelow`, `probabilityBetween: [min, max]`, or an `any`, `all`, or `atLeast` group of conditions, nested at most 5 levels with 1 to 20 conditions per list. `GatewayDecisionModel` rejects an invalid shape with an `InvalidArgumentException` before any request. Other gateway options pass through unchanged.

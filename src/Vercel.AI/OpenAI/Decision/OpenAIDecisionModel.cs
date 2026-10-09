@@ -82,7 +82,7 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
             body["safety_identifier"] = safetyIdentifier;
         }
 
-        body["input"] = ToText(call.State);
+        body["input"] = BuildInput(call.State);
         var questions = new JsonArray();
         foreach (var pair in call.Questions)
         {
@@ -209,6 +209,50 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
         {
             throw new ApiException("Invalid JSON response", 200, body, exception);
         }
+    }
+
+    private static readonly string[] ImageMediaTypes = { "image/png", "image/jpeg", "image/webp", "image/gif" };
+
+    private static JsonArray BuildInput(object? state)
+    {
+        var content = new JsonArray();
+        foreach (var item in (IEnumerable<object?>)state!)
+        {
+            var part = (IDictionary<string, object?>)item!;
+            var type = (string)part["type"]!;
+            if (type == "text")
+            {
+                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = (string)part["text"]! });
+                continue;
+            }
+
+            if (type == "json")
+            {
+                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = JsonSerializer.Serialize(part["value"], Text) });
+                continue;
+            }
+
+            var mediaType = (string)part["mediaType"]!;
+            var data = (IDictionary<string, object?>)part["data"]!;
+            var dataType = (string)data["type"]!;
+            if (dataType != "data")
+            {
+                throw new UnsupportedFunctionalityException("OpenAI decision file input", "'OpenAI decision file input: " + mediaType + " (" + dataType + ")' functionality not supported.");
+            }
+
+            var inline = data["data"]!;
+            // Direct DoDecideAsync calls can bypass the media type detection in DecisionState.
+            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : MediaTypes.DetectMediaType(inline, "image");
+            if (resolved == null || !ImageMediaTypes.Contains(resolved))
+            {
+                throw new UnsupportedFunctionalityException("OpenAI decision image media type", "'OpenAI decision image media type: " + mediaType + "' functionality not supported.");
+            }
+
+            var base64 = inline as string ?? Convert.ToBase64String((byte[])inline);
+            content.Add(new JsonObject { ["type"] = "input_image", ["image_url"] = "data:" + resolved + ";base64," + base64 });
+        }
+
+        return new JsonArray(new JsonObject { ["role"] = "user", ["content"] = content });
     }
 
     private static string ToText(object? value)
