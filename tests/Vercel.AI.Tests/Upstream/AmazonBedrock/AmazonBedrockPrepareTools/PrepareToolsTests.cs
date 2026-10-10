@@ -19,7 +19,7 @@ public sealed class PrepareToolsTests
     [InlineData("anthropic.claude-haiku-5-5")]
     [InlineData("us.anthropic.claude-opus-6-v1:0")]
     [InlineData("global.anthropic.claude-future-v1:0")]
-    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools::should warn when strict is omitted for %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should warn when strict is omitted for %s", Coverage = UpstreamCoverage.Covered)]
     public void Should_warn_when_strict_is_omitted_for(string modelId)
     {
         using var document = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{}}");
