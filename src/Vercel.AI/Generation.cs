@@ -99,14 +99,14 @@ internal static class Generation
 
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -206,14 +206,16 @@ internal static class Generation
                 }
 
                 var text = new StringBuilder();
+                var textBlocks = new List<TextBlock>();
                 var reasoning = new StringBuilder();
                 var toolCalls = new List<GeneratedToolCall>();
                 var sources = new List<GeneratedSource>();
+                var documentSources = new List<GeneratedDocumentSource>();
                 FinishReason? finish = null;
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
-                var usage = LanguageModelUsage.Empty;
+                var usage = LanguageModelUsage.Null;
                 var enumerator = current.DoStreamAsync(callOptions, cancellationToken).GetAsyncEnumerator(cancellationToken);
                 var disposal = abort.Track(enumerator);
                 try
@@ -238,9 +240,25 @@ internal static class Generation
                         var part = enumerator.Current;
                         switch (part)
                         {
+                            case TextStartStreamPart textStart:
+                                TextBlock.Start(textBlocks, textStart.Id);
+                                break;
                             case TextDeltaStreamPart delta:
                                 text.Append(delta.Delta);
+                                TextBlock.Find(textBlocks, delta.Id).Text.Append(delta.Delta);
                                 buffer.Add(new TextDeltaPart(delta.Delta));
+                                break;
+                            case TextEndStreamPart textEnd:
+                                var ended = TextBlock.Find(textBlocks, textEnd.Id);
+                                ended.Citations = textEnd.Citations;
+                                break;
+                            case DocumentSourceStreamPart documentSource:
+                                documentSources.Add(new GeneratedDocumentSource(
+                                    documentSource.Id,
+                                    documentSource.MediaType,
+                                    documentSource.Title,
+                                    documentSource.Filename,
+                                    documentSource.ProviderMetadata));
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
                                 reasoning.Append(reasoningDelta.Delta);
@@ -291,14 +309,14 @@ internal static class Generation
                 }
 
                 var generated = new LanguageModelGenerateResult(
-                    BuildContent(text.ToString(), reasoning.ToString(), toolCalls, sources),
+                    BuildContent(textBlocks, reasoning.ToString(), toolCalls, sources, documentSources),
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
                     rawFinish,
                     warnings,
                     providerMetadata: providerMetadata);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     buffer.Add(new ToolResultPart(toolResult));
@@ -311,7 +329,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -393,7 +411,12 @@ internal static class Generation
         }
     }
 
-    private static List<GeneratedContent> BuildContent(string text, string reasoning, List<GeneratedToolCall> toolCalls, List<GeneratedSource> sources)
+    private static List<GeneratedContent> BuildContent(
+        List<TextBlock> textBlocks,
+        string reasoning,
+        List<GeneratedToolCall> toolCalls,
+        List<GeneratedSource> sources,
+        List<GeneratedDocumentSource> documentSources)
     {
         var content = new List<GeneratedContent>();
         if (reasoning.Length > 0)
@@ -401,20 +424,61 @@ internal static class Generation
             content.Add(new GeneratedReasoning(reasoning));
         }
 
-        if (text.Length > 0)
+        foreach (var block in textBlocks)
         {
-            content.Add(new GeneratedText(text));
+            if (block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0)
+            {
+                content.Add(new GeneratedText(block.Text.ToString(), block.Citations));
+            }
         }
 
         content.AddRange(toolCalls);
         content.AddRange(sources);
+        content.AddRange(documentSources);
         return content;
+    }
+
+    // One streamed text block. Citations arrive with its text-end part.
+    private sealed class TextBlock
+    {
+        private TextBlock(string id)
+        {
+            Id = id;
+        }
+
+        public string Id { get; }
+
+        public StringBuilder Text { get; } = new();
+
+        public IReadOnlyList<Citation>? Citations { get; set; }
+
+        public static TextBlock Start(List<TextBlock> blocks, string id)
+        {
+            var block = new TextBlock(id);
+            blocks.Add(block);
+            return block;
+        }
+
+        // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here.
+        public static TextBlock Find(List<TextBlock> blocks, string id)
+        {
+            for (var i = blocks.Count - 1; i >= 0; i--)
+            {
+                if (blocks[i].Id == id)
+                {
+                    return blocks[i];
+                }
+            }
+
+            return Start(blocks, id);
+        }
     }
 
     private static async Task<StepResult> FinishStepAsync(
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         List<ModelMessage> messages,
+        ILanguageModel model,
         CancellationToken cancellationToken)
     {
         var toolCalls = new List<GeneratedToolCall>();
@@ -456,11 +520,11 @@ internal static class Generation
             {
                 var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
                 toolResults.Add(executed);
-                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
+                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
             }
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, generated.Content);
     }
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
@@ -515,24 +579,44 @@ internal static class Generation
         }
     }
 
-    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
+    private static Tool? FindTool(GenerateTextOptions options, string name)
     {
-        Tool? tool = null;
         if (options.Tools != null)
         {
             foreach (var candidate in options.Tools)
             {
-                if (string.Equals(candidate.Name, call.ToolName, StringComparison.Ordinal))
+                if (string.Equals(candidate.Name, name, StringComparison.Ordinal))
                 {
-                    tool = candidate;
-                    break;
+                    return candidate;
                 }
             }
         }
 
+        return null;
+    }
+
+    // A tool without an execute function leaves its call for the caller, so the loop ends without asking the stop condition.
+    private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
+    {
+        foreach (var call in step.ToolCalls)
+        {
+            var tool = FindTool(options, call.ToolName);
+            if (tool != null && tool.Execute == null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
+    {
+        var tool = FindTool(options, call.ToolName);
+
         if (tool?.Execute == null)
         {
-            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true);
+            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
         }
 
         if (options.ApproveTool != null)
@@ -540,7 +624,7 @@ internal static class Generation
             var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
             if (!approved)
             {
-                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true);
+                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." };
             }
         }
 
@@ -553,7 +637,7 @@ internal static class Generation
         catch (Exception exception)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true);
+            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
         }
     }
 
@@ -596,7 +680,7 @@ internal static class Generation
         var last = steps.Count == 0
             ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
             : steps[steps.Count - 1];
-        var usage = LanguageModelUsage.Empty;
+        var usage = LanguageModelUsage.Null;
         var sources = new List<GeneratedSource>();
         foreach (var step in steps)
         {

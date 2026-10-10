@@ -4,6 +4,8 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Azure;
+using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate;
@@ -24,6 +26,12 @@ internal static class ReasoningEffortUpdateSupport
             ["openai"] = OpenAIUpstream.Json("{\"reasoningEffortUpdate\":\"" + effort + "\"}"),
         });
 
+    internal static AssistantModelMessage PreviousReasoning() =>
+        new(null, null, "Earlier reasoning", new Dictionary<string, JsonElement>
+        {
+            ["openai"] = OpenAIUpstream.Json("{\"itemId\":\"rs_previous\"}"),
+        });
+
     internal static List<ModelMessage> Build(IEnumerable<string> kinds)
     {
         var prompt = new List<ModelMessage>();
@@ -42,7 +50,8 @@ internal static class ReasoningEffortUpdateSupport
         string modelId,
         double? temperature = null,
         double? topP = null,
-        OpenAICapture? capture = null)
+        OpenAICapture? capture = null,
+        string provider = "openai.responses")
     {
         const string response = "{\"id\":\"resp_test\",\"created_at\":0,\"model\":\"m\",\"output\":[]}";
         capture ??= new OpenAICapture();
@@ -62,7 +71,9 @@ internal static class ReasoningEffortUpdateSupport
             TopP = topP,
             ProviderOptions = new Dictionary<string, JsonElement> { ["openai"] = OpenAIUpstream.Json(options.ToJsonString()) },
         };
-        var model = OpenAIUpstream.Provider(capture).ResponsesModel(modelId);
+        var model = provider == "azure.responses"
+            ? AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, capture).ResponsesModel(modelId)
+            : OpenAIUpstream.Provider(capture).ResponsesModel(modelId);
         IReadOnlyList<CallWarning> warnings;
         if (method == "generate")
         {

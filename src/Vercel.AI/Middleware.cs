@@ -390,9 +390,21 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var result = await model.DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
+        var id = 0;
+        foreach (var part in result.Content)
         {
-            yield return new TextDeltaStreamPart("text", result.Text);
+            if (part is GeneratedText generatedText && (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0))
+            {
+                var textId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                yield return new TextStartStreamPart(textId);
+                if (generatedText.Text.Length > 0)
+                {
+                    yield return new TextDeltaStreamPart(textId, generatedText.Text);
+                }
+
+                yield return new TextEndStreamPart(textId, generatedText.Citations);
+                id++;
+            }
         }
 
         yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason, result.ProviderMetadata);

@@ -111,9 +111,17 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
         {
-            var result = await EmbedAsync(new AlibabaEmbeddingRequest(values), cancellationToken).ConfigureAwait(false);
+            var dimension = providerOptions != null
+                && providerOptions.TryGetValue("alibaba", out var options)
+                && options.ValueKind == JsonValueKind.Object
+                && options.TryGetProperty("dimension", out var width)
+                && width.ValueKind == JsonValueKind.Number
+                && width.TryGetInt32(out var parsed)
+                ? parsed
+                : dimensions;
+            var result = await EmbedAsync(new AlibabaEmbeddingRequest(values) { Dimension = dimension }, cancellationToken).ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);
         }
 
