@@ -16,14 +16,14 @@ public sealed class DoGenerateStructuredOutputsTests
     [InlineData("moonshot-v2")]
     [InlineData("kimi-next")]
     [UpstreamTest(
-        "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate::should preserve JSON schema output for unknown model %s",
+        "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate > structured outputs::should preserve JSON schema output for unknown model %s",
         Coverage = UpstreamCoverage.Covered)]
     public async Task Should_preserve_JSON_schema_output_for_unknown_model(string modelId)
     {
         var capture = new UpstreamCapture();
         var provider = MoonshotProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture);
         var options = UpstreamChat.Prompt();
-        options.JsonSchema = UpstreamCapture.Json("{\"type\":\"object\",\"properties\":{}}");
+        options.JsonSchema = UpstreamChat.Json("{\"type\":\"object\",\"properties\":{}}");
         options.JsonSchemaName = "response";
 
         var result = await ((OpenAICompatibleLanguageModel)provider.LanguageModel(modelId)).DoGenerateAsync(options, CancellationToken.None);
