@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.TypeSafeAi;
 using Vercel.AI.Util;
@@ -77,7 +78,7 @@ public sealed class TypesafeAiEvaluationModelTests
         Assert.Equal("Bearer custom-key", call.Headers["authorization"]);
         Assert.Equal("provider", call.Headers["custom"]);
         Assert.Equal("call", call.Headers["shared"]);
-        Assert.Contains("ai-sdk/typesafe-ai/" + Vercel.AI.Operations.AiSdkVersion.Version, call.Headers["user-agent"]);
+        Assert.Contains("ai-sdk/typesafe-ai/" + AiSdkVersion.Version, call.Headers["user-agent"]);
         Assert.Equal("jev-future", JsonNode.Parse(call.Body)!["model"]!.GetValue<string>());
         Assert.Equal("test-id", result.Response!.Headers!["x-request-id"]);
     }
