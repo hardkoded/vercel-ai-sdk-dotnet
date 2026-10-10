@@ -35,7 +35,7 @@ internal static class OpenAIJson
     }
 
     /// <summary>
-    /// Like <see cref="ToolOutputText"/>. For a tool with an output schema, OpenAI parses the string as JSON,
+    /// Like <see cref="ToolOutputText(string?, string?)"/>. For a tool with an output schema, OpenAI parses the string as JSON,
     /// so <c>text</c> and <c>execution-denied</c> become JSON string literals.
     /// </summary>
     public static string ToolOutputText(string? outputType, string? output, bool hasOutputSchema)

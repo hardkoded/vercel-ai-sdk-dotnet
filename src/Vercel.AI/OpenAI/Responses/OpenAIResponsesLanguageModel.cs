@@ -123,8 +123,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     private static HashSet<string>? OutputSchemaToolNames(IReadOnlyList<LanguageModelTool>? tools)
     {
-        var names = tools?.Where(tool => tool.OutputSchema != null).Select(tool => tool.Name).ToHashSet();
-        return names is { Count: > 0 } ? names : null;
+        var names = tools?.Where(tool => tool.OutputSchema != null).Select(tool => tool.Name).ToArray();
+        return names is { Length: > 0 } ? new HashSet<string>(names) : null;
     }
 
     /// <summary>Builds the Responses body for <paramref name="modelId"/>. Generate calls omit <c>stream</c>.</summary>
