@@ -60,9 +60,10 @@ public static class AnthropicResponse
         var idFactory = context.GenerateId ?? SequentialId();
         if (root.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
         {
+            var hasWebSearchResults = HasWebSearchResults(parts);
             foreach (var part in parts.EnumerateArray())
             {
-                MapPart(part, content, context, mcpNames, idFactory, ref jsonTool);
+                MapPart(part, content, context, mcpNames, idFactory, hasWebSearchResults, ref jsonTool);
             }
         }
 
@@ -87,12 +88,29 @@ public static class AnthropicResponse
             headers);
     }
 
+    private static bool HasWebSearchResults(JsonElement parts)
+    {
+        foreach (var part in parts.EnumerateArray())
+        {
+            if (AnthropicJson.String(part, "type") == "web_search_tool_result"
+                && part.TryGetProperty("content", out var body)
+                && body.ValueKind == JsonValueKind.Array
+                && body.GetArrayLength() > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static void MapPart(
         JsonElement part,
         List<GeneratedContent> content,
         AnthropicParseContext context,
         Dictionary<string, string> mcpNames,
         Func<string> generateId,
+        bool hasWebSearchResults,
         ref bool jsonTool)
     {
         var type = AnthropicJson.String(part, "type");
@@ -101,7 +119,7 @@ public static class AnthropicResponse
             case "text":
                 if (!context.UsesJsonResponseTool)
                 {
-                    MapText(part, content, generateId);
+                    MapText(part, content, generateId, hasWebSearchResults);
                 }
 
                 break;
@@ -156,40 +174,36 @@ public static class AnthropicResponse
         }
     }
 
-    private static void MapText(JsonElement part, List<GeneratedContent> content, Func<string> generateId)
+    private static void MapText(JsonElement part, List<GeneratedContent> content, Func<string> generateId, bool hasWebSearchResults)
     {
         var text = AnthropicJson.String(part, "text") ?? string.Empty;
-        JsonArray? web = null;
-        if (part.TryGetProperty("citations", out var citations) && citations.ValueKind == JsonValueKind.Array)
+        var citations = new List<JsonElement>();
+        if (part.TryGetProperty("citations", out var citationArray) && citationArray.ValueKind == JsonValueKind.Array)
         {
-            foreach (var citation in citations.EnumerateArray())
-            {
-                if (AnthropicJson.String(citation, "type") == "web_search_result_location")
-                {
-                    web = web ?? new JsonArray();
-                    web.Add(AnthropicJson.Node(citation));
-                }
-            }
+            citations.AddRange(citationArray.EnumerateArray());
         }
 
-        if (web != null && web.Count > 0)
+        if (citations.Count > 0)
         {
-            content.Add(new AnthropicText(text, ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["citations"] = web } })));
+            content.Add(new AnthropicText(text, AnthropicCitations.TextMetadata(citations), AnthropicCitations.MapAll(citations)));
         }
         else
         {
             content.Add(new GeneratedText(text));
         }
 
-        if (part.TryGetProperty("citations", out var all) && all.ValueKind == JsonValueKind.Array)
+        foreach (var citation in citations)
         {
-            foreach (var citation in all.EnumerateArray())
+            // Search results are already sources. Only a citation without them falls back to a source.
+            if (hasWebSearchResults && AnthropicJson.String(citation, "type") == "web_search_result_location")
             {
-                var source = CitationSource(citation, generateId);
-                if (source != null)
-                {
-                    content.Add(source);
-                }
+                continue;
+            }
+
+            var source = CitationSource(citation, generateId);
+            if (source != null)
+            {
+                content.Add(source);
             }
         }
     }
