@@ -60,7 +60,7 @@ public sealed class MoonshotUpstreamTests
         Assert.True(MoonshotProvider.SupportsStructuredOutputs("moonshot-v1-8k-vision-preview"));
         Assert.True(MoonshotProvider.SupportsStructuredOutputs("moonshot-v1-32k-vision-preview"));
         Assert.True(MoonshotProvider.SupportsStructuredOutputs("moonshot-v1-128k-vision-preview"));
-        Assert.False(MoonshotProvider.SupportsStructuredOutputs("moonshot-v1-custom"));
-        Assert.False(MoonshotProvider.SupportsStructuredOutputs("custom-model-id"));
+        Assert.True(MoonshotProvider.SupportsStructuredOutputs("moonshot-v1-custom"));
+        Assert.True(MoonshotProvider.SupportsStructuredOutputs("custom-model-id"));
     }
 }
