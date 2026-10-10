@@ -65,6 +65,15 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return new AzureOpenAIProvider(client, options);
     }
 
+    /// <summary>
+    /// Responses API model. The provider id is <c>azure.responses</c>.
+    /// Options are read from the <c>azure</c> provider options and fall back to <c>openai</c>.
+    /// </summary>
+    public OpenAI.OpenAIResponsesLanguageModel ResponsesModel(string modelId)
+    {
+        return new OpenAI.OpenAIResponsesLanguageModel(this, modelId);
+    }
+
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options)
     {
         options ??= new AzureOpenAIOptions();

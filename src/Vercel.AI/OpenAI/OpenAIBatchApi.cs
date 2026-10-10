@@ -72,19 +72,37 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             && response.TryGetProperty("body", out var body) && response.TryGetProperty("status_code", out var code) && code.ValueKind == JsonValueKind.Number && code.GetInt32() < 400)
         {
             // Upstream converts only the Responses API shape (output[].content[].output_text) for OpenAI batches.
-            var texts = new List<string>();
-            if (body.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Array)
+            if (body.ValueKind != JsonValueKind.Object)
             {
-                foreach (var entry in output.EnumerateArray())
+                return InvalidResponse(id, "OpenAI returned an invalid Responses batch result.");
+            }
+
+            if (body.TryGetProperty("error", out var bodyError) && bodyError.ValueKind == JsonValueKind.Object)
+            {
+                return new BatchItem("text", id, "failed") { ErrorCode = Str(bodyError, "code"), ErrorMessage = Str(bodyError, "message") };
+            }
+
+            body.TryGetProperty("output", out var output);
+            if (output.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                return InvalidResponse(id, NoOutputMessage(body));
+            }
+
+            if (output.ValueKind != JsonValueKind.Array)
+            {
+                return InvalidResponse(id, "OpenAI returned an invalid Responses batch result.");
+            }
+
+            var texts = new List<string>();
+            foreach (var entry in output.EnumerateArray())
+            {
+                if (Str(entry, "type") == "message" && entry.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
                 {
-                    if (Str(entry, "type") == "message" && entry.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
+                    foreach (var part in content.EnumerateArray())
                     {
-                        foreach (var part in content.EnumerateArray())
+                        if (Str(part, "type") == "output_text")
                         {
-                            if (Str(part, "type") == "output_text")
-                            {
-                                texts.Add(Str(part, "text") ?? string.Empty);
-                            }
+                            texts.Add(Str(part, "text") ?? string.Empty);
                         }
                     }
                 }
@@ -95,5 +113,16 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
         var error = line.TryGetProperty("error", out var value) ? value : default;
         return new BatchItem("text", id, "failed") { ErrorCode = Str(error, "code"), ErrorMessage = Str(error, "message") };
+    }
+
+    private static BatchItem InvalidResponse(string id, string message)
+    {
+        return new BatchItem("text", id, "failed") { ErrorCode = "invalid_response", ErrorMessage = message };
+    }
+
+    private static string NoOutputMessage(JsonElement body)
+    {
+        var reason = body.TryGetProperty("incomplete_details", out var details) ? Str(details, "reason") : null;
+        return reason != null ? "OpenAI Responses returned no output (" + reason + ")." : "OpenAI Responses returned no output.";
     }
 }

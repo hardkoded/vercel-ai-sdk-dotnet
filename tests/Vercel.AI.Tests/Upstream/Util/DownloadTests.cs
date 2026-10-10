@@ -6,6 +6,7 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
+[Collection("DownloadFetch")]
 public sealed class DownloadTests
 {
     [UpstreamTest("packages/ai/src/util/download/download.test.ts::download SSRF protection::should reject private IPv4 addresses", Coverage = UpstreamCoverage.Covered)]
