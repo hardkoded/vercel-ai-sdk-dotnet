@@ -500,6 +500,29 @@ public sealed class EvaluateTests
         Assert.Single(model.Calls);
     }
 
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::response validation::accepts a selected choice within the declared probability rounding", Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_a_selected_choice_within_the_declared_probability_rounding()
+    {
+        var questions = new Dictionary<string, EvaluationQuestion>
+        {
+            ["topic"] = new EvaluationQuestion("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = null, ["other"] = null }),
+        };
+        var answers = new Dictionary<string, EvaluationAnswer>
+        {
+            ["topic"] = new EvaluationAnswer("choice", choice: "support", probabilities: new Dictionary<string, double> { ["billing"] = 0.44, ["support"] = 0.43, ["other"] = 0.13 }),
+        };
+        var result = await Evaluate.EvaluateAsync(new EvaluateRequest
+        {
+            Model = new EvalModel { Result = new EvaluationModelResult(answers, rounding: new EvaluationRounding(2)) },
+            State = "text",
+            Questions = questions,
+        });
+        Assert.Equal("support", result.Answers["topic"].Choice);
+        Assert.Equal(0.44, result.Answers["topic"].Probabilities!["billing"]);
+        Assert.Equal(0.43, result.Answers["topic"].Probabilities!["support"]);
+    }
+
     private static Dictionary<string, EvaluationQuestion> SampleQuestions()
     {
         return new Dictionary<string, EvaluationQuestion>

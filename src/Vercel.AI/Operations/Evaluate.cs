@@ -622,7 +622,7 @@ public static class Evaluate
                     {
                         ValidateDistribution(answer.Probabilities, options.Keys, answers, pair.Key, probabilityError);
                         var selected = answer.Probabilities[answer.Choice];
-                        if (answer.Probabilities.Values.Any(probability => probability > selected + Tolerance))
+                        if (answer.Probabilities.Values.Any(probability => probability > selected + Tolerance + 2 * probabilityError))
                         {
                             throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" did not select a highest-probability option.");
                         }
