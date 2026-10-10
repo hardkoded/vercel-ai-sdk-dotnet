@@ -33,3 +33,12 @@ The default stop condition is one step. That step’s tool calls still run, and 
 A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated.
 
 Set `ApproveTool` to veto a call before it runs. A denied call is stored as an error tool result.
+
+## Tool errors
+
+A tool result carries an output type: `text`, `json`, `error-text`, `error-json`, or `execution-denied`. `ToolModelMessage.OutputType` holds it. When you do not set it, the type comes from `isError` and from whether the output is valid JSON.
+
+Providers keep the error status:
+
+- OpenAI Chat Completions and Responses send `error-text` and `error-json` as `{"error": <value>}`. `execution-denied` stays the reason, or `Tool call execution denied.` when there is none.
+- Google sends `error-text`, `error-json`, and `execution-denied` on `functionResponse.response.error`. Successful results stay on `response.content`.
