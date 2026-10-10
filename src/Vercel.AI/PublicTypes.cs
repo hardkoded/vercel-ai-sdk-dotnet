@@ -118,12 +118,14 @@ public sealed class StepResult
         IReadOnlyList<CallWarning>? warnings = null,
         IReadOnlyList<GeneratedFile>? files = null,
         string? provider = null,
-        string? modelId = null)
+        string? modelId = null,
+        IReadOnlyList<GeneratedContent>? content = null)
     {
         Provider = provider;
         ModelId = modelId;
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
+        Content = content ?? Array.Empty<GeneratedContent>();
         ToolCalls = toolCalls ?? Array.Empty<GeneratedToolCall>();
         ToolResults = toolResults ?? Array.Empty<ExecutedTool>();
         FinishReason = finishReason;
@@ -136,6 +138,12 @@ public sealed class StepResult
 
     /// <summary>Text generated in this step.</summary>
     public string Text { get; }
+
+    /// <summary>
+    /// Content the model generated in this step, in order. A <see cref="GeneratedText"/> carries its
+    /// <see cref="GeneratedText.Citations"/>, separate from the retrieved <see cref="Sources"/>.
+    /// </summary>
+    public IReadOnlyList<GeneratedContent> Content { get; }
 
     /// <summary>Reasoning text generated in this step.</summary>
     public string? ReasoningText { get; }
@@ -598,6 +606,9 @@ public sealed class GenerateTextResult
 
     /// <summary>Reasoning from the last step.</summary>
     public string? ReasoningText { get; }
+
+    /// <summary>Content from the last step. See <see cref="StepResult.Content"/>.</summary>
+    public IReadOnlyList<GeneratedContent> Content => FinalStep.Content;
 
     /// <summary>Every step.</summary>
     public IReadOnlyList<StepResult> Steps { get; }

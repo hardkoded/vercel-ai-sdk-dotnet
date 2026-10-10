@@ -104,7 +104,7 @@ internal static class DefaultStopConditionSupport
         {
             LogWarnings.ResetState();
             LogWarnings.Logger = new Action<LogWarningsOptions>(Record);
-            LogWarnings.ProcessEmitWarning = (_, _) => CountEmit();
+            LogWarnings.ProcessEmitWarning = (_, _, _) => CountEmit();
             LogWarnings.ConsoleWarn = _ => CountEmit();
         }
 
