@@ -223,11 +223,11 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
                 throw FailedResponse(uri.ToString(), body, status, response.ReasonPhrase, responseHeaders, text);
             }
 
-            return ParseResponse(uri.ToString(), body, status, responseHeaders, text);
+            return ParseResponse(uri.ToString(), body, status, responseHeaders, text, warnings);
         }
     }
 
-    private EvaluationModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text)
+    private EvaluationModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text, IReadOnlyList<OperationWarning> warnings)
     {
         try
         {
@@ -294,7 +294,7 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
             var metadata = JsonDocument.Parse(new JsonObject { ["typesafe"] = new JsonObject { ["confidence"] = confidence } }.ToJsonString()).RootElement.Clone();
             return new EvaluationModelResult(
                 answers,
-                warnings: null,
+                warnings: warnings,
                 usage: new OperationUsage(inputTokens, outputTokens),
                 rounding: new EvaluationRounding(2, 2),
                 providerMetadata: metadata,
