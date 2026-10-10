@@ -230,6 +230,10 @@ public sealed class AnthropicStream
                 yield return new ReasoningDeltaStreamPart(block.Id, Text(delta["thinking"]) ?? string.Empty);
             }
         }
+        else if (deltaType == "citations_delta" && block.Kind == "text" && delta["citation"] != null)
+        {
+            block.Citations.Add(ParseElement(delta["citation"]!.ToJsonString()));
+        }
         else if (deltaType == "input_json_delta" && block.Kind == "tool")
         {
             block.SawDelta = true;
@@ -249,7 +253,9 @@ public sealed class AnthropicStream
         _blocks.Remove(index);
         if (block.Kind == "text")
         {
-            yield return new TextEndStreamPart(block.Id);
+            yield return block.Citations.Count == 0
+                ? new TextEndStreamPart(block.Id)
+                : new TextEndStreamPart(block.Id, AnthropicCitations.MapAll(block.Citations), AnthropicCitations.TextMetadata(block.Citations));
         }
         else if (block.Kind == "reasoning")
         {
@@ -346,5 +352,7 @@ public sealed class AnthropicStream
         public bool HasInitialInput { get; set; }
 
         public bool SawDelta { get; set; }
+
+        public List<JsonElement> Citations { get; } = new();
     }
 }
