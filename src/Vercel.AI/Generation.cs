@@ -457,7 +457,7 @@ internal static class Generation
             {
                 var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
                 toolResults.Add(executed);
-                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.OutputJson, executed.IsError));
+                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
             }
         }
 
@@ -553,7 +553,7 @@ internal static class Generation
 
         if (tool?.Execute == null)
         {
-            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true);
+            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
         }
 
         if (options.ApproveTool != null)
@@ -561,7 +561,7 @@ internal static class Generation
             var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
             if (!approved)
             {
-                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true);
+                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." };
             }
         }
 
@@ -574,7 +574,7 @@ internal static class Generation
         catch (Exception exception)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true);
+            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
         }
     }
 

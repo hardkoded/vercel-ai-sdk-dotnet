@@ -35,8 +35,8 @@ public interface IEmbeddingModel
     /// <summary>Model id.</summary>
     string ModelId { get; }
 
-    /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id.</summary>
-    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken);
+    /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id. <paramref name="dimensions"/> is the requested vector width. A provider option for the same setting wins.</summary>
+    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null);
 }
 
 /// <summary>One generated image.</summary>
