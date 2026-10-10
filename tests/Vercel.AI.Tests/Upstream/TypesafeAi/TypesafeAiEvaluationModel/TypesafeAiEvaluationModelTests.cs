@@ -22,7 +22,7 @@ public sealed class TypesafeAiEvaluationModelTests
     {
         var server = Server();
         var questions = Questions();
-        await Provider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(questions), CancellationToken.None);
+        await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(questions), CancellationToken.None);
         var call = Assert.Single(server.Calls);
         Assert.True(JsonNode.DeepEquals(NativeRequest, JsonNode.Parse(call.Body)), call.Body);
         Assert.Equal("boolean", questions["requestsRefund"].Type);
@@ -34,7 +34,7 @@ public sealed class TypesafeAiEvaluationModelTests
     [UpstreamTest(Prefix + "preserves native scores, probabilities, confidence metadata, and usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_native_scores_probabilities_confidence_metadata_and_usage()
     {
-        var result = await Provider(Server()).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
+        var result = await CreateProvider(Server()).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
         Assert.Equal(3, result.Answers.Count);
         var department = result.Answers["department"];
         Assert.Equal("choice", department.Type);
@@ -108,7 +108,7 @@ public sealed class TypesafeAiEvaluationModelTests
     public async Task Reports_unsupported_provider_options_without_passing_them_through()
     {
         var server = Server();
-        var result = await Provider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
+        var result = await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
             Call(providerOptions: "{\"typesafe\":{\"temperature\":0}}"),
             CancellationToken.None);
         var warning = Assert.Single(result.Warnings);
@@ -135,7 +135,7 @@ public sealed class TypesafeAiEvaluationModelTests
     public async Task Rejects_provider_limits_before_HTTP_for_type(EvaluationQuestion question)
     {
         var server = Server();
-        await Assert.ThrowsAsync<InvalidArgumentError>(() => Provider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
             Call(new Dictionary<string, EvaluationQuestion> { ["question"] = question }, state: JsonState("test")),
             CancellationToken.None));
         Assert.Empty(server.Calls);
@@ -147,7 +147,7 @@ public sealed class TypesafeAiEvaluationModelTests
     {
         var server = Server();
         server.ResponseBody = "{\"model\":null,\"usage\":null,\"answers\":{\"topic\":{\"type\":\"choice\",\"choice\":\"a\",\"probabilities\":{\"a\":1},\"confidence\":null}}}";
-        var result = await Provider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
+        var result = await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
         Assert.Null(result.Usage!.InputTokens);
         Assert.Null(result.Usage.OutputTokens);
         Assert.Equal("jev-latest", result.Response!.ModelId);

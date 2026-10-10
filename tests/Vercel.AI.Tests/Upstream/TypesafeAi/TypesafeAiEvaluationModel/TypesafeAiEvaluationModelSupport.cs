@@ -84,7 +84,7 @@ internal static class TypesafeAiEvaluationModelSupport
         return new TypeSafeAiServer { ResponseBody = NativeResponseJson };
     }
 
-    internal static TypeSafeAiProvider Provider(TypeSafeAiServer server, string? apiKey = "test-api-key")
+    internal static TypeSafeAiProvider CreateProvider(TypeSafeAiServer server, string? apiKey = "test-api-key")
     {
         return TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = apiKey }, server);
     }

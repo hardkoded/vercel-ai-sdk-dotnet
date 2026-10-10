@@ -15,7 +15,7 @@ public sealed class HttpErrorsTests
 
     private static Task<ApiCallError> Fail(TypeSafeAiServer server)
     {
-        return Assert.ThrowsAsync<ApiCallError>(() => Provider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None));
+        return Assert.ThrowsAsync<ApiCallError>(() => CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None));
     }
 
     [Theory]
