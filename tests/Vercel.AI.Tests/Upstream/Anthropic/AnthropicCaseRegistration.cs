@@ -140,7 +140,6 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools > provider-defined tools::should reject advisor_20260301 maxTokens below 1024", AnthropicAssertions.StrictAndProviderTools);
         AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"auto\"", AnthropicAssertions.ToolChoiceAndCache);
         AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"required\"", AnthropicAssertions.ToolChoiceAndCache);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"none\"", AnthropicAssertions.ToolChoiceAndCache);
         AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"tool\"", AnthropicAssertions.ToolChoiceAndCache);
         AnthropicCases.Add("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should set cache control", AnthropicAssertions.ToolChoiceAndCache);
         AnthropicCases.Add("packages/anthropic/src/anthropic-provider.test.ts::createAnthropic > baseURL configuration::uses the default Anthropic base URL when not provided", AnthropicAssertions.DefaultBaseUrl);

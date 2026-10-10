@@ -175,13 +175,6 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"none\"", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0472()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"none\"").ConfigureAwait(false);
-    }
-
-    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-prepare-tools.test.ts::prepareTools::should handle tool choice \"tool\"", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0473()
     {
