@@ -41,7 +41,7 @@ These JavaScript packages are Node or browser products, not the model SDK:
 
 ## UI message stream
 
-`ToUIMessageStreamResult` emits `text/event-stream` with header `x-vercel-ai-ui-message-stream: v1` and these chunks: `start`, `start-step`, `text-start`, `text-delta`, `text-end`, `reasoning-start`, `reasoning-delta`, `reasoning-end`, `tool-input-available`, `tool-output-available`, `tool-output-error`, `source-url`, `finish-step`, `finish`, `error`, and `data: [DONE]`.
+`ToUIMessageStreamResult` emits `text/event-stream` with header `x-vercel-ai-ui-message-stream: v1` and these chunks: `start`, `start-step`, `text-start`, `text-delta`, `text-end`, `reasoning-start`, `reasoning-delta`, `reasoning-end`, `tool-input-available`, `tool-output-available`, `tool-output-error`, `source-url`, `finish-step`, `finish`, `error`, and `data: [DONE]`. The `text-end` chunk carries `citations` when the step's text has them.
 
 Optional `keepAliveMs` writes `: stream-open` before the start event and `: keep-alive` while the next part is still pending. Null sends no comment lines.
 
