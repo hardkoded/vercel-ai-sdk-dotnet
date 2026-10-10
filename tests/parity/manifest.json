@@ -93,6 +93,7 @@
     "replicate": "Vercel.AI.Replicate",
     "revai": "Vercel.AI.RevAI",
     "togetherai": "Vercel.AI.TogetherAI",
+    "typesafe-ai": "Vercel.AI.TypeSafeAi",
     "voyage": "Vercel.AI.Voyage",
     "xai": "Vercel.AI.Xai",
     "zai": "Vercel.AI.Zai",
@@ -111,7 +112,6 @@
     "svelte",
     "test-server",
     "tui",
-    "typesafe-ai",
     "valibot",
     "vue"
   ]
