@@ -341,10 +341,10 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"minimal\" to thinkingLevel \"minimal\"", Coverage = UpstreamCoverage.Covered)]
-    public void Maps_reasoning_minimal_to_thinkingLevel_minimal()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"minimal\" to thinkingLevel \"low\"", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_reasoning_minimal_to_thinkingLevel_low()
     {
-        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "minimal"), "{\"thinkingLevel\":\"minimal\"}");
+        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "minimal"), "{\"thinkingLevel\":\"low\"}");
     }
 
     [Fact]
@@ -369,10 +369,10 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"minimal\"", Coverage = UpstreamCoverage.Covered)]
-    public void Maps_reasoning_none_to_thinkingLevel_minimal()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"low\"", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_reasoning_none_to_thinkingLevel_low()
     {
-        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "none"), "{\"thinkingLevel\":\"minimal\"}");
+        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "none"), "{\"thinkingLevel\":\"low\"}");
     }
 
     [Fact]
@@ -423,6 +423,13 @@ public sealed class GoogleLanguageUpstreamTests
             ("gemini-3.7-flash-lite", "minimal", "minimal"),
             ("gemini-3.10-flash-lite-preview", "minimal", "minimal"),
             ("gemini-flash-lite-latest", "minimal", "minimal"),
+            ("au.gemini-3.5-flash", "none", "minimal"),
+            ("eu.gemini-3.5-flash", "none", "minimal"),
+            ("us.gemini-3.1-pro", "none", "low"),
+            ("gemini-3.5-pro", "none", "low"),
+            ("gemini-3.5-pro", "minimal", "low"),
+            ("gemini-3.1-pro", "none", "low"),
+            ("gemini-3.1-pro", "minimal", "low"),
         };
         foreach (var item in cases)
         {
@@ -487,15 +494,15 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > providerOptions precedence::should use providerOptions thinkingConfig when both reasoning and providerOptions are set", Coverage = UpstreamCoverage.Covered)]
-    public void Lets_provider_thinkingConfig_replace_the_resolved_budget()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > providerOptions precedence::should not combine a resolved thinkingLevel with an explicit thinkingBudget", Coverage = UpstreamCoverage.Covered)]
+    public void Does_not_combine_a_resolved_thinkingLevel_with_an_explicit_thinkingBudget()
     {
         var options = Hello();
         options.Reasoning = "high";
         options.ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"thinkingConfig\":{\"thinkingBudget\":999}}}");
-        var thinking = Prep("gemini-pro", options).Body["generationConfig"]!["thinkingConfig"]!.AsObject();
-        Assert.Equal(999, thinking["thinkingBudget"]!.GetValue<int>());
-        Assert.False(thinking.ContainsKey("thinkingLevel"));
+        var thinking = Prep("gemini-3-pro-preview", options).Body["generationConfig"]!["thinkingConfig"]!;
+        GoogleUpstream.JsonEqual(thinking, "{\"thinkingBudget\":999}");
+        Assert.Null(thinking.AsObject()["thinkingLevel"]);
     }
 
     [Fact]

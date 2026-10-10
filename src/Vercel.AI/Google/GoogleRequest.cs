@@ -119,11 +119,16 @@ public static class GoogleRequest
         var tools = GoogleTools.Prepare(options.Tools, providerTools, options.ToolChoice, modelId ?? string.Empty, vertex);
         warnings.AddRange(tools.Warnings);
 
-        var resolved = GoogleThinking.Resolve(options.Reasoning, modelId ?? string.Empty, warnings);
-        JsonObject? thinking = resolved;
-        if (GoogleJson.TryObject(google, "thinkingConfig", out var thinkingOverride))
+        JsonObject? thinking;
+        var hasOverride = GoogleJson.TryObject(google, "thinkingConfig", out var thinkingOverride);
+        if (hasOverride && (thinkingOverride.TryGetProperty("thinkingBudget", out _) || thinkingOverride.TryGetProperty("thinkingLevel", out _)))
         {
-            thinking = Merge(resolved, thinkingOverride);
+            thinking = Merge(null, thinkingOverride);
+        }
+        else
+        {
+            var resolved = GoogleThinking.Resolve(options.Reasoning, modelId ?? string.Empty, warnings);
+            thinking = hasOverride ? Merge(resolved, thinkingOverride) : resolved;
         }
 
         var config = new JsonObject();

@@ -10,6 +10,8 @@ namespace Vercel.AI.Google;
 /// <summary>Maps the shared reasoning option onto Gemini thinking configuration.</summary>
 public static class GoogleThinking
 {
+    private static readonly Regex ModelName = new(@"(?:^|[/.])(gemini-[^/]*)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini3Pro = new(@"^gemini-(\d+)(?:\.\d+)?-pro(?:$|-)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     private static readonly Regex Gemini3Flash = new(@"^gemini-(\d+)\.(\d+)-flash(?:$|-(?!lite(?:-|$)))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>
@@ -73,14 +75,16 @@ public static class GoogleThinking
 
     private static string MinimumLevel(string modelId)
     {
-        var name = modelId ?? string.Empty;
-        var slash = name.LastIndexOf('/');
-        if (slash >= 0)
-        {
-            name = name.Substring(slash + 1);
-        }
+        var nameMatch = ModelName.Match(modelId ?? string.Empty);
+        var name = nameMatch.Success ? nameMatch.Groups[1].Value : modelId ?? string.Empty;
 
         if (name.Equals("gemini-flash-latest", StringComparison.OrdinalIgnoreCase))
+        {
+            return "low";
+        }
+
+        var proMatch = Gemini3Pro.Match(name);
+        if (proMatch.Success && int.Parse(proMatch.Groups[1].Value) >= 3)
         {
             return "low";
         }
