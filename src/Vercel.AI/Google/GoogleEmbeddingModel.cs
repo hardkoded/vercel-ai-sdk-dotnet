@@ -45,7 +45,7 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
         var inputs = values ?? Array.Empty<string>();
         if (_provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -66,7 +66,7 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
                 ["model"] = "models/" + ModelId,
                 ["content"] = new JsonObject { ["parts"] = new JsonArray { new JsonObject { ["text"] = value } } },
             };
-            ApplyEmbeddingOptions(body, _provider.Options);
+            ApplyEmbeddingOptions(body, _provider.Options, dimensions);
             using var document = await PostAsync(":embedContent", body, cancellationToken).ConfigureAwait(false);
             return new EmbeddingResult(new[] { ReadVector(document.RootElement.GetProperty("embedding").GetProperty("values")) }, null);
         }
@@ -83,7 +83,7 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
                     ["parts"] = new JsonArray { new JsonObject { ["text"] = value } },
                 },
             };
-            ApplyEmbeddingOptions(request, _provider.Options);
+            ApplyEmbeddingOptions(request, _provider.Options, dimensions);
             requests.Add(request);
         }
 
@@ -163,17 +163,21 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
             cancellationToken).ConfigureAwait(false);
     }
 
-    private static void ApplyEmbeddingOptions(JsonObject body, GoogleOptions options)
+    private static void ApplyEmbeddingOptions(JsonObject body, GoogleOptions options, int? dimensions)
     {
         var google = EmbeddingOptions(options);
+        if (google != null && google.Value.TryGetProperty("outputDimensionality", out var providerDimensions) && providerDimensions.TryGetInt32(out var count))
+        {
+            body["outputDimensionality"] = count;
+        }
+        else if (dimensions is { } width)
+        {
+            body["outputDimensionality"] = width;
+        }
+
         if (google == null)
         {
             return;
-        }
-
-        if (google.Value.TryGetProperty("outputDimensionality", out var dimensions) && dimensions.TryGetInt32(out var count))
-        {
-            body["outputDimensionality"] = count;
         }
 
         var task = GoogleJson.String(google.Value, "taskType");

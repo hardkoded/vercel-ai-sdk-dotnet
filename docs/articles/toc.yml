@@ -8,3 +8,5 @@
   href: providers.md
 - name: Compatibility
   href: compatibility.md
+- name: Warnings
+  href: warnings.md

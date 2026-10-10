@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -87,6 +88,12 @@ public sealed class ExecutedTool
 
     /// <summary>Whether execution failed or was denied.</summary>
     public bool IsError { get; }
+
+    /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
+    internal string? ModelOutputType { get; init; }
+
+    /// <summary>The output sent to the model, such as an error message. Null means <see cref="OutputJson"/>.</summary>
+    internal string? ModelOutput { get; init; }
 }
 
 /// <summary>One language-model step, including any tool results from that step.</summary>
@@ -104,8 +111,12 @@ public sealed class StepResult
         JsonElement? providerMetadata = null,
         IReadOnlyList<CallWarning>? warnings = null,
         IReadOnlyList<GeneratedFile>? files = null,
+        string? provider = null,
+        string? modelId = null,
         IReadOnlyList<GeneratedContent>? content = null)
     {
+        Provider = provider;
+        ModelId = modelId;
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
         Content = content ?? Array.Empty<GeneratedContent>();
@@ -154,6 +165,12 @@ public sealed class StepResult
 
     /// <summary>Files generated in this step.</summary>
     public IReadOnlyList<GeneratedFile> Files { get; }
+
+    /// <summary>Provider id of the model that produced this step, when known.</summary>
+    public string? Provider { get; }
+
+    /// <summary>Model id of the model that produced this step, when known.</summary>
+    public string? ModelId { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -181,6 +198,15 @@ public static class StopWhen
     public static StopCondition HasToolCall(params string[] toolNames)
     {
         return new HasToolCallCondition(toolNames ?? Array.Empty<string>());
+    }
+
+    /// <summary>
+    /// The default stop condition of <see cref="Agent"/>. Stops when the step count equals <paramref name="stepCount"/>
+    /// and logs a warning, because the default limit is what ended the tool loop.
+    /// </summary>
+    internal static StopCondition CreateDefaultStopCondition(int stepCount)
+    {
+        return new DefaultStopCondition(stepCount);
     }
 
     /// <summary>A stop condition that never stops the loop. The loop still ends when a step does not call a tool.</summary>
@@ -232,6 +258,34 @@ public static class StopWhen
         public override bool ShouldStop(IReadOnlyList<StepResult> steps)
         {
             return steps.Count == _count;
+        }
+    }
+
+    private sealed class DefaultStopCondition : StopCondition
+    {
+        private readonly int _stepCount;
+
+        public DefaultStopCondition(int stepCount)
+        {
+            _stepCount = stepCount;
+        }
+
+        public override bool ShouldStop(IReadOnlyList<StepResult> steps)
+        {
+            if (steps.Count != _stepCount)
+            {
+                return false;
+            }
+
+            var last = steps[steps.Count - 1];
+            LogWarnings.Log(new LogWarningsOptions(
+                new ModelWarning[]
+                {
+                    new OtherWarning("The tool loop stopped because it reached the default stopWhen condition, isStepCount(" + _stepCount + "). To allow more steps, set stopWhen to isStepCount(...) with a higher limit or provide a custom stop condition. Learn more: https://ai-sdk.dev/docs/agents/loop-control"),
+                },
+                last.Provider,
+                last.ModelId));
+            return true;
         }
     }
 

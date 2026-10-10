@@ -32,6 +32,32 @@ public sealed class GoogleLanguageUpstreamTests
         Assert.Equal("system messages are only supported at the beginning of the conversation", error.Message);
     }
 
+    [Theory]
+    [InlineData("text", "deployed", null, "{\"content\":\"deployed\"}")]
+    [InlineData("json", "{\"version\":\"1.0\"}", null, "{\"content\":{\"version\":\"1.0\"}}")]
+    [InlineData("error-text", "migration failed", null, "{\"error\":\"migration failed\"}")]
+    [InlineData("error-json", "{\"code\":\"E_MIGRATION\"}", null, "{\"error\":{\"code\":\"E_MIGRATION\"}}")]
+    [InlineData("error-json", "{\"$ref\":\"#/$defs/Error\"}", null, "{\"error\":\"{\\\"$ref\\\":\\\"#/$defs/Error\\\"}\"}")]
+    [InlineData("execution-denied", null, "User declined.", "{\"error\":\"User declined.\"}")]
+    [InlineData("execution-denied", null, null, "{\"error\":\"Tool call execution denied.\"}")]
+    [UpstreamTest("packages/google/src/convert-to-google-messages.test.ts::tool messages::should preserve the status of tool output $output", Coverage = UpstreamCoverage.Covered)]
+    public void Should_preserve_the_status_of_tool_output(string outputType, string? output, string? reason, string response)
+    {
+        var result = new GoogleToolResultPart("deploy") { ToolCallId = "call-deploy", OutputKind = outputType, Output = output, DenialReason = reason };
+        var prompt = Convert(new GoogleMessageOptions(), new GoogleToolTurn(new[] { result }));
+        var body = JsonNode.Parse(response)!.AsObject();
+        body.Add("name", "deploy");
+        var expected = new JsonArray(new JsonObject
+        {
+            ["role"] = "user",
+            ["parts"] = new JsonArray(new JsonObject
+            {
+                ["functionResponse"] = new JsonObject { ["id"] = "call-deploy", ["name"] = "deploy", ["response"] = body },
+            }),
+        });
+        GoogleUpstream.JsonEqual(prompt.Contents, expected.ToJsonString());
+    }
+
     [Fact]
     [UpstreamTest("packages/google/src/convert-to-google-messages.test.ts::thought signatures::should preserve thought signatures in assistant messages", Coverage = UpstreamCoverage.Covered)]
     public void Preserves_thought_signatures_on_assistant_parts()
@@ -341,10 +367,10 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"minimal\" to thinkingLevel \"minimal\"", Coverage = UpstreamCoverage.Covered)]
-    public void Maps_reasoning_minimal_to_thinkingLevel_minimal()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"minimal\" to thinkingLevel \"low\"", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_reasoning_minimal_to_thinkingLevel_low()
     {
-        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "minimal"), "{\"thinkingLevel\":\"minimal\"}");
+        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "minimal"), "{\"thinkingLevel\":\"low\"}");
     }
 
     [Fact]
@@ -369,10 +395,10 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"minimal\"", Coverage = UpstreamCoverage.Covered)]
-    public void Maps_reasoning_none_to_thinkingLevel_minimal()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"low\"", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_reasoning_none_to_thinkingLevel_low()
     {
-        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "none"), "{\"thinkingLevel\":\"minimal\"}");
+        GoogleUpstream.JsonEqual(Thinking("gemini-3-pro-preview", "none"), "{\"thinkingLevel\":\"low\"}");
     }
 
     [Fact]
@@ -423,6 +449,13 @@ public sealed class GoogleLanguageUpstreamTests
             ("gemini-3.7-flash-lite", "minimal", "minimal"),
             ("gemini-3.10-flash-lite-preview", "minimal", "minimal"),
             ("gemini-flash-lite-latest", "minimal", "minimal"),
+            ("au.gemini-3.5-flash", "none", "minimal"),
+            ("eu.gemini-3.5-flash", "none", "minimal"),
+            ("us.gemini-3.1-pro", "none", "low"),
+            ("gemini-3.5-pro", "none", "low"),
+            ("gemini-3.5-pro", "minimal", "low"),
+            ("gemini-3.1-pro", "none", "low"),
+            ("gemini-3.1-pro", "minimal", "low"),
         };
         foreach (var item in cases)
         {
@@ -487,15 +520,15 @@ public sealed class GoogleLanguageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > providerOptions precedence::should use providerOptions thinkingConfig when both reasoning and providerOptions are set", Coverage = UpstreamCoverage.Covered)]
-    public void Lets_provider_thinkingConfig_replace_the_resolved_budget()
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > providerOptions precedence::should not combine a resolved thinkingLevel with an explicit thinkingBudget", Coverage = UpstreamCoverage.Covered)]
+    public void Does_not_combine_a_resolved_thinkingLevel_with_an_explicit_thinkingBudget()
     {
         var options = Hello();
         options.Reasoning = "high";
         options.ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"thinkingConfig\":{\"thinkingBudget\":999}}}");
-        var thinking = Prep("gemini-pro", options).Body["generationConfig"]!["thinkingConfig"]!.AsObject();
-        Assert.Equal(999, thinking["thinkingBudget"]!.GetValue<int>());
-        Assert.False(thinking.ContainsKey("thinkingLevel"));
+        var thinking = Prep("gemini-3-pro-preview", options).Body["generationConfig"]!["thinkingConfig"]!;
+        GoogleUpstream.JsonEqual(thinking, "{\"thinkingBudget\":999}");
+        Assert.Null(thinking.AsObject()["thinkingLevel"]);
     }
 
     [Fact]

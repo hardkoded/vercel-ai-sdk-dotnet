@@ -54,6 +54,10 @@ public sealed class LanguageModelUsage
         TextTokens = textTokens;
     }
 
+    private LanguageModelUsage()
+    {
+    }
+
     /// <summary>Prompt tokens.</summary>
     public int? InputTokens { get; }
 
@@ -81,7 +85,7 @@ public sealed class LanguageModelUsage
     /// <summary>Output tokens that were not reasoning tokens, when the provider reports them.</summary>
     public int? TextTokens { get; }
 
-    /// <summary>Adds two usage values.</summary>
+    /// <summary>Adds two usage values. <see cref="Raw"/> survives only when one side is <see cref="Null"/>.</summary>
     public static LanguageModelUsage Add(LanguageModelUsage left, LanguageModelUsage right)
     {
         return new LanguageModelUsage(
@@ -91,12 +95,27 @@ public sealed class LanguageModelUsage
             Sum(left.CacheReadTokens, right.CacheReadTokens),
             Sum(left.CacheWriteTokens, right.CacheWriteTokens),
             Sum(left.ReasoningTokens, right.ReasoningTokens),
+            raw: left.IsNull ? right.Raw : right.IsNull ? left.Raw : null,
             noCacheInputTokens: Sum(left.NoCacheInputTokens, right.NoCacheInputTokens),
             textTokens: Sum(left.TextTokens, right.TextTokens));
     }
 
     /// <summary>Zero usage.</summary>
     public static LanguageModelUsage Empty { get; } = new(0, 0, 0);
+
+    /// <summary>Usage with every count and <see cref="Raw"/> unset. It is the start value for adding steps.</summary>
+    public static LanguageModelUsage Null { get; } = new();
+
+    private bool IsNull =>
+        InputTokens is null
+        && NoCacheInputTokens is null
+        && CacheReadTokens is null
+        && CacheWriteTokens is null
+        && OutputTokens is null
+        && TextTokens is null
+        && ReasoningTokens is null
+        && TotalTokens is null
+        && Raw is null;
 
     private static int? Sum(int? left, int? right)
     {
@@ -548,11 +567,25 @@ public sealed class AssistantModelMessage : ModelMessage
 {
     /// <summary>Creates an assistant message.</summary>
     public AssistantModelMessage(string? text, IReadOnlyList<GeneratedToolCall>? toolCalls, string? reasoning)
+        : this(text, toolCalls, reasoning, null)
+    {
+    }
+
+    /// <summary>
+    /// Creates an assistant message whose reasoning carries provider options, such as an OpenAI
+    /// <c>itemId</c> for reasoning stored by the Responses API.
+    /// </summary>
+    public AssistantModelMessage(
+        string? text,
+        IReadOnlyList<GeneratedToolCall>? toolCalls,
+        string? reasoning,
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
         : base("assistant")
     {
         Text = text;
         ToolCalls = toolCalls ?? Array.Empty<GeneratedToolCall>();
         Reasoning = reasoning;
+        ReasoningProviderOptions = reasoningProviderOptions;
     }
 
     /// <summary>Assistant text.</summary>
@@ -563,19 +596,46 @@ public sealed class AssistantModelMessage : ModelMessage
 
     /// <summary>Reasoning text, when the provider returned it.</summary>
     public string? Reasoning { get; }
+
+    /// <summary>Provider options of the reasoning part, such as an OpenAI <c>itemId</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ReasoningProviderOptions { get; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
 public sealed class ToolModelMessage : ModelMessage
 {
-    /// <summary>Creates a tool result message.</summary>
+    private static readonly string[] OutputTypes = { "text", "json", "error-text", "error-json", "execution-denied" };
+
+    /// <summary>Creates a tool result message. The output type comes from <paramref name="isError"/> and from whether <paramref name="outputJson"/> is valid JSON.</summary>
     public ToolModelMessage(string toolCallId, string toolName, string outputJson, bool isError, JsonElement? providerMetadata = null)
+        : this(toolCallId, toolName, outputJson, isError, null, providerMetadata)
+    {
+    }
+
+    /// <summary>
+    /// Creates a tool result message. <paramref name="outputType"/> is <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>,
+    /// or <c>execution-denied</c>. When it is null, the type comes from <paramref name="isError"/> and from whether
+    /// <paramref name="outputJson"/> is valid JSON. When it is set, it decides <see cref="IsError"/> and <paramref name="isError"/> is ignored.
+    /// For <c>execution-denied</c>, <paramref name="outputJson"/> is the reason, or null for none.
+    /// </summary>
+    public ToolModelMessage(string toolCallId, string toolName, string? outputJson, bool isError, string? outputType, JsonElement? providerMetadata = null)
         : base("tool")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
         ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
-        OutputJson = outputJson ?? "null";
-        IsError = isError;
+        if (outputType != null && Array.IndexOf(OutputTypes, outputType) < 0)
+        {
+            throw new ArgumentException("Unknown tool output type '" + outputType + "'.", nameof(outputType));
+        }
+
+        if ((outputType == "json" || outputType == "error-json") && !IsJson(outputJson))
+        {
+            throw new ArgumentException("Output type '" + outputType + "' needs valid JSON.", nameof(outputJson));
+        }
+
+        OutputType = outputType ?? (isError ? (IsJson(outputJson) ? "error-json" : "error-text") : (IsJson(outputJson) ? "json" : "text"));
+        OutputJson = outputJson ?? (OutputType == "execution-denied" ? string.Empty : "null");
+        IsError = OutputType != "text" && OutputType != "json";
         ProviderMetadata = providerMetadata;
     }
 
@@ -585,14 +645,35 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>Tool name.</summary>
     public string ToolName { get; }
 
-    /// <summary>JSON result.</summary>
+    /// <summary>JSON result. For <c>text</c> and <c>error-text</c> it is the text itself. For <c>execution-denied</c> it is the reason, or empty for none.</summary>
     public string OutputJson { get; }
 
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
 
+    /// <summary>Output type: <c>text</c>, <c>json</c>, <c>error-text</c>, <c>error-json</c>, or <c>execution-denied</c>.</summary>
+    public string OutputType { get; }
+
     /// <summary>Provider metadata carried on this tool result, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    private static bool IsJson(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(value!);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 }
 
 /// <summary>Settings for one language-model call. Property names follow the V4 call options.</summary>

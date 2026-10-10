@@ -309,7 +309,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "tool calls::should normalize malformed tool call input and preserve the tool error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "tool calls::should normalize malformed tool call input and preserve the tool error semantics", Coverage = UpstreamCoverage.Covered)]
     public void NormalizesMalformedToolInput()
     {
         var result = OpenAIChatMessages.Convert(new[]
@@ -318,11 +318,11 @@ public sealed class OpenAIChatMessageUpstreamTests
             {
                 ToolCalls = new[] { new GeneratedToolCall("quux", "thwomp", "{\"foo\":\"bar\"") },
             },
-            new OpenAIChatPromptMessage("tool") { ToolCallId = "quux", ToolOutput = "Invalid input: JSON parsing failed" },
+            new OpenAIChatPromptMessage("tool") { ToolCallId = "quux", ToolOutput = "Invalid input: JSON parsing failed", ToolOutputType = "error-text" },
         });
         OpenAIUpstream.Equal(
             result.Messages,
-            "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{}\"}}]},{\"role\":\"tool\",\"tool_call_id\":\"quux\",\"content\":\"Invalid input: JSON parsing failed\"}]");
+            "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{}\"}}]},{\"role\":\"tool\",\"tool_call_id\":\"quux\",\"content\":\"{\\\"error\\\":\\\"Invalid input: JSON parsing failed\\\"}\"}]");
     }
 
     [Fact]
@@ -334,6 +334,22 @@ public sealed class OpenAIChatMessageUpstreamTests
         Assert.Equal("No provider reference found for provider 'openai'. Available providers: anthropic", exception.Message);
     }
 
+    [Theory]
+    [InlineData("error-text", "E42", "{\"error\":\"E42\"}")]
+    [InlineData("error-json", "{\"code\":\"E42\"}", "{\"error\":{\"code\":\"E42\"}}")]
+    [UpstreamTest(Prefix + "tool calls::should wrap tool errors $output", Coverage = UpstreamCoverage.Covered)]
+    public void Should_wrap_tool_errors(string outputType, string value, string expected)
+    {
+        var result = OpenAIChatMessages.Convert(new ModelMessage[]
+        {
+            new ToolModelMessage("error-tool", "deploy", value, isError: true, outputType: outputType),
+        });
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("tool", message!["role"]!.GetValue<string>());
+        Assert.Equal("error-tool", message["tool_call_id"]!.GetValue<string>());
+        Assert.Equal(expected, message["content"]!.GetValue<string>());
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "tool calls::should handle different tool output types", Coverage = UpstreamCoverage.Covered)]
     public void SendsTextAndErrorToolOutputsAsContent()
@@ -341,11 +357,11 @@ public sealed class OpenAIChatMessageUpstreamTests
         var result = OpenAIChatMessages.Convert(new ModelMessage[]
         {
             new ToolModelMessage("text-tool", "text-tool", "Hello world", isError: false),
-            new ToolModelMessage("error-tool", "error-tool", "Something went wrong", isError: true),
+            new ToolModelMessage("error-tool", "error-tool", "Something went wrong", isError: true, outputType: "error-text"),
         });
         OpenAIUpstream.Equal(
             result.Messages,
-            "[{\"role\":\"tool\",\"tool_call_id\":\"text-tool\",\"content\":\"Hello world\"},{\"role\":\"tool\",\"tool_call_id\":\"error-tool\",\"content\":\"Something went wrong\"}]");
+            "[{\"role\":\"tool\",\"tool_call_id\":\"text-tool\",\"content\":\"Hello world\"},{\"role\":\"tool\",\"tool_call_id\":\"error-tool\",\"content\":\"{\\\"error\\\":\\\"Something went wrong\\\"}\"}]");
     }
 
     private static void EqualAudio(string mediaType, string format)
