@@ -200,7 +200,7 @@ public static class AnthropicToolPreparer
 
                 return new AnthropicPreparedTools(prepared, Choice("any", null, disableParallelToolUse), warnings, betas);
             case "none":
-                return new AnthropicPreparedTools(null, null, warnings, betas);
+                return new AnthropicPreparedTools(prepared, Choice("none", null, null), warnings, betas);
             case "tool":
                 if (rejectsForcedToolUse)
                 {

@@ -1353,8 +1353,8 @@ internal static class AnthropicAssertions
         Assert.True(prepared.ToolChoice!["disable_parallel_tool_use"]!.GetValue<bool>());
         Assert.Equal("ephemeral", prepared.Tools![0]!["cache_control"]!["type"]!.GetValue<string>());
         var none = AnthropicToolPreparer.Prepare(tools, "none", null, null);
-        Assert.Null(none.Tools);
-        Assert.Null(none.ToolChoice);
+        Assert.Single(none.Tools!);
+        Assert.Equal("none", none.ToolChoice!["type"]!.GetValue<string>());
         var named = AnthropicToolPreparer.Prepare(tools, "tool", "lookup", null);
         Assert.Equal("tool", named.ToolChoice!["type"]!.GetValue<string>());
         Assert.Equal("lookup", named.ToolChoice!["name"]!.GetValue<string>());
