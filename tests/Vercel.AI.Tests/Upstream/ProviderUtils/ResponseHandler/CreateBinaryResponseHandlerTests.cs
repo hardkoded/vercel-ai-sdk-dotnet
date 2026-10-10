@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Net;
-using Vercel.AI.ProviderUtils;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Tests.Upstream.ProviderUtils.ResponseHandler;
 
