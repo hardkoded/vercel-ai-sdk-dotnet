@@ -550,11 +550,16 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     /// <inheritdoc />
     public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
-        return DoEmbedAsync(values, dimensions, null, cancellationToken);
+        return EmbedAsync(values, dimensions, null, providerOptions ?? ProviderOptions, cancellationToken);
     }
 
     /// <summary>Embeds values, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set. A <c>dimensions</c> provider option wins over <paramref name="dimensions"/>.</summary>
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, CancellationToken cancellationToken)
+    {
+        return EmbedAsync(values, dimensions, user, ProviderOptions, cancellationToken);
+    }
+
+    private async Task<EmbeddingResult> EmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
     {
         if (values == null)
         {
@@ -575,17 +580,29 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         }
 
         var warnings = new List<CallWarning>();
-        var fromOptions = ReadEmbeddingOptions(warnings);
+        var fromOptions = ReadEmbeddingOptions(providerOptions, warnings);
         var body = new JsonObject
         {
             ["model"] = ModelId,
             ["input"] = input,
             ["encoding_format"] = "float",
         };
-        var width = fromOptions.Dimensions ?? dimensions ?? Dimensions;
-        if (width != null)
+        if (_provider.Options.ProviderName == "mistral")
         {
-            body["dimensions"] = width.Value;
+            // Mistral names the width output_dimension and does not accept dimensions.
+            var outputDimension = MistralOutputDimension(providerOptions) ?? dimensions ?? Dimensions;
+            if (outputDimension != null)
+            {
+                body["output_dimension"] = outputDimension.Value;
+            }
+        }
+        else
+        {
+            var width = fromOptions.Dimensions ?? dimensions ?? Dimensions;
+            if (width != null)
+            {
+                body["dimensions"] = width.Value;
+            }
         }
 
         var endUser = user ?? fromOptions.User ?? User;
@@ -635,10 +652,21 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         return new EmbeddingResult(vectors, tokens);
     }
 
-    private EmbeddingCallOptions ReadEmbeddingOptions(List<CallWarning> warnings)
+    private static int? MistralOutputDimension(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        if (providerOptions != null && providerOptions.TryGetValue("mistral", out var bag) && bag.ValueKind == JsonValueKind.Object
+            && bag.TryGetProperty("outputDimension", out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
+    }
+
+    private EmbeddingCallOptions ReadEmbeddingOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, List<CallWarning> warnings)
     {
         var rawName = OpenAICompatibleChat.BaseProviderName(Provider);
-        if (OpenAICompatibleChat.HasOptions(ProviderOptions, "openai-compatible"))
+        if (OpenAICompatibleChat.HasOptions(providerOptions, "openai-compatible"))
         {
             warnings.Add(new CallWarning(
                 "deprecated",
@@ -646,15 +674,15 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         }
 
         var camel = OpenAICompatibleChat.ToCamelCase(rawName);
-        OpenAICompatibleChat.WarnIfDeprecated(rawName, ProviderOptions, warnings);
+        OpenAICompatibleChat.WarnIfDeprecated(rawName, providerOptions, warnings);
         int? width = null;
         string? endUser = null;
-        ApplyEmbeddingOptions(ProviderOptions, "openai-compatible", ref width, ref endUser);
-        ApplyEmbeddingOptions(ProviderOptions, "openaiCompatible", ref width, ref endUser);
-        ApplyEmbeddingOptions(ProviderOptions, rawName, ref width, ref endUser);
+        ApplyEmbeddingOptions(providerOptions, "openai-compatible", ref width, ref endUser);
+        ApplyEmbeddingOptions(providerOptions, "openaiCompatible", ref width, ref endUser);
+        ApplyEmbeddingOptions(providerOptions, rawName, ref width, ref endUser);
         if (!string.Equals(camel, rawName, StringComparison.Ordinal))
         {
-            ApplyEmbeddingOptions(ProviderOptions, camel, ref width, ref endUser);
+            ApplyEmbeddingOptions(providerOptions, camel, ref width, ref endUser);
         }
 
         return new EmbeddingCallOptions(width, endUser);

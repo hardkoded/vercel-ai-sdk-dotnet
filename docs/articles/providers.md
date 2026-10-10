@@ -75,7 +75,15 @@ A provider option for the same setting wins over `Dimensions`. When both are uns
 | Perplexity | `perplexity.dimensions` | `dimensions` |
 | Voyage | `voyage.outputDimension` | `output_dimension` |
 | Alibaba | `alibaba.dimension` | `parameters.dimension` |
+| Amazon Bedrock Titan | `amazonBedrock.dimensions` | `dimensions` |
+| Amazon Bedrock Cohere | `amazonBedrock.outputDimension` | `output_dimension` |
+| Amazon Bedrock Nova | `amazonBedrock.embeddingDimension` | `singleEmbeddingParams.embeddingDimension` (1024 when unset) |
+| Google Vertex (predict) | `googleVertex.outputDimensionality` | `parameters.outputDimensionality` |
+| Google Vertex (embedContent) | `googleVertex.outputDimensionality` | `embedContentConfig.outputDimensionality` |
+| Mistral | `mistral.outputDimension` | `output_dimension` |
 
-Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them. Amazon Bedrock, Google Vertex, and Mistral ignore `Dimensions` for now.
+`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`.
+
+Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 
 `IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. Custom models must add the parameter.
