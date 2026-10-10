@@ -14,8 +14,6 @@ public sealed class UnsupportedConfigurationTests
 {
     private const string Prefix = "packages/openai/src/responses/openai-responses-reasoning-effort-update.test.ts::positioned reasoning effort updates (%s) > unsupported configuration: $model $options::";
 
-    private const string PartialNote = "The port has no reasoningMode or contextManagement, so those three cases are not ported. Needs a new ticket.";
-
     public static TheoryData<string, string, string> Cases()
     {
         var data = new TheoryData<string, string, string>();
@@ -23,7 +21,10 @@ public sealed class UnsupportedConfigurationTests
         {
             data.Add(method, "gpt-5.6", "{}");
             data.Add(method, "custom-model", "{\"forceReasoning\":true}");
+            data.Add(method, "gpt-6-astra", "{\"reasoningMode\":\"pro\"}");
             data.Add(method, "gpt-6-astra", "{\"truncation\":\"auto\"}");
+            data.Add(method, "gpt-6-astra", "{\"contextManagement\":[{\"type\":\"compaction\",\"compactThreshold\":1000}]}");
+            data.Add(method, "gpt-6-astra", "{\"contextManagement\":[]}");
         }
 
         return data;
@@ -31,7 +32,7 @@ public sealed class UnsupportedConfigurationTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "rejects historical updates before sending and preserves caller input", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
+    [UpstreamTest(Prefix + "rejects historical updates before sending and preserves caller input", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_historical_updates_before_sending_and_preserves_caller_input(string method, string model, string optionsJson)
     {
         var prompt = Build(new[] { "high", "user" });
@@ -50,7 +51,7 @@ public sealed class UnsupportedConfigurationTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "preserves legacy request-level warn-and-omit behavior", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
+    [UpstreamTest(Prefix + "preserves legacy request-level warn-and-omit behavior", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_legacy_request_level_warn_and_omit_behavior(string method, string model, string optionsJson)
     {
         var options = JsonNode.Parse(optionsJson)!.AsObject();

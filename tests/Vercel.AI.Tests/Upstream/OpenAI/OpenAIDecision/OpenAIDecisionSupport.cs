@@ -13,7 +13,12 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision;
 /// <summary>Fixtures and helpers shared by the <c>openai-decision.test.ts</c> port.</summary>
 internal static class OpenAIDecisionSupport
 {
-    internal const string State = "A billing issue with a workaround.";
+    internal const string StateText = "A billing issue with a workaround.";
+
+    internal static List<object?> State()
+    {
+        return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = StateText } };
+    }
 
     internal static JsonObject Fixture(string name = "decision.json")
     {
@@ -39,7 +44,7 @@ internal static class OpenAIDecisionSupport
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new EvaluationModelCall(
-            state ?? State,
+            state ?? State(),
             questions ?? Questions(),
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
