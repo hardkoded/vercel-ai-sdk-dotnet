@@ -123,8 +123,9 @@ public sealed class AiClient : IAiClient
             throw new ArgumentNullException(nameof(options));
         }
 
+        Operations.Embed.ValidateEmbeddingDimensions(options.Dimensions);
         var model = options.Model ?? _gateway.EmbeddingModel(Require(options.ModelId, "embedding"));
-        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken);
+        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions);
     }
 
     /// <inheritdoc />
@@ -303,6 +304,9 @@ public sealed class EmbedOptions
 
     /// <summary>Values to embed.</summary>
     public IReadOnlyList<string> Values { get; set; } = Array.Empty<string>();
+
+    /// <summary>Requested output dimensions. Must be a positive integer. Support depends on the model.</summary>
+    public int? Dimensions { get; set; }
 
     /// <summary>Provider options keyed by provider id.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
