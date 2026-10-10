@@ -3,11 +3,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
+/// <summary>Keeps tests that replace <c>Download.Fetch</c> from racing each other.</summary>
+[CollectionDefinition("DownloadFetch", DisableParallelization = true)]
+public sealed class DownloadFetchCollection
+{
+}
+
 /// <summary>Upstream parity for <c>evaluate</c>.</summary>
+[Collection("DownloadFetch")]
 public sealed class EvaluateTests
 {
     [Fact]
@@ -41,7 +49,10 @@ public sealed class EvaluateTests
                 ProviderOptions = OperationJson.Parse("{\"test\":{\"option\":true}}"),
             });
             Assert.Single(model.Calls);
-            Assert.Same(state, model.Calls[0].State);
+            var prepared = Assert.IsAssignableFrom<IReadOnlyList<object?>>(model.Calls[0].State);
+            var part = Assert.IsAssignableFrom<IDictionary<string, object?>>(Assert.Single(prepared));
+            Assert.Equal("json", part["type"]);
+            Assert.Same(state, part["value"]);
             Assert.Equal("value", model.Calls[0].Headers["custom"]);
             Assert.Contains("ai/", model.Calls[0].Headers["user-agent"]);
             Assert.Equal((double?)0.92, result.Answers["refund"].Probability);
@@ -172,7 +183,7 @@ public sealed class EvaluateTests
         var result = await Evaluate.EvaluateAsync(new EvaluateRequest
         {
             Model = new EvalModel(),
-            State = new List<object?> { shared, shared },
+            State = new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { shared, shared } } },
             Questions = SampleQuestions(),
         });
         Assert.Equal(3, result.Answers.Count);
@@ -498,6 +509,254 @@ public sealed class EvaluateTests
         Assert.Equal("mock-provider", error.Provider);
         Assert.Equal("mock-model-id", error.ModelId);
         Assert.Single(model.Calls);
+    }
+
+    public static IEnumerable<object[]> MalformedStates()
+    {
+        yield return new object[] { new List<object?> { "legacy JSON array" } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["arbitrary"] = "object" } } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "image", ["image"] = "iVBORw==" } } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = 42 } } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png" } } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "json" } } };
+        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["bad"] = EvaluationValues.NotANumber } } } };
+    }
+
+    public static IEnumerable<object[]> PublicStates()
+    {
+        yield return new object[] { "Inspect this package.", new List<object?> { TextPart("Inspect this package.") } };
+        yield return new object[] { new Dictionary<string, object?> { ["product"] = "glass vase" }, new List<object?> { JsonPart(new Dictionary<string, object?> { ["product"] = "glass vase" }) } };
+        yield return new object[] { new List<object?>(), new List<object?>() };
+        yield return new object[]
+        {
+            new List<object?> { JsonPart(new List<object?> { 1, null }), TextPart("Inspect.") },
+            new List<object?> { JsonPart(new List<object?> { 1, null }), TextPart("Inspect.") },
+        };
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::preserves ordered state parts and normalizes file shorthands", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_ordered_state_parts_and_normalizes_file_shorthands()
+    {
+        var model = new EvalModel();
+        var bytes = new byte[] { 0x89, 0x50, 0x4e, 0x47 };
+        await Evaluate.EvaluateAsync(new EvaluateRequest
+        {
+            Model = model,
+            Questions = SampleQuestions(),
+            State = new List<object?>
+            {
+                TextPart(string.Empty),
+                JsonPart(new List<object?> { 1, null, new Dictionary<string, object?> { ["label"] = "package" } }),
+                new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = FilePartInput.FromArrayBuffer(bytes), ["filename"] = "package.png" },
+                new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("data:image/png;base64,iVBORw==") },
+                TextPart("Inspect both images."),
+            },
+        });
+        Assert.Equal(
+            new List<object?>
+            {
+                TextPart(string.Empty),
+                JsonPart(new List<object?> { 1, null, new Dictionary<string, object?> { ["label"] = "package" } }),
+                FilePart("image/png", bytes, "package.png"),
+                FilePart("image/png", "iVBORw==", null),
+                TextPart("Inspect both images."),
+            },
+            model.Calls[0].State);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::treats an empty array as an empty list of state parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Treats_an_empty_array_as_an_empty_list_of_state_parts()
+    {
+        var model = new EvalModel();
+        await Evaluate.EvaluateAsync(new EvaluateRequest { Model = model, Questions = SampleQuestions(), State = new List<object?>() });
+        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<object?>>(model.Calls[0].State));
+    }
+
+    [Theory]
+    [MemberData(nameof(MalformedStates))]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects malformed state parts before I/O: %j", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_malformed_state_parts_before_IO(object state)
+    {
+        var model = new EvalModel();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => Evaluate.EvaluateAsync(new EvaluateRequest { Model = model, Questions = SampleQuestions(), State = state }));
+        Assert.Empty(model.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::downloads image URLs and sends their bytes to the decision model", Coverage = UpstreamCoverage.Covered)]
+    public async Task Downloads_image_URLs_and_sends_their_bytes_to_the_decision_model()
+    {
+        var model = new EvalModel();
+        var bytes = new byte[] { 0x89, 0x50, 0x4e, 0x47 };
+        var fetches = 0;
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = (url, request) =>
+            {
+                fetches++;
+                return Task.FromResult(DownloadResponse.Bytes(bytes, "image/png"));
+            };
+            await Evaluate.EvaluateAsync(new EvaluateRequest
+            {
+                Model = model,
+                Questions = SampleQuestions(),
+                State = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("https://example.com/package.png") } },
+            });
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Equal(1, fetches);
+        Assert.Equal(new List<object?> { FilePart("image/png", bytes, null) }, model.Calls[0].State);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::stops before provider I/O when an image download fails", Coverage = UpstreamCoverage.Covered)]
+    public async Task Stops_before_provider_IO_when_an_image_download_fails()
+    {
+        var model = new EvalModel();
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = (url, request) => Task.FromResult(new DownloadResponse(404, "Not Found", null, null));
+            var error = await Assert.ThrowsAsync<DownloadError>(() => Evaluate.EvaluateAsync(new EvaluateRequest
+            {
+                Model = model,
+                Questions = SampleQuestions(),
+                State = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/missing.png") } },
+            }));
+            Assert.Equal("AI_DownloadError", error.ErrorName);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Empty(model.Calls);
+    }
+
+    [Theory]
+    [MemberData(nameof(PublicStates))]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::normalizes public state into provider parts: $state", Coverage = UpstreamCoverage.Covered)]
+    public async Task Normalizes_public_state_into_provider_parts(object state, List<object?> expected)
+    {
+        var model = new EvalModel();
+        var started = new List<EvaluateEvent>();
+        var modelStarted = new List<EvaluateModelEvent>();
+        await Evaluate.EvaluateAsync(new EvaluateRequest
+        {
+            Model = model,
+            Questions = SampleQuestions(),
+            State = state,
+            OnStart = item => { started.Add(item); return Task.CompletedTask; },
+            Telemetry = new EvaluateTelemetry { OnModelStart = item => { modelStarted.Add(item); return Task.CompletedTask; } },
+        });
+        Assert.Equal(expected, model.Calls[0].State);
+        Assert.Same(state, Assert.Single(started).State);
+        Assert.Equal(expected, Assert.Single(modelStarted).State);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::preserves structured questions for provider calls and all lifecycle events", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_structured_questions_for_provider_calls_and_all_lifecycle_events()
+    {
+        var publicQuestions = StructuredQuestions();
+        var model = new EvalModel
+        {
+            Result = new EvaluationModelResult(new Dictionary<string, EvaluationAnswer>
+            {
+                ["topic"] = new EvaluationAnswer("choice", choice: "billing"),
+                ["severity"] = new EvaluationAnswer("score", score: 1.25),
+                ["refund"] = new EvaluationAnswer("boolean", probability: 0.8),
+                ["noCriteria"] = new EvaluationAnswer("boolean", probability: 0.5),
+                ["emptyCriteria"] = new EvaluationAnswer("boolean", probability: 0.5),
+                ["nullCriteria"] = new EvaluationAnswer("boolean", probability: 0.5),
+                ["falseCriteria"] = new EvaluationAnswer("boolean", probability: 0.5),
+            }),
+        };
+        var seen = new List<IReadOnlyDictionary<string, EvaluationQuestion>>();
+        await Evaluate.EvaluateAsync(new EvaluateRequest
+        {
+            Model = model,
+            State = "package",
+            Questions = publicQuestions,
+            OnStart = item => { seen.Add(item.Questions); return Task.CompletedTask; },
+            OnEnd = item => { seen.Add(item.Questions); return Task.CompletedTask; },
+            Telemetry = new EvaluateTelemetry
+            {
+                OnModelStart = item => { seen.Add(item.Questions); return Task.CompletedTask; },
+                OnModelEnd = item => { seen.Add(item.Questions); return Task.CompletedTask; },
+            },
+        });
+        Assert.Same(publicQuestions, model.Calls[0].Questions);
+        Assert.Equal(4, seen.Count);
+        Assert.All(seen, item => Assert.Same(publicQuestions, item));
+        var original = StructuredQuestions();
+        Assert.Equal(original.Keys, publicQuestions.Keys);
+        foreach (var pair in original)
+        {
+            Assert.Equal(pair.Value.Type, publicQuestions[pair.Key].Type);
+            Assert.Equal(pair.Value.Instructions, publicQuestions[pair.Key].Instructions);
+            Assert.Equal(pair.Value.Criteria, publicQuestions[pair.Key].Criteria);
+        }
+    }
+
+    private static Dictionary<string, EvaluationQuestion> StructuredQuestions()
+    {
+        return new Dictionary<string, EvaluationQuestion>
+        {
+            ["topic"] = new EvaluationQuestion(
+                "choice",
+                "Pick a \"team\".\nKeep this string.",
+                new Dictionary<string, object?>
+                {
+                    ["billing"] = new Dictionary<string, object?> { ["includes"] = new List<object?> { "charges" } },
+                    ["support"] = new List<object?> { "help", new Dictionary<string, object?> { ["urgent"] = true } },
+                    ["other"] = null,
+                }),
+            ["severity"] = new EvaluationQuestion(
+                "score",
+                new Dictionary<string, object?> { ["task"] = "Rate severity" },
+                new List<object?> { new Dictionary<string, object?> { ["level"] = "low" }, new List<object?> { "medium", "high" }, null }),
+            ["refund"] = new EvaluationQuestion(
+                "boolean",
+                new List<object?> { "Refund?", new Dictionary<string, object?> { ["locale"] = "en" } },
+                new Dictionary<string, object?>
+                {
+                    ["true"] = new Dictionary<string, object?> { ["requested"] = true },
+                    ["false"] = new List<object?> { "status only" },
+                }),
+            ["noCriteria"] = new EvaluationQuestion("boolean", "No criteria."),
+            ["emptyCriteria"] = new EvaluationQuestion("boolean", "Empty criteria.", new Dictionary<string, object?>()),
+            ["nullCriteria"] = new EvaluationQuestion("boolean", "Null criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = null }),
+            ["falseCriteria"] = new EvaluationQuestion("boolean", "False criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = "No refund requested" }),
+        };
+    }
+
+    private static Dictionary<string, object?> TextPart(string text)
+    {
+        return new Dictionary<string, object?> { ["type"] = "text", ["text"] = text };
+    }
+
+    private static Dictionary<string, object?> JsonPart(object? value)
+    {
+        return new Dictionary<string, object?> { ["type"] = "json", ["value"] = value };
+    }
+
+    private static Dictionary<string, object?> FilePart(string mediaType, object data, string? filename)
+    {
+        var part = new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = mediaType, ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data } };
+        if (filename != null)
+        {
+            part["filename"] = filename;
+        }
+
+        return part;
     }
 
     private static Dictionary<string, EvaluationQuestion> SampleQuestions()
