@@ -99,6 +99,12 @@ public class OpenAICompatibleOptions
     /// <summary>Rewrites the JSON body before it is sent. Warnings raised here are returned with the call.</summary>
     public Func<JsonObject, IList<CallWarning>, JsonObject>? TransformRequestBody { get; set; }
 
+    /// <summary>
+    /// Resolves <c>reasoning_effort</c> for a model. Arguments are the model id, the portable <c>Reasoning</c> level,
+    /// the provider option effort, and the call warnings. Null removes the field. Null here keeps the default behavior.
+    /// </summary>
+    public Func<string, string?, string?, IList<CallWarning>, string?>? ResolveReasoningEffort { get; set; }
+
     /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
     public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }
 

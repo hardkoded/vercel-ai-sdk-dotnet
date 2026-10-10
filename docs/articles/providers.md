@@ -26,6 +26,8 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Anthropic, DeepSeek, Moonshot, and OpenAI models that list `max` send it unchanged, with no warning.
 - Google (Gemini 3), Groq, and Fireworks send `high`. Fireworks also sends `low` for `minimal` and `high` for `xhigh`. Each change adds a warning. A `reasoningEffort` provider option wins over `Reasoning` and adds no warning.
 - Perplexity sends `xhigh`.
+- Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
+- OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The `open-responses` provider options `reasoningEffort` and `reasoningSummary` set `reasoning.effort` and `reasoning.summary`.
 
 OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
 

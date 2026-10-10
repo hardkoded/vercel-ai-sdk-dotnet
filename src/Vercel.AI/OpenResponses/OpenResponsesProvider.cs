@@ -2,10 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.OpenResponses;
 
@@ -74,6 +76,16 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    private static readonly Dictionary<string, string> ReasoningEffortMap = new Dictionary<string, string>
+    {
+        { "minimal", "low" },
+        { "low", "low" },
+        { "medium", "medium" },
+        { "high", "high" },
+        { "xhigh", "xhigh" },
+        { "max", "max" },
+    };
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
@@ -99,7 +111,59 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             }
         }
 
+        var warnings = new List<CallWarning>();
+        string? providerEffort = null;
+        string? providerSummary = null;
+        if (options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue(OpenResponsesProvider.ProviderName, out var configured)
+            && configured.ValueKind == JsonValueKind.Object)
+        {
+            if (configured.TryGetProperty("reasoningEffort", out var effortValue) && effortValue.ValueKind == JsonValueKind.String)
+            {
+                providerEffort = effortValue.GetString();
+            }
+
+            if (configured.TryGetProperty("reasoningSummary", out var summaryValue) && summaryValue.ValueKind == JsonValueKind.String)
+            {
+                providerSummary = summaryValue.GetString();
+            }
+        }
+
+        var effort = providerEffort;
+        if (effort == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
+        {
+            if (options.Reasoning == "none")
+            {
+                effort = "none";
+            }
+            else
+            {
+                var mappingWarnings = new List<ModelWarning>();
+                effort = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, ReasoningEffortMap, mappingWarnings);
+                foreach (var warning in mappingWarnings)
+                {
+                    warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
+                }
+            }
+        }
+
         var body = new JsonObject { ["model"] = ModelId, ["input"] = input };
+        if (effort != null || providerSummary != null)
+        {
+            var reasoning = new JsonObject();
+            if (effort != null)
+            {
+                reasoning["effort"] = effort;
+            }
+
+            if (providerSummary != null)
+            {
+                reasoning["summary"] = providerSummary;
+            }
+
+            body["reasoning"] = reasoning;
+        }
+
         using var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
@@ -107,7 +171,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             new Dictionary<string, string?> { ["Authorization"] = "Bearer " + ApiKeys.Require(_provider.Options.ApiKey, _provider.Options.ApiKeyEnvironmentVariable) },
             cancellationToken).ConfigureAwait(false);
         var outputText = document.RootElement.TryGetProperty("output_text", out var output) ? output.GetString() ?? string.Empty : string.Empty;
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(outputText) }, FinishReason.Stop, LanguageModelUsage.Empty);
+        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(outputText) }, FinishReason.Stop, LanguageModelUsage.Empty, warnings: warnings);
     }
 
     /// <inheritdoc />
