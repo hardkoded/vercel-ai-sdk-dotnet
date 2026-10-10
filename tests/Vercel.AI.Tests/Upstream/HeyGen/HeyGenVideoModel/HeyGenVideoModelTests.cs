@@ -6,9 +6,9 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using static Vercel.AI.Tests.Upstream.HeyGen.HeyGenVideoModel.HeyGenVideoModelSupport;
 using HeyGenProviderType = Vercel.AI.HeyGen.HeyGenProvider;
 using HeyGenVideoModelType = Vercel.AI.HeyGen.HeyGenVideoModel;
-using static Vercel.AI.Tests.Upstream.HeyGen.HeyGenVideoModel.HeyGenVideoModelSupport;
 
 namespace Vercel.AI.Tests.Upstream.HeyGen.HeyGenVideoModel;
 
