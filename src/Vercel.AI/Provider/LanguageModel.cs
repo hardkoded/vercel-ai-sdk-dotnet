@@ -446,11 +446,25 @@ public sealed class AssistantModelMessage : ModelMessage
 {
     /// <summary>Creates an assistant message.</summary>
     public AssistantModelMessage(string? text, IReadOnlyList<GeneratedToolCall>? toolCalls, string? reasoning)
+        : this(text, toolCalls, reasoning, null)
+    {
+    }
+
+    /// <summary>
+    /// Creates an assistant message whose reasoning carries provider options, such as an OpenAI
+    /// <c>itemId</c> for reasoning stored by the Responses API.
+    /// </summary>
+    public AssistantModelMessage(
+        string? text,
+        IReadOnlyList<GeneratedToolCall>? toolCalls,
+        string? reasoning,
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
         : base("assistant")
     {
         Text = text;
         ToolCalls = toolCalls ?? Array.Empty<GeneratedToolCall>();
         Reasoning = reasoning;
+        ReasoningProviderOptions = reasoningProviderOptions;
     }
 
     /// <summary>Assistant text.</summary>
@@ -461,6 +475,9 @@ public sealed class AssistantModelMessage : ModelMessage
 
     /// <summary>Reasoning text, when the provider returned it.</summary>
     public string? Reasoning { get; }
+
+    /// <summary>Provider options of the reasoning part, such as an OpenAI <c>itemId</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ReasoningProviderOptions { get; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
