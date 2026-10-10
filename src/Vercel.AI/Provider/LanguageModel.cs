@@ -348,6 +348,11 @@ public sealed class LanguageModelTool
 
     /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
     public bool? Strict { get; }
+
+    /// <summary>
+    /// JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so text results of this tool are sent as JSON string literals.
+    /// </summary>
+    public JsonElement? OutputSchema { get; init; }
 }
 
 /// <summary>A prompt message.</summary>
@@ -554,6 +559,9 @@ public sealed class ToolModelMessage : ModelMessage
 
     /// <summary>Provider metadata carried on this tool result, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Provider options set on the tool output itself rather than on the tool result, such as an OpenAI <c>promptCacheBreakpoint</c>.</summary>
+    public JsonElement? OutputProviderOptions { get; init; }
 
     private static bool IsJson(string? value)
     {

@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 
@@ -11,23 +13,54 @@ namespace Vercel.AI.Tests.ConvertToOpenAIResponsesInput;
 public sealed class ToolMessagesCustomToolTests
 {
     [Theory]
-    [InlineData("error-text", "E42", "{\"error\":\"E42\"}")]
-    [InlineData("error-json", "{\"code\":\"E42\"}", "{\"error\":{\"code\":\"E42\"}}")]
+    [InlineData(false, "error-text", "E42", "{\"error\":\"E42\"}")]
+    [InlineData(false, "error-json", "{\"code\":\"E42\"}", "{\"error\":{\"code\":\"E42\"}}")]
+    [InlineData(true, "error-text", "E42", "{\"error\":\"E42\"}")]
+    [InlineData(true, "error-json", "{\"code\":\"E42\"}", "{\"error\":{\"code\":\"E42\"}}")]
     [UpstreamTest(
         "packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > tool messages > custom tool: %s::should wrap tool errors $output",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Runs the custom tool: false case only. The port has no custom_tool_call_output, no output-schema tool set, and no prompt-cache breakpoint on tool results.")]
-    public void Should_wrap_tool_errors(string outputType, string value, string expected)
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_wrap_tool_errors(bool isCustomTool, string outputType, string value, string expected)
     {
-        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-4o", new LanguageModelCallOptions
+        foreach (var hasOutputSchema in new[] { false, true })
         {
-            Prompt = new ModelMessage[] { new ToolModelMessage("call_error", "deploy", value, isError: true, outputType: outputType) },
-        }, false);
+            foreach (var hasBreakpoint in new[] { false, true })
+            {
+                var breakpoint = JsonDocument.Parse("{\"openai\":{\"promptCacheBreakpoint\":{\"mode\":\"explicit\"}}}").RootElement;
+                var result = OpenAIResponsesLanguageModel.ConvertInput(
+                    new ModelMessage[]
+                    {
+                        new ToolModelMessage("call_error", "deploy", value, isError: true, outputType: outputType, providerMetadata: hasBreakpoint ? breakpoint : null),
+                    },
+                    "system",
+                    false,
+                    null,
+                    "openai",
+                    false,
+                    true,
+                    customToolNames: isCustomTool ? new HashSet<string> { "deploy" } : null,
+                    outputSchemaToolNames: hasOutputSchema ? new HashSet<string> { "deploy" } : null);
 
-        var item = Assert.Single(prepared.Body["input"]!.AsArray())!;
-        Assert.Equal("function_call_output", item["type"]!.GetValue<string>());
-        Assert.Equal("call_error", item["call_id"]!.GetValue<string>());
-        Assert.Equal(expected, item["output"]!.GetValue<string>());
-        Assert.Empty(prepared.Warnings);
+                JsonNode output = expected;
+                if (hasBreakpoint)
+                {
+                    output = new JsonArray(new JsonObject
+                    {
+                        ["type"] = "input_text",
+                        ["text"] = expected,
+                        ["prompt_cache_breakpoint"] = new JsonObject { ["mode"] = "explicit" },
+                    });
+                }
+
+                var expectedInput = new JsonArray(new JsonObject
+                {
+                    ["type"] = isCustomTool ? "custom_tool_call_output" : "function_call_output",
+                    ["call_id"] = "call_error",
+                    ["output"] = output,
+                });
+                Assert.True(JsonNode.DeepEquals(expectedInput, result.Input), result.Input.ToJsonString());
+                Assert.Empty(result.Warnings);
+            }
+        }
     }
 }
