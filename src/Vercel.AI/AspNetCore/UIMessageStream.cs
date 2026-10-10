@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
 using Vercel.AI.OpenTelemetry;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AspNetCore;
@@ -305,10 +306,25 @@ public sealed class UIMessageStreamResult : IResult
                     AddProviderMetadata(sourceChunk, source.Source.ProviderMetadata);
                     yield return Frame(sourceChunk);
                     break;
-                case StepFinishPart:
+                case StepFinishPart stepFinish:
                     if (textId != null)
                     {
-                        yield return Frame(new JsonObject { ["type"] = "text-end", ["id"] = textId });
+                        var textEnd = new JsonObject { ["type"] = "text-end", ["id"] = textId };
+                        var citations = new List<Citation>();
+                        foreach (var content in stepFinish.Step.Content)
+                        {
+                            if (content is GeneratedText { Citations: { } textCitations })
+                            {
+                                citations.AddRange(textCitations);
+                            }
+                        }
+
+                        if (citations.Count > 0)
+                        {
+                            textEnd["citations"] = CitationJson.ToJson(citations);
+                        }
+
+                        yield return Frame(textEnd);
                         textId = null;
                     }
 

@@ -8,18 +8,14 @@ using Vercel.AI.Provider;
 namespace Vercel.AI.Anthropic;
 
 /// <summary>Generated text that also carries Anthropic provider metadata, such as citations.</summary>
-public sealed class AnthropicText : GeneratedContent
+public sealed class AnthropicText : GeneratedText
 {
     /// <summary>Creates text content.</summary>
-    public AnthropicText(string text, JsonElement? providerMetadata)
-        : base("text")
+    public AnthropicText(string text, JsonElement? providerMetadata, IReadOnlyList<Citation>? citations = null)
+        : base(text ?? string.Empty, citations)
     {
-        Text = text ?? string.Empty;
         ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Generated text.</summary>
-    public string Text { get; }
 
     /// <summary>Provider metadata, when the block has citations or a compaction marker.</summary>
     public JsonElement? ProviderMetadata { get; }

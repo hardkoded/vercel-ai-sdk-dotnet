@@ -371,7 +371,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         var prepared = Prepare(ModelId, options, true);
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var text = false;
+        var state = new OpenAIResponsesStream();
         await foreach (var data in _provider.Http.SendSseAsync(
             ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
             prepared.Body.ToJsonString(),
@@ -395,36 +395,20 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 continue;
             }
 
-            var type = node?["type"]?.GetValue<string>();
-            if (type == "response.output_text.delta")
+            if (node == null)
             {
-                var delta = node?["delta"]?.GetValue<string>();
-                if (!text)
-                {
-                    text = true;
-                    yield return new TextStartStreamPart("text");
-                }
-
-                if (!string.IsNullOrEmpty(delta))
-                {
-                    yield return new TextDeltaStreamPart("text", delta!);
-                }
+                continue;
             }
-            else if (type == "response.completed")
-            {
-                if (text)
-                {
-                    yield return new TextEndStreamPart("text");
-                    text = false;
-                }
 
-                yield return new FinishStreamPart(FinishReason.Stop, LanguageModelUsage.Empty);
+            foreach (var part in state.Push(node))
+            {
+                yield return part;
             }
         }
 
-        if (text)
+        foreach (var part in state.Complete())
         {
-            yield return new TextEndStreamPart("text");
+            yield return part;
         }
     }
 
@@ -432,8 +416,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         JsonElement root,
         IReadOnlyList<OpenAICallWarning> warnings,
         string raw,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers,
+        Func<string>? generateId = null)
     {
+        generateId ??= () => JsonValues.GenerateId("source_");
         if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
         {
             var message = error.TryGetProperty("message", out var messageElement) && messageElement.ValueKind == JsonValueKind.String
@@ -461,11 +447,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var content = new List<GeneratedContent>();
         var hasFunctionCall = false;
+        var hasWebSearchActionSources = false;
+        var hasFileSearchResults = false;
+        foreach (var item in output.EnumerateArray())
+        {
+            var itemType = item.TryGetProperty("type", out var itemTypeElement) ? itemTypeElement.GetString() : null;
+            hasWebSearchActionSources |= itemType == "web_search_call" && OpenAIResponsesOutput.WebSearchUrls(item).Count > 0;
+            hasFileSearchResults |= itemType == "file_search_call" && OpenAIResponsesOutput.HasResults(item);
+        }
+
+        var retrievedFileIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in output.EnumerateArray())
         {
             var type = item.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
             if (type == "message" && item.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
             {
+                var itemId = OpenAIJson.String(item, "id");
                 foreach (var part in parts.EnumerateArray())
                 {
                     if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
@@ -473,8 +470,51 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         var value = text.GetString();
                         if (!string.IsNullOrEmpty(value))
                         {
-                            content.Add(new GeneratedText(value!));
+                            var annotations = new List<JsonElement>();
+                            if (part.TryGetProperty("annotations", out var annotationArray) && annotationArray.ValueKind == JsonValueKind.Array)
+                            {
+                                annotations.AddRange(annotationArray.EnumerateArray());
+                            }
+
+                            content.Add(new OpenAIText(
+                                value!,
+                                OpenAIResponsesOutput.Citations(annotations),
+                                OpenAIResponsesOutput.TextMetadata(itemId, annotations)));
+
+                            // Citation-derived sources are only used when retrieval data is unavailable.
+                            foreach (var annotation in annotations)
+                            {
+                                var annotationType = OpenAIJson.String(annotation, "type");
+                                if ((annotationType == "url_citation" && hasWebSearchActionSources)
+                                    || (annotationType == "file_citation" && hasFileSearchResults))
+                                {
+                                    continue;
+                                }
+
+                                content.Add(OpenAIResponsesOutput.AnnotationSource(annotation, generateId()));
+                            }
                         }
+                    }
+                }
+            }
+            else if (type == "web_search_call")
+            {
+                var id = OpenAIJson.String(item, "id") ?? string.Empty;
+                content.Add(new GeneratedToolResult(id, "web_search", OpenAIResponsesOutput.WebSearchResult(item)));
+                foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
+                {
+                    content.Add(new GeneratedSource(generateId(), url, null));
+                }
+            }
+            else if (type == "file_search_call")
+            {
+                var id = OpenAIJson.String(item, "id") ?? string.Empty;
+                content.Add(new GeneratedToolResult(id, "file_search", OpenAIResponsesOutput.FileSearchResult(item)));
+                foreach (var (fileId, filename) in OpenAIResponsesOutput.RetrievedFiles(item))
+                {
+                    if (retrievedFileIds.Add(fileId))
+                    {
+                        content.Add(new GeneratedDocumentSource(generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId)));
                     }
                 }
             }
@@ -525,22 +565,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             incompleteReason = reasonElement.GetString();
         }
 
-        FinishReason finish;
-        switch (incompleteReason)
-        {
-            case null:
-                finish = hasFunctionCall ? FinishReason.ToolCalls : FinishReason.Stop;
-                break;
-            case "max_output_tokens":
-                finish = FinishReason.Length;
-                break;
-            case "content_filter":
-                finish = FinishReason.ContentFilter;
-                break;
-            default:
-                finish = hasFunctionCall ? FinishReason.ToolCalls : FinishReason.Other;
-                break;
-        }
+        var finish = MapFinishReason(incompleteReason, hasFunctionCall);
 
         var responseId = root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
         var responseModel = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == JsonValueKind.String ? modelValue.GetString() : null;
@@ -556,6 +581,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             string.IsNullOrEmpty(responseModel) ? null : responseModel,
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),
             headers);
+    }
+
+    internal static FinishReason MapFinishReason(string? incompleteReason, bool hasFunctionCall)
+    {
+        switch (incompleteReason)
+        {
+            case null:
+                return hasFunctionCall ? FinishReason.ToolCalls : FinishReason.Stop;
+            case "max_output_tokens":
+                return FinishReason.Length;
+            case "content_filter":
+                return FinishReason.ContentFilter;
+            default:
+                return hasFunctionCall ? FinishReason.ToolCalls : FinishReason.Other;
+        }
     }
 
     private static readonly string[] UpdateEfforts = { "none", "low", "medium", "high", "xhigh", "max" };

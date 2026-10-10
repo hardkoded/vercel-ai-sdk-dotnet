@@ -143,14 +143,21 @@ public abstract class GeneratedContent
 public class GeneratedText : GeneratedContent
 {
     /// <summary>Creates text content.</summary>
-    public GeneratedText(string text)
+    public GeneratedText(string text, IReadOnlyList<Citation>? citations = null)
         : base("text")
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
+        Citations = citations;
     }
 
     /// <summary>Generated text.</summary>
     public string Text { get; }
+
+    /// <summary>
+    /// References supporting this text, or null when the provider sent none. They are separate from the retrieved
+    /// <see cref="GeneratedSource"/> parts.
+    /// </summary>
+    public IReadOnlyList<Citation>? Citations { get; }
 }
 
 /// <summary>A function tool call.</summary>
@@ -217,6 +224,101 @@ public sealed class GeneratedSource : GeneratedContent
 
     /// <summary>Provider-specific source metadata, such as a snippet or search-result id.</summary>
     public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>A document source, such as a retrieved file or a cited document.</summary>
+public sealed class GeneratedDocumentSource : GeneratedContent
+{
+    /// <summary>Creates a document source.</summary>
+    public GeneratedDocumentSource(string id, string mediaType, string title, string? filename = null, JsonElement? providerMetadata = null)
+        : base("source")
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        Title = title ?? throw new ArgumentNullException(nameof(title));
+        Filename = filename;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Source id.</summary>
+    public string Id { get; }
+
+    /// <summary>IANA media type of the document.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Document title.</summary>
+    public string Title { get; }
+
+    /// <summary>Optional file name.</summary>
+    public string? Filename { get; }
+
+    /// <summary>Provider-specific source metadata, such as a file id or a page range.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>
+/// A reference that supports generated text: the source it points at, plus the optional range of the text it supports
+/// and the cited passage. It is not a second copy of the retrieved sources.
+/// </summary>
+public sealed class Citation
+{
+    /// <summary>Creates a citation for a URL source.</summary>
+    public Citation(GeneratedSource source, int? startIndex = null, int? endIndex = null, string? citedText = null)
+        : this((GeneratedContent)source, startIndex, endIndex, citedText)
+    {
+    }
+
+    /// <summary>Creates a citation for a document source.</summary>
+    public Citation(GeneratedDocumentSource source, int? startIndex = null, int? endIndex = null, string? citedText = null)
+        : this((GeneratedContent)source, startIndex, endIndex, citedText)
+    {
+    }
+
+    private Citation(GeneratedContent source, int? startIndex, int? endIndex, string? citedText)
+    {
+        Source = source ?? throw new ArgumentNullException(nameof(source));
+        StartIndex = startIndex;
+        EndIndex = endIndex;
+        CitedText = citedText;
+    }
+
+    /// <summary>The referenced source: a <see cref="GeneratedSource"/> (URL) or a <see cref="GeneratedDocumentSource"/>.</summary>
+    public GeneratedContent Source { get; }
+
+    /// <summary>Start offset in the containing generated text, when the provider supplied one.</summary>
+    public int? StartIndex { get; }
+
+    /// <summary>Exclusive end offset in the containing generated text, when the provider supplied one.</summary>
+    public int? EndIndex { get; }
+
+    /// <summary>The supporting passage from the source, when the provider supplied one.</summary>
+    public string? CitedText { get; }
+}
+
+/// <summary>A tool result the provider produced itself, such as a web or file search.</summary>
+public sealed class GeneratedToolResult : GeneratedContent
+{
+    /// <summary>Creates a provider-executed tool result.</summary>
+    public GeneratedToolResult(string toolCallId, string toolName, string resultJson, bool isError = false)
+        : base("tool-result")
+    {
+        ToolCallId = toolCallId ?? string.Empty;
+        ToolName = toolName ?? string.Empty;
+        ResultJson = resultJson ?? "null";
+        IsError = isError;
+    }
+
+    /// <summary>Matching tool call id.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>JSON result.</summary>
+    public string ResultJson { get; }
+
+    /// <summary>Whether the tool failed.</summary>
+    public bool IsError { get; }
 }
 
 /// <summary>A generated file.</summary>
@@ -835,6 +937,36 @@ public sealed class SourceStreamPart : LanguageModelStreamPart
     public JsonElement? ProviderMetadata { get; }
 }
 
+/// <summary>A retrieved document, such as a file a search tool returned.</summary>
+public sealed class DocumentSourceStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a document source part.</summary>
+    public DocumentSourceStreamPart(string id, string mediaType, string title, string? filename = null, JsonElement? providerMetadata = null)
+        : base("source")
+    {
+        Id = id;
+        MediaType = mediaType;
+        Title = title;
+        Filename = filename;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Source id.</summary>
+    public string Id { get; }
+
+    /// <summary>IANA media type of the document.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Document title.</summary>
+    public string Title { get; }
+
+    /// <summary>Optional file name.</summary>
+    public string? Filename { get; }
+
+    /// <summary>Provider-specific source metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>The stream finished.</summary>
 public sealed class FinishStreamPart : LanguageModelStreamPart
 {
@@ -915,14 +1047,22 @@ public sealed class TextStartStreamPart : LanguageModelStreamPart
 public sealed class TextEndStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a text-end part.</summary>
-    public TextEndStreamPart(string id)
+    public TextEndStreamPart(string id, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
         : base("text-end")
     {
         Id = id ?? string.Empty;
+        Citations = citations;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Text block id.</summary>
     public string Id { get; }
+
+    /// <summary>References supporting the text block with this id, or null when there are none.</summary>
+    public IReadOnlyList<Citation>? Citations { get; }
+
+    /// <summary>Provider metadata for this block.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Marks the start of one reasoning block.</summary>
