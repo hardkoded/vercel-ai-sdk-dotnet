@@ -127,6 +127,8 @@ public sealed class GoogleCoreUpstreamTests
         AssertCapabilities("gemini-99-pro-preview", true, true, true);
         AssertCapabilities("gemini-ultra-latest", true, true, true);
         AssertCapabilities("nano-banana-pro-preview", true, false, false);
+        AssertCapabilities("eu.gemini-2.5-flash", true, true, false);
+        AssertCapabilities("au.gemini-3.5-flash", true, true, true);
     }
 
     [Fact]

@@ -30,12 +30,12 @@ public sealed class GoogleModelCapabilities
 /// <summary>Classifies Gemini model ids. Unknown future Gemini ids inherit the newest behavior.</summary>
 public static class GoogleModelCapability
 {
-    private static readonly Regex Gemini1 = new(@"(^|/)gemini-1(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gemini2 = new(@"(^|/)gemini-2(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gemini25 = new(@"(^|/)gemini-2\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gemini = new(@"(^|/)gemini-", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex GeminiPro = new(@"(^|/)gemini-pro(?:-vision)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Robotics = new(@"(^|/)gemini-robotics-er-1\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini1 = new(@"(^|[/.])gemini-1(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini2 = new(@"(^|[/.])gemini-2(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini25 = new(@"(^|[/.])gemini-2\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini = new(@"(^|[/.])gemini-", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex GeminiPro = new(@"(^|[/.])gemini-pro(?:-vision)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Robotics = new(@"(^|[/.])gemini-robotics-er-1\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>Classifies <paramref name="modelId"/>.</summary>
     public static GoogleModelCapabilities Get(string modelId)
