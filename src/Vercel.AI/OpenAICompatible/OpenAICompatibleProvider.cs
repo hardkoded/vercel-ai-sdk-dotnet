@@ -548,12 +548,12 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
-        return DoEmbedAsync(values, null, null, cancellationToken);
+        return DoEmbedAsync(values, dimensions, null, cancellationToken);
     }
 
-    /// <summary>Embeds values, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set.</summary>
+    /// <summary>Embeds values, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set. A <c>dimensions</c> provider option wins over <paramref name="dimensions"/>.</summary>
     public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, CancellationToken cancellationToken)
     {
         if (values == null)
@@ -582,7 +582,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             ["input"] = input,
             ["encoding_format"] = "float",
         };
-        var width = dimensions ?? fromOptions.Dimensions ?? Dimensions;
+        var width = fromOptions.Dimensions ?? dimensions ?? Dimensions;
         if (width != null)
         {
             body["dimensions"] = width.Value;
