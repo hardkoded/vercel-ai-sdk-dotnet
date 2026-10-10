@@ -408,6 +408,39 @@ public sealed class FileContentPart : UserContentPart
         FileName = fileName;
     }
 
+    private FileContentPart(
+        string mediaType,
+        IReadOnlyDictionary<string, string> providerReference,
+        string? fileName,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        : this(mediaType, null, null, fileName)
+    {
+        ProviderReference = providerReference ?? throw new ArgumentNullException(nameof(providerReference));
+        ProviderOptions = providerOptions;
+    }
+
+    /// <summary>
+    /// Creates a file part that refers to an uploaded file. Maps to <c>data: { type: "reference", reference }</c>.
+    /// </summary>
+    /// <param name="mediaType">IANA media type.</param>
+    /// <param name="providerReference">Map from provider name to the provider's file id.</param>
+    /// <param name="fileName">Optional file name.</param>
+    /// <param name="providerOptions">Provider-specific options for this part.</param>
+    public static FileContentPart FromProviderReference(
+        string mediaType,
+        IReadOnlyDictionary<string, string> providerReference,
+        string? fileName = null,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    {
+        return new FileContentPart(mediaType, providerReference, fileName, providerOptions);
+    }
+
+    /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
+    public IReadOnlyDictionary<string, string>? ProviderReference { get; }
+
+    /// <summary>Provider-specific options for this part.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
+
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
 

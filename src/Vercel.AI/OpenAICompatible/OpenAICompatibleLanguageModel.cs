@@ -466,7 +466,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(rawName, options.ProviderOptions);
-        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey);
+        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName);
         AddTools(body, options);
 
         if (stream)

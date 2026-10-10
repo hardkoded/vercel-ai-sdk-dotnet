@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAICompatible;
 
@@ -232,7 +233,7 @@ public static class OpenAICompatibleChat
     }
 
     /// <summary>Converts prompt messages to Chat Completions messages.</summary>
-    public static JsonArray ConvertMessages(IReadOnlyList<ModelMessage> prompt, string metadataKey)
+    public static JsonArray ConvertMessages(IReadOnlyList<ModelMessage> prompt, string metadataKey, string? providerName = null)
     {
         var messages = new JsonArray();
         if (prompt == null)
@@ -248,7 +249,7 @@ public static class OpenAICompatibleChat
                     messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
                     break;
                 case UserModelMessage user:
-                    messages.Add(new JsonObject { ["role"] = "user", ["content"] = MapUserContent(user) });
+                    messages.Add(new JsonObject { ["role"] = "user", ["content"] = MapUserContent(user, metadataKey, providerName ?? metadataKey) });
                     break;
                 case AssistantModelMessage assistant:
                     messages.Add(MapAssistant(assistant, metadataKey));
@@ -360,7 +361,7 @@ public static class OpenAICompatibleChat
         return new AiSdkException("'" + functionality + "' functionality not supported.");
     }
 
-    private static JsonNode MapUserContent(UserModelMessage user)
+    private static JsonNode MapUserContent(UserModelMessage user, string metadataKey, string providerName)
     {
         if (user.Content.Count == 1 && user.Content[0] is TextContentPart only)
         {
@@ -376,18 +377,40 @@ public static class OpenAICompatibleChat
             }
             else if (part is FileContentPart file)
             {
-                parts.Add(MapFile(file));
+                parts.Add(MapFile(file, metadataKey, providerName));
             }
         }
 
         return parts;
     }
 
-    private static JsonObject MapFile(FileContentPart file)
+    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName)
     {
         if (file.Url == null && file.Data == null)
         {
-            throw Unsupported("file parts with provider references");
+            if (file.ProviderReference == null)
+            {
+                throw Unsupported("file parts with provider references");
+            }
+
+            var fileId = ProviderReferences.ResolveProviderReference(file.ProviderReference, providerName);
+            var reference = new JsonObject
+            {
+                ["type"] = "file",
+                ["file"] = new JsonObject { ["file_id"] = fileId },
+            };
+            if (file.ProviderOptions != null
+                && (file.ProviderOptions.TryGetValue(metadataKey, out var custom)
+                    || file.ProviderOptions.TryGetValue("openaiCompatible", out custom))
+                && custom.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in custom.EnumerateObject())
+                {
+                    reference[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+            }
+
+            return reference;
         }
 
         var mediaType = file.MediaType ?? string.Empty;

@@ -26,6 +26,24 @@ OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, an
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
 
+## Uploaded File References
+
+An OpenAI-compatible chat model accepts a file that you already uploaded to the provider. Build the part with a provider reference: a map from provider name to file id.
+
+```csharp
+var part = FileContentPart.FromProviderReference(
+    "application/pdf",
+    new Dictionary<string, string> { ["my-provider"] = "file-123" },
+    "document.pdf");
+```
+
+- The reference key must match `OpenAICompatibleOptions.ProviderName`, including hyphens. A camelCase variant such as `myProvider` is never used as the id. A reference without that key throws `NoSuchProviderReferenceError`.
+- The request body carries `{ "type": "file", "file": { "file_id": "file-123" } }`. This works for `application/pdf` and `image/png`. Properties from the part's `openaiCompatible` provider options are copied onto that part.
+- `DoStreamAsync` sends the same part.
+- Inline PDF bytes are unchanged: they are sent as a base64 `file_data` URL.
+
+The provider does not upload the file. Which media types are accepted depends on the destination model.
+
 ## Gateway decision fallbacks
 
 `providerOptions.gateway.models` for a decision request may start with one conditional entry, `{ "model": "...", "when": { ... } }`, followed by plain model ids. `when` is `confidenceBelow`, `probabilityBetween: [min, max]`, or an `any`, `all`, or `atLeast` group of conditions, nested at most 5 levels with 1 to 20 conditions per list. `GatewayDecisionModel` rejects an invalid shape with an `InvalidArgumentException` before any request. Other gateway options pass through unchanged.
