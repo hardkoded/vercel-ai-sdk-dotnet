@@ -43,7 +43,7 @@ public sealed class Agent
             Instructions = Options.Instructions,
             Prompt = prompt,
             Tools = Options.Tools,
-            StopWhen = Options.StopWhen ?? StopWhen.IsStepCount(10),
+            StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
             AbortSignal = abortSignal,
@@ -60,7 +60,7 @@ public sealed class Agent
             Instructions = Options.Instructions,
             Prompt = prompt,
             Tools = Options.Tools,
-            StopWhen = Options.StopWhen ?? StopWhen.IsStepCount(10),
+            StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
         };
