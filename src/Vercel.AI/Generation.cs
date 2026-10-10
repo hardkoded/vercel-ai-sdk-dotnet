@@ -213,7 +213,7 @@ internal static class Generation
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
-                var usage = LanguageModelUsage.Empty;
+                var usage = LanguageModelUsage.Null;
                 var enumerator = current.DoStreamAsync(callOptions, cancellationToken).GetAsyncEnumerator(cancellationToken);
                 var disposal = abort.Track(enumerator);
                 try
@@ -596,7 +596,7 @@ internal static class Generation
         var last = steps.Count == 0
             ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
             : steps[steps.Count - 1];
-        var usage = LanguageModelUsage.Empty;
+        var usage = LanguageModelUsage.Null;
         var sources = new List<GeneratedSource>();
         foreach (var step in steps)
         {

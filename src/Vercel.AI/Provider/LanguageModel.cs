@@ -54,6 +54,10 @@ public sealed class LanguageModelUsage
         TextTokens = textTokens;
     }
 
+    private LanguageModelUsage()
+    {
+    }
+
     /// <summary>Prompt tokens.</summary>
     public int? InputTokens { get; }
 
@@ -81,7 +85,7 @@ public sealed class LanguageModelUsage
     /// <summary>Output tokens that were not reasoning tokens, when the provider reports them.</summary>
     public int? TextTokens { get; }
 
-    /// <summary>Adds two usage values.</summary>
+    /// <summary>Adds two usage values. <see cref="Raw"/> survives only when one side is <see cref="Null"/>.</summary>
     public static LanguageModelUsage Add(LanguageModelUsage left, LanguageModelUsage right)
     {
         return new LanguageModelUsage(
@@ -91,12 +95,27 @@ public sealed class LanguageModelUsage
             Sum(left.CacheReadTokens, right.CacheReadTokens),
             Sum(left.CacheWriteTokens, right.CacheWriteTokens),
             Sum(left.ReasoningTokens, right.ReasoningTokens),
+            raw: left.IsNull ? right.Raw : right.IsNull ? left.Raw : null,
             noCacheInputTokens: Sum(left.NoCacheInputTokens, right.NoCacheInputTokens),
             textTokens: Sum(left.TextTokens, right.TextTokens));
     }
 
     /// <summary>Zero usage.</summary>
     public static LanguageModelUsage Empty { get; } = new(0, 0, 0);
+
+    /// <summary>Usage with every count and <see cref="Raw"/> unset. It is the start value for adding steps.</summary>
+    public static LanguageModelUsage Null { get; } = new();
+
+    private bool IsNull =>
+        InputTokens is null
+        && NoCacheInputTokens is null
+        && CacheReadTokens is null
+        && CacheWriteTokens is null
+        && OutputTokens is null
+        && TextTokens is null
+        && ReasoningTokens is null
+        && TotalTokens is null
+        && Raw is null;
 
     private static int? Sum(int? left, int? right)
     {
