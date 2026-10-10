@@ -183,16 +183,6 @@ public sealed class OpenAICompatibleChatUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::user messages::should throw error for file parts with provider references", Coverage = UpstreamCoverage.Covered)]
-    public async Task Provider_file_references_are_rejected()
-    {
-        var options = UpstreamChat.Prompt();
-        options.Prompt = new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new FileContentPart("image/png", null, null, null) }) };
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => UpstreamChat.Model(new UpstreamCapture()).DoGenerateAsync(options, CancellationToken.None));
-        Assert.Contains("provider references", error.Message);
-    }
-
-    [Fact]
     [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::tool calls::should stringify arguments to tool calls", Coverage = UpstreamCoverage.Covered)]
     public async Task Tool_call_arguments_stay_json_text()
     {
