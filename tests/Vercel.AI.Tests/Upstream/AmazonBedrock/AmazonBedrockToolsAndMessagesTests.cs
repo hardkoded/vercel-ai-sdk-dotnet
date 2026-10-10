@@ -358,7 +358,7 @@ public sealed class AmazonBedrockConverseResponseTests
             SecretAccessKey = "secret",
             UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
         }, handler);
-        return await provider.LanguageModel("anthropic.claude-sonnet-4-5-20250929-v1:0").DoGenerateAsync(new LanguageModelCallOptions
+        return await provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoGenerateAsync(new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
             JsonSchema = jsonSchema ? JsonDocument.Parse("{\"type\":\"object\"}").RootElement.Clone() : null,

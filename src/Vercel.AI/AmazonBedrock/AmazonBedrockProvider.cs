@@ -5,9 +5,12 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -110,7 +113,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var bodyObject = Build(options, out var warnings, out var usesJsonTool);
+        var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
         var body = bodyObject.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, _provider.ConverseUri(ModelId))
         {
@@ -125,7 +128,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         using var document = JsonDocument.Parse(text);
-        return Parse(document.RootElement, warnings, CopyHeaders(response), usesJsonTool);
+        return Parse(document.RootElement, warnings, CopyHeaders(response), usesJsonTool, usesJsonInstruction);
     }
 
     /// <inheritdoc />
@@ -164,34 +167,217 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
     }
 
-    private JsonObject Build(LanguageModelCallOptions options, out List<CallWarning> warnings, out bool usesJsonTool)
+    private JsonObject Build(LanguageModelCallOptions options, out List<CallWarning> warnings, out bool usesJsonTool, out bool usesJsonInstruction)
     {
-        AmazonBedrockMessages.Convert(ModelId, options.Prompt, out var system, out var messages);
+        warnings = new List<CallWarning>();
+        var bedrock = ReadBedrockOptions(options.ProviderOptions);
+        var reasoningConfig = BedrockReasoningConfig.Read(bedrock);
+        var additional = ReadAdditionalModelRequestFields(bedrock);
+        var capabilities = AnthropicModelCapabilities.Get(ModelId);
+        var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(ModelId, reasoningConfig?.BudgetTokens);
+
+        reasoningConfig = ResolveReasoningConfig(options.Reasoning, reasoningConfig, warnings, isAnthropicModel, capabilities);
+        var isThinkingEnabled = reasoningConfig?.Type == "enabled" || reasoningConfig?.Type == "adaptive";
+
+        var structuredOutputMode = ReadString(bedrock, "structuredOutputMode")
+            ?? ReadString(ReadProviderOptions(options.ProviderOptions, "anthropic"), "structuredOutputMode")
+            ?? "auto";
+
+        if (structuredOutputMode == "jsonTool"
+            && additional?["output_config"] is JsonObject existingOutputConfig)
+        {
+            existingOutputConfig.Remove("format");
+            if (existingOutputConfig.Count == 0)
+            {
+                additional.Remove("output_config");
+            }
+        }
+
+        var hasSchema = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Null && schema.ValueKind != JsonValueKind.Undefined;
+        var supportsNative = AmazonBedrockModelSupport.SupportsNativeStructuredOutput(ModelId)
+            && (capabilities.SupportsStructuredOutput || isThinkingEnabled);
+        var useNativeStructuredOutput = isAnthropicModel
+            && hasSchema
+            && (structuredOutputMode == "outputFormat" || (structuredOutputMode == "auto" && supportsNative));
+        usesJsonInstruction = !useNativeStructuredOutput
+            && isAnthropicModel
+            && hasSchema
+            && (capabilities.RejectsForcedToolUse
+                || (structuredOutputMode != "jsonTool"
+                    && !AmazonBedrockModelSupport.SupportsStrictTools(ModelId)
+                    && options.Tools is { Count: > 0 }));
+        usesJsonTool = hasSchema && !useNativeStructuredOutput && !usesJsonInstruction;
+
+        var tools = options.Tools;
+        var toolChoice = options.ToolChoice;
+        if (usesJsonTool)
+        {
+            var list = new List<LanguageModelTool>(tools ?? Array.Empty<LanguageModelTool>())
+            {
+                new LanguageModelTool(JsonToolName, "Respond with a JSON object.", options.JsonSchema!.Value),
+            };
+            tools = list;
+            toolChoice = ToolChoice.Required;
+        }
+
+        var toolConfig = AmazonBedrockTools.Prepare(ModelId, tools, toolChoice, out var toolWarnings);
+        warnings.AddRange(toolWarnings);
+
+        var thinkingType = reasoningConfig?.Type;
+        var thinkingBudget = thinkingType == "enabled" ? reasoningConfig?.BudgetTokens : null;
+        var isAnthropicThinkingEnabled = isAnthropicModel && isThinkingEnabled;
+        var maxTokens = options.MaxOutputTokens;
+        var temperature = options.Temperature;
+        var topP = options.TopP;
+        var topK = options.TopK;
+
+        if (isAnthropicThinkingEnabled)
+        {
+            if (thinkingBudget is { } budget)
+            {
+                maxTokens = maxTokens is { } current ? current + budget : budget + 4096;
+                additional ??= new JsonObject();
+                additional["thinking"] = new JsonObject { ["type"] = "enabled", ["budget_tokens"] = budget };
+            }
+            else if (thinkingType == "adaptive")
+            {
+                var thinking = new JsonObject { ["type"] = "adaptive" };
+                if (reasoningConfig!.Display != null)
+                {
+                    thinking["display"] = reasoningConfig.Display;
+                }
+
+                additional ??= new JsonObject();
+                additional["thinking"] = thinking;
+            }
+        }
+        else if (!isAnthropicModel)
+        {
+            if (reasoningConfig?.BudgetTokens != null)
+            {
+                warnings.Add(new CallWarning("unsupported", "budgetTokens applies only to Anthropic models on Bedrock and will be ignored for this model."));
+            }
+
+            if (thinkingType == "adaptive")
+            {
+                warnings.Add(new CallWarning("unsupported", "adaptive thinking type applies only to Anthropic models on Bedrock."));
+            }
+        }
+
+        var maxReasoningEffort = reasoningConfig?.MaxReasoningEffort;
+        if (maxReasoningEffort != null)
+        {
+            additional ??= new JsonObject();
+            var openAiMatch = Regex.Match(ModelId, @"^(?:[^.]+\.)?(openai\..+)$", RegexOptions.CultureInvariant);
+            if (isAnthropicModel)
+            {
+                var outputConfig = additional["output_config"] as JsonObject ?? new JsonObject();
+                outputConfig["effort"] = maxReasoningEffort;
+                additional["output_config"] = outputConfig;
+            }
+            else if (openAiMatch.Success)
+            {
+                // gpt-oss models expect a flat `reasoning_effort`; GPT-5.x models expect a nested `reasoning.effort`.
+                if (openAiMatch.Groups[1].Value.StartsWith("openai.gpt-oss-", StringComparison.Ordinal))
+                {
+                    additional["reasoning_effort"] = maxReasoningEffort;
+                }
+                else
+                {
+                    var reasoning = additional["reasoning"] as JsonObject ?? new JsonObject();
+                    reasoning["effort"] = maxReasoningEffort;
+                    additional["reasoning"] = reasoning;
+                }
+            }
+            else
+            {
+                // Other models, such as Nova 2, use the reasoningConfig format.
+                var novaConfig = new JsonObject();
+                if (thinkingType != null && thinkingType != "adaptive")
+                {
+                    novaConfig["type"] = thinkingType;
+                }
+
+                if (thinkingBudget is { } novaBudget)
+                {
+                    novaConfig["budgetTokens"] = novaBudget;
+                }
+
+                novaConfig["maxReasoningEffort"] = maxReasoningEffort;
+                additional["reasoningConfig"] = novaConfig;
+            }
+        }
+
+        if (useNativeStructuredOutput)
+        {
+            additional ??= new JsonObject();
+            var outputConfig = additional["output_config"] as JsonObject ?? new JsonObject();
+            outputConfig["format"] = new JsonObject
+            {
+                ["type"] = "json_schema",
+                ["schema"] = AnthropicJsonSchema.Sanitize(options.JsonSchema!.Value),
+            };
+            additional["output_config"] = outputConfig;
+        }
+
+        if (isAnthropicThinkingEnabled)
+        {
+            if (temperature != null)
+            {
+                temperature = null;
+                warnings.Add(new CallWarning("unsupported", "temperature is not supported when thinking is enabled"));
+            }
+
+            if (topP != null)
+            {
+                topP = null;
+                warnings.Add(new CallWarning("unsupported", "topP is not supported when thinking is enabled"));
+            }
+
+            if (topK != null)
+            {
+                topK = null;
+                warnings.Add(new CallWarning("unsupported", "topK is not supported when thinking is enabled"));
+            }
+        }
+
+        var prompt = options.Prompt;
+        if (usesJsonInstruction)
+        {
+            prompt = InjectJsonInstructionIntoMessages(prompt, options.JsonSchema!.Value);
+        }
+
+        AmazonBedrockMessages.Convert(ModelId, prompt, out var system, out var messages);
         var body = new JsonObject { ["messages"] = messages };
         if (system != null)
         {
             body["system"] = system;
         }
 
+        if (additional != null)
+        {
+            body["additionalModelRequestFields"] = additional;
+        }
+
         var inference = new JsonObject();
-        if (options.MaxOutputTokens is { } max)
+        if (maxTokens is { } max)
         {
             inference["maxTokens"] = max;
         }
 
-        if (options.Temperature is { } temperature)
+        if (temperature is { } temperatureValue)
         {
-            inference["temperature"] = temperature;
+            inference["temperature"] = temperatureValue;
         }
 
-        if (options.TopP is { } topP)
+        if (topP is { } topPValue)
         {
-            inference["topP"] = topP;
+            inference["topP"] = topPValue;
         }
 
-        if (options.TopK is { } topK)
+        if (topK is { } topKValue)
         {
-            inference["topK"] = topK;
+            inference["topK"] = topKValue;
         }
 
         if (options.StopSequences is { Count: > 0 })
@@ -210,21 +396,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["inferenceConfig"] = inference;
         }
 
-        // Structured output goes through a forced `json` tool. Its input becomes the response text.
-        usesJsonTool = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Null && schema.ValueKind != JsonValueKind.Undefined;
-        var tools = options.Tools;
-        var toolChoice = options.ToolChoice;
-        if (usesJsonTool)
-        {
-            var list = new List<LanguageModelTool>(tools ?? Array.Empty<LanguageModelTool>())
-            {
-                new LanguageModelTool(JsonToolName, "Respond with a JSON object.", options.JsonSchema!.Value),
-            };
-            tools = list;
-            toolChoice = ToolChoice.Required;
-        }
-
-        var toolConfig = AmazonBedrockTools.Prepare(ModelId, tools, toolChoice, out warnings);
         if (toolConfig.Count > 0)
         {
             body["toolConfig"] = toolConfig;
@@ -237,6 +408,175 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         return body;
+    }
+
+    private static IReadOnlyList<ModelMessage> InjectJsonInstructionIntoMessages(IReadOnlyList<ModelMessage> messages, JsonElement schema)
+    {
+        var first = messages.Count > 0 ? messages[0] as SystemModelMessage : null;
+        var instruction = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(
+            first?.Content,
+            schema,
+            schemaSuffix: Vercel.AI.GenerateText.JsonInstructionText.From("You MUST answer with only a JSON object that matches the JSON schema above. Do not wrap it in markdown fences or include any other text."));
+        var result = new List<ModelMessage> { new SystemModelMessage(instruction, first?.ProviderOptions) };
+        for (var i = first != null ? 1 : 0; i < messages.Count; i++)
+        {
+            result.Add(messages[i]);
+        }
+
+        return result;
+    }
+
+    private static BedrockReasoningConfig? ResolveReasoningConfig(
+        string? reasoning,
+        BedrockReasoningConfig? user,
+        List<CallWarning> warnings,
+        bool isAnthropicModel,
+        AnthropicModelCapabilities capabilities)
+    {
+        if (!ReasoningMap.IsCustomReasoning(reasoning))
+        {
+            return user;
+        }
+
+        var modelWarnings = new List<ModelWarning>();
+        BedrockReasoningConfig? result = user;
+        if (isAnthropicModel)
+        {
+            if (reasoning == "none")
+            {
+                result = new BedrockReasoningConfig { Type = "disabled" };
+            }
+            else if (capabilities.SupportsAdaptiveThinking)
+            {
+                var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, ReasoningEffortMap, modelWarnings);
+                result = new BedrockReasoningConfig { Type = "adaptive", MaxReasoningEffort = effort }.MergeUser(user);
+            }
+            else
+            {
+                var budget = ReasoningMap.MapReasoningToProviderBudget(reasoning!, capabilities.MaxOutputTokens, capabilities.MaxOutputTokens, modelWarnings);
+                if (budget != null)
+                {
+                    result = new BedrockReasoningConfig { Type = "enabled", BudgetTokens = budget }.MergeUser(user);
+                }
+            }
+        }
+        else if (reasoning != "none")
+        {
+            var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, ReasoningEffortMap, modelWarnings);
+            result = new BedrockReasoningConfig { MaxReasoningEffort = effort }.MergeUser(user);
+        }
+
+        // When the merged type ends up disabled, drop the derived effort and budget.
+        if (result?.Type == "disabled")
+        {
+            result.MaxReasoningEffort = null;
+            result.BudgetTokens = null;
+        }
+
+        foreach (var warning in modelWarnings)
+        {
+            switch (warning)
+            {
+                case UnsupportedWarning unsupported:
+                    warnings.Add(new CallWarning("unsupported", unsupported.Details ?? unsupported.Feature));
+                    break;
+                case CompatibilityWarning compatibility:
+                    warnings.Add(new CallWarning("compatibility", compatibility.Details ?? compatibility.Feature));
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private static readonly IReadOnlyDictionary<string, string> ReasoningEffortMap = new Dictionary<string, string>
+    {
+        { "minimal", "low" },
+        { "low", "low" },
+        { "medium", "medium" },
+        { "high", "high" },
+        { "xhigh", "max" },
+    };
+
+    /// <summary>Reads provider options from <c>amazonBedrock</c>, then <c>bedrock</c>, then <c>amazon-bedrock</c>.</summary>
+    private static JsonElement? ReadBedrockOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        return ReadProviderOptions(providerOptions, "amazonBedrock")
+            ?? ReadProviderOptions(providerOptions, "bedrock")
+            ?? ReadProviderOptions(providerOptions, "amazon-bedrock");
+    }
+
+    private static JsonElement? ReadProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    {
+        if (providerOptions != null && providerOptions.TryGetValue(key, out var value) && value.ValueKind == JsonValueKind.Object)
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    private static string? ReadString(JsonElement? element, string name)
+    {
+        if (element is { } value && value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String)
+        {
+            return property.GetString();
+        }
+
+        return null;
+    }
+
+    private static JsonObject? ReadAdditionalModelRequestFields(JsonElement? bedrock)
+    {
+        if (bedrock is { } value
+            && value.TryGetProperty("additionalModelRequestFields", out var fields)
+            && fields.ValueKind == JsonValueKind.Object)
+        {
+            return JsonNode.Parse(fields.GetRawText()) as JsonObject;
+        }
+
+        return null;
+    }
+
+    private sealed class BedrockReasoningConfig
+    {
+        public string? Type { get; set; }
+
+        public int? BudgetTokens { get; set; }
+
+        public string? MaxReasoningEffort { get; set; }
+
+        public string? Display { get; set; }
+
+        public static BedrockReasoningConfig? Read(JsonElement? bedrock)
+        {
+            if (bedrock is not { } value
+                || !value.TryGetProperty("reasoningConfig", out var config)
+                || config.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            var result = new BedrockReasoningConfig { Type = ReadString(config, "type"), MaxReasoningEffort = ReadString(config, "maxReasoningEffort"), Display = ReadString(config, "display") };
+            if (config.TryGetProperty("budgetTokens", out var budget) && budget.ValueKind == JsonValueKind.Number && budget.TryGetInt32(out var tokens))
+            {
+                result.BudgetTokens = tokens;
+            }
+
+            return result;
+        }
+
+        /// <summary>Returns a copy of this derived config with every field the user set laid over it.</summary>
+        public BedrockReasoningConfig MergeUser(BedrockReasoningConfig? user)
+        {
+            return new BedrockReasoningConfig
+            {
+                Type = user?.Type ?? Type,
+                BudgetTokens = user?.BudgetTokens ?? BudgetTokens,
+                MaxReasoningEffort = user?.MaxReasoningEffort ?? MaxReasoningEffort,
+                Display = user?.Display ?? Display,
+            };
+        }
     }
 
     /// <summary>Reads <c>requestMetadata</c> from <c>amazon-bedrock</c>, then <c>amazonBedrock</c>, then <c>bedrock</c>.</summary>
@@ -286,8 +626,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         return result;
     }
 
-    private LanguageModelGenerateResult Parse(JsonElement root, IReadOnlyList<CallWarning> warnings, IReadOnlyDictionary<string, string> headers, bool usesJsonTool)
+    private LanguageModelGenerateResult Parse(JsonElement root, IReadOnlyList<CallWarning> warnings, IReadOnlyDictionary<string, string> headers, bool usesJsonTool, bool usesJsonInstruction)
     {
+        var extractor = usesJsonInstruction ? new JsonObjectTextExtractor() : null;
         var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
         var content = new List<GeneratedContent>();
         var jsonTool = false;
@@ -297,7 +638,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             {
                 if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                 {
-                    content.Add(new GeneratedText(text.GetString() ?? string.Empty));
+                    content.Add(new GeneratedText(Extract(extractor, text.GetString() ?? string.Empty)));
                 }
                 else if (part.TryGetProperty("citationsContent", out var citations) && citations.TryGetProperty("content", out var cited) && cited.ValueKind == JsonValueKind.Array)
                 {
@@ -305,7 +646,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                     {
                         if (citedPart.TryGetProperty("text", out var citedText) && citedText.ValueKind == JsonValueKind.String)
                         {
-                            content.Add(new GeneratedText(citedText.GetString() ?? string.Empty));
+                            content.Add(new GeneratedText(Extract(extractor, citedText.GetString() ?? string.Empty)));
                         }
                     }
                 }
@@ -381,6 +722,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
         return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, providerMetadata, responseHeaders: headers);
     }
+
+    private static string Extract(JsonObjectTextExtractor? extractor, string text) => extractor?.Process(text) ?? text;
 
     private static Dictionary<string, string> CopyHeaders(HttpResponseMessage response)
     {
