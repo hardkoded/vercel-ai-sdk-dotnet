@@ -564,8 +564,8 @@ public sealed class FileContentPart : UserContentPart
     /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
     public IReadOnlyDictionary<string, string>? ProviderReference { get; }
 
-    /// <summary>Provider-specific options for this part.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
+    /// <summary>Provider-specific options for this part, such as the xAI <c>imageDetail</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
@@ -1210,13 +1210,23 @@ public sealed class ReasoningEndStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning-end part.</summary>
     public ReasoningEndStreamPart(string id)
+        : this(id, null)
+    {
+    }
+
+    /// <summary>Creates a reasoning-end part that carries provider metadata.</summary>
+    public ReasoningEndStreamPart(string id, JsonElement? providerMetadata)
         : base("reasoning-end")
     {
         Id = id ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning block id.</summary>
     public string Id { get; }
+
+    /// <summary>Provider metadata for this block, such as encrypted reasoning content.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Identifies the provider response.</summary>
