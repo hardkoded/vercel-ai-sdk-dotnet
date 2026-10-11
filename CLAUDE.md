@@ -13,3 +13,4 @@
   - The directory sits in the test project that runs the test, and the namespace follows it.
 - Every test ports an upstream `it`. Do not keep a test that has no upstream `it`, even for .NET-only code. If an upstream `it` covers the behavior, port that `it` instead.
 - A ported test checks everything its upstream `it` checks. If a part needs a feature the port does not have, name it in the PR report. Do not keep an upstream name on a test that checks only part of it.
+- Out-of-scope work and follow-ups: whenever a port leaves something out (a skipped or partial test, a missing feature, a caveat you found), open a GitHub issue for it. Do this even when the PR report already names it. Search existing issues first to avoid duplicates. Link the issue from the PR report and reference the PR in the issue.

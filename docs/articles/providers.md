@@ -29,9 +29,29 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Google (Gemini 3), Groq, and Fireworks send `high`. Fireworks also sends `low` for `minimal` and `high` for `xhigh`. Each change adds a warning. A `reasoningEffort` provider option wins over `Reasoning` and adds no warning.
 - Perplexity sends `xhigh`.
 
+Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
+
 OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
+
+## Uploaded File References
+
+An OpenAI-compatible chat model accepts a file that you already uploaded to the provider. Build the part with a provider reference: a map from provider name to file id.
+
+```csharp
+var part = FileContentPart.FromProviderReference(
+    "application/pdf",
+    new Dictionary<string, string> { ["my-provider"] = "file-123" },
+    "document.pdf");
+```
+
+- The reference key must match `OpenAICompatibleOptions.ProviderName`, including hyphens. A camelCase variant such as `myProvider` is never used as the id. A reference without that key throws `NoSuchProviderReferenceError`.
+- The request body carries `{ "type": "file", "file": { "file_id": "file-123" } }`. This works for `application/pdf` and `image/png`. Properties from the part's `openaiCompatible` provider options are copied onto that part.
+- `DoStreamAsync` sends the same part.
+- Inline PDF bytes are unchanged: they are sent as a base64 `file_data` URL.
+
+The provider does not upload the file. Which media types are accepted depends on the destination model.
 
 ## Decision state
 
