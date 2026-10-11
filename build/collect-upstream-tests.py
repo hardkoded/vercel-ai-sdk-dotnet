@@ -30,7 +30,6 @@ NOT_PORTED = {
     "tui",
     "policy-opa",
     "code-mode",
-    "typesafe-ai",
 }
 
 HOOKS = {"beforeEach", "afterEach", "beforeAll", "afterAll"}
@@ -82,6 +81,7 @@ DOTNET_PROJECTS = {
     "replicate": "Vercel.AI.Replicate",
     "revai": "Vercel.AI.RevAI",
     "togetherai": "Vercel.AI.TogetherAI",
+    "typesafe-ai": "Vercel.AI.TypeSafeAi",
     "voyage": "Vercel.AI.Voyage",
     "xai": "Vercel.AI.Xai",
     "zai": "Vercel.AI.Zai",
