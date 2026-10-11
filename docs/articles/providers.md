@@ -86,6 +86,16 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+### OpenAI batch results
+
+`OpenAIBatchApi.DoGetResultsAsync` converts each row of the output and error files. A row that fails never stops the later rows.
+
+- A row with `error.code` `batch_cancelled` or `batch_expired` has status `cancelled` or `expired`. Any other row error has status `failed`.
+- A row with a non-2xx `status_code` fails with `ErrorMessage`, `ErrorType`, `ErrorCode`, and `ErrorStatusCode` from `response.body.error`. When the body has no error message, the message is `OpenAI batch request failed with status code <n>.`
+- A 2xx row whose body is not a valid Responses result fails with `invalid_response`. A body with no `output` also fails with `invalid_response`.
+- A Responses `output` converts to `BatchTextGeneration.Content`: `reasoning` (with `itemId` and `reasoningEncryptedContent` provider metadata), `text`, and `tool-call` parts for `function_call` and `custom_tool_call`. `web_search_call`, `file_search_call`, and `code_interpreter_call` become a provider-executed dynamic `tool-call` plus a `tool-result`. A failed or incomplete web search sets `IsError` on its result. Any other output item fails the row with `unsupported_content`.
+- `FinishReason`, `RawFinishReason`, `Usage`, `ResponseId`, `Timestamp`, and `ModelId` come from the body. `ProviderMetadata.openai` holds `responseId` and, when present, `logprobs`, `serviceTier`, and `reasoningContext`.
+
 ## Response handlers
 
 `ResponseHandlers` in `Vercel.AI.ProviderUtils` holds the closest .NET shape of the upstream response handler factories. Each one takes the `HttpResponseMessage`, the request `url`, and the request body values, and returns the value with the response headers (`ResponseHandlerResult<T>`) or, for the error handlers, an `ApiException`.

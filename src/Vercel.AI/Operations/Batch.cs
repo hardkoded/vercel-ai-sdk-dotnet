@@ -255,6 +255,9 @@ public sealed class BatchContentPart
     /// <summary>True for a dynamic tool.</summary>
     public bool? Dynamic { get; set; }
 
+    /// <summary>True when a tool result is an error.</summary>
+    public bool? IsError { get; set; }
+
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; set; }
 
@@ -347,6 +350,12 @@ public sealed class BatchItem
     /// <summary>Error code.</summary>
     public string? ErrorCode { get; set; }
 
+    /// <summary>Error type reported by the provider.</summary>
+    public string? ErrorType { get; set; }
+
+    /// <summary>HTTP status code of a failed provider response.</summary>
+    public int? ErrorStatusCode { get; set; }
+
     /// <summary>Provider metadata for a failed item.</summary>
     public JsonElement? ProviderMetadata { get; set; }
 }
@@ -404,6 +413,12 @@ public sealed class BatchItemResult
 
     /// <summary>Error code.</summary>
     public string? ErrorCode { get; set; }
+
+    /// <summary>Error type reported by the provider.</summary>
+    public string? ErrorType { get; set; }
+
+    /// <summary>HTTP status code of a failed provider response.</summary>
+    public int? ErrorStatusCode { get; set; }
 }
 
 /// <summary>A version-2 batch reference.</summary>
@@ -818,7 +833,7 @@ public static class Batch
 
     private static async Task<BatchItemResult> ConvertAsync(BatchItem item, BatchRequestOptions request, CancellationToken cancellationToken)
     {
-        var result = new BatchItemResult { Type = item.Type, Id = item.Id, Status = item.Status, ErrorMessage = item.ErrorMessage, ErrorCode = item.ErrorCode, ProviderMetadata = item.ProviderMetadata };
+        var result = new BatchItemResult { Type = item.Type, Id = item.Id, Status = item.Status, ErrorMessage = item.ErrorMessage, ErrorCode = item.ErrorCode, ErrorType = item.ErrorType, ErrorStatusCode = item.ErrorStatusCode, ProviderMetadata = item.ProviderMetadata };
         if (item.Status != "succeeded")
         {
             return result;
