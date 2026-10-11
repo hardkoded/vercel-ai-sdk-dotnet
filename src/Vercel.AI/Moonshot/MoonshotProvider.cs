@@ -25,7 +25,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
     {
     }
 
-    /// <summary>Whether <paramref name="modelId"/> accepts JSON schema responses.</summary>
+    /// <summary>Whether <paramref name="modelId"/> accepts JSON schema responses. Every non-empty id does.</summary>
     public static bool SupportsStructuredOutputs(string modelId)
     {
         if (string.IsNullOrEmpty(modelId))
@@ -33,24 +33,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
             return false;
         }
 
-        if (modelId.StartsWith("kimi-k", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        switch (modelId)
-        {
-            case "moonshot-v1-8k":
-            case "moonshot-v1-32k":
-            case "moonshot-v1-128k":
-            case "moonshot-v1-auto":
-            case "moonshot-v1-8k-vision-preview":
-            case "moonshot-v1-32k-vision-preview":
-            case "moonshot-v1-128k-vision-preview":
-                return true;
-            default:
-                return false;
-        }
+        return true;
     }
 
     /// <inheritdoc />

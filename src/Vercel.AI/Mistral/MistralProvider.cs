@@ -4,6 +4,9 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Mistral;
 
@@ -32,6 +35,71 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         return new MistralProvider(client, options);
     }
 
+    private static readonly HashSet<string> ModelsWithoutReasoningEffort = new HashSet<string>
+    {
+        "codestral-2508",
+        "codestral-latest",
+        "ministral-14b-2512",
+        "ministral-14b-latest",
+        "ministral-3b-2512",
+        "ministral-3b-latest",
+        "ministral-8b-2512",
+        "ministral-8b-latest",
+        "mistral-code-fim-latest",
+        "mistral-code-latest",
+        "mistral-large-latest",
+        "mistral-large-2512",
+        "voxtral-small-2507",
+        "voxtral-small-latest",
+    };
+
+    private static readonly Dictionary<string, string> EffortMap = new Dictionary<string, string>
+    {
+        { "minimal", "high" },
+        { "low", "high" },
+        { "medium", "high" },
+        { "high", "high" },
+        { "xhigh", "high" },
+        { "max", "high" },
+    };
+
+    private static string? ResolveReasoningEffort(string modelId, string? reasoning, string? providerEffort, IList<CallWarning> warnings)
+    {
+        if (ModelsWithoutReasoningEffort.Contains(modelId))
+        {
+            if (ReasoningMap.IsCustomReasoning(reasoning))
+            {
+                warnings.Add(new CallWarning("unsupported", "This model does not support reasoning configuration."));
+            }
+
+            return null;
+        }
+
+        if (providerEffort != null)
+        {
+            return providerEffort;
+        }
+
+        if (!ReasoningMap.IsCustomReasoning(reasoning))
+        {
+            return null;
+        }
+
+        if (reasoning == "none")
+        {
+            return "none";
+        }
+
+        var mappingWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, EffortMap, mappingWarnings);
+        foreach (var warning in mappingWarnings)
+        {
+            warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
+        }
+
+        return effort;
+    }
+
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options ??= new OpenAICompatibleOptions();
@@ -50,6 +118,7 @@ public sealed class MistralProvider : OpenAICompatibleProvider
             options.ApiKeyEnvironmentVariable = ApiKeyVariable;
         }
 
+        options.ResolveReasoningEffort ??= ResolveReasoningEffort;
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
         options.RequireApiKey = true;

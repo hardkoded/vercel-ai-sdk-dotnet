@@ -73,6 +73,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId) => new AmazonBedrockRerankingModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId) => new AmazonBedrockEmbeddingModel(this, modelId);
+
     internal Uri ConverseUri(string modelId)
     {
         if (!HostnameParts.IsValidHostnamePart(Options.Region))

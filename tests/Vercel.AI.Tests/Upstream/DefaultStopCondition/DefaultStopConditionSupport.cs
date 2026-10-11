@@ -169,7 +169,8 @@ internal static class DefaultStopConditionSupport
         string method,
         ToolLoopModel model,
         Tool tool,
-        StopCondition? stopWhen = null)
+        StopCondition? stopWhen = null,
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall = null)
     {
         var tools = new[] { tool };
         const string prompt = "Call the test tool.";
@@ -180,9 +181,9 @@ internal static class DefaultStopConditionSupport
             case "streamText":
                 return await Consume(Client().StreamTextAsync(new StreamTextOptions { Model = model, Tools = tools, StopWhen = stopWhen, Prompt = prompt }));
             case "agent.generate":
-                return (await new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen }, Client()).GenerateAsync(prompt)).Steps;
+                return (await new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen, PrepareCall = prepareCall }, Client()).GenerateAsync(prompt)).Steps;
             default:
-                return await Consume(new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen }, Client()).Stream(prompt));
+                return await Consume(new Agent(new AgentOptions { Model = model, Tools = tools, StopWhen = stopWhen, PrepareCall = prepareCall }, Client()).Stream(prompt));
         }
     }
 

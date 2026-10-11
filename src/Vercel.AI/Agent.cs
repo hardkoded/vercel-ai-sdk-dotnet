@@ -30,25 +30,52 @@ public sealed class Agent
     /// <summary>Generates a reply to <paramref name="prompt"/>.</summary>
     public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
     {
-        return _client.GenerateTextAsync(CreateOptions(prompt), cancellationToken);
+        return _client.GenerateTextAsync(Prepare(CreateOptions(prompt)), cancellationToken);
     }
 
     /// <summary>Streams a reply to <paramref name="prompt"/>. <paramref name="abortSignal"/> aborts the stream and carries the reason.</summary>
     public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null)
     {
+        var prepared = Prepare(CreateOptions(prompt));
         return _client.StreamTextAsync(new StreamTextOptions
         {
-            Model = Options.Model,
-            ModelId = Options.ModelId,
-            Instructions = Options.Instructions,
-            Prompt = prompt,
-            Tools = Options.Tools,
-            StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
-            Temperature = Options.Temperature,
-            MaxOutputTokens = Options.MaxOutputTokens,
+            Model = prepared.Model,
+            ModelId = prepared.ModelId,
+            System = prepared.System,
+            Instructions = prepared.Instructions,
+            Prompt = prepared.Prompt,
+            Messages = prepared.Messages,
+            Tools = prepared.Tools,
+            ActiveTools = prepared.ActiveTools,
+            ToolChoice = prepared.ToolChoice,
+            StopWhen = prepared.StopWhen,
+            Output = prepared.Output,
+            MaxOutputTokens = prepared.MaxOutputTokens,
+            Temperature = prepared.Temperature,
+            TopP = prepared.TopP,
+            TopK = prepared.TopK,
+            PresencePenalty = prepared.PresencePenalty,
+            FrequencyPenalty = prepared.FrequencyPenalty,
+            StopSequences = prepared.StopSequences,
+            Seed = prepared.Seed,
+            Reasoning = prepared.Reasoning,
+            MaxRetries = prepared.MaxRetries,
+            Timeout = prepared.Timeout,
+            Headers = prepared.Headers,
+            ProviderOptions = prepared.ProviderOptions,
+            PrepareStep = prepared.PrepareStep,
+            OnStepEnd = prepared.OnStepEnd,
+            OnFinish = prepared.OnFinish,
+            OnError = prepared.OnError,
+            ApproveTool = prepared.ApproveTool,
             AbortSignal = abortSignal,
             OnAbort = Options.OnAbort,
         }, cancellationToken);
+    }
+
+    private GenerateTextOptions Prepare(GenerateTextOptions call)
+    {
+        return Options.PrepareCall?.Invoke(call) ?? call;
     }
 
     private GenerateTextOptions CreateOptions(string prompt)
@@ -90,6 +117,13 @@ public sealed class AgentOptions
 
     /// <summary>Maximum output tokens.</summary>
     public int? MaxOutputTokens { get; set; }
+
+    /// <summary>
+    /// Called before each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call with the options the agent would use,
+    /// including the default <see cref="GenerateTextOptions.StopWhen"/>. Return replacement options, or null to keep them.
+    /// A returned options object that sets <see cref="GenerateTextOptions.StopWhen"/> replaces the default limit. Maps to <c>prepareCall</c>.
+    /// </summary>
+    public Func<GenerateTextOptions, GenerateTextOptions?>? PrepareCall { get; set; }
 
     /// <summary>Called after <see cref="Agent.Stream"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }

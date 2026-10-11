@@ -6,6 +6,8 @@
   href: streaming.md
 - name: Providers
   href: providers.md
+- name: TypeSafe
+  href: typesafe-ai.md
 - name: Compatibility
   href: compatibility.md
 - name: Warnings
