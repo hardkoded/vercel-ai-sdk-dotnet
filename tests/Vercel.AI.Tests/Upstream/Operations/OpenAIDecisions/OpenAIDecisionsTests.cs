@@ -138,11 +138,18 @@ public sealed class OpenAIDecisionsTests
             return copy;
         }
 
+        JsonObject ChoiceWithProbabilities()
+        {
+            var copy = Edit(0, "choice", "technical");
+            copy["probabilities"] = JsonNode.Parse("[{\"value\":\"billing\",\"probability\":0.35},{\"value\":\"technical\",\"probability\":0.33},{\"value\":\"other\",\"probability\":0.32}]");
+            return copy;
+        }
+
         var invalid = index switch
         {
             0 => JsonNode.Parse("{\"type\":\"predicate\",\"name\":\"team\",\"probability\":0.5}")!,
             1 => Edit(0, "choice", "unknown"),
-            2 => Edit(0, "choice", "technical"),
+            2 => ChoiceWithProbabilities(),
             3 => Edit(0, "probabilities", JsonNode.Parse("[{\"value\":\"billing\",\"probability\":1}]")),
             4 => Edit(1, "score", 1.5),
             _ => Edit(1, "score", 3),
