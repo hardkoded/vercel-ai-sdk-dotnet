@@ -30,6 +30,8 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Anthropic, DeepSeek, Moonshot, and OpenAI models that list `max` send it unchanged, with no warning.
 - Google (Gemini 3), Groq, and Fireworks send `high`. Fireworks also sends `low` for `minimal` and `high` for `xhigh`. Each change adds a warning. A `reasoningEffort` provider option wins over `Reasoning` and adds no warning.
 - Perplexity sends `xhigh`.
+- Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
+- OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The `open-responses` provider options `reasoningEffort` and `reasoningSummary` set `reasoning.effort` and `reasoning.summary`.
 
 Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
 
