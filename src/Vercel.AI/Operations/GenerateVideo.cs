@@ -185,7 +185,7 @@ public sealed class GeneratedVideo
 public sealed class VideoModelCall
 {
     /// <summary>Creates a call.</summary>
-    public VideoModelCall(string? prompt, int n, string? aspectRatio, string? resolution, double? duration, int? fps, int? seed, VideoModelFile? image, IReadOnlyList<VideoFrameFile>? frameImages, IReadOnlyList<VideoModelFile>? inputReferences, bool? generateAudio, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, string? webhookUrl = null, object? operation = null)
+    public VideoModelCall(string? prompt, int n, string? aspectRatio, string? resolution, double? duration, int? fps, double? seed, VideoModelFile? image, IReadOnlyList<VideoFrameFile>? frameImages, IReadOnlyList<VideoModelFile>? inputReferences, bool? generateAudio, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, string? webhookUrl = null, object? operation = null)
     {
         Prompt = prompt;
         N = n;
@@ -224,7 +224,7 @@ public sealed class VideoModelCall
     public int? Fps { get; }
 
     /// <summary>Seed.</summary>
-    public int? Seed { get; }
+    public double? Seed { get; }
 
     /// <summary>Resolved start image.</summary>
     public VideoModelFile? Image { get; }
@@ -507,7 +507,7 @@ public class GenerateVideoRequest : OperationRequest
     public int? Fps { get; set; }
 
     /// <summary>Seed.</summary>
-    public int? Seed { get; set; }
+    public double? Seed { get; set; }
 
     /// <summary>Frame images.</summary>
     public IReadOnlyList<VideoFrameImage>? FrameImages { get; set; }

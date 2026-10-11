@@ -42,7 +42,7 @@ public sealed class GenerateVideoTests
         Assert.Equal("720p", call.Resolution);
         Assert.Equal((double?)4, call.Duration);
         Assert.Equal((int?)24, call.Fps);
-        Assert.Equal((int?)7, call.Seed);
+        Assert.Equal((double?)7, call.Seed);
         Assert.True(call.GenerateAudio);
         Assert.Equal("cinematic", call.ProviderOptions.GetProperty("p").GetProperty("style").GetString());
         Assert.Equal("1", call.Headers["x-test"]);

@@ -79,7 +79,7 @@ internal static class HeyGenVideoModelSupport
         string? resolution = null,
         double? duration = null,
         int? fps = null,
-        int? seed = null,
+        double? seed = null,
         VideoModelFile? image = null,
         IReadOnlyList<VideoFrameFile>? frames = null,
         IReadOnlyList<VideoModelFile>? references = null,
