@@ -34,6 +34,21 @@ internal static class OpenAIJson
         }
     }
 
+    /// <summary>
+    /// Like <see cref="ToolOutputText(string?, string?)"/>. For a tool with an output schema, OpenAI parses the string as JSON,
+    /// so <c>text</c> and <c>execution-denied</c> become JSON string literals.
+    /// </summary>
+    public static string ToolOutputText(string? outputType, string? output, bool hasOutputSchema)
+    {
+        var text = ToolOutputText(outputType, output);
+        if (hasOutputSchema && (outputType == "text" || outputType == "execution-denied"))
+        {
+            return JsonSerializer.Serialize(text, ToolOutputOptions);
+        }
+
+        return text;
+    }
+
     public static JsonElement Clone(JsonElement element)
     {
         return element.Clone();

@@ -102,17 +102,29 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 warnings.Add(warning.ToCallWarning());
             }
 
-            prepared.Add(new JsonObject
+            var definition = new JsonObject
             {
                 ["type"] = "function",
                 ["name"] = tool.Name,
                 ["description"] = tool.Description,
                 ["parameters"] = normalized.Schema,
                 ["strict"] = tool.Strict ?? false,
-            });
+            };
+            if (tool.OutputSchema is { } outputSchema)
+            {
+                definition["output_schema"] = JsonNode.Parse(outputSchema.GetRawText());
+            }
+
+            prepared.Add(definition);
         }
 
         return new PreparedResponsesTools(prepared, toolChoice, warnings);
+    }
+
+    private static HashSet<string>? OutputSchemaToolNames(IReadOnlyList<LanguageModelTool>? tools)
+    {
+        var names = tools?.Where(tool => tool.OutputSchema != null).Select(tool => tool.Name).ToArray();
+        return names is { Length: > 0 } ? new HashSet<string>(names) : null;
     }
 
     /// <summary>Builds the Responses body for <paramref name="modelId"/>. Generate calls omit <c>stream</c>.</summary>
@@ -177,7 +189,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             configurationUpdateUnsupportedReason,
             providerOptionsName,
             hasContinuation,
-            OpenAIJson.Bool(openai, "store") ?? true);
+            OpenAIJson.Bool(openai, "store") ?? true,
+            outputSchemaToolNames: OutputSchemaToolNames(options.Tools));
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -779,14 +792,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return null;
     }
 
-    private static ResponsesInput ConvertInput(
+    internal static ResponsesInput ConvertInput(
         IReadOnlyList<ModelMessage> prompt,
         string systemMessageMode,
         bool explicitItem,
         string? configurationUpdateUnsupportedReason,
         string providerOptionsName,
         bool hasContinuation,
-        bool store)
+        bool store,
+        ISet<string>? customToolNames = null,
+        ISet<string>? outputSchemaToolNames = null)
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -861,11 +876,28 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     break;
                 case ToolModelMessage tool:
+                    // The output's own breakpoint wins over the tool result's.
+                    var toolBreakpoint = OpenAIJson.PromptCacheBreakpoint(tool.OutputProviderOptions)
+                        ?? OpenAIJson.PromptCacheBreakpoint(tool.ProviderMetadata);
+                    var toolIsCustom = customToolNames?.Contains(tool.ToolName) == true;
+                    var toolHasSchema = !toolIsCustom && outputSchemaToolNames?.Contains(tool.ToolName) == true;
+                    var toolText = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputJson, toolHasSchema);
+                    JsonNode toolOutput = toolText;
+                    if (toolBreakpoint != null)
+                    {
+                        toolOutput = new JsonArray(new JsonObject
+                        {
+                            ["type"] = "input_text",
+                            ["text"] = toolText,
+                            ["prompt_cache_breakpoint"] = toolBreakpoint,
+                        });
+                    }
+
                     input.Add(new JsonObject
                     {
-                        ["type"] = "function_call_output",
+                        ["type"] = toolIsCustom ? "custom_tool_call_output" : "function_call_output",
                         ["call_id"] = tool.ToolCallId,
-                        ["output"] = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputJson),
+                        ["output"] = toolOutput,
                     });
                     break;
                 default:
@@ -1028,7 +1060,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return result;
     }
 
-    private sealed class ResponsesInput
+    internal sealed class ResponsesInput
     {
         public ResponsesInput(JsonArray input, IReadOnlyList<OpenAICallWarning> warnings)
         {
