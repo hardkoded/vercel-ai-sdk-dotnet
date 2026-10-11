@@ -84,6 +84,22 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+## Response handlers
+
+`ResponseHandlers` in `Vercel.AI.ProviderUtils` holds the closest .NET shape of the upstream response handler factories. Each one takes the `HttpResponseMessage`, the request `url`, and the request body values, and returns the value with the response headers (`ResponseHandlerResult<T>`) or, for the error handlers, an `ApiException`.
+
+| Method | Upstream | Result |
+| --- | --- | --- |
+| `CreateBinaryResponseAsync` | `createBinaryResponseHandler` | The body bytes. An empty body throws an `ApiException` with "Response body is empty". |
+| `CreateBinaryStreamResponseAsync` | `createBinaryStreamResponseHandler` | The body stream. An empty body throws "Empty response body". |
+| `CreateEventSourceResponseAsync` | `createEventSourceResponseHandler` | A stream of parsed events. A read failure (`IOException`, `HttpRequestException`) on the successful response throws a retryable `ApiException` "Failed to process successful response" that keeps the status code, URL, headers, and the original error as `InnerException`. |
+| `CreateJsonErrorResponseAsync` | `createJsonErrorResponseHandler` | An `ApiException` whose message comes from `errorToMessage`, or the status text when the body does not match the error schema. |
+| `CreateStatusCodeErrorResponseAsync` | `createStatusCodeErrorResponseHandler` | An `ApiException` whose message is the status text. |
+
+The binary and error handlers read at most `Download.DefaultMaxBytes`. A larger `Content-Length` throws a `DownloadError` ("exceeded maximum size") before the body is read, and the body is released.
+
+`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default).
+
 ## Embedding dimensions
 
 `Embed.EmbedAsync`, `EmbedMany.EmbedManyAsync`, and `AiClient.EmbedAsync` / `EmbedManyAsync` take an optional `Dimensions` setting. It requests an output vector size and must be a positive integer. Any other value throws an `InvalidArgumentException` for parameter `dimensions` before the model runs. `EmbedMany` sends the same value to every chunk and every retry, and the start events and the `OnEmbedStart` telemetry callback carry it. `AiClient` calls the model once and does not retry or raise those events. Provider options are not changed.
