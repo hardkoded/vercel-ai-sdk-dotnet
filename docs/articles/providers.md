@@ -3,6 +3,7 @@
 Native wire protocols have their own request mappers:
 
 - Gateway (`AI_GATEWAY_API_KEY`) posts V4 call options to `/language-model`, `/embedding-model`, and `/image-model`. `DecisionModel(id)` posts the state and questions to `/decision-model`.
+- Google `DecisionModel(id)` answers `Evaluate` questions with Gemini structured output (provider id `google.decision`). It wraps the Gemini language model in `DecisionLanguageModel`, which sends one request for every Choice, Score, and Boolean question and calls the model with reasoning `none` (the minimum thinking level on Gemini 3 models). `providerOptions.google` passes through, so `thinkingConfig` overrides the default. A finish reason other than `STOP`, invalid JSON, an unknown choice, or a score or probability outside its range throws `InvalidResponseDataException`. File parts must be images.
 - OpenAI speaks Chat Completions, the Responses API, embeddings, images, speech, and transcription. `DecisionModel(id)` answers `Evaluate` questions through the Decisions API (`POST /decisions`; provider id `openai.decision`). Its only provider option is `safetyIdentifier` (a string of at most 128 characters). Any other `openai` option is reported as an `unsupported` warning and not sent. A refused question returns a `refusal` answer, and `Evaluate.EvaluateAsync` throws `DecisionRefusalError` for it.
 - OpenAI Responses on GPT-6 and later models accept `reasoningEffortUpdate` (`none`, `low`, `medium`, `high`, `xhigh`, or `max`). Set it in the `openai` provider options to prepend a `configuration_update` item to the input. Set it on a `SystemModelMessage` with empty content (through its `providerOptions`) to place the update inside the conversation. Pass that message in the messages list. The `instructions` argument is rebuilt from text only and drops message provider options. Sampling parameters (`temperature`, `topP`) and `logprobs` follow the last update, so a `none` update on GPT-6 Sol or Luna keeps them. Adjacent updates, unsupported efforts, and message updates on other models throw `UnsupportedFunctionalityException`. A request-level update on an unsupported model is dropped with a warning.
 - OpenAI Responses exposes the URLs in `web_search_call.action.sources` as `GeneratedSource` parts, and each retrieved `file_search_call` file once as a `GeneratedDocumentSource` (even when several passages come from one file, or the file is not cited). Inline `url_citation`, `file_citation`, and `container_file_citation` annotations become `GeneratedText.Citations`, with the output range as `StartIndex` and `EndIndex`, and on a streamed `TextEndStreamPart` for each completed message. Repeated ranges and URLs with query strings or fragments stay distinct. The raw annotations stay in the text part's provider metadata as `openai.annotations`. A `file_path` annotation is a generated file, not a citation. When the response has no retrieval data, the annotation's own source is still emitted as a source. In a stream that decision is made when the stream ends. Provider-executed `web_search_call` and `file_search_call` results are reported as tool results named `web_search` and `file_search`.
@@ -12,6 +13,7 @@ Native wire protocols have their own request mappers:
   - `contextManagement` (a list of `{ "type": "compaction", "compactThreshold": n }`) is sent as `context_management`. `compactionTrigger: true` appends a `compaction_trigger` item as the last input item.
   - `conversation` is sent as `conversation`. It warns when combined with `previousResponseId`. With either `conversation` or `previousResponseId`, assistant reasoning that carries an OpenAI `itemId` is not resent. Build that reasoning with the `AssistantModelMessage` constructor that takes `reasoningProviderOptions`. Without a continuation, a reasoning `itemId` is sent as an `item_reference` (or as a `reasoning` item when `store` is `false`).
 - Azure OpenAI Responses: `AzureOpenAIProvider.ResponsesModel(id)` posts to `/openai/v1/responses` (provider id `azure.responses`). Provider options and message options are read from `azure` first and fall back to `openai` only when the `azure` key is absent. An empty `azure` object therefore hides the `openai` options.
+- TypeSafe (`TYPESAFE_AI_API_KEY`) posts the state and questions to `/systemone` through `TypeSafeAiProvider.EvaluationModel(id)` (provider id `typesafe.evaluation`). See [TypeSafe](typesafe-ai.md).
 - Anthropic speaks the Messages API. `AnthropicAwsProvider` points that body at the AWS external endpoint.
   - `GeneratedSource` parts come from `web_search_tool_result` blocks, one per search result. The citations on a text block are attached to its `GeneratedText.Citations` (a `Citation` for each of `web_search_result_location`, `search_result_location`, `page_location`, `char_location`, and `content_block_location`), including on a streamed `TextEndStreamPart`. They are not repeated as sources. A `web_search_result_location` citation only becomes a `GeneratedSource` when the response has no search results. The raw citations stay in the text part's provider metadata as `anthropic.citations`. Page, character, and block locations refer to the source document, not to the generated answer. A document citation uses the `text/plain` media type, and the title falls back to `Document {index}`, because the port does not track the prompt's documents.
   - `claude-sonnet-5-5` always thinks and rejects thinking token budgets and forced tool use. Its lowest thinking setting is `thinking: { type: "between_tools" }`: no upfront thinking, only short progress notes between tool calls. `thinking: { type: "disabled" }` and `reasoning: "none"` are sent as `between_tools` (the first with a warning). `between_tools` is accepted only at `low`, `medium`, and `high` effort. At `xhigh` or `max` the effort is lowered to `high` with a warning. `thinking: { type: "enabled", budgetTokens }` is sent as `{ type: "adaptive" }` with a warning. A `required` or named tool choice falls back to `auto`, and `structuredOutputMode: "jsonTool"` falls back to native `output_config.format`, each with a warning.
@@ -28,6 +30,8 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Anthropic, DeepSeek, Moonshot, and OpenAI models that list `max` send it unchanged, with no warning.
 - Google (Gemini 3), Groq, and Fireworks send `high`. Fireworks also sends `low` for `minimal` and `high` for `xhigh`. Each change adds a warning. A `reasoningEffort` provider option wins over `Reasoning` and adds no warning.
 - Perplexity sends `xhigh`.
+- Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
+- OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The `open-responses` provider options `reasoningEffort` and `reasoningSummary` set `reasoning.effort` and `reasoning.summary`.
 
 Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
 
@@ -86,6 +90,22 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+## Response handlers
+
+`ResponseHandlers` in `Vercel.AI.ProviderUtils` holds the closest .NET shape of the upstream response handler factories. Each one takes the `HttpResponseMessage`, the request `url`, and the request body values, and returns the value with the response headers (`ResponseHandlerResult<T>`) or, for the error handlers, an `ApiException`.
+
+| Method | Upstream | Result |
+| --- | --- | --- |
+| `CreateBinaryResponseAsync` | `createBinaryResponseHandler` | The body bytes. An empty body throws an `ApiException` with "Response body is empty". |
+| `CreateBinaryStreamResponseAsync` | `createBinaryStreamResponseHandler` | The body stream. An empty body throws "Empty response body". |
+| `CreateEventSourceResponseAsync` | `createEventSourceResponseHandler` | A stream of parsed events. A read failure (`IOException`, `HttpRequestException`) on the successful response throws a retryable `ApiException` "Failed to process successful response" that keeps the status code, URL, headers, and the original error as `InnerException`. |
+| `CreateJsonErrorResponseAsync` | `createJsonErrorResponseHandler` | An `ApiException` whose message comes from `errorToMessage`, or the status text when the body does not match the error schema. |
+| `CreateStatusCodeErrorResponseAsync` | `createStatusCodeErrorResponseHandler` | An `ApiException` whose message is the status text. |
+
+The binary and error handlers read at most `Download.DefaultMaxBytes`. A larger `Content-Length` throws a `DownloadError` ("exceeded maximum size") before the body is read, and the body is released.
+
+`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default).
+
 ## Embedding dimensions
 
 `Embed.EmbedAsync`, `EmbedMany.EmbedManyAsync`, and `AiClient.EmbedAsync` / `EmbedManyAsync` take an optional `Dimensions` setting. It requests an output vector size and must be a positive integer. Any other value throws an `InvalidArgumentException` for parameter `dimensions` before the model runs. `EmbedMany` sends the same value to every chunk and every retry, and the start events and the `OnEmbedStart` telemetry callback carry it. `AiClient` calls the model once and does not retry or raise those events. Provider options are not changed.
@@ -101,7 +121,15 @@ A provider option for the same setting wins over `Dimensions`. When both are uns
 | Perplexity | `perplexity.dimensions` | `dimensions` |
 | Voyage | `voyage.outputDimension` | `output_dimension` |
 | Alibaba | `alibaba.dimension` | `parameters.dimension` |
+| Amazon Bedrock Titan | `amazonBedrock.dimensions` | `dimensions` |
+| Amazon Bedrock Cohere | `amazonBedrock.outputDimension` | `output_dimension` |
+| Amazon Bedrock Nova | `amazonBedrock.embeddingDimension` | `singleEmbeddingParams.embeddingDimension` (1024 when unset) |
+| Google Vertex (predict) | `googleVertex.outputDimensionality` | `parameters.outputDimensionality` |
+| Google Vertex (embedContent) | `googleVertex.outputDimensionality` | `embedContentConfig.outputDimensionality` |
+| Mistral | `mistral.outputDimension` | `output_dimension` |
 
-Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them. Amazon Bedrock, Google Vertex, and Mistral ignore `Dimensions` for now.
+`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`.
+
+Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 
 `IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. Custom models must add the parameter.

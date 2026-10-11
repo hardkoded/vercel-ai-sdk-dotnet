@@ -44,6 +44,24 @@ public class ApiException : AiSdkException
 
     /// <summary>Raw response body, when the provider sent one.</summary>
     public string? ResponseBody { get; }
+
+    /// <summary>URL of the failed request. Set by the response handlers.</summary>
+    public string? Url { get; init; }
+
+    /// <summary>Request body values the call was made with. Set by the response handlers.</summary>
+    public object? RequestBodyValues { get; init; }
+
+    /// <summary>Response headers, when the handler had them.</summary>
+    public IReadOnlyDictionary<string, string>? ResponseHeaders { get; init; }
+
+    /// <summary>True when the call can be retried. Defaults to 408, 429, and 500 and above.</summary>
+    public bool IsRetryable
+    {
+        get => _isRetryable ?? (StatusCode == 408 || StatusCode == 429 || StatusCode >= 500);
+        init => _isRetryable = value;
+    }
+
+    private readonly bool? _isRetryable;
 }
 
 /// <summary>HTTP 400.</summary>

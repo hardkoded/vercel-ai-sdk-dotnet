@@ -8,7 +8,7 @@ using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 using DecisionModel = Vercel.AI.Operations.DecisionLanguageModel;
 
-namespace Vercel.AI.Tests.DecisionLanguageModel;
+namespace Vercel.AI.Tests.Upstream.ProviderUtils.DecisionLanguageModelSuite;
 
 /// <summary>Port of <c>decision-language-model.test.ts</c>.</summary>
 public sealed class DecisionLanguageModelTests

@@ -449,10 +449,18 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             body[pair.Key] = pair.Value?.DeepClone();
         }
 
-        var reasoningEffort = settings.ReasoningEffort;
-        if (reasoningEffort == null && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning))
+        string? reasoningEffort;
+        if (_provider.Options.ResolveReasoningEffort != null)
         {
-            reasoningEffort = options.Reasoning;
+            reasoningEffort = _provider.Options.ResolveReasoningEffort(ModelId, options.Reasoning, settings.ReasoningEffort, warnings);
+        }
+        else
+        {
+            reasoningEffort = settings.ReasoningEffort;
+            if (reasoningEffort == null && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning))
+            {
+                reasoningEffort = options.Reasoning;
+            }
         }
 
         if (reasoningEffort != null)

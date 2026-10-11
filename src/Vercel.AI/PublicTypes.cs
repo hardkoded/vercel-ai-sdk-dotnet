@@ -36,6 +36,12 @@ public sealed class Tool
     /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
     public bool? Strict { get; }
 
+    /// <summary>
+    /// When true, a call to this tool is not executed. The loop ends at that step and the call is left for the caller,
+    /// unless <see cref="GenerateTextOptions.ApproveTool"/> is set, which then decides. Maps to <c>needsApproval</c>.
+    /// </summary>
+    public bool NeedsApproval { get; set; }
+
     /// <summary>Creates a tool from a JSON schema string.</summary>
     public static Tool Function(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
     {
