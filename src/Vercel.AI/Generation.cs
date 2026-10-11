@@ -518,6 +518,11 @@ internal static class Generation
         {
             foreach (var call in toolCalls)
             {
+                if (IsAwaitingApproval(FindTool(options, call.ToolName), options))
+                {
+                    continue;
+                }
+
                 var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
                 toolResults.Add(executed);
                 messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
@@ -595,13 +600,19 @@ internal static class Generation
         return null;
     }
 
-    // A tool without an execute function leaves its call for the caller, so the loop ends without asking the stop condition.
+    // A tool that needs approval, with nobody to ask, leaves its call for the caller.
+    private static bool IsAwaitingApproval(Tool? tool, GenerateTextOptions options)
+    {
+        return tool != null && tool.NeedsApproval && options.ApproveTool == null;
+    }
+
+    // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
     private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
     {
         foreach (var call in step.ToolCalls)
         {
             var tool = FindTool(options, call.ToolName);
-            if (tool != null && tool.Execute == null)
+            if ((tool != null && tool.Execute == null) || IsAwaitingApproval(tool, options))
             {
                 return true;
             }

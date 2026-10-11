@@ -102,6 +102,19 @@ public sealed class DefaultStopConditionMethodTests
     }
 
     [Theory]
+    [MemberData(nameof(MethodNames))]
+    [UpstreamTest(Prefix + "does not warn when a tool needs approval", Coverage = UpstreamCoverage.Covered)]
+    public async Task Does_not_warn_when_a_tool_needs_approval(string method)
+    {
+        using var log = new LogRecorder();
+        var tool = ExecutableTool();
+        tool.NeedsApproval = true;
+
+        Assert.Single(await Run(method, new ToolLoopModel(), tool, null));
+        Assert.Empty(log.Logged);
+    }
+
+    [Theory]
     [MemberData(nameof(Methods))]
     [UpstreamTest(Prefix + "does not warn for an explicit default limit (array: %s)", Coverage = UpstreamCoverage.Partial, Note = "Covers array: false. StopWhen is one condition, not an array.")]
     public async Task Does_not_warn_for_an_explicit_default_limit(string method, int limit)
@@ -136,5 +149,35 @@ public sealed class DefaultStopConditionMethodTests
         Assert.Equal(limit, (await Run(method, new ToolLoopModel(), ExecutableTool(), null)).Count);
         Assert.Empty(log.Logged);
         Assert.Equal(0, log.Emitted);
+    }
+
+    [Theory]
+    [InlineData("agent.generate", 10)]
+    [InlineData("agent.stream", 10)]
+    [UpstreamTest(Prefix + "does not warn when prepareCall replaces the default limit", Coverage = UpstreamCoverage.Covered)]
+    public async Task Does_not_warn_when_prepareCall_replaces_the_default_limit(string method, int limit)
+    {
+        using var log = new LogRecorder();
+
+        var steps = await Run(method, new ToolLoopModel(), ExecutableTool(), null, settings =>
+        {
+            settings.StopWhen = StopWhen.IsStepCount(limit);
+            return settings;
+        });
+
+        Assert.Equal(limit, steps.Count);
+        Assert.Empty(log.Logged);
+    }
+
+    [Theory]
+    [InlineData("agent.generate", 10)]
+    [InlineData("agent.stream", 10)]
+    [UpstreamTest(Prefix + "preserves the default warning through prepareCall", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_the_default_warning_through_prepareCall(string method, int limit)
+    {
+        using var log = new LogRecorder();
+
+        Assert.Equal(limit, (await Run(method, new ToolLoopModel(), ExecutableTool(), null, settings => settings)).Count);
+        Assert.Single(log.Logged);
     }
 }

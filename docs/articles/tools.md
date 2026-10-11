@@ -30,7 +30,9 @@ The default stop condition is one step. That step’s tool calls still run, and 
 
 `Agent` stops after 10 steps when `AgentOptions.StopWhen` is null. When that default limit is what stopped the loop, the agent logs one warning through `LogWarnings` (type `other`, with the provider and model of the last step). Set `StopWhen` explicitly, with `IsStepCount` or a custom condition, to raise the limit and silence it. `GenerateTextAsync` and `StreamTextAsync` do not log. `LogWarnings.Logger = false` suppresses the warning. `StepResult.Provider` and `StepResult.ModelId` name the model that produced each step.
 
-A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated.
+Set `AgentOptions.PrepareCall` to change the options of each `Agent.GenerateAsync` and `Agent.Stream` call. It receives the options the agent would use, including the default `StopWhen`, and returns replacement options (or null to keep them). Returning them unchanged keeps the default warning; setting `StopWhen` replaces the default limit and silences it.
+
+A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated. The same holds for a tool with `NeedsApproval = true` when `ApproveTool` is not set: the call is not executed and no warning is logged. When `ApproveTool` is set, it decides instead.
 
 Set `ApproveTool` to veto a call before it runs. A denied call is stored as an error tool result.
 
