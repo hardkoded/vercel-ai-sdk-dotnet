@@ -19,17 +19,17 @@ internal static class GoogleDecisionSupport
         return (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-decision.json")))!;
     }
 
-    internal static Dictionary<string, EvaluationQuestion> Questions()
+    internal static Dictionary<string, DecisionQuestion> Questions()
     {
-        return new Dictionary<string, EvaluationQuestion>
+        return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new EvaluationQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = new EvaluationQuestion("score", "[\"Rate severity.\"]", new List<object?> { "Low", "Medium", "High" }),
+            ["department"] = new DecisionQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
+            ["severity"] = new DecisionQuestion("score", "[\"Rate severity.\"]", new List<object?> { "Low", "Medium", "High" }),
         };
     }
 
-    internal static EvaluationModelCall Call(
-        IReadOnlyDictionary<string, EvaluationQuestion>? questions = null,
+    internal static DecisionModelCall Call(
+        IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default)
@@ -43,7 +43,7 @@ internal static class GoogleDecisionSupport
                 ["value"] = new Dictionary<string, object?> { ["message"] = "A billing issue with a workaround." },
             },
         };
-        return new EvaluationModelCall(state, questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(state, questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
     }
 
     internal static (DecisionLanguageModel Model, GoogleDecisionCapture Capture) Setup(JsonNode? body = null, bool withBaseUrl = true)

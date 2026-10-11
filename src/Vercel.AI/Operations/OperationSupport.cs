@@ -311,11 +311,11 @@ public sealed class DownloadException : AiSdkException
     public int StatusCode { get; }
 }
 
-/// <summary>The evaluation model does not support a question type.</summary>
-public sealed class EvaluationUnsupportedQuestionTypeException : AiSdkException
+/// <summary>The decision model does not support a question type.</summary>
+public class DecisionUnsupportedQuestionTypeException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
-    public EvaluationUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
+    public DecisionUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
         : base("Question \"" + questionId + "\" has unsupported type \"" + questionType + "\".")
     {
         QuestionId = questionId;

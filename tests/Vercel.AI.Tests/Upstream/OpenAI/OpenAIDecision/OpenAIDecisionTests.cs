@@ -136,9 +136,9 @@ public sealed class OpenAIDecisionTests
     public async Task Serializes_structured_input_and_rubrics_omits_null_descriptions_and_preserves_boolean_criteria()
     {
         var (model, capture) = Setup();
-        var questions = new Dictionary<string, EvaluationQuestion>
+        var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new EvaluationQuestion(
+            ["department"] = new DecisionQuestion(
                 "choice",
                 new Dictionary<string, object?> { ["task"] = "route" },
                 new Dictionary<string, object?>
@@ -146,11 +146,11 @@ public sealed class OpenAIDecisionTests
                     ["technical"] = null,
                     ["billing"] = new Dictionary<string, object?> { ["rubric"] = new List<object?> { "charges" } },
                 }),
-            ["severity"] = new EvaluationQuestion(
+            ["severity"] = new DecisionQuestion(
                 "score",
                 new List<object?> { "severity" },
                 new List<object?> { null, new Dictionary<string, object?> { ["meaning"] = "high" } }),
-            ["refund"] = new EvaluationQuestion(
+            ["refund"] = new DecisionQuestion(
                 "boolean",
                 "Refund?",
                 new Dictionary<string, object?>
@@ -303,7 +303,7 @@ public sealed class OpenAIDecisionTests
         var body = (JsonObject)live.DeepClone();
         body["model"] = "gpt-6-luna-resolved";
         var questions = Questions();
-        var renamed = new Dictionary<string, EvaluationQuestion>
+        var renamed = new Dictionary<string, DecisionQuestion>
         {
             ["department"] = questions["department"],
             ["severity"] = questions["severity"],
@@ -381,7 +381,7 @@ public sealed class OpenAIDecisionTests
         }
 
         var questions = Questions();
-        questions["refund"] = new EvaluationQuestion("boolean", "Refund?", parsed);
+        questions["refund"] = new DecisionQuestion("boolean", "Refund?", parsed);
         await model.DoDecideAsync(Call(questions));
         Assert.Equal(expected, RequestBody(capture)["questions"]![2]!["instructions"]!.GetValue<string>());
     }

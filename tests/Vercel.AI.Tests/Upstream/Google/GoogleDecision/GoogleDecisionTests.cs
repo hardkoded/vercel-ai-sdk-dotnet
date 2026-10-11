@@ -120,7 +120,7 @@ public sealed class GoogleDecisionTests
         body["candidates"]![0]!["content"]!["parts"] = new JsonArray(new JsonObject { ["text"] = "{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.02}" });
         var (model, capture) = Setup(body);
         var questions = Questions();
-        questions["flag"] = new EvaluationQuestion("boolean", "Is a refund requested?");
+        questions["flag"] = new DecisionQuestion("boolean", "Is a refund requested?");
         var result = await model.DoDecideAsync(Call(questions));
         Assert.Equal("billing", result.Answers["department"].Choice);
         Assert.Equal(1.25, result.Answers["severity"].Score);
@@ -145,11 +145,11 @@ public sealed class GoogleDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves the deprecated factory and direct model method", Coverage = UpstreamCoverage.Partial, Note = "The port has no EvaluationModel factory on GoogleProvider; the direct DoEvaluateAsync method is checked through DecisionModel.")]
+    [UpstreamTest(Prefix + "preserves the deprecated factory and direct model method", Coverage = UpstreamCoverage.Partial, Note = "The port has no EvaluationModel factory on GoogleProvider; the direct DoDecideAsync method is checked through DecisionModel.")]
     public async Task Preserves_the_deprecated_factory_and_direct_model_method()
     {
         var (model, capture) = Setup(withBaseUrl: false);
-        var result = await model.DoEvaluateAsync(Call(), CancellationToken.None);
+        var result = await model.DoDecideAsync(Call(), CancellationToken.None);
         Assert.Equal("choice", result.Answers["department"].Type);
         Assert.Equal("billing", result.Answers["department"].Choice);
         Assert.Contains(".decision", model.Provider);

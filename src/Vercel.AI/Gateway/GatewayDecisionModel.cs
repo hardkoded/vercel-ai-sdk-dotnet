@@ -11,8 +11,9 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Gateway;
 
+#pragma warning disable CS0618
 /// <summary>Answers questions through the Gateway <c>/decision-model</c> route.</summary>
-public sealed class GatewayDecisionModel : IEvaluationCaller
+public sealed class GatewayDecisionModel : IDecisionCaller, IEvaluationCaller
 {
     private readonly GatewayProvider _provider;
 
@@ -35,14 +36,15 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
     /// <inheritdoc />
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
 
-    /// <inheritdoc />
-    public Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
+    [Obsolete("Use DoDecideAsync instead.")]
+    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
     {
-        return DoDecideAsync(call, cancellationToken);
+        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Sends the state and every question in one request.</summary>
-    public async Task<EvaluationModelResult> DoDecideAsync(EvaluationModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
     {
         if (call == null)
         {
@@ -99,16 +101,16 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
 
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var root = document.RootElement.Clone();
-        var answers = new Dictionary<string, EvaluationAnswer>();
+        var answers = new Dictionary<string, DecisionAnswer>();
         foreach (var answer in root.GetProperty("answers").EnumerateObject())
         {
             answers[answer.Name] = ParseAnswer(answer.Value);
         }
 
-        EvaluationRounding? rounding = null;
+        DecisionRounding? rounding = null;
         if (root.TryGetProperty("rounding", out var roundingElement) && roundingElement.ValueKind == JsonValueKind.Object)
         {
-            rounding = new EvaluationRounding(Integer(roundingElement, "probabilityDecimals"), Integer(roundingElement, "scoreDecimals"));
+            rounding = new DecisionRounding(Integer(roundingElement, "probabilityDecimals"), Integer(roundingElement, "scoreDecimals"));
         }
 
         OperationUsage? usage = null;
@@ -137,7 +139,7 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
             providerMetadata = metadata;
         }
 
-        return new EvaluationModelResult(
+        return new DecisionModelResult(
             answers,
             warnings,
             usage,
@@ -146,7 +148,7 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
             new ProviderResponse(response.Headers, root, modelId: Text(root, "model") ?? ModelId));
     }
 
-    private static EvaluationAnswer ParseAnswer(JsonElement answer)
+    private static DecisionAnswer ParseAnswer(JsonElement answer)
     {
         var type = answer.GetProperty("type").GetString()!;
         IReadOnlyDictionary<string, double>? probabilities = null;
@@ -164,13 +166,13 @@ public sealed class GatewayDecisionModel : IEvaluationCaller
         switch (type)
         {
             case "choice":
-                return new EvaluationAnswer(type, choice: answer.GetProperty("choice").GetString(), probabilities: probabilities);
+                return new DecisionAnswer(type, choice: answer.GetProperty("choice").GetString(), probabilities: probabilities);
             case "score":
-                return new EvaluationAnswer(type, score: answer.GetProperty("score").GetDouble(), probabilities: probabilities);
+                return new DecisionAnswer(type, score: answer.GetProperty("score").GetDouble(), probabilities: probabilities);
             case "boolean":
-                return new EvaluationAnswer(type, probability: answer.GetProperty("probability").GetDouble());
+                return new DecisionAnswer(type, probability: answer.GetProperty("probability").GetDouble());
             case "refusal":
-                return new EvaluationAnswer(type);
+                return new DecisionAnswer(type);
             default:
                 throw new InvalidResponseDataException(answer, "Unknown answer type \"" + type + "\".");
         }
@@ -424,3 +426,4 @@ internal static class GatewayDecisionProviderOptions
         return value.ValueKind == JsonValueKind.Number && value.GetDouble() >= 0 && value.GetDouble() <= 1;
     }
 }
+#pragma warning restore CS0618

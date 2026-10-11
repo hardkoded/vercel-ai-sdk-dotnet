@@ -7,6 +7,7 @@ using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision.OpenAIDecisionSupport;
+using DecideOperation = Vercel.AI.Operations.Decide;
 
 namespace Vercel.AI.Tests.Upstream.Operations.OpenAIDecisions;
 
@@ -42,13 +43,13 @@ public sealed class OpenAIDecisionsTests
         return new TheoryData<int> { 0, 1, 2, 3, 4, 5 };
     }
 
-    private static Dictionary<string, EvaluationQuestion> Questions()
+    private static Dictionary<string, DecisionQuestion> Questions()
     {
-        return new Dictionary<string, EvaluationQuestion>
+        return new Dictionary<string, DecisionQuestion>
         {
-            ["team"] = new EvaluationQuestion("choice", "Route the ticket.", new Dictionary<string, object?> { ["billing"] = "Charges", ["technical"] = "Bugs", ["other"] = null }),
-            ["severity"] = new EvaluationQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = new EvaluationQuestion("boolean", "Is a refund requested?"),
+            ["team"] = new DecisionQuestion("choice", "Route the ticket.", new Dictionary<string, object?> { ["billing"] = "Charges", ["technical"] = "Bugs", ["other"] = null }),
+            ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = new DecisionQuestion("boolean", "Is a refund requested?"),
         };
     }
 
@@ -78,7 +79,7 @@ public sealed class OpenAIDecisionsTests
     {
         var (model, capture) = Setup();
         var state = new Dictionary<string, object?> { ["ticket"] = "Charged twice." };
-        var result = await Evaluate.EvaluateAsync(new EvaluateRequest { Model = model, State = state, Questions = Questions() });
+        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = state, Questions = Questions() });
         Assert.Equal(1, capture.Calls);
         Assert.Equal("https://api.openai.com/v1/decisions", capture.Uri);
         Assert.Equal(3, result.Answers.Count);
@@ -114,13 +115,13 @@ public sealed class OpenAIDecisionsTests
         var (model, _) = Setup(JsonNode.Parse("""
             [{ "type": "score", "name": "severity", "score": 0.5, "probabilities": [{ "value": 0, "probability": 0.51 }, { "value": 1, "probability": 0.49 }] }]
             """));
-        var result = await Evaluate.EvaluateAsync(new EvaluateRequest
+        var result = await DecideOperation.DecideAsync(new DecideRequest
         {
             Model = model,
             State = "A billing issue with a workaround.",
-            Questions = new Dictionary<string, EvaluationQuestion>
+            Questions = new Dictionary<string, DecisionQuestion>
             {
-                ["severity"] = new EvaluationQuestion("score", "Rate severity.", new List<object?> { "Low", "High" }),
+                ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "High" }),
             },
         });
         AssertAnswer(result.Answers["severity"], "score", score: 0.5, probabilities: new[] { ("0", 0.51), ("1", 0.49) });
@@ -153,7 +154,7 @@ public sealed class OpenAIDecisionsTests
             replacement.Add(original!["name"]!.GetValue<string>() == invalid["name"]!.GetValue<string>() ? invalid.DeepClone() : original.DeepClone());
         }
 
-        await Assert.ThrowsAsync<InvalidResponseDataException>(() => Evaluate.EvaluateAsync(new EvaluateRequest
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() => DecideOperation.DecideAsync(new DecideRequest
         {
             Model = Setup(replacement).Model,
             State = "Ticket",
@@ -173,7 +174,7 @@ public sealed class OpenAIDecisionsTests
         }
 
         var (model, capture) = Setup(answers);
-        var error = await Assert.ThrowsAsync<DecisionRefusalError>(() => Evaluate.EvaluateAsync(new EvaluateRequest { Model = model, State = "Ticket", Questions = Questions() }));
+        var error = await Assert.ThrowsAsync<DecisionRefusalError>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "Ticket", Questions = Questions() }));
         Assert.Equal("AI_DecisionRefusalError", error.ErrorName);
         Assert.Equal(new[] { "refund" }, error.QuestionIds);
         Assert.Equal(1, capture.Calls);

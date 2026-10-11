@@ -7,14 +7,14 @@ using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.TypeSafeAi;
 using Vercel.AI.Util;
-using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiEvaluationModel.TypesafeAiEvaluationModelSupport;
+using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel.TypesafeAiDecisionModelSupport;
 
-namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiEvaluationModel;
+namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 
-/// <summary>Port of the tests outside any <c>describe</c> in <c>typesafe-ai-evaluation-model.test.ts</c>.</summary>
-public sealed class TypesafeAiEvaluationModelTests
+/// <summary>Port of the tests outside any <c>describe</c> in <c>typesafe-ai-decision-model.test.ts</c>.</summary>
+public sealed class TypesafeAiDecisionModelTests
 {
-    private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-evaluation-model.test.ts::";
+    private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-decision-model.test.ts::";
 
     [Fact]
     [UpstreamTest(Prefix + "sends all three question types and structured rubrics in one request", Coverage = UpstreamCoverage.Covered)]
@@ -22,7 +22,7 @@ public sealed class TypesafeAiEvaluationModelTests
     {
         var server = Server();
         var questions = Questions();
-        await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(questions), CancellationToken.None);
+        await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(questions), CancellationToken.None);
         var call = Assert.Single(server.Calls);
         Assert.True(JsonNode.DeepEquals(NativeRequest, JsonNode.Parse(call.Body)), call.Body);
         Assert.Equal("boolean", questions["requestsRefund"].Type);
@@ -34,7 +34,7 @@ public sealed class TypesafeAiEvaluationModelTests
     [UpstreamTest(Prefix + "preserves native scores, probabilities, confidence metadata, and usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_native_scores_probabilities_confidence_metadata_and_usage()
     {
-        var result = await CreateProvider(Server()).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
+        var result = await CreateProvider(Server()).DecisionModel("jev-latest").DoDecideAsync(Call(), CancellationToken.None);
         Assert.Equal(3, result.Answers.Count);
         var department = result.Answers["department"];
         Assert.Equal("choice", department.Type);
@@ -70,7 +70,7 @@ public sealed class TypesafeAiEvaluationModelTests
                 Headers = new Dictionary<string, string> { ["custom"] = "provider", ["shared"] = "provider" },
             },
             server);
-        var result = await custom.EvaluationModel("jev-future").DoEvaluateAsync(
+        var result = await custom.DecisionModel("jev-future").DoDecideAsync(
             Call(headers: new Dictionary<string, string> { ["shared"] = "call" }),
             CancellationToken.None);
         var call = Assert.Single(server.Calls);
@@ -88,12 +88,12 @@ public sealed class TypesafeAiEvaluationModelTests
     public async Task Loads_TYPESAFE_AI_API_KEY_lazily_from_the_environment()
     {
         var server = Server();
-        var environmentModel = TypeSafeAiProvider.Create(null, server).EvaluationModel("jev-latest");
+        var environmentModel = TypeSafeAiProvider.Create(null, server).DecisionModel("jev-latest");
         var previous = Environment.GetEnvironmentVariable(TypeSafeAiProvider.ApiKeyEnvironmentVariable);
         Environment.SetEnvironmentVariable(TypeSafeAiProvider.ApiKeyEnvironmentVariable, "environment-key");
         try
         {
-            await environmentModel.DoEvaluateAsync(Call(), CancellationToken.None);
+            await environmentModel.DoDecideAsync(Call(), CancellationToken.None);
         }
         finally
         {
@@ -108,7 +108,7 @@ public sealed class TypesafeAiEvaluationModelTests
     public async Task Reports_unsupported_provider_options_without_passing_them_through()
     {
         var server = Server();
-        var result = await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(
             Call(providerOptions: "{\"typesafe\":{\"temperature\":0}}"),
             CancellationToken.None);
         var warning = Assert.Single(result.Warnings);
@@ -125,18 +125,18 @@ public sealed class TypesafeAiEvaluationModelTests
             options[index.ToString()] = null;
         }
 
-        yield return new object[] { new EvaluationQuestion("choice", "Pick", options) };
-        yield return new object[] { new EvaluationQuestion("score", "Rate", Enumerable.Range(0, 11).Select(index => (object?)("Level " + index)).ToList()) };
+        yield return new object[] { new DecisionQuestion("choice", "Pick", options) };
+        yield return new object[] { new DecisionQuestion("score", "Rate", Enumerable.Range(0, 11).Select(index => (object?)("Level " + index)).ToList()) };
     }
 
     [Theory]
     [MemberData(nameof(ProviderLimitQuestions))]
     [UpstreamTest(Prefix + "rejects provider limits before HTTP for $type", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_provider_limits_before_HTTP_for_type(EvaluationQuestion question)
+    public async Task Rejects_provider_limits_before_HTTP_for_type(DecisionQuestion question)
     {
         var server = Server();
-        await Assert.ThrowsAsync<InvalidArgumentError>(() => CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(
-            Call(new Dictionary<string, EvaluationQuestion> { ["question"] = question }, state: JsonState("test")),
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(
+            Call(new Dictionary<string, DecisionQuestion> { ["question"] = question }, state: JsonState("test")),
             CancellationToken.None));
         Assert.Empty(server.Calls);
     }
@@ -147,7 +147,7 @@ public sealed class TypesafeAiEvaluationModelTests
     {
         var server = Server();
         server.ResponseBody = "{\"model\":null,\"usage\":null,\"answers\":{\"topic\":{\"type\":\"choice\",\"choice\":\"a\",\"probabilities\":{\"a\":1},\"confidence\":null}}}";
-        var result = await CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None);
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(), CancellationToken.None);
         Assert.Null(result.Usage!.InputTokens);
         Assert.Null(result.Usage.OutputTokens);
         Assert.Equal("jev-latest", result.Response!.ModelId);
@@ -163,8 +163,8 @@ public sealed class TypesafeAiEvaluationModelTests
     {
         using var controller = new CancellationTokenSource();
         var handler = new CancellingHandler(controller);
-        var model = TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = "test" }, handler).EvaluationModel("jev-latest");
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => model.DoEvaluateAsync(Call(), controller.Token));
+        var model = TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = "test" }, handler).DecisionModel("jev-latest");
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => model.DoDecideAsync(Call(), controller.Token));
         Assert.Equal(1, handler.Calls);
         Assert.True(handler.TokenCanBeCanceled);
         Assert.True(handler.TokenCancelledAfterAbort);
@@ -174,9 +174,9 @@ public sealed class TypesafeAiEvaluationModelTests
     [UpstreamTest(Prefix + "serializes and restores a model for workflow boundaries", Coverage = UpstreamCoverage.Covered)]
     public async Task Serializes_and_restores_a_model_for_workflow_boundaries()
     {
-        var original = new TypeSafeAiEvaluationModel("jev-latest", new TypeSafeAiEvaluationModelConfig
+        var original = new TypeSafeAiDecisionModel("jev-latest", new TypeSafeAiDecisionModelConfig
         {
-            Provider = "typesafe.evaluation",
+            Provider = "typesafe.decision",
             BaseUrl = "https://api.typesafe.ai/v1",
             Headers = () => new Dictionary<string, string> { ["Authorization"] = "Bearer restored-key" },
             HttpClient = new HttpClient(Server()),
@@ -185,8 +185,8 @@ public sealed class TypesafeAiEvaluationModelTests
         Assert.False(serialized.Config.ContainsKey("fetch"));
         Assert.False(serialized.Config.ContainsKey("httpClient"));
         var server = Server();
-        var restored = TypeSafeAiEvaluationModel.Deserialize(serialized, new HttpClient(server));
-        await restored.DoEvaluateAsync(Call(), CancellationToken.None);
+        var restored = TypeSafeAiDecisionModel.Deserialize(serialized, new HttpClient(server));
+        await restored.DoDecideAsync(Call(), CancellationToken.None);
         Assert.Equal("Bearer restored-key", server.Calls[0].Headers["authorization"]);
         Assert.Equal(new[] { "choice", "score", "boolean" }, restored.SupportedQuestionTypes);
     }
@@ -200,12 +200,12 @@ public sealed class TypesafeAiEvaluationModelTests
         Environment.SetEnvironmentVariable(TypeSafeAiProvider.ApiKeyEnvironmentVariable, "workflow-key");
         try
         {
-            var restored = TypeSafeAiEvaluationModel.Deserialize(
+            var restored = TypeSafeAiDecisionModel.Deserialize(
                 new SerializedModelOptions(
                     "jev-latest",
-                    new Dictionary<string, object?> { ["provider"] = "typesafe.evaluation", ["baseURL"] = "https://api.typesafe.ai/v1" }),
+                    new Dictionary<string, object?> { ["provider"] = "typesafe.decision", ["baseURL"] = "https://api.typesafe.ai/v1" }),
                 new HttpClient(server));
-            await restored.DoEvaluateAsync(Call(), CancellationToken.None);
+            await restored.DoDecideAsync(Call(), CancellationToken.None);
         }
         finally
         {

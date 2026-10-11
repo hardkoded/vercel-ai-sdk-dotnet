@@ -4,18 +4,18 @@
 
 using System.Net;
 using Vercel.AI.Util;
-using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiEvaluationModel.TypesafeAiEvaluationModelSupport;
+using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel.TypesafeAiDecisionModelSupport;
 
-namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiEvaluationModel;
+namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 
-/// <summary>Port of <c>typesafe-ai-evaluation-model.test.ts</c> &gt; <c>HTTP errors</c>.</summary>
+/// <summary>Port of <c>typesafe-ai-decision-model.test.ts</c> &gt; <c>HTTP errors</c>.</summary>
 public sealed class HttpErrorsTests
 {
-    private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-evaluation-model.test.ts::HTTP errors::";
+    private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-decision-model.test.ts::HTTP errors::";
 
     private static Task<ApiCallError> Fail(TypeSafeAiServer server)
     {
-        return Assert.ThrowsAsync<ApiCallError>(() => CreateProvider(server).EvaluationModel("jev-latest").DoEvaluateAsync(Call(), CancellationToken.None));
+        return Assert.ThrowsAsync<ApiCallError>(() => CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(), CancellationToken.None));
     }
 
     [Theory]
