@@ -423,39 +423,46 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Suite + "should properly combine headers from all sources",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The provider has no model-level headers setting, so only the per-call headers and the SigV4 signature are checked.")]
+    [UpstreamTest(Suite + "should properly combine headers from all sources", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_properly_combine_headers_from_all_sources()
     {
         var handler = Chunks(
             """{"contentBlockDelta":{"contentBlockIndex":0,"delta":{"text":"Hello"}}}""",
             """{"messageStop":{"stopReason":"stop_sequence"}}""");
-        await Stream(handler, new LanguageModelCallOptions
-        {
-            Prompt = TestPrompt,
-            Headers = new Dictionary<string, string?> { ["options-header"] = "options-value", ["shared-header"] = "options-shared" },
-        });
+        await Stream(
+            handler,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Headers = new Dictionary<string, string?> { ["options-header"] = "options-value", ["shared-header"] = "options-shared" },
+            },
+            providerHeaders: new Dictionary<string, string?> { ["model-header"] = "model-value", ["shared-header"] = "model-shared" });
 
         Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
         Assert.Equal("options-shared", handler.Headers["shared-header"]);
         Assert.StartsWith("AWS4-HMAC-SHA256", handler.Headers["Authorization"]);
         Assert.Contains("options-header", handler.Headers["Authorization"]);
     }
 
     [Fact]
-    [UpstreamTest(
-        Suite + "should work with partial headers",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The provider has no model-level headers setting, so only the SigV4 signature headers are checked.")]
+    [UpstreamTest(Suite + "should work with partial headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_work_with_partial_headers()
     {
-        var handler = Chunks();
-        await Stream(handler);
+        var handler = Chunks(
+            """{"contentBlockDelta":{"contentBlockIndex":0,"delta":{"text":"Hello"}}}""",
+            """{"messageStop":{"stopReason":"stop_sequence"}}""");
+        await Stream(
+            handler,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Headers = new Dictionary<string, string?> { ["options-header"] = "options-value" },
+            },
+            providerHeaders: new Dictionary<string, string?> { ["model-header"] = "model-value" });
 
-        Assert.StartsWith("AWS4-HMAC-SHA256", handler.Headers["Authorization"]);
-        Assert.True(handler.Headers.ContainsKey("x-amz-date"));
+        Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
     }
 
     [Fact]

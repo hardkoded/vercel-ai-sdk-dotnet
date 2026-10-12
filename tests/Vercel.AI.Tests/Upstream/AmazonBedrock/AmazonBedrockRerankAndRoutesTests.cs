@@ -189,7 +189,7 @@ public sealed class AmazonBedrockRerankTests
 
     private static AmazonBedrockRerankingModel Model(UpstreamRecordingHandler handler)
     {
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
             Region = "us-west-2",
             AgentRuntimeBaseUrl = "https://bedrock-agent-runtime.us-east-1.amazonaws.com",

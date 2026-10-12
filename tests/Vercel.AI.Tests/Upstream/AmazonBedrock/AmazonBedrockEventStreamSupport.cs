@@ -173,21 +173,22 @@ internal static class BedrockStreamSupport
         return new UpstreamEventStreamHandler(EventStreamFrames.FromChunkLines(lines), headers);
     }
 
-    public static ILanguageModel CreateModel(HttpMessageHandler handler, string modelId = ModelId)
+    public static ILanguageModel CreateModel(HttpMessageHandler handler, string modelId = ModelId, Dictionary<string, string?>? providerHeaders = null)
     {
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
             AccessKeyId = "test-access-key",
             SecretAccessKey = "test-secret",
             UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            Headers = providerHeaders ?? new(),
         }, handler);
         return provider.LanguageModel(modelId);
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Stream(HttpMessageHandler handler, LanguageModelCallOptions? options = null, string modelId = ModelId)
+    public static async Task<List<LanguageModelStreamPart>> Stream(HttpMessageHandler handler, LanguageModelCallOptions? options = null, string modelId = ModelId, Dictionary<string, string?>? providerHeaders = null)
     {
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in CreateModel(handler, modelId).DoStreamAsync(options ?? Call(), CancellationToken.None))
+        await foreach (var part in CreateModel(handler, modelId, providerHeaders).DoStreamAsync(options ?? Call(), CancellationToken.None))
         {
             parts.Add(part);
         }

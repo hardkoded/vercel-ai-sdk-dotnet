@@ -4,8 +4,8 @@
 
 using System.Text.Json;
 using Vercel.AI.AmazonBedrock;
-using ResponseHandler = Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamResponseHandler;
 using Vercel.AI.Provider;
+using ResponseHandler = Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamResponseHandler;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockEventStreamResponseHandler;
 
