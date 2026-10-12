@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Calls a model through the AI Gateway and through a provider directly.</Description>
+  </PropertyGroup>
+</Project>

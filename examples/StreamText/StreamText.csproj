@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Streams text deltas as the model writes them.</Description>
+  </PropertyGroup>
+</Project>

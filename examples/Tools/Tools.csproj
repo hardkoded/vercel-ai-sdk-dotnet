@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Lets the model call a tool and read its result.</Description>
+  </PropertyGroup>
+</Project>

@@ -1,8 +1,12 @@
 <Solution>
-  <Folder Name="/samples/">
-    <Project Path="samples/Vercel.AI.AspNetCore.Sample/Vercel.AI.AspNetCore.Sample.csproj" />
-    <Project Path="samples/Vercel.AI.Sample/Vercel.AI.Sample.csproj" />
-    <Project Path="samples/Vercel.AI.Examples/Vercel.AI.Examples.csproj" />
+  <Folder Name="/examples/">
+    <Project Path="examples/Agent/Agent.csproj" />
+    <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
+    <Project Path="examples/GenerateText/GenerateText.csproj" />
+    <Project Path="examples/Providers/Providers.csproj" />
+    <Project Path="examples/StreamText/StreamText.csproj" />
+    <Project Path="examples/Tools/Tools.csproj" />
+    <Project Path="examples/UIMessageStream/UIMessageStream.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Vercel.AI/Vercel.AI.csproj" />
