@@ -340,9 +340,21 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+### OpenAI batch
+
+Batch support is experimental and the API may change in patch releases.
+
+The OpenAI provider supports asynchronous text generation through the [Batch API](https://developers.openai.com/api/docs/guides/batch). Pass the provider to `Batch.StartBatchAsync`, `Batch.GetBatchStatusAsync`, `Batch.GetBatchResults`, `Batch.CancelBatchAsync`, and `Batch.ListBatchesAsync` for the complete workflow.
+
+- `DoStartAsync` uploads the requests as a `batch.jsonl` input file and creates a `/v1/responses` batch with a `24h` completion window. Each request body is the Responses request body for its model. OpenAI requires every request in a batch to be a text request for the same model. A different type throws `UnsupportedFunctionalityException` and a different model throws `InvalidArgumentException`, both before any upload. Only function tools are supported in batch requests for now.
+- `providerOptions.openai.inputFileExpiresAfter` sets the input file TTL in seconds, from 3600 (1 hour) to 2592000 (30 days). It defaults to 48 hours. The start result's `ProviderMetadata.openai` holds `inputFileId` and, when the upload reports one, `inputFileExpiresAt`.
+- The OpenAI Batch API does not support per-batch webhooks. When you set `WebhookUrl`, the start result has an `unsupported` warning and the batch starts without a webhook.
+- `Status` is `completed` for `completed`, `failed` for `failed`, `expired`, and `cancelled`, and `pending` for every other status. `RawStatus` holds the OpenAI status. `RequestCounts`, `CreatedAt`, `ExpiresAt`, and the first batch error (`ErrorMessage`, `ErrorCode`) come from the batch object. A batch error without a message reads `OpenAI batch failed.`
+- `DoListAsync` sends `Limit` as `limit` and `Cursor` as `after`. `NextCursor` is the page's `last_id` when `has_more` is true.
+
 ### OpenAI batch results
 
-`OpenAIBatchApi.DoGetResultsAsync` converts each row of the output and error files. A row that fails never stops the later rows.
+`OpenAIBatchApi.DoGetResultsAsync` reads the batch first and throws `InvalidArgumentException` while its status is `pending`. It then converts each row of the output and error files. A row that fails never stops the later rows.
 
 - A row with `error.code` `batch_cancelled` or `batch_expired` has status `cancelled` or `expired`. Any other row error has status `failed`.
 - A row with a non-2xx `status_code` fails with `ErrorMessage`, `ErrorType`, `ErrorCode`, and `ErrorStatusCode` from `response.body.error`. When the body has no error message, the message is `OpenAI batch request failed with status code <n>.`

@@ -2,6 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
@@ -10,9 +13,12 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAI;
 
-/// <summary>OpenAI Batch API. Downloads the JSONL output and error files of a finished batch.</summary>
+/// <summary>OpenAI Batch API. Starts, reads, cancels, and lists Responses batches, and downloads their results.</summary>
 public sealed class OpenAIBatchApi : BatchResultsApiBase
 {
+    private const string Endpoint = "/v1/responses";
+    private const int DefaultInputFileExpiresAfterSeconds = 48 * 60 * 60;
+
     private readonly OpenAIProvider _provider;
 
     internal OpenAIBatchApi(OpenAIProvider provider)
@@ -24,18 +30,152 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     public override string Provider => _provider.Name + ".batch";
 
     /// <inheritdoc />
+    public override bool CanCancel => true;
+
+    /// <inheritdoc />
+    public override bool CanList => true;
+
+    /// <summary>
+    /// Uploads the requests as a JSONL input file, then creates a <c>/v1/responses</c> batch with a 24-hour completion window.
+    /// Every request must be a text request for the same model. <c>providerOptions.openai.inputFileExpiresAfter</c> sets the
+    /// input file TTL in seconds (3600 to 2592000, default 48 hours).
+    /// </summary>
+    public override async Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var requests = call.Requests ?? Array.Empty<NormalizedBatchRequest>();
+        foreach (var request in requests)
+        {
+            if (request.Type != "text")
+            {
+                throw new UnsupportedFunctionalityException("batch request type: " + request.Type, "The OpenAI Batch API does not support batch requests with type \"" + request.Type + "\".");
+            }
+        }
+
+        var modelId = requests.Count > 0 ? requests[0].ModelId : null;
+        foreach (var request in requests)
+        {
+            if (request.ModelId != modelId)
+            {
+                throw new InvalidArgumentException("requests", request.ModelId, "The OpenAI Batch API requires all requests in a batch to use the same model. Found \"" + modelId + "\" and \"" + request.ModelId + "\".");
+            }
+        }
+
+        var warnings = new List<BatchRequestWarning>();
+        if (call.WebhookUrl != null)
+        {
+            warnings.Add(new BatchRequestWarning(null, new OperationWarning("unsupported", feature: "webhookUrl", details: "The OpenAI Batch API does not support per-batch webhook URLs.")));
+        }
+
+        var expiresAfterSeconds = InputFileExpiresAfter(call.ProviderOptions) ?? DefaultInputFileExpiresAfterSeconds;
+        var file = new StringBuilder();
+        foreach (var request in requests)
+        {
+            var prepared = OpenAIResponsesLanguageModel.Prepare(request.ModelId, ToCallOptions(request.Options), stream: false);
+            file.Append(new JsonObject
+            {
+                ["custom_id"] = request.Id,
+                ["method"] = "POST",
+                ["url"] = Endpoint,
+                ["body"] = prepared.Body,
+            }.ToJsonString()).Append('\n');
+            foreach (var warning in prepared.Warnings)
+            {
+                warnings.Add(new BatchRequestWarning(request.Id, new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)));
+            }
+        }
+
+        var headers = Headers(call);
+        JsonElement upload;
+        using (var content = new MultipartFormDataContent())
+        {
+            var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes(file.ToString()));
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/jsonl");
+            content.Add(fileContent, "file", "batch.jsonl");
+            content.Add(new StringContent("batch"), "purpose");
+            content.Add(new StringContent("created_at"), "expires_after[anchor]");
+            content.Add(new StringContent(expiresAfterSeconds.ToString(CultureInfo.InvariantCulture)), "expires_after[seconds]");
+            var bytes = await _provider.Http.SendBytesAsync(HttpMethod.Post, Url("files"), content, headers, cancellationToken).ConfigureAwait(false);
+            using var document = JsonDocument.Parse(bytes);
+            upload = document.RootElement.Clone();
+        }
+
+        var inputFileId = Str(upload, "id") ?? throw new ApiException("Invalid JSON response", 200, upload.GetRawText());
+        var body = new JsonObject { ["input_file_id"] = inputFileId, ["endpoint"] = Endpoint, ["completion_window"] = "24h" }.ToJsonString();
+        var batch = await SendBatchAsync(HttpMethod.Post, Url("batches"), body, headers, cancellationToken).ConfigureAwait(false);
+
+        var metadata = new JsonObject { ["inputFileId"] = inputFileId };
+        if (Timestamp(upload, "expires_at") is { } inputFileExpiresAt)
+        {
+            metadata["inputFileExpiresAt"] = inputFileExpiresAt;
+        }
+
+        var started = Fill(new BatchStartResult { Id = Str(batch, "id")!, Warnings = warnings }, batch);
+        started.ProviderMetadata = OpenAIJson.ProviderMetadata(metadata);
+        return started;
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        return Fill(new BatchStatus(), await RetrieveAsync(call, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        await SendBatchAsync(HttpMethod.Post, Url("batches/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel"), "{}", Headers(call), cancellationToken).ConfigureAwait(false);
+        return new BatchCancelResult();
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var query = new List<string>();
+        if (call.Limit is { } limit)
+        {
+            query.Add("limit=" + limit.ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (call.Cursor != null)
+        {
+            query.Add("after=" + Uri.EscapeDataString(call.Cursor));
+        }
+
+        var url = Url("batches");
+        if (query.Count > 0)
+        {
+            url = new Uri(url.AbsoluteUri + "?" + string.Join("&", query));
+        }
+
+        JsonElement page;
+        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, url, null, Headers(call), cancellationToken).ConfigureAwait(false))
+        {
+            page = document.RootElement.Clone();
+        }
+
+        if (!page.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array
+            || !page.TryGetProperty("has_more", out var hasMore) || (hasMore.ValueKind != JsonValueKind.True && hasMore.ValueKind != JsonValueKind.False))
+        {
+            throw new ApiException("Invalid JSON response", 200, page.GetRawText());
+        }
+
+        var batches = new List<ListedBatch>();
+        foreach (var batch in data.EnumerateArray())
+        {
+            batches.Add(Fill(new ListedBatch { Id = Str(Validate(batch), "id")! }, batch));
+        }
+
+        var lastId = Str(page, "last_id");
+        return new BatchListResult(batches, hasMore.GetBoolean() && lastId != null ? lastId : null);
+    }
+
+    /// <inheritdoc />
     public override async Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
-        var headers = _provider.CreateOpenAIHeaders(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
-        JsonElement batch;
-        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + Uri.EscapeDataString(batchId)), null, headers, cancellationToken).ConfigureAwait(false))
-        {
-            batch = document.RootElement.Clone();
-        }
-
-        var status = Str(batch, "status");
-        if (status == "validating" || status == "in_progress" || status == "finalizing" || status == "cancelling")
+        var batch = await RetrieveAsync(call, cancellationToken).ConfigureAwait(false);
+        var status = MapStatus(Str(batch, "status"));
+        if (status == "pending")
         {
             throw new InvalidArgumentException("batchId", batchId, "OpenAI batch \"" + batchId + "\" is not complete.");
         }
@@ -55,15 +195,202 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             throw new InvalidResponseDataException(batch, "OpenAI batch \"" + batchId + "\" completed without batch output.");
         }
 
+        var headers = Headers(call);
         var items = new List<BatchItem>();
         foreach (var fileId in fileIds)
         {
-            var uri = ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + Uri.EscapeDataString(fileId) + "/content");
+            var uri = Url("files/" + Uri.EscapeDataString(fileId) + "/content");
             var lines = await CollectAsync(_provider.Http.SendJsonLinesAsync(HttpMethod.Get, uri, null, headers, _provider.MaxBatchLineBytes, cancellationToken), cancellationToken).ConfigureAwait(false);
             items.AddRange(lines.Select(Convert));
         }
 
         return items;
+    }
+
+    private Uri Url(string path) => ApiKeys.Combine(_provider.Options.BaseUrl, path);
+
+    private Dictionary<string, string?> Headers(BatchOperationCall call) =>
+        _provider.CreateOpenAIHeaders(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
+
+    private Task<JsonElement> RetrieveAsync(BatchOperationCall call, CancellationToken cancellationToken) =>
+        SendBatchAsync(HttpMethod.Get, Url("batches/" + Uri.EscapeDataString(call.BatchId ?? string.Empty)), null, Headers(call), cancellationToken);
+
+    private async Task<JsonElement> SendBatchAsync(HttpMethod method, Uri url, string? body, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    {
+        using var document = await _provider.Http.SendJsonAsync(method, url, body, headers, cancellationToken).ConfigureAwait(false);
+        return Validate(document.RootElement.Clone());
+    }
+
+    // Upstream's batch response schema requires a string id and status.
+    private static JsonElement Validate(JsonElement batch)
+    {
+        if (Str(batch, "id") == null || Str(batch, "status") == null)
+        {
+            throw new ApiException("Invalid JSON response", 200, batch.GetRawText());
+        }
+
+        return batch;
+    }
+
+    private static T Fill<T>(T target, JsonElement batch)
+        where T : BatchStatus
+    {
+        var rawStatus = Str(batch, "status");
+        target.Status = MapStatus(rawStatus);
+        target.RawStatus = rawStatus;
+        var counts = batch.TryGetProperty("request_counts", out var requestCounts) ? requestCounts : default;
+        var total = Number(counts, "total");
+        var completed = Number(counts, "completed");
+        var failed = Number(counts, "failed");
+        // Every count is at most the total, so a total that fits in int makes the casts safe.
+        var normalized = ProviderValues.NormalizeBatchRequestCounts(total, total - completed - failed, completed, failed);
+        target.RequestCounts = normalized == null || normalized.Total > int.MaxValue
+            ? null
+            : new BatchRequestCounts((int)normalized.Total, (int)normalized.Pending, (int)normalized.Completed, (int)normalized.Failed);
+        if (batch.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object
+            && errors.TryGetProperty("data", out var errorData) && errorData.ValueKind == JsonValueKind.Array && errorData.GetArrayLength() > 0)
+        {
+            var first = errorData[0];
+            target.ErrorMessage = Str(first, "message") ?? "OpenAI batch failed.";
+            target.ErrorCode = Str(first, "code");
+        }
+
+        target.CreatedAt = Timestamp(batch, "created_at");
+        target.ExpiresAt = Timestamp(batch, "expires_at");
+        return target;
+    }
+
+    // Unknown states are treated as pending so callers do not read incomplete results.
+    private static string MapStatus(string? rawStatus) => rawStatus switch
+    {
+        "completed" => "completed",
+        "failed" or "expired" or "cancelled" => "failed",
+        _ => "pending",
+    };
+
+    private static double? Number(JsonElement element, string name) =>
+        element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : null;
+
+    private static string? Timestamp(JsonElement element, string name)
+    {
+        // Outside DateTimeOffset's range, like an invalid JavaScript Date, there is no timestamp.
+        if (Number(element, name) is not { } seconds || seconds * 1000 < -62135596800000 || seconds * 1000 > 253402300799999)
+        {
+            return null;
+        }
+
+        return DateTimeOffset.FromUnixTimeMilliseconds((long)Math.Truncate(seconds * 1000)).UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+    }
+
+    private static int? InputFileExpiresAfter(JsonElement? providerOptions)
+    {
+        var openai = OpenAIJson.Child(providerOptions, "openai");
+        if (OpenAIJson.Child(openai, "inputFileExpiresAfter") is not { } value || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var seconds = value.ValueKind == JsonValueKind.Number ? value.GetDouble() : double.NaN;
+        if (!(seconds >= 3600 && seconds <= 2_592_000) || seconds != Math.Floor(seconds))
+        {
+            throw new InvalidArgumentException("providerOptions", openai, "invalid openai provider options: inputFileExpiresAfter must be an integer between 3600 and 2592000");
+        }
+
+        return (int)seconds;
+    }
+
+    // Reads the normalized options that Batch.StartBatchAsync builds for a text request.
+    private static LanguageModelCallOptions ToCallOptions(JsonElement options)
+    {
+        var prompt = new List<ModelMessage>();
+        if (OpenAIJson.Child(options, "prompt") is { ValueKind: JsonValueKind.Array } messages)
+        {
+            foreach (var message in messages.EnumerateArray())
+            {
+                prompt.Add(ToMessage(message));
+            }
+        }
+
+        var result = new LanguageModelCallOptions
+        {
+            Prompt = prompt,
+            MaxOutputTokens = OpenAIJson.Int(options, "maxOutputTokens"),
+            Temperature = OpenAIJson.Double(options, "temperature"),
+            TopP = OpenAIJson.Double(options, "topP"),
+            TopK = OpenAIJson.Int(options, "topK"),
+            PresencePenalty = OpenAIJson.Double(options, "presencePenalty"),
+            FrequencyPenalty = OpenAIJson.Double(options, "frequencyPenalty"),
+            Seed = OpenAIJson.Int(options, "seed"),
+            Reasoning = OpenAIJson.String(options, "reasoning"),
+        };
+        if (OpenAIJson.Child(options, "stopSequences") is { ValueKind: JsonValueKind.Array } stops)
+        {
+            result.StopSequences = stops.EnumerateArray().Select(stop => stop.GetString() ?? string.Empty).ToList();
+        }
+
+        if (OpenAIJson.Child(options, "providerOptions") is { ValueKind: JsonValueKind.Object } providerOptions)
+        {
+            result.ProviderOptions = providerOptions.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone());
+        }
+
+        if (OpenAIJson.Child(options, "tools") is { ValueKind: JsonValueKind.Array } tools)
+        {
+            var converted = new List<LanguageModelTool>();
+            foreach (var tool in tools.EnumerateArray())
+            {
+                if (Str(tool, "type") != "function")
+                {
+                    // The Responses request builder has no provider-defined tools yet (issue #398).
+                    throw new UnsupportedFunctionalityException("batch tool type: " + Str(tool, "type"), "OpenAI batches support only function tools.");
+                }
+
+                converted.Add(new LanguageModelTool(Str(tool, "name") ?? string.Empty, Str(tool, "description"), tool.TryGetProperty("inputSchema", out var schema) ? schema.Clone() : OpenAIJson.Parse("{}")));
+            }
+
+            result.Tools = converted;
+        }
+
+        if (OpenAIJson.Child(options, "toolChoice") is { ValueKind: JsonValueKind.Object } choice)
+        {
+            result.ToolChoice = Str(choice, "type") switch
+            {
+                "auto" => ToolChoice.Auto,
+                "none" => ToolChoice.None,
+                "required" => ToolChoice.Required,
+                "tool" => ToolChoice.Tool(Str(choice, "toolName") ?? string.Empty),
+                var type => throw new InvalidArgumentException("toolChoice", type, "Unsupported tool choice type \"" + type + "\"."),
+            };
+        }
+
+        return result;
+    }
+
+    private static ModelMessage ToMessage(JsonElement message)
+    {
+        var role = Str(message, "role");
+        var content = OpenAIJson.Child(message, "content");
+        if (role == "system" && content is { ValueKind: JsonValueKind.String } system)
+        {
+            return new SystemModelMessage(system.GetString()!);
+        }
+
+        if (role == "user" && content is { ValueKind: JsonValueKind.Array } parts)
+        {
+            var converted = new List<UserContentPart>();
+            foreach (var part in parts.EnumerateArray())
+            {
+                if (Str(part, "type") != "text")
+                {
+                    throw new UnsupportedFunctionalityException("batch prompt part: " + Str(part, "type"), "OpenAI batches support only text prompt parts.");
+                }
+
+                converted.Add(new TextContentPart(Str(part, "text") ?? string.Empty));
+            }
+
+            return new UserModelMessage(converted);
+        }
+
+        throw new UnsupportedFunctionalityException("batch prompt message: " + role, "OpenAI batches support only system and user text messages.");
     }
 
     private static BatchItem Convert(JsonElement line)
