@@ -139,10 +139,24 @@ public sealed class CallWarning
         Message = message;
     }
 
+    /// <summary>Creates an <c>unsupported</c> or <c>compatibility</c> warning about a feature.</summary>
+    /// <param name="type">Warning category, such as <c>unsupported</c>.</param>
+    /// <param name="feature">The feature the warning is about.</param>
+    /// <param name="details">Additional details. When omitted, <see cref="Message"/> is the feature name.</param>
+    public CallWarning(string type, string feature, string? details)
+    {
+        Type = type;
+        Feature = feature;
+        Message = details ?? feature;
+    }
+
     /// <summary>Warning category, such as <c>unsupported</c>.</summary>
     public string Type { get; }
 
-    /// <summary>Human-readable warning.</summary>
+    /// <summary>The feature that is unsupported or used in compatibility mode, or <see langword="null"/> when the provider did not set one.</summary>
+    public string? Feature { get; }
+
+    /// <summary>Human-readable warning. For a feature warning, this is its details text.</summary>
     public string Message { get; }
 }
 
