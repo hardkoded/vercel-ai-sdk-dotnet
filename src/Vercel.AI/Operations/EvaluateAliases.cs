@@ -125,6 +125,17 @@ public interface IEvaluationCaller
     Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Deprecated provider factory for decision models. Implement <see cref="IDecisionProvider"/> instead. A provider that
+/// implements both is asked through <see cref="IDecisionProvider"/> only.
+/// </summary>
+[Obsolete("Implement IDecisionProvider instead.")]
+public interface IEvaluationProvider
+{
+    /// <summary>Returns a decision model, or null when the provider has no such model.</summary>
+    IEvaluationCaller? EvaluationModel(string modelId);
+}
+
 /// <summary>Deprecated alias of <see cref="DecisionUnsupportedQuestionTypeException"/>.</summary>
 [Obsolete("Use DecisionUnsupportedQuestionTypeException instead.")]
 public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsupportedQuestionTypeException
@@ -308,6 +319,26 @@ internal sealed class LegacyDecisionCaller : IDecisionCaller
     private async Task<DecisionModelResult> AdaptAsync(DecisionModelCall call, CancellationToken cancellationToken)
     {
         return await _inner.DoEvaluateAsync(EvaluationModelCall.From(call), cancellationToken).ConfigureAwait(false);
+    }
+}
+
+internal static class DecisionModels
+{
+    // Asks the decision factory, then the deprecated evaluation factory. Null when the provider has neither or returns no model.
+    public static IDecisionCaller? FromProvider(object provider, string modelId)
+    {
+        if (provider is IDecisionProvider decision)
+        {
+            return decision.DecisionModel(modelId);
+        }
+
+        return provider is IEvaluationProvider evaluation && evaluation.EvaluationModel(modelId) is { } legacy ? DecisionCaller.FromLegacy(legacy) : null;
+    }
+
+    // Maps to resolveDecisionModel for a model instance.
+    public static IDecisionCaller Validate(IDecisionCaller model)
+    {
+        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
     }
 }
 

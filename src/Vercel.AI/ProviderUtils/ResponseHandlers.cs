@@ -151,7 +151,7 @@ public static class ResponseHandlers
             return Create(statusText, statusCode, body, url, requestBodyValues, headers);
         }
 
-        return Create(errorToMessage(parsed.Value.Value), statusCode, body, url, requestBodyValues, headers);
+        return Create(errorToMessage(parsed.Value.Value), statusCode, body, url, requestBodyValues, headers, parsed.Value.Value.Clone());
     }
 
     /// <summary>
@@ -233,10 +233,12 @@ public static class ResponseHandlers
         string? body,
         string url,
         object? requestBodyValues,
-        IReadOnlyDictionary<string, string> headers)
+        IReadOnlyDictionary<string, string> headers,
+        object? errorData = null)
     {
         return new ApiException(message, statusCode, body)
         {
+            ErrorData = errorData,
             Url = url,
             RequestBodyValues = requestBodyValues,
             ResponseHeaders = headers,

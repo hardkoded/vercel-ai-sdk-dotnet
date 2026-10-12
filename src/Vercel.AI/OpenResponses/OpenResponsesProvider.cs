@@ -451,6 +451,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 RequestBodyValues = body,
                 ResponseHeaders = http.Headers,
                 IsRetryable = errorMetadata?.IsRetryable ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500),
+                ErrorData = error.Clone(),
             };
         }
 

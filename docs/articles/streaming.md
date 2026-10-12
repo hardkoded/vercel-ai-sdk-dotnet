@@ -5,9 +5,11 @@
 <!-- snippet: streaming -->
 <a id='snippet-streaming'></a>
 ```cs
+var client = new AiClient(GatewayProvider.Create());
+
 var stream = client.StreamTextAsync(new StreamTextOptions
 {
-    Model = model,
+    ModelId = "openai/gpt-6-astra",
     Prompt = "Draft a changelog entry.",
 });
 
@@ -19,7 +21,7 @@ await foreach (var delta in stream.TextStream())
 Console.WriteLine();
 Console.WriteLine(await stream.FinishReason);
 ```
-<sup><a href='/samples/Vercel.AI.Examples/StreamingExample.cs#L18-L32' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/StreamText/Program.cs#L14-L30' title='Snippet source file'>snippet source</a> | <a href='#snippet-streaming' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ## UI message stream

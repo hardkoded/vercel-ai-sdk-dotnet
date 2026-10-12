@@ -17,7 +17,7 @@ public sealed class EndpointSpecificResponseErrorMetadataTests
     private const string Error = """{"code":"busy","message":"Try again later.","http_status":503,"retry":false}""";
 
     [Fact]
-    [UpstreamTest(Prefix + "maps generation failures without assuming a vendor status field", Coverage = UpstreamCoverage.Partial, Note = "Checks the status code and retry flag. ApiException has no data property, so the error data is not asserted. Issue #388.")]
+    [UpstreamTest(Prefix + "maps generation failures without assuming a vendor status field", Coverage = UpstreamCoverage.Covered)]
     public async Task Maps_generation_failures_without_assuming_a_vendor_status_field()
     {
         var capture = new UpstreamCapture { ResponseBody = """{"error":ERROR,"status":"failed","output":[]}""".Replace("ERROR", Error) };
@@ -26,6 +26,7 @@ public sealed class EndpointSpecificResponseErrorMetadataTests
 
         Assert.Equal(503, error.StatusCode);
         Assert.False(error.IsRetryable);
+        JsonAssert.Equal((JsonElement)error.ErrorData!, Error);
     }
 
     [Fact]

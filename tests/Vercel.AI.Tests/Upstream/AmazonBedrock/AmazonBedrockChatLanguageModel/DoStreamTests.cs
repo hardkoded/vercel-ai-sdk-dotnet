@@ -40,10 +40,7 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("high")]
     [InlineData("max")]
-    [UpstreamTest(
-        Suite + "should derive portable %s effort with type-only Nova 2 reasoningConfig in streams",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+    [UpstreamTest(Suite + "should derive portable %s effort with type-only Nova 2 reasoningConfig in streams", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_derive_portable_effort_with_type_only_Nova_2_reasoningConfig_in_streams(string reasoning)
     {
         var handler = Chunks(StopOnly);
@@ -61,6 +58,7 @@ public sealed class DoStreamTests
         {
             var warning = Assert.Single(start.Warnings);
             Assert.Equal("compatibility", warning.Type);
+            Assert.Equal("reasoning", warning.Feature);
             Assert.Equal("reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".", warning.Message);
         }
         else
@@ -237,21 +235,27 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Suite + "should handle failed chunk parsing",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream mocks the response handler to emit { message: 'Chunk Parsing Failed' }; here a frame with an invalid JSON payload fails parsing, so the error message differs.")]
+    [UpstreamTest(Suite + "should handle failed chunk parsing", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_handle_failed_chunk_parsing()
     {
-        var handler = new UpstreamEventStreamHandler(new[] { EventStreamFrames.Event("contentBlockDelta", "not json") });
-        var parts = await Stream(handler);
+        var model = (AmazonBedrockLanguageModel)CreateModel(Chunks());
+        model.StreamResponseHandler = (_, _, _) => Task.FromResult<(IReadOnlyDictionary<string, string>, IAsyncEnumerable<AmazonBedrockStreamChunk>)>(
+            (new Dictionary<string, string>(), FailedChunk("Chunk Parsing Failed")));
+        var parts = new List<LanguageModelStreamPart>();
+        await foreach (var part in model.DoStreamAsync(Call(), CancellationToken.None))
+        {
+            parts.Add(part);
+        }
 
-        Assert.Equal(4, parts.Count);
-        Assert.Equal(Start, Render(parts[0]));
-        Assert.Equal(Meta, Render(parts[1]));
-        var error = Assert.IsType<ErrorStreamPart>(parts[2]);
-        Assert.Contains("JSON parsing failed", error.Message);
-        Assert.Equal("finish error raw=undefined usage=" + NoUsage, Render(parts[3]));
+        Assert.Equal(
+            new[]
+            {
+                Start,
+                Meta,
+                "error \"Chunk Parsing Failed\"",
+                "finish error raw=undefined usage=" + NoUsage,
+            },
+            Render(parts));
     }
 
     [Fact]
@@ -383,10 +387,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Suite + "should include response headers in rawResponse",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The stream result has no response object; the headers are checked on the response handler that feeds the stream.")]
+    [UpstreamTest(Suite + "should include response headers in rawResponse", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_include_response_headers_in_rawResponse()
     {
         var handler = new UpstreamEventStreamHandler(
@@ -396,15 +397,21 @@ public sealed class DoStreamTests
                 """{"messageStop":{"stopReason":"stop_sequence"}}""",
             }),
             new Dictionary<string, string> { ["x-amzn-requestid"] = "test-request-id", ["x-amzn-trace-id"] = "test-trace-id" });
-        using var client = new HttpClient(handler, disposeHandler: false);
-        using var response = await client.PostAsync("https://bedrock-runtime.us-east-1.amazonaws.com/model/x/converse-stream", new StringContent("{}"));
-        var (headers, _) = await Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamResponseHandler.HandleAsync(response, _ => null);
+        var model = (AmazonBedrockLanguageModel)CreateModel(handler);
+        await foreach (var _ in model.DoStreamAsync(Call(), CancellationToken.None))
+        {
+        }
 
-        Assert.Equal("no-cache", headers["cache-control"]);
-        Assert.Equal("keep-alive", headers["connection"]);
-        Assert.Equal("application/vnd.amazon.eventstream", headers["content-type"]);
-        Assert.Equal("test-request-id", headers["x-amzn-requestid"]);
-        Assert.Equal("test-trace-id", headers["x-amzn-trace-id"]);
+        Assert.Equal(
+            new Dictionary<string, string>
+            {
+                ["cache-control"] = "no-cache",
+                ["connection"] = "keep-alive",
+                ["content-type"] = "application/vnd.amazon.eventstream",
+                ["x-amzn-requestid"] = "test-request-id",
+                ["x-amzn-trace-id"] = "test-trace-id",
+            },
+            model.LastResponseHeaders);
     }
 
     [Fact]
@@ -922,6 +929,12 @@ public sealed class DoStreamTests
         Assert.Equal(type, providerError.Type);
         Assert.True(JsonEquals("{\"" + type + "\":" + data + "}", Assert.IsType<JsonElement>(providerError.Data)));
         Assert.Equal("finish error raw=undefined usage=" + NoUsage, Render(parts[3]));
+    }
+
+    private static async IAsyncEnumerable<AmazonBedrockStreamChunk> FailedChunk(string error)
+    {
+        await Task.Yield();
+        yield return AmazonBedrockStreamChunk.Fail(error);
     }
 
     private static LanguageModelCallOptions JsonCall(string prompt, string schema)

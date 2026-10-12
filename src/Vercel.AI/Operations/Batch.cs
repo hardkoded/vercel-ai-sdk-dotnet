@@ -499,6 +499,15 @@ public class BatchStatus
     /// <summary>Creation time.</summary>
     public string? CreatedAt { get; set; }
 
+    /// <summary>Expiry time.</summary>
+    public string? ExpiresAt { get; set; }
+
+    /// <summary>Message of the batch-level error.</summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>Code of the batch-level error.</summary>
+    public string? ErrorCode { get; set; }
+
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; set; }
 }

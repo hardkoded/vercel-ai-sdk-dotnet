@@ -5,6 +5,9 @@
 #pragma warning disable CS0618
 
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
+using Vercel.AI.Testing;
+using DecideModel = Vercel.AI.Tests.Upstream.Operations.Decide.DecideModel;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
 namespace Vercel.AI.Tests.Upstream.Operations.DeprecatedAliases;
@@ -38,6 +41,36 @@ public sealed class DeprecatedAliasesTests
         var current = await DecideOperation.DecideAsync(new DecideRequest { Model = DecisionCaller.FromLegacy(wrapped), State = "message", Questions = new Dictionary<string, DecisionQuestion>(Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value)) });
         Assert.Equal(output.Answers["route"].Choice, current.Answers["route"].Choice);
         Assert.Equal(1, wrapped.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel through the registry, a custom fallback, and the deprecated alias map. String ids through a default provider (issue #389) and the deprecated EvaluationModel accessors (issue #390) are not ported.")]
+    public async Task Resolves_deprecated_provider_factories_through_default_custom_and_registry_access()
+    {
+        var legacy = new LegacyProvider();
+        var registry = new ProviderRegistry("|");
+        registry.Register("legacy", legacy);
+        var custom = new CustomProvider { FallbackProvider = legacy };
+        var aliases = new CustomProvider().AddEvaluationModel("alias", new LegacyModel());
+        foreach (var model in new[] { registry.DecisionModel("legacy|model"), custom.DecisionModel("model"), aliases.DecisionModel("alias") })
+        {
+            var output = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "message", Questions = DecisionQuestions() });
+            Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Partial, Note = "Checks that the decision map wins over the deprecated map, and that a fallback provider's decision factory wins over its deprecated factory. The default provider (issue #389) and direct DoEvaluateAsync calls through CustomProvider.EvaluationModel (issue #390) are not ported.")]
+    public async Task Prefers_new_model_maps_and_factories_and_supports_direct_deprecated_model_calls()
+    {
+        var model = new DecideModel { Result = Result() };
+        var provider = new CustomProvider().AddDecisionModel("alias", model).AddEvaluationModel("alias", new LegacyModel());
+        Assert.Same(model, provider.DecisionModel("alias"));
+
+        var both = new BothFactoriesProvider(model);
+        await DecideOperation.DecideAsync(new DecideRequest { Model = new CustomProvider { FallbackProvider = both }.DecisionModel("model"), State = "message", Questions = DecisionQuestions() });
+        Assert.Single(model.Calls);
+        Assert.Equal(0, both.DeprecatedCalls);
     }
 
     [Fact]
@@ -107,6 +140,52 @@ public sealed class DeprecatedAliasesTests
         });
         Assert.Equal(4, current);
         Assert.Equal(0, deprecated);
+    }
+
+    private static Dictionary<string, DecisionQuestion> DecisionQuestions()
+    {
+        return Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value);
+    }
+
+    private sealed class LegacyProvider : ProviderBase, IEvaluationProvider
+    {
+        private readonly LegacyModel _model = new LegacyModel();
+
+        public LegacyProvider()
+            : base("legacy")
+        {
+        }
+
+        public override ILanguageModel LanguageModel(string modelId) => new TestLanguageModel(modelId);
+
+        IEvaluationCaller IEvaluationProvider.EvaluationModel(string modelId)
+        {
+            Assert.Equal("model", modelId);
+            return _model;
+        }
+    }
+
+    private sealed class BothFactoriesProvider : ProviderBase, IDecisionProvider, IEvaluationProvider
+    {
+        private readonly IDecisionCaller _model;
+
+        public BothFactoriesProvider(IDecisionCaller model)
+            : base("both")
+        {
+            _model = model;
+        }
+
+        public int DeprecatedCalls { get; private set; }
+
+        public override ILanguageModel LanguageModel(string modelId) => new TestLanguageModel(modelId);
+
+        public IDecisionCaller DecisionModel(string modelId) => _model;
+
+        IEvaluationCaller IEvaluationProvider.EvaluationModel(string modelId)
+        {
+            DeprecatedCalls++;
+            return new LegacyModel();
+        }
     }
 
     private sealed class LegacyModel : IEvaluationCaller
