@@ -111,7 +111,7 @@ public sealed class QuiverAIParityTests
 
     [Fact]
     [UpstreamTest(
-        Integration + "generates multiple edits through separate requests (middleware: %s)",
+        Integration + "generates multiple edits with $modelId (middleware: $useMiddleware)",
         Coverage = UpstreamCoverage.Partial,
         Note = "Covers the case without middleware. The port has no image model middleware.")]
     public async Task GenerateImageSplitsEditsIntoSeparateRequests()
@@ -230,7 +230,7 @@ public sealed class QuiverAIParityTests
 
     [Fact]
     [UpstreamTest(
-        Provider + "throws for unsupported language and embedding models",
+        Provider + "creates language models and throws for unsupported embedding models",
         Coverage = UpstreamCoverage.Partial,
         Note = "Both factories throw AiSdkException. The port has no NoSuchModelError or textEmbeddingModel alias.")]
     public void ThrowsForUnsupportedModels()

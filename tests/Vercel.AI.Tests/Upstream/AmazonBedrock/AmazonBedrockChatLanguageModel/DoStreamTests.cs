@@ -19,7 +19,7 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("amazonBedrock")]
     [InlineData("bedrock")]
-    // Upstream: doStream > "should ignore portable max without warnings in streams with explicit %s reasoning effort". Newer than the catalog commit in tests/parity, so it has no UpstreamTest link yet.
+    [UpstreamTest(Suite + "should ignore portable max without warnings in streams with explicit %s reasoning effort", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_ignore_portable_max_without_warnings_in_streams_with_explicit_reasoning_effort(string providerKey)
     {
         var handler = Chunks(StopOnly);
@@ -40,7 +40,10 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("high")]
     [InlineData("max")]
-    // Upstream: doStream > "should derive portable %s effort with type-only Nova 2 reasoningConfig in streams". Newer than the catalog commit in tests/parity, so it has no UpstreamTest link yet.
+    [UpstreamTest(
+        Suite + "should derive portable %s effort with type-only Nova 2 reasoningConfig in streams",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_derive_portable_effort_with_type_only_Nova_2_reasoningConfig_in_streams(string reasoning)
     {
         var handler = Chunks(StopOnly);
@@ -71,7 +74,7 @@ public sealed class DoStreamTests
     [InlineData("high", "bedrock")]
     [InlineData("max", "amazonBedrock")]
     [InlineData("max", "bedrock")]
-    // Upstream: doStream > "should preserve a budget-only configuration with portable %s reasoning in %s streams". Newer than the catalog commit in tests/parity, so it has no UpstreamTest link yet.
+    [UpstreamTest(Suite + "should preserve a budget-only configuration with portable %s reasoning in %s streams", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_preserve_a_budget_only_configuration_with_portable_reasoning_in_streams(string reasoning, string providerKey)
     {
         var handler = Chunks(StopOnly);
@@ -657,7 +660,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    // Upstream: doStream > "should pass requestMetadata in stream requests". Newer than the catalog commit in tests/parity, so it has no UpstreamTest link yet.
+    [UpstreamTest(Suite + "should pass requestMetadata in stream requests", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_requestMetadata_in_stream_requests()
     {
         var handler = Chunks("""{"messageStop":{"stopReason":"stop_sequence"}}""");
@@ -669,7 +672,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    // Upstream: doStream > "should omit requestMetadata from stream requests when not provided". Newer than the catalog commit in tests/parity, so it has no UpstreamTest link yet.
+    [UpstreamTest(Suite + "should omit requestMetadata from stream requests when not provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_omit_requestMetadata_from_stream_requests_when_not_provided()
     {
         var handler = Chunks("""{"messageStop":{"stopReason":"stop_sequence"}}""");

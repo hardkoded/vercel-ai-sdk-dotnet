@@ -35,7 +35,6 @@ public sealed class GatewayDecisionModelTests
 
     [Theory]
     [MemberData(nameof(LegacyStates))]
-    [UpstreamTest(Prefix + "sends $name using the legacy Gateway state format", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_name_using_the_legacy_Gateway_state_format(string name, object? state, object? expected)
     {
         var (model, capture) = Setup();
@@ -49,7 +48,6 @@ public sealed class GatewayDecisionModelTests
     [Theory]
     [InlineData("image/png")]
     [InlineData("application/pdf")]
-    [UpstreamTest(Prefix + "rejects %s before sending a Gateway request", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_before_sending_a_Gateway_request(string mediaType)
     {
         var (model, capture) = Setup();

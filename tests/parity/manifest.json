@@ -1,6 +1,6 @@
 {
   "upstreamRepo": "https://github.com/vercel/ai",
-  "upstreamCommit": "269331916eb51ecd937a55df5fcf44ff8f63eaf8",
+  "upstreamCommit": "ba05943b69ad070558bb5bc912da99ec66d7d263",
   "excludedFiles": [
     {
       "file": "packages/ai/src/generate-text/stream-provider-error.integration.test.ts",
@@ -23,6 +23,10 @@
       "reason": "integration"
     },
     {
+      "file": "packages/harness-deepagents/src/bridge/mcp-tool-errors.integration.test.ts",
+      "reason": "integration"
+    },
+    {
       "file": "packages/policy-opa/src/opa/opa-policy.integration.test.ts",
       "reason": "integration"
     },
@@ -39,7 +43,23 @@
       "reason": "integration"
     },
     {
+      "file": "packages/workflow/src/model-call-payload.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/workflow-agent-approval.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/workflow-agent-boundaries.integration.test.ts",
+      "reason": "integration"
+    },
+    {
       "file": "packages/workflow/src/workflow-agent-e2e.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/workflow/src/workflow-agent-telemetry.integration.test.ts",
       "reason": "integration"
     },
     {
@@ -79,7 +99,7 @@
     "gladia": "Vercel.AI.Gladia",
     "gmicloud": "Vercel.AI.GmiCloud",
     "groq": "Vercel.AI.Groq",
-    "heygen": "Vercel.AI.HeyGen",
+    "heygen": "Vercel.AI",
     "huggingface": "Vercel.AI.HuggingFace",
     "hume": "Vercel.AI.Hume",
     "klingai": "Vercel.AI.KlingAI",

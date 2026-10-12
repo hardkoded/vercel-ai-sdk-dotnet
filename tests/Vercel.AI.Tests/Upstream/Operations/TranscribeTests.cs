@@ -129,10 +129,14 @@ public sealed class TranscribeTests
     {
         var model = new TranscriptFake { Parts = new[] { new ModelStreamPart { Type = "transcript-delta", Delta = "x" } }, Completes = false };
         var result = StreamTranscribe.Start(new StreamTranscribeRequest { Model = model, Audio = new AudioChunkStream(), InputAudioFormat = "pcm16" });
-        var stream = result.FullStream;
-        await model.Started.Task;
-        stream.Cancel();
-        await Task.Delay(30);
+        await foreach (var part in result.FullStream)
+        {
+            Assert.Equal("transcript-delta", part.Type);
+            break;
+        }
+
+        // The pump cancels the model stream before it rejects the result promises.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => result.Text);
         Assert.True(model.Stream!.Cancelled);
     }
 

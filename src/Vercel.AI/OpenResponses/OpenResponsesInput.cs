@@ -136,38 +136,127 @@ internal static class OpenResponsesInput
 
     private static void ConvertAssistant(AssistantModelMessage assistant, JsonArray input, string providerOptionsName, bool strictResponseInput)
     {
-        var reasoningData = ProviderData(assistant.ReasoningProviderOptions, providerOptionsName);
-        if (!string.IsNullOrEmpty(assistant.Reasoning) || reasoningData != null)
-        {
-            input.Add(ReasoningItem(assistant.Reasoning ?? string.Empty, reasoningData));
-        }
+        var content = new JsonArray();
+        string? messageId = null;
 
-        if (!string.IsNullOrEmpty(assistant.Text))
+        void Flush()
         {
-            // Assistant text carries no item id, so strict mode sends an easy input message.
-            input.Add(strictResponseInput
-                ? new JsonObject { ["type"] = "message", ["role"] = "assistant", ["content"] = assistant.Text }
-                : new JsonObject
+            if (content.Count == 0)
+            {
+                return;
+            }
+
+            if (strictResponseInput && messageId == null)
+            {
+                // Assistant text without an item id is sent as an easy input message.
+                input.Add(new JsonObject
                 {
                     ["type"] = "message",
                     ["role"] = "assistant",
-                    ["content"] = new JsonArray(new JsonObject { ["type"] = "output_text", ["text"] = assistant.Text }),
+                    ["content"] = string.Concat(content.Select(part => (string?)part!["text"])),
                 });
-        }
-
-        foreach (var call in assistant.ToolCalls)
-        {
-            var item = new JsonObject { ["type"] = "function_call" };
-            if (ItemId(ProviderData(call.ProviderMetadata, providerOptionsName)) is { } itemId)
+            }
+            else if (strictResponseInput)
             {
-                item["id"] = itemId;
+                foreach (var part in content)
+                {
+                    part!["annotations"] ??= new JsonArray();
+                    part["logprobs"] ??= new JsonArray();
+                }
+
+                input.Add(new JsonObject
+                {
+                    ["id"] = messageId,
+                    ["type"] = "message",
+                    ["status"] = "completed",
+                    ["role"] = "assistant",
+                    ["content"] = content,
+                });
+            }
+            else
+            {
+                var item = new JsonObject { ["type"] = "message", ["role"] = "assistant", ["content"] = content };
+                if (messageId != null)
+                {
+                    item["id"] = messageId;
+                }
+
+                input.Add(item);
             }
 
-            item["call_id"] = call.ToolCallId;
-            item["name"] = call.ToolName;
-            item["arguments"] = call.ArgumentsJson;
-            input.Add(item);
+            content = new JsonArray();
+            messageId = null;
         }
+
+        foreach (var part in assistant.Parts)
+        {
+            var providerData = ProviderData(part.ProviderOptions, providerOptionsName);
+            switch (part)
+            {
+                case AssistantReasoningPart reasoning when reasoning.Text.Length > 0 || providerData != null:
+                    Flush();
+                    AddReasoning(input, ReasoningItem(reasoning.Text, providerData));
+                    break;
+                case AssistantTextPart text:
+                    var itemId = ItemId(providerData);
+                    if (content.Count > 0 && messageId != itemId)
+                    {
+                        Flush();
+                    }
+
+                    messageId = itemId;
+                    var outputText = new JsonObject { ["type"] = "output_text", ["text"] = text.Text };
+                    if (Annotations(Child(providerData, "annotations")) is { } annotations)
+                    {
+                        outputText["annotations"] = annotations;
+                    }
+
+                    content.Add(outputText);
+                    break;
+                case AssistantToolCallPart toolCall:
+                    Flush();
+                    var call = toolCall.ToolCall;
+                    var item = new JsonObject { ["type"] = "function_call" };
+                    if (ItemId(providerData) is { } callItemId)
+                    {
+                        item["id"] = callItemId;
+                    }
+
+                    item["call_id"] = call.ToolCallId;
+                    item["name"] = call.ToolName;
+                    item["arguments"] = call.ArgumentsJson;
+                    input.Add(item);
+                    break;
+            }
+        }
+
+        Flush();
+    }
+
+    /// <summary>Adds a reasoning item, or appends its content to the previous item when both have the same id.</summary>
+    private static void AddReasoning(JsonArray input, JsonObject item)
+    {
+        if (item["id"] is { } id
+            && input.Count > 0
+            && input[input.Count - 1] is JsonObject previous
+            && (string?)previous["type"] == "reasoning"
+            && (string?)previous["id"] == (string?)id)
+        {
+            if (item["content"] is JsonArray added)
+            {
+                var merged = previous["content"] as JsonArray ?? new JsonArray();
+                foreach (var entry in added)
+                {
+                    merged.Add(entry!.DeepClone());
+                }
+
+                previous["content"] = merged;
+            }
+
+            return;
+        }
+
+        input.Add(item);
     }
 
     private static JsonObject ReasoningItem(string text, JsonElement? providerData)
@@ -225,6 +314,40 @@ internal static class OpenResponsesInput
         }
 
         return parts;
+    }
+
+    /// <summary>Copies the <c>url_citation</c> annotations, or returns null when any annotation is not a valid citation.</summary>
+    private static JsonArray? Annotations(JsonElement? value)
+    {
+        if (value is not { ValueKind: JsonValueKind.Array } array)
+        {
+            return null;
+        }
+
+        var annotations = new JsonArray();
+        foreach (var annotation in array.EnumerateArray())
+        {
+            if (Child(annotation, "type") is not { ValueKind: JsonValueKind.String } type
+                || type.GetString() != "url_citation"
+                || Child(annotation, "start_index") is not { ValueKind: JsonValueKind.Number } start
+                || Child(annotation, "end_index") is not { ValueKind: JsonValueKind.Number } end
+                || Child(annotation, "url") is not { ValueKind: JsonValueKind.String } url
+                || Child(annotation, "title") is not { ValueKind: JsonValueKind.String } title)
+            {
+                return null;
+            }
+
+            annotations.Add(new JsonObject
+            {
+                ["type"] = "url_citation",
+                ["start_index"] = JsonNode.Parse(start.GetRawText()),
+                ["end_index"] = JsonNode.Parse(end.GetRawText()),
+                ["url"] = url.GetString(),
+                ["title"] = title.GetString(),
+            });
+        }
+
+        return annotations;
     }
 
     private static JsonNode ToolOutput(ToolModelMessage tool)

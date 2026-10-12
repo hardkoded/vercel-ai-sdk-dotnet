@@ -30,7 +30,7 @@ public sealed class OpenAIResponsesUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Tools + "should not include strict mode when strict is undefined", Coverage = UpstreamCoverage.Partial, Note = "The port sends strict false when a tool leaves strict unset.")]
+    [UpstreamTest(Tools + "should default strict mode to false when strict is undefined", Coverage = UpstreamCoverage.Partial, Note = "The port sends strict false when a tool leaves strict unset.")]
     public void SendsFalseWhenStrictIsUnset()
     {
         var tool = Prepared(null);

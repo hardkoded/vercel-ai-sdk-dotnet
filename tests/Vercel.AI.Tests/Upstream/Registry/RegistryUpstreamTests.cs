@@ -14,7 +14,7 @@ public sealed class RegistryUpstreamTests
 {
     private const string Registry = "packages/ai/src/registry/provider-registry.test.ts::";
     private const string Custom = "packages/ai/src/registry/custom-provider.test.ts::";
-    private const string Evaluation = "packages/ai/src/registry/evaluation-model.test.ts::";
+    private const string Evaluation = "packages/ai/src/registry/decision-model.test.ts::";
 
     [Theory]
     [InlineData("embeddingModel")]
@@ -315,7 +315,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "custom evaluation models::resolves an alias before consulting the fallback", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "custom decision models::resolves an alias before consulting the fallback", Coverage = UpstreamCoverage.Covered)]
     public void Custom_evaluation_alias_wins_over_the_fallback()
     {
         var model = new FakeModel("model");
@@ -326,7 +326,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "custom evaluation models::preserves the fallback receiver", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "custom decision models::preserves the fallback receiver", Coverage = UpstreamCoverage.Covered)]
     public void Custom_evaluation_uses_the_fallback_provider()
     {
         var model = new FakeModel("model:version");
@@ -340,7 +340,7 @@ public sealed class RegistryUpstreamTests
     [InlineData("toString")]
     [InlineData("constructor")]
     [InlineData("__proto__")]
-    [UpstreamTest(Evaluation + "custom evaluation models::reports missing alias %s without treating inherited properties as models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "custom decision models::reports missing alias %s without treating inherited properties as models", Coverage = UpstreamCoverage.Covered)]
     public void Custom_evaluation_reports_missing_aliases(string modelId)
     {
         var provider = new CustomProvider().AddEvaluationModel("known", new FakeModel("known"));
@@ -349,7 +349,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "custom evaluation models::reports an unavailable fallback model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "custom decision models::reports an unavailable fallback model", Coverage = UpstreamCoverage.Covered)]
     public void Custom_evaluation_reports_a_fallback_without_the_model()
     {
         var provider = new CustomProvider { FallbackProvider = new StubProvider(null) };
@@ -358,7 +358,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "evaluation registry::preserves model identity, receiver, and colons inside model IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "decision registry::preserves model identity, receiver, and colons inside model IDs", Coverage = UpstreamCoverage.Covered)]
     public void Registry_evaluation_keeps_model_identity_and_colons()
     {
         var model = new FakeModel("model:version");
@@ -370,7 +370,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "evaluation registry::preserves legacy provider extensions and custom separators", Coverage = UpstreamCoverage.Partial, Note = "Checks the multi-character separator. .NET has no ProviderV3 to adapt.")]
+    [UpstreamTest(Evaluation + "decision registry::preserves legacy provider extensions and custom separators", Coverage = UpstreamCoverage.Partial, Note = "Checks the multi-character separator. .NET has no ProviderV3 to adapt.")]
     public void Registry_evaluation_splits_on_a_custom_separator()
     {
         var model = new FakeModel("model::version");
@@ -382,7 +382,7 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "evaluation registry::identifies unknown providers with the existing marker-based error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "decision registry::identifies unknown providers with the existing marker-based error", Coverage = UpstreamCoverage.Covered)]
     public void Registry_evaluation_marks_unknown_providers()
     {
         var registry = new ProviderRegistry();
@@ -396,14 +396,14 @@ public sealed class RegistryUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "evaluation registry::reports malformed IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Evaluation + "decision registry::reports malformed IDs", Coverage = UpstreamCoverage.Covered)]
     public void Registry_evaluation_reports_malformed_ids()
     {
         Assert.Contains("must be in the format \"providerId:modelId\"", Assert.Throws<NoSuchModelError>(() => new ProviderRegistry().EvaluationModel("model")).Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest(Evaluation + "evaluation registry::reports missing evaluation capabilities or models", Coverage = UpstreamCoverage.Partial, Note = "Checks a provider that returns no model. A provider without evaluation support throws its own AiSdkException.")]
+    [UpstreamTest(Evaluation + "decision registry::reports missing decision capabilities or models", Coverage = UpstreamCoverage.Partial, Note = "Checks a provider that returns no model. A provider without evaluation support throws its own AiSdkException.")]
     public void Registry_evaluation_reports_a_provider_without_the_model()
     {
         var registry = new ProviderRegistry();

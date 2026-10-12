@@ -39,4 +39,17 @@ public sealed class DoGenerateTests
 
         Assert.Contains("The upstream provider failed to generate a response.", error.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should send schema-less JSON as a JSON object format", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_schema_less_JSON_as_a_JSON_object_format()
+    {
+        var capture = JsonFixture("lmstudio-basic.1");
+        var options = UpstreamChat.Prompt();
+        options.JsonResponse = true;
+
+        await Model(capture).DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("{\"format\":{\"type\":\"json_object\"}}", UpstreamChat.Body(capture)["text"]!.ToJsonString());
+    }
 }
