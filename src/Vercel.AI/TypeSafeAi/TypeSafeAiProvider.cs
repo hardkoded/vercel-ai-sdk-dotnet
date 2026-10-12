@@ -15,7 +15,7 @@ public sealed class TypeSafeAiOptions
     /// <summary>API key. Falls back to <c>TYPESAFE_AI_API_KEY</c> at call time.</summary>
     public string? ApiKey { get; set; }
 
-    /// <summary>API base URL. Defaults to <c>https://api.typesafe.ai/v1</c>.</summary>
+    /// <summary>API base URL. Defaults to <c>TYPESAFE_AI_BASE_URL</c>, then <c>https://api.typesafe.ai/v1</c>.</summary>
     public string? BaseUrl { get; set; }
 
     /// <summary>Headers sent with every request.</summary>
@@ -34,6 +34,11 @@ public sealed class TypeSafeAiProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyEnvironmentVariable = "TYPESAFE_AI_API_KEY";
 
+    /// <summary>Environment variable for the API base URL.</summary>
+    public const string BaseUrlEnvironmentVariable = "TYPESAFE_AI_BASE_URL";
+
+    private static TypeSafeAiProvider? _default;
+
     private readonly TypeSafeAiOptions _options;
     private readonly HttpClient? _httpClient;
     private readonly string _baseUrl;
@@ -43,11 +48,24 @@ public sealed class TypeSafeAiProvider
     {
         _options = options ?? new TypeSafeAiOptions();
         _httpClient = httpClient;
-        _baseUrl = string.IsNullOrEmpty(_options.BaseUrl) ? DefaultBaseUrl : _options.BaseUrl!.TrimEnd('/');
+        var baseUrl = string.IsNullOrEmpty(_options.BaseUrl)
+            ? Environment.GetEnvironmentVariable(BaseUrlEnvironmentVariable)
+            : _options.BaseUrl;
+        _baseUrl = string.IsNullOrEmpty(baseUrl) ? DefaultBaseUrl : baseUrl!.TrimEnd('/');
     }
 
-    /// <summary>Provider that reads <c>TYPESAFE_AI_API_KEY</c> when a request is made.</summary>
-    public static TypeSafeAiProvider Default { get; } = new TypeSafeAiProvider();
+    /// <summary>
+    /// Provider that reads <c>TYPESAFE_AI_API_KEY</c> when a request is made.
+    /// It reads <c>TYPESAFE_AI_BASE_URL</c> when it is first created.
+    /// </summary>
+    public static TypeSafeAiProvider Default => _default ??= new TypeSafeAiProvider();
+
+    internal string ResolvedBaseUrl => _baseUrl;
+
+    internal static void ResetDefault()
+    {
+        _default = null;
+    }
 
     /// <summary>Specification version.</summary>
     public string SpecificationVersion => "v4";

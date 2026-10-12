@@ -17,12 +17,12 @@ var result = await Evaluate.EvaluateAsync(new EvaluateRequest
 
 ## Provider
 
-`TypeSafeAiProvider.Default` reads `TYPESAFE_AI_API_KEY` when a request is made, not when the provider is created. `TypeSafeAiProvider.Create(options, handler)` takes these `TypeSafeAiOptions`:
+`TypeSafeAiProvider.Default` reads `TYPESAFE_AI_API_KEY` when a request is made, not when the provider is created. It reads `TYPESAFE_AI_BASE_URL` once, when it is first created. `TypeSafeAiProvider.Create(options, handler)` takes these `TypeSafeAiOptions`:
 
 | Option | Meaning |
 | --- | --- |
 | `ApiKey` | API key. Defaults to `TYPESAFE_AI_API_KEY`. |
-| `BaseUrl` | Defaults to `https://api.typesafe.ai/v1`. A trailing slash is removed. |
+| `BaseUrl` | Defaults to `TYPESAFE_AI_BASE_URL`, then `https://api.typesafe.ai/v1`. A trailing slash is removed. An assigned value wins over the variable. |
 | `Headers` | Sent with every request. Headers on the call win over them. |
 
 `EvaluationModel(id)` accepts any model id, including ids this library does not know yet. The provider id is `typesafe.evaluation`. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw `NoSuchModelError`.
