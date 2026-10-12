@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Xai;
 
@@ -41,17 +42,37 @@ public sealed class XaiFileUpload
     public IDictionary<string, string>? Headers { get; set; }
 }
 
-/// <summary>Metadata stored under <c>providerMetadata.xai</c>. Null fields are omitted.</summary>
+/// <summary>Metadata stored under <c>providerMetadata.xai</c>. A field is null when the response did not return it.</summary>
 public sealed class XaiFileMetadata
 {
-    /// <summary>Creates metadata from the fields the response actually returned.</summary>
-    public XaiFileMetadata(IReadOnlyDictionary<string, object> values)
+    /// <summary>Creates metadata from the fields the response returned.</summary>
+    public XaiFileMetadata(string? fileName, string? purpose, long? bytes, long? createdAt, string? status, long? expiresAt)
     {
-        Values = values ?? new Dictionary<string, object>();
+        FileName = fileName;
+        Purpose = purpose;
+        Bytes = bytes;
+        CreatedAt = createdAt;
+        Status = status;
+        ExpiresAt = expiresAt;
     }
 
-    /// <summary>Present response fields.</summary>
-    public IReadOnlyDictionary<string, object> Values { get; }
+    /// <summary><c>filename</c> from the response.</summary>
+    public string? FileName { get; }
+
+    /// <summary><c>purpose</c> from the response.</summary>
+    public string? Purpose { get; }
+
+    /// <summary><c>bytes</c> from the response.</summary>
+    public long? Bytes { get; }
+
+    /// <summary><c>created_at</c> from the response, in unix seconds.</summary>
+    public long? CreatedAt { get; }
+
+    /// <summary><c>status</c> from the response.</summary>
+    public string? Status { get; }
+
+    /// <summary><c>expires_at</c> from the response, in unix seconds.</summary>
+    public long? ExpiresAt { get; }
 }
 
 /// <summary>Result of an xAI file upload or metadata read.</summary>
@@ -68,22 +89,22 @@ public sealed class XaiFileResult
         DateTimeOffset? expiresAt)
     {
         ProviderReference = providerReference ?? new Dictionary<string, string>();
-        Metadata = metadata ?? new XaiFileMetadata(new Dictionary<string, object>());
+        Metadata = metadata ?? new XaiFileMetadata(null, null, null, null, null, null);
         FileName = fileName;
         MediaType = mediaType;
         ByteSize = byteSize;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<ModelWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<ModelWarning> Warnings { get; }
 
     /// <summary>Reference containing the <c>xai</c> file id.</summary>
     public IReadOnlyDictionary<string, string> ProviderReference { get; }
 
-    /// <summary>Response fields with nulls removed. <c>createdAt</c> is unix seconds.</summary>
+    /// <summary>Response fields. Fields the response did not return are null.</summary>
     public XaiFileMetadata Metadata { get; }
 
     /// <summary>File name from the response, or the name that was uploaded.</summary>
@@ -110,11 +131,11 @@ public sealed class XaiFileDownload
     {
         Content = content ?? Stream.Null;
         MediaType = mediaType;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<ModelWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<ModelWarning> Warnings { get; }
 
     /// <summary>File contents.</summary>
     public Stream Content { get; }
@@ -131,11 +152,11 @@ public sealed class XaiFileDeleteResult
     {
         ProviderReference = providerReference ?? new Dictionary<string, string>();
         Deleted = deleted;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<ModelWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<ModelWarning> Warnings { get; }
 
     /// <summary>Reference containing the deleted <c>xai</c> file id.</summary>
     public IReadOnlyDictionary<string, string> ProviderReference { get; }
@@ -362,50 +383,33 @@ public sealed class XaiFiles : IFileStore
         using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json))
         {
             var root = document.RootElement;
-            var metadata = new Dictionary<string, object>();
             var fileName = ReadString(root, "filename");
-            if (fileName != null)
-            {
-                metadata["filename"] = fileName;
-            }
-
             var purpose = ReadString(root, "purpose");
-            if (purpose != null)
-            {
-                metadata["purpose"] = purpose;
-            }
 
             long? bytes = null;
             if (root.TryGetProperty("bytes", out var bytesValue) && bytesValue.ValueKind == JsonValueKind.Number)
             {
                 bytes = bytesValue.GetInt64();
-                metadata["bytes"] = bytes.Value;
             }
 
             long? created = null;
             if (root.TryGetProperty("created_at", out var createdValue) && createdValue.ValueKind == JsonValueKind.Number)
             {
                 created = createdValue.GetInt64();
-                metadata["createdAt"] = created.Value;
             }
 
             var status = ReadString(root, "status");
-            if (status != null)
-            {
-                metadata["status"] = status;
-            }
 
             long? expires = null;
             if (root.TryGetProperty("expires_at", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number)
             {
                 expires = expiresValue.GetInt64();
-                metadata["expiresAt"] = expires.Value;
             }
 
             var id = ReadString(root, "id") ?? string.Empty;
             return new XaiFileResult(
                 new Dictionary<string, string> { ["xai"] = id },
-                new XaiFileMetadata(metadata),
+                new XaiFileMetadata(fileName, purpose, bytes, created, status, expires),
                 fileName ?? uploadedName,
                 mediaType,
                 bytes,
