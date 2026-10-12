@@ -2,7 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.OpenResponses;
+using Vercel.AI.Tests.Upstream;
+using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelSupport;
 
 namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 
@@ -15,9 +16,9 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     [UpstreamTest(Prefix + "should send a provider-native reasoning effort", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_a_provider_native_reasoning_effort()
     {
-        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
+        var capture = JsonFixture("lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
-        options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\"}");
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningEffort\":\"max\"}");
 
         await Model(capture).DoGenerateAsync(options, CancellationToken.None);
 
@@ -28,10 +29,10 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     [UpstreamTest(Prefix + "should prefer providerOptions reasoning effort over top-level reasoning", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_prefer_providerOptions_reasoning_effort_over_top_level_reasoning()
     {
-        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
+        var capture = JsonFixture("lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
         options.Reasoning = "low";
-        options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\",\"reasoningSummary\":\"detailed\"}");
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningEffort\":\"max\",\"reasoningSummary\":\"detailed\"}");
 
         var result = await Model(capture).DoGenerateAsync(options, CancellationToken.None);
 
@@ -40,21 +41,63 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should combine top-level reasoning effort with providerOptions summary", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_combine_top_level_reasoning_effort_with_providerOptions_summary()
+    [UpstreamTest(Prefix + "should send reasoning.summary via providerOptions", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_reasoning_summary_via_providerOptions()
     {
-        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
+        var capture = JsonFixture("lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
-        options.Reasoning = "high";
-        options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningSummary\":\"auto\"}");
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningSummary\":\"detailed\"}");
 
         await Model(capture).DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal("{\"effort\":\"high\",\"summary\":\"auto\"}", UpstreamChat.Body(capture)["reasoning"]!.ToJsonString());
+        JsonAssert.Equal(UpstreamChat.Body(capture), """
+            {"input":[{"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"}],"model":"gemma-7b-it","reasoning":{"summary":"detailed"}}
+            """);
     }
 
-    private static OpenResponsesLanguageModel Model(UpstreamCapture capture)
+    [Fact]
+    [UpstreamTest(Prefix + "should combine top-level reasoning effort with providerOptions summary", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_combine_top_level_reasoning_effort_with_providerOptions_summary()
     {
-        return (OpenResponsesLanguageModel)OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "test-key", BaseUrl = "https://example.test/v1" }, capture).LanguageModel("gemma-7b-it");
+        var capture = JsonFixture("lmstudio-basic.1");
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "high";
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningSummary\":\"auto\"}");
+
+        await Model(capture).DoGenerateAsync(options, CancellationToken.None);
+
+        JsonAssert.Equal(UpstreamChat.Body(capture), """
+            {"input":[{"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"}],"model":"gemma-7b-it","reasoning":{"effort":"high","summary":"auto"}}
+            """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should send reasoning.summary concise via providerOptions", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_reasoning_summary_concise_via_providerOptions()
+    {
+        var capture = JsonFixture("lmstudio-basic.1");
+        var options = UpstreamChat.Prompt();
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningSummary\":\"concise\"}");
+
+        await Model(capture).DoGenerateAsync(options, CancellationToken.None);
+
+        JsonAssert.Equal(UpstreamChat.Body(capture), """
+            {"input":[{"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"}],"model":"gemma-7b-it","reasoning":{"summary":"concise"}}
+            """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should not set reasoning when providerOptions has no reasoning fields", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_set_reasoning_when_providerOptions_has_no_reasoning_fields()
+    {
+        var capture = JsonFixture("lmstudio-basic.1");
+        var options = UpstreamChat.Prompt();
+        options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{}");
+
+        await Model(capture).DoGenerateAsync(options, CancellationToken.None);
+
+        JsonAssert.Equal(UpstreamChat.Body(capture), """
+            {"input":[{"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"}],"model":"gemma-7b-it"}
+            """);
     }
 }

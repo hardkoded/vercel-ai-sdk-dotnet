@@ -34,12 +34,12 @@ public sealed class BedrockRequestMetadataTests
         Assert.Equal("prod", metadata.GetProperty("environment").GetString());
         Assert.Equal(1, CountOf(handler.Body, "\"requestMetadata\""));
         Assert.False(document.RootElement.TryGetProperty("reasoningConfig", out _));
-        Assert.False(document.RootElement.TryGetProperty("serviceTier", out _));
+        Assert.Equal("default", document.RootElement.GetProperty("serviceTier").GetProperty("type").GetString());
         var fields = document.RootElement.GetProperty("additionalModelRequestFields");
         Assert.Equal(1, fields.GetProperty("topK").GetInt32());
         Assert.Equal(1024, fields.GetProperty("thinking").GetProperty("budget_tokens").GetInt32());
         Assert.DoesNotContain("reasoningConfig", handler.Body);
-        Assert.DoesNotContain("serviceTier", handler.Body);
+        Assert.False(fields.TryGetProperty("serviceTier", out _));
     }
 
     [Fact]

@@ -2,11 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
 using Vercel.AI.Provider;
-using static Vercel.AI.Tests.ConvertToOpenResponsesInputTests.ConvertToOpenResponsesInputHelpers;
+using static Vercel.AI.Tests.Upstream.OpenResponses.ConvertToOpenResponsesInput.ConvertToOpenResponsesInputSupport;
 
-namespace Vercel.AI.Tests.ConvertToOpenResponsesInputTests;
+namespace Vercel.AI.Tests.Upstream.OpenResponses.ConvertToOpenResponsesInput;
 
 /// <summary>Port of <c>convert-to-open-responses-input.test.ts</c> &gt; <c>convertToOpenResponsesInput &gt; system messages</c>.</summary>
 public sealed class SystemMessagesTests
@@ -20,7 +19,7 @@ public sealed class SystemMessagesTests
         var result = Convert(new SystemModelMessage("You are a helpful assistant."));
 
         Assert.Equal("You are a helpful assistant.", result.Instructions);
-        AssertInput("[]", result);
+        JsonAssert.Equal(result.Input, "[]");
     }
 
     [Fact]
@@ -30,14 +29,14 @@ public sealed class SystemMessagesTests
         var result = Convert(new SystemModelMessage("You are a helpful assistant."), new SystemModelMessage("Always be concise."));
 
         Assert.Equal("You are a helpful assistant.\nAlways be concise.", result.Instructions);
-        AssertInput("[]", result);
+        JsonAssert.Equal(result.Input, "[]");
     }
 
     [Fact]
     [UpstreamTest(Prefix + "should return undefined instructions when no system messages", Coverage = UpstreamCoverage.Covered)]
     public void Should_return_undefined_instructions_when_no_system_messages()
     {
-        var result = Convert(User(new TextContentPart("Hello")));
+        var result = Convert(new UserModelMessage("Hello"));
 
         Assert.Null(result.Instructions);
     }
@@ -46,15 +45,14 @@ public sealed class SystemMessagesTests
     [UpstreamTest(Prefix + "should handle system message with user and assistant messages", Coverage = UpstreamCoverage.Covered)]
     public void Should_handle_system_message_with_user_and_assistant_messages()
     {
-        var result = Convert(
-            new SystemModelMessage("You are a helpful assistant."),
-            User(new TextContentPart("Hello")),
-            Assistant(new AssistantTextPart("Hi there!")));
+        var result = Convert(new SystemModelMessage("You are a helpful assistant."), new UserModelMessage("Hello"), AssistantText("Hi there!"));
 
         Assert.Equal("You are a helpful assistant.", result.Instructions);
-        AssertInput(
-            "[{\"content\":[{\"text\":\"Hello\",\"type\":\"input_text\"}],\"role\":\"user\",\"type\":\"message\"},"
-            + "{\"content\":[{\"text\":\"Hi there!\",\"type\":\"output_text\"}],\"role\":\"assistant\",\"type\":\"message\"}]",
-            result);
+        JsonAssert.Equal(result.Input, """
+            [
+              {"content":[{"text":"Hello","type":"input_text"}],"role":"user","type":"message"},
+              {"content":[{"text":"Hi there!","type":"output_text"}],"role":"assistant","type":"message"}
+            ]
+            """);
     }
 }
