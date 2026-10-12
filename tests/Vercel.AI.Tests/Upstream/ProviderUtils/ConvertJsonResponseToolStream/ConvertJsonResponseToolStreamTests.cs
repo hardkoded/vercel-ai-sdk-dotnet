@@ -25,8 +25,8 @@ public sealed class ConvertJsonResponseToolStreamTests
         return new List<LanguageModelStreamPart>
         {
             new ToolInputStartStreamPart("response", "json", Metadata),
-            new ToolInputDeltaStreamPart("response", "{\"date\":"),
-            new ToolInputDeltaStreamPart("response", "\"2031-06-17\"}"),
+            new ToolInputDeltaStreamPart("response", "{\"date\":", Metadata),
+            new ToolInputDeltaStreamPart("response", "\"2031-06-17\"}", Metadata),
             new ToolInputEndStreamPart("response"),
             new ToolCallStreamPart("response", "json", Date, Metadata),
         };
@@ -68,8 +68,12 @@ public sealed class ConvertJsonResponseToolStreamTests
         var start = Assert.IsType<TextStartStreamPart>(parts[0]);
         Assert.Equal("response", start.Id);
         Assert.Equal(Metadata.GetRawText(), Raw(start.ProviderMetadata));
-        Assert.Equal("{\"date\":", Assert.IsType<TextDeltaStreamPart>(parts[1]).Delta);
-        Assert.Equal("\"2031-06-17\"}", Assert.IsType<TextDeltaStreamPart>(parts[2]).Delta);
+        var first = Assert.IsType<TextDeltaStreamPart>(parts[1]);
+        Assert.Equal("{\"date\":", first.Delta);
+        Assert.Equal(Metadata.GetRawText(), Raw(first.ProviderMetadata));
+        var second = Assert.IsType<TextDeltaStreamPart>(parts[2]);
+        Assert.Equal("\"2031-06-17\"}", second.Delta);
+        Assert.Equal(Metadata.GetRawText(), Raw(second.ProviderMetadata));
         var end = Assert.IsType<TextEndStreamPart>(parts[3]);
         Assert.Equal("response", end.Id);
         Assert.Equal(Metadata.GetRawText(), Raw(end.ProviderMetadata));
@@ -88,13 +92,15 @@ public sealed class ConvertJsonResponseToolStreamTests
             new ToolInputStartStreamPart("response", "json"),
             new ToolInputDeltaStreamPart("response", string.Empty),
             new ToolInputEndStreamPart("response"),
-            new ToolCallStreamPart("response", "json", "{}"),
+            new ToolCallStreamPart("response", "json", "{}", Metadata),
         });
 
         Assert.Equal(4, parts.Count);
         Assert.Equal("response", Assert.IsType<TextStartStreamPart>(parts[0]).Id);
         Assert.Equal(string.Empty, Assert.IsType<TextDeltaStreamPart>(parts[1]).Delta);
-        Assert.Equal("{}", Assert.IsType<TextDeltaStreamPart>(parts[2]).Delta);
+        var full = Assert.IsType<TextDeltaStreamPart>(parts[2]);
+        Assert.Equal("{}", full.Delta);
+        Assert.Equal(Metadata.GetRawText(), Raw(full.ProviderMetadata));
         Assert.Equal("response", Assert.IsType<TextEndStreamPart>(parts[3]).Id);
     }
 

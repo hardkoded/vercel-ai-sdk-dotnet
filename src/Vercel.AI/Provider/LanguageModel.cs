@@ -873,11 +873,12 @@ public abstract class LanguageModelStreamPart
 public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a text delta.</summary>
-    public TextDeltaStreamPart(string id, string delta)
+    public TextDeltaStreamPart(string id, string delta, JsonElement? providerMetadata = null)
         : base("text-delta")
     {
         Id = id;
         Delta = delta ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Text block id.</summary>
@@ -885,6 +886,9 @@ public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 
     /// <summary>Text fragment.</summary>
     public string Delta { get; }
+
+    /// <summary>Provider metadata for this delta.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A reasoning delta.</summary>
