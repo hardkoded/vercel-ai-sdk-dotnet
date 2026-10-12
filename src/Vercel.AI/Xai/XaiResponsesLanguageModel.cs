@@ -17,13 +17,9 @@ public sealed class XaiReasoning : GeneratedReasoning
 {
     /// <summary>Creates reasoning.</summary>
     public XaiReasoning(string text, JsonElement? providerMetadata)
-        : base(text)
+        : base(text, providerMetadata)
     {
-        ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Provider metadata, such as <c>xai.itemId</c> and <c>xai.reasoningEncryptedContent</c>.</summary>
-    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>

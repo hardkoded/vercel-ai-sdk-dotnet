@@ -210,13 +210,23 @@ public class GeneratedReasoning : GeneratedContent
 {
     /// <summary>Creates reasoning content.</summary>
     public GeneratedReasoning(string text)
+        : this(text, null)
+    {
+    }
+
+    /// <summary>Creates reasoning content that carries provider metadata, such as an <c>itemId</c> or encrypted content.</summary>
+    public GeneratedReasoning(string text, JsonElement? providerMetadata)
         : base("reasoning")
     {
         Text = text ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider metadata for this reasoning, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A URL source cited by the model.</summary>

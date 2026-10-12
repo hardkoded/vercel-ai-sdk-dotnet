@@ -26,13 +26,9 @@ public sealed class HuggingFaceReasoning : GeneratedReasoning
 {
     /// <summary>Creates reasoning.</summary>
     public HuggingFaceReasoning(string text, JsonElement? providerMetadata)
-        : base(text)
+        : base(text, providerMetadata)
     {
-        ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Provider metadata, such as <c>huggingface.itemId</c>.</summary>
-    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A tool call that Hugging Face ran itself, such as an MCP call.</summary>

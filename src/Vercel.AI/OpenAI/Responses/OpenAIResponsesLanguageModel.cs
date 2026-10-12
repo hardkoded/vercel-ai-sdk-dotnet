@@ -681,9 +681,24 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {
+                var reasoningItemId = item.TryGetProperty("id", out var reasoningIdElement) && reasoningIdElement.ValueKind == JsonValueKind.String
+                    ? reasoningIdElement.GetString()
+                    : null;
+                var reasoningValues = new JsonObject();
+                if (!string.IsNullOrEmpty(reasoningItemId))
+                {
+                    reasoningValues["itemId"] = reasoningItemId;
+                }
+
+                if (item.TryGetProperty("encrypted_content", out var encryptedElement) && encryptedElement.ValueKind == JsonValueKind.String)
+                {
+                    reasoningValues["reasoningEncryptedContent"] = encryptedElement.GetString();
+                }
+
+                JsonElement? reasoningMetadata = reasoningValues.Count > 0 ? OpenAIJson.ProviderMetadata(reasoningValues) : null;
                 if (summary.GetArrayLength() == 0)
                 {
-                    content.Add(new GeneratedReasoning(string.Empty));
+                    content.Add(new GeneratedReasoning(string.Empty, reasoningMetadata));
                 }
 
                 foreach (var part in summary.EnumerateArray())
@@ -691,7 +706,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     var text = part.TryGetProperty("text", out var textElement) && textElement.ValueKind == JsonValueKind.String
                         ? textElement.GetString() ?? string.Empty
                         : string.Empty;
-                    content.Add(new GeneratedReasoning(text));
+                    content.Add(new GeneratedReasoning(text, reasoningMetadata));
                 }
             }
         }
