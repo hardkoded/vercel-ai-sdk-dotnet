@@ -424,7 +424,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         JsonElement? schema = options.JsonSchema;
         string? name = options.JsonSchemaName;
         string? description = null;
-        string? type = schema != null ? "json" : null;
+        string? type = schema != null || options.JsonResponse ? "json" : null;
         if (format != null)
         {
             type = OpenAIJson.String(format, "type") ?? type;

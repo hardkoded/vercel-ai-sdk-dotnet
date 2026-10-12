@@ -939,6 +939,9 @@ public sealed class LanguageModelCallOptions
     /// <summary>Random seed.</summary>
     public int? Seed { get; set; }
 
+    /// <summary>Asks for a JSON response without a schema. Maps to <c>responseFormat: { type: 'json' }</c> with no schema. Providers send <c>json_object</c> or the matching format. Ignored when <see cref="JsonSchema"/> is set.</summary>
+    public bool JsonResponse { get; set; }
+
     /// <summary>JSON schema when structured output is requested.</summary>
     public JsonElement? JsonSchema { get; set; }
 

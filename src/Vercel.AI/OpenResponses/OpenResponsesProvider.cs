@@ -202,6 +202,10 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             format["strict"] = true;
             body["text"] = new JsonObject { ["format"] = format };
         }
+        else if (options.JsonResponse)
+        {
+            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+        }
 
         return (body, warnings);
     }
