@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenResponses;
 
@@ -280,5 +281,133 @@ public static class OpenResponsesExtensions
         }
 
         map[key] = extension;
+    }
+}
+
+/// <summary>Decodes extension items and events for generate and stream.</summary>
+internal static class OpenResponsesExtensionItems
+{
+    /// <summary>Kind of the custom part that holds an extension item for replay.</summary>
+    public const string ReplayKind = "open-responses.extension-replay";
+
+    /// <summary>
+    /// Decodes a completed extension item. Returns null when no extension decodes it. Otherwise the result starts with a replay
+    /// part that holds the original item, followed by the decoded parts, each tagged with the extension id and item id.
+    /// </summary>
+    public static List<GeneratedContent>? Decode(OpenResponsesExtensionRegistry registry, string providerOptionsName, JsonObject item, OpenResponsesItemMode mode)
+    {
+        var type = (string)item["type"]!;
+        if (!registry.ByItemType.TryGetValue(type, out var extension) || extension.DecodeItem == null)
+        {
+            return null;
+        }
+
+        var decoded = extension.DecodeItem(new OpenResponsesDecodeItemContext(item, mode));
+        if (decoded == null)
+        {
+            return null;
+        }
+
+        var result = new List<GeneratedContent>
+        {
+            new GeneratedCustom(
+                ReplayKind,
+                ProviderMetadata(providerOptionsName, new JsonObject
+                {
+                    ["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["item"] = item.DeepClone() },
+                })),
+        };
+        foreach (var part in decoded)
+        {
+            result.Add(WithExtensionReference(part, providerOptionsName, extension, item));
+        }
+
+        return result;
+    }
+
+    /// <summary>Converts decoded extension content to a stream part.</summary>
+    public static LanguageModelStreamPart ToStreamPart(GeneratedContent part)
+    {
+        switch (part)
+        {
+            case GeneratedToolCall call:
+                return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted };
+            case GeneratedToolResult toolResult:
+                return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { ProviderMetadata = toolResult.ProviderMetadata };
+            case GeneratedSource source:
+                return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
+            case GeneratedDocumentSource documentSource:
+                return new DocumentSourceStreamPart(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, documentSource.ProviderMetadata);
+            case GeneratedCustom custom:
+                return new CustomStreamPart(custom.Kind, custom.ProviderMetadata);
+            case GeneratedReasoning reasoning:
+                return new ReasoningDeltaStreamPart(string.Empty, reasoning.Text);
+            case GeneratedText text:
+                return new TextDeltaStreamPart(string.Empty, text.Text, text.ProviderMetadata);
+            default:
+                throw new InvalidOperationException("Open Responses extension content of type " + part.Type + " cannot be streamed.");
+        }
+    }
+
+    private static GeneratedContent WithExtensionReference(GeneratedContent part, string providerOptionsName, OpenResponsesExtension extension, JsonObject item)
+    {
+        JsonElement? existing;
+        switch (part)
+        {
+            case GeneratedText text:
+                existing = text.ProviderMetadata;
+                break;
+            case GeneratedReasoning reasoning:
+                existing = reasoning.ProviderMetadata;
+                break;
+            case GeneratedToolCall call:
+                existing = call.ProviderMetadata;
+                break;
+            case GeneratedToolResult toolResult:
+                existing = toolResult.ProviderMetadata;
+                break;
+            case GeneratedSource source:
+                existing = source.ProviderMetadata;
+                break;
+            case GeneratedDocumentSource documentSource:
+                existing = documentSource.ProviderMetadata;
+                break;
+            case GeneratedCustom custom:
+                existing = custom.ProviderMetadata;
+                break;
+            default:
+                return part;
+        }
+
+        var metadata = existing is { ValueKind: JsonValueKind.Object } element
+            ? JsonNode.Parse(element.GetRawText())!.AsObject()
+            : new JsonObject();
+        var inner = metadata[providerOptionsName] as JsonObject ?? new JsonObject();
+        inner["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["itemId"] = (string)item["id"]! };
+        metadata[providerOptionsName] = inner;
+        var merged = JsonSerializer.SerializeToElement(metadata);
+
+        switch (part)
+        {
+            case GeneratedText text:
+                return new GeneratedText(text.Text, text.Citations) { ProviderMetadata = merged };
+            case GeneratedReasoning reasoning:
+                return new GeneratedReasoning(reasoning.Text, merged);
+            case GeneratedToolCall call:
+                return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, merged) { ProviderExecuted = call.ProviderExecuted };
+            case GeneratedToolResult toolResult:
+                return new GeneratedToolResult(toolResult.ToolCallId, toolResult.ToolName, toolResult.ResultJson, toolResult.IsError) { ProviderMetadata = merged };
+            case GeneratedSource source:
+                return new GeneratedSource(source.Id, source.Url, source.Title, merged);
+            case GeneratedDocumentSource documentSource:
+                return new GeneratedDocumentSource(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, merged);
+            default:
+                return new GeneratedCustom(((GeneratedCustom)part).Kind, merged);
+        }
+    }
+
+    private static JsonElement ProviderMetadata(string providerOptionsName, JsonObject inner)
+    {
+        return JsonSerializer.SerializeToElement(new JsonObject { [providerOptionsName] = inner });
     }
 }

@@ -32,7 +32,7 @@ internal static class OpenResponsesLanguageModelTestSupport
 
     public static string ReadFixture(string name)
     {
-        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "OpenResponses", name));
+        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "open-responses-" + name));
     }
 
     public static void PrepareJsonFixtureResponse(UpstreamCapture capture, string filename)

@@ -32,11 +32,12 @@ internal static class OpenResponsesInput
 {
     public static OpenResponsesInputResult Convert(
         IReadOnlyList<ModelMessage> prompt,
-        string providerOptionsName,
-        OpenResponsesExtensionRegistry? extensionRegistry,
-        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
-        bool strictResponseInput)
+        string providerOptionsName = OpenResponsesProvider.ProviderName,
+        bool strictResponseInput = false,
+        OpenResponsesExtensionRegistry? extensionRegistry = null,
+        IReadOnlyDictionary<string, LanguageModelTool>? providerToolsByName = null)
     {
+        providerToolsByName ??= new Dictionary<string, LanguageModelTool>(StringComparer.Ordinal);
         var input = new JsonArray();
         var warnings = new List<CallWarning>();
         var systemMessages = new List<string>();
@@ -78,7 +79,8 @@ internal static class OpenResponsesInput
             {
                 if (file.ProviderReference != null)
                 {
-                    throw new UnsupportedFunctionalityException("file parts with provider references", "Open Responses does not support file parts with provider references.");
+                    const string functionality = "file parts with provider references";
+                    throw new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
                 }
 
                 if (MediaTypes.GetTopLevelMediaType(file.MediaType) == "image")
@@ -179,7 +181,7 @@ internal static class OpenResponsesInput
             assistantMessageId = null;
         }
 
-        foreach (var part in AssistantParts(assistant))
+        foreach (var part in AssistantParts(assistant, providerOptionsName))
         {
             var replay = GetExtensionReplay(part.ProviderOptions, providerOptionsName, extensionRegistry);
             if (replay != null)
@@ -462,7 +464,7 @@ internal static class OpenResponsesInput
     }
 
     /// <summary>The ordered parts of an assistant message, built from the flat fields when the message has no parts.</summary>
-    private static IReadOnlyList<AssistantContentPart> AssistantParts(AssistantModelMessage assistant)
+    private static IReadOnlyList<AssistantContentPart> AssistantParts(AssistantModelMessage assistant, string providerOptionsName)
     {
         if (assistant.Parts != null)
         {
@@ -470,9 +472,9 @@ internal static class OpenResponsesInput
         }
 
         var parts = new List<AssistantContentPart>();
-        if (!string.IsNullOrEmpty(assistant.Reasoning))
+        if (!string.IsNullOrEmpty(assistant.Reasoning) || ProviderData(assistant.ReasoningProviderOptions, providerOptionsName) != null)
         {
-            parts.Add(new AssistantReasoningPart(assistant.Reasoning!, assistant.ReasoningProviderOptions));
+            parts.Add(new AssistantReasoningPart(assistant.Reasoning ?? string.Empty, assistant.ReasoningProviderOptions));
         }
 
         if (!string.IsNullOrEmpty(assistant.Text))
