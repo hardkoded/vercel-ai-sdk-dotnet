@@ -44,14 +44,23 @@ public sealed class XaiFileUpload
 /// <summary>Metadata stored under <c>providerMetadata.xai</c>. Null fields are omitted.</summary>
 public sealed class XaiFileMetadata
 {
-    /// <summary>Creates metadata from the fields the response actually returned.</summary>
-    public XaiFileMetadata(IReadOnlyDictionary<string, object> values)
-    {
-        Values = values ?? new Dictionary<string, object>();
-    }
+    /// <summary>File name.</summary>
+    public string? Filename { get; set; }
 
-    /// <summary>Present response fields.</summary>
-    public IReadOnlyDictionary<string, object> Values { get; }
+    /// <summary>File purpose.</summary>
+    public string? Purpose { get; set; }
+
+    /// <summary>Size in bytes.</summary>
+    public long? Bytes { get; set; }
+
+    /// <summary>Creation time in unix seconds.</summary>
+    public long? CreatedAt { get; set; }
+
+    /// <summary>File status.</summary>
+    public string? Status { get; set; }
+
+    /// <summary>Expiration time in unix seconds.</summary>
+    public long? ExpiresAt { get; set; }
 }
 
 /// <summary>Result of an xAI file upload or metadata read.</summary>
@@ -68,17 +77,17 @@ public sealed class XaiFileResult
         DateTimeOffset? expiresAt)
     {
         ProviderReference = providerReference ?? new Dictionary<string, string>();
-        Metadata = metadata ?? new XaiFileMetadata(new Dictionary<string, object>());
+        Metadata = metadata ?? new XaiFileMetadata();
         FileName = fileName;
         MediaType = mediaType;
         ByteSize = byteSize;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<CallWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<CallWarning> Warnings { get; }
 
     /// <summary>Reference containing the <c>xai</c> file id.</summary>
     public IReadOnlyDictionary<string, string> ProviderReference { get; }
@@ -110,11 +119,11 @@ public sealed class XaiFileDownload
     {
         Content = content ?? Stream.Null;
         MediaType = mediaType;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<CallWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<CallWarning> Warnings { get; }
 
     /// <summary>File contents.</summary>
     public Stream Content { get; }
@@ -131,11 +140,11 @@ public sealed class XaiFileDeleteResult
     {
         ProviderReference = providerReference ?? new Dictionary<string, string>();
         Deleted = deleted;
-        Warnings = Array.Empty<string>();
+        Warnings = Array.Empty<CallWarning>();
     }
 
     /// <summary>Always empty.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<CallWarning> Warnings { get; }
 
     /// <summary>Reference containing the deleted <c>xai</c> file id.</summary>
     public IReadOnlyDictionary<string, string> ProviderReference { get; }
@@ -362,50 +371,36 @@ public sealed class XaiFiles : IFileStore
         using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json))
         {
             var root = document.RootElement;
-            var metadata = new Dictionary<string, object>();
+            var metadata = new XaiFileMetadata();
             var fileName = ReadString(root, "filename");
-            if (fileName != null)
-            {
-                metadata["filename"] = fileName;
-            }
-
-            var purpose = ReadString(root, "purpose");
-            if (purpose != null)
-            {
-                metadata["purpose"] = purpose;
-            }
-
+            metadata.Filename = fileName;
+            metadata.Purpose = ReadString(root, "purpose");
+            metadata.Status = ReadString(root, "status");
             long? bytes = null;
             if (root.TryGetProperty("bytes", out var bytesValue) && bytesValue.ValueKind == JsonValueKind.Number)
             {
                 bytes = bytesValue.GetInt64();
-                metadata["bytes"] = bytes.Value;
+                metadata.Bytes = bytes;
             }
 
             long? created = null;
             if (root.TryGetProperty("created_at", out var createdValue) && createdValue.ValueKind == JsonValueKind.Number)
             {
                 created = createdValue.GetInt64();
-                metadata["createdAt"] = created.Value;
-            }
-
-            var status = ReadString(root, "status");
-            if (status != null)
-            {
-                metadata["status"] = status;
+                metadata.CreatedAt = created;
             }
 
             long? expires = null;
             if (root.TryGetProperty("expires_at", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number)
             {
                 expires = expiresValue.GetInt64();
-                metadata["expiresAt"] = expires.Value;
+                metadata.ExpiresAt = expires;
             }
 
             var id = ReadString(root, "id") ?? string.Empty;
             return new XaiFileResult(
                 new Dictionary<string, string> { ["xai"] = id },
-                new XaiFileMetadata(metadata),
+                metadata,
                 fileName ?? uploadedName,
                 mediaType,
                 bytes,

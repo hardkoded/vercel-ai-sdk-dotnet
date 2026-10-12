@@ -41,9 +41,9 @@ public sealed class XaiParityTests
     {
         var (files, _) = Files("{\"id\":\"file-abc123\",\"object\":\"file\",\"bytes\":512,\"created_at\":1700000000,\"filename\":\"data.csv\"}");
         var result = await files.UploadAsync(Bytes(new byte[] { 1 }), CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("data.csv", (string)result.Metadata.Values["filename"]);
-        Assert.Equal(512L, (long)result.Metadata.Values["bytes"]);
-        Assert.Equal(1700000000L, (long)result.Metadata.Values["createdAt"]);
+        Assert.Equal("data.csv", result.Metadata.Filename);
+        Assert.Equal(512L, result.Metadata.Bytes!.Value);
+        Assert.Equal(1700000000L, result.Metadata.CreatedAt!.Value);
     }
 
     [Fact]
@@ -101,7 +101,12 @@ public sealed class XaiParityTests
     {
         var (files, _) = Files("{\"id\":\"file-abc123\",\"object\":\"file\",\"bytes\":null,\"created_at\":null,\"filename\":null}");
         var result = await files.UploadAsync(Bytes(new byte[] { 1 }), CancellationToken.None).ConfigureAwait(false);
-        Assert.Empty(result.Metadata.Values);
+        Assert.Null(result.Metadata.Filename);
+        Assert.Null(result.Metadata.Purpose);
+        Assert.Null(result.Metadata.Bytes);
+        Assert.Null(result.Metadata.CreatedAt);
+        Assert.Null(result.Metadata.Status);
+        Assert.Null(result.Metadata.ExpiresAt);
     }
 
     [Fact]
@@ -143,7 +148,7 @@ public sealed class XaiParityTests
 
         Assert.Equal("expires_after,file", string.Join(",", names));
         Assert.Equal("172800", Encoding.UTF8.GetString(Part(handler.Calls[0], "expires_after").Data));
-        Assert.Equal(1234740690L, (long)result.Metadata.Values["expiresAt"]);
+        Assert.Equal(1234740690L, result.Metadata.ExpiresAt!.Value);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1234740690), result.ExpiresAt);
     }
 

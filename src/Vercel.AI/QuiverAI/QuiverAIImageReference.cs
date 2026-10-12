@@ -10,6 +10,34 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.QuiverAI;
 
+/// <summary>A prepared reference image: <c>{ url }</c> or <c>{ base64 }</c>. Exactly one is set.</summary>
+public sealed class QuiverAIImageReferenceResult
+{
+    /// <summary>Creates a result with a URL.</summary>
+    public static QuiverAIImageReferenceResult FromUrl(string url)
+    {
+        return new QuiverAIImageReferenceResult { Url = url };
+    }
+
+    /// <summary>Creates a result with base64 data.</summary>
+    public static QuiverAIImageReferenceResult FromBase64(string base64)
+    {
+        return new QuiverAIImageReferenceResult { Base64 = base64 };
+    }
+
+    /// <summary>HTTP or HTTPS image URL.</summary>
+    public string? Url { get; private set; }
+
+    /// <summary>Base64 image data.</summary>
+    public string? Base64 { get; private set; }
+
+    /// <summary>Converts to the provider option JSON shape.</summary>
+    public JsonObject ToJson()
+    {
+        return Url != null ? new JsonObject { ["url"] = Url } : new JsonObject { ["base64"] = Base64 };
+    }
+}
+
 /// <summary>Builds the reference image objects accepted by <c>providerOptions.quiverai.referenceImages</c>.</summary>
 public static class QuiverAIImageReference
 {
@@ -32,20 +60,20 @@ public static class QuiverAIImageReference
     private static readonly Regex SvgSelfClose = new Regex("<svg(?:\\s[^>]*)?/>\\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant);
 
     /// <summary>Returns <c>{ "url" }</c> for an HTTP or HTTPS URL.</summary>
-    public static JsonObject Prepare(Uri input)
+    public static QuiverAIImageReferenceResult Prepare(Uri input)
     {
-        return new JsonObject { ["url"] = ValidateImageUrl(input.ToString()) };
+        return QuiverAIImageReferenceResult.FromUrl(ValidateImageUrl(input.ToString()));
     }
 
     /// <summary>
     /// Returns <c>{ "url" }</c> for a URL, or <c>{ "base64" }</c> for a base64 string or a base64 data URL.
     /// Throws <see cref="InvalidArgumentException"/> for other schemes, invalid base64, or unsupported images.
     /// </summary>
-    public static JsonObject Prepare(string input)
+    public static QuiverAIImageReferenceResult Prepare(string input)
     {
         if (Scheme.IsMatch(input))
         {
-            return new JsonObject { ["url"] = ValidateImageUrl(input) };
+            return QuiverAIImageReferenceResult.FromUrl(ValidateImageUrl(input));
         }
 
         if (input.StartsWith("data:", StringComparison.Ordinal))
@@ -57,18 +85,18 @@ public static class QuiverAIImageReference
             }
 
             ValidateReferenceBase64(match.Groups[2].Value, "input");
-            return new JsonObject { ["base64"] = match.Groups[2].Value };
+            return QuiverAIImageReferenceResult.FromBase64(match.Groups[2].Value);
         }
 
         ValidateReferenceBase64(input, "input");
-        return new JsonObject { ["base64"] = input };
+        return QuiverAIImageReferenceResult.FromBase64(input);
     }
 
     /// <summary>Returns <c>{ "base64" }</c> for PNG, JPEG, WebP, GIF, or SVG bytes.</summary>
-    public static JsonObject Prepare(byte[] input)
+    public static QuiverAIImageReferenceResult Prepare(byte[] input)
     {
         ValidateReferenceBytes(input, "input");
-        return new JsonObject { ["base64"] = Convert.ToBase64String(input) };
+        return QuiverAIImageReferenceResult.FromBase64(Convert.ToBase64String(input));
     }
 
     internal static string ValidateImageUrl(string url)

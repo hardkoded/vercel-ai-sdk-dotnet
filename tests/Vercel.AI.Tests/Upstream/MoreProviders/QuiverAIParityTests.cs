@@ -42,8 +42,8 @@ public sealed class QuiverAIParityTests
     [UpstreamTest(Reference + "prepares URL references", Coverage = UpstreamCoverage.Covered)]
     public void PreparesUrlReferences()
     {
-        JsonAssert.Equal(QuiverAIImageReference.Prepare(new Uri("https://example.com/reference.svg")), "{\"url\":\"https://example.com/reference.svg\"}");
-        JsonAssert.Equal(QuiverAIImageReference.Prepare("http://example.com/reference.png"), "{\"url\":\"http://example.com/reference.png\"}");
+        JsonAssert.Equal(QuiverAIImageReference.Prepare(new Uri("https://example.com/reference.svg")).ToJson(), "{\"url\":\"https://example.com/reference.svg\"}");
+        JsonAssert.Equal(QuiverAIImageReference.Prepare("http://example.com/reference.png").ToJson(), "{\"url\":\"http://example.com/reference.png\"}");
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public sealed class QuiverAIParityTests
     public void PreparesBinaryReferences()
     {
         var svg = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"></svg>");
-        JsonAssert.Equal(QuiverAIImageReference.Prepare(svg), "{\"base64\":\"" + Convert.ToBase64String(svg) + "\"}");
+        JsonAssert.Equal(QuiverAIImageReference.Prepare(svg).ToJson(), "{\"base64\":\"" + Convert.ToBase64String(svg) + "\"}");
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class QuiverAIParityTests
     public void PreparesBase64AndDataUrlReferences()
     {
         var base64 = Base64("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"></svg>");
-        JsonAssert.Equal(QuiverAIImageReference.Prepare(base64), "{\"base64\":\"" + base64 + "\"}");
-        JsonAssert.Equal(QuiverAIImageReference.Prepare("data:image/svg+xml;base64," + base64), "{\"base64\":\"" + base64 + "\"}");
+        JsonAssert.Equal(QuiverAIImageReference.Prepare(base64).ToJson(), "{\"base64\":\"" + base64 + "\"}");
+        JsonAssert.Equal(QuiverAIImageReference.Prepare("data:image/svg+xml;base64," + base64).ToJson(), "{\"base64\":\"" + base64 + "\"}");
     }
 
     [Theory]
@@ -395,7 +395,7 @@ public sealed class QuiverAIParityTests
     {
         const string source = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><rect width=\"10\" height=\"10\" fill=\"red\"/></svg>";
         const string reference = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\"><circle cx=\"5\" cy=\"5\" r=\"4\" fill=\"blue\"/></svg>";
-        var references = new JsonArray(new JsonObject { ["url"] = "https://example.com/reference.png" }, QuiverAIImageReference.Prepare(Encoding.UTF8.GetBytes(reference)));
+        var references = new JsonArray(new JsonObject { ["url"] = "https://example.com/reference.png" }, QuiverAIImageReference.Prepare(Encoding.UTF8.GetBytes(reference)).ToJson());
         var options = new JsonObject
         {
             ["operation"] = "edit",
