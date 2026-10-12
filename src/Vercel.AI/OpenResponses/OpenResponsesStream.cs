@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.OpenResponses;
@@ -128,6 +129,7 @@ internal sealed class OpenResponsesStream
 {
     private readonly string _providerOptionsName;
     private readonly OpenResponsesExtensionRegistry _registry;
+    private readonly Func<JsonElement, OpenResponsesErrorMetadata?>? _getResponseErrorMetadata;
     private readonly Dictionary<string, object?> _extensionState = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(StringComparer.Ordinal);
     private string? _activeReasoningId;
@@ -136,10 +138,14 @@ internal sealed class OpenResponsesStream
     private string? _rawFinishReason;
     private LanguageModelUsage _usage = LanguageModelUsage.Null;
 
-    public OpenResponsesStream(string providerOptionsName, OpenResponsesExtensionRegistry registry)
+    public OpenResponsesStream(
+        string providerOptionsName,
+        OpenResponsesExtensionRegistry registry,
+        Func<JsonElement, OpenResponsesErrorMetadata?>? getResponseErrorMetadata = null)
     {
         _providerOptionsName = providerOptionsName;
         _registry = registry;
+        _getResponseErrorMetadata = getResponseErrorMetadata;
     }
 
     public List<LanguageModelStreamPart> Accept(string data, bool includeRaw)
@@ -273,9 +279,9 @@ internal sealed class OpenResponsesStream
                 _finishReason = FinishReason.Error;
                 _rawFinishReason = OpenAIJson.String(failedError, "code") ?? OpenAIJson.String(failed, "status");
                 UpdateUsage(failed);
-                if (failedError is { ValueKind: JsonValueKind.Object })
+                if (failedError is { ValueKind: JsonValueKind.Object } responseError)
                 {
-                    parts.Add(new ErrorStreamPart(OpenAIJson.String(failedError, "message") ?? string.Empty));
+                    parts.Add(new ErrorStreamPart(StreamError("response.failed", responseError, chunk)));
                 }
 
                 break;
@@ -283,9 +289,36 @@ internal sealed class OpenResponsesStream
                 var error = OpenAIJson.Child(chunk, "error");
                 _finishReason = FinishReason.Error;
                 _rawFinishReason = OpenAIJson.String(error, "code");
-                parts.Add(new ErrorStreamPart(OpenAIJson.String(error, "message") ?? string.Empty));
+                parts.Add(error is { } streamError
+                    ? new ErrorStreamPart(StreamError("error", streamError, chunk))
+                    : new ErrorStreamPart(string.Empty));
                 break;
         }
+    }
+
+    /// <summary>The provider stream error of an <c>error</c> or <c>response.failed</c> event. Maps to <c>createOpenResponsesStreamError</c>.</summary>
+    private ProviderStreamError StreamError(string type, JsonElement error, JsonElement chunk)
+    {
+        var metadata = _getResponseErrorMetadata?.Invoke(error);
+        return new ProviderStreamError(
+            OpenAIJson.String(error, "message") ?? string.Empty,
+            chunk.Clone(),
+            type,
+            ErrorCode(error),
+            metadata?.StatusCode,
+            metadata?.IsRetryable);
+    }
+
+    private static object? ErrorCode(JsonElement error)
+    {
+        return OpenAIJson.Child(error, "code") is { } code
+            ? code.ValueKind switch
+            {
+                JsonValueKind.String => code.GetString(),
+                JsonValueKind.Number => code.TryGetInt64(out var number) ? (object)number : code.GetDouble(),
+                _ => null,
+            }
+            : null;
     }
 
     private void AcceptExtensionEvent(string type, JsonElement chunk, List<LanguageModelStreamPart> parts)
