@@ -45,12 +45,13 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Partial, Note = "Warnings are type plus message rather than feature plus details.")]
+    [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_warn_when_reasoning_minimal_is_mapped_for_newer_Anthropic_models()
     {
         var (result, body) = await Generate(NewerAnthropicModelId, "minimal");
 
         Assert.Contains(result.Warnings, warning => warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
             && warning.Message == "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".");
         Assert.Equal("low", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
     }
@@ -142,7 +143,7 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking", Coverage = UpstreamCoverage.Partial, Note = "Warnings are type plus message rather than feature plus details.")]
+    [UpstreamTest(Prefix + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_strip_temperature_topP_topK_for_Anthropic_models_when_reasoning_enables_thinking()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
@@ -158,10 +159,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         Assert.False(inference.TryGetProperty("temperature", out _));
         Assert.False(inference.TryGetProperty("topP", out _));
         Assert.False(inference.TryGetProperty("topK", out _));
-        var warnings = result.Warnings.Select(warning => (warning.Type, warning.Message)).ToArray();
-        Assert.Contains(("unsupported", "temperature is not supported when thinking is enabled"), warnings);
-        Assert.Contains(("unsupported", "topP is not supported when thinking is enabled"), warnings);
-        Assert.Contains(("unsupported", "topK is not supported when thinking is enabled"), warnings);
+        var warnings = result.Warnings.Select(warning => (warning.Type, warning.Feature, warning.Message)).ToArray();
+        Assert.Contains(("unsupported", "temperature", "temperature is not supported when thinking is enabled"), warnings);
+        Assert.Contains(("unsupported", "topP", "topP is not supported when thinking is enabled"), warnings);
+        Assert.Contains(("unsupported", "topK", "topK is not supported when thinking is enabled"), warnings);
     }
 
     [Fact]

@@ -451,8 +451,7 @@ public sealed class DoGenerateTests
     [InlineData("global.openai.gpt-5.6-luna")]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::strips unsupported sampling settings for OpenAI model %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Strips_unsupported_sampling_settings_for_OpenAI_model(string crisModelId)
     {
         var (result, body) = await Run(crisModelId, OpenAiResponse, new LanguageModelCallOptions
@@ -468,17 +467,16 @@ public sealed class DoGenerateTests
         AssertEqual("{\"maxTokens\":100,\"topK\":5}", body.GetProperty("inferenceConfig"));
         AssertWarnings(
             result,
-            ("unsupported", "temperature is not supported by this OpenAI model on the Converse API"),
-            ("unsupported", "topP is not supported by this OpenAI model on the Converse API"),
-            ("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+            ("unsupported", "temperature", "temperature is not supported by this OpenAI model on the Converse API"),
+            ("unsupported", "topP", "topP is not supported by this OpenAI model on the Converse API"),
+            ("unsupported", "stopSequences", "stopSequences is not supported by this OpenAI model on the Converse API"));
     }
 
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::does not warn about clamping an unsupported OpenAI temperature",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Does_not_warn_about_clamping_an_unsupported_OpenAI_temperature()
     {
         var (result, body) = await Run("us.openai.gpt-5.6-luna", OpenAiResponse, new LanguageModelCallOptions
@@ -488,15 +486,14 @@ public sealed class DoGenerateTests
         });
 
         Assert.False(body.TryGetProperty("inferenceConfig", out _));
-        AssertWarnings(result, ("unsupported", "temperature is not supported by this OpenAI model on the Converse API"));
+        AssertWarnings(result, ("unsupported", "temperature", "temperature is not supported by this OpenAI model on the Converse API"));
     }
 
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::keeps supported sampling settings for OpenAI gpt-oss models",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Keeps_supported_sampling_settings_for_OpenAI_gpt_oss_models()
     {
         var (result, body) = await Run("openai.gpt-oss-120b-1:0", OpenAiResponse, new LanguageModelCallOptions
@@ -508,7 +505,7 @@ public sealed class DoGenerateTests
         });
 
         AssertEqual("{\"temperature\":0.2,\"topP\":0.5}", body.GetProperty("inferenceConfig"));
-        AssertWarnings(result, ("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+        AssertWarnings(result, ("unsupported", "stopSequences", "stopSequences is not supported by this OpenAI model on the Converse API"));
     }
 
 
@@ -518,8 +515,7 @@ public sealed class DoGenerateTests
     [InlineData("us.anthropic.claude-opus-5")]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should omit unsupported sampling parameters for %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_omit_unsupported_sampling_parameters_for(string samplingModelId)
     {
         var (result, body) = await Run(samplingModelId, "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"OK\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}", new LanguageModelCallOptions
@@ -539,17 +535,16 @@ public sealed class DoGenerateTests
 
         AssertWarnings(
             result,
-            ("unsupported", "temperature is not supported by " + samplingModelId + " and will be ignored"),
-            ("unsupported", "topK is not supported by " + samplingModelId + " and will be ignored"),
-            ("unsupported", "topP is not supported by " + samplingModelId + " and will be ignored"));
+            ("unsupported", "temperature", "temperature is not supported by " + samplingModelId + " and will be ignored"),
+            ("unsupported", "topK", "topK is not supported by " + samplingModelId + " and will be ignored"),
+            ("unsupported", "topP", "topP is not supported by " + samplingModelId + " and will be ignored"));
     }
 
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature above 1 to 1 and add warning",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_clamp_temperature_above_1_to_1_and_add_warning()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
@@ -559,15 +554,14 @@ public sealed class DoGenerateTests
         });
 
         Assert.Equal(1, body.GetProperty("inferenceConfig").GetProperty("temperature").GetDouble());
-        AssertWarnings(result, ("unsupported", "1.5 exceeds bedrock maximum of 1.0. clamped to 1.0"));
+        AssertWarnings(result, ("unsupported", "temperature", "1.5 exceeds bedrock maximum of 1.0. clamped to 1.0"));
     }
 
 
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature below 0 to 0 and add warning",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Warnings are type plus message rather than feature plus details.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_clamp_temperature_below_0_to_0_and_add_warning()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
@@ -577,7 +571,7 @@ public sealed class DoGenerateTests
         });
 
         Assert.Equal(0, body.GetProperty("inferenceConfig").GetProperty("temperature").GetDouble());
-        AssertWarnings(result, ("unsupported", "-0.5 is below bedrock minimum of 0. clamped to 0"));
+        AssertWarnings(result, ("unsupported", "temperature", "-0.5 is below bedrock minimum of 0. clamped to 0"));
     }
 
 
@@ -661,9 +655,9 @@ public sealed class DoGenerateTests
             && config.TryGetProperty("format", out _);
     }
 
-    internal static void AssertWarnings(LanguageModelGenerateResult result, params (string Type, string Message)[] expected)
+    internal static void AssertWarnings(LanguageModelGenerateResult result, params (string Type, string Feature, string Details)[] expected)
     {
-        Assert.Equal(expected, result.Warnings.Select(warning => (warning.Type, warning.Message)).ToArray());
+        Assert.Equal(expected, result.Warnings.Select(warning => (warning.Type, warning.Feature!, warning.Message)).ToArray());
     }
 
     internal static void AssertEqual(string expectedJson, JsonElement actual)
