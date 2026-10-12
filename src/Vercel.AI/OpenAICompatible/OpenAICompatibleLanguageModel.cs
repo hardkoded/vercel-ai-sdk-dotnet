@@ -89,6 +89,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             foreach (var part in OpenAICompatibleChat.ConvertContent(contentElement))
             {
+                if (prepared.JsonResponseToolName != null && !part.Reasoning)
+                {
+                    // The response tool supplies the output. Omit conversational text.
+                    continue;
+                }
+
                 content.Add(part.Reasoning ? (GeneratedContent)new GeneratedReasoning(part.Text) : new GeneratedText(part.Text));
             }
         }
@@ -116,17 +122,21 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                     id = JsonValues.GenerateId("call_");
                 }
 
+                var toolName = function.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty;
+                var toolArguments = function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String
+                    ? arguments.GetString() ?? "{}"
+                    : "{}";
+                if (toolName == prepared.JsonResponseToolName)
+                {
+                    content.Add(new GeneratedText(toolArguments));
+                    continue;
+                }
+
                 var signature = ReadWireSignature(call);
                 JsonElement? metadata = string.IsNullOrEmpty(signature)
                     ? null
                     : OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature!);
-                content.Add(new GeneratedToolCall(
-                    id!,
-                    function.TryGetProperty("name", out var name) ? name.GetString() ?? string.Empty : string.Empty,
-                    function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String
-                        ? arguments.GetString() ?? "{}"
-                        : "{}",
-                    metadata));
+                content.Add(new GeneratedToolCall(id!, toolName, toolArguments, metadata));
             }
         }
 
@@ -138,6 +148,14 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             : OpenAICompatibleUsage.Missing;
         var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
         var finishReason = MapFinish(raw);
+        if (prepared.JsonResponseToolName != null
+            && raw == "tool_calls"
+            && content.Any(part => part is GeneratedText)
+            && !content.Any(part => part is GeneratedToolCall))
+        {
+            finishReason = FinishReason.Stop;
+        }
+
         if (prepared.JsonTextOverridesToolCalls && raw == "tool_calls" && content.Any(part => part is GeneratedText { Text.Length: > 0 }))
         {
             // The model can repeat a tool call after valid JSON text. The text is the final answer.
@@ -166,6 +184,23 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
+        var stream = StreamAsync(options, prepared, cancellationToken);
+        if (prepared.JsonResponseToolName != null)
+        {
+            stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
+        }
+
+        await foreach (var part in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            yield return part;
+        }
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        PreparedRequest prepared,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var sse = await _provider.PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
         LastResponseHeaders = sse.Headers;
         yield return new StreamStartStreamPart(prepared.Warnings);
@@ -246,7 +281,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 }
             }
 
-            if (root["usage"] is JsonObject usageObject)
+            if ((root["usage"] ?? (root["x_groq"] as JsonObject)?["usage"]) is JsonObject usageObject)
             {
                 using var usageDocument = JsonDocument.Parse(usageObject.ToJsonString());
                 usageElement = usageDocument.RootElement.Clone();
@@ -349,6 +384,14 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 continue;
             }
 
+            if (call.ToolName == prepared.JsonResponseToolName)
+            {
+                // The shared tracker reports only whole calls. The response-tool converter reads the input parts.
+                yield return new ToolInputStartStreamPart(call.ToolCallId, call.ToolName);
+                yield return new ToolInputDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
+                yield return new ToolInputEndStreamPart(call.ToolCallId);
+            }
+
             if (signatures.TryGetValue(call.ToolCallId, out var signature))
             {
                 yield return new ToolCallStreamPart(
@@ -425,8 +468,13 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             body["user"] = settings.User;
         }
 
+        var responseTool = _provider.Options.UsesJsonResponseToolWithTools ? JsonResponseToolFor(options) : null;
         AddSampling(body, options);
-        AddResponseFormat(body, options, settings, warnings);
+        if (responseTool == null)
+        {
+            AddResponseFormat(body, options, settings, warnings);
+        }
+
         var jsonResponse = body.ContainsKey("response_format");
         if (options.StopSequences is { Count: > 0 })
         {
@@ -475,7 +523,15 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(rawName, options.ProviderOptions);
         body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName);
-        AddTools(body, options);
+        if (responseTool == null)
+        {
+            AddTools(body, options.Tools, options.ToolChoice);
+        }
+        else
+        {
+            AddTools(body, options.Tools!.Concat(new[] { responseTool }).ToList(), JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name));
+            body["parallel_tool_calls"] = false;
+        }
 
         if (stream)
         {
@@ -496,7 +552,19 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             _provider.CreateHeaders(options.Headers),
             warnings,
             metadataKey,
-            jsonResponse && _provider.Options.JsonTextOverridesToolCalls);
+            jsonResponse && _provider.Options.JsonTextOverridesToolCalls,
+            responseTool?.Name);
+    }
+
+    // Groq rejects JSON response formatting together with function tools.
+    private static LanguageModelTool? JsonResponseToolFor(LanguageModelCallOptions options)
+    {
+        return options.JsonSchema is { } schema
+            && schema.ValueKind != JsonValueKind.Undefined
+            && schema.ValueKind != JsonValueKind.Null
+            && options.Tools is { Count: > 0 } tools
+                ? JsonResponseTools.CreateTool(tools, schema)
+                : null;
     }
 
     private void AddResponseFormat(JsonObject body, LanguageModelCallOptions options, ChatSettings settings, List<CallWarning> warnings)
@@ -541,15 +609,15 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         body["response_format"] = new JsonObject { ["type"] = "json_object" };
     }
 
-    private static void AddTools(JsonObject body, LanguageModelCallOptions options)
+    private static void AddTools(JsonObject body, IReadOnlyList<LanguageModelTool>? callTools, ToolChoice? toolChoice)
     {
-        if (options.Tools == null || options.Tools.Count == 0)
+        if (callTools == null || callTools.Count == 0)
         {
             return;
         }
 
         var tools = new JsonArray();
-        foreach (var tool in options.Tools)
+        foreach (var tool in callTools)
         {
             var function = new JsonObject
             {
@@ -574,9 +642,9 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         body["tools"] = tools;
-        if (options.ToolChoice != null)
+        if (toolChoice != null)
         {
-            body["tool_choice"] = MapToolChoice(options.ToolChoice);
+            body["tool_choice"] = MapToolChoice(toolChoice);
         }
     }
 
@@ -993,8 +1061,9 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private sealed class PreparedRequest
     {
-        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls)
+        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls, string? jsonResponseToolName)
         {
+            JsonResponseToolName = jsonResponseToolName;
             Json = json;
             Headers = headers;
             Warnings = warnings;
@@ -1011,5 +1080,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         public string MetadataKey { get; }
 
         public bool JsonTextOverridesToolCalls { get; }
+
+        public string? JsonResponseToolName { get; }
     }
 }

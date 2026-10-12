@@ -75,6 +75,23 @@ public sealed class GoogleLanguageModel : ILanguageModel
     {
         options ??= new LanguageModelCallOptions();
         var prepared = Prepare(options, true);
+        var stream = StreamAsync(options, prepared, cancellationToken);
+        if (prepared.JsonResponseToolName != null)
+        {
+            stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
+        }
+
+        await foreach (var part in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            yield return part;
+        }
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        GooglePreparedRequest prepared,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         yield return new StreamStartStreamPart(Warnings(prepared));
         string? responseId = null;
         var emittedMetadata = false;
@@ -206,7 +223,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     else if (generated is GoogleToolCall tool)
                     {
                         // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
-                        yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata);
+                        yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted };
                     }
                     else if (generated is GoogleGeneratedFile file)
                     {
@@ -276,7 +293,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
     private GoogleParseContext Context(GooglePreparedRequest prepared)
     {
-        return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings);
+        return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings, prepared.JsonResponseToolName);
     }
 
     private static IReadOnlyList<CallWarning> Warnings(GooglePreparedRequest prepared)
