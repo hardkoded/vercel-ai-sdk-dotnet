@@ -64,11 +64,11 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
     public string? Project { get; set; }
 }
 
-/// <summary>Function tools prepared for the OpenAI Responses API.</summary>
+/// <summary>Tools prepared for the OpenAI Responses API.</summary>
 public sealed class PreparedResponsesTools
 {
     /// <summary>Creates a prepared tool list.</summary>
-    public PreparedResponsesTools(JsonArray? tools, ToolChoice? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
+    public PreparedResponsesTools(JsonArray? tools, JsonNode? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
     {
         Tools = tools;
         ToolChoice = toolChoice;
@@ -78,8 +78,10 @@ public sealed class PreparedResponsesTools
     /// <summary>Provider tool objects. Null when the request has no tools.</summary>
     public JsonArray? Tools { get; }
 
-    /// <summary>Tool choice passed through for this request. Null when unset.</summary>
-    public ToolChoice? ToolChoice { get; }
+    /// <summary>
+    /// The <c>tool_choice</c> request value. A named choice maps to the matching hosted tool, a custom tool, or a function tool. Null when unset.
+    /// </summary>
+    public JsonNode? ToolChoice { get; }
 
     /// <summary>Warnings produced while preparing tools.</summary>
     public IReadOnlyList<CallWarning> ToolWarnings { get; }
