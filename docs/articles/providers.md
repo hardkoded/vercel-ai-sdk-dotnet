@@ -255,7 +255,9 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 - A row with `error.code` `batch_cancelled` or `batch_expired` has status `cancelled` or `expired`. Any other row error has status `failed`.
 - A row with a non-2xx `status_code` fails with `ErrorMessage`, `ErrorType`, `ErrorCode`, and `ErrorStatusCode` from `response.body.error`. When the body has no error message, the message is `OpenAI batch request failed with status code <n>.`
-- A 2xx row whose body is not a valid Responses result fails with `invalid_response`. A body with no `output` also fails with `invalid_response`.
+- A 2xx row whose body does not match the Responses response schema fails with `invalid_response`. This includes an unknown `output` item `type` and an `output` of `null`. A body with no `output` key also fails with `invalid_response`.
+- A row that does not match the result line schema (`custom_id` string, `response.status_code` number, `error.code` and `error.message` strings) throws a `TypeValidationException` and stops the download.
+- A completed batch with no output or error file throws `InvalidResponseDataException`.
 - A Responses `output` converts to `BatchTextGeneration.Content`: `reasoning` (with `itemId` and `reasoningEncryptedContent` provider metadata), `text`, and `tool-call` parts for `function_call` and `custom_tool_call`. `web_search_call`, `file_search_call`, and `code_interpreter_call` become a provider-executed dynamic `tool-call` plus a `tool-result`. A failed or incomplete web search sets `IsError` on its result. Any other output item fails the row with `unsupported_content`.
 - `FinishReason`, `RawFinishReason`, `Usage`, `ResponseId`, `Timestamp`, and `ModelId` come from the body. `ProviderMetadata.openai` holds `responseId` and, when present, `logprobs`, `serviceTier`, and `reasoningContext`.
 
