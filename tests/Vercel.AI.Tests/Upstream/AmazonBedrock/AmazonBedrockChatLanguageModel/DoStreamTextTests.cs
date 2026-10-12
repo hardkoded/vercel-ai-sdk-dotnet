@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.AmazonBedrock;
 using static Vercel.AI.Tests.Upstream.AmazonBedrock.BedrockStreamSupport;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockChatLanguageModel;
@@ -45,31 +46,40 @@ public sealed class DoStreamTextTests
     [UpstreamTest(Suite + "should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_expose_the_raw_response_headers()
     {
-        // Upstream reads `result.response.headers`; the stream result here is a part sequence, so the
-        // response headers are checked on the HTTP response that feeds it.
-        var handler = Fixture("text", new Dictionary<string, string> { ["test-header"] = "test-value" });
-        using var client = new HttpClient(handler, disposeHandler: false);
-        using var response = await client.PostAsync("https://bedrock-runtime.us-east-1.amazonaws.com/model/x/converse-stream", new StringContent("{}"));
-        var (headers, _) = await Vercel.AI.AmazonBedrock.AmazonBedrockEventStreamResponseHandler.HandleAsync(response, _ => null);
+        var model = await StreamModel(Fixture("text", new Dictionary<string, string> { ["test-header"] = "test-value" }));
 
-        Assert.Equal("no-cache", headers["cache-control"]);
-        Assert.Equal("keep-alive", headers["connection"]);
-        Assert.Equal("application/vnd.amazon.eventstream", headers["content-type"]);
-        Assert.Equal("test-value", headers["test-header"]);
+        Assert.Equal(
+            new Dictionary<string, string>
+            {
+                ["cache-control"] = "no-cache",
+                ["connection"] = "keep-alive",
+                ["content-type"] = "application/vnd.amazon.eventstream",
+                ["test-header"] = "test-value",
+            },
+            model.LastResponseHeaders);
     }
 
     [Fact]
     [UpstreamTest(Suite + "should return the request body", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_the_request_body()
     {
-        var handler = Fixture("text");
-        await Stream(handler);
+        var model = await StreamModel(Fixture("text"));
 
+        using var body = JsonDocument.Parse(model.LastRequestBody!);
         Assert.True(JsonEquals(
             """
             {"additionalModelResponseFieldPaths":["/delta/stop_sequence"],"messages":[{"content":[{"text":"Hello"}],"role":"user"}],"system":[{"text":"System Prompt"}]}
             """,
-            handler.BodyJson));
-        Assert.EndsWith("/converse-stream", handler.Uri);
+            body.RootElement));
+    }
+
+    private static async Task<AmazonBedrockLanguageModel> StreamModel(UpstreamEventStreamHandler handler)
+    {
+        var model = (AmazonBedrockLanguageModel)CreateModel(handler);
+        await foreach (var _ in model.DoStreamAsync(Call(), CancellationToken.None))
+        {
+        }
+
+        return model;
     }
 }
