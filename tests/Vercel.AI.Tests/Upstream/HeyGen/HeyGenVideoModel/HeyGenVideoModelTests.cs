@@ -146,6 +146,8 @@ public sealed class HeyGenVideoModelTests
     [InlineData("long duration")]
     [InlineData("fractional duration")]
     [InlineData("negative seed")]
+    [InlineData("large seed")]
+    [InlineData("fractional seed")]
     [InlineData("unknown resolution")]
     [InlineData("text adaptive ratio")]
     [InlineData("unsupported ratio")]
@@ -170,7 +172,7 @@ public sealed class HeyGenVideoModelTests
     [InlineData("too many combined references")]
     [InlineData("combined image limit")]
     [InlineData("wrong reference media type")]
-    [UpstreamTest(Prefix + "rejects %s before submitting", Coverage = UpstreamCoverage.Partial, Note = "The large and fractional seed cases are not representable: the seed is an int.")]
+    [UpstreamTest(Prefix + "rejects %s before submitting", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_before_submitting(string name)
     {
         var server = new Server();
@@ -344,6 +346,8 @@ public sealed class HeyGenVideoModelTests
             "long duration" => Start(duration: 16),
             "fractional duration" => Start(duration: 5.5),
             "negative seed" => Start(seed: -1),
+            "large seed" => Start(seed: 4294967296),
+            "fractional seed" => Start(seed: 0.5),
             "unknown resolution" => Start(resolution: "1920x1080"),
             "text adaptive ratio" => Start(aspectRatio: "adaptive"),
             "unsupported ratio" => Start(aspectRatio: "2:1"),

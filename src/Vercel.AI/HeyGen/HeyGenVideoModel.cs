@@ -251,7 +251,7 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
             throw new InvalidArgumentException("duration", duration, "HeyGen duration must be an integer between 5 and 15 seconds.");
         }
 
-        if (call.Seed is < 0)
+        if (call.Seed is { } seed && (seed != Math.Floor(seed) || seed < 0 || seed > uint.MaxValue))
         {
             throw new InvalidArgumentException("seed", call.Seed, "HeyGen seed must be an unsigned 32-bit integer.");
         }
