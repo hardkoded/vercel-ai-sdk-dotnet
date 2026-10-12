@@ -172,14 +172,15 @@ public sealed class DecisionLanguageModel : IDecisionCaller, IEvaluationCaller
                     var data = (IDictionary<string, object?>)part["data"]!;
                     var mediaType = (string)part["mediaType"]!;
                     var fileName = part.TryGetValue("filename", out var name) ? name as string : null;
+                    var fileOptions = part.TryGetValue("providerOptions", out var options) ? ToProviderOptions(options) : null;
                     if ((string)data["type"]! == "url")
                     {
-                        content.Add(new FileContentPart(mediaType, data["url"]?.ToString(), null, fileName));
+                        content.Add(new FileContentPart(mediaType, data["url"]?.ToString(), null, fileName) { ProviderOptions = fileOptions });
                     }
                     else
                     {
                         var inline = data["data"]!;
-                        content.Add(new FileContentPart(mediaType, null, inline as byte[] ?? Convert.FromBase64String((string)inline), fileName));
+                        content.Add(new FileContentPart(mediaType, null, inline as byte[] ?? Convert.FromBase64String((string)inline), fileName) { ProviderOptions = fileOptions });
                     }
 
                     break;
@@ -282,21 +283,21 @@ public sealed class DecisionLanguageModel : IDecisionCaller, IEvaluationCaller
             }
             else if (question.Type == "boolean")
             {
-                if (value.ValueKind != JsonValueKind.Number || value.GetDouble() < 0 || value.GetDouble() > 1)
+                if (!TryGetFinite(value, out var probability) || probability < 0 || probability > 1)
                 {
                     throw new InvalidResponseDataException(values, "Question \"" + id + "\" must return P(true) as a finite probability in [0, 1].");
                 }
 
-                answers[id] = new DecisionAnswer("boolean", probability: value.GetDouble());
+                answers[id] = new DecisionAnswer("boolean", probability: probability);
             }
             else
             {
-                if (value.ValueKind != JsonValueKind.Number || value.GetDouble() < 0 || value.GetDouble() > ((IList<object?>)question.Criteria!).Count - 1)
+                if (!TryGetFinite(value, out var score) || score < 0 || score > ((IList<object?>)question.Criteria!).Count - 1)
                 {
                     throw new InvalidResponseDataException(values, "Question \"" + id + "\" returned a score outside its rubric.");
                 }
 
-                answers[id] = new DecisionAnswer("score", score: value.GetDouble());
+                answers[id] = new DecisionAnswer("score", score: score);
             }
         }
 
@@ -333,6 +334,40 @@ public sealed class DecisionLanguageModel : IDecisionCaller, IEvaluationCaller
             FinishReason.Stop => "stop",
             _ => "other",
         };
+    }
+
+    // Out-of-range numbers such as 1e999 are infinite on .NET Core and fail to parse on .NET Framework.
+    private static bool TryGetFinite(JsonElement value, out double number)
+    {
+        number = 0;
+        return value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out number) && !double.IsInfinity(number) && !double.IsNaN(number);
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (value is IReadOnlyDictionary<string, JsonElement> typed)
+        {
+            return typed;
+        }
+
+        var element = value is JsonElement json ? json : JsonSerializer.SerializeToElement(value, Text);
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        foreach (var property in element.EnumerateObject())
+        {
+            options[property.Name] = property.Value.Clone();
+        }
+
+        return options;
     }
 
     private static JsonNode? ToNode(object? value)
