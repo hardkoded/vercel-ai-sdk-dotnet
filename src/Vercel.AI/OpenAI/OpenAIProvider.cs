@@ -64,7 +64,7 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
     public string? Project { get; set; }
 }
 
-/// <summary>Function tools prepared for the OpenAI Responses API.</summary>
+/// <summary>Tools prepared for the OpenAI Responses API.</summary>
 public sealed class PreparedResponsesTools
 {
     /// <summary>Creates a prepared tool list.</summary>
@@ -83,6 +83,11 @@ public sealed class PreparedResponsesTools
 
     /// <summary>Warnings produced while preparing tools.</summary>
     public IReadOnlyList<CallWarning> ToolWarnings { get; }
+
+    /// <summary>
+    /// The <c>tool_choice</c> request value. A named choice maps to the matching hosted tool, a custom tool, or a function tool.
+    /// </summary>
+    public JsonNode? ResolvedToolChoice { get; init; }
 }
 
 /// <summary>OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches.</summary>
