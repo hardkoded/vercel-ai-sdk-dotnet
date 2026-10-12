@@ -57,6 +57,7 @@ internal static class Generation
             Seed = options.Seed,
             JsonSchema = options.Output?.Schema,
             JsonSchemaName = options.Output?.SchemaName,
+            JsonSchemaDescription = options.Output?.SchemaDescription,
             Tools = SelectTools(options),
             ToolChoice = options.ToolChoice,
             Headers = options.Headers,

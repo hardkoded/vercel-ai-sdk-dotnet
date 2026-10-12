@@ -49,14 +49,14 @@ public static class JsonResponseTools
                         responseToolsWithDeltas.Add(delta.Id);
                     }
 
-                    yield return new TextDeltaStreamPart(delta.Id, delta.Delta);
+                    yield return new TextDeltaStreamPart(delta.Id, delta.Delta, delta.ProviderMetadata);
                     continue;
                 case ToolInputEndStreamPart end when responseToolIds.Contains(end.Id):
                     continue;
                 case ToolCallStreamPart call when call.ToolName == toolName:
                     if (!responseToolsWithDeltas.Contains(call.ToolCallId))
                     {
-                        yield return new TextDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
+                        yield return new TextDeltaStreamPart(call.ToolCallId, call.ArgumentsJson, call.ProviderMetadata);
                     }
 
                     yield return new TextEndStreamPart(call.ToolCallId, null, call.ProviderMetadata);
@@ -80,9 +80,9 @@ public static class JsonResponseTools
 
     /// <summary>
     /// Builds the response tool. The name is <c>json</c>, or <c>json_1</c>, <c>json_2</c>, and so on when a caller tool already uses it.
-    /// The description is the schema description, or a default.
+    /// The description is the response format description, or a default.
     /// </summary>
-    internal static LanguageModelTool CreateTool(IReadOnlyList<LanguageModelTool> tools, JsonElement schema)
+    internal static LanguageModelTool CreateTool(IReadOnlyList<LanguageModelTool> tools, JsonElement schema, string? description)
     {
         var name = "json";
         for (var suffix = 1; tools.Any(tool => tool.Name == name); suffix++)
@@ -90,13 +90,7 @@ public static class JsonResponseTools
             name = "json_" + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        var description = schema.ValueKind == JsonValueKind.Object
-            && schema.TryGetProperty("description", out var text)
-            && text.ValueKind == JsonValueKind.String
-            && !string.IsNullOrEmpty(text.GetString())
-                ? text.GetString()
-                : DefaultDescription;
-        return new LanguageModelTool(name, description, schema);
+        return new LanguageModelTool(name, description ?? DefaultDescription, schema);
     }
 
     /// <summary>A named tool stays that tool. <c>none</c> selects the response tool. Anything else becomes <c>required</c>.</summary>
