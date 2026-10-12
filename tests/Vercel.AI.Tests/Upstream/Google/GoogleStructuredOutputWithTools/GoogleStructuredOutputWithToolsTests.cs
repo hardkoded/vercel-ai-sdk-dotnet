@@ -101,7 +101,7 @@ public sealed class GoogleStructuredOutputWithToolsTests
     [InlineData("generate")]
     [InlineData("stream")]
     [UpstreamTest("packages/google/src/structured-output-with-tools.test.ts::structured output with tools::preserves an application call alongside the response tool in %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Preserves_an_application_call_alongside_the_response_tool(string mode)
+    public async Task Preserves_an_application_call_alongside_the_response_tool_in(string mode)
     {
         var body = Response("json", ApplicationCall());
 
@@ -206,7 +206,7 @@ public sealed class GoogleStructuredOutputWithToolsTests
     [InlineData("gemini-3.8-flash")]
     [InlineData("gemini-99-pro-preview")]
     [UpstreamTest("packages/google/src/structured-output-with-tools.test.ts::structured output with tools::keeps native formatting on %s with automatic tool choice", Coverage = UpstreamCoverage.Covered)]
-    public async Task Keeps_native_formatting_on_Gemini_3_with_automatic_tool_choice(string modelId)
+    public async Task Keeps_native_formatting_on_with_automatic_tool_choice(string modelId)
     {
         var options = Options();
         options.ToolChoice = ToolChoice.Auto;

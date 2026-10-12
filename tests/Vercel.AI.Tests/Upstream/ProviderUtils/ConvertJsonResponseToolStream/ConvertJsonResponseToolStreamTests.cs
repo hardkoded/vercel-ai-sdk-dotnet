@@ -96,19 +96,23 @@ public sealed class ConvertJsonResponseToolStreamTests
         });
 
         Assert.Equal(4, parts.Count);
-        Assert.Equal("response", Assert.IsType<TextStartStreamPart>(parts[0]).Id);
+        var start = Assert.IsType<TextStartStreamPart>(parts[0]);
+        Assert.Equal("response", start.Id);
+        Assert.Null(start.ProviderMetadata);
         Assert.Equal(string.Empty, Assert.IsType<TextDeltaStreamPart>(parts[1]).Delta);
         var full = Assert.IsType<TextDeltaStreamPart>(parts[2]);
         Assert.Equal("{}", full.Delta);
         Assert.Equal(Metadata.GetRawText(), Raw(full.ProviderMetadata));
-        Assert.Equal("response", Assert.IsType<TextEndStreamPart>(parts[3]).Id);
+        var end = Assert.IsType<TextEndStreamPart>(parts[3]);
+        Assert.Equal("response", end.Id);
+        Assert.Equal(Metadata.GetRawText(), Raw(end.ProviderMetadata));
     }
 
     [Theory]
     [InlineData("before")]
     [InlineData("after")]
     [UpstreamTest("packages/provider-utils/src/convert-json-response-tool-stream.test.ts::convertJsonResponseToolStream::preserves an application call %s the response call", Coverage = UpstreamCoverage.Covered)]
-    public async Task Preserves_an_application_call_around_the_response_call(string order)
+    public async Task Preserves_an_application_call_the_response_call(string order)
     {
         var application = new LanguageModelStreamPart[]
         {
@@ -125,8 +129,7 @@ public sealed class ConvertJsonResponseToolStreamTests
         var parts = await Convert(input.Concat(new[] { finish }));
 
         Assert.Equal(application, parts.Where(part => part.Type.StartsWith("tool-", StringComparison.Ordinal)).ToList());
-        var result = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
-        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Same(finish, parts[parts.Count - 1]);
         Assert.Equal(Date, string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
     }
 

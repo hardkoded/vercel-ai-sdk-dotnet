@@ -105,7 +105,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var clientTool = false;
         string? confirmedBlock = null;
         var seenSources = new HashSet<string>(StringComparer.Ordinal);
-        var callContext = Context(prepared);
+        var callContext = StreamContext(prepared);
         var activeCalls = new List<StreamingCall>();
 
         var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
@@ -161,11 +161,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                 if (confirmedBlock != null || !root.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
                 {
-                    metadata = GoogleResponse.Parse(root, Context(prepared)).ProviderMetadata ?? metadata;
+                    metadata = GoogleResponse.Parse(root, StreamContext(prepared)).ProviderMetadata ?? metadata;
                     continue;
                 }
 
-                var parsed = GoogleResponse.Parse(root, Context(prepared));
+                var parsed = GoogleResponse.Parse(root, StreamContext(prepared));
                 metadata = parsed.ProviderMetadata ?? metadata;
                 if (!string.IsNullOrEmpty(parsed.RawFinishReason))
                 {
@@ -175,7 +175,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                 if (candidates[0].TryGetProperty("groundingMetadata", out var grounding))
                 {
-                    foreach (var source in GoogleResponse.Sources(grounding, Context(prepared)))
+                    foreach (var source in GoogleResponse.Sources(grounding, StreamContext(prepared)))
                     {
                         if (seenSources.Add(source.Url))
                         {
@@ -294,6 +294,13 @@ public sealed class GoogleLanguageModel : ILanguageModel
     private GoogleParseContext Context(GooglePreparedRequest prepared)
     {
         return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings, prepared.JsonResponseToolName);
+    }
+
+    // The stream rewrites the response tool once, from its tool input parts. Parsing chunks with the tool name would also
+    // turn the call into text parts here and close an open reasoning block early.
+    private GoogleParseContext StreamContext(GooglePreparedRequest prepared)
+    {
+        return new GoogleParseContext(Provider, _provider.Options.GenerateId, prepared.Tools, prepared.Warnings);
     }
 
     private static IReadOnlyList<CallWarning> Warnings(GooglePreparedRequest prepared)

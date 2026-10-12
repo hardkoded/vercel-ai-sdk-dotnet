@@ -41,6 +41,30 @@ internal sealed class StreamingToolCallDelta
     public bool HasArguments { get; }
 }
 
+/// <summary>What one delta did to a tracked call. Upstream enqueues these as <c>tool-input-start</c> and <c>tool-input-delta</c> parts.</summary>
+internal sealed class StreamingToolCallInput
+{
+    public StreamingToolCallInput(string id, string name, bool started, string? argumentsDelta)
+    {
+        Id = id;
+        Name = name;
+        Started = started;
+        ArgumentsDelta = argumentsDelta;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string Id { get; }
+
+    /// <summary>Tool name.</summary>
+    public string Name { get; }
+
+    /// <summary>True when this delta started the call.</summary>
+    public bool Started { get; }
+
+    /// <summary>Arguments this delta appended, or null when it appended none.</summary>
+    public string? ArgumentsDelta { get; }
+}
+
 /// <summary>
 /// Correlates streamed Chat Completions tool-call deltas. A non-blank id, an index, and a
 /// function name are labels. Blank labels are absent. Calls stay distinct when those labels
@@ -61,8 +85,8 @@ internal sealed class StreamingToolCallTracker
         _generateId = generateId ?? (() => JsonValues.GenerateId("call_"));
     }
 
-    /// <summary>Applies one tool-call delta.</summary>
-    public void ProcessDelta(StreamingToolCallDelta toolCallDelta)
+    /// <summary>Applies one tool-call delta. Returns what it did to a call, or null when it was ignored.</summary>
+    public StreamingToolCallInput? ProcessDelta(StreamingToolCallDelta toolCallDelta)
     {
         var rawName = toolCallDelta.NameIsString ? toolCallDelta.Name : null;
         var hasBlankName = toolCallDelta.NameIsString && string.IsNullOrWhiteSpace(toolCallDelta.Name);
@@ -75,19 +99,21 @@ internal sealed class StreamingToolCallTracker
         var resolution = ResolveToolCall(wireId, index, name, hasExplicitCallStart, hasEmptyArguments);
         if (resolution.Kind == ToolCallResolutionKind.Ambiguous)
         {
-            return;
+            return null;
         }
 
         TrackedToolCall call;
+        StreamingToolCallInput? input;
         if (resolution.Kind == ToolCallResolutionKind.New)
         {
             // A blank name cannot start a call. Match continuations first, then ignore only the unmatched delta.
             if (hasBlankName)
             {
-                return;
+                return null;
             }
 
             call = ProcessNewToolCall(wireId, index, name, arguments ?? string.Empty);
+            input = new StreamingToolCallInput(call.Id, call.Name, true, string.IsNullOrEmpty(arguments) ? null : arguments);
         }
         else
         {
@@ -97,13 +123,17 @@ internal sealed class StreamingToolCallTracker
                 AssociateWireId(call, wireId);
             }
 
-            ProcessExistingToolCall(call, arguments);
+            input = ProcessExistingToolCall(call, arguments)
+                ? new StreamingToolCallInput(call.Id, call.Name, false, arguments)
+                : null;
         }
 
         if (index != null)
         {
             AssociateIndex(call, index.Value);
         }
+
+        return input;
     }
 
     /// <summary>Emits one tool call per unfinished call, in index order when every call has an index.</summary>
@@ -295,15 +325,16 @@ internal sealed class StreamingToolCallTracker
         return call;
     }
 
-    private static void ProcessExistingToolCall(TrackedToolCall call, string? arguments)
+    private static bool ProcessExistingToolCall(TrackedToolCall call, string? arguments)
     {
         if (call.HasFinished || arguments == null)
         {
-            return;
+            return false;
         }
 
         call.ArgumentState.Append(arguments);
         call.Arguments.Append(arguments);
+        return true;
     }
 
     private string CreateToolCallId(string? wireId)
