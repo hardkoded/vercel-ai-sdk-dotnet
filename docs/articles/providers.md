@@ -366,7 +366,7 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 The binary and error handlers read at most `Download.DefaultMaxBytes`. A larger `Content-Length` throws a `DownloadError` ("exceeded maximum size") before the body is read, and the body is released.
 
-`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default).
+`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default) and `ErrorData`, the provider error parsed from the response body (upstream `APICallError.data`). It is a `JsonElement` when `CreateJsonErrorResponseAsync` parsed the body, and `null` otherwise. It is not called `Data` because `Exception.Data` already exists.
 
 ## Embedding dimensions
 

@@ -54,6 +54,12 @@ public class ApiException : AiSdkException
     /// <summary>Response headers, when the handler had them.</summary>
     public IReadOnlyDictionary<string, string>? ResponseHeaders { get; init; }
 
+    /// <summary>
+    /// The provider error parsed from the response body, when the handler could parse it.
+    /// Maps to <c>APICallError.data</c>. Named <c>ErrorData</c> because <see cref="Exception.Data"/> already exists.
+    /// </summary>
+    public object? ErrorData { get; init; }
+
     /// <summary>True when the call can be retried. Defaults to 408, 429, and 500 and above.</summary>
     public bool IsRetryable
     {
