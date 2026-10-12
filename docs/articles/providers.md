@@ -307,11 +307,11 @@ The provider does not upload the file. Which media types are accepted depends on
 
 ## Decision state
 
-`DecideRequest.State` is a string, a JSON object, or a list of parts. A raw JSON array is not state. Wrap it in an object or in a `json` part. Each part is a dictionary: `{ type: "text", text }`, `{ type: "json", value }`, or `{ type: "file", mediaType, data, filename? }`. `Decide.DecideAsync` normalizes the state with `DecisionState.PrepareDecisionStateAsync` before the model call. A string becomes one text part, an object becomes one json part, and a file part gets a full media type. A URL file is downloaded. A failed download throws `DownloadError` before any model call. `DecisionModelCall.State` and `DecisionModelEvent.State` hold the normalized parts. `DecideEvent.State` keeps the public value. `OpenAIDecisionModel` sends text and json parts as `input_text` and inline PNG, JPEG, WebP, or GIF files as `input_image`. It throws `UnsupportedFunctionalityException` for other files. `GatewayDecisionModel` keeps its legacy state format: one text part or one json object is sent as a string or object, and anything else as an array of values. It throws `UnsupportedFunctionalityException` for any file part.
+`DecideRequest.State` is a string, a JSON object, or a list of parts. A raw JSON array is not state. Wrap it in an object or in a `json` part. Each part is a dictionary: `{ type: "text", text }`, `{ type: "json", value }`, or `{ type: "file", mediaType, data, filename?, providerOptions? }`. `Decide.DecideAsync` normalizes the state with `DecisionState.PrepareDecisionStateAsync` before the model call. A string becomes one text part, an object becomes one json part, and a file part gets a full media type. A URL file is downloaded. A failed download throws `DownloadError` before any model call. `DecisionModelCall.State` and `DecisionModelEvent.State` hold the normalized parts. `DecideEvent.State` keeps the public value. `OpenAIDecisionModel` sends text and json parts as `input_text` and inline PNG, JPEG, WebP, or GIF files as `input_image`. It throws `UnsupportedFunctionalityException` for other files. `GatewayDecisionModel` keeps its legacy state format: one text part or one json object is sent as a string or object, and anything else as an array of values. It throws `UnsupportedFunctionalityException` for any file part.
 
 ## Decision language model
 
-`new DecisionLanguageModel(languageModel, provider?)` wraps a V4 `ILanguageModel` so `Decide.DecideAsync` can use it for `choice`, `score`, and `boolean` questions. The provider id defaults to the wrapped model's provider plus `.decision`. It sends one structured-output request with reasoning set to `none`. Question ids and choice labels are replaced by internal keys (`q0`, `c0`, ...) in the schema and mapped back in the answers. State parts keep their order. Text and image file parts pass through, and a json part is sent as compact JSON text. Any non-image file part throws `UnsupportedFunctionalityException` before the model is called. A wrong finish reason, invalid JSON, a missing or extra answer, an unknown choice, a score outside its rubric, or a probability outside 0 to 1 throws `InvalidResponseDataException`. A choice needs at least one option and a score at least two levels, otherwise `InvalidArgumentException` is thrown. The C# file content part has no provider options, so per-file provider options are not forwarded.
+`new DecisionLanguageModel(languageModel, provider?)` wraps a V4 `ILanguageModel` so `Decide.DecideAsync` can use it for `choice`, `score`, and `boolean` questions. The provider id defaults to the wrapped model's provider plus `.decision`. It sends one structured-output request with reasoning set to `none`. Question ids and choice labels are replaced by internal keys (`q0`, `c0`, ...) in the schema and mapped back in the answers. State parts keep their order. Text and image file parts pass through, and a json part is sent as compact JSON text. Any non-image file part throws `UnsupportedFunctionalityException` before the model is called. A wrong finish reason, invalid JSON, a missing or extra answer, an unknown choice, a score outside its rubric, or a probability outside 0 to 1 throws `InvalidResponseDataException`. A choice needs at least one option and a score at least two levels, otherwise `InvalidArgumentException` is thrown. A file part's `providerOptions` are forwarded as the `FileContentPart.ProviderOptions` of the image.
 
 ## Gateway decision fallbacks
 
@@ -388,7 +388,18 @@ A provider option for the same setting wins over `Dimensions`. When both are uns
 | Google Vertex (embedContent) | `googleVertex.outputDimensionality` | `embedContentConfig.outputDimensionality` |
 | Mistral | `mistral.outputDimension` | `output_dimension` |
 
-`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`.
+`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`. Cohere token usage comes from the `x-amzn-bedrock-input-token-count` response header. When the header is missing, `Tokens` is null.
+
+Application inference profile ARNs do not identify their underlying model. Pass the model family when you create the embedding model, so the provider can select the correct request format and batch size:
+
+```csharp
+var profileArn = "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/qibm5eutlkcy";
+var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelSettings { ModelFamily = AmazonBedrockEmbeddingModelFamily.Cohere });
+```
+
+`AmazonBedrockOptions.Headers` are sent with every embedding and reranking request. `AmazonBedrockEmbeddingModel.Headers` are sent with the next call and override provider headers with the same name. Both are signed with the request.
+
+`OpenAICompatibleEmbeddingModel.LastResponseBody` holds the raw body of the most recent call, next to `LastResponseHeaders`.
 
 Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 

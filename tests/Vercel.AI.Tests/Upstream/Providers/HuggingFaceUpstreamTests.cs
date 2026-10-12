@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.HuggingFace;
 using Vercel.AI.OpenAICompatible;
@@ -269,17 +270,22 @@ public sealed class HuggingFaceUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Model + "doStream::preserves $expectedType stream errors", Coverage = UpstreamCoverage.Partial, Note = "The message and the error finish match, and the raw finish reason is the code. ErrorStreamPart has no type, code, or data fields.")]
+    [UpstreamTest(Model + "doStream::preserves $expectedType stream errors", Coverage = UpstreamCoverage.Covered)]
     public async Task Stream_errors_become_error_parts()
     {
-        foreach (var (json, message) in new[]
+        foreach (var (json, message, expectedType, code) in new[]
         {
-            ("{\"type\":\"response.failed\",\"response\":{\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}},\"sequence_number\":1}", "Rate limit reached"),
-            ("{\"type\":\"error\",\"code\":\"503\",\"message\":\"Service unavailable\",\"param\":null,\"sequence_number\":1}", "Service unavailable"),
+            ("{\"type\":\"response.failed\",\"response\":{\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}},\"sequence_number\":1}", "Rate limit reached", "response.failed", "429"),
+            ("{\"type\":\"error\",\"code\":\"503\",\"message\":\"Service unavailable\",\"param\":null,\"sequence_number\":1}", "Service unavailable", "error", "503"),
         })
         {
             var parts = await Stream(json);
-            Assert.Equal(message, parts.OfType<ErrorStreamPart>().Single().Message);
+            var error = parts.OfType<ErrorStreamPart>().Single().Error;
+            Assert.NotNull(error);
+            Assert.Equal(message, error.Message);
+            Assert.Equal(expectedType, error.Type);
+            Assert.Equal(code, error.Code);
+            JsonAssert.Equal(JsonNode.Parse(json), ((JsonElement)error.Data!).GetRawText());
             var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
             Assert.Equal(FinishReason.Error, finish.FinishReason);
         }
