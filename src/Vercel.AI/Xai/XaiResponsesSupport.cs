@@ -43,7 +43,6 @@ internal static class XaiResponsesResults
 
         var inputTokens = RequiredInt(usage, "input_tokens");
         var outputTokens = RequiredInt(usage, "output_tokens");
-        OptionalInt(usage, "total_tokens");
         var cacheRead = NestedInt(usage, "input_tokens_details", "cached_tokens") ?? 0;
         var reasoning = NestedInt(usage, "output_tokens_details", "reasoning_tokens") ?? 0;
 
@@ -93,12 +92,12 @@ internal static class XaiResponsesResults
             return null;
         }
 
-        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetDouble(out var number))
         {
-            throw new InvalidOperationException("The xAI usage field " + name + " must be an integer.");
+            throw new InvalidOperationException("The xAI usage field " + name + " must be a number.");
         }
 
-        return number;
+        return (int)number;
     }
 
     private static int? NestedInt(JsonElement element, string objectName, string name)
