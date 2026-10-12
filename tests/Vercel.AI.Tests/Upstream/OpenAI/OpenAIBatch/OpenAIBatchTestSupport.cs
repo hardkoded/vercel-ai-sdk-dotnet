@@ -151,7 +151,8 @@ internal static class OpenAIBatchTestSupport
     public static async Task<IReadOnlyList<BatchItem>> GetResultsAsync(HttpMessageHandler handler)
     {
         var batch = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ExperimentalBatch()!;
-        return await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        return await stream.ToListAsync();
     }
 }
 

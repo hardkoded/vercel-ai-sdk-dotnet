@@ -23,7 +23,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
     public override string Provider => _provider.ModelProvider + ".batch";
 
     /// <inheritdoc />
-    public override async Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
@@ -55,8 +55,8 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
         var origin = new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
         var encoded = string.Join("/", responsesFile.Split('/').Select(Uri.EscapeDataString));
         var uri = new Uri(origin + "/download/v1beta/" + encoded + ":download?alt=media");
-        var lines = await CollectAsync(_provider.Http.SendJsonLinesAsync(HttpMethod.Get, uri, null, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken), cancellationToken).ConfigureAwait(false);
-        return lines.Select(Convert).ToList();
+        var lines = await _provider.Http.OpenJsonLinesAsync(HttpMethod.Get, uri, null, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken).ConfigureAwait(false);
+        return ConvertRows(lines, Convert, cancellationToken);
     }
 
     private static JsonElement? Find(JsonElement root, params string[] path)

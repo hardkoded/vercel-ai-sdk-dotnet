@@ -27,7 +27,8 @@ public sealed class AnthropicBatchTests
             BatchResultDownloads = new BatchResultDownloads { MaxLineBytes = maxLineBytes },
         }, handler);
         var batch = provider.ExperimentalBatch()!;
-        var results = batch.DoGetResultsAsync(new BatchOperationCall("msgbatch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("msgbatch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var results = stream.ToListAsync().AsTask();
         if (maxLineBytes == 16)
         {
             var error = await Assert.ThrowsAsync<DownloadError>(() => results);

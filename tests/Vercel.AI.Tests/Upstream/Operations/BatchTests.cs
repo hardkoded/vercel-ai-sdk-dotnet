@@ -320,12 +320,12 @@ public sealed class BatchTests
     public async Task Copies_pending_tool_input_without_executing()
     {
         var executed = 0;
-        var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
+        var results = await Batch.GetAllBatchResultsAsync(new BatchRequestOptions
         {
             Provider = new BatchFake { Items = new[] { ToolItem(providerExecuted: false, includeResult: true) } },
             Batch = new BatchReference(2, "batch-1", "test"),
             Tools = new[] { new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) => { executed++; return Task.FromResult<object?>("local"); }) },
-        }));
+        });
         Assert.Equal("Paris", results[0].Content![1].Input!.Value.GetProperty("city").GetString());
         Assert.Equal(0, executed);
     }
@@ -486,11 +486,11 @@ public sealed class BatchTests
             return Task.FromResult(new BatchStatus { Status = "in_progress", RawStatus = "in_progress", RequestCounts = new BatchRequestCounts(3, 1, 2, 0) });
         }
 
-        public Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+        public Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
         {
             Last = call;
             ResultOpens++;
-            return Task.FromResult(Items);
+            return Task.FromResult(Items.ToAsyncEnumerable());
         }
 
         public Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)

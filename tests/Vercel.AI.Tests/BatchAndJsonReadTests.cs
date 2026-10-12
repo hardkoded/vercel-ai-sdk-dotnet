@@ -50,7 +50,8 @@ public sealed class BatchAndJsonReadTests
             .Add(resultsUrl, "{\"custom_id\":\"france\",\"result\":{\"type\":\"succeeded\"}}\n");
         var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }, handler);
         var batch = provider.ExperimentalBatch()!;
-        var item = Assert.Single(await batch.DoGetResultsAsync(new BatchOperationCall("msgbatch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None));
+        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("msgbatch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var item = Assert.Single(await stream.ToListAsync());
         Assert.Equal("failed", item.Status);
         Assert.Equal("invalid_response", item.ErrorCode);
     }
