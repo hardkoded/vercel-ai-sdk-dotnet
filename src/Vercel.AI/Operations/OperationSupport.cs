@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
@@ -311,11 +312,15 @@ public sealed class DownloadException : AiSdkException
     public int StatusCode { get; }
 }
 
-/// <summary>The evaluation model does not support a question type.</summary>
-public sealed class EvaluationUnsupportedQuestionTypeException : AiSdkException
+/// <summary>
+/// The decision model does not support a question type. It carries the
+/// <see cref="DecisionUnsupportedQuestionTypeError.ErrorMarker"/> marker, so
+/// <see cref="DecisionUnsupportedQuestionTypeError.IsInstance(object)"/> recognizes it.
+/// </summary>
+public class DecisionUnsupportedQuestionTypeException : AiSdkException, IErrorMarkers
 {
     /// <summary>Creates the exception.</summary>
-    public EvaluationUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
+    public DecisionUnsupportedQuestionTypeException(string questionId, string questionType, string provider, string modelId)
         : base("Question \"" + questionId + "\" has unsupported type \"" + questionType + "\".")
     {
         QuestionId = questionId;
@@ -335,6 +340,15 @@ public sealed class EvaluationUnsupportedQuestionTypeException : AiSdkException
 
     /// <summary>Model id.</summary>
     public string ModelId { get; }
+
+    /// <summary>Upstream error name, <c>AI_DecisionUnsupportedQuestionTypeError</c>.</summary>
+    public string ErrorName => "AI_DecisionUnsupportedQuestionTypeError";
+
+    /// <inheritdoc />
+    public bool HasMarker(string marker)
+    {
+        return marker == AiSdkError.Marker || marker == DecisionUnsupportedQuestionTypeError.ErrorMarker;
+    }
 }
 
 /// <summary>Headers and body returned by one provider call.</summary>

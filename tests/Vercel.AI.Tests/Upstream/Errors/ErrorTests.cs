@@ -10,53 +10,53 @@ namespace Vercel.AI.Tests;
 
 public sealed class ErrorTests
 {
-    [UpstreamTest("packages/ai/src/error/evaluation-unsupported-question-type-error.test.ts::EvaluationUnsupportedQuestionTypeError::identifies the unsupported question and model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/error/decision-unsupported-question-type-error.test.ts::DecisionUnsupportedQuestionTypeError::identifies the unsupported question and model", Coverage = UpstreamCoverage.Covered)]
     [Fact]
-    public void Evaluation_error_identifies_the_question()
+    public void Decision_error_identifies_the_question()
     {
-        var error = new EvaluationUnsupportedQuestionTypeError("requestsRefund", "boolean", "test.evaluation", "test-model");
+        var error = new DecisionUnsupportedQuestionTypeError("requestsRefund", "boolean", "test.decision", "test-model");
         Assert.IsAssignableFrom<Exception>(error);
         Assert.True(AiSdkError.IsInstance(error));
-        Assert.True(EvaluationUnsupportedQuestionTypeError.IsInstance(error));
-        Assert.Equal("AI_EvaluationUnsupportedQuestionTypeError", error.ErrorName);
+        Assert.True(DecisionUnsupportedQuestionTypeError.IsInstance(error));
+        Assert.Equal("AI_DecisionUnsupportedQuestionTypeError", error.ErrorName);
         Assert.Equal("requestsRefund", error.QuestionId);
         Assert.Equal("boolean", error.QuestionType);
-        Assert.Equal("test.evaluation", error.Provider);
+        Assert.Equal("test.decision", error.Provider);
         Assert.Equal("test-model", error.ModelId);
-        Assert.Equal("Question \"requestsRefund\" has type \"boolean\", which is not supported by provider \"test.evaluation\" and model \"test-model\".", error.Message);
+        Assert.Equal("Question \"requestsRefund\" has type \"boolean\", which is not supported by provider \"test.decision\" and model \"test-model\".", error.Message);
     }
 
-    [UpstreamTest("packages/ai/src/error/evaluation-unsupported-question-type-error.test.ts::EvaluationUnsupportedQuestionTypeError::accepts a provider-specific message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/error/decision-unsupported-question-type-error.test.ts::DecisionUnsupportedQuestionTypeError::accepts a provider-specific message", Coverage = UpstreamCoverage.Covered)]
     [Fact]
-    public void Evaluation_error_accepts_a_custom_message()
+    public void Decision_error_accepts_a_custom_message()
     {
-        var error = new EvaluationUnsupportedQuestionTypeError(
+        var error = new DecisionUnsupportedQuestionTypeError(
             "requestsRefund",
             "boolean",
-            "test.evaluation",
+            "test.decision",
             "test-model",
             "This model cannot return a probability for a boolean question.");
         Assert.Equal("This model cannot return a probability for a boolean question.", error.Message);
     }
 
-    [UpstreamTest("packages/ai/src/error/evaluation-unsupported-question-type-error.test.ts::EvaluationUnsupportedQuestionTypeError::recognizes the marker across package copies", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/error/decision-unsupported-question-type-error.test.ts::DecisionUnsupportedQuestionTypeError::recognizes the marker across package copies", Coverage = UpstreamCoverage.Covered)]
     [Fact]
-    public void Evaluation_error_recognizes_a_copied_marker()
+    public void Decision_error_recognizes_a_copied_marker()
     {
-        var copy = new ErrorMarkerBag(EvaluationUnsupportedQuestionTypeError.ErrorMarker, true);
-        Assert.True(EvaluationUnsupportedQuestionTypeError.IsInstance(copy));
+        var copy = new ErrorMarkerBag(DecisionUnsupportedQuestionTypeError.ErrorMarker, true);
+        Assert.True(DecisionUnsupportedQuestionTypeError.IsInstance(copy));
     }
 
-    [UpstreamTest("packages/ai/src/error/evaluation-unsupported-question-type-error.test.ts::EvaluationUnsupportedQuestionTypeError::rejects values without the marker: %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/error/decision-unsupported-question-type-error.test.ts::DecisionUnsupportedQuestionTypeError::rejects values without the marker: %s", Coverage = UpstreamCoverage.Covered)]
     [Fact]
-    public void Evaluation_error_rejects_values_without_the_marker()
+    public void Decision_error_rejects_values_without_the_marker()
     {
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance(null));
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance(JsUndefined.Value));
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance("error"));
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance(new Exception("Unrelated error")));
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance(new ErrorMarkerBag()));
-        Assert.False(EvaluationUnsupportedQuestionTypeError.IsInstance(new ErrorMarkerBag(EvaluationUnsupportedQuestionTypeError.ErrorMarker, false)));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance(null));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance(JsUndefined.Value));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance("error"));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance(new Exception("Unrelated error")));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance(new ErrorMarkerBag()));
+        Assert.False(DecisionUnsupportedQuestionTypeError.IsInstance(new ErrorMarkerBag(DecisionUnsupportedQuestionTypeError.ErrorMarker, false)));
     }
 
     [UpstreamTest("packages/ai/src/error/stream-provider-error.test.ts::StreamProviderError::exposes provider metadata and preserves the raw payload", Coverage = UpstreamCoverage.Covered)]

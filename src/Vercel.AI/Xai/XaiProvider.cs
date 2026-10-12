@@ -29,6 +29,15 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
+    /// <summary>
+    /// Creates a Responses API model. The provider id is <c>xai.responses</c>.
+    /// <see cref="OpenAICompatibleProvider.LanguageModel(string)"/> stays on Chat Completions.
+    /// </summary>
+    public XaiResponsesLanguageModel ResponsesModel(string modelId)
+    {
+        return new XaiResponsesLanguageModel(this, modelId);
+    }
+
     /// <summary>xAI file store.</summary>
     public XaiFiles Files()
     {

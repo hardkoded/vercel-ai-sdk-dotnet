@@ -13,15 +13,15 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.DecisionLanguageModelSuite;
 /// <summary>Port of <c>decision-language-model.test.ts</c>.</summary>
 public sealed class DecisionLanguageModelTests
 {
-    private static Dictionary<string, EvaluationQuestion> Questions()
+    private static Dictionary<string, DecisionQuestion> Questions()
     {
-        return new Dictionary<string, EvaluationQuestion>
+        return new Dictionary<string, DecisionQuestion>
         {
-            ["category"] = new EvaluationQuestion(
+            ["category"] = new DecisionQuestion(
                 "choice",
                 "Pick the category.",
                 new Dictionary<string, object?> { ["Needs Review"] = "Review it.", ["Needs review"] = "Review it too.", ["other"] = null }),
-            ["severity"] = new EvaluationQuestion(
+            ["severity"] = new DecisionQuestion(
                 "score",
                 "Rate the severity.",
                 new List<object?> { "low", new Dictionary<string, object?> { ["meaning"] = "medium" }, null }),
@@ -42,9 +42,9 @@ public sealed class DecisionLanguageModelTests
         return (new DecisionModel(language, "test.decision"), language);
     }
 
-    private static EvaluationModelCall Call(IReadOnlyList<object?> state)
+    private static DecisionModelCall Call(IReadOnlyList<object?> state)
     {
-        return new EvaluationModelCall(state, Questions(), default, new Dictionary<string, string>(), CancellationToken.None);
+        return new DecisionModelCall(state, Questions(), default, new Dictionary<string, string>(), CancellationToken.None);
     }
 
     [Fact]

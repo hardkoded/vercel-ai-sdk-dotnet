@@ -25,25 +25,25 @@ internal static class OpenAIDecisionSupport
         return (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name)))!;
     }
 
-    internal static Dictionary<string, EvaluationQuestion> Questions()
+    internal static Dictionary<string, DecisionQuestion> Questions()
     {
-        return new Dictionary<string, EvaluationQuestion>
+        return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new EvaluationQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = new EvaluationQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = new EvaluationQuestion("boolean", "Is a refund requested?"),
+            ["department"] = new DecisionQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
+            ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = new DecisionQuestion("boolean", "Is a refund requested?"),
         };
     }
 
-    internal static EvaluationModelCall Call(
-        IReadOnlyDictionary<string, EvaluationQuestion>? questions = null,
+    internal static DecisionModelCall Call(
+        IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         object? state = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
         CancellationToken cancellationToken = default)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new EvaluationModelCall(
+        return new DecisionModelCall(
             state ?? State(),
             questions ?? Questions(),
             document.RootElement.Clone(),
@@ -77,7 +77,7 @@ internal static class OpenAIDecisionSupport
         return (JsonObject)JsonNode.Parse(capture.Body)!;
     }
 
-    internal static void AssertAnswer(EvaluationAnswer answer, string type, string? choice = null, double? score = null, double? probability = null, params (string Key, double Value)[] probabilities)
+    internal static void AssertAnswer(DecisionAnswer answer, string type, string? choice = null, double? score = null, double? probability = null, params (string Key, double Value)[] probabilities)
     {
         Assert.Equal(type, answer.Type);
         Assert.Equal(choice, answer.Choice);
@@ -92,7 +92,7 @@ internal static class OpenAIDecisionSupport
         Assert.Equal(probabilities.ToDictionary(pair => pair.Key, pair => pair.Value), answer.Probabilities);
     }
 
-    /// <summary>Converts parsed JSON into the values <see cref="EvaluationQuestion"/> accepts.</summary>
+    /// <summary>Converts parsed JSON into the values <see cref="DecisionQuestion"/> accepts.</summary>
     internal static object? ToValue(JsonElement element)
     {
         switch (element.ValueKind)

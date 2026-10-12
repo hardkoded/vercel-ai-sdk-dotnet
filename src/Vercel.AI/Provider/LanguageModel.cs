@@ -564,8 +564,8 @@ public sealed class FileContentPart : UserContentPart
     /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
     public IReadOnlyDictionary<string, string>? ProviderReference { get; }
 
-    /// <summary>Provider-specific options for this part.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
+    /// <summary>Provider-specific options for this part, such as the xAI <c>imageDetail</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
@@ -753,6 +753,9 @@ public sealed class LanguageModelCallOptions
     /// <summary>Schema name sent to providers that require one.</summary>
     public string? JsonSchemaName { get; set; }
 
+    /// <summary>Response format description. Maps to <c>responseFormat.description</c>.</summary>
+    public string? JsonSchemaDescription { get; set; }
+
     /// <summary>Tools the model may call.</summary>
     public IReadOnlyList<LanguageModelTool>? Tools { get; set; }
 
@@ -873,11 +876,12 @@ public abstract class LanguageModelStreamPart
 public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a text delta.</summary>
-    public TextDeltaStreamPart(string id, string delta)
+    public TextDeltaStreamPart(string id, string delta, JsonElement? providerMetadata = null)
         : base("text-delta")
     {
         Id = id;
         Delta = delta ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Text block id.</summary>
@@ -885,6 +889,9 @@ public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 
     /// <summary>Text fragment.</summary>
     public string Delta { get; }
+
+    /// <summary>Provider metadata for this delta.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A reasoning delta.</summary>
@@ -1213,13 +1220,23 @@ public sealed class ReasoningEndStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning-end part.</summary>
     public ReasoningEndStreamPart(string id)
+        : this(id, null)
+    {
+    }
+
+    /// <summary>Creates a reasoning-end part that carries provider metadata.</summary>
+    public ReasoningEndStreamPart(string id, JsonElement? providerMetadata)
         : base("reasoning-end")
     {
         Id = id ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning block id.</summary>
     public string Id { get; }
+
+    /// <summary>Provider metadata for this block, such as encrypted reasoning content.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Identifies the provider response.</summary>
