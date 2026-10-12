@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 using Vercel.AI.Tests.Upstream;
@@ -154,10 +155,10 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_rewrites_the_system_message()
     {
-        var result = JsonInstructions.InjectIntoMessages(new[] { System("Generate a person") }, BasicSchema());
+        var result = JsonInstructions.InjectIntoMessages(new ModelMessage[] { System("Generate a person") }, BasicSchema());
         var message = Assert.Single(result);
         Assert.Equal("system", message.Role);
-        Assert.Equal("Generate a person\n\nJSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, (string)message.Content!);
+        Assert.Equal("Generate a person\n\nJSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, ((SystemModelMessage)message).Content);
     }
 
     [Fact]
@@ -166,9 +167,9 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_leaves_the_input_unchanged()
     {
-        var original = new[] { System("Generate a person") };
+        var original = new ModelMessage[] { System("Generate a person") };
         JsonInstructions.InjectIntoMessages(original, BasicSchema());
-        Assert.Equal("Generate a person", (string)original[0].Content!);
+        Assert.Equal("Generate a person", ((SystemModelMessage)original[0]).Content);
     }
 
     [Fact]
@@ -177,9 +178,9 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_inserts_a_system_message()
     {
-        var result = JsonInstructions.InjectIntoMessages(Array.Empty<JsonInstructions.PromptMessage>(), BasicSchema());
+        var result = JsonInstructions.InjectIntoMessages(Array.Empty<ModelMessage>(), BasicSchema());
         var message = Assert.Single(result);
-        Assert.Equal("JSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, (string)message.Content!);
+        Assert.Equal("JSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, ((SystemModelMessage)message).Content);
     }
 
     [Fact]
@@ -188,9 +189,9 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_keeps_user_and_assistant_content()
     {
-        var user = new JsonInstructions.PromptMessage("user", Text("Hello"));
-        var assistant = new JsonInstructions.PromptMessage("assistant", Text("Hi there"));
-        var result = JsonInstructions.InjectIntoMessages(new[] { user, assistant }, BasicSchema());
+        var user = new UserModelMessage("Hello");
+        var assistant = new AssistantModelMessage("Hi there", null, null);
+        var result = JsonInstructions.InjectIntoMessages(new ModelMessage[] { user, assistant }, BasicSchema());
         Assert.Equal(3, result.Count);
         Assert.Equal("system", result[0].Role);
         Assert.Same(user, result[1]);
@@ -203,9 +204,9 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_replaces_empty_system_content()
     {
-        var user = new JsonInstructions.PromptMessage("user", Text("Generate data"));
-        var result = JsonInstructions.InjectIntoMessages(new[] { System(string.Empty), user }, BasicSchema());
-        Assert.Equal("JSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, (string)result[0].Content!);
+        var user = new UserModelMessage("Generate data");
+        var result = JsonInstructions.InjectIntoMessages(new ModelMessage[] { System(string.Empty), user }, BasicSchema());
+        Assert.Equal("JSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, ((SystemModelMessage)result[0]).Content);
         Assert.Same(user, result[1]);
     }
 
@@ -215,11 +216,11 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_preserves_later_messages()
     {
-        var first = new JsonInstructions.PromptMessage("user", Text("Hello"));
-        var second = new JsonInstructions.PromptMessage("assistant", Text("Hi"));
-        var third = new JsonInstructions.PromptMessage("user", Text("Generate person"));
-        var result = JsonInstructions.InjectIntoMessages(new[] { System("You are helpful"), first, second, third }, BasicSchema());
-        Assert.Equal("You are helpful\n\nJSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, (string)result[0].Content!);
+        var first = new UserModelMessage("Hello");
+        var second = new AssistantModelMessage("Hi", null, null);
+        var third = new UserModelMessage("Generate person");
+        var result = JsonInstructions.InjectIntoMessages(new ModelMessage[] { System("You are helpful"), first, second, third }, BasicSchema());
+        Assert.Equal("You are helpful\n\nJSON schema:\n" + BasicJson() + "\n" + SchemaSuffix, ((SystemModelMessage)result[0]).Content);
         Assert.Same(first, result[1]);
         Assert.Same(second, result[2]);
         Assert.Same(third, result[3]);
@@ -231,8 +232,8 @@ public sealed class JsonInstructionTests
         Coverage = UpstreamCoverage.Covered)]
     public void Inject_into_messages_uses_the_generic_suffix()
     {
-        var result = JsonInstructions.InjectIntoMessages(new[] { System("Generate data") });
-        Assert.Equal("Generate data\n\n" + GenericSuffix, (string)Assert.Single(result).Content!);
+        var result = JsonInstructions.InjectIntoMessages(new ModelMessage[] { System("Generate data") });
+        Assert.Equal("Generate data\n\n" + GenericSuffix, ((SystemModelMessage)Assert.Single(result)).Content);
     }
 
     [Fact]
@@ -242,13 +243,13 @@ public sealed class JsonInstructionTests
     public void Inject_into_messages_uses_a_custom_prefix_and_suffix()
     {
         var result = JsonInstructions.InjectIntoMessages(
-            new[] { System("Generate data") },
+            new ModelMessage[] { System("Generate data") },
             BasicSchema(),
             "Custom schema:",
             "Follow this format exactly.",
             true,
             true);
-        Assert.Equal("Generate data\n\nCustom schema:\n" + BasicJson() + "\nFollow this format exactly.", (string)Assert.Single(result).Content!);
+        Assert.Equal("Generate data\n\nCustom schema:\n" + BasicJson() + "\nFollow this format exactly.", ((SystemModelMessage)Assert.Single(result)).Content);
     }
 
     [Fact]
@@ -364,14 +365,9 @@ public sealed class JsonInstructionTests
             new[] { "name", "age" });
     }
 
-    private static JsonInstructions.PromptMessage System(string content)
+    private static ModelMessage System(string content)
     {
-        return new JsonInstructions.PromptMessage("system", content);
-    }
-
-    private static JsonArray Text(string text)
-    {
-        return new JsonArray { new JsonObject { ["type"] = "text", ["text"] = text } };
+        return new SystemModelMessage(content);
     }
 
     private static JsonObject Apply(string json)

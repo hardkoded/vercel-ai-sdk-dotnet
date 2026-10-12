@@ -64,7 +64,7 @@ public static class DecisionState
         {
             case "data":
                 object inline = (object?)converted.Bytes ?? converted.Base64 ?? string.Empty;
-                mediaType = MediaTypes.ResolveFullMediaType(mediaType, inline);
+                mediaType = MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", mediaType) { Bytes = converted.Bytes, Base64 = converted.Base64 });
                 data = new Dictionary<string, object?> { ["type"] = "data", ["data"] = inline };
                 break;
             case "url":

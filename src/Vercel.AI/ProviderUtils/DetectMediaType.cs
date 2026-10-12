@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 
 namespace Vercel.AI.ProviderUtils;
 
@@ -70,7 +71,18 @@ public static class MediaTypes
     /// Detects a media type from raw bytes or a base64 string.
     /// When <paramref name="topLevelType"/> is omitted, image, document, audio, and video signatures are considered.
     /// </summary>
-    public static string? DetectMediaType(object data, string? topLevelType = null)
+    public static string? DetectMediaType(byte[] data, string? topLevelType = null)
+    {
+        return DetectCore(data, topLevelType);
+    }
+
+    /// <summary>Detects a media type from a base64 string. See <see cref="DetectMediaType(byte[], string?)"/>.</summary>
+    public static string? DetectMediaType(string base64, string? topLevelType = null)
+    {
+        return DetectCore(base64, topLevelType);
+    }
+
+    private static string? DetectCore(object data, string? topLevelType)
     {
         if (topLevelType is null)
         {
@@ -134,11 +146,28 @@ public static class MediaTypes
     }
 
     /// <summary>
-    /// Returns <paramref name="mediaType"/> when it has a subtype. Otherwise detects the subtype from <paramref name="inlineData"/>,
-    /// which is bytes or a base64 string, or null when the file is not inline. Maps to <c>resolveFullMediaType</c>.
+    /// Returns the file part media type when it has a subtype. Otherwise detects the subtype from the file part data,
+    /// which is the file part's bytes or base64 text, or null when the file is not inline. Maps to <c>resolveFullMediaType</c>.
     /// </summary>
     /// <exception cref="UnsupportedFunctionalityException">The subtype cannot be resolved.</exception>
-    public static string ResolveFullMediaType(string mediaType, object? inlineData)
+    public static string ResolveFullMediaType(LanguageModelFilePart file)
+    {
+        if (file is null)
+        {
+            throw new ArgumentNullException(nameof(file));
+        }
+
+        object? inline = file.Bytes != null ? file.Bytes : file.Base64;
+        return ResolveCore(file.MediaType ?? string.Empty, inline);
+    }
+
+    /// <summary>Resolves a media type for inline bytes, or null when the file is not inline. See <see cref="ResolveFullMediaType(LanguageModelFilePart)"/>.</summary>
+    public static string ResolveFullMediaType(string mediaType, byte[]? inlineData)
+    {
+        return ResolveCore(mediaType, inlineData);
+    }
+
+    private static string ResolveCore(string mediaType, object? inlineData)
     {
         if (IsFullMediaType(mediaType))
         {
@@ -148,7 +177,7 @@ public static class MediaTypes
         string functionality;
         if (inlineData != null)
         {
-            var detected = DetectMediaType(inlineData, GetTopLevelMediaType(mediaType));
+            var detected = DetectCore(inlineData, GetTopLevelMediaType(mediaType));
             if (detected != null)
             {
                 return detected;
