@@ -87,6 +87,12 @@ public class OpenAICompatibleOptions
     /// <summary>When true, a JSON-mode response that has text drops its tool calls, and a <c>tool_calls</c> finish becomes stop.</summary>
     public bool JsonTextOverridesToolCalls { get; set; }
 
+    /// <summary>
+    /// When true, a call that has a JSON schema and function tools sends an internal JSON response tool instead of <c>response_format</c>.
+    /// The provider rejects the two together.
+    /// </summary>
+    internal bool UsesJsonResponseToolWithTools { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 

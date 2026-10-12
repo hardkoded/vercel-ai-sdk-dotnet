@@ -173,6 +173,15 @@ public static class GoogleResponse
             }
 
             var args = call.TryGetProperty("args", out var argsValue) ? argsValue.GetRawText() : "{}";
+            if (name.GetString() == context.JsonResponseToolName)
+            {
+                var jsonText = call.TryGetProperty("args", out var textArgs) && textArgs.ValueKind == JsonValueKind.String
+                    ? textArgs.GetString() ?? string.Empty
+                    : textArgs.ValueKind == JsonValueKind.Null ? "{}" : args;
+                content.Add(new GoogleText(jsonText, SignatureMetadata(part, context)));
+                return;
+            }
+
             content.Add(new GeneratedToolCall(id!, name.GetString() ?? string.Empty, args, SignatureMetadata(part, context)));
             return;
         }
@@ -209,6 +218,13 @@ public static class GoogleResponse
 
         if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
         {
+            var isThought = part.TryGetProperty("thought", out var thoughtMarker) && thoughtMarker.ValueKind == JsonValueKind.True;
+            if (context.JsonResponseToolName != null && !isThought)
+            {
+                // The response tool supplies the output. Omit conversational text.
+                return;
+            }
+
             var value = text.GetString() ?? string.Empty;
             var signature = SignatureMetadata(part, context);
             if (value.Length == 0)
@@ -342,8 +358,9 @@ public sealed class GoogleParseContext
     private int _ids;
 
     /// <summary>Creates a parse context.</summary>
-    public GoogleParseContext(string? provider = null, Func<string>? generateId = null, GoogleToolPreparation? tools = null, IReadOnlyList<GoogleWarning>? warnings = null)
+    public GoogleParseContext(string? provider = null, Func<string>? generateId = null, GoogleToolPreparation? tools = null, IReadOnlyList<GoogleWarning>? warnings = null, string? jsonResponseToolName = null)
     {
+        JsonResponseToolName = jsonResponseToolName;
         var vertex = provider != null && provider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0;
         MetadataNames = vertex ? new[] { "vertex", "googleVertex" } : new[] { "google" };
         GenerateId = generateId ?? (() => "id_" + _ids);
@@ -362,6 +379,9 @@ public sealed class GoogleParseContext
 
     /// <summary>Warnings copied onto the result.</summary>
     public IReadOnlyList<GoogleWarning> Warnings { get; }
+
+    /// <summary>Name of the internal tool that carries structured output. Its calls become text and ordinary text is omitted.</summary>
+    public string? JsonResponseToolName { get; }
 
     /// <summary>Returns the next synthetic id.</summary>
     public string NextId()
