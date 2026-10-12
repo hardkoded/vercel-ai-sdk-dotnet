@@ -49,14 +49,14 @@ public static class JsonResponseTools
                         responseToolsWithDeltas.Add(delta.Id);
                     }
 
-                    yield return new TextDeltaStreamPart(delta.Id, delta.Delta);
+                    yield return new TextDeltaStreamPart(delta.Id, delta.Delta, delta.ProviderMetadata);
                     continue;
                 case ToolInputEndStreamPart end when responseToolIds.Contains(end.Id):
                     continue;
                 case ToolCallStreamPart call when call.ToolName == toolName:
                     if (!responseToolsWithDeltas.Contains(call.ToolCallId))
                     {
-                        yield return new TextDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
+                        yield return new TextDeltaStreamPart(call.ToolCallId, call.ArgumentsJson, call.ProviderMetadata);
                     }
 
                     yield return new TextEndStreamPart(call.ToolCallId, null, call.ProviderMetadata);
