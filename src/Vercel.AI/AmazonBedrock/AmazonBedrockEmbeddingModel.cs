@@ -15,11 +15,20 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 {
     private readonly AmazonBedrockProvider _provider;
 
+    private readonly string? _modelFamily;
+
     /// <summary>Creates an embedding model.</summary>
     public AmazonBedrockEmbeddingModel(AmazonBedrockProvider provider, string modelId)
+        : this(provider, modelId, null)
+    {
+    }
+
+    /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockEmbeddingModel(AmazonBedrockProvider provider, string modelId, AmazonBedrockEmbeddingModelSettings? settings)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _modelFamily = settings?.ModelFamily;
     }
 
     /// <inheritdoc />
@@ -34,7 +43,10 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     /// <summary>Maximum values per call. Cohere models take 96. Titan and Nova take one.</summary>
     public int MaxEmbeddingsPerCall => Family == "cohere" ? 96 : 1;
 
-    private string Family => IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan";
+    /// <summary>Headers for the next call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    private string Family => _modelFamily ?? (IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan");
 
     /// <inheritdoc />
     public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
@@ -92,6 +104,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+        _provider.AddHeaders(request, Headers);
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");

@@ -28,6 +28,8 @@ internal sealed class UpstreamRecordingHandler : HttpMessageHandler
 
     public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -53,9 +55,15 @@ internal sealed class UpstreamRecordingHandler : HttpMessageHandler
             Headers["Authorization"] = request.Headers.Authorization.ToString();
         }
 
-        return new HttpResponseMessage(Status)
+        var response = new HttpResponseMessage(Status)
         {
             Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json"),
         };
+        foreach (var header in ResponseHeaders)
+        {
+            response.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return response;
     }
 }
