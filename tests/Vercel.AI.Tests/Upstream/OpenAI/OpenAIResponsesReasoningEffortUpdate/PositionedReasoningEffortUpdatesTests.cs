@@ -117,6 +117,7 @@ public sealed class PositionedReasoningEffortUpdatesTests
 
     [Theory]
     [MemberData(nameof(AzureMessages))]
+    [UpstreamTest(Prefix + "supports $name on Azure messages", Coverage = UpstreamCoverage.Covered)]
     public async Task Supports_name_on_Azure_messages(string method, string name, string providerOptionsJson, string expected)
     {
         var providerOptions = new Dictionary<string, JsonElement>();

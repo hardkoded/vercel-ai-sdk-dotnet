@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel.XaiResponsesLanguageModelSupport;
 
@@ -13,10 +14,7 @@ public sealed class ErrorEventHandlingTests
     private const string Prefix = TestFile + " > error event handling::";
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should emit error chunk for server error events",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "ErrorStreamPart carries only a message, so the case does not assert the error type, code, status code, retry flag, or data.")]
+    [UpstreamTest(Prefix + "should emit error chunk for server error events", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_emit_error_chunk_for_server_error_events()
     {
         var capture = StreamResponse(
@@ -25,6 +23,13 @@ public sealed class ErrorEventHandlingTests
 
         var parts = await Collect(Model(capture), HelloPrompt());
 
-        Assert.Equal("Internal server error", First<ErrorStreamPart>(parts).Message);
+        var error = First<ErrorStreamPart>(parts).Error;
+        Assert.NotNull(error);
+        Assert.Equal("Internal server error", error.Message);
+        Assert.Equal("error", error.Type);
+        Assert.Equal("server_error", error.Code);
+        Assert.Equal(500, error.StatusCode);
+        Assert.True(error.IsRetryable);
+        Assert.Equal("""{"type":"error","code":"server_error","message":"Internal server error","param":null}""", ((JsonElement)error.Data!).GetRawText());
     }
 }

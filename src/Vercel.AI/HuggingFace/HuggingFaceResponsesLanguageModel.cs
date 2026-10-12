@@ -660,7 +660,9 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             if (TryReadError(chunk, type!, out var message, out var code))
             {
                 Fail(code ?? type);
-                yield return new ErrorStreamPart(message);
+                yield return OpenAI.OpenAIStreamError.CreateProviderStreamError(chunk) is { } streamError
+                    ? new ErrorStreamPart(streamError)
+                    : new ErrorStreamPart(message);
                 yield break;
             }
 

@@ -13,6 +13,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 PARITY = ROOT / "tests" / "parity"
@@ -24,9 +25,10 @@ ATTR = re.compile(
     r'(?P<rest>.*?)\)\]',
     re.S,
 )
-CONST_RE = re.compile(
-    r'const\s+string\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:([A-Za-z_][A-Za-z0-9_]*)\s*\+\s*)?"((?:\\.|[^"\\])*)"'
-)
+STRING = r'"(?:\\.|[^"\\])*"'
+TERM = rf'(?:{STRING}|[A-Za-z_][A-Za-z0-9_]*)'
+CONST_RE = re.compile(rf'const\s+string\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*({TERM}(?:\s*\+\s*{TERM})*)\s*;')
+TERM_RE = re.compile(rf'({STRING})|([A-Za-z_][A-Za-z0-9_]*)')
 CLASS_RE = re.compile(r"\bclass\s+(\w+)")
 METHOD_RE = re.compile(r"public\s+(?:async\s+)?(?:Task|void)\s+(\w+)\s*\(")
 COVERAGE_RE = re.compile(r"Coverage\s*=\s*UpstreamCoverage\.(Covered|Partial)")
@@ -37,35 +39,42 @@ def unescape(value: str) -> str:
     return json.loads('"' + value + '"')
 
 
+def constant_resolver(paths: list[Path]) -> Callable[[Path, str], str]:
+    """Resolve C# string constants in one test folder.
+
+    A name is looked up in its own file first, then in the sibling files, so a
+    constant like `Prefix = TestFile + "::"` can use `TestFile` from a shared file.
+    """
+    raw = {path: dict(CONST_RE.findall(path.read_text(encoding="utf-8"))) for path in paths}
+    resolved: dict[tuple[Path, str], str] = {}
+
+    def resolve(path: Path, name: str, stack: tuple[tuple[Path, str], ...] = ()) -> str:
+        owner = path if name in raw[path] else next((p for p in paths if name in raw[p]), None)
+        if owner is None:
+            raise SystemExit(f"Unknown string constant {name} in {path}")
+        key = (owner, name)
+        if key in stack:
+            raise SystemExit(f"Circular string constant {name} in {owner}")
+        if key not in resolved:
+            resolved[key] = "".join(
+                unescape(literal[1:-1]) if literal else resolve(owner, ident, stack + (key,))
+                for literal, ident in TERM_RE.findall(raw[owner][name])
+            )
+        return resolved[key]
+
+    return resolve
+
+
 def load_links() -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
     paths = sorted(TEST_DIR.rglob("*.cs"))
-    texts = {path: path.read_text(encoding="utf-8") for path in paths}
-    # A constant may live in a support file next to the tests (TestFile), and
-    # several folders reuse the same name, so the nearest directory wins.
-    by_dir: dict[Path, dict[str, tuple[str, str]]] = {}
-    for path, text in texts.items():
-        found = by_dir.setdefault(path.parent, {})
-        for name, base, value in CONST_RE.findall(text):
-            found[name] = (base, value)
-
-    def resolve(name: str, directory: Path, local: dict[str, tuple[str, str]]) -> str | None:
-        entry = local.get(name)
-        folder = directory
-        while entry is None and folder != TEST_DIR.parent:
-            entry = by_dir.get(folder, {}).get(name)
-            folder = folder.parent
-        if entry is None:
-            return None
-        base, value = entry
-        if not base:
-            return unescape(value)
-        prefix = resolve(base, directory, local)
-        return None if prefix is None else prefix + unescape(value)
-
+    folders: dict[Path, list[Path]] = defaultdict(list)
     for path in paths:
-        text = texts[path]
-        local = {name: (base, value) for name, base, value in CONST_RE.findall(text)}
+        folders[path.parent].append(path)
+    resolvers = {folder: constant_resolver(files) for folder, files in folders.items()}
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        resolve_constant = resolvers[path.parent]
         class_name = "Tests"
         cursor = 0
         for match in ATTR.finditer(text):
@@ -83,10 +92,7 @@ def load_links() -> list[dict[str, str]]:
             upstream_id = unescape(match.group("id"))
             prefix_name = match.group("prefix")
             if prefix_name:
-                prefix = resolve(prefix_name, path.parent, local)
-                if prefix is None:
-                    raise SystemExit(f"Unknown string constant {prefix_name} in {path}")
-                upstream_id = prefix + upstream_id
+                upstream_id = resolve_constant(path, prefix_name) + upstream_id
             link = {
                 "upstreamId": upstream_id,
                 "dotnetTest": f"Vercel.AI.Tests.{class_name}.{method.group(1)}",

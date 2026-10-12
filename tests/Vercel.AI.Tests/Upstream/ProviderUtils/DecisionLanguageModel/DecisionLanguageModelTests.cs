@@ -345,6 +345,7 @@ public sealed class DecisionLanguageModelTests
 
     [Theory]
     [MemberData(nameof(InvalidRubricShapes))]
+    [UpstreamTest(Prefix + "rejects invalid rubric shapes before model I/O", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_invalid_rubric_shapes_before_model_IO(string shape)
     {
         var (model, language, _) = Setup();
