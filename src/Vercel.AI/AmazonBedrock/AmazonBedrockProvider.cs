@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -37,6 +38,12 @@ public sealed class AmazonBedrockOptions
 
     /// <summary>Clock used for signing. Tests can pin this.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
+
+    /// <summary>
+    /// Headers sent with every embedding and reranking request. Call headers override them.
+    /// The Converse language model does not send them yet.
+    /// </summary>
+    public Dictionary<string, string> Headers { get; } = new();
 }
 
 /// <summary>Amazon Bedrock Converse provider.</summary>
@@ -79,6 +86,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId) => new AmazonBedrockEmbeddingModel(this, modelId);
 
+    /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockEmbeddingModel EmbeddingModel(string modelId, AmazonBedrockEmbeddingModelSettings? settings) => new AmazonBedrockEmbeddingModel(this, modelId, settings);
+
     internal Uri ConverseUri(string modelId)
     {
         if (!HostnameParts.IsValidHostnamePart(Options.Region))
@@ -87,6 +97,32 @@ public sealed class AmazonBedrockProvider : ProviderBase
         }
 
         return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
+    }
+
+    /// <summary>Adds the provider headers, then <paramref name="callHeaders"/>. A call header wins over a provider header with the same name, and a null call value drops it.</summary>
+    internal void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
+    {
+        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in Options.Headers)
+        {
+            merged[header.Key] = header.Value;
+        }
+
+        if (callHeaders != null)
+        {
+            foreach (var header in callHeaders)
+            {
+                merged[header.Key] = header.Value;
+            }
+        }
+
+        foreach (var header in merged)
+        {
+            if (header.Value != null)
+            {
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
     }
 }
 
@@ -178,6 +214,50 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var additional = ReadAdditionalModelRequestFields(bedrock);
         var capabilities = AnthropicModelCapabilities.Get(ModelId);
         var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(ModelId, reasoningConfig?.BudgetTokens);
+        var temperature = options.Temperature;
+        var topP = options.TopP;
+        var topK = options.TopK;
+        var stopSequences = options.StopSequences;
+
+        if (capabilities.RejectsSamplingParameters)
+        {
+            if (temperature != null)
+            {
+                temperature = null;
+                warnings.Add(new CallWarning("unsupported", "temperature is not supported by " + ModelId + " and will be ignored"));
+            }
+
+            if (topK != null)
+            {
+                topK = null;
+                warnings.Add(new CallWarning("unsupported", "topK is not supported by " + ModelId + " and will be ignored"));
+            }
+
+            if (topP != null)
+            {
+                topP = null;
+                warnings.Add(new CallWarning("unsupported", "topP is not supported by " + ModelId + " and will be ignored"));
+            }
+        }
+
+        var openAiMatch = Regex.Match(ModelId, @"^(?:[^.]+\.)?(openai\..+)$", RegexOptions.CultureInvariant);
+        var isOpenAiModel = openAiMatch.Success;
+        var isOpenAiGptOssModel = isOpenAiModel && openAiMatch.Groups[1].Value.StartsWith("openai.gpt-oss-", StringComparison.Ordinal);
+
+        // OpenAI models other than gpt-oss reject temperature outright, so clamping it would only add a misleading warning.
+        if (!isOpenAiModel || isOpenAiGptOssModel)
+        {
+            if (temperature > 1)
+            {
+                warnings.Add(new CallWarning("unsupported", FormatNumber(temperature.Value) + " exceeds bedrock maximum of 1.0. clamped to 1.0"));
+                temperature = 1;
+            }
+            else if (temperature < 0)
+            {
+                warnings.Add(new CallWarning("unsupported", FormatNumber(temperature.Value) + " is below bedrock minimum of 0. clamped to 0"));
+                temperature = 0;
+            }
+        }
 
         reasoningConfig = ResolveReasoningConfig(options.Reasoning, reasoningConfig, warnings, isAnthropicModel, capabilities);
         var isThinkingEnabled = reasoningConfig?.Type == "enabled" || reasoningConfig?.Type == "adaptive";
@@ -230,9 +310,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var thinkingBudget = thinkingType == "enabled" ? reasoningConfig?.BudgetTokens : null;
         var isAnthropicThinkingEnabled = isAnthropicModel && isThinkingEnabled;
         var maxTokens = options.MaxOutputTokens;
-        var temperature = options.Temperature;
-        var topP = options.TopP;
-        var topK = options.TopK;
 
         if (isAnthropicThinkingEnabled)
         {
@@ -271,17 +348,16 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         if (maxReasoningEffort != null)
         {
             additional ??= new JsonObject();
-            var openAiMatch = Regex.Match(ModelId, @"^(?:[^.]+\.)?(openai\..+)$", RegexOptions.CultureInvariant);
             if (isAnthropicModel)
             {
                 var outputConfig = additional["output_config"] as JsonObject ?? new JsonObject();
                 outputConfig["effort"] = maxReasoningEffort;
                 additional["output_config"] = outputConfig;
             }
-            else if (openAiMatch.Success)
+            else if (isOpenAiModel)
             {
                 // gpt-oss models expect a flat `reasoning_effort`; GPT-5.x models expect a nested `reasoning.effort`.
-                if (openAiMatch.Groups[1].Value.StartsWith("openai.gpt-oss-", StringComparison.Ordinal))
+                if (isOpenAiGptOssModel)
                 {
                     additional["reasoning_effort"] = maxReasoningEffort;
                 }
@@ -344,6 +420,28 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
         }
 
+        // OpenAI models reject stopSequences on the Converse API. Models other than gpt-oss also reject temperature and topP.
+        if (isOpenAiModel)
+        {
+            if (!isOpenAiGptOssModel && temperature != null)
+            {
+                temperature = null;
+                warnings.Add(new CallWarning("unsupported", "temperature is not supported by this OpenAI model on the Converse API"));
+            }
+
+            if (!isOpenAiGptOssModel && topP != null)
+            {
+                topP = null;
+                warnings.Add(new CallWarning("unsupported", "topP is not supported by this OpenAI model on the Converse API"));
+            }
+
+            if (stopSequences != null)
+            {
+                stopSequences = null;
+                warnings.Add(new CallWarning("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+            }
+        }
+
         var prompt = options.Prompt;
         if (usesJsonInstruction)
         {
@@ -383,10 +481,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             inference["topK"] = topKValue;
         }
 
-        if (options.StopSequences is { Count: > 0 })
+        if (stopSequences != null)
         {
             var stop = new JsonArray();
-            foreach (var sequence in options.StopSequences)
+            foreach (var sequence in stopSequences)
             {
                 stop.Add(sequence);
             }
@@ -397,6 +495,11 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         if (inference.Count > 0)
         {
             body["inferenceConfig"] = inference;
+        }
+
+        if (ReadServiceTier(bedrock) is { } serviceTier)
+        {
+            body["serviceTier"] = new JsonObject { ["type"] = serviceTier };
         }
 
         if (toolConfig.Count > 0)
@@ -528,6 +631,24 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
         return null;
     }
+
+    private static string? ReadServiceTier(JsonElement? bedrock)
+    {
+        if (bedrock is not { } value || !value.TryGetProperty("serviceTier", out var tier) || tier.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var name = tier.ValueKind == JsonValueKind.String ? tier.GetString() : null;
+        if (name is not ("reserved" or "priority" or "default" or "flex"))
+        {
+            throw new ArgumentException("Bedrock serviceTier must be one of reserved, priority, default, or flex.");
+        }
+
+        return name;
+    }
+
+    private static string FormatNumber(double value) => value.ToString(CultureInfo.InvariantCulture);
 
     private static JsonObject? ReadAdditionalModelRequestFields(JsonElement? bedrock)
     {

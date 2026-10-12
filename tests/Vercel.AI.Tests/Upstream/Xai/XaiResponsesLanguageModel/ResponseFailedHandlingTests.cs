@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel.XaiResponsesLanguageModelSupport;
 
@@ -11,11 +12,10 @@ namespace Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel;
 public sealed class ResponseFailedHandlingTests
 {
     private const string Prefix = TestFile + " > response.failed handling::";
-    private const string StatusNote = "ErrorStreamPart carries only a message, so the case does not assert the error type, code, status code, retry flag, or data.";
     private const string Created = """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","output":[]}}""";
 
     [Fact]
-    [UpstreamTest(Prefix + "should set finish reason to error", Coverage = UpstreamCoverage.Partial, Note = StatusNote)]
+    [UpstreamTest(Prefix + "should set finish reason to error", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_set_finish_reason_to_error()
     {
         var capture = StreamResponse(
@@ -29,11 +29,18 @@ public sealed class ResponseFailedHandlingTests
         Assert.Equal("error", finish.RawFinishReason);
         Assert.Equal(50, finish.Usage.InputTokens);
         Assert.Equal(0, finish.Usage.OutputTokens);
-        Assert.Equal("Internal server error", First<ErrorStreamPart>(parts).Message);
+        var error = First<ErrorStreamPart>(parts).Error;
+        Assert.NotNull(error);
+        Assert.Equal("Internal server error", error.Message);
+        Assert.Equal("response.failed", error.Type);
+        Assert.Equal("server_error", error.Code);
+        Assert.Equal(500, error.StatusCode);
+        Assert.True(error.IsRetryable);
+        Assert.Equal("""{"type":"response.failed","response":{"error":{"code":"server_error","message":"Internal server error"},"usage":{"input_tokens":50,"output_tokens":0}}}""", ((JsonElement)error.Data!).GetRawText());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should classify insufficient quota as non-retryable", Coverage = UpstreamCoverage.Partial, Note = StatusNote)]
+    [UpstreamTest(Prefix + "should classify insufficient quota as non-retryable", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_classify_insufficient_quota_as_non_retryable()
     {
         var capture = StreamResponse(
@@ -42,7 +49,14 @@ public sealed class ResponseFailedHandlingTests
 
         var parts = await Collect(Model(capture), HelloPrompt());
 
-        Assert.Equal("You exceeded your current quota.", First<ErrorStreamPart>(parts).Message);
+        var error = First<ErrorStreamPart>(parts).Error;
+        Assert.NotNull(error);
+        Assert.Equal("You exceeded your current quota.", error.Message);
+        Assert.Equal("response.failed", error.Type);
+        Assert.Equal("insufficient_quota", error.Code);
+        Assert.Equal(429, error.StatusCode);
+        Assert.False(error.IsRetryable);
+        Assert.Equal("""{"type":"response.failed","response":{"error":{"code":"insufficient_quota","message":"You exceeded your current quota."},"usage":{"input_tokens":50,"output_tokens":0}}}""", ((JsonElement)error.Data!).GetRawText());
     }
 
     [Fact]

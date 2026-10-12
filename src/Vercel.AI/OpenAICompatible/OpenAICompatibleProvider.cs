@@ -547,6 +547,9 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     /// <summary>HTTP response headers from the most recent call.</summary>
     public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
+    /// <summary>Raw HTTP response body from the most recent call.</summary>
+    public string? LastResponseBody { get; private set; }
+
     /// <inheritdoc />
     public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
@@ -618,6 +621,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             cancellationToken).ConfigureAwait(false);
         LastWarnings = warnings;
         LastResponseHeaders = response.Headers;
+        LastResponseBody = response.Body;
         using var parsed = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var vectors = new List<float[]>();
         if (parsed.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
