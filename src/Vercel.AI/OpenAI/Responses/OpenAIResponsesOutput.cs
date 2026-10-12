@@ -19,7 +19,7 @@ public sealed class OpenAIText : GeneratedText
     }
 
     /// <summary>Provider metadata: <c>openai.itemId</c> and, when the text is annotated, <c>openai.annotations</c>.</summary>
-    public JsonElement ProviderMetadata { get; }
+    public new JsonElement ProviderMetadata { get; }
 }
 
 /// <summary>

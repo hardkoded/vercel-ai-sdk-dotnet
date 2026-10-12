@@ -24,6 +24,58 @@ Native wire protocols have their own request mappers:
 - Amazon Bedrock signs a Converse request with Signature Version 4. It signs the caller's headers too, and sends a header with a non-ASCII value without signing it. Provider options come from `amazonBedrock`, then `bedrock`. `reasoningConfig` (`type`, `budgetTokens`, `maxReasoningEffort` of `low`, `medium`, `high`, `xhigh`, or `max`, and `display`) becomes `additionalModelRequestFields.thinking` and `output_config.effort` on Anthropic models, `reasoning_effort` or `reasoning.effort` on OpenAI models, and a `reasoningConfig` field on other models such as Nova. The top-level `Reasoning` option fills in `reasoningConfig`, and fields you set win. Structured output (`JsonSchema`) on an Anthropic model follows `structuredOutputMode` (`outputFormat`, `jsonTool`, or `auto`, read from `amazonBedrock`, then `anthropic`). In `auto`, models that support it send a sanitized `additionalModelRequestFields.output_config.format`, and `jsonTool` removes a manually set `format`. Otherwise a forced `json` tool carries it, and the tool input comes back as the response text with `providerMetadata.bedrock.isJsonResponseFromTool` set. Models that reject forced tool use, and models that reject `strict` tools when you also pass tools, get a JSON instruction in the system message instead, and the first JSON object in the reply becomes the text. `AmazonBedrockFetch` and `AmazonBedrockSigV4Fetch` apply the same signing and the `ai-sdk-amazon-bedrock` user agent to any other Bedrock call.
 - Cohere speaks chat, embed, and rerank.
 - OpenResponses posts to `{base}/responses`. The default base is the Gateway Open Responses route.
+- OpenResponses warns and ignores `StopSequences`, `TopK`, and `Seed`. `OpenResponsesOptions.Name` is the key of the provider in provider options and provider metadata (default `open-responses`). It sends function tools. A provider-defined tool (`LanguageModelTool.ProviderDefined(id, name, args)`) is omitted with an `unsupported` warning (`provider-defined tool <id>`) unless an extension registers it. A `ToolChoice.Tool(name)` that selects an omitted provider tool is omitted too.
+
+### OpenResponses extensions (experimental)
+
+Open Responses implementations can add namespaced tools, items, and streaming events. Register an `OpenResponsesExtension` in `OpenResponsesOptions.Extensions` to encode and decode an implementation's wire formats. This API is experimental and may change.
+
+The provider-tool id uses dot notation (`acme.document_search`). Open Responses wire types use colon notation (`acme:document_search`). The namespace in `Id` must match the namespace in every registered wire type.
+
+```csharp
+var extension = new OpenResponsesExtension
+{
+    Id = "acme.document_search",
+    ToolType = "acme:document_search",
+    ItemTypes = new[] { "acme:document_search_receipt" },
+    EncodeTool = context => new JsonObject
+    {
+        ["name"] = context.Name,
+        ["index"] = context.Args.GetProperty("index").GetString(),
+    },
+    DecodeItem = context => new GeneratedContent[]
+    {
+        new GeneratedToolCall((string)context.Item["call_id"]!, (string)context.Item["name"]!, context.Item["query"]!.ToJsonString())
+        {
+            ProviderExecuted = true,
+        },
+        new GeneratedToolResult((string)context.Item["call_id"]!, (string)context.Item["name"]!, context.Item["result"]!.ToJsonString()),
+    },
+};
+
+var acme = OpenResponsesProvider.Create(new OpenResponsesOptions
+{
+    Name = "acme",
+    BaseUrl = "https://api.acme.example/v1",
+    Extensions = new[] { extension },
+});
+```
+
+Set `ProviderExecuted` on each decoded tool call or `ToolInputStartStreamPart`. It can vary by item or event. An extension can define:
+
+- `EncodeTool`: encodes a provider tool from `OpenResponsesToolContext` (`Name`, `Args`). Returning `null` omits the tool with an `unsupported` warning. A tool choice that selects the omitted tool is omitted too.
+- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the `type`.
+- `DecodeItem`: maps a completed item (`OpenResponsesDecodeItemContext.Item`, plus `Mode` of `Generate` or `Stream`) to content parts.
+- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a registered namespaced `type`.
+- `DecodeEvent`: maps a streaming event to stream parts. `OpenResponsesDecodeEventContext.State` lasts for one response stream.
+
+Tool, item, and event capabilities are independent. Capability fields must be provided in pairs.
+
+Each decoded item adds a `GeneratedCustom` part of kind `open-responses.extension-replay` (a `CustomStreamPart` when streaming). It stores the original item in provider metadata, and the other decoded parts reference it by `itemId`. Pass the result back with `AssistantModelMessage.FromGeneratedContent(result.Content)` to replay the original item once, opaque fields included. This also preserves items that decode only to source parts.
+
+The model validates only the extension discriminator fields. Validate the other item and event fields in the codec. The original item is stored in provider metadata and can appear in persisted messages, telemetry, logs, or UI payloads.
+
+Extension delegates cannot cross a workflow boundary. `OpenResponsesLanguageModel.Serialize()` throws a `SerializationError` when extensions are registered. Create the provider inside the workflow step.
 - Perplexity language generation posts to `{base}/v1/agent` (the Agent API). Preset ids are `fast`, `low`, `medium`, `high`, and `xhigh`. Any other id is sent as an Agent API model id. Legacy Sonar model ids are not aliased, and Sonar provider options are not translated. Embeddings stay on the OpenAI-compatible embeddings route. Sonar PDF input, video input, and image or video results have no Agent API equivalent.
 
 The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallOptions` accepts `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. Budget-based reasoning uses 95 percent of the output budget for `max`. Providers with a lower ceiling coerce `max` and return a `compatibility` warning:

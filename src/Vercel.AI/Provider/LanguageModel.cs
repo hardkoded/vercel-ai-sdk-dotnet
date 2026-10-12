@@ -177,6 +177,9 @@ public class GeneratedText : GeneratedContent
     /// <see cref="GeneratedSource"/> parts.
     /// </summary>
     public IReadOnlyList<Citation>? Citations { get; }
+
+    /// <summary>Provider metadata for this text, keyed by provider name, such as an Open Responses <c>itemId</c>.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
 }
 
 /// <summary>A function tool call.</summary>
@@ -203,6 +206,9 @@ public class GeneratedToolCall : GeneratedContent
 
     /// <summary>Provider-specific metadata for this call, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
+    public bool ProviderExecuted { get; init; }
 }
 
 /// <summary>Reasoning text kept separate from the answer.</summary>
@@ -348,6 +354,30 @@ public sealed class GeneratedToolResult : GeneratedContent
 
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
+
+    /// <summary>Provider-specific metadata for this result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
+}
+
+/// <summary>
+/// A provider-specific content part, identified by <see cref="Kind"/>. It carries no data of its own; the provider keeps it in
+/// <see cref="ProviderMetadata"/>.
+/// </summary>
+public sealed class GeneratedCustom : GeneratedContent
+{
+    /// <summary>Creates a custom content part.</summary>
+    public GeneratedCustom(string kind, JsonElement? providerMetadata = null)
+        : base("custom")
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Provider-scoped kind, such as <c>open-responses.extension-replay</c>.</summary>
+    public string Kind { get; }
+
+    /// <summary>Provider metadata for this part, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A generated file.</summary>
@@ -449,8 +479,33 @@ public sealed class LanguageModelTool
         Strict = strict;
     }
 
+    private LanguageModelTool(string providerToolId, string name, JsonElement args)
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        ProviderToolId = providerToolId ?? throw new ArgumentNullException(nameof(providerToolId));
+        Args = args;
+    }
+
+    /// <summary>
+    /// Creates a provider-defined tool. Maps to <c>{ type: 'provider', id, name, args }</c>.
+    /// <paramref name="id"/> is <c>&lt;provider&gt;.&lt;tool&gt;</c>. <paramref name="args"/> must be a JSON object.
+    /// </summary>
+    public static LanguageModelTool ProviderDefined(string id, string name, JsonElement args)
+    {
+        return new LanguageModelTool(id, name, args);
+    }
+
     /// <summary>Tool name.</summary>
     public string Name { get; }
+
+    /// <summary>Provider-defined tool id, or null for a function tool.</summary>
+    public string? ProviderToolId { get; }
+
+    /// <summary>Whether this is a provider-defined tool rather than a function tool.</summary>
+    public bool IsProviderDefined => ProviderToolId != null;
+
+    /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
+    public JsonElement Args { get; }
 
     /// <summary>Tool description.</summary>
     public string? Description { get; }
@@ -636,6 +691,98 @@ public sealed class AssistantModelMessage : ModelMessage
         ReasoningProviderOptions = reasoningProviderOptions;
     }
 
+    /// <summary>
+    /// Creates an assistant message from ordered content parts. <see cref="Text"/>, <see cref="ToolCalls"/>, and
+    /// <see cref="Reasoning"/> are filled from the parts for providers that read the flat form.
+    /// </summary>
+    public AssistantModelMessage(IReadOnlyList<AssistantContentPart> parts)
+        : base("assistant")
+    {
+        Parts = parts ?? throw new ArgumentNullException(nameof(parts));
+        var text = new System.Text.StringBuilder();
+        var reasoning = new System.Text.StringBuilder();
+        var calls = new List<GeneratedToolCall>();
+        foreach (var part in parts)
+        {
+            if (part is AssistantTextPart textPart)
+            {
+                text.Append(textPart.Text);
+            }
+            else if (part is AssistantReasoningPart reasoningPart)
+            {
+                reasoning.Append(reasoningPart.Text);
+            }
+            else if (part is AssistantToolCallPart callPart)
+            {
+                calls.Add(new GeneratedToolCall(callPart.ToolCallId, callPart.ToolName, callPart.InputJson) { ProviderExecuted = callPart.ProviderExecuted });
+            }
+        }
+
+        Text = text.Length > 0 ? text.ToString() : null;
+        Reasoning = reasoning.Length > 0 ? reasoning.ToString() : null;
+        ToolCalls = calls;
+    }
+
+    /// <summary>
+    /// Creates an assistant message from generated content, keeping order and each part's provider metadata as its provider options.
+    /// This is how a generate result is replayed as history. Sources and files have no assistant part and are skipped.
+    /// </summary>
+    public static AssistantModelMessage FromGeneratedContent(IReadOnlyList<GeneratedContent> content)
+    {
+        if (content == null)
+        {
+            throw new ArgumentNullException(nameof(content));
+        }
+
+        var parts = new List<AssistantContentPart>();
+        foreach (var item in content)
+        {
+            switch (item)
+            {
+                case GeneratedText text:
+                    parts.Add(new AssistantTextPart(text.Text, MetadataToOptions(text.ProviderMetadata)));
+                    break;
+                case GeneratedReasoning reasoning:
+                    parts.Add(new AssistantReasoningPart(reasoning.Text, MetadataToOptions(reasoning.ProviderMetadata)));
+                    break;
+                case GeneratedToolCall call:
+                    parts.Add(new AssistantToolCallPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted, MetadataToOptions(call.ProviderMetadata)));
+                    break;
+                case GeneratedToolResult result:
+                    parts.Add(new AssistantToolResultPart(
+                        result.ToolCallId,
+                        result.ToolName,
+                        new ToolModelMessage(result.ToolCallId, result.ToolName, result.ResultJson, result.IsError),
+                        MetadataToOptions(result.ProviderMetadata)));
+                    break;
+                case GeneratedCustom custom:
+                    parts.Add(new AssistantCustomPart(custom.Kind, MetadataToOptions(custom.ProviderMetadata)));
+                    break;
+            }
+        }
+
+        return new AssistantModelMessage(parts);
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? MetadataToOptions(JsonElement? metadata)
+    {
+        if (metadata is not { ValueKind: JsonValueKind.Object } bag)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>();
+        foreach (var property in bag.EnumerateObject())
+        {
+            options[property.Name] = property.Value;
+        }
+
+        return options;
+    }
+
+    /// <summary>Ordered content parts, when the message was created from parts. Null for the flat form.</summary>
+    public IReadOnlyList<AssistantContentPart>? Parts { get; }
+
     /// <summary>Assistant text.</summary>
     public string? Text { get; }
 
@@ -647,6 +794,122 @@ public sealed class AssistantModelMessage : ModelMessage
 
     /// <summary>Provider options of the reasoning part, such as an OpenAI <c>itemId</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ReasoningProviderOptions { get; }
+}
+
+/// <summary>One part of an assistant message, in the order the model produced it.</summary>
+public abstract class AssistantContentPart
+{
+    /// <summary>Creates a part.</summary>
+    protected AssistantContentPart(string type, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        Type = type;
+        ProviderOptions = providerOptions;
+    }
+
+    /// <summary>Part type: <c>text</c>, <c>reasoning</c>, <c>tool-call</c>, <c>tool-result</c>, or <c>custom</c>.</summary>
+    public string Type { get; }
+
+    /// <summary>Provider options of this part, keyed by provider name.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
+}
+
+/// <summary>Assistant text.</summary>
+public sealed class AssistantTextPart : AssistantContentPart
+{
+    /// <summary>Creates a text part.</summary>
+    public AssistantTextPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("text", providerOptions)
+    {
+        Text = text ?? string.Empty;
+    }
+
+    /// <summary>Text.</summary>
+    public string Text { get; }
+}
+
+/// <summary>Assistant reasoning.</summary>
+public sealed class AssistantReasoningPart : AssistantContentPart
+{
+    /// <summary>Creates a reasoning part.</summary>
+    public AssistantReasoningPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("reasoning", providerOptions)
+    {
+        Text = text ?? string.Empty;
+    }
+
+    /// <summary>Reasoning text.</summary>
+    public string Text { get; }
+}
+
+/// <summary>A tool call in an assistant message.</summary>
+public sealed class AssistantToolCallPart : AssistantContentPart
+{
+    /// <summary>Creates a tool-call part.</summary>
+    public AssistantToolCallPart(
+        string toolCallId,
+        string toolName,
+        string inputJson,
+        bool providerExecuted = false,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("tool-call", providerOptions)
+    {
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+        ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
+        InputJson = inputJson ?? "{}";
+        ProviderExecuted = providerExecuted;
+    }
+
+    /// <summary>Tool call id.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>Input as JSON.</summary>
+    public string InputJson { get; }
+
+    /// <summary>True when the provider executed the tool.</summary>
+    public bool ProviderExecuted { get; }
+}
+
+/// <summary>A provider-executed tool result in an assistant message.</summary>
+public sealed class AssistantToolResultPart : AssistantContentPart
+{
+    /// <summary>Creates a tool-result part. <paramref name="output"/> carries the output type and value.</summary>
+    public AssistantToolResultPart(
+        string toolCallId,
+        string toolName,
+        ToolModelMessage output,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("tool-result", providerOptions)
+    {
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+        ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
+        Output = output ?? throw new ArgumentNullException(nameof(output));
+    }
+
+    /// <summary>Matching tool call id.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>The output, as a tool message with the same call id and name. Use its <see cref="ToolModelMessage.OutputType"/> and <see cref="ToolModelMessage.OutputJson"/>.</summary>
+    public ToolModelMessage Output { get; }
+}
+
+/// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
+public sealed class AssistantCustomPart : AssistantContentPart
+{
+    /// <summary>Creates a custom part.</summary>
+    public AssistantCustomPart(string kind, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("custom", providerOptions)
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+    }
+
+    /// <summary>Provider-scoped kind.</summary>
+    public string Kind { get; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
@@ -1051,6 +1314,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>Result value.</summary>
     public JsonElement Result { get; }
+
+    /// <summary>Provider metadata for this result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
 }
 
 /// <summary>A cited URL.</summary>

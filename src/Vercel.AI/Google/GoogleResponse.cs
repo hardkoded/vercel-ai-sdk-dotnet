@@ -402,7 +402,7 @@ public sealed class GoogleText : GeneratedText
     }
 
     /// <summary>Provider metadata, such as a thought signature.</summary>
-    public JsonElement? ProviderMetadata { get; }
+    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning text that can carry a thought signature.</summary>
@@ -426,7 +426,7 @@ public sealed class GoogleToolCall : GeneratedToolCall
     }
 
     /// <summary>True when Gemini executed the tool itself.</summary>
-    public bool ProviderExecuted { get; }
+    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A provider-executed tool result.</summary>

@@ -87,7 +87,7 @@ public sealed class OpenResponsesParityTests
             ToolType = "acme:search",
             ItemTypes = new[] { "acme:search_call" },
             EventTypes = eventTypes,
-            EncodeTool = _ => new object(),
+            EncodeTool = _ => new System.Text.Json.Nodes.JsonObject(),
             DecodeItem = _ => null,
             DecodeEvent = decodeEvent ? _ => null : null,
         };

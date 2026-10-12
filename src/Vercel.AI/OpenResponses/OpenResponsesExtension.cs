@@ -2,7 +2,89 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
+
 namespace Vercel.AI.OpenResponses;
+
+/// <summary>Input of <see cref="OpenResponsesExtension.EncodeTool"/> and <see cref="OpenResponsesExtension.EncodeToolChoice"/>.</summary>
+public sealed class OpenResponsesToolContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesToolContext(string name, JsonElement args)
+    {
+        Name = name;
+        Args = args;
+    }
+
+    /// <summary>Tool name.</summary>
+    public string Name { get; }
+
+    /// <summary>Provider-tool arguments, a JSON object.</summary>
+    public JsonElement Args { get; }
+}
+
+/// <summary>Whether an item is decoded from a generate response or from a stream.</summary>
+public enum OpenResponsesItemMode
+{
+    /// <summary>A <c>DoGenerateAsync</c> response.</summary>
+    Generate,
+
+    /// <summary>A <c>DoStreamAsync</c> stream.</summary>
+    Stream,
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.DecodeItem"/>.</summary>
+public sealed class OpenResponsesDecodeItemContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesDecodeItemContext(JsonObject item, OpenResponsesItemMode mode)
+    {
+        Item = item;
+        Mode = mode;
+    }
+
+    /// <summary>The completed item. It has a namespaced <c>type</c>, a string <c>id</c>, and a string <c>status</c>.</summary>
+    public JsonObject Item { get; }
+
+    /// <summary>Where the item came from.</summary>
+    public OpenResponsesItemMode Mode { get; }
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.EncodeInputItem"/>.</summary>
+public sealed class OpenResponsesEncodeInputItemContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesEncodeInputItemContext(AssistantContentPart part, LanguageModelTool tool)
+    {
+        Part = part;
+        Tool = tool;
+    }
+
+    /// <summary>The history part: an <see cref="AssistantToolCallPart"/> or an <see cref="AssistantToolResultPart"/>.</summary>
+    public AssistantContentPart Part { get; }
+
+    /// <summary>The provider-defined tool the part belongs to.</summary>
+    public LanguageModelTool Tool { get; }
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.DecodeEvent"/>.</summary>
+public sealed class OpenResponsesDecodeEventContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesDecodeEventContext(JsonObject @event, IDictionary<string, object?> state)
+    {
+        Event = @event;
+        State = state;
+    }
+
+    /// <summary>The event. It has a namespaced <c>type</c> and a numeric <c>sequence_number</c>.</summary>
+    public JsonObject Event { get; }
+
+    /// <summary>State that lasts for one response stream.</summary>
+    public IDictionary<string, object?> State { get; }
+}
 
 /// <summary>
 /// One Open Responses extension. Tool, item, and event capabilities are registered independently.
@@ -21,20 +103,20 @@ public sealed class OpenResponsesExtension
     /// <summary>Namespaced event types. Required together with <see cref="DecodeEvent"/>.</summary>
     public IReadOnlyList<string>? EventTypes { get; set; }
 
-    /// <summary>Encodes a provider tool. Present or absent together with <see cref="ToolType"/>.</summary>
-    public Func<object, object?>? EncodeTool { get; set; }
+    /// <summary>Encodes a provider tool. Return null when its arguments cannot be encoded. The model adds <see cref="ToolType"/> and omits a tool choice that selects the omitted tool. Present or absent together with <see cref="ToolType"/>.</summary>
+    public Func<OpenResponsesToolContext, JsonObject?>? EncodeTool { get; set; }
 
-    /// <summary>Encodes a tool choice. Requires a tool encoder.</summary>
-    public Func<object, object?>? EncodeToolChoice { get; set; }
+    /// <summary>Encodes a specific tool choice. The model adds <see cref="ToolType"/>. The default is an object holding only <see cref="ToolType"/>. Requires a tool encoder.</summary>
+    public Func<OpenResponsesToolContext, JsonObject?>? EncodeToolChoice { get; set; }
 
-    /// <summary>Decodes a completed item. Present or absent together with <see cref="ItemTypes"/>.</summary>
-    public Func<object, object?>? DecodeItem { get; set; }
+    /// <summary>Decodes a completed item into content parts. The model adds a <c>open-responses.extension-replay</c> custom part holding the original item. Present or absent together with <see cref="ItemTypes"/>.</summary>
+    public Func<OpenResponsesDecodeItemContext, IReadOnlyList<GeneratedContent>?>? DecodeItem { get; set; }
 
-    /// <summary>Encodes a history item. Requires an item decoder.</summary>
-    public Func<object, object?>? EncodeInputItem { get; set; }
+    /// <summary>Encodes a history part when no original wire item is available. Every returned item must use one of <see cref="ItemTypes"/>. Requires an item decoder.</summary>
+    public Func<OpenResponsesEncodeInputItemContext, IReadOnlyList<JsonObject>?>? EncodeInputItem { get; set; }
 
-    /// <summary>Decodes a streaming event. Present or absent together with <see cref="EventTypes"/>.</summary>
-    public Func<object, object?>? DecodeEvent { get; set; }
+    /// <summary>Decodes a streaming event into stream parts. Present or absent together with <see cref="EventTypes"/>.</summary>
+    public Func<OpenResponsesDecodeEventContext, IReadOnlyList<LanguageModelStreamPart>?>? DecodeEvent { get; set; }
 }
 
 /// <summary>Indexes extensions by id and by wire type.</summary>

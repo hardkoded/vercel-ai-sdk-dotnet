@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.OpenResponses;
+using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelTestSupport;
 
 namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 
@@ -16,6 +17,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     public async Task Should_send_a_provider_native_reasoning_effort()
     {
         var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\"}");
 
@@ -29,6 +31,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     public async Task Should_prefer_providerOptions_reasoning_effort_over_top_level_reasoning()
     {
         var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
         options.Reasoning = "low";
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\",\"reasoningSummary\":\"detailed\"}");
@@ -44,6 +47,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     public async Task Should_combine_top_level_reasoning_effort_with_providerOptions_summary()
     {
         var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
         var options = UpstreamChat.Prompt();
         options.Reasoning = "high";
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningSummary\":\"auto\"}");

@@ -18,7 +18,7 @@ public sealed class HuggingFaceText : GeneratedText
     }
 
     /// <summary>Provider metadata, such as <c>huggingface.itemId</c>.</summary>
-    public JsonElement? ProviderMetadata { get; }
+    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning text that carries the Responses output item id.</summary>
@@ -42,7 +42,7 @@ public sealed class HuggingFaceToolCall : GeneratedToolCall
     }
 
     /// <summary>True when Hugging Face executed the tool.</summary>
-    public bool ProviderExecuted { get; }
+    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A tool result returned in the response output.</summary>
