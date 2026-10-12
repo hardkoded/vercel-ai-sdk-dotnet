@@ -38,8 +38,10 @@ public sealed class AmazonBedrockOptions
     /// <summary>Clock used for signing. Tests can pin this.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
 
-    /// <summary>Headers sent with every request. Call headers override them.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+    /// <summary>
+    /// Headers sent with every request. Call headers override them.
+    /// </summary>
+    public Dictionary<string, string?> Headers { get; set; } = new();
 }
 
 /// <summary>Amazon Bedrock Converse provider.</summary>
@@ -67,13 +69,13 @@ public sealed class AmazonBedrockProvider : ProviderBase
     public ProviderHttp Http { get; }
 
     /// <summary>
-    /// Adds the provider headers, then the call headers (which win), then the
+    /// Adds the provider headers, then the call headers (which win; a null call value drops the header), then the
     /// <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing.
     /// </summary>
-    public void AddHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? callHeaders)
+    public void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
     {
         var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in new[] { Options.Headers, callHeaders })
+        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>?[] { Options.Headers, callHeaders })
         {
             if (source == null)
             {
@@ -85,6 +87,10 @@ public sealed class AmazonBedrockProvider : ProviderBase
                 if (header.Value != null)
                 {
                     merged[header.Key] = header.Value;
+                }
+                else
+                {
+                    merged.Remove(header.Key);
                 }
             }
         }
@@ -114,6 +120,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
 
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId) => new AmazonBedrockEmbeddingModel(this, modelId);
+
+    /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockEmbeddingModel EmbeddingModel(string modelId, AmazonBedrockEmbeddingModelSettings? settings) => new AmazonBedrockEmbeddingModel(this, modelId, settings);
 
     internal Uri ConverseUri(string modelId)
     {

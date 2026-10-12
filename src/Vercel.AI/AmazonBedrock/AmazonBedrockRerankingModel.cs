@@ -125,7 +125,7 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
-        _provider.AddHeaders(request, call.Headers?.ToDictionary(h => h.Key, h => (string?)h.Value));
+        _provider.AddHeaders(request, call.Headers?.Select(header => new KeyValuePair<string, string?>(header.Key, header.Value)));
 
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");

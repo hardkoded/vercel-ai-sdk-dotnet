@@ -546,7 +546,7 @@ internal static class HeadersTestHelper
         {
             AccessKeyId = "test-access-key",
             SecretAccessKey = "test-secret",
-            Headers = providerHeaders,
+            Headers = (Dictionary<string, string?>)providerHeaders,
         }, handler);
         await provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoGenerateAsync(new LanguageModelCallOptions
         {
@@ -561,7 +561,7 @@ internal static class HeadersTestHelper
         {
             AccessKeyId = "test-access-key",
             SecretAccessKey = "test-secret",
-            Headers = providerHeaders,
+            Headers = (Dictionary<string, string?>)providerHeaders,
         }, handler);
         await foreach (var _ in provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoStreamAsync(new LanguageModelCallOptions
         {

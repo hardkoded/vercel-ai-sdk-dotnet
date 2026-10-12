@@ -12,7 +12,7 @@ namespace Vercel.AI.Operations;
 /// <summary>
 /// Normalizes decision state. Maps to <c>prepareDecisionState</c>.
 /// Public state is a string, a JSON object, or a list of parts. Each part is a dictionary with
-/// <c>type</c> <c>text</c> (<c>text</c>), <c>json</c> (<c>value</c>), or <c>file</c> (<c>mediaType</c>, <c>data</c>, optional <c>filename</c>).
+/// <c>type</c> <c>text</c> (<c>text</c>), <c>json</c> (<c>value</c>), or <c>file</c> (<c>mediaType</c>, <c>data</c>, optional <c>filename</c> and <c>providerOptions</c>).
 /// File <c>data</c> is a <see cref="FilePartInput"/>, <c>byte[]</c>, <see cref="Uri"/>, or string.
 /// </summary>
 public static class DecisionState
@@ -90,6 +90,11 @@ public static class DecisionState
         if (part.TryGetValue("filename", out var filename) && filename != null)
         {
             file["filename"] = filename;
+        }
+
+        if (part.TryGetValue("providerOptions", out var providerOptions) && providerOptions != null)
+        {
+            file["providerOptions"] = providerOptions;
         }
 
         return file;
