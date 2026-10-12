@@ -45,7 +45,7 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Partial, Note = WarningNote)]
+    [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Partial, Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_warn_when_reasoning_minimal_is_mapped_for_newer_Anthropic_models()
     {
         var (result, body) = await Generate(NewerAnthropicModelId, "minimal");
@@ -142,7 +142,7 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking", Coverage = UpstreamCoverage.Partial, Note = WarningNote)]
+    [UpstreamTest(Prefix + "should strip temperature, topP, topK for Anthropic models when reasoning enables thinking", Coverage = UpstreamCoverage.Partial, Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_strip_temperature_topP_topK_for_Anthropic_models_when_reasoning_enables_thinking()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions

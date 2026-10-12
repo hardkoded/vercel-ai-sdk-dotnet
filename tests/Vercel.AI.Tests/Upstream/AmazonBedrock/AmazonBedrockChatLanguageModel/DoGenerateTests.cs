@@ -452,7 +452,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::strips unsupported sampling settings for OpenAI model %s",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Strips_unsupported_sampling_settings_for_OpenAI_model(string crisModelId)
     {
         var (result, body) = await Run(crisModelId, OpenAiResponse, new LanguageModelCallOptions
@@ -478,7 +478,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::does not warn about clamping an unsupported OpenAI temperature",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Does_not_warn_about_clamping_an_unsupported_OpenAI_temperature()
     {
         var (result, body) = await Run("us.openai.gpt-5.6-luna", OpenAiResponse, new LanguageModelCallOptions
@@ -496,7 +496,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::keeps supported sampling settings for OpenAI gpt-oss models",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Keeps_supported_sampling_settings_for_OpenAI_gpt_oss_models()
     {
         var (result, body) = await Run("openai.gpt-oss-120b-1:0", OpenAiResponse, new LanguageModelCallOptions
@@ -519,7 +519,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should omit unsupported sampling parameters for %s",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_omit_unsupported_sampling_parameters_for(string samplingModelId)
     {
         var (result, body) = await Run(samplingModelId, "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"OK\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}", new LanguageModelCallOptions
@@ -549,7 +549,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature above 1 to 1 and add warning",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_clamp_temperature_above_1_to_1_and_add_warning()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
@@ -567,7 +567,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature below 0 to 0 and add warning",
         Coverage = UpstreamCoverage.Partial,
-        Note = WarningNote)]
+        Note = "Warnings are type plus message rather than feature plus details.")]
     public async Task Should_clamp_temperature_below_0_to_0_and_add_warning()
     {
         var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
@@ -605,7 +605,6 @@ public sealed class DoGenerateTests
         Assert.False(request.RootElement.TryGetProperty("additionalModelRequestFields", out _));
     }
 
-    internal const string WarningNote = "Warnings are type plus message rather than feature plus details.";
     private const string OpenAiResponse = "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
     internal const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
     internal const string NewerAnthropicModelId = "anthropic.claude-sonnet-4-6-v1";
