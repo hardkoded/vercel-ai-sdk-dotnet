@@ -212,6 +212,15 @@ public sealed class ProviderRegistry
         return Model(providerAndModel, "evaluationModel", (provider, modelId) => provider.EvaluationModel(modelId));
     }
 
+    /// <summary>
+    /// Resolves <c>provider:model</c> to a decision model. The provider must implement <see cref="Operations.IDecisionProvider"/>
+    /// or the deprecated <see cref="Operations.IEvaluationProvider"/>, or <see cref="NoSuchModelError"/> is thrown.
+    /// </summary>
+    public Operations.IDecisionCaller DecisionModel(string providerAndModel)
+    {
+        return Operations.DecisionModels.Validate(Model(providerAndModel, "decisionModel", Operations.DecisionModels.FromProvider));
+    }
+
     /// <summary>Returns the file store of the provider registered under <paramref name="providerId"/>.</summary>
     public IFileStore FileStore(string providerId)
     {
@@ -255,7 +264,7 @@ public sealed class ProviderRegistry
 /// A provider backed by caller-supplied models. Maps to <c>customProvider</c>. A model id that is not registered goes to
 /// <see cref="FallbackProvider"/>, or throws <see cref="NoSuchModelError"/> when there is none.
 /// </summary>
-public sealed class CustomProvider : ProviderBase
+public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
 {
     private readonly Dictionary<string, ILanguageModel> _language = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEmbeddingModel> _embedding = new(StringComparer.Ordinal);
@@ -265,6 +274,8 @@ public sealed class CustomProvider : ProviderBase
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEvaluationModel> _evaluation = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Operations.IDecisionCaller> _decision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Operations.IDecisionCaller> _legacyDecision = new(StringComparer.Ordinal);
 
     /// <summary>Creates a custom provider.</summary>
     public CustomProvider(string name = "custom")
@@ -351,6 +362,22 @@ public sealed class CustomProvider : ProviderBase
         return Add(_evaluation, modelId, model);
     }
 
+    /// <summary>Registers a decision model under <paramref name="modelId"/>. Maps to <c>decisionModels</c>.</summary>
+    public CustomProvider AddDecisionModel(string modelId, Operations.IDecisionCaller model)
+    {
+        return Add(_decision, modelId, model);
+    }
+
+    /// <summary>
+    /// Registers a deprecated decision model under <paramref name="modelId"/>. Maps to <c>evaluationModels</c>.
+    /// These models are ignored once any model is added with <see cref="AddDecisionModel"/>.
+    /// </summary>
+    [Obsolete("Use AddDecisionModel instead.")]
+    public CustomProvider AddEvaluationModel(string modelId, Operations.IEvaluationCaller model)
+    {
+        return Add(_legacyDecision, modelId, Operations.DecisionCaller.FromLegacy(model));
+    }
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
@@ -397,6 +424,16 @@ public sealed class CustomProvider : ProviderBase
     public override IEvaluationModel EvaluationModel(string modelId)
     {
         return Find(_evaluation, modelId, "evaluationModel", fallback => fallback.EvaluationModel(modelId));
+    }
+
+    /// <summary>
+    /// Returns the decision model registered under <paramref name="modelId"/>, or asks <see cref="FallbackProvider"/>
+    /// when it implements <see cref="Operations.IDecisionProvider"/> or the deprecated <see cref="Operations.IEvaluationProvider"/>.
+    /// </summary>
+    public Operations.IDecisionCaller DecisionModel(string modelId)
+    {
+        var models = _decision.Count > 0 ? _decision : _legacyDecision;
+        return Operations.DecisionModels.Validate(Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId)));
     }
 
     /// <inheritdoc />
