@@ -2,12 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
-using Vercel.AI.Util;
 
 namespace Vercel.AI.OpenResponses;
 
@@ -22,6 +19,12 @@ public sealed class OpenResponsesOptions
 
     /// <summary>Environment variable.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "AI_GATEWAY_API_KEY";
+
+    /// <summary>
+    /// Whether to serialize assistant history using the strict OpenAI Responses input schemas. Assistant messages without an
+    /// item id are sent as easy input messages, and messages with an item id are sent as complete output items.
+    /// </summary>
+    public bool StrictResponseInput { get; set; }
 }
 
 /// <summary>Open Responses provider.</summary>
@@ -53,134 +56,6 @@ public sealed class OpenResponsesProvider : ProviderBase
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId) => new OpenResponsesLanguageModel(this, modelId);
-}
-
-/// <summary>Posts to <c>/responses</c>.</summary>
-public sealed class OpenResponsesLanguageModel : ILanguageModel
-{
-    private readonly OpenResponsesProvider _provider;
-
-    /// <summary>Creates a model.</summary>
-    public OpenResponsesLanguageModel(OpenResponsesProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string SpecificationVersion => "V4";
-
-    /// <inheritdoc />
-    public string Provider => OpenResponsesProvider.ProviderName;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    private static readonly Dictionary<string, string> ReasoningEffortMap = new Dictionary<string, string>
-    {
-        { "minimal", "low" },
-        { "low", "low" },
-        { "medium", "medium" },
-        { "high", "high" },
-        { "xhigh", "xhigh" },
-        { "max", "max" },
-    };
-
-    /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        var input = new JsonArray();
-        foreach (var message in options.Prompt)
-        {
-            if (message is UserModelMessage user)
-            {
-                var text = string.Empty;
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text += textPart.Text;
-                    }
-                }
-
-                input.Add(new JsonObject { ["role"] = "user", ["content"] = text });
-            }
-            else if (message is SystemModelMessage system)
-            {
-                input.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
-            }
-        }
-
-        var warnings = new List<CallWarning>();
-        string? providerEffort = null;
-        string? providerSummary = null;
-        if (options.ProviderOptions != null
-            && options.ProviderOptions.TryGetValue(OpenResponsesProvider.ProviderName, out var configured)
-            && configured.ValueKind == JsonValueKind.Object)
-        {
-            if (configured.TryGetProperty("reasoningEffort", out var effortValue) && effortValue.ValueKind == JsonValueKind.String)
-            {
-                providerEffort = effortValue.GetString();
-            }
-
-            if (configured.TryGetProperty("reasoningSummary", out var summaryValue) && summaryValue.ValueKind == JsonValueKind.String)
-            {
-                providerSummary = summaryValue.GetString();
-            }
-        }
-
-        var effort = providerEffort;
-        if (effort == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
-        {
-            if (options.Reasoning == "none")
-            {
-                effort = "none";
-            }
-            else
-            {
-                var mappingWarnings = new List<ModelWarning>();
-                effort = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, ReasoningEffortMap, mappingWarnings);
-                foreach (var warning in mappingWarnings)
-                {
-                    warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
-                }
-            }
-        }
-
-        var body = new JsonObject { ["model"] = ModelId, ["input"] = input };
-        if (effort != null || providerSummary != null)
-        {
-            var reasoning = new JsonObject();
-            if (effort != null)
-            {
-                reasoning["effort"] = effort;
-            }
-
-            if (providerSummary != null)
-            {
-                reasoning["summary"] = providerSummary;
-            }
-
-            body["reasoning"] = reasoning;
-        }
-
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),
-            body.ToJsonString(),
-            new Dictionary<string, string?> { ["Authorization"] = "Bearer " + ApiKeys.Require(_provider.Options.ApiKey, _provider.Options.ApiKeyEnvironmentVariable) },
-            cancellationToken).ConfigureAwait(false);
-        var outputText = document.RootElement.TryGetProperty("output_text", out var output) ? output.GetString() ?? string.Empty : string.Empty;
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(outputText) }, FinishReason.Stop, LanguageModelUsage.Empty, warnings: warnings);
-    }
-
-    /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        yield return new TextDeltaStreamPart("text", result.Text);
-        yield return new FinishStreamPart(result.FinishReason, result.Usage);
-    }
 }
 
 /// <summary>Registers Open Responses.</summary>

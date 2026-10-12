@@ -402,7 +402,7 @@ public sealed class GoogleText : GeneratedText
     }
 
     /// <summary>Provider metadata, such as a thought signature.</summary>
-    public JsonElement? ProviderMetadata { get; }
+    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning text that can carry a thought signature.</summary>

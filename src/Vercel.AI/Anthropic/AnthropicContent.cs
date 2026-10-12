@@ -18,7 +18,7 @@ public sealed class AnthropicText : GeneratedText
     }
 
     /// <summary>Provider metadata, when the block has citations or a compaction marker.</summary>
-    public JsonElement? ProviderMetadata { get; }
+    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning content with a thinking signature or redacted payload.</summary>
