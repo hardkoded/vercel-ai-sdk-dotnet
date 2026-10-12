@@ -164,6 +164,27 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             body["reasoning"] = reasoning;
         }
 
+        if (options.JsonSchema is { } responseSchema && responseSchema.ValueKind != JsonValueKind.Undefined && responseSchema.ValueKind != JsonValueKind.Null)
+        {
+            var format = new JsonObject
+            {
+                ["type"] = "json_schema",
+                ["name"] = options.JsonSchemaName ?? "response",
+            };
+            if (options.JsonSchemaDescription != null)
+            {
+                format["description"] = options.JsonSchemaDescription;
+            }
+
+            format["schema"] = JsonNode.Parse(responseSchema.GetRawText());
+            format["strict"] = true;
+            body["text"] = new JsonObject { ["format"] = format };
+        }
+        else if (options.JsonResponse)
+        {
+            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+        }
+
         using var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, "responses"),

@@ -574,7 +574,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private void AddResponseFormat(JsonObject body, LanguageModelCallOptions options, ChatSettings settings, List<CallWarning> warnings)
     {
-        var wantsJson = string.Equals(settings.ResponseFormat, "json", StringComparison.OrdinalIgnoreCase);
+        var wantsJson = options.JsonResponse || string.Equals(settings.ResponseFormat, "json", StringComparison.OrdinalIgnoreCase);
         var hasSchema = options.JsonSchema is { } schema && schema.ValueKind != JsonValueKind.Undefined && schema.ValueKind != JsonValueKind.Null;
         if (!wantsJson && !hasSchema)
         {

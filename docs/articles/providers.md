@@ -26,6 +26,8 @@ Native wire protocols have their own request mappers:
 - OpenResponses posts to `{base}/responses`. The default base is the Gateway Open Responses route.
 - Perplexity language generation posts to `{base}/v1/agent` (the Agent API). Preset ids are `fast`, `low`, `medium`, `high`, and `xhigh`. Any other id is sent as an Agent API model id. Legacy Sonar model ids are not aliased, and Sonar provider options are not translated. Embeddings stay on the OpenAI-compatible embeddings route. Sonar PDF input, video input, and image or video results have no Agent API equivalent.
 
+Set `LanguageModelCallOptions.JsonResponse` to ask for JSON without a schema (upstream `responseFormat: { type: 'json' }`). OpenAI, OpenAI-compatible, and Open Responses providers send `json_object`, and the Gateway sends `json`. `JsonSchema` wins when both are set.
+
 The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallOptions` accepts `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. Budget-based reasoning uses 95 percent of the output budget for `max`. Providers with a lower ceiling coerce `max` and return a `compatibility` warning:
 
 - Anthropic, DeepSeek, Moonshot, and OpenAI models that list `max` send it unchanged, with no warning.
