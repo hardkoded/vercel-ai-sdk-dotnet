@@ -58,6 +58,7 @@ public sealed class GroqProvider : OpenAICompatibleProvider
             options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
         }
         options.SupportsStructuredOutputs = true;
+        options.UsesJsonResponseToolWithTools = true;
         options.TransformRequestBody = OpenAICompatibleTransforms.Groq;
         return options;
     }

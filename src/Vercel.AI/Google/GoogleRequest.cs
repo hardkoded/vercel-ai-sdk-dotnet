@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Google;
 
@@ -13,12 +14,13 @@ namespace Vercel.AI.Google;
 public sealed class GooglePreparedRequest
 {
     /// <summary>Creates a prepared request.</summary>
-    public GooglePreparedRequest(JsonObject body, IReadOnlyList<GoogleWarning> warnings, IReadOnlyDictionary<string, string?> extraHeaders, GoogleToolPreparation tools)
+    public GooglePreparedRequest(JsonObject body, IReadOnlyList<GoogleWarning> warnings, IReadOnlyDictionary<string, string?> extraHeaders, GoogleToolPreparation tools, string? jsonResponseToolName = null)
     {
         Body = body;
         Warnings = warnings;
         ExtraHeaders = extraHeaders;
         Tools = tools;
+        JsonResponseToolName = jsonResponseToolName;
     }
 
     /// <summary>Request JSON.</summary>
@@ -32,6 +34,9 @@ public sealed class GooglePreparedRequest
 
     /// <summary>Prepared tools, including built-in name mapping.</summary>
     public GoogleToolPreparation Tools { get; }
+
+    /// <summary>Name of the internal tool that carries structured output, or null when the request uses native JSON formatting.</summary>
+    public string? JsonResponseToolName { get; }
 }
 
 /// <summary>Builds a Gemini <c>generateContent</c> body.</summary>
@@ -44,6 +49,8 @@ public static class GoogleRequest
         "HARM_CATEGORY_HARASSMENT",
         "HARM_CATEGORY_SEXUALLY_EXPLICIT",
     };
+
+    private static readonly Regex GeminiModel = new(@"(^|/)gemini-", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     private static readonly Regex Gemini25 = new(@"(^|/)gemini-2\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
@@ -116,7 +123,16 @@ public static class GoogleRequest
         var prompt = GoogleMessages.Convert(options.Prompt, messageOptions);
         warnings.AddRange(messageOptions.Warnings);
 
-        var tools = GoogleTools.Prepare(options.Tools, providerTools, options.ToolChoice, modelId ?? string.Empty, vertex);
+        var responseTool = JsonResponseToolFor(modelId ?? string.Empty, options);
+        var callTools = options.Tools;
+        var toolChoice = options.ToolChoice;
+        if (responseTool != null)
+        {
+            callTools = options.Tools!.Concat(new[] { responseTool }).ToList();
+            toolChoice = JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name);
+        }
+
+        var tools = GoogleTools.Prepare(callTools, providerTools, toolChoice, modelId ?? string.Empty, vertex);
         warnings.AddRange(tools.Warnings);
 
         JsonObject? thinking;
@@ -154,7 +170,7 @@ public static class GoogleRequest
         }
 
         GoogleJson.Set(config, "seed", options.Seed);
-        if (options.JsonSchema != null)
+        if (options.JsonSchema != null && responseTool == null)
         {
             config["responseMimeType"] = "application/json";
             var structured = google.ValueKind != JsonValueKind.Object || !google.TryGetProperty("structuredOutputs", out var flag) || flag.ValueKind != JsonValueKind.False;
@@ -230,7 +246,29 @@ public static class GoogleRequest
         }
 
         GoogleJson.Set(body, "serviceTier", vertex ? null : serviceTier);
-        return new GooglePreparedRequest(body, warnings, extra, tools);
+        return new GooglePreparedRequest(body, warnings, extra, tools, responseTool?.Name);
+    }
+
+    // Gemini before Gemini 3 rejects JSON response formatting together with function tools. Gemini 3 accepts the
+    // combination only with automatic tool choice. Forced tool choice needs a JSON response tool instead.
+    private static LanguageModelTool? JsonResponseToolFor(string modelId, LanguageModelCallOptions options)
+    {
+        if (options.JsonSchema is not { } schema
+            || schema.ValueKind == JsonValueKind.Undefined
+            || schema.ValueKind == JsonValueKind.Null
+            || options.Tools is not { Count: > 0 } tools
+            || !GeminiModel.IsMatch(modelId))
+        {
+            return null;
+        }
+
+        var forced = options.ToolChoice?.Type == "required" || options.ToolChoice is ToolChoice.NamedChoice;
+        if (GoogleModelCapability.Get(modelId).UsesGemini3Features && !forced)
+        {
+            return null;
+        }
+
+        return JsonResponseTools.CreateTool(tools, schema);
     }
 
     private static JsonObject? ImageConfig(JsonElement google, bool vertex, string provider, List<GoogleWarning> warnings)

@@ -929,6 +929,9 @@ public sealed class ToolCallStreamPart : LanguageModelStreamPart
 
     /// <summary>Provider metadata for this call.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
+    public bool ProviderExecuted { get; init; }
 }
 
 /// <summary>Marks the start of streamed tool input.</summary>
