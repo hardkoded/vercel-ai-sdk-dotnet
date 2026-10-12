@@ -14,41 +14,41 @@ public sealed class BatchResultDownloads
     public int? MaxLineBytes { get; set; }
 }
 
-/// <summary>Batch API that only downloads results. Start, status, cancel, and list are not implemented.</summary>
+/// <summary>Batch API that downloads results. Start, status, cancel, and list throw unless a provider overrides them.</summary>
 public abstract class BatchResultsApiBase : IBatchApi
 {
     /// <inheritdoc />
     public abstract string Provider { get; }
 
     /// <inheritdoc />
-    public bool CanCancel => false;
+    public virtual bool CanCancel => false;
 
     /// <inheritdoc />
-    public bool CanList => false;
+    public virtual bool CanList => false;
 
     /// <inheritdoc />
     public abstract Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
 
     /// <inheritdoc />
-    public Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch start");
     }
 
     /// <inheritdoc />
-    public Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch status");
     }
 
     /// <inheritdoc />
-    public Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch cancellation");
     }
 
     /// <inheritdoc />
-    public Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch listing");
     }

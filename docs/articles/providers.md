@@ -26,6 +26,7 @@ Native wire protocols have their own request mappers:
 - Cohere speaks chat, embed, and rerank.
 - OpenResponses posts to `{base}/responses`. The default base is the Gateway Open Responses route. `OpenResponsesOptions.Name` (default `open-responses`) is the key for provider options and provider metadata, and the model's provider id is `{Name}.responses`. System messages become `instructions`. Text and tool calls stream as they arrive, and reasoning streams from `reasoning_summary_text` and `reasoning_text` deltas. Reasoning, text, and tool-call parts carry their `itemId` in provider metadata (`GeneratedText.ProviderMetadata` and streamed `text-end` parts also carry `url_citation` annotations), and reasoning keeps its summary, content, and encrypted content. Each reasoning content part becomes its own `GeneratedReasoning`. `AssistantModelMessage.Parts` keeps the text, reasoning, and tool-call parts in order, each with its own provider options (`AssistantTextPart`, `AssistantReasoningPart`, `AssistantToolCallPart`), so a later turn replays the items in the original order with their ids and annotations. `GenerateText` builds these parts from the model output. `StrictResponseInput` serializes assistant history using the strict OpenAI Responses input schemas: assistant text without an item id is sent as an easy input message, and text with an item id as a complete output message.
 - OpenResponses warns and ignores `StopSequences`, `TopK`, and `Seed`. `OpenResponsesOptions.Headers` are sent with every request. It sends function tools. A provider-defined tool (`LanguageModelTool.ProviderDefined(id, name, args)`) is omitted with an `unsupported` warning (`provider-defined tool <id>`) unless an extension registers it. A `ToolChoice.Tool(name)` that selects an omitted provider tool is omitted too.
+- OpenResponses stream `response.failed` and `error` events become `ErrorStreamPart`s whose `Error` is a `ProviderStreamError` with the event type, the error `code` and `message`, and the whole event as `Data`. `OpenResponsesOptions.GetResponseErrorMetadata` reads optional `StatusCode` and `IsRetryable` values from a response `error` object, including endpoint-specific fields. It applies to generation failures and to streaming `response.failed` and `error` events. The standard Open Responses error fields are `code` and `message`, so endpoint-specific status fields need this callback. Without it, a generation failure has status 400. When only a status code is supplied, retryability comes from that status.
 
 ### OpenResponses extensions (experimental)
 
@@ -341,9 +342,21 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+### OpenAI batch
+
+Batch support is experimental and the API may change in patch releases.
+
+The OpenAI provider supports asynchronous text generation through the [Batch API](https://developers.openai.com/api/docs/guides/batch). Pass the provider to `Batch.StartBatchAsync`, `Batch.GetBatchStatusAsync`, `Batch.GetBatchResults`, `Batch.CancelBatchAsync`, and `Batch.ListBatchesAsync` for the complete workflow.
+
+- `DoStartAsync` uploads the requests as a `batch.jsonl` input file and creates a `/v1/responses` batch with a `24h` completion window. Each request body is the Responses request body for its model. OpenAI requires every request in a batch to be a text request for the same model. A different type throws `UnsupportedFunctionalityException` and a different model throws `InvalidArgumentException`, both before any upload. Only function tools are supported in batch requests for now.
+- `providerOptions.openai.inputFileExpiresAfter` sets the input file TTL in seconds, from 3600 (1 hour) to 2592000 (30 days). It defaults to 48 hours. The start result's `ProviderMetadata.openai` holds `inputFileId` and, when the upload reports one, `inputFileExpiresAt`.
+- The OpenAI Batch API does not support per-batch webhooks. When you set `WebhookUrl`, the start result has an `unsupported` warning and the batch starts without a webhook.
+- `Status` is `completed` for `completed`, `failed` for `failed`, `expired`, and `cancelled`, and `pending` for every other status. `RawStatus` holds the OpenAI status. `RequestCounts`, `CreatedAt`, `ExpiresAt`, and the first batch error (`ErrorMessage`, `ErrorCode`) come from the batch object. A batch error without a message reads `OpenAI batch failed.`
+- `DoListAsync` sends `Limit` as `limit` and `Cursor` as `after`. `NextCursor` is the page's `last_id` when `has_more` is true.
+
 ### OpenAI batch results
 
-`OpenAIBatchApi.DoGetResultsAsync` converts each row of the output and error files. A row that fails never stops the later rows.
+`OpenAIBatchApi.DoGetResultsAsync` reads the batch first and throws `InvalidArgumentException` while its status is `pending`. It then converts each row of the output and error files. A row that fails never stops the later rows.
 
 - A row with `error.code` `batch_cancelled` or `batch_expired` has status `cancelled` or `expired`. Any other row error has status `failed`.
 - A row with a non-2xx `status_code` fails with `ErrorMessage`, `ErrorType`, `ErrorCode`, and `ErrorStatusCode` from `response.body.error`. When the body has no error message, the message is `OpenAI batch request failed with status code <n>.`
@@ -367,7 +380,7 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 The binary and error handlers read at most `Download.DefaultMaxBytes`. A larger `Content-Length` throws a `DownloadError` ("exceeded maximum size") before the body is read, and the body is released.
 
-`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default).
+`ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 429, and 500 and above by default) and `ErrorData`, the provider error parsed from the response body (upstream `APICallError.data`). It is a `JsonElement` when `CreateJsonErrorResponseAsync` parsed the body, and `null` otherwise. It is not called `Data` because `Exception.Data` already exists.
 
 ## Embedding dimensions
 
@@ -413,3 +426,9 @@ Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its o
 `Decide.DecideAsync(DecideRequest)` is `experimental_decide`. It answers typed questions against one shared state. A decision model implements `IDecisionCaller.DoDecideAsync(DecisionModelCall)` and returns a `DecisionModelResult`. Operation ids are `ai.decide` and `ai.decide.doDecide`. Telemetry callbacks on `DecideTelemetry` are `OnDecideStart`, `OnDecideEnd`, `OnDecisionModelCallStart`, and `OnDecisionModelCallEnd`. Lifecycle events are `DecideEvent` and `DecisionModelEvent`. The refused-question and unsupported-type errors are `DecisionRefusalError`, `DecisionUnsupportedQuestionTypeError` (marker `vercel.ai.error.AI_DecisionUnsupportedQuestionTypeError`), and `DecisionUnsupportedQuestionTypeException`.
 
 The old names still compile and are marked `[Obsolete]`: `Evaluate.EvaluateAsync`, `EvaluateRequest`, `EvaluateResult`, `EvaluateEvent`, `EvaluateModelEvent`, `EvaluateTelemetry`, `IEvaluationCaller.DoEvaluateAsync`, `EvaluationQuestion`, `EvaluationAnswer`, `EvaluationRounding`, `EvaluationModelCall`, `EvaluationModelResult`, `EvaluationValues`, and the two `EvaluationUnsupportedQuestionType*` types. C# cannot make two names one type, so each alias derives from its decision type, and `Evaluate.EvaluateAsync` forwards to `Decide.DecideAsync`. A model that implements only `IEvaluationCaller` still runs through `Evaluate.EvaluateAsync`. To pass it to `Decide.DecideAsync`, wrap it with `DecisionCaller.FromLegacy(model)`. Both `Decide.DecideAsync` and `DecisionLanguageModel` throw the unsupported-type error as `EvaluationUnsupportedQuestionTypeException`, so a `catch` of the old or the new type matches, and `DecisionUnsupportedQuestionTypeError.IsInstance` recognizes it. Deprecated telemetry callbacks run once and receive the decision operation ids. When both a decision callback and its deprecated alias are set, only the decision callback runs. The rubric API (`AiClient.EvaluateAsync`, `IEvaluationModel`, `EvaluationResult`) is a different feature and keeps its names.
+
+#### Decision models in registries and custom providers
+
+A provider exposes decision models by implementing `IDecisionProvider.DecisionModel(id)`. `GatewayProvider` does. `ProviderRegistry.DecisionModel("providerId:modelId")` returns the decision model of a registered provider. Custom separators and colons inside the model id work as they do for other model types. Language model middleware does not wrap decision models. `CustomProvider.AddDecisionModel(alias, model)` registers an alias, and `CustomProvider.DecisionModel(alias)` returns it. An unknown alias goes to the fallback provider's decision factory when it has one. A provider without a decision factory, or one that returns null, throws `NoSuchModelError` with `ModelType` `decisionModel`. An unknown registry provider throws `NoSuchProviderError`. A model whose `SpecificationVersion` is not `v4` throws `UnsupportedModelVersionException`.
+
+The deprecated factory `IEvaluationProvider.EvaluationModel(id)` and the deprecated alias map `CustomProvider.AddEvaluationModel(alias, IEvaluationCaller)` still resolve through `DecisionModel`. A provider that implements both factories is asked through `IDecisionProvider` only. The deprecated alias map is ignored once any alias is added with `AddDecisionModel`. `ProviderRegistry.EvaluationModel` and `CustomProvider.EvaluationModel` return rubric models, so the deprecated `evaluationModel` accessors are not ported. String model ids for `Decide.DecideAsync` and a default provider are not ported either.

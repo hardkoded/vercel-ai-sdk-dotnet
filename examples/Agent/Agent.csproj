@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Runs an agent that calls a tool.</Description>
+  </PropertyGroup>
+</Project>

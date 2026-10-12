@@ -37,8 +37,24 @@ public sealed class OpenResponsesOptions
     /// <summary>Extra headers sent with every request.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; set; }
 
+    /// <summary>
+    /// Reads HTTP status and retry metadata from an endpoint-specific response <c>error</c> object.
+    /// Applies to both generation and streaming errors. Maps to <c>getResponseErrorMetadata</c>.
+    /// </summary>
+    public Func<JsonElement, OpenResponsesErrorMetadata?>? GetResponseErrorMetadata { get; set; }
+
     /// <summary>Codecs for Open Responses extension tools, items, and streaming events. Experimental.</summary>
     public IReadOnlyList<OpenResponsesExtension>? Extensions { get; set; }
+}
+
+/// <summary>Status and retry metadata read from an endpoint-specific response error.</summary>
+public sealed class OpenResponsesErrorMetadata
+{
+    /// <summary>HTTP status of the error.</summary>
+    public int? StatusCode { get; set; }
+
+    /// <summary>Whether the call can be retried.</summary>
+    public bool? IsRetryable { get; set; }
 }
 
 /// <summary>Open Responses provider.</summary>
@@ -159,7 +175,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     {
         var (body, warnings) = Prepare(options);
         body["stream"] = true;
-        var session = new OpenResponsesStream(_provider.Name, Registry);
+        var session = new OpenResponsesStream(_provider.Name, Registry, _provider.Options.GetResponseErrorMetadata);
         var enumerator = _provider.Http.SendSseAsync(RequestUri(), body.ToJsonString(), Headers(options), cancellationToken)
             .GetAsyncEnumerator(cancellationToken);
         try
@@ -427,12 +443,15 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     {
         if (OpenAIJson.Child(response, "error") is { } error)
         {
-            throw new ApiException(OpenAIJson.String(error, "message") ?? string.Empty, 400, http.Body)
+            var errorMetadata = _provider.Options.GetResponseErrorMetadata?.Invoke(error);
+            var statusCode = errorMetadata?.StatusCode ?? 400;
+            throw new ApiException(OpenAIJson.String(error, "message") ?? string.Empty, statusCode, http.Body)
             {
                 Url = uri.ToString(),
                 RequestBodyValues = body,
                 ResponseHeaders = http.Headers,
-                IsRetryable = false,
+                IsRetryable = errorMetadata?.IsRetryable ?? (statusCode == 408 || statusCode == 409 || statusCode == 429 || statusCode >= 500),
+                ErrorData = error.Clone(),
             };
         }
 

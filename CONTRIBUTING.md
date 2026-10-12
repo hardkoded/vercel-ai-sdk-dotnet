@@ -31,6 +31,15 @@ Provider tests should mock `HttpMessageHandler` and assert the request URL and a
 
 When the upstream commit in `COMPATIBILITY.md` moves, update that file and the provider notes in the same change.
 
-## Documentation examples
+## Examples
 
-Code in `docs/articles` comes from compiled projects. Put the code in `samples/Vercel.AI.Examples` between `#region name` and `#endregion`, then reference it in a markdown file with `<!-- snippet: name -->` and `<!-- endSnippet -->`. [MarkdownSnippets.MsBuild](https://github.com/SimonCropp/MarkdownSnippets) rewrites the markdown on build, so the examples cannot drift from the API.
+Every code block in `README.md` comes from a runnable project in `examples/`. Do not type code into the README by hand. Use the same way for new code in `docs/articles`. Moving its older hand-written blocks is tracked in #250. [MarkdownSnippets.MsBuild](https://github.com/SimonCropp/MarkdownSnippets) rewrites the markdown when `examples/GenerateText` builds, so the code cannot drift from the API. CI fails when the committed markdown does not match the build output.
+
+To add an example:
+
+1. Create `examples/<Name>/<Name>.csproj` with `Microsoft.NET.Sdk` and a `Description`. `examples/Directory.Build.props` makes it a `net10.0` console app that references `Vercel.AI`.
+2. Write `Program.cs` with the C# file header. Call a real model when `AI_GATEWAY_API_KEY` (or the provider's key) is set. When the key is missing, print which variable to set and exit.
+3. Put the code to show between `#region name` and `#endregion`. Region names must be unique across the repository.
+4. Add the project to `Vercel.AI.slnx`.
+5. Reference the snippet in a markdown file with `<!-- snippet: name -->` and `<!-- endSnippet -->`.
+6. Run `dotnet build Vercel.AI.slnx` and commit the markdown it rewrites. Check that `dotnet run --project examples/<Name>` works.
