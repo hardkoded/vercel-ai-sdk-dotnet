@@ -219,43 +219,43 @@ internal static class OpenResponsesInput
                     break;
 
                 case AssistantTextPart text:
-                {
-                    var data = ProviderData(text.ProviderOptions, providerOptionsName);
-                    var itemId = GetString(data, "itemId");
-                    var annotations = ParseAnnotations(data?["annotations"]);
-                    if (assistantContent.Count > 0 && assistantMessageId != itemId)
                     {
-                        Flush();
-                    }
+                        var data = ProviderData(text.ProviderOptions, providerOptionsName);
+                        var itemId = GetString(data, "itemId");
+                        var annotations = ParseAnnotations(data?["annotations"]);
+                        if (assistantContent.Count > 0 && assistantMessageId != itemId)
+                        {
+                            Flush();
+                        }
 
-                    assistantMessageId = itemId;
-                    var output = new JsonObject { ["type"] = "output_text", ["text"] = text.Text };
-                    if (annotations != null)
-                    {
-                        output["annotations"] = annotations;
-                    }
+                        assistantMessageId = itemId;
+                        var output = new JsonObject { ["type"] = "output_text", ["text"] = text.Text };
+                        if (annotations != null)
+                        {
+                            output["annotations"] = annotations;
+                        }
 
-                    assistantContent.Add(output);
-                    break;
-                }
+                        assistantContent.Add(output);
+                        break;
+                    }
 
                 case AssistantToolCallPart toolCall:
-                {
-                    Flush();
-                    var itemId = GetString(ProviderData(toolCall.ProviderOptions, providerOptionsName), "itemId");
-                    var item = new JsonObject();
-                    item["type"] = "function_call";
-                    if (itemId != null)
                     {
-                        item["id"] = itemId;
-                    }
+                        Flush();
+                        var itemId = GetString(ProviderData(toolCall.ProviderOptions, providerOptionsName), "itemId");
+                        var item = new JsonObject();
+                        item["type"] = "function_call";
+                        if (itemId != null)
+                        {
+                            item["id"] = itemId;
+                        }
 
-                    item["call_id"] = toolCall.ToolCallId;
-                    item["name"] = toolCall.ToolName;
-                    item["arguments"] = toolCall.InputJson;
-                    input.Add(item);
-                    break;
-                }
+                        item["call_id"] = toolCall.ToolCallId;
+                        item["name"] = toolCall.ToolName;
+                        item["arguments"] = toolCall.InputJson;
+                        input.Add(item);
+                        break;
+                    }
             }
         }
 

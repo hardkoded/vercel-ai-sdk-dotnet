@@ -339,79 +339,79 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             switch (type)
             {
                 case "reasoning":
-                {
-                    var item = JsonNode.Parse(part.GetRawText())!.AsObject();
-                    var reasoningContent = item["content"] as JsonArray;
-                    if (reasoningContent != null && reasoningContent.Count > 0)
                     {
-                        foreach (var contentPart in reasoningContent)
+                        var item = JsonNode.Parse(part.GetRawText())!.AsObject();
+                        var reasoningContent = item["content"] as JsonArray;
+                        if (reasoningContent != null && reasoningContent.Count > 0)
                         {
-                            content.Add(new GeneratedReasoning(
-                                (string?)contentPart!["text"] ?? string.Empty,
-                                ReasoningMetadata(item, new JsonArray(contentPart.DeepClone()))));
-                        }
-                    }
-                    else
-                    {
-                        var summary = string.Concat(((item["summary"] as JsonArray) ?? new JsonArray()).Select(summaryPart => (string?)summaryPart!["text"]));
-                        content.Add(new GeneratedReasoning(summary, ReasoningMetadata(item, item["content"] == null ? null : item["content"]!.DeepClone().AsArray())));
-                    }
-
-                    break;
-                }
-
-                case "message":
-                {
-                    var itemId = Str(part, "id");
-                    if (part.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var contentPart in parts.EnumerateArray())
-                        {
-                            var annotations = OutputTextAnnotations(contentPart);
-                            var metadata = new JsonObject { ["itemId"] = itemId };
-                            if (annotations.Count > 0)
+                            foreach (var contentPart in reasoningContent)
                             {
-                                metadata["annotations"] = annotations;
+                                content.Add(new GeneratedReasoning(
+                                    (string?)contentPart!["text"] ?? string.Empty,
+                                    ReasoningMetadata(item, new JsonArray(contentPart.DeepClone()))));
                             }
-
-                            content.Add(new GeneratedText(Str(contentPart, "text") ?? string.Empty)
-                            {
-                                ProviderMetadata = Provider_(metadata),
-                            });
                         }
-                    }
+                        else
+                        {
+                            var summary = string.Concat(((item["summary"] as JsonArray) ?? new JsonArray()).Select(summaryPart => (string?)summaryPart!["text"]));
+                            content.Add(new GeneratedReasoning(summary, ReasoningMetadata(item, item["content"] == null ? null : item["content"]!.DeepClone().AsArray())));
+                        }
 
-                    break;
-                }
-
-                case "function_call":
-                {
-                    hasToolCalls = true;
-                    content.Add(new GeneratedToolCall(
-                        Str(part, "call_id") ?? string.Empty,
-                        Str(part, "name") ?? string.Empty,
-                        Str(part, "arguments") ?? string.Empty,
-                        Provider_(new JsonObject { ["itemId"] = Str(part, "id") })));
-                    break;
-                }
-
-                default:
-                {
-                    var item = JsonNode.Parse(part.GetRawText())!.AsObject();
-                    if (!OpenResponsesJson.IsExtensionItem(item))
-                    {
                         break;
                     }
 
-                    var decoded = DecodeExtensionItem(item, OpenResponsesItemMode.Generate);
-                    if (decoded != null)
+                case "message":
                     {
-                        content.AddRange(decoded);
-                        hasToolCalls |= decoded.Any(decodedPart => decodedPart is GeneratedToolCall);
+                        var itemId = Str(part, "id");
+                        if (part.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var contentPart in parts.EnumerateArray())
+                            {
+                                var annotations = OutputTextAnnotations(contentPart);
+                                var metadata = new JsonObject { ["itemId"] = itemId };
+                                if (annotations.Count > 0)
+                                {
+                                    metadata["annotations"] = annotations;
+                                }
+
+                                content.Add(new GeneratedText(Str(contentPart, "text") ?? string.Empty)
+                                {
+                                    ProviderMetadata = Provider_(metadata),
+                                });
+                            }
+                        }
+
+                        break;
                     }
 
-                    break;
-                }
+                case "function_call":
+                    {
+                        hasToolCalls = true;
+                        content.Add(new GeneratedToolCall(
+                            Str(part, "call_id") ?? string.Empty,
+                            Str(part, "name") ?? string.Empty,
+                            Str(part, "arguments") ?? string.Empty,
+                            Provider_(new JsonObject { ["itemId"] = Str(part, "id") })));
+                        break;
+                    }
+
+                default:
+                    {
+                        var item = JsonNode.Parse(part.GetRawText())!.AsObject();
+                        if (!OpenResponsesJson.IsExtensionItem(item))
+                        {
+                            break;
+                        }
+
+                        var decoded = DecodeExtensionItem(item, OpenResponsesItemMode.Generate);
+                        if (decoded != null)
+                        {
+                            content.AddRange(decoded);
+                            hasToolCalls |= decoded.Any(decodedPart => decodedPart is GeneratedToolCall);
+                        }
+
+                        break;
+                    }
             }
         }
 
