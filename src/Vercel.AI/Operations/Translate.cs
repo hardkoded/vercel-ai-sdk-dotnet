@@ -94,8 +94,11 @@ public static class SpeechTranslationModels
 /// <summary>Options for <see cref="StreamTranslate.Start"/>.</summary>
 public sealed class StreamTranslateRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Speech translation model. When set, <see cref="ModelId"/> is ignored.</summary>
+    public ISpeechTranslationCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="SpeechTranslationModels.Default"/>. Used when <see cref="Model"/> is null.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio stream.</summary>
     public AudioChunkStream? Audio { get; set; }
@@ -408,28 +411,28 @@ public static class StreamTranslate
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = Resolve(request.Model);
+        var model = Resolve(request.Model, request.ModelId);
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         return new StreamTranslateResult(model, request, token);
     }
 
-    private static ISpeechTranslationCaller Resolve(object? model)
+    private static ISpeechTranslationCaller Resolve(ISpeechTranslationCaller? model, string? modelId)
     {
-        if (model is string id)
+        if (model != null)
         {
-            return SpeechTranslationModels.Default?.Invoke(id) ?? throw new InvalidOperationException(MissingProviderMessage);
-        }
-
-        if (model is ISpeechTranslationCaller caller)
-        {
-            if (caller.SpecificationVersion != "v4")
+            if (model.SpecificationVersion != "v4")
             {
-                throw new UnsupportedModelVersionException(caller.SpecificationVersion, caller.Provider, caller.ModelId);
+                throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
             }
 
-            return caller;
+            return model;
         }
 
-        throw new InvalidArgumentException("model", model, "model is required");
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            throw new InvalidArgumentException("model", modelId, "model is required");
+        }
+
+        return SpeechTranslationModels.Default?.Invoke(modelId!) ?? throw new InvalidOperationException(MissingProviderMessage);
     }
 }

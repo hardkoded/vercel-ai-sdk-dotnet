@@ -208,8 +208,11 @@ public sealed class TranscribeResult
 /// <summary>Options for <see cref="Transcribe.TranscribeAsync"/>.</summary>
 public sealed class TranscribeRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Transcription model. When set, <see cref="ModelId"/> is ignored.</summary>
+    public ITranscriptionCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="TranscriptionModels.Default"/>. Used when <see cref="Model"/> is null.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio bytes.</summary>
     public byte[]? Audio { get; set; }
@@ -224,8 +227,11 @@ public sealed class TranscribeRequest : OperationRequest
 /// <summary>Options for <see cref="StreamTranscribe.Start"/>.</summary>
 public sealed class StreamTranscribeRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Transcription model. When set, <see cref="ModelId"/> is ignored.</summary>
+    public ITranscriptionCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="TranscriptionModels.Default"/>. Used when <see cref="Model"/> is null.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio stream.</summary>
     public AudioChunkStream? Audio { get; set; }
@@ -236,7 +242,7 @@ public sealed class StreamTranscribeRequest : OperationRequest
     /// <summary>Requests raw provider chunks.</summary>
     public bool? IncludeRawChunks { get; set; }
 
-    /// <summary>True when <see cref="Model"/> was a string id.</summary>
+    /// <summary>True when the model was resolved from <see cref="ModelId"/>.</summary>
     public bool ModelWasString { get; set; }
 }
 
@@ -536,7 +542,7 @@ public static class Transcribe
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = Resolve(request.Model);
+        var model = Resolve(request.Model, request.ModelId);
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
@@ -562,24 +568,24 @@ public static class Transcribe
         return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"));
     }
 
-    internal static ITranscriptionCaller Resolve(object? model)
+    internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)
     {
-        if (model is ITranscriptionCaller caller)
+        if (model != null)
         {
-            if (caller.SpecificationVersion != "v4" && caller.SpecificationVersion != "v3" && caller.SpecificationVersion != "v2")
+            if (model.SpecificationVersion != "v4" && model.SpecificationVersion != "v3" && model.SpecificationVersion != "v2")
             {
-                throw new UnsupportedModelVersionException(caller.SpecificationVersion, caller.Provider, caller.ModelId);
+                throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
             }
 
-            return caller;
+            return model;
         }
 
-        if (model is string id)
+        if (string.IsNullOrWhiteSpace(modelId))
         {
-            return TranscriptionModels.Default?.Invoke(id) ?? throw new InvalidOperationException("The default provider does not support transcription models.");
+            throw new InvalidArgumentException("model", modelId, "model is required");
         }
 
-        throw new InvalidArgumentException("model", model, "model is required");
+        return TranscriptionModels.Default?.Invoke(modelId!) ?? throw new InvalidOperationException("The default provider does not support transcription models.");
     }
 }
 
@@ -594,15 +600,17 @@ public static class StreamTranscribe
             throw new ArgumentNullException(nameof(request));
         }
 
-        ITranscriptionCaller model;
-        if (request.Model is string id)
+        var model = request.Model;
+        if (model == null)
         {
+            if (string.IsNullOrWhiteSpace(request.ModelId))
+            {
+                throw new InvalidArgumentException("model", request.ModelId, "model is required");
+            }
+
+            var id = request.ModelId!;
             request.ModelWasString = true;
             model = TranscriptionModels.Default?.Invoke(id) ?? throw StreamTranscribeResult.Unsupported(new MissingTranscriptionCaller(id), true);
-        }
-        else
-        {
-            model = request.Model as ITranscriptionCaller ?? throw new InvalidArgumentException("model", request.Model, "model is required");
         }
 
         if (!model.CanStream)
