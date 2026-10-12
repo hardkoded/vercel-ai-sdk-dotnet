@@ -86,7 +86,7 @@ public sealed class AnthropicMessageStartTests
     [Fact]
     public void ShouldIgnoreMessageStartAccountingPartsWhenReplayingAssistantContent()
     {
-        var result = AnthropicPrompt.Convert(
+        var result = AnthropicPrompt.ConvertJson(
             AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"custom\",\"kind\":\"anthropic.message_start\",\"providerOptions\":{\"anthropic\":{\"id\":\"msg_usage\",\"model\":\"claude-haiku-4-5\",\"usage\":{\"input_tokens\":13,\"output_tokens\":1}}}},{\"type\":\"text\",\"text\":\"Hi!\"}]}]"),
             sendReasoning: false);
 

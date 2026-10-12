@@ -37,8 +37,132 @@ public sealed class AnthropicPromptResult
 /// <summary>Converts SDK prompt messages into Anthropic message blocks.</summary>
 public static class AnthropicPrompt
 {
-    /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
+    /// <summary>Converts SDK prompt messages into Anthropic <c>system</c> and <c>messages</c>.</summary>
     public static AnthropicPromptResult Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        bool sendReasoning = true,
+        AnthropicCacheControlValidator? cacheControl = null,
+        IReadOnlyDictionary<string, string>? providerToolNames = null,
+        IReadOnlyDictionary<string, string>? toolsetNames = null)
+    {
+        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames);
+    }
+
+    internal static JsonElement ToJson(IReadOnlyList<ModelMessage> prompt)
+    {
+        var messages = new JsonArray();
+        foreach (var message in prompt)
+        {
+            if (message is SystemModelMessage system)
+            {
+                messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
+            }
+            else if (message is UserModelMessage user)
+            {
+                var parts = new JsonArray();
+                foreach (var part in user.Content)
+                {
+                    if (part is TextContentPart text)
+                    {
+                        parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+                    }
+                    else if (part is FileContentPart file)
+                    {
+                        var data = new JsonObject();
+                        if (!string.IsNullOrEmpty(file.Url))
+                        {
+                            data["type"] = "url";
+                            data["url"] = file.Url;
+                        }
+                        else if (file.Data != null)
+                        {
+                            data["type"] = "data";
+                            data["data"] = System.Convert.ToBase64String(file.Data);
+                        }
+
+                        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = data };
+                        AnthropicJson.Set(node, "filename", file.FileName);
+                        parts.Add(node);
+                    }
+                }
+
+                messages.Add(new JsonObject { ["role"] = "user", ["content"] = parts });
+            }
+            else if (message is AssistantModelMessage assistant)
+            {
+                var parts = new JsonArray();
+                if (!string.IsNullOrEmpty(assistant.Reasoning))
+                {
+                    parts.Add(new JsonObject { ["type"] = "reasoning", ["text"] = assistant.Reasoning });
+                }
+
+                if (!string.IsNullOrEmpty(assistant.Text))
+                {
+                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = assistant.Text });
+                }
+
+                foreach (var call in assistant.ToolCalls)
+                {
+                    JsonNode input;
+                    try
+                    {
+                        input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson) ?? new JsonObject();
+                    }
+                    catch (JsonException)
+                    {
+                        input = new JsonObject { ["rawInvalidInput"] = call.ArgumentsJson };
+                    }
+
+                    parts.Add(new JsonObject
+                    {
+                        ["type"] = "tool-call",
+                        ["toolCallId"] = call.ToolCallId,
+                        ["toolName"] = call.ToolName,
+                        ["input"] = input,
+                    });
+                }
+
+                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = parts });
+            }
+            else if (message is ToolModelMessage tool)
+            {
+                JsonNode value;
+                try
+                {
+                    value = JsonNode.Parse(tool.OutputJson) ?? JsonValue.Create(tool.OutputJson)!;
+                }
+                catch (JsonException)
+                {
+                    value = JsonValue.Create(tool.OutputJson)!;
+                }
+
+                messages.Add(new JsonObject
+                {
+                    ["role"] = "tool",
+                    ["content"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["type"] = "tool-result",
+                            ["toolName"] = tool.ToolName,
+                            ["toolCallId"] = tool.ToolCallId,
+                            ["output"] = new JsonObject
+                            {
+                                ["type"] = tool.IsError ? "error-json" : "json",
+                                ["value"] = value,
+                            },
+                        },
+                    },
+                });
+            }
+        }
+
+        using var document = JsonDocument.Parse(messages.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    /// <summary>Converts a prompt JSON array that uses the SDK message shape. Allows per-part provider options.</summary>
+    internal static AnthropicPromptResult ConvertJson(
         JsonElement prompt,
         bool sendReasoning = true,
         AnthropicCacheControlValidator? cacheControl = null,

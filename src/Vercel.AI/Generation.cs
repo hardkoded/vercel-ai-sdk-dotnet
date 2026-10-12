@@ -99,6 +99,11 @@ internal static class Generation
                     callOptions.ToolChoice = update.ToolChoice;
                 }
 
+                if (update?.ProviderOptions != null)
+                {
+                    callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update.ProviderOptions);
+                }
+
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
@@ -205,6 +210,11 @@ internal static class Generation
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
+                }
+
+                if (update?.ProviderOptions != null)
+                {
+                    callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update.ProviderOptions);
                 }
 
                 var text = new StringBuilder();
@@ -535,6 +545,52 @@ internal static class Generation
 
         using var document = JsonDocument.Parse(merged.ToJsonString());
         return document.RootElement.Clone();
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement> MergeProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? baseOptions,
+        IReadOnlyDictionary<string, JsonElement> overrides)
+    {
+        var merged = new Dictionary<string, JsonElement>();
+        if (baseOptions != null)
+        {
+            foreach (var pair in baseOptions)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+        }
+
+        foreach (var pair in overrides)
+        {
+            merged[pair.Key] = merged.TryGetValue(pair.Key, out var existing)
+                ? JsonSerializer.SerializeToElement(MergeNodes(JsonNode.Parse(existing.GetRawText()), JsonNode.Parse(pair.Value.GetRawText())))
+                : pair.Value;
+        }
+
+        return merged;
+    }
+
+    private static JsonNode? MergeNodes(JsonNode? baseNode, JsonNode? overrideNode)
+    {
+        if (baseNode is JsonObject left && overrideNode is JsonObject right)
+        {
+            var result = new JsonObject();
+            foreach (var pair in left)
+            {
+                result[pair.Key] = pair.Value?.DeepClone();
+            }
+
+            foreach (var pair in right)
+            {
+                result[pair.Key] = result.TryGetPropertyValue(pair.Key, out var current)
+                    ? MergeNodes(current, pair.Value)
+                    : pair.Value?.DeepClone();
+            }
+
+            return result;
+        }
+
+        return overrideNode?.DeepClone();
     }
 
     private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? metadata)

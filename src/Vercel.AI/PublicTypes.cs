@@ -421,6 +421,9 @@ public sealed class PrepareStepUpdate
 
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
+
+    /// <summary>Provider options for this step. They are deep-merged over the call's provider options.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>

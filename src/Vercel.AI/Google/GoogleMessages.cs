@@ -128,8 +128,8 @@ public sealed class GoogleFileUserPart : GoogleUserPart
     /// <summary>Inline text source.</summary>
     public string? Text { get; set; }
 
-    /// <summary>Provider reference object. The <c>google</c> property is the file URI.</summary>
-    public JsonElement? Reference { get; set; }
+    /// <summary>Provider reference, a map of provider name to file id. The <c>google</c> entry is the file URI.</summary>
+    public IReadOnlyDictionary<string, string>? Reference { get; set; }
 }
 
 /// <summary>An assistant turn.</summary>
@@ -227,8 +227,8 @@ public sealed class GoogleFileAssistantPart : GoogleAssistantPart
     /// <summary>Remote URL.</summary>
     public string? Url { get; set; }
 
-    /// <summary>Provider reference object.</summary>
-    public JsonElement? Reference { get; set; }
+    /// <summary>Provider reference, a map of provider name to file id. The <c>google</c> entry is the file URI.</summary>
+    public IReadOnlyDictionary<string, string>? Reference { get; set; }
 }
 
 /// <summary>A tool-result turn.</summary>
@@ -467,8 +467,8 @@ public static class GoogleMessages
                     }
                     else if (part is FileContentPart file)
                     {
-                        var kind = file.Data != null ? "data" : "url";
-                        parts.Add(new GoogleFileUserPart(file.MediaType, kind) { Data = file.Data, Url = file.Url });
+                        var kind = file.ProviderReference != null ? "reference" : file.Data != null ? "data" : "url";
+                        parts.Add(new GoogleFileUserPart(file.MediaType, kind) { Data = file.Data, Url = file.Url, Reference = file.ProviderReference });
                     }
                 }
 
@@ -967,16 +967,11 @@ public static class GoogleMessages
         return null;
     }
 
-    private static string ResolveReference(JsonElement? reference)
+    private static string ResolveReference(IReadOnlyDictionary<string, string>? reference)
     {
-        if (reference is { } element && element.ValueKind == JsonValueKind.Object && element.TryGetProperty("google", out var google) && google.ValueKind == JsonValueKind.String)
+        if (reference != null && reference.TryGetValue("google", out var google))
         {
-            return google.GetString() ?? string.Empty;
-        }
-
-        if (reference is { ValueKind: JsonValueKind.String })
-        {
-            return reference.Value.GetString() ?? string.Empty;
+            return google;
         }
 
         throw new InvalidOperationException("file parts with provider references require a google file URI");

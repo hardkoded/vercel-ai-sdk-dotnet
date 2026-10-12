@@ -11,20 +11,19 @@ namespace Vercel.AI.Anthropic;
 public static class AnthropicContainer
 {
     /// <summary>
-    /// Searches <paramref name="steps"/> from the end and returns provider options that set
-    /// <c>anthropic.container.id</c>. Returns null when no step has a container id.
+    /// Searches <paramref name="steps"/> from the end and returns a <see cref="PrepareStepUpdate"/> whose provider options set
+    /// <c>anthropic.container.id</c>. Returns null when no step has a container id. Return it from <c>PrepareStep</c>.
     /// </summary>
-    public static JsonObject? ForwardFromLastStep(JsonElement steps)
+    public static PrepareStepUpdate? ForwardFromLastStep(IReadOnlyList<StepResult> steps)
     {
-        if (steps.ValueKind != JsonValueKind.Array)
+        if (steps == null)
         {
             return null;
         }
 
-        for (var i = steps.GetArrayLength() - 1; i >= 0; i--)
+        for (var i = steps.Count - 1; i >= 0; i--)
         {
-            var step = steps[i];
-            if (!step.TryGetProperty("providerMetadata", out var metadata) || metadata.ValueKind != JsonValueKind.Object)
+            if (steps[i].ProviderMetadata is not { ValueKind: JsonValueKind.Object } metadata)
             {
                 continue;
             }
@@ -45,14 +44,12 @@ public static class AnthropicContainer
                 continue;
             }
 
-            return new JsonObject
+            var options = new JsonObject { ["container"] = new JsonObject { ["id"] = id } };
+            return new PrepareStepUpdate
             {
-                ["providerOptions"] = new JsonObject
+                ProviderOptions = new Dictionary<string, JsonElement>
                 {
-                    ["anthropic"] = new JsonObject
-                    {
-                        ["container"] = new JsonObject { ["id"] = id },
-                    },
+                    ["anthropic"] = JsonSerializer.SerializeToElement(options),
                 },
             };
         }

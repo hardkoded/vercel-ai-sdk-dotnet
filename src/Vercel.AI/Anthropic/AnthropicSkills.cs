@@ -30,7 +30,7 @@ public sealed class AnthropicSkillFile
 public sealed class AnthropicSkillUpload
 {
     /// <summary>Creates an upload result.</summary>
-    public AnthropicSkillUpload(string id, string? name, JsonElement providerReference)
+    public AnthropicSkillUpload(string id, string? name, IReadOnlyDictionary<string, string> providerReference)
     {
         Id = id;
         Name = name;
@@ -43,8 +43,8 @@ public sealed class AnthropicSkillUpload
     /// <summary>Skill name from the version metadata, when present.</summary>
     public string? Name { get; }
 
-    /// <summary><c>providerReference.anthropic</c> set to the skill id.</summary>
-    public JsonElement ProviderReference { get; }
+    /// <summary>Provider reference with <c>anthropic</c> set to the skill id.</summary>
+    public IReadOnlyDictionary<string, string> ProviderReference { get; }
 }
 
 /// <summary>Anthropic Skills API.</summary>
@@ -122,8 +122,7 @@ public sealed class AnthropicSkills
             name = AnthropicJson.String(versionDocument.RootElement, "name");
         }
 
-        using var reference = JsonDocument.Parse("{\"anthropic\":" + JsonSerializer.Serialize(id) + "}");
-        return new AnthropicSkillUpload(id, name, reference.RootElement.Clone());
+        return new AnthropicSkillUpload(id, name, new Dictionary<string, string> { ["anthropic"] = id });
     }
 
     private static Dictionary<string, string?> WithBeta(IReadOnlyDictionary<string, string?> headers)
