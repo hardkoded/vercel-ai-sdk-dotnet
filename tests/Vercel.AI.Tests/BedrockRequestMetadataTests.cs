@@ -40,6 +40,7 @@ public sealed class BedrockRequestMetadataTests
         Assert.Equal(1, fields.GetProperty("topK").GetInt32());
         Assert.Equal(1024, fields.GetProperty("thinking").GetProperty("budget_tokens").GetInt32());
         Assert.DoesNotContain("reasoningConfig", handler.Body);
+        Assert.False(fields.TryGetProperty("serviceTier", out _));
     }
 
     [Fact]

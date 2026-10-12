@@ -904,7 +904,7 @@ public sealed class DoStreamTests
         Assert.Equal(Start, Render(parts[0]));
         Assert.Equal(Meta, Render(parts[1]));
         var error = Assert.IsType<ErrorStreamPart>(parts[2]);
-        var providerError = Assert.IsType<Vercel.AI.Prompt.ProviderStreamError>(error.ProviderError);
+        var providerError = Assert.IsType<Vercel.AI.Prompt.ProviderStreamError>(error.Error);
         Assert.Null(providerError.Code);
         Assert.Equal(isRetryable, providerError.IsRetryable);
         Assert.Equal(message, providerError.Message);

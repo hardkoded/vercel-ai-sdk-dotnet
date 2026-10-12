@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.Prompt;
 
 namespace Vercel.AI.Provider;
 
@@ -1153,18 +1154,22 @@ public sealed class ErrorStreamPart : LanguageModelStreamPart
         Message = message ?? "Unknown provider error.";
     }
 
-    /// <summary>Creates an error part that carries a provider error with status and retry metadata.</summary>
-    public ErrorStreamPart(Vercel.AI.Prompt.ProviderStreamError error)
-        : this(error?.Message ?? "Unknown provider error.")
+    /// <summary>Creates an error part that carries the provider's structured error.</summary>
+    public ErrorStreamPart(ProviderStreamError error)
+        : base("error")
     {
-        ProviderError = error;
+        Error = error ?? throw new ArgumentNullException(nameof(error));
+        Message = error.Message;
     }
 
     /// <summary>Error message.</summary>
     public string Message { get; }
 
-    /// <summary>The provider error with status, retry, and raw data, when the provider reports one.</summary>
-    public Vercel.AI.Prompt.ProviderStreamError? ProviderError { get; }
+    /// <summary>
+    /// The provider's structured error (<c>type</c>, <c>code</c>, status, retry flag, and the original <c>data</c>).
+    /// Null when the provider reported only a message.
+    /// </summary>
+    public ProviderStreamError? Error { get; }
 }
 
 /// <summary>Marks the start of a stream and carries call warnings.</summary>

@@ -75,7 +75,7 @@ public sealed class AmazonBedrockChatLanguageModelDoStreamTests
         var parts = await Stream(handler, Options);
 
         var errorPart = Assert.IsType<ErrorStreamPart>(parts[^2]);
-        var error = Assert.IsType<ProviderStreamError>(errorPart.ProviderError);
+        var error = Assert.IsType<ProviderStreamError>(errorPart.Error);
         Assert.Equal(message, error.Message);
         Assert.Equal(exceptionType, error.Type);
         Assert.Equal(statusCode, error.StatusCode);
