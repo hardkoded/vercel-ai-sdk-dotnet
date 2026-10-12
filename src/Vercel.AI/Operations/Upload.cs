@@ -189,8 +189,11 @@ public sealed class UploadFileResult
 /// <summary>Options for <see cref="UploadFile.UploadFileAsync"/>.</summary>
 public sealed class UploadFileRequest
 {
-    /// <summary>Files API or a provider that exposes one.</summary>
-    public object? Api { get; set; }
+    /// <summary>Files API. Wins over <see cref="Provider"/> when both are set.</summary>
+    public IFileStore? Api { get; set; }
+
+    /// <summary>Provider that exposes a files API. Used when <see cref="Api"/> is null.</summary>
+    public IFileStoreProvider? Provider { get; set; }
 
     /// <summary>Tagged data, bytes, or a string shorthand.</summary>
     public object? Data { get; set; }
@@ -230,7 +233,7 @@ public static class UploadFile
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         try
         {
-            var store = Resolve(request.Api);
+            var store = Resolve(request.Api, request.Provider);
             var result = await store.UploadFileAsync(new UploadFileCall(data, mediaType, request.Filename, token, request.Headers, request.ProviderOptionsSpecified ? request.ProviderOptions : null), token).ConfigureAwait(false);
             return new UploadFileResult(result.ProviderReference, result.MediaType, result.Filename, result.ByteSize, result.CreatedAt, result.ExpiresAt, result.ProviderMetadata, result.Warnings);
         }
@@ -316,20 +319,12 @@ public static class UploadFile
         return true;
     }
 
-    private static IFileStore Resolve(object? api)
+    private static IFileStore Resolve(IFileStore? api, IFileStoreProvider? provider)
     {
-        if (api is IFileStore store)
+        var files = api ?? provider?.Files();
+        if (files != null)
         {
-            return store;
-        }
-
-        if (api is IFileStoreProvider provider)
-        {
-            var files = provider.Files();
-            if (files != null)
-            {
-                return files;
-            }
+            return files;
         }
 
         throw new InvalidOperationException("The provider does not support file uploads. Make sure it exposes a files() method.");
@@ -433,8 +428,11 @@ public interface ISkillStoreProvider
 /// <summary>Options for <see cref="UploadSkill.UploadSkillAsync"/>.</summary>
 public sealed class UploadSkillRequest
 {
-    /// <summary>Skills API or a provider that exposes one.</summary>
-    public object? Api { get; set; }
+    /// <summary>Skills API. Wins over <see cref="Provider"/> when both are set.</summary>
+    public ISkillStore? Api { get; set; }
+
+    /// <summary>Provider that exposes a skills API. Used when <see cref="Api"/> is null.</summary>
+    public ISkillStoreProvider? Provider { get; set; }
 
     /// <summary>Skill files.</summary>
     public IReadOnlyList<SkillFile> Files { get; set; } = Array.Empty<SkillFile>();
@@ -457,7 +455,7 @@ public static class UploadSkill
             throw new ArgumentNullException(nameof(request));
         }
 
-        var store = Resolve(request.Api);
+        var store = Resolve(request.Api, request.Provider);
         var files = new List<SkillFilePayload>();
         foreach (var file in request.Files)
         {
@@ -468,20 +466,12 @@ public static class UploadSkill
         return await store.UploadSkillAsync(new UploadSkillCall(files, request.DisplayTitle, request.ProviderOptions), cancellationToken).ConfigureAwait(false);
     }
 
-    private static ISkillStore Resolve(object? api)
+    private static ISkillStore Resolve(ISkillStore? api, ISkillStoreProvider? provider)
     {
-        if (api is ISkillStore store)
+        var skills = api ?? provider?.Skills();
+        if (skills != null)
         {
-            return store;
-        }
-
-        if (api is ISkillStoreProvider provider)
-        {
-            var skills = provider.Skills();
-            if (skills != null)
-            {
-                return skills;
-            }
+            return skills;
         }
 
         throw new InvalidOperationException("The provider does not support skills. Make sure it exposes a skills() method.");

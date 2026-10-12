@@ -102,8 +102,19 @@ public interface IEmbeddingCaller
 /// <summary>Start event for <c>embed</c> and <c>embedMany</c>.</summary>
 public sealed class EmbedStartEvent
 {
-    /// <summary>Creates a start event.</summary>
-    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
+    /// <summary>Creates a start event for <c>embed</c>.</summary>
+    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, string value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
+        : this(callId, operationId, runtimeContext, provider, modelId, value, null, maxRetries, headers, providerOptions, dimensions)
+    {
+    }
+
+    /// <summary>Creates a start event for <c>embedMany</c>.</summary>
+    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, IReadOnlyList<string> values, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
+        : this(callId, operationId, runtimeContext, provider, modelId, null, values, maxRetries, headers, providerOptions, dimensions)
+    {
+    }
+
+    private EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, string? value, IReadOnlyList<string>? values, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions)
     {
         CallId = callId;
         OperationId = operationId;
@@ -111,6 +122,7 @@ public sealed class EmbedStartEvent
         Provider = provider;
         ModelId = modelId;
         Value = value;
+        Values = values;
         Dimensions = dimensions;
         MaxRetries = maxRetries;
         Headers = headers;
@@ -132,8 +144,11 @@ public sealed class EmbedStartEvent
     /// <summary>Model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>A string for embed, or the value list for embedMany.</summary>
-    public object Value { get; }
+    /// <summary>The embedded value for <c>embed</c>. Null for <c>embedMany</c>.</summary>
+    public string? Value { get; }
+
+    /// <summary>The embedded values for <c>embedMany</c>. Null for <c>embed</c>.</summary>
+    public IReadOnlyList<string>? Values { get; }
 
     /// <summary>Requested output dimensions, when specified.</summary>
     public int? Dimensions { get; }
@@ -151,8 +166,19 @@ public sealed class EmbedStartEvent
 /// <summary>End event for <c>embed</c> and <c>embedMany</c>.</summary>
 public sealed class EmbedEndEvent
 {
-    /// <summary>Creates an end event.</summary>
-    public EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, object embedding, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, object? response)
+    /// <summary>Creates an end event for <c>embed</c>.</summary>
+    public EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, string value, double[] embedding, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse? response)
+        : this(callId, operationId, runtimeContext, provider, modelId, value, null, embedding, null, usage, warnings, providerMetadata, response, null)
+    {
+    }
+
+    /// <summary>Creates an end event for <c>embedMany</c>.</summary>
+    public EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, IReadOnlyList<string> values, IReadOnlyList<double[]> embeddings, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, IReadOnlyList<ProviderResponse?> responses)
+        : this(callId, operationId, runtimeContext, provider, modelId, null, values, null, embeddings, usage, warnings, providerMetadata, null, responses)
+    {
+    }
+
+    private EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, string? value, IReadOnlyList<string>? values, double[]? embedding, IReadOnlyList<double[]>? embeddings, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse? response, IReadOnlyList<ProviderResponse?>? responses)
     {
         CallId = callId;
         OperationId = operationId;
@@ -160,11 +186,14 @@ public sealed class EmbedEndEvent
         Provider = provider;
         ModelId = modelId;
         Value = value;
+        Values = values;
         Embedding = embedding;
+        Embeddings = embeddings;
         Usage = usage;
         Warnings = warnings;
         ProviderMetadata = providerMetadata;
         Response = response;
+        Responses = responses;
     }
 
     /// <summary>Correlates start and end.</summary>
@@ -182,11 +211,17 @@ public sealed class EmbedEndEvent
     /// <summary>Model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>Embedded value or values.</summary>
-    public object Value { get; }
+    /// <summary>The embedded value for <c>embed</c>. Null for <c>embedMany</c>.</summary>
+    public string? Value { get; }
 
-    /// <summary>One vector, or the vector list for embedMany.</summary>
-    public object Embedding { get; }
+    /// <summary>The embedded values for <c>embedMany</c>. Null for <c>embed</c>.</summary>
+    public IReadOnlyList<string>? Values { get; }
+
+    /// <summary>The vector for <c>embed</c>. Null for <c>embedMany</c>.</summary>
+    public double[]? Embedding { get; }
+
+    /// <summary>The vectors for <c>embedMany</c>. Null for <c>embed</c>.</summary>
+    public IReadOnlyList<double[]>? Embeddings { get; }
 
     /// <summary>Token usage.</summary>
     public OperationUsage Usage { get; }
@@ -197,8 +232,11 @@ public sealed class EmbedEndEvent
     /// <summary>Merged provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>One response for embed, or the response list for embedMany.</summary>
-    public object? Response { get; }
+    /// <summary>The model response for <c>embed</c>. Null for <c>embedMany</c>.</summary>
+    public ProviderResponse? Response { get; }
+
+    /// <summary>One model response per call for <c>embedMany</c>. Null for <c>embed</c>.</summary>
+    public IReadOnlyList<ProviderResponse?>? Responses { get; }
 }
 
 /// <summary>Telemetry callbacks for an embedding operation.</summary>
@@ -475,12 +513,18 @@ public static class Embed
 
     internal static EmbedStartEvent Filter(EmbedStartEvent source, EmbedTelemetry telemetry)
     {
-        return new EmbedStartEvent(source.CallId, source.OperationId, FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Value, source.MaxRetries, source.Headers, source.ProviderOptions, source.Dimensions);
+        var context = FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext);
+        return source.Values != null
+            ? new EmbedStartEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.Values, source.MaxRetries, source.Headers, source.ProviderOptions, source.Dimensions)
+            : new EmbedStartEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.Value!, source.MaxRetries, source.Headers, source.ProviderOptions, source.Dimensions);
     }
 
     internal static EmbedEndEvent Filter(EmbedEndEvent source, EmbedTelemetry telemetry)
     {
-        return new EmbedEndEvent(source.CallId, source.OperationId, FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext), source.Provider, source.ModelId, source.Value, source.Embedding, source.Usage, source.Warnings, source.ProviderMetadata, source.Response);
+        var context = FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext);
+        return source.Values != null
+            ? new EmbedEndEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.Values, source.Embeddings!, source.Usage, source.Warnings, source.ProviderMetadata, source.Responses!)
+            : new EmbedEndEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.Value!, source.Embedding!, source.Usage, source.Warnings, source.ProviderMetadata, source.Response);
     }
 
     internal static IReadOnlyDictionary<string, object?> FilterContext(IReadOnlyDictionary<string, object?> source, IReadOnlyDictionary<string, bool>? include)

@@ -54,7 +54,7 @@ public sealed class UploadAndSpeechTests
     public async Task Cancels_the_stream_when_the_provider_has_no_files_api()
     {
         var stream = new UploadStream();
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = new EmptyProvider(), Data = new UploadData("stream", stream) }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Provider = new EmptyProvider(), Data = new UploadData("stream", stream) }));
         Assert.Contains("files()", error.Message);
         Assert.Same(error, stream.CancelError);
     }
@@ -135,7 +135,7 @@ public sealed class UploadAndSpeechTests
     public async Task Resolves_the_files_api_from_the_provider()
     {
         var store = new RecordingFiles();
-        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = new FilesProvider(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Provider = new FilesProvider(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Equal("file-1", result.ProviderReference.Id);
     }
 
@@ -143,7 +143,7 @@ public sealed class UploadAndSpeechTests
     [UpstreamTest("packages/ai/src/upload-file/upload-file.test.ts::uploadFile::should throw when ProviderV4 has no files() method", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_the_provider_has_no_files_api()
     {
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = new EmptyProvider(), Data = new byte[] { 1 } }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Provider = new EmptyProvider(), Data = new byte[] { 1 } }));
         Assert.Equal("The provider does not support file uploads. Make sure it exposes a files() method.", error.Message);
     }
 
@@ -180,7 +180,7 @@ public sealed class UploadAndSpeechTests
     public async Task Resolves_the_skills_api_from_the_provider()
     {
         var store = new RecordingSkills();
-        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = new SkillsProvider(store), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) } });
+        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Provider = new SkillsProvider(store), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) } });
         Assert.Equal("skill-1", result.ProviderReference.Id);
     }
 
@@ -188,7 +188,7 @@ public sealed class UploadAndSpeechTests
     [UpstreamTest("packages/ai/src/upload-skill/upload-skill.test.ts::uploadSkill::should throw when ProviderV4 has no skills() method", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_the_provider_has_no_skills_api()
     {
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = new EmptyProvider(), Files = Array.Empty<SkillFile>() }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadSkill.UploadSkillAsync(new UploadSkillRequest { Provider = new EmptyProvider(), Files = Array.Empty<SkillFile>() }));
         Assert.Equal("The provider does not support skills. Make sure it exposes a skills() method.", error.Message);
     }
 

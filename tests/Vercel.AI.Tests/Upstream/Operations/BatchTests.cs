@@ -19,7 +19,7 @@ public sealed class BatchTests
     public async Task Requests_cancellation_and_returns_metadata()
     {
         var api = new BatchFake();
-        var result = await Batch.CancelBatchAsync(new BatchRequestOptions { Provider = api, Batch = new BatchReference(2, "batch-1", "test") });
+        var result = await Batch.CancelBatchAsync(new BatchRequestOptions { Api = api, Batch = new BatchReference(2, "batch-1", "test") });
         Assert.Equal("batch-1", api.Last!.BatchId);
         Assert.Equal("cancelling", result.Status);
         Assert.Equal("test", result.ProviderMetadata!.Value.GetProperty("provider").GetString());
@@ -29,7 +29,7 @@ public sealed class BatchTests
     [UpstreamTest(Prefix + "cancelBatch::throws when cancellation is unsupported", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_cancellation_is_unsupported()
     {
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.CancelBatchAsync(new BatchRequestOptions { Provider = new BatchFake { CanCancel = false }, Batch = new BatchReference(2, "batch-1", "test") }));
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.CancelBatchAsync(new BatchRequestOptions { Api = new BatchFake { CanCancel = false }, Batch = new BatchReference(2, "batch-1", "test") }));
         Assert.Equal("batch cancellation", error.Functionality);
         Assert.Equal("The provider does not support batch cancellation.", error.Message);
     }
@@ -39,7 +39,7 @@ public sealed class BatchTests
     public async Task Preserves_the_batch_api_as_the_receiver()
     {
         var api = new BatchFake();
-        await Batch.ListBatchesAsync(new BatchRequestOptions { Provider = api });
+        await Batch.ListBatchesAsync(new BatchRequestOptions { Api = api });
         Assert.Same(api, api.Last!.Receiver);
     }
 
@@ -48,7 +48,7 @@ public sealed class BatchTests
     public async Task Returns_normalized_batch_references()
     {
         var api = new BatchFake();
-        var page = await Batch.ListBatchesAsync(new BatchRequestOptions { Provider = api, Limit = 2, Cursor = "start" });
+        var page = await Batch.ListBatchesAsync(new BatchRequestOptions { Api = api, Limit = 2, Cursor = "start" });
         Assert.Equal((int?)2, api.Last!.Limit);
         Assert.Equal("start", api.Last.Cursor);
         Assert.Equal(2, page.Batches[0].Version);
@@ -62,7 +62,7 @@ public sealed class BatchTests
     [UpstreamTest(Prefix + "listBatches::throws when listing is unsupported", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_listing_is_unsupported()
     {
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.ListBatchesAsync(new BatchRequestOptions { Provider = new BatchFake { CanList = false } }));
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => Batch.ListBatchesAsync(new BatchRequestOptions { Api = new BatchFake { CanList = false } }));
         Assert.Equal("batch listing", error.Functionality);
         Assert.Equal("The provider does not support listing batches.", error.Message);
     }
@@ -72,7 +72,7 @@ public sealed class BatchTests
     public async Task Rejects_unsupported_request_types_before_starting()
     {
         var api = new BatchFake();
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, Requests = new[] { new BatchRequest("a", "audio", "model") } }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Api = api, Requests = new[] { new BatchRequest("a", "audio", "model") } }));
         Assert.Equal("requests", error.Parameter);
         Assert.Contains("Unsupported batch request type \"audio\".", error.Message);
         Assert.Null(api.Last);
@@ -84,7 +84,7 @@ public sealed class BatchTests
     {
         var api = new BatchFake();
         var request = new BatchRequest("image-1", "image", "image-model") { Prompt = "a cat", N = 2, Size = "1024x1024", AspectRatio = "1:1", Seed = 4 };
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, Requests = new[] { request } });
+        await Batch.StartBatchAsync(new BatchRequestOptions { Api = api, Requests = new[] { request } });
         var options = api.Last!.Requests![0].Options;
         Assert.Equal("image", api.Last.Requests[0].Type);
         Assert.Equal("a cat", options.GetProperty("prompt").GetString());
@@ -135,7 +135,7 @@ public sealed class BatchTests
             TopP = null,
             Seed = 3,
         };
-        var started = await Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, Requests = new[] { request }, Headers = new Dictionary<string, string> { ["X-Test"] = "1" } });
+        var started = await Batch.StartBatchAsync(new BatchRequestOptions { Api = api, Requests = new[] { request }, Headers = new Dictionary<string, string> { ["X-Test"] = "1" } });
         var options = api.Last!.Requests![0].Options;
         Assert.Equal("user", options.GetProperty("prompt")[0].GetProperty("role").GetString());
         Assert.Equal("Hello", options.GetProperty("prompt")[0].GetProperty("content")[0].GetProperty("text").GetString());
@@ -152,11 +152,11 @@ public sealed class BatchTests
     [UpstreamTest(Prefix + "startBatch::rejects empty and duplicate request IDs", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_empty_and_duplicate_request_ids()
     {
-        var empty = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = new BatchFake(), Requests = Array.Empty<BatchRequest>() }));
+        var empty = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Api = new BatchFake(), Requests = Array.Empty<BatchRequest>() }));
         Assert.Contains("requests must not be empty", empty.Message);
-        var blank = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = new BatchFake(), Requests = new[] { new BatchRequest("  ", "text", "model") } }));
+        var blank = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Api = new BatchFake(), Requests = new[] { new BatchRequest("  ", "text", "model") } }));
         Assert.Contains("request IDs must not be empty", blank.Message);
-        var duplicate = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = new BatchFake(), Requests = new[] { new BatchRequest("a", "text", "model"), new BatchRequest("a", "text", "model") } }));
+        var duplicate = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Api = new BatchFake(), Requests = new[] { new BatchRequest("a", "text", "model"), new BatchRequest("a", "text", "model") } }));
         Assert.Contains("duplicate ID \"a\"", duplicate.Message);
     }
 
@@ -173,7 +173,7 @@ public sealed class BatchTests
     public async Task Forwards_the_webhook_url()
     {
         var api = new BatchFake();
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, WebhookUrl = "https://example.com/hook", Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi" } } });
+        await Batch.StartBatchAsync(new BatchRequestOptions { Api = api, WebhookUrl = "https://example.com/hook", Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi" } } });
         Assert.Equal("https://example.com/hook", api.Last!.WebhookUrl);
     }
 
@@ -186,7 +186,7 @@ public sealed class BatchTests
         try
         {
             var api = new BatchFake { StartWarnings = new[] { new BatchRequestWarning("a", OperationWarning.Other("careful")) } };
-            await Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, Requests = new[] { new BatchRequest("a", "text", "language-model") { Prompt = "hi" } } });
+            await Batch.StartBatchAsync(new BatchRequestOptions { Api = api, Requests = new[] { new BatchRequest("a", "text", "language-model") { Prompt = "hi" } } });
             Assert.Equal("careful", seen[0].Warnings[0].Message);
             Assert.Equal("test", seen[0].Provider);
             Assert.Equal("language-model", seen[0].Model);
@@ -204,7 +204,7 @@ public sealed class BatchTests
         var executed = 0;
         var tool = new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "Forecast", (_, _) => { executed++; return Task.FromResult<object?>("nope"); });
         var api = new BatchFake();
-        await Batch.StartBatchAsync(new BatchRequestOptions { Provider = api, Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi", Tools = new[] { tool }, ToolChoice = "required" } } });
+        await Batch.StartBatchAsync(new BatchRequestOptions { Api = api, Requests = new[] { new BatchRequest("a", "text", "model") { Prompt = "hi", Tools = new[] { tool }, ToolChoice = "required" } } });
         var tools = api.Last!.Requests![0].Options.GetProperty("tools");
         Assert.Equal("function", tools[0].GetProperty("type").GetString());
         Assert.Equal("weather", tools[0].GetProperty("name").GetString());
@@ -219,7 +219,7 @@ public sealed class BatchTests
     {
         var first = new BatchRequest("a", "text", "model") { Prompt = "hi", Tools = new[] { new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "One") } };
         var second = new BatchRequest("b", "text", "model") { Prompt = "hi", Tools = new[] { new BatchTool("weather", OperationJson.Parse("{\"type\":\"object\"}"), "Two") } };
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Provider = new BatchFake(), Requests = new[] { first, second } }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.StartBatchAsync(new BatchRequestOptions { Api = new BatchFake(), Requests = new[] { first, second } }));
         Assert.Contains("tool \"weather\" must have the same definition in every batch request", error.Message);
     }
 
@@ -228,7 +228,7 @@ public sealed class BatchTests
     public async Task Returns_the_latest_status()
     {
         var api = new BatchFake();
-        var status = await Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = api, Batch = new BatchReference(2, "batch-1", "test") });
+        var status = await Batch.GetBatchStatusAsync(new BatchRequestOptions { Api = api, Batch = new BatchReference(2, "batch-1", "test") });
         Assert.Equal("batch-1", api.Last!.BatchId);
         Assert.Equal("in_progress", status.Status);
         Assert.Equal(3, status.RequestCounts!.Total);
@@ -239,7 +239,7 @@ public sealed class BatchTests
     [UpstreamTest(Prefix + "getBatchStatus::rejects an incompatible provider", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_an_incompatible_provider()
     {
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = new BatchFake(), Batch = new BatchReference(2, "batch-1", "other") }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Api = new BatchFake(), Batch = new BatchReference(2, "batch-1", "other") }));
         Assert.Contains("provider test is not compatible with batch provider other", error.Message);
     }
 
@@ -247,7 +247,7 @@ public sealed class BatchTests
     [UpstreamTest(Prefix + "getBatchStatus::rejects a version 1 batch reference", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_a_version_1_reference()
     {
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Provider = new BatchFake(), Batch = new BatchReference(1, "batch-1", "test") }));
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Batch.GetBatchStatusAsync(new BatchRequestOptions { Api = new BatchFake(), Batch = new BatchReference(1, "batch-1", "test") }));
         Assert.Contains("batch must be a supported batch reference", error.Message);
     }
 
@@ -256,7 +256,7 @@ public sealed class BatchTests
     public async Task Opens_results_eagerly_and_streams_them()
     {
         var api = new BatchFake();
-        var stream = Batch.GetBatchResults(new BatchRequestOptions { Provider = api, Batch = new BatchReference(2, "batch-1", "test") });
+        var stream = Batch.GetBatchResults(new BatchRequestOptions { Api = api, Batch = new BatchReference(2, "batch-1", "test") });
         await Task.Delay(30);
         Assert.Equal(1, api.ResultOpens);
         var results = await Read(stream);
@@ -275,7 +275,7 @@ public sealed class BatchTests
         var executed = 0;
         var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
         {
-            Provider = api,
+            Api = api,
             Batch = new BatchReference(2, "batch-1", "test"),
             Tools = new[] { new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) => { executed++; return Task.FromResult<object?>("local"); }) },
         }));
@@ -308,7 +308,7 @@ public sealed class BatchTests
                 Usage = new OperationUsage(4, 0, 4),
             },
         };
-        var results = await Read(Batch.GetBatchResults(new BatchRequestOptions { Provider = new BatchFake { Items = new[] { item } }, Batch = new BatchReference(2, "batch-1", "test") }));
+        var results = await Read(Batch.GetBatchResults(new BatchRequestOptions { Api = new BatchFake { Items = new[] { item } }, Batch = new BatchReference(2, "batch-1", "test") }));
         var image = results[0].Images![0];
         Assert.Equal("hello", Encoding.UTF8.GetString(image.Data));
         Assert.Equal("cat", image.ProviderMetadata!.Value.GetProperty("openai").GetProperty("revised").GetString());
@@ -322,7 +322,7 @@ public sealed class BatchTests
         var executed = 0;
         var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
         {
-            Provider = new BatchFake { Items = new[] { ToolItem(providerExecuted: false, includeResult: true) } },
+            Api = new BatchFake { Items = new[] { ToolItem(providerExecuted: false, includeResult: true) } },
             Batch = new BatchReference(2, "batch-1", "test"),
             Tools = new[] { new BatchTool("weather", OperationJson.Parse("{}"), execute: (_, _) => { executed++; return Task.FromResult<object?>("local"); }) },
         }));
@@ -338,7 +338,7 @@ public sealed class BatchTests
         {
             var results = await Read(Batch.GetBatchResults(new BatchRequestOptions
             {
-                Provider = new BatchFake { Items = new[] { FileItem(type) } },
+                Api = new BatchFake { Items = new[] { FileItem(type) } },
                 Batch = new BatchReference(2, "batch-1", "test"),
                 Download = (_, _) => Task.FromResult(new DownloadedMedia(Encoding.UTF8.GetBytes("Hello World"), "text/plain")),
             }));
@@ -360,7 +360,7 @@ public sealed class BatchTests
             CancellationToken seen = default;
             var stream = Batch.GetBatchResults(new BatchRequestOptions
             {
-                Provider = new BatchFake { Items = new[] { FileItem("file") } },
+                Api = new BatchFake { Items = new[] { FileItem("file") } },
                 Batch = new BatchReference(2, "batch-1", "test"),
                 CancellationToken = source.Token,
                 TimeoutMs = mode == "timeout" ? 80 : null,

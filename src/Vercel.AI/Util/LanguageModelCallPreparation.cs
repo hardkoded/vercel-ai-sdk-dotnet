@@ -31,8 +31,8 @@ public sealed class LanguageModelCallOptionsInput
     /// <summary>Stop sequences.</summary>
     public IReadOnlyList<string>? StopSequences { get; set; }
 
-    /// <summary>Provider reasoning options.</summary>
-    public object? Reasoning { get; set; }
+    /// <summary>Reasoning effort: <c>provider-default</c>, <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, or <c>max</c>.</summary>
+    public string? Reasoning { get; set; }
 }
 
 /// <summary>Validates language-model call options. <see cref="PrepareCallSettings"/> is the deprecated alias.</summary>
