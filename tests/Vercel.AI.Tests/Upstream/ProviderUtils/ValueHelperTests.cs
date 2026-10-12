@@ -755,7 +755,7 @@ public sealed class ValueHelperTests
 
     [Fact]
     [UpstreamTest(
-        "packages/provider-utils/src/get-runtime-environment-user-agent.test.ts::getRuntimeEnvironmentUserAgent::should return the correct user agent for browsers",
+        "packages/provider-utils/src/get-runtime-environment-user-agent.test.ts::getRuntimeEnvironmentUserAgent::should return the browser user agent",
         Coverage = UpstreamCoverage.Covered)]
     public void Runtime_user_agent_reports_a_browser()
     {
@@ -763,9 +763,6 @@ public sealed class ValueHelperTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/provider-utils/src/get-runtime-environment-user-agent.test.ts::getRuntimeEnvironmentUserAgent::should return the correct user agent for test",
-        Coverage = UpstreamCoverage.Covered)]
     public void Runtime_user_agent_reports_the_navigator_value()
     {
         Assert.Equal("runtime/test", ProviderValues.GetRuntimeEnvironmentUserAgent(new ProviderValues.RuntimeProbe { NavigatorUserAgent = "test" }));

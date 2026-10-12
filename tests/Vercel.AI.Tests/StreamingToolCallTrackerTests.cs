@@ -310,7 +310,7 @@ public sealed class StreamingToolCallTrackerTests
 
     [Fact]
     [UpstreamTest(
-        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep same-name calls with empty opening arguments distinct when continuations repeat their ids",
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep same-name calls with empty opening arguments distinct when continuations $description",
         Coverage = UpstreamCoverage.Covered)]
     public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_their_ids()
     {
@@ -326,9 +326,6 @@ public sealed class StreamingToolCallTrackerTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep same-name calls with empty opening arguments distinct when continuations omit their ids",
-        Coverage = UpstreamCoverage.Covered)]
     public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_omit_their_ids()
     {
         var tracker = new StreamingToolCallTracker();

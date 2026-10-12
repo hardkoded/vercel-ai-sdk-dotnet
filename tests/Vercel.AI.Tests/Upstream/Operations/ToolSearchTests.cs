@@ -197,7 +197,7 @@ public sealed class ToolSearchTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/tool-search/tool-search.test.ts::%s tool search::adds discovered definitions on the next step without injecting messages (early call: %s)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/tool-search/tool-search.test.ts::%s tool search::adds discovered definitions on the next step without injecting messages (early call: $callEarly, custom search: $customSearch)", Coverage = UpstreamCoverage.Covered)]
     public async Task Adds_discovered_definitions_on_the_next_step()
     {
         foreach (var mode in new[] { "generateText", "streamText", "agent.generate", "agent.stream" })
