@@ -185,6 +185,10 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
                 },
             };
         }
+        else if (options.JsonResponse)
+        {
+            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+        }
 
         var effort = ResolveReasoningEffort(xai.ReasoningEffort, options.Reasoning, warnings);
         if (effort != null)
