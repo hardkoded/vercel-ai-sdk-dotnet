@@ -12,13 +12,9 @@ public sealed class AnthropicText : GeneratedText
 {
     /// <summary>Creates text content.</summary>
     public AnthropicText(string text, JsonElement? providerMetadata, IReadOnlyList<Citation>? citations = null)
-        : base(text ?? string.Empty, citations)
+        : base(text ?? string.Empty, citations, providerMetadata)
     {
-        ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Provider metadata, when the block has citations or a compaction marker.</summary>
-    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning content with a thinking signature or redacted payload.</summary>

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Vercel.AI.Anthropic;
 
@@ -11,30 +10,22 @@ namespace Vercel.AI.Anthropic;
 public static class AnthropicContainer
 {
     /// <summary>
-    /// Searches <paramref name="steps"/> from the end and returns provider options that set
+    /// Searches <paramref name="steps"/> from the end and returns a <c>prepareStep</c> update whose provider options set
     /// <c>anthropic.container.id</c>. Returns null when no step has a container id.
+    /// Maps to <c>forwardAnthropicContainerIdFromLastStep</c>.
     /// </summary>
-    public static JsonObject? ForwardFromLastStep(JsonElement steps)
+    public static PrepareStepUpdate? ForwardFromLastStep(IReadOnlyList<StepResult> steps)
     {
-        if (steps.ValueKind != JsonValueKind.Array)
+        if (steps == null)
         {
-            return null;
+            throw new ArgumentNullException(nameof(steps));
         }
 
-        for (var i = steps.GetArrayLength() - 1; i >= 0; i--)
+        for (var i = steps.Count - 1; i >= 0; i--)
         {
-            var step = steps[i];
-            if (!step.TryGetProperty("providerMetadata", out var metadata) || metadata.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            if (!metadata.TryGetProperty("anthropic", out var anthropic) || anthropic.ValueKind != JsonValueKind.Object)
-            {
-                continue;
-            }
-
-            if (!anthropic.TryGetProperty("container", out var container) || container.ValueKind != JsonValueKind.Object)
+            if (steps[i].ProviderMetadata is not { ValueKind: JsonValueKind.Object } metadata
+                || !metadata.TryGetProperty("anthropic", out var anthropic) || anthropic.ValueKind != JsonValueKind.Object
+                || !anthropic.TryGetProperty("container", out var container) || container.ValueKind != JsonValueKind.Object)
             {
                 continue;
             }
@@ -45,15 +36,10 @@ public static class AnthropicContainer
                 continue;
             }
 
-            return new JsonObject
+            using var options = JsonDocument.Parse("{\"container\":{\"id\":" + JsonSerializer.Serialize(id) + "}}");
+            return new PrepareStepUpdate
             {
-                ["providerOptions"] = new JsonObject
-                {
-                    ["anthropic"] = new JsonObject
-                    {
-                        ["container"] = new JsonObject { ["id"] = id },
-                    },
-                },
+                ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = options.RootElement.Clone() },
             };
         }
 

@@ -309,6 +309,24 @@ var part = FileContentPart.FromProviderReference(
 
 The provider does not upload the file. Which media types are accepted depends on the destination model.
 
+Anthropic and Google read the same reference. Anthropic sends the `anthropic` entry as a Files API `file_id`. Google sends the `google` entry as the `fileUri`. `AnthropicSkills.UploadSkillAsync` returns its skill id as `ProviderReference["anthropic"]`.
+
+## Anthropic container forwarding
+
+Code execution runs in a container. To keep the same container across steps, return `AnthropicContainer.ForwardFromLastStep` from `PrepareStep`. It searches the steps from the end for `providerMetadata.anthropic.container.id` and returns an update whose `ProviderOptions` set `anthropic.container.id`. It returns null when no step has a container id.
+
+```csharp
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = anthropic.LanguageModel("claude-sonnet-4-5"),
+    StopWhen = StopWhen.IsStepCount(10),
+    Tools = tools,
+    PrepareStep = context => AnthropicContainer.ForwardFromLastStep(context.Steps),
+});
+```
+
+`PrepareStepUpdate.ProviderOptions` is deep-merged onto the call's provider options for that step.
+
 ## Decision state
 
 `DecideRequest.State` is a string, a JSON object, or a list of parts. A raw JSON array is not state. Wrap it in an object or in a `json` part. Each part is a dictionary: `{ type: "text", text }`, `{ type: "json", value }`, or `{ type: "file", mediaType, data, filename?, providerOptions? }`. `Decide.DecideAsync` normalizes the state with `DecisionState.PrepareDecisionStateAsync` before the model call. A string becomes one text part, an object becomes one json part, and a file part gets a full media type. A URL file is downloaded. A failed download throws `DownloadError` before any model call. `DecisionModelCall.State` and `DecisionModelEvent.State` hold the normalized parts. `DecideEvent.State` keeps the public value. `OpenAIDecisionModel` sends text and json parts as `input_text` and inline PNG, JPEG, WebP, or GIF files as `input_image`. It throws `UnsupportedFunctionalityException` for other files. `GatewayDecisionModel` keeps its legacy state format: one text part or one json object is sent as a string or object, and anything else as an array of values. It throws `UnsupportedFunctionalityException` for any file part.
