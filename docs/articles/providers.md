@@ -291,6 +291,27 @@ An image file part accepts the provider option `xai.imageDetail` (`low`, `high`,
 
 The xAI provider-defined tools (web search, X search, code execution, file search, image generation, view image, view X video, and MCP) are not mapped, because the port has no provider-defined tools. Stream error parts carry the message only, without the status code and retry flag that upstream adds. Tool results with image content are not sent.
 
+## QuiverAI reference images
+
+The SVG edit provider option `quiverai.referenceImages` takes up to four `{ "url" }` or `{ "base64" }` objects. URL references must use HTTP or HTTPS. Base64 references must decode to PNG, JPEG, WebP, GIF, or SVG data. Use `QuiverAIImageReference.Prepare` to convert binary, data URL, or URL inputs into this shape. It returns a `QuiverAIImageReference` with exactly one of `Url` and `Base64` set, and it serializes to the JSON shape above.
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.QuiverAI;
+
+var options = new JsonObject
+{
+    ["quiverai"] = new JsonObject
+    {
+        ["operation"] = "edit",
+        ["referenceImages"] = new JsonArray(
+            JsonSerializer.SerializeToNode(QuiverAIImageReference.Prepare(File.ReadAllBytes("blue-reference.png"))),
+            new JsonObject { ["url"] = "https://example.com/second-reference.png" }),
+    },
+};
+```
+
 ## Uploaded File References
 
 An OpenAI-compatible chat model accepts a file that you already uploaded to the provider. Build the part with a provider reference: a map from provider name to file id.
