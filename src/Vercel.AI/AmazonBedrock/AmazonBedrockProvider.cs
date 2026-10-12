@@ -37,6 +37,12 @@ public sealed class AmazonBedrockOptions
 
     /// <summary>Clock used for signing. Tests can pin this.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
+
+    /// <summary>
+    /// Headers sent with every embedding and reranking request. Call headers override them.
+    /// The Converse language model does not send them yet.
+    /// </summary>
+    public Dictionary<string, string> Headers { get; } = new();
 }
 
 /// <summary>Amazon Bedrock Converse provider.</summary>
@@ -79,6 +85,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId) => new AmazonBedrockEmbeddingModel(this, modelId);
 
+    /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockEmbeddingModel EmbeddingModel(string modelId, AmazonBedrockEmbeddingModelSettings? settings) => new AmazonBedrockEmbeddingModel(this, modelId, settings);
+
     internal Uri ConverseUri(string modelId)
     {
         if (!HostnameParts.IsValidHostnamePart(Options.Region))
@@ -87,6 +96,32 @@ public sealed class AmazonBedrockProvider : ProviderBase
         }
 
         return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
+    }
+
+    /// <summary>Adds the provider headers, then <paramref name="callHeaders"/>. A call header wins over a provider header with the same name, and a null call value drops it.</summary>
+    internal void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
+    {
+        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in Options.Headers)
+        {
+            merged[header.Key] = header.Value;
+        }
+
+        if (callHeaders != null)
+        {
+            foreach (var header in callHeaders)
+            {
+                merged[header.Key] = header.Value;
+            }
+        }
+
+        foreach (var header in merged)
+        {
+            if (header.Value != null)
+            {
+                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
     }
 }
 

@@ -336,7 +336,18 @@ A provider option for the same setting wins over `Dimensions`. When both are uns
 | Google Vertex (embedContent) | `googleVertex.outputDimensionality` | `embedContentConfig.outputDimensionality` |
 | Mistral | `mistral.outputDimension` | `output_dimension` |
 
-`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`.
+`AmazonBedrockProvider.EmbeddingModel` creates an `InvokeModel` embedding model for Titan, Cohere (up to 96 values per call), and Nova model ids. The `bedrock` options key is accepted as well as `amazonBedrock`. Cohere token usage comes from the `x-amzn-bedrock-input-token-count` response header. When the header is missing, `Tokens` is null.
+
+Application inference profile ARNs do not identify their underlying model. Pass the model family when you create the embedding model, so the provider can select the correct request format and batch size:
+
+```csharp
+var profileArn = "arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/qibm5eutlkcy";
+var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelSettings { ModelFamily = AmazonBedrockEmbeddingModelFamily.Cohere });
+```
+
+`AmazonBedrockOptions.Headers` are sent with every embedding and reranking request. `AmazonBedrockEmbeddingModel.Headers` are sent with the next call and override provider headers with the same name. Both are signed with the request.
+
+`OpenAICompatibleEmbeddingModel.LastResponseBody` holds the raw body of the most recent call, next to `LastResponseHeaders`.
 
 Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 
