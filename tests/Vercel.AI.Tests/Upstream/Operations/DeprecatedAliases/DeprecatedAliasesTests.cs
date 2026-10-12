@@ -55,9 +55,18 @@ public sealed class DeprecatedAliasesTests
         DecisionModels.DefaultProvider = legacy;
         try
         {
-            foreach (var model in new object[] { "model", registry.DecisionModel("legacy|model"), custom.DecisionModel("model"), aliases.DecisionModel("alias") })
+            var requests = new[]
             {
-                var output = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "message", Questions = DecisionQuestions() });
+                new DecideRequest { ModelId = "model" },
+                new DecideRequest { Model = registry.DecisionModel("legacy|model") },
+                new DecideRequest { Model = custom.DecisionModel("model") },
+                new DecideRequest { Model = aliases.DecisionModel("alias") },
+            };
+            foreach (var request in requests)
+            {
+                request.State = "message";
+                request.Questions = DecisionQuestions();
+                var output = await DecideOperation.DecideAsync(request);
                 Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
             }
         }

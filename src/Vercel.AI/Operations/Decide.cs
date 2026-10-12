@@ -424,11 +424,14 @@ public class DecisionResult
 /// <summary>Options for <see cref="Decide.DecideAsync"/>.</summary>
 public sealed class DecideRequest : OperationRequest
 {
+    /// <summary>Explicit decision model. Wins over <see cref="ModelId"/> when both are set.</summary>
+    public IDecisionCaller? Model { get; set; }
+
     /// <summary>
-    /// Decision model: an <see cref="IDecisionCaller"/> or a string model id. A string id goes through
-    /// <see cref="DecisionModels.DefaultProvider"/>, or Gateway when none is set.
+    /// Decision model id, used when <see cref="Model"/> is null. It goes through <see cref="DecisionModels.DefaultProvider"/>,
+    /// or Gateway when none is set.
     /// </summary>
-    public object? Model { get; set; }
+    public string? ModelId { get; set; }
 
     /// <summary>
     /// Shared state: a string, a JSON object (<c>IDictionary&lt;string, object?&gt;</c>), or a list of parts (<c>IList&lt;object?&gt;</c>).
@@ -462,7 +465,7 @@ public static class Decide
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = DecisionModels.Resolve(request.Model);
+        var model = DecisionModels.Resolve(request.Model, request.ModelId);
 
         var questions = request.Questions ?? new Dictionary<string, DecisionQuestion>();
         ValidateInput(request.State, questions);

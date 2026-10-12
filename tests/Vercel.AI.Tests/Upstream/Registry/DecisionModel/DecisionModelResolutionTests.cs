@@ -49,7 +49,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     [UpstreamTest(Prefix + "returns model instances unchanged", Coverage = UpstreamCoverage.Covered)]
     public void Returns_model_instances_unchanged()
     {
-        Assert.Same(_model, DecisionModels.Resolve(_model));
+        Assert.Same(_model, DecisionModels.Resolve(_model, null));
     }
 
     [Theory]
@@ -70,7 +70,8 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
 
         var result = await DecideOperation.DecideAsync(new DecideRequest
         {
-            Model = resolution == "string" ? modelId : new CustomProvider().AddDecisionModel("check", modelId).DecisionModel("check"),
+            Model = resolution == "string" ? null : new CustomProvider().AddDecisionModel("check", modelId).DecisionModel("check"),
+            ModelId = resolution == "string" ? modelId : null,
             State = state,
             Questions = questions,
         });
@@ -97,7 +98,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
             return GatewayProvider.Create();
         };
         DecisionModels.DefaultProvider = new MockProvider();
-        var error = Assert.Throws<InvalidOperationException>(() => DecisionModels.Resolve("typesafe-ai/jev"));
+        var error = Assert.Throws<InvalidOperationException>(() => DecisionModels.Resolve(null, "typesafe-ai/jev"));
         Assert.Equal("The default provider does not support decision models.", error.Message);
         Assert.Equal(0, gatewayCalls);
     }
@@ -110,13 +111,13 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         var provider = new CustomProvider().AddDecisionModel("invalid", invalid);
         var registry = new ProviderRegistry();
         registry.Register("provider", provider);
-        DecisionModels.DefaultProvider = registry;
+        DecisionModels.DefaultProvider = provider;
         foreach (var resolve in new Func<IDecisionCaller>[]
         {
-            () => DecisionModels.Resolve(invalid),
+            () => DecisionModels.Resolve(invalid, null),
             () => provider.DecisionModel("invalid"),
             () => registry.DecisionModel("provider:invalid"),
-            () => DecisionModels.Resolve("provider:invalid"),
+            () => DecisionModels.Resolve(null, "invalid"),
         })
         {
             Assert.Throws<UnsupportedModelVersionException>(resolve);
@@ -129,7 +130,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     {
         var error = new NoSuchModelError("missing", "decisionModel");
         DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => throw error);
-        Assert.Same(error, Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve("missing")));
+        Assert.Same(error, Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve(null, "missing")));
     }
 
     [Fact]
@@ -137,7 +138,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     public void Reports_missing_models_returned_by_the_default_provider()
     {
         DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => null);
-        var error = Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve("missing"));
+        var error = Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve(null, "missing"));
         Assert.Equal("missing", error.ModelId);
         Assert.Equal("decisionModel", error.ModelType);
     }
@@ -158,7 +159,8 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
 
         var result = await DecideOperation.DecideAsync(new DecideRequest
         {
-            Model = resolution == "string" ? "route" : registry.DecisionModel("provider:route"),
+            Model = resolution == "string" ? null : registry.DecisionModel("provider:route"),
+            ModelId = resolution == "string" ? "route" : null,
             State = new Dictionary<string, object?> { ["message"] = "Charged twice" },
             Questions = questions,
             Headers = new Dictionary<string, string> { ["x-test"] = "header" },
@@ -183,7 +185,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         DecisionModels.DefaultProvider = new CustomProvider().AddDecisionModel("choice", mock);
         await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest
         {
-            Model = "choice",
+            ModelId = "choice",
             State = "test",
             Questions = new Dictionary<string, DecisionQuestion> { ["flag"] = new DecisionQuestion("boolean", "Yes?") },
         }));

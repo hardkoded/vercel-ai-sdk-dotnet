@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Gateway;
+using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
@@ -19,38 +20,41 @@ public static class DecisionModels
     /// The global default provider (<c>AI_SDK_DEFAULT_PROVIDER</c>). A string model id is resolved through it. It must
     /// implement <see cref="IDecisionProvider"/> or the deprecated <see cref="IEvaluationProvider"/>. When null, string ids go through Gateway.
     /// </summary>
-    public static object? DefaultProvider { get; set; }
+    public static ProviderBase? DefaultProvider { get; set; }
 
     /// <summary>Creates the provider used when <see cref="DefaultProvider"/> is null. Null uses a shared <see cref="GatewayProvider"/>.</summary>
-    public static Func<IDecisionProvider>? GatewayFactory { get; set; }
+    public static Func<GatewayProvider>? GatewayFactory { get; set; }
 
-    /// <summary>Resolves a decision model instance or a string model id.</summary>
-    public static IDecisionCaller Resolve(object? model)
+    /// <summary>
+    /// Resolves a decision model. <paramref name="model"/> wins when set. Otherwise <paramref name="modelId"/> goes through
+    /// <see cref="DefaultProvider"/>, or Gateway when none is set.
+    /// </summary>
+    public static IDecisionCaller Resolve(IDecisionCaller? model, string? modelId)
     {
-        if (model is IDecisionCaller caller)
+        if (model != null)
         {
-            return Validate(caller);
+            return Validate(model);
         }
 
-        if (model is string id)
+        if (string.IsNullOrWhiteSpace(modelId))
         {
-            var provider = DefaultProvider ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
+            throw new AiSdkException("Model or ModelId is required.");
+        }
+
+        var provider = DefaultProvider ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
 #pragma warning disable CS0618 // IEvaluationProvider is the deprecated factory that string ids still resolve through.
-            if (provider is not (IDecisionProvider or IEvaluationProvider))
+        if (provider is not (IDecisionProvider or IEvaluationProvider))
 #pragma warning restore CS0618
-            {
-                throw new InvalidOperationException(MissingProviderMessage);
-            }
-
-            return Validate(FromProvider(provider, id) ?? throw new NoSuchModelError(id, "decisionModel"));
+        {
+            throw new InvalidOperationException(MissingProviderMessage);
         }
 
-        throw new InvalidArgumentException("model", model, "model is required");
+        return Validate(FromProvider(provider, modelId!) ?? throw new NoSuchModelError(modelId!, "decisionModel"));
     }
 
 #pragma warning disable CS0618
     // Asks the decision factory, then the deprecated evaluation factory. Null when the provider has neither or returns no model.
-    internal static IDecisionCaller? FromProvider(object provider, string modelId)
+    internal static IDecisionCaller? FromProvider(ProviderBase provider, string modelId)
     {
         if (provider is IDecisionProvider decision)
         {

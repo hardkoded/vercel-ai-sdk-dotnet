@@ -133,7 +133,7 @@ public sealed class AgentOptions
 /// Looks up provider models by <c>provider:model</c> ids. Maps to <c>createProviderRegistry</c>.
 /// Everything after the first separator is the model id, so model ids may contain the separator.
 /// </summary>
-public sealed class ProviderRegistry : Operations.IDecisionProvider
+public sealed class ProviderRegistry
 {
     private readonly Dictionary<string, ProviderBase> _providers = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _separator;
@@ -221,12 +221,6 @@ public sealed class ProviderRegistry : Operations.IDecisionProvider
         return Operations.DecisionModels.Validate(Model(providerAndModel, "decisionModel", Operations.DecisionModels.FromProvider));
     }
 
-    /// <inheritdoc />
-    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
-    {
-        return DecisionModel(modelId);
-    }
-
     /// <summary>Returns the file store of the provider registered under <paramref name="providerId"/>.</summary>
     public IFileStore FileStore(string providerId)
     {
@@ -280,8 +274,8 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEvaluationModel> _evaluation = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, object> _decision = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, object> _legacyDecision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _decision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _legacyDecision = new(StringComparer.Ordinal);
 
     /// <summary>Creates a custom provider.</summary>
     public CustomProvider(string name = "custom")
@@ -371,7 +365,12 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// <summary>Registers a decision model under <paramref name="modelId"/>. Maps to <c>decisionModels</c>.</summary>
     public CustomProvider AddDecisionModel(string modelId, Operations.IDecisionCaller model)
     {
-        return Add<object>(_decision, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_decision, modelId, () => model);
     }
 
     /// <summary>
@@ -380,7 +379,12 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// </summary>
     public CustomProvider AddDecisionModel(string modelId, string providerModelId)
     {
-        return Add<object>(_decision, modelId, providerModelId);
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_decision, modelId, () => Operations.DecisionModels.Resolve(null, providerModelId));
     }
 
     /// <summary>
@@ -390,7 +394,8 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     [Obsolete("Use AddDecisionModel instead.")]
     public CustomProvider AddEvaluationModel(string modelId, Operations.IEvaluationCaller model)
     {
-        return Add<object>(_legacyDecision, modelId, Operations.DecisionCaller.FromLegacy(model));
+        var legacy = Operations.DecisionCaller.FromLegacy(model);
+        return Add(_legacyDecision, modelId, () => legacy);
     }
 
     /// <inheritdoc />
@@ -448,7 +453,8 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     public Operations.IDecisionCaller DecisionModel(string modelId)
     {
         var models = _decision.Count > 0 ? _decision : _legacyDecision;
-        return Operations.DecisionModels.Resolve(Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId)));
+        var factory = Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId) is { } found ? () => found : null);
+        return Operations.DecisionModels.Validate(factory());
     }
 
     /// <inheritdoc />
