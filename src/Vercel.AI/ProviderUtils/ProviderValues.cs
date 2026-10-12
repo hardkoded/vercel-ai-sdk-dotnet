@@ -11,31 +11,23 @@ namespace Vercel.AI.ProviderUtils;
 /// <summary>Small collection, header, text, and media helpers shared by providers.</summary>
 public static class ProviderValues
 {
-    /// <summary>Returns an empty list for null, the same list when <paramref name="value"/> is already a list, or a one-item list.</summary>
-    public static IReadOnlyList<T> AsArray<T>(object? value)
+    /// <summary>Returns an empty list for null, or a one-item list. Maps to <c>asArray</c> for a single value.</summary>
+    public static IReadOnlyList<T> AsArray<T>(T? value)
     {
-        if (value is null)
-        {
-            return Array.Empty<T>();
-        }
+        return value is null ? Array.Empty<T>() : new[] { value };
+    }
 
-        if (value is IReadOnlyList<T> list)
-        {
-            return list;
-        }
-
-        if (value is T item)
-        {
-            return new[] { item };
-        }
-
-        throw new ArgumentException("Value is not " + typeof(T).Name + " or a list of that type.", nameof(value));
+    /// <summary>Returns an empty list for null, or the same list. Maps to <c>asArray</c> for an array value.</summary>
+    public static IReadOnlyList<T> AsArray<T>(IReadOnlyList<T>? values)
+    {
+        return values ?? Array.Empty<T>();
     }
 
     /// <summary>Drops null entries and keeps other values, including false, zero, and empty strings.</summary>
-    public static IReadOnlyList<object> FilterNullable(params object?[] values)
+    public static IReadOnlyList<T> FilterNullable<T>(params T?[] values)
+        where T : class
     {
-        var result = new List<object>();
+        var result = new List<T>();
         if (values == null)
         {
             return result;
@@ -52,10 +44,31 @@ public static class ProviderValues
         return result;
     }
 
-    /// <summary>Copies entries whose values are not null.</summary>
-    public static Dictionary<string, object> RemoveUndefinedEntries(IReadOnlyDictionary<string, object?> record)
+    /// <summary>Drops null entries and keeps other values, including false and zero.</summary>
+    public static IReadOnlyList<T> FilterNullable<T>(params T?[] values)
+        where T : struct
     {
-        var result = new Dictionary<string, object>(StringComparer.Ordinal);
+        var result = new List<T>();
+        if (values == null)
+        {
+            return result;
+        }
+
+        foreach (var value in values)
+        {
+            if (value.HasValue)
+            {
+                result.Add(value.Value);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Copies entries whose values are not null.</summary>
+    public static Dictionary<string, T> RemoveUndefinedEntries<T>(IReadOnlyDictionary<string, T?> record)
+    {
+        var result = new Dictionary<string, T>(StringComparer.Ordinal);
         if (record == null)
         {
             return result;
@@ -523,20 +536,16 @@ public static class ByteEncoding
         return Convert.FromBase64String(normalized);
     }
 
-    /// <summary>Returns base64 text unchanged, or encodes bytes.</summary>
-    public static string ConvertToBase64(object value)
+    /// <summary>Returns base64 text unchanged. Maps to <c>convertToBase64</c> for a string.</summary>
+    public static string ConvertToBase64(string value)
     {
-        if (value is string text)
-        {
-            return text;
-        }
+        return value ?? throw new ArgumentNullException(nameof(value));
+    }
 
-        if (value is byte[] bytes)
-        {
-            return ToBase64(bytes);
-        }
-
-        throw new ArgumentException("Value must be a string or a byte array.", nameof(value));
+    /// <summary>Encodes bytes as base64. Maps to <c>convertToBase64</c> for a byte array.</summary>
+    public static string ConvertToBase64(byte[] value)
+    {
+        return ToBase64(value);
     }
 }
 

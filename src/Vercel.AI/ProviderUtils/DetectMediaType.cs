@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 
 namespace Vercel.AI.ProviderUtils;
 
@@ -67,14 +68,38 @@ public static class MediaTypes
     };
 
     /// <summary>
-    /// Detects a media type from raw bytes or a base64 string.
+    /// Detects a media type from raw bytes.
     /// When <paramref name="topLevelType"/> is omitted, image, document, audio, and video signatures are considered.
     /// </summary>
-    public static string? DetectMediaType(object data, string? topLevelType = null)
+    public static string? DetectMediaType(byte[] data, string? topLevelType = null)
+    {
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
+        return Detect(maxBytes => DecodePrefix(data, maxBytes), topLevelType);
+    }
+
+    /// <summary>
+    /// Detects a media type from a base64 string.
+    /// When <paramref name="topLevelType"/> is omitted, image, document, audio, and video signatures are considered.
+    /// </summary>
+    public static string? DetectMediaType(string base64, string? topLevelType = null)
+    {
+        if (base64 is null)
+        {
+            throw new ArgumentNullException(nameof(base64));
+        }
+
+        return Detect(maxBytes => DecodePrefix(base64, maxBytes), topLevelType);
+    }
+
+    private static string? Detect(Func<int, byte[]> decodePrefix, string? topLevelType)
     {
         if (topLevelType is null)
         {
-            return Match(data, Concat(ImageSignatures, DocumentSignatures, AudioSignaturesWithoutMp4, VideoSignatures));
+            return Match(decodePrefix, Concat(ImageSignatures, DocumentSignatures, AudioSignaturesWithoutMp4, VideoSignatures));
         }
 
         Signature[]? table = null;
@@ -100,7 +125,7 @@ public static class MediaTypes
             return null;
         }
 
-        return Match(data, table);
+        return Match(decodePrefix, table);
     }
 
     /// <summary>Returns the segment before the first slash. Maps to <c>getTopLevelMediaType</c>.</summary>
@@ -134,11 +159,39 @@ public static class MediaTypes
     }
 
     /// <summary>
-    /// Returns <paramref name="mediaType"/> when it has a subtype. Otherwise detects the subtype from <paramref name="inlineData"/>,
-    /// which is bytes or a base64 string, or null when the file is not inline. Maps to <c>resolveFullMediaType</c>.
+    /// Returns <paramref name="mediaType"/> when it has a subtype. Otherwise detects the subtype from inline <paramref name="data"/>.
+    /// Maps to <c>resolveFullMediaType</c>, with <paramref name="mediaType"/> and <paramref name="data"/> as the file part's
+    /// <c>mediaType</c> and <c>data</c>.
     /// </summary>
     /// <exception cref="UnsupportedFunctionalityException">The subtype cannot be resolved.</exception>
-    public static string ResolveFullMediaType(string mediaType, object? inlineData)
+    public static string ResolveFullMediaType(string mediaType, LanguageModelFilePart data)
+    {
+        if (data is null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
+        if (data.DataType != "data")
+        {
+            return Resolve(mediaType, null, null);
+        }
+
+        return data.Bytes != null
+            ? Resolve(mediaType, data.Bytes, null)
+            : Resolve(mediaType, null, data.Base64 ?? string.Empty);
+    }
+
+    /// <summary>
+    /// Returns <paramref name="mediaType"/> when it has a subtype. Otherwise detects the subtype from <paramref name="inlineData"/>,
+    /// or null when the file is not inline. Maps to <c>resolveFullMediaType</c>.
+    /// </summary>
+    /// <exception cref="UnsupportedFunctionalityException">The subtype cannot be resolved.</exception>
+    public static string ResolveFullMediaType(string mediaType, byte[]? inlineData)
+    {
+        return Resolve(mediaType, inlineData, null);
+    }
+
+    private static string Resolve(string mediaType, byte[]? bytes, string? base64)
     {
         if (IsFullMediaType(mediaType))
         {
@@ -146,9 +199,10 @@ public static class MediaTypes
         }
 
         string functionality;
-        if (inlineData != null)
+        if (bytes != null || base64 != null)
         {
-            var detected = DetectMediaType(inlineData, GetTopLevelMediaType(mediaType));
+            var topLevelType = GetTopLevelMediaType(mediaType);
+            var detected = bytes != null ? DetectMediaType(bytes, topLevelType) : DetectMediaType(base64!, topLevelType);
             if (detected != null)
             {
                 return detected;
@@ -164,12 +218,12 @@ public static class MediaTypes
         throw new UnsupportedFunctionalityException(functionality, functionality);
     }
 
-    private static string? Match(object data, Signature[] signatures)
+    private static string? Match(Func<int, byte[]> decodePrefix, Signature[] signatures)
     {
         byte[] bytes;
         try
         {
-            bytes = DecodePrefix(data, DefaultSniffBytes);
+            bytes = decodePrefix(DefaultSniffBytes);
         }
         catch (FormatException)
         {
@@ -180,7 +234,7 @@ public static class MediaTypes
         {
             try
             {
-                bytes = StripId3(DecodePrefix(data, Id3ScanBytes));
+                bytes = StripId3(decodePrefix(Id3ScanBytes));
             }
             catch (FormatException)
             {
@@ -235,22 +289,17 @@ public static class MediaTypes
         return rest;
     }
 
-    private static byte[] DecodePrefix(object data, int maxBytes)
+    private static byte[] DecodePrefix(byte[] bytes, int maxBytes)
     {
-        if (data is byte[] bytes)
-        {
-            return bytes.Length > maxBytes ? Slice(bytes, maxBytes) : bytes;
-        }
+        return bytes.Length > maxBytes ? Slice(bytes, maxBytes) : bytes;
+    }
 
-        if (data is string text)
-        {
-            var maxChars = ((maxBytes + 2) / 3) * 4;
-            var slice = text.Length > maxChars ? text.Substring(0, maxChars) : text;
-            var decoded = ByteEncoding.FromBase64(slice);
-            return decoded.Length > maxBytes ? Slice(decoded, maxBytes) : decoded;
-        }
-
-        throw new ArgumentException("Media data must be bytes or a base64 string.", nameof(data));
+    private static byte[] DecodePrefix(string base64, int maxBytes)
+    {
+        var maxChars = ((maxBytes + 2) / 3) * 4;
+        var slice = base64.Length > maxChars ? base64.Substring(0, maxChars) : base64;
+        var decoded = ByteEncoding.FromBase64(slice);
+        return decoded.Length > maxBytes ? Slice(decoded, maxBytes) : decoded;
     }
 
     private static byte[] Slice(byte[] bytes, int length)

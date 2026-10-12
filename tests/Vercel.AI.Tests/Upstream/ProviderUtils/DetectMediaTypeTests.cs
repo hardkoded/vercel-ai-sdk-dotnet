@@ -4,6 +4,7 @@
 
 using System.Text;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 
@@ -580,35 +581,35 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "returns full media type as-is", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_keeps_a_concrete_type()
     {
-        Assert.Equal("image/jpeg", MediaTypes.ResolveFullMediaType("image/jpeg", Png));
+        Assert.Equal("image/jpeg", MediaTypes.ResolveFullMediaType("image/jpeg", Inline(Png)));
     }
 
     [Fact]
     [UpstreamTest(ResolveFull + "detects image subtype from inline bytes for top-level-only media type", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_sniffs_an_image()
     {
-        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", Png));
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", Inline(Png)));
     }
 
     [Fact]
     [UpstreamTest(ResolveFull + "treats image/* wildcard as top-level and runs detection", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_sniffs_a_wildcard()
     {
-        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image/*", Png));
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image/*", Inline(Png)));
     }
 
     [Fact]
     [UpstreamTest(ResolveFull + "detects application subtype (PDF)", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_sniffs_a_pdf()
     {
-        Assert.Equal("application/pdf", MediaTypes.ResolveFullMediaType("application", Pdf));
+        Assert.Equal("application/pdf", MediaTypes.ResolveFullMediaType("application", Inline(Pdf)));
     }
 
     [Fact]
     [UpstreamTest(ResolveFull + "throws the \"not passed as inline bytes\" message when URL source with top-level-only media type", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_rejects_a_url()
     {
-        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", null));
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", new LanguageModelFilePart("url", null) { Url = new Uri("https://example.com/x") }));
         Assert.Contains("not passed as inline bytes", error.Message);
     }
 
@@ -616,7 +617,7 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "throws the \"could not be auto-detected\" message when bytes are present but unrecognised", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_rejects_unknown_bytes()
     {
-        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", Bytes(0x00, 0x01, 0x02)));
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", Inline(Bytes(0x00, 0x01, 0x02))));
         Assert.Contains("could not be auto-detected", error.Message);
     }
 
@@ -624,7 +625,7 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "throws the \"could not be auto-detected\" message when top-level segment is unsupported (e.g. text)", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_rejects_text()
     {
-        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("text", "hello"));
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("text", Inline("hello")));
         Assert.Contains("could not be auto-detected", error.Message);
     }
 
@@ -632,7 +633,17 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "accepts base64 string data", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_accepts_base64()
     {
-        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", ByteEncoding.ToBase64(Png)));
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", Inline(ByteEncoding.ToBase64(Png))));
+    }
+
+    private static LanguageModelFilePart Inline(byte[] bytes)
+    {
+        return new LanguageModelFilePart("data", null) { Bytes = bytes };
+    }
+
+    private static LanguageModelFilePart Inline(string base64)
+    {
+        return new LanguageModelFilePart("data", null) { Base64 = base64 };
     }
 
     private static byte[] Bytes(params int[] values)
