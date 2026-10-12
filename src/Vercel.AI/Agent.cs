@@ -206,10 +206,10 @@ public sealed class ProviderRegistry
         return Model(providerAndModel, "videoModel", (provider, modelId) => provider.VideoModel(modelId));
     }
 
-    /// <summary>Resolves <c>provider:model</c> to an evaluation model.</summary>
-    public IEvaluationModel EvaluationModel(string providerAndModel)
+    /// <summary>Resolves <c>provider:model</c> to a model that scores a candidate against a rubric.</summary>
+    public IRubricModel RubricModel(string providerAndModel)
     {
-        return Model(providerAndModel, "evaluationModel", (provider, modelId) => provider.EvaluationModel(modelId));
+        return Model(providerAndModel, "rubricModel", (provider, modelId) => provider.RubricModel(modelId));
     }
 
     /// <summary>
@@ -219,6 +219,16 @@ public sealed class ProviderRegistry
     public Operations.IDecisionCaller DecisionModel(string providerAndModel)
     {
         return Operations.DecisionModels.Validate(Model(providerAndModel, "decisionModel", Operations.DecisionModels.FromProvider));
+    }
+
+    /// <summary>
+    /// Deprecated alias of <see cref="DecisionModel"/>. Returns the same model, which also has the deprecated
+    /// <see cref="Operations.IEvaluationCaller.DoEvaluateAsync"/>. Maps to <c>evaluationModel</c>.
+    /// </summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public Operations.IEvaluationDecisionCaller EvaluationModel(string providerAndModel)
+    {
+        return Operations.DecisionModels.AsEvaluationModel(DecisionModel(providerAndModel));
     }
 
     /// <summary>Returns the file store of the provider registered under <paramref name="providerId"/>.</summary>
@@ -273,7 +283,7 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     private readonly Dictionary<string, ISpeechModel> _speech = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IEvaluationModel> _evaluation = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IRubricModel> _rubric = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Operations.IDecisionCaller> _decision = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Operations.IDecisionCaller> _legacyDecision = new(StringComparer.Ordinal);
 
@@ -356,10 +366,17 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
         return Add(_video, modelId, model);
     }
 
-    /// <summary>Registers an evaluation model under <paramref name="modelId"/>.</summary>
+    /// <summary>Registers a model that scores a candidate against a rubric under <paramref name="modelId"/>.</summary>
+    public CustomProvider AddRubricModel(string modelId, IRubricModel model)
+    {
+        return Add(_rubric, modelId, model);
+    }
+
+    /// <summary>Deprecated name of <see cref="AddRubricModel"/>. Registers a rubric model, not a decision model.</summary>
+    [Obsolete("Use AddRubricModel instead.")]
     public CustomProvider AddEvaluationModel(string modelId, IEvaluationModel model)
     {
-        return Add(_evaluation, modelId, model);
+        return AddRubricModel(modelId, RubricModels.FromLegacy(model));
     }
 
     /// <summary>Registers a decision model under <paramref name="modelId"/>. Maps to <c>decisionModels</c>.</summary>
@@ -421,9 +438,9 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     }
 
     /// <inheritdoc />
-    public override IEvaluationModel EvaluationModel(string modelId)
+    public override IRubricModel RubricModel(string modelId)
     {
-        return Find(_evaluation, modelId, "evaluationModel", fallback => fallback.EvaluationModel(modelId));
+        return Find(_rubric, modelId, "rubricModel", fallback => fallback.RubricModel(modelId));
     }
 
     /// <summary>
@@ -434,6 +451,16 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     {
         var models = _decision.Count > 0 ? _decision : _legacyDecision;
         return Operations.DecisionModels.Validate(Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId)));
+    }
+
+    /// <summary>
+    /// Deprecated alias of <see cref="DecisionModel"/>. Returns the same model, which also has the deprecated
+    /// <see cref="Operations.IEvaluationCaller.DoEvaluateAsync"/>. Maps to <c>evaluationModel</c>.
+    /// </summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public Operations.IEvaluationDecisionCaller EvaluationModel(string modelId)
+    {
+        return Operations.DecisionModels.AsEvaluationModel(DecisionModel(modelId));
     }
 
     /// <inheritdoc />

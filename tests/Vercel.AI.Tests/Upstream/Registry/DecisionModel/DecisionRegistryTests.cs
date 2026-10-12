@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+#pragma warning disable CS0618
+
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -40,7 +42,7 @@ public sealed class DecisionRegistryTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves deprecated factories when adapting a v3 provider", Coverage = UpstreamCoverage.Partial, Note = "Checks that DecisionModel resolves through the deprecated factory. .NET has no ProviderV3 to adapt (issue #391), and ProviderRegistry.EvaluationModel returns rubric models (issue #390).")]
+    [UpstreamTest(Prefix + "preserves deprecated factories when adapting a v3 provider", Coverage = UpstreamCoverage.Partial, Note = "Checks that DecisionModel and the deprecated EvaluationModel resolve through the deprecated factory. .NET has no ProviderV3 to adapt. Issue #391.")]
     public void Preserves_deprecated_factories_when_adapting_a_v3_provider()
     {
         var provider = new EvaluationFactoryProvider(modelId =>
@@ -51,10 +53,11 @@ public sealed class DecisionRegistryTests
         var registry = new ProviderRegistry("::");
         registry.Register("provider", provider);
         Assert.Same(_model, registry.DecisionModel("provider::model::version"));
+        Assert.Same(_model, registry.EvaluationModel("provider::model::version"));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves deprecated factory receivers when adapting video models", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel and VideoModel. ProviderRegistry.EvaluationModel returns rubric models. Issue #390.")]
+    [UpstreamTest(Prefix + "preserves deprecated factory receivers when adapting video models", Coverage = UpstreamCoverage.Covered)]
     public void Preserves_deprecated_factory_receivers_when_adapting_video_models()
     {
         var videoModel = new MockVideoModel();
@@ -69,6 +72,7 @@ public sealed class DecisionRegistryTests
         var registry = new ProviderRegistry();
         registry.Register("provider", provider);
         Assert.Same(_model, registry.DecisionModel("provider:model"));
+        Assert.Same(_model, registry.EvaluationModel("provider:model"));
         Assert.Same(videoModel, registry.VideoModel("provider:video"));
     }
 

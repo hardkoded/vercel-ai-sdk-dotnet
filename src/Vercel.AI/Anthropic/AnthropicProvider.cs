@@ -153,7 +153,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
     }
 
     /// <inheritdoc />
-    public override IEvaluationModel EvaluationModel(string modelId)
+    public override IRubricModel RubricModel(string modelId)
     {
         return new AnthropicEvaluationModel(this, modelId);
     }

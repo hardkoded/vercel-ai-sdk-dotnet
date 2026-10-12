@@ -1403,7 +1403,7 @@ internal static class AnthropicAssertions
         };
         var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
         provider.Options.Headers["x-provider"] = "configured";
-        var model = (AnthropicEvaluationModel)provider.EvaluationModel("claude-haiku-4-5-20251001");
+        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
         var call = new LanguageModelCallOptions { Headers = new Dictionary<string, string?> { ["x-call"] = "forwarded" } };
         call.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"structuredOutputMode\":\"outputFormat\"}") };
         var result = await model.EvaluateAsync(Questions(), call, CancellationToken.None).ConfigureAwait(false);
@@ -1428,7 +1428,7 @@ internal static class AnthropicAssertions
     {
         var handler = new CaptureHandler { ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "end_turn") };
         var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
-        var model = (AnthropicEvaluationModel)provider.EvaluationModel("claude-haiku-4-5-20251001");
+        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
         var call = new LanguageModelCallOptions();
         call.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}}") };
         await model.EvaluateAsync(Questions(), call, CancellationToken.None).ConfigureAwait(false);
@@ -1441,7 +1441,7 @@ internal static class AnthropicAssertions
     {
         var handler = new CaptureHandler { ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "end_turn") };
         var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
-        var model = (AnthropicEvaluationModel)provider.EvaluationModel("claude-haiku-4-5-20251001");
+        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
         await model.EvaluateAsync(Questions(), null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("json_schema", JsonNode.Parse(handler.Body)!["output_config"]!["format"]!["type"]!.GetValue<string>());
         handler.ResponseBody = "{\"content\":[{\"type\":\"tool_use\",\"id\":\"tool-test\",\"name\":\"json\",\"input\":{\"q0\":\"c1\",\"q1\":1.25}}],\"stop_reason\":\"tool_use\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
