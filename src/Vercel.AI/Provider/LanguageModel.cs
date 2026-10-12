@@ -753,6 +753,9 @@ public sealed class LanguageModelCallOptions
     /// <summary>Schema name sent to providers that require one.</summary>
     public string? JsonSchemaName { get; set; }
 
+    /// <summary>Response format description. Maps to <c>responseFormat.description</c>.</summary>
+    public string? JsonSchemaDescription { get; set; }
+
     /// <summary>Tools the model may call.</summary>
     public IReadOnlyList<LanguageModelTool>? Tools { get; set; }
 

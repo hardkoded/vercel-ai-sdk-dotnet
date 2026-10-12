@@ -347,21 +347,23 @@ public abstract class OutputSpec
     }
 
     /// <summary>JSON object output validated against <paramref name="schema"/>.</summary>
-    public static OutputSpec Object(JsonElement schema, string? name = null)
+    public static OutputSpec Object(JsonElement schema, string? name = null, string? description = null)
     {
-        return new ObjectOutput(schema, name);
+        return new ObjectOutput(schema, name, description);
     }
 
     /// <summary>JSON object output validated against a schema string.</summary>
-    public static OutputSpec Object(string jsonSchema, string? name = null)
+    public static OutputSpec Object(string jsonSchema, string? name = null, string? description = null)
     {
         using var document = JsonDocument.Parse(jsonSchema);
-        return new ObjectOutput(document.RootElement.Clone(), name);
+        return new ObjectOutput(document.RootElement.Clone(), name, description);
     }
 
     internal virtual JsonElement? Schema => null;
 
     internal virtual string? SchemaName => null;
+
+    internal virtual string? SchemaDescription => null;
 
     private sealed class TextOutput : OutputSpec
     {
@@ -370,19 +372,24 @@ public abstract class OutputSpec
 
     private sealed class ObjectOutput : OutputSpec
     {
-        public ObjectOutput(JsonElement schema, string? name)
+        public ObjectOutput(JsonElement schema, string? name, string? description)
         {
             SchemaValue = schema;
             Name = name;
+            Description = description;
         }
 
         public JsonElement SchemaValue { get; }
 
         public string? Name { get; }
 
+        public string? Description { get; }
+
         internal override JsonElement? Schema => SchemaValue;
 
         internal override string? SchemaName => Name;
+
+        internal override string? SchemaDescription => Description;
     }
 }
 
@@ -619,7 +626,7 @@ public sealed class GenerateTextResult
     /// <summary>Usage summed across steps.</summary>
     public LanguageModelUsage Usage { get; }
 
-    /// <summary>Parsed structured output, when <see cref="OutputSpec.Object(JsonElement, string?)"/> was used.</summary>
+    /// <summary>Parsed structured output, when <see cref="OutputSpec.Object(JsonElement, string?, string?)"/> was used.</summary>
     public JsonElement? Output { get; }
 
     /// <summary>Tool calls from every step.</summary>

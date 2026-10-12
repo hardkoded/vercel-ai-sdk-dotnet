@@ -563,7 +563,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             && schema.ValueKind != JsonValueKind.Undefined
             && schema.ValueKind != JsonValueKind.Null
             && options.Tools is { Count: > 0 } tools
-                ? JsonResponseTools.CreateTool(tools, schema)
+                ? JsonResponseTools.CreateTool(tools, schema, options.JsonSchemaDescription)
                 : null;
     }
 
