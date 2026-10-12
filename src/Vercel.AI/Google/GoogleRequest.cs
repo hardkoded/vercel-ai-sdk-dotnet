@@ -268,7 +268,7 @@ public static class GoogleRequest
             return null;
         }
 
-        return JsonResponseTools.CreateTool(tools, schema);
+        return JsonResponseTools.CreateTool(tools, schema, options.JsonSchemaDescription);
     }
 
     private static JsonObject? ImageConfig(JsonElement google, bool vertex, string provider, List<GoogleWarning> warnings)

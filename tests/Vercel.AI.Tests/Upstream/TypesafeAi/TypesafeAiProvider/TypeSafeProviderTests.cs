@@ -16,15 +16,26 @@ public sealed class TypeSafeProviderTests
     private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-provider.test.ts::TypeSafe provider::";
 
     [Fact]
-    [UpstreamTest(Prefix + "provides the experimental evaluation capability", Coverage = UpstreamCoverage.Covered)]
-    public void Provides_the_experimental_evaluation_capability()
+    [UpstreamTest(Prefix + "provides the experimental decision capability", Coverage = UpstreamCoverage.Covered)]
+    public void Provides_the_experimental_decision_capability()
     {
-        var model = TypeSafeAiProvider.Default.EvaluationModel("jev-latest");
+        var model = TypeSafeAiProvider.Default.DecisionModel("jev-latest");
         Assert.Equal("v4", TypeSafeAiProvider.Default.SpecificationVersion);
         Assert.Equal("v4", model.SpecificationVersion);
-        Assert.Equal("typesafe.evaluation", model.Provider);
+        Assert.Equal("typesafe.decision", model.Provider);
         Assert.Equal("jev-latest", model.ModelId);
         Assert.Equal(new[] { "choice", "score", "boolean" }, model.SupportedQuestionTypes);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "retains the deprecated factory alias", Coverage = UpstreamCoverage.Partial, Note = "C# cannot make two methods the same object, so the test checks that EvaluationModel returns a model with the decision provider id instead of checking function identity.")]
+    public void Retains_the_deprecated_factory_alias()
+    {
+#pragma warning disable CS0618
+        var model = TypeSafeAiProvider.Default.EvaluationModel("jev-latest");
+#pragma warning restore CS0618
+        Assert.Equal("typesafe.decision", model.Provider);
+        Assert.Equal("jev-latest", model.ModelId);
     }
 
     [Theory]
@@ -111,17 +122,17 @@ public sealed class TypeSafeProviderTests
 
     private static Task Decide(TypeSafeAiProvider provider)
     {
-        var questions = new Dictionary<string, EvaluationQuestion>
+        var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["configured"] = new EvaluationQuestion("boolean", "Did the request use the configured endpoint?", null),
+            ["configured"] = new DecisionQuestion("boolean", "Did the request use the configured endpoint?", null),
         };
         var state = new List<object?>
         {
             new Dictionary<string, object?> { ["type"] = "text", ["text"] = "The request used the configured endpoint." },
         };
         using var options = System.Text.Json.JsonDocument.Parse("{}");
-        return provider.EvaluationModel("jev-latest").DoEvaluateAsync(
-            new EvaluationModelCall(state, questions, options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None),
+        return provider.DecisionModel("jev-latest").DoDecideAsync(
+            new DecisionModelCall(state, questions, options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None),
             CancellationToken.None);
     }
 

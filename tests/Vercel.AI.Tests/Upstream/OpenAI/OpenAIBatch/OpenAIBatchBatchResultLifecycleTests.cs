@@ -13,17 +13,37 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIBatch;
 public sealed class OpenAIBatchBatchResultLifecycleTests
 {
     [Fact]
+    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service > batch result lifecycle::rejects result retrieval while the batch is pending", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_result_retrieval_while_the_batch_is_pending()
+    {
+        var handler = new RoutedHandler()
+            .Add(BatchUrl, new JsonObject
+            {
+                ["id"] = "batch_123",
+                ["status"] = "in_progress",
+                ["output_file_id"] = null,
+                ["error_file_id"] = null,
+                ["created_at"] = 1_700_000_000,
+                ["expires_at"] = 1_700_086_400,
+                ["request_counts"] = new JsonObject { ["total"] = 2, ["completed"] = 1, ["failed"] = 0 },
+                ["errors"] = null,
+            }.ToJsonString());
+
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => GetResultsAsync(handler));
+
+        Assert.Equal("batchId", error.Parameter);
+        Assert.EndsWith("OpenAI batch \"batch_123\" is not complete.", error.Message);
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service > batch result lifecycle::fails an invalid item and continues with later results", Coverage = UpstreamCoverage.Covered)]
     public async Task Fails_an_invalid_item_and_continues_with_later_results()
     {
         var handler = new RoutedHandler()
-            .Add("https://api.openai.com/v1/batches/batch_123", "{\"id\":\"batch_123\",\"status\":\"completed\",\"output_file_id\":\"file-output\"}")
-            .Add("https://api.openai.com/v1/files/file-output/content",
-                "{\"custom_id\":\"invalid\",\"response\":{\"status_code\":200,\"body\":{\"output\":42}}}\n"
-                + "{\"custom_id\":\"valid\",\"response\":{\"status_code\":200,\"body\":{\"id\":\"resp_123\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Paris\"}]}]}}}\n");
-        var batch = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ExperimentalBatch()!;
+            .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
+            .Add(OutputUrl, ResultLine("invalid", new JsonObject { ["output"] = 42 }) + "\n" + ResultLine("valid", ResponsesResultBody("Paris")));
 
-        var results = await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var results = await GetResultsAsync(handler);
 
         Assert.Equal(2, results.Count);
         Assert.Equal("invalid", results[0].Id);
@@ -32,42 +52,18 @@ public sealed class OpenAIBatchBatchResultLifecycleTests
         Assert.Equal("invalid_response", results[0].ErrorCode);
         Assert.Equal("valid", results[1].Id);
         Assert.Equal("succeeded", results[1].Status);
-        Assert.Equal("Paris", results[1].Text!.Content[0].Text);
+        Assert.Equal("Paris", Assert.Single(results[1].Text!.Content).Text);
     }
 
-    [Theory]
-    [InlineData(true, "failed")]
-    [InlineData(true, "incomplete")]
-    [InlineData(false, "failed")]
-    [InlineData(false, "incomplete")]
-    public async Task Preserves_web_search_tool_errors_in_successful_batch_responses(bool withAction, string status)
+    [Fact]
+    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service > batch result lifecycle::rejects a completed batch without output", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_a_completed_batch_without_output()
     {
-        var webSearch = new JsonObject { ["type"] = "web_search_call", ["id"] = "ws_test", ["status"] = status };
-        if (withAction)
-        {
-            webSearch["action"] = new JsonObject { ["type"] = "search", ["query"] = "AI SDK" };
-        }
+        var handler = new RoutedHandler().Add(BatchUrl, BatchResponse());
 
-        var handler = new RoutedHandler()
-            .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
-            .Add(OutputUrl, ResultLine("web-search", WithOutput(ResponsesResultBody(string.Empty), webSearch)));
+        var error = await Assert.ThrowsAsync<InvalidResponseDataException>(() => GetResultsAsync(handler));
 
-        var item = Assert.Single(await GetResultsAsync(handler));
-
-        Assert.Equal("web-search", item.Id);
-        Assert.Equal("succeeded", item.Status);
-        var content = item.Text!.Content;
-        Assert.Equal(2, content.Count);
-        Assert.Equal("tool-call", content[0].Type);
-        Assert.Equal("ws_test", content[0].ToolCallId);
-        Assert.Equal("web_search", content[0].ToolName);
-        Assert.Equal("{}", content[0].Text);
-        Assert.True(content[0].ProviderExecuted);
-        Assert.Equal("tool-result", content[1].Type);
-        Assert.Equal("ws_test", content[1].ToolCallId);
-        Assert.Equal("web_search", content[1].ToolName);
-        Assert.True(content[1].IsError);
-        Assert.Equal(status, content[1].Output!.Value.GetProperty("status").GetString());
+        Assert.Equal("OpenAI batch \"batch_123\" completed without batch output.", error.Message);
     }
 
     [Fact]

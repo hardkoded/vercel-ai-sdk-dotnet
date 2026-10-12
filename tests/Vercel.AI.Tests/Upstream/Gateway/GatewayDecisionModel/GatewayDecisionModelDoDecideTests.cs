@@ -12,7 +12,7 @@ public sealed class GatewayDecisionModelDoDecideTests
 {
     private const string Prefix = "packages/gateway/src/gateway-decision-model.test.ts::GatewayDecisionModel > doDecide::";
 
-    private static void AssertDummyAnswers(IReadOnlyDictionary<string, EvaluationAnswer> answers)
+    private static void AssertDummyAnswers(IReadOnlyDictionary<string, DecisionAnswer> answers)
     {
         Assert.Equal(3, answers.Count);
         Assert.Equal("boolean", answers["correct"].Type);

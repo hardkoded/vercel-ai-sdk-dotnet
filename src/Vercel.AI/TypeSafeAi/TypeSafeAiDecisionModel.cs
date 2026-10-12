@@ -12,11 +12,11 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.TypeSafeAi;
 
-/// <summary>Settings for a <see cref="TypeSafeAiEvaluationModel"/>.</summary>
-public sealed class TypeSafeAiEvaluationModelConfig
+/// <summary>Settings for a <see cref="TypeSafeAiDecisionModel"/>.</summary>
+public class TypeSafeAiDecisionModelConfig
 {
-    /// <summary>Provider id, such as <c>typesafe.evaluation</c>.</summary>
-    public string Provider { get; set; } = TypeSafeAiProvider.EvaluationProviderId;
+    /// <summary>Provider id, such as <c>typesafe.decision</c>.</summary>
+    public string Provider { get; set; } = TypeSafeAiProvider.DecisionProviderId;
 
     /// <summary>API base URL, without a trailing slash.</summary>
     public string BaseUrl { get; set; } = TypeSafeAiProvider.DefaultBaseUrl;
@@ -32,17 +32,19 @@ public sealed class TypeSafeAiEvaluationModelConfig
 }
 
 /// <summary>Answers questions through the TypeSafe <c>/systemone</c> route.</summary>
-public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
+#pragma warning disable CS0618
+public class TypeSafeAiDecisionModel : IDecisionCaller, IEvaluationCaller
+#pragma warning restore CS0618
 {
     private static readonly HttpClient SharedClient = new HttpClient();
 
-    private readonly TypeSafeAiEvaluationModelConfig _config;
+    private readonly TypeSafeAiDecisionModelConfig _config;
 
-    /// <summary>Creates an evaluation model. <paramref name="modelId"/> may be a model id this library does not know yet.</summary>
-    public TypeSafeAiEvaluationModel(string modelId, TypeSafeAiEvaluationModelConfig? config = null)
+    /// <summary>Creates a decision model. <paramref name="modelId"/> may be a model id this library does not know yet.</summary>
+    public TypeSafeAiDecisionModel(string modelId, TypeSafeAiDecisionModelConfig? config = null)
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
-        _config = config ?? new TypeSafeAiEvaluationModelConfig();
+        _config = config ?? new TypeSafeAiDecisionModelConfig();
     }
 
     /// <inheritdoc />
@@ -86,14 +88,20 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
     /// Restores a model from <see cref="Serialize"/>. When no headers were serialized, authentication is read from
     /// <c>TYPESAFE_AI_API_KEY</c> at call time. The HTTP client is not serialized, so pass one to use a custom handler.
     /// </summary>
-    public static TypeSafeAiEvaluationModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    public static TypeSafeAiDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
     {
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        var config = new TypeSafeAiEvaluationModelConfig { HttpClient = httpClient };
+        return new TypeSafeAiDecisionModel(options.ModelId, DeserializeConfig(options, httpClient));
+    }
+
+    /// <summary>Reads the config written by <see cref="Serialize"/>.</summary>
+    internal static TypeSafeAiDecisionModelConfig DeserializeConfig(SerializedModelOptions options, HttpClient? httpClient)
+    {
+        var config = new TypeSafeAiDecisionModelConfig { HttpClient = httpClient };
         if (options.Config.TryGetValue("provider", out var provider) && provider is string providerId)
         {
             config.Provider = providerId;
@@ -110,11 +118,18 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
             config.Headers = () => copy;
         }
 
-        return new TypeSafeAiEvaluationModel(options.ModelId, config);
+        return config;
+    }
+
+    /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
+    [Obsolete("Use DoDecideAsync instead.")]
+    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    {
+        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
     {
         if (call == null)
         {
@@ -227,7 +242,7 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
         }
     }
 
-    private EvaluationModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text, IReadOnlyList<OperationWarning> warnings)
+    private DecisionModelResult ParseResponse(string url, JsonObject requestBody, int status, IReadOnlyDictionary<string, string> headers, string text, IReadOnlyList<OperationWarning> warnings)
     {
         try
         {
@@ -238,7 +253,7 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
                 throw new FormatException("Expected an object.");
             }
 
-            var answers = new Dictionary<string, EvaluationAnswer>();
+            var answers = new Dictionary<string, DecisionAnswer>();
             var confidence = new JsonObject();
             foreach (var pair in Property(root, "answers", JsonValueKind.Object).EnumerateObject())
             {
@@ -251,21 +266,21 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
                 switch (Property(answer, "type", JsonValueKind.String).GetString())
                 {
                     case "choice":
-                        answers[pair.Name] = new EvaluationAnswer(
+                        answers[pair.Name] = new DecisionAnswer(
                             "choice",
                             choice: Property(answer, "choice", JsonValueKind.String).GetString(),
                             probabilities: Probabilities(answer));
                         AddConfidence(confidence, pair.Name, answer);
                         break;
                     case "score":
-                        answers[pair.Name] = new EvaluationAnswer(
+                        answers[pair.Name] = new DecisionAnswer(
                             "score",
                             score: Property(answer, "score", JsonValueKind.Number).GetDouble(),
                             probabilities: Probabilities(answer));
                         AddConfidence(confidence, pair.Name, answer);
                         break;
                     case "noul":
-                        answers[pair.Name] = new EvaluationAnswer("boolean", probability: Property(answer, "noul", JsonValueKind.Number).GetDouble());
+                        answers[pair.Name] = new DecisionAnswer("boolean", probability: Property(answer, "noul", JsonValueKind.Number).GetDouble());
                         break;
                     default:
                         throw new FormatException("Unknown answer type.");
@@ -292,11 +307,11 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
             }
 
             var metadata = JsonDocument.Parse(new JsonObject { ["typesafe"] = new JsonObject { ["confidence"] = confidence } }.ToJsonString()).RootElement.Clone();
-            return new EvaluationModelResult(
+            return new DecisionModelResult(
                 answers,
                 warnings: warnings,
                 usage: new OperationUsage(inputTokens, outputTokens),
-                rounding: new EvaluationRounding(2, 2),
+                rounding: new DecisionRounding(2, 2),
                 providerMetadata: metadata,
                 response: new ProviderResponse(headers, root, modelId: model ?? ModelId));
         }
@@ -478,5 +493,33 @@ public sealed class TypeSafeAiEvaluationModel : IEvaluationCaller
     private static JsonNode? ToNode(object? value)
     {
         return value == null ? null : JsonNode.Parse(JsonSerializer.Serialize(value));
+    }
+}
+
+/// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModelConfig"/>.</summary>
+[Obsolete("Use TypeSafeAiDecisionModelConfig instead.")]
+public sealed class TypeSafeAiEvaluationModelConfig : TypeSafeAiDecisionModelConfig
+{
+}
+
+/// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModel"/>.</summary>
+[Obsolete("Use TypeSafeAiDecisionModel instead.")]
+public sealed class TypeSafeAiEvaluationModel : TypeSafeAiDecisionModel
+{
+    /// <summary>Creates a decision model. <paramref name="modelId"/> may be a model id this library does not know yet.</summary>
+    public TypeSafeAiEvaluationModel(string modelId, TypeSafeAiDecisionModelConfig? config = null)
+        : base(modelId, config)
+    {
+    }
+
+    /// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModel.Deserialize"/>.</summary>
+    public static new TypeSafeAiEvaluationModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return new TypeSafeAiEvaluationModel(options.ModelId, DeserializeConfig(options, httpClient));
     }
 }
