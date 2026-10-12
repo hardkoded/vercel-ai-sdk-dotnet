@@ -117,6 +117,27 @@ public sealed class ResponseValidationTests
     }
 
     [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::response validation::accepts a selected choice within the declared probability rounding", Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_a_selected_choice_within_the_declared_probability_rounding()
+    {
+        var questions = SampleQuestions();
+        questions["topic"] = new DecisionQuestion("choice", questions["topic"].Instructions, new Dictionary<string, object?> { ["billing"] = null, ["support"] = null, ["other"] = null });
+        var roundedAnswers = SampleAnswers();
+        roundedAnswers["topic"] = new DecisionAnswer("choice", choice: "support", probabilities: new Dictionary<string, double> { ["billing"] = 0.44, ["support"] = 0.43, ["other"] = 0.13 });
+        var result = await DecideOperation.DecideAsync(new DecideRequest
+        {
+            Model = new DecideModel { Result = new DecisionModelResult(roundedAnswers, Array.Empty<OperationWarning>(), rounding: new DecisionRounding(2)) },
+            State = "text",
+            Questions = questions,
+        });
+        Assert.Equal(roundedAnswers.Keys, result.Answers.Keys);
+        Assert.Equal("support", result.Answers["topic"].Choice);
+        Assert.Equal(0.44, result.Answers["topic"].Probabilities!["billing"]);
+        Assert.Equal(0.43, result.Answers["topic"].Probabilities!["support"]);
+        Assert.Equal(0.13, result.Answers["topic"].Probabilities!["other"]);
+    }
+
+    [Fact]
     [UpstreamTest("packages/ai/src/decide/decide.test.ts::response validation::accepts rounding within tolerance without modifying the distribution", Coverage = UpstreamCoverage.Covered)]
     public async Task Accepts_rounding_within_tolerance_without_modifying_the_distribution()
     {

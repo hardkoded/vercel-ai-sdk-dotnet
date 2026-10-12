@@ -52,7 +52,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
         if (status == "completed" && fileIds.Count == 0)
         {
-            throw new AiSdkException("OpenAI batch \"" + batchId + "\" completed without batch output.");
+            throw new InvalidResponseDataException(batch, "OpenAI batch \"" + batchId + "\" completed without batch output.");
         }
 
         var items = new List<BatchItem>();
@@ -68,6 +68,11 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
     private static BatchItem Convert(JsonElement line)
     {
+        if (!OpenAIResponsesSchema.IsValidResultLine(line))
+        {
+            throw new TypeValidationException("Type validation failed: Value: " + line.GetRawText() + ".", line);
+        }
+
         var id = Str(line, "custom_id") ?? string.Empty;
         if (line.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
         {
@@ -93,7 +98,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         }
 
         // Upstream converts only the Responses API shape for OpenAI batches.
-        if (body.ValueKind != JsonValueKind.Object || !IsValidResponse(body))
+        if (!OpenAIResponsesSchema.IsValidResponse(body))
         {
             return InvalidResponse(id, "OpenAI returned an invalid Responses batch result.");
         }
@@ -105,7 +110,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
         body.TryGetProperty("output", out var output);
         var incompleteReason = body.TryGetProperty("incomplete_details", out var details) ? Str(details, "reason") : null;
-        if (output.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+        if (output.ValueKind == JsonValueKind.Undefined)
         {
             return InvalidResponse(id, incompleteReason != null ? "OpenAI Responses returned no output (" + incompleteReason + ")." : "OpenAI Responses returned no output.");
         }
@@ -363,50 +368,6 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         }
 
         return item;
-    }
-
-    /// <summary>Checks the parts of the Responses schema that the conversion reads.</summary>
-    private static bool IsValidResponse(JsonElement body)
-    {
-        if (body.TryGetProperty("id", out var responseId) && responseId.ValueKind != JsonValueKind.String)
-        {
-            return false;
-        }
-
-        if (!body.TryGetProperty("output", out var output) || output.ValueKind == JsonValueKind.Null)
-        {
-            return true;
-        }
-
-        if (output.ValueKind != JsonValueKind.Array)
-        {
-            return false;
-        }
-
-        foreach (var entry in output.EnumerateArray())
-        {
-            if (entry.ValueKind != JsonValueKind.Object || Str(entry, "type") == null)
-            {
-                return false;
-            }
-
-            var valid = Str(entry, "type") switch
-            {
-                "message" => entry.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array && parts.EnumerateArray().All(part => Str(part, "text") != null),
-                "reasoning" => Str(entry, "id") != null && entry.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array && summary.EnumerateArray().All(part => Str(part, "text") != null),
-                "function_call" => Str(entry, "call_id") != null && Str(entry, "name") != null && Str(entry, "arguments") != null && Str(entry, "id") != null,
-                "custom_tool_call" => Str(entry, "call_id") != null && Str(entry, "name") != null && Str(entry, "input") != null && Str(entry, "id") != null,
-                "web_search_call" or "file_search_call" => Str(entry, "id") != null,
-                "code_interpreter_call" => Str(entry, "id") != null && Str(entry, "container_id") != null,
-                _ => true,
-            };
-            if (!valid)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static BatchItem InvalidResponse(string id, string message)

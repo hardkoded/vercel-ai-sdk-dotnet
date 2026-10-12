@@ -85,9 +85,83 @@ internal static class OpenAIBatchTestSupport
         }.ToJsonString();
     }
 
-    public static async Task<IReadOnlyList<BatchItem>> GetResultsAsync(RoutedHandler handler)
+    public static async Task<IReadOnlyList<BatchItem>> GetResultsAsync(HttpMessageHandler handler)
     {
         var batch = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ExperimentalBatch()!;
         return await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+    }
+}
+
+/// <summary>Serves each route as separate body chunks and records the request URLs in order.</summary>
+internal sealed class ChunkedHandler : HttpMessageHandler
+{
+    private readonly Dictionary<string, string[]> _chunks = new(StringComparer.Ordinal);
+
+    public List<string> RequestUrls { get; } = new();
+
+    public ChunkedHandler Add(string url, params string[] chunks)
+    {
+        _chunks[url] = chunks;
+        return this;
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var url = request.RequestUri?.AbsoluteUri ?? string.Empty;
+        RequestUrls.Add(url);
+        if (!_chunks.TryGetValue(url, out var chunks))
+        {
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound) { Content = new StringContent("{\"error\":{\"message\":\"no route for " + url + "\"}}") });
+        }
+
+        var content = new StreamContent(new ChunkStream(chunks));
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/jsonl");
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content });
+    }
+
+    private sealed class ChunkStream : Stream
+    {
+        private readonly Queue<byte[]> _chunks;
+
+        public ChunkStream(string[] chunks)
+        {
+            _chunks = new Queue<byte[]>(chunks.Select(chunk => System.Text.Encoding.UTF8.GetBytes(chunk)));
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_chunks.Count == 0)
+            {
+                return 0;
+            }
+
+            var chunk = _chunks.Dequeue();
+            chunk.CopyTo(buffer, offset);
+            return chunk.Length;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

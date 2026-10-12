@@ -41,14 +41,14 @@ public sealed class OpenAIBatchServiceTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::incrementally parses Responses results across chunk boundaries", Coverage = UpstreamCoverage.Partial, Note = "The test handler returns one body, so chunk boundaries and the request URL order are not asserted.")]
+    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::incrementally parses Responses results across chunk boundaries", Coverage = UpstreamCoverage.Covered)]
     public async Task Incrementally_parses_Responses_results_across_chunk_boundaries()
     {
         var first = ResultLine("france", ResponsesResultBody("Paris"));
         var second = ResultLine("germany", ResponsesResultBody("Berlin"));
-        var handler = new RoutedHandler()
+        var handler = new ChunkedHandler()
             .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
-            .Add(OutputUrl, first + "\r\n" + second);
+            .Add(OutputUrl, first[..19], first[19..] + "\r", "\n" + second[..31], second[31..]);
 
         var results = await GetResultsAsync(handler);
 
@@ -74,6 +74,7 @@ public sealed class OpenAIBatchServiceTests
         Assert.Equal("germany", results[1].Id);
         Assert.Equal("succeeded", results[1].Status);
         Assert.Equal("Berlin", Assert.Single(results[1].Text!.Content).Text);
+        Assert.Equal(new[] { BatchUrl, OutputUrl }, handler.RequestUrls);
     }
 
     [Fact]
@@ -107,19 +108,20 @@ public sealed class OpenAIBatchServiceTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::streams output and error files after retrieving fresh batch metadata", Coverage = UpstreamCoverage.Partial, Note = "Request URL order is not asserted.")]
+    [UpstreamTest("packages/openai/src/openai-batch.test.ts::OpenAI batch service::streams output and error files after retrieving fresh batch metadata", Coverage = UpstreamCoverage.Partial, Note = "The OpenAI batch API only downloads results, so the test cannot call the status operation first. The second batch request in upstream's URL order is missing.")]
     public async Task Streams_output_and_error_files_after_retrieving_fresh_batch_metadata()
     {
-        var handler = new RoutedHandler()
+        var handler = new ChunkedHandler()
             .Add(BatchUrl, BatchResponse(outputFileId: "file-output", errorFileId: "file-errors"))
             .Add(OutputUrl, "{\"custom_id\":\"http-error\",\"response\":{\"status_code\":400,\"request_id\":\"request-error\",\"body\":{\"error\":{\"message\":\"Invalid request.\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":\"invalid_request\"}}},\"error\":null}")
             .Add(ErrorsUrl,
-                "{\"custom_id\":\"cancelled\",\"response\":null,\"error\":{\"code\":\"batch_cancelled\",\"message\":\"Batch cancelled.\"}}\n"
-                + "{\"custom_id\":\"expired\",\"response\":null,\"error\":{\"code\":\"batch_expired\",\"message\":\"Batch expired.\"}}\n"
-                + "{\"custom_id\":\"failed\",\"response\":null,\"error\":{\"code\":\"request_timeout\",\"message\":\"Request timed out.\"}}");
+                "{\"custom_id\":\"cancelled\",\"response\":null,\"error\":{\"code\":\"batch_cancelled\",\"message\":\"Batch cancelled.\"}}\n",
+                "{\"custom_id\":\"expired\",\"response\":null,\"error\":{\"code\":\"batch_expired\",\"message\":\"Batch expired.\"}}\n",
+                "{\"custom_id\":\"failed\",\"response\":null,\"error\":{\"code\":\"request_timeout\",\"message\":\"Request timed out.\"}}");
 
         var results = await GetResultsAsync(handler);
 
+        Assert.Equal(new[] { BatchUrl, OutputUrl, ErrorsUrl }, handler.RequestUrls);
         Assert.Equal(4, results.Count);
         Assert.Equal(("http-error", "failed", "Invalid request.", "invalid_request", "invalid_request_error", (int?)400), (results[0].Id, results[0].Status, results[0].ErrorMessage, results[0].ErrorCode, results[0].ErrorType, results[0].ErrorStatusCode));
         Assert.Equal(("cancelled", "cancelled", "Batch cancelled.", "batch_cancelled", (string?)null, (int?)null), (results[1].Id, results[1].Status, results[1].ErrorMessage, results[1].ErrorCode, results[1].ErrorType, results[1].ErrorStatusCode));
