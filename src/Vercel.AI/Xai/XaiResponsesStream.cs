@@ -207,7 +207,7 @@ internal sealed class XaiResponsesStream
                 Fail(root, parts);
                 break;
             case "error":
-                parts.Add(new ErrorStreamPart(Required(root, "message")));
+                parts.Add(StreamError(root, Required(root, "message")));
                 break;
             case "response.function_call_arguments.delta":
                 if (_ongoingToolCalls.TryGetValue(OutputIndex(root), out var toolCallId))
@@ -324,7 +324,7 @@ internal sealed class XaiResponsesStream
 
         if (OpenAIJson.Child(response, "error") is { } error)
         {
-            parts.Add(new ErrorStreamPart(Required(error, "message")));
+            parts.Add(StreamError(root, Required(error, "message")));
         }
     }
 
@@ -384,6 +384,13 @@ internal sealed class XaiResponsesStream
     private static int OutputIndex(JsonElement element)
     {
         return OpenAIJson.Int(element, "output_index") ?? throw new InvalidOperationException("missing output_index");
+    }
+
+    private static ErrorStreamPart StreamError(JsonElement root, string message)
+    {
+        return OpenAIStreamError.CreateProviderStreamError(root) is { } streamError
+            ? new ErrorStreamPart(streamError)
+            : new ErrorStreamPart(message);
     }
 
     private static string Required(JsonElement element, string name)
