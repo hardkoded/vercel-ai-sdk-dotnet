@@ -35,6 +35,21 @@ public sealed class DoGenerateSettingsAndOptionsResponseFormatTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should send response format json object when no schema provided", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_response_format_json_object_when_no_schema_provided()
+    {
+        var capture = EmptyResponse();
+        var options = HelloPrompt();
+        options.JsonResponse = true;
+
+        await Model(capture).DoGenerateAsync(options, CancellationToken.None);
+
+        var expected = "{\"input\":[{\"content\":[{\"text\":\"hello\",\"type\":\"input_text\"}],\"role\":\"user\"}],\"model\":\"grok-4-fast-non-reasoning\","
+            + "\"text\":{\"format\":{\"type\":\"json_object\"}}}";
+        JsonAssert.Equal(Body(capture), expected);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should use default name when responseFormat.name is not provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_use_default_name_when_responseFormat_name_is_not_provided()
     {
