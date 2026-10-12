@@ -54,11 +54,16 @@ public sealed class TestLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+    public Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         Calls.Add(options);
+        return Task.FromResult(new LanguageModelStreamResult(Stream(cancellationToken)));
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> Stream([EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var parts = StreamParts ?? new LanguageModelStreamPart[]
         {
             new TextDeltaStreamPart("text", "ok"),

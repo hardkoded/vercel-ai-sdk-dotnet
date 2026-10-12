@@ -605,7 +605,7 @@ internal static class AnthropicAssertions
         handler.ResponseBody = "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude-sonnet-4-6\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hi\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}\n\ndata: {\"type\":\"message_stop\"}\n\n";
         var provider = AnthropicParity.Aws(handler, new AnthropicOptions { Region = "us-west-2", WorkspaceId = "wrkspc_test", ApiKey = "test-api-key" });
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in provider.LanguageModel("claude-sonnet-4-6").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None).ConfigureAwait(false))
+        await foreach (var part in (await provider.LanguageModel("claude-sonnet-4-6").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)).ConfigureAwait(false))
         {
             parts.Add(part);
         }

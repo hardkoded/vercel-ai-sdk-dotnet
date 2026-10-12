@@ -45,16 +45,12 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: false);
         var response = await _provider.PostJsonAsync(_provider.CompletionsUri(ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = response.Headers;
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var root = document.RootElement;
         if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
@@ -94,14 +90,26 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
         var sse = await _provider.PostSseAsync(_provider.CompletionsUri(ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = sse.Headers;
+        return new LanguageModelStreamResult(
+            StreamAsync(options, prepared, sse, cancellationToken),
+            LanguageModelStreamRequest.FromJson(prepared.Json),
+            new LanguageModelStreamResponse(sse.Headers));
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        Prepared prepared,
+        OpenAICompatibleSseResponse sse,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var disposable = sse;
         yield return new StreamStartStreamPart(prepared.Warnings);
 
         string? finishRaw = null;

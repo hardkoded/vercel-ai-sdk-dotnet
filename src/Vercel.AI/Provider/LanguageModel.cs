@@ -1693,8 +1693,75 @@ public interface ILanguageModel
     /// <summary>Generates a complete result.</summary>
     Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);
 
-    /// <summary>Streams partial results.</summary>
-    IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);
+    /// <summary>Streams partial results. The result carries the stream with the request and response info.</summary>
+    Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);
+}
+
+/// <summary>Request info for a stream call. Maps to the <c>request</c> field of <c>doStream</c>.</summary>
+public sealed class LanguageModelStreamRequest
+{
+    /// <summary>Creates request info.</summary>
+    public LanguageModelStreamRequest(JsonElement? body = null)
+    {
+        Body = body;
+    }
+
+    /// <summary>Creates request info from the JSON text that was sent.</summary>
+    public static LanguageModelStreamRequest FromJson(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return new LanguageModelStreamRequest(document.RootElement.Clone());
+    }
+
+    /// <summary>Request body sent to the provider, for debugging.</summary>
+    public JsonElement? Body { get; }
+}
+
+/// <summary>Response info for a stream call. Maps to the <c>response</c> field of <c>doStream</c>.</summary>
+public sealed class LanguageModelStreamResponse
+{
+    /// <summary>Creates response info.</summary>
+    public LanguageModelStreamResponse(IReadOnlyDictionary<string, string>? headers = null)
+    {
+        Headers = headers ?? new Dictionary<string, string>();
+    }
+
+    /// <summary>HTTP response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
+/// <summary>
+/// What <see cref="ILanguageModel.DoStreamAsync"/> returns: the stream plus the request and response info.
+/// Maps to the <c>{ stream, request, response }</c> object returned by <c>doStream</c>.
+/// Enumerating the result enumerates <see cref="Stream"/>.
+/// </summary>
+public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelStreamPart>
+{
+    /// <summary>Creates a stream result.</summary>
+    public LanguageModelStreamResult(
+        IAsyncEnumerable<LanguageModelStreamPart> stream,
+        LanguageModelStreamRequest? request = null,
+        LanguageModelStreamResponse? response = null)
+    {
+        Stream = stream ?? throw new ArgumentNullException(nameof(stream));
+        Request = request;
+        Response = response;
+    }
+
+    /// <summary>The stream parts.</summary>
+    public IAsyncEnumerable<LanguageModelStreamPart> Stream { get; }
+
+    /// <summary>Request info, when the model reports it.</summary>
+    public LanguageModelStreamRequest? Request { get; }
+
+    /// <summary>Response info, when the model reports it.</summary>
+    public LanguageModelStreamResponse? Response { get; }
+
+    /// <inheritdoc />
+    public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return Stream.GetAsyncEnumerator(cancellationToken);
+    }
 }
 
 /// <summary>Maps provider finish-reason strings onto <see cref="FinishReason"/>.</summary>

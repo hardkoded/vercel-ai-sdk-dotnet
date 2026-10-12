@@ -242,7 +242,7 @@ public sealed class DoStreamTests
         model.StreamResponseHandler = (_, _, _) => Task.FromResult<(IReadOnlyDictionary<string, string>, IAsyncEnumerable<AmazonBedrockStreamChunk>)>(
             (new Dictionary<string, string>(), FailedChunk("Chunk Parsing Failed")));
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in model.DoStreamAsync(Call(), CancellationToken.None))
+        await foreach (var part in (await model.DoStreamAsync(Call(), CancellationToken.None)))
         {
             parts.Add(part);
         }
@@ -398,7 +398,8 @@ public sealed class DoStreamTests
             }),
             new Dictionary<string, string> { ["x-amzn-requestid"] = "test-request-id", ["x-amzn-trace-id"] = "test-trace-id" });
         var model = (AmazonBedrockLanguageModel)CreateModel(handler);
-        await foreach (var _ in model.DoStreamAsync(Call(), CancellationToken.None))
+        var result = await model.DoStreamAsync(Call(), CancellationToken.None);
+        await foreach (var _ in result)
         {
         }
 
@@ -411,7 +412,7 @@ public sealed class DoStreamTests
                 ["x-amzn-requestid"] = "test-request-id",
                 ["x-amzn-trace-id"] = "test-trace-id",
             },
-            model.LastResponseHeaders);
+            result.Response!.Headers);
     }
 
     [Fact]

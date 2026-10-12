@@ -35,9 +35,9 @@ public sealed class JsonResponseToolStreamTests
             IncludeRawChunks = true,
         };
 
-        var parts = await UpstreamChat.Read(GroqProvider.Create(new OpenAICompatibleOptions { ApiKey = "test" }, capture)
+        var parts = await UpstreamChat.Read((await GroqProvider.Create(new OpenAICompatibleOptions { ApiKey = "test" }, capture)
             .LanguageModel("openai/gpt-oss-120b")
-            .DoStreamAsync(options, CancellationToken.None));
+            .DoStreamAsync(options, CancellationToken.None)));
 
         var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
         Assert.Equal(new[] { "{\"date\"", ":\"2031-", "06-17\"}" }, deltas.Select(part => part.Delta));
@@ -76,7 +76,7 @@ public sealed class JsonResponseToolStreamTests
             Tools = new[] { GoogleUpstream.Function("resolveDate", EmptyObject, null) },
         };
 
-        var parts = await GoogleUpstream.Collect(GoogleUpstream.Client(handler).LanguageModel("gemini-2.5-flash-lite").DoStreamAsync(options, CancellationToken.None));
+        var parts = await GoogleUpstream.Collect((await GoogleUpstream.Client(handler).LanguageModel("gemini-2.5-flash-lite").DoStreamAsync(options, CancellationToken.None)));
 
         Assert.Equal(
             new[] { "stream-start", "reasoning-start", "reasoning-delta", "text-start", "text-delta", "text-end", "reasoning-end", "finish" },

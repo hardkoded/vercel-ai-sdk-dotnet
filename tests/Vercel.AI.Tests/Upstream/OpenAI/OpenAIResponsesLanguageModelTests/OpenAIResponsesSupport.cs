@@ -37,7 +37,7 @@ internal static class OpenAIResponsesSupport
     {
         var capture = new OpenAICapture { ServerSentEvents = serverSentEvents };
         return await OpenAIUpstream.Read(
-            OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-nano").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+            (await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-nano").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
     }
 
     internal static JsonNode CitationsJson(IReadOnlyList<Citation>? citations) =>

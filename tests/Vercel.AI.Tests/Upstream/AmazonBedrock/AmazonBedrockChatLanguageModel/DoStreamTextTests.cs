@@ -46,7 +46,7 @@ public sealed class DoStreamTextTests
     [UpstreamTest(Suite + "should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_expose_the_raw_response_headers()
     {
-        var model = await StreamModel(Fixture("text", new Dictionary<string, string> { ["test-header"] = "test-value" }));
+        var result = await StreamModel(Fixture("text", new Dictionary<string, string> { ["test-header"] = "test-value" }));
 
         Assert.Equal(
             new Dictionary<string, string>
@@ -56,30 +56,31 @@ public sealed class DoStreamTextTests
                 ["content-type"] = "application/vnd.amazon.eventstream",
                 ["test-header"] = "test-value",
             },
-            model.LastResponseHeaders);
+            result.Response!.Headers);
     }
 
     [Fact]
     [UpstreamTest(Suite + "should return the request body", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_the_request_body()
     {
-        var model = await StreamModel(Fixture("text"));
+        var result = await StreamModel(Fixture("text"));
 
-        using var body = JsonDocument.Parse(model.LastRequestBody!);
+        var body = result.Request!.Body!.Value;
         Assert.True(JsonEquals(
             """
             {"additionalModelResponseFieldPaths":["/delta/stop_sequence"],"messages":[{"content":[{"text":"Hello"}],"role":"user"}],"system":[{"text":"System Prompt"}]}
             """,
-            body.RootElement));
+            body));
     }
 
-    private static async Task<AmazonBedrockLanguageModel> StreamModel(UpstreamEventStreamHandler handler)
+    private static async Task<Vercel.AI.Provider.LanguageModelStreamResult> StreamModel(UpstreamEventStreamHandler handler)
     {
         var model = (AmazonBedrockLanguageModel)CreateModel(handler);
-        await foreach (var _ in model.DoStreamAsync(Call(), CancellationToken.None))
+        var result = await model.DoStreamAsync(Call(), CancellationToken.None);
+        await foreach (var _ in result)
         {
         }
 
-        return model;
+        return result;
     }
 }

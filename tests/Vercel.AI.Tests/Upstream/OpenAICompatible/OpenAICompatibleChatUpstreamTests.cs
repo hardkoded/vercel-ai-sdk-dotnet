@@ -344,7 +344,6 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var model = UpstreamChat.Model(capture);
         var result = await model.DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal("req-9", result.ResponseHeaders["x-request-id"]);
-        Assert.Equal("req-9", model.LastResponseHeaders["x-request-id"]);
     }
 
     [Fact]
@@ -627,7 +626,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     {
         var capture = StreamCapture();
         var model = UpstreamChat.Model(capture, configure: settings => settings.IncludeUsage = true);
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream"]!.GetValue<bool>());
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
@@ -639,7 +638,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var capture = StreamCapture(UpstreamChat.Sse(
             "{\"choices\":[{\"delta\":{\"reasoning_content\":\"Think\"}}]}",
             "{\"choices\":[{\"delta\":{\"content\":\"Hi\"},\"finish_reason\":\"stop\"}]}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.IsType<ReasoningStartStreamPart>(parts[1]);
         Assert.Equal("Think", Assert.IsType<ReasoningDeltaStreamPart>(parts[2]).Delta);
         Assert.IsType<ReasoningEndStreamPart>(parts[3]);
@@ -655,7 +654,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var capture = StreamCapture(UpstreamChat.Sse(
             "{\"choices\":[{\"delta\":{\"reasoning_content\":\"Think\",\"tool_calls\":[]}}]}",
             "{\"choices\":[{\"delta\":{\"reasoning_content\":\" more\"},\"finish_reason\":\"stop\"}]}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         var reasoning = parts.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta).ToArray();
         Assert.Equal(new[] { "Think", " more" }, reasoning);
         Assert.Single(parts.OfType<ReasoningEndStreamPart>());
@@ -666,7 +665,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     public async Task Unparsable_stream_chunks_finish_with_error()
     {
         var capture = StreamCapture(UpstreamChat.Sse("not-json", "{\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Contains(parts, part => part is ErrorStreamPart);
         Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]).FinishReason);
     }
@@ -676,7 +675,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     public async Task Error_chunks_finish_as_error_when_no_later_finish_reason_arrives()
     {
         var capture = StreamCapture(UpstreamChat.Sse("{\"error\":{\"message\":\"quota\"}}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Equal("quota", Assert.IsType<ErrorStreamPart>(parts[1]).Message);
         Assert.Equal(FinishReason.Error, Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]).FinishReason);
     }
@@ -686,7 +685,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     public async Task A_stream_without_a_finish_reason_is_an_error()
     {
         var capture = StreamCapture(UpstreamChat.Sse("{\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Contains(parts, part => part is ErrorStreamPart error && error.Message == "Response stream ended without a finish reason.");
         Assert.Equal(FinishReason.Error, Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]).FinishReason);
     }
@@ -697,7 +696,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     {
         var capture = StreamCapture(UpstreamChat.Sse(
             "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"function\":{\"arguments\":\"{}\"}}]},\"finish_reason\":\"tool_calls\"}]}"));
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
+        var error = await Assert.ThrowsAsync<AiSdkException>(async () => await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None))));
         Assert.Equal("Expected 'function.name' to be a string.", error.Message);
     }
 
@@ -708,7 +707,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var capture = StreamCapture(UpstreamChat.Sse(
             "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"function\":{\"arguments\":\"{\\\"a\\\":\"}}]}}]}",
             "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"weather\",\"arguments\":\"1}\"}}]},\"finish_reason\":\"tool_calls\"}]}"));
-        var parts = await UpstreamChat.Read(UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await UpstreamChat.Model(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         var call = parts.OfType<ToolCallStreamPart>().Single();
         Assert.Equal("call_1", call.ToolCallId);
         Assert.Equal("weather", call.ToolName);

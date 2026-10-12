@@ -19,9 +19,9 @@ public interface ILanguageModelMiddleware
         CancellationToken cancellationToken);
 
     /// <summary>Wraps a stream call.</summary>
-    IAsyncEnumerable<LanguageModelStreamPart> WrapStreamAsync(
+    Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, IAsyncEnumerable<LanguageModelStreamPart>> next,
+        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
         CancellationToken cancellationToken);
 }
 
@@ -38,15 +38,12 @@ public abstract class LanguageModelMiddleware : ILanguageModelMiddleware
     }
 
     /// <inheritdoc />
-    public virtual async IAsyncEnumerable<LanguageModelStreamPart> WrapStreamAsync(
+    public virtual Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, IAsyncEnumerable<LanguageModelStreamPart>> next,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        CancellationToken cancellationToken)
     {
-        await foreach (var part in next(options, cancellationToken).ConfigureAwait(false))
-        {
-            yield return part;
-        }
+        return next(options, cancellationToken);
     }
 }
 
@@ -153,9 +150,17 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
     }
 
     /// <inheritdoc />
-    public override async IAsyncEnumerable<LanguageModelStreamPart> WrapStreamAsync(
+    public override async Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, IAsyncEnumerable<LanguageModelStreamPart>> next,
+        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        CancellationToken cancellationToken)
+    {
+        var inner = await next(options, cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(Extract(inner.Stream, cancellationToken), inner.Request, inner.Response);
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> Extract(
+        IAsyncEnumerable<LanguageModelStreamPart> source,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var extractions = new Dictionary<string, StreamExtraction>();
@@ -164,7 +169,7 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
         var delayedTextStarts = new Dictionary<string, TextStartStreamPart>();
         var reasoningIds = 0;
         var output = new List<LanguageModelStreamPart>();
-        await foreach (var part in next(options, cancellationToken).ConfigureAwait(false))
+        await foreach (var part in source.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             switch (part)
             {
@@ -384,12 +389,20 @@ internal static class MiddlewareResults
 public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
 {
     /// <summary>Generates once and yields the text as a single delta.</summary>
-    public async IAsyncEnumerable<LanguageModelStreamPart> Simulate(
+    public async Task<LanguageModelStreamResult> Simulate(
         ILanguageModel model,
         LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         var result = await model.DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(
+            Parts(result),
+            response: new LanguageModelStreamResponse(result.ResponseHeaders));
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
         var id = 0;
         foreach (var part in result.Content)
         {
@@ -438,9 +451,9 @@ public sealed class DefaultSettingsMiddleware : LanguageModelMiddleware
     }
 
     /// <inheritdoc />
-    public override IAsyncEnumerable<LanguageModelStreamPart> WrapStreamAsync(
+    public override Task<LanguageModelStreamResult> WrapStreamAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, IAsyncEnumerable<LanguageModelStreamPart>> next,
+        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
         CancellationToken cancellationToken)
     {
         Apply(options);
@@ -524,7 +537,7 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
         return _middleware.WrapGenerateAsync(options, _inner.DoGenerateAsync, cancellationToken);
     }
 
-    public IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         if (_middleware is SimulateStreamingMiddleware simulate)
         {

@@ -1378,7 +1378,7 @@ public sealed class OpenAIMediaUpstreamTests
     public async Task PassesCompletionStreamPrompt()
     {
         var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
-        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
         OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo-instruct\",\"prompt\":\"user:\\nHello\\n\\nassistant:\\n\",\"stop\":[\"\\nuser:\"],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
         Assert.EndsWith("/completions", capture.Uri, StringComparison.Ordinal);
     }
@@ -1388,7 +1388,7 @@ public sealed class OpenAIMediaUpstreamTests
     public async Task PassesCompletionStreamHeaders()
     {
         var capture = new OpenAICapture { ServerSentEvents = CompletionStreamOk };
-        await OpenAIUpstream.Read(StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(CompletionCall(), CancellationToken.None));
+        await OpenAIUpstream.Read((await StandardProvider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(CompletionCall(), CancellationToken.None)));
         AssertCompletionHeaders(capture);
         Assert.Contains(OpenAIProvider.UserAgentSuffix, OpenAIUpstream.Header(capture, "user-agent"), StringComparison.Ordinal);
     }
@@ -1462,7 +1462,7 @@ public sealed class OpenAIMediaUpstreamTests
     private static async Task<List<LanguageModelStreamPart>> StreamCompletion(string events)
     {
         var capture = new OpenAICapture { ServerSentEvents = events };
-        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+        return await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
     }
 
     private static async Task<OpenAIEmbeddingCallResult> Embed(string json, string modelId, IReadOnlyList<string> values)

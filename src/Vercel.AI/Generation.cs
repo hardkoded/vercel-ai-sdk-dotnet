@@ -219,7 +219,8 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
-                var enumerator = current.DoStreamAsync(callOptions, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
                 var disposal = abort.Track(enumerator);
                 try
                 {

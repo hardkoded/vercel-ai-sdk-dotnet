@@ -82,7 +82,7 @@ internal static class ReasoningEffortUpdateSupport
         else
         {
             var parts = new List<LanguageModelStreamPart>();
-            await foreach (var part in model.DoStreamAsync(callOptions, CancellationToken.None))
+            await foreach (var part in (await model.DoStreamAsync(callOptions, CancellationToken.None)))
             {
                 parts.Add(part);
             }

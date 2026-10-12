@@ -97,7 +97,7 @@ public sealed class CerebrasUpstreamTests
     [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::normalizes captured streamed structured output with tool calls finish reason", Coverage = UpstreamCoverage.Covered)]
     public async Task A_json_mode_stream_with_text_finishes_with_stop()
     {
-        var parts = await UpstreamChat.Read(Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None)));
         var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal("tool_calls", finish.RawFinishReason);
@@ -116,7 +116,7 @@ public sealed class CerebrasUpstreamTests
     [UpstreamTest("packages/cerebras/src/cerebras-chat-language-model.test.ts::doStream > finish reason normalization::drops the spurious tool calls from a mixed structured-output stream", Coverage = UpstreamCoverage.Covered)]
     public async Task A_json_mode_stream_with_text_drops_tool_calls()
     {
-        var parts = await UpstreamChat.Read(Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Chat(StreamFixtureCapture()).DoStreamAsync(JsonMode(), CancellationToken.None)));
         Assert.Empty(parts.OfType<ToolCallStreamPart>());
     }
 

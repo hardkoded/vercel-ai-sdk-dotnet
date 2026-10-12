@@ -333,9 +333,9 @@ internal static class XaiResponsesLanguageModelSupport
         return UpstreamChat.Body(capture);
     }
 
-    internal static Task<List<LanguageModelStreamPart>> Collect(XaiResponsesLanguageModelType model, LanguageModelCallOptions options)
+    internal static async Task<List<LanguageModelStreamPart>> Collect(XaiResponsesLanguageModelType model, LanguageModelCallOptions options)
     {
-        return UpstreamChat.Read(model.DoStreamAsync(options, CancellationToken.None));
+        return await UpstreamChat.Read((await model.DoStreamAsync(options, CancellationToken.None)));
     }
 
     internal static LanguageModelTool WeatherTool()

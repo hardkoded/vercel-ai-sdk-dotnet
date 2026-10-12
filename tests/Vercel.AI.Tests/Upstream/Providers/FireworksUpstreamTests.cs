@@ -533,7 +533,7 @@ public sealed class FireworksUpstreamTests
     public async Task Chat_streams_request_usage()
     {
         var capture = Stream("{\"choices\":[{\"delta\":{\"content\":\"Hi\"},\"finish_reason\":\"stop\"}]}");
-        await UpstreamChat.Read(Chat(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await Chat(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 
@@ -600,7 +600,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = Stream("{\"choices\":[{\"text\":\"Hi\",\"finish_reason\":\"stop\"}]}");
         var model = FireworksProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).CompletionModel("test-model");
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 
