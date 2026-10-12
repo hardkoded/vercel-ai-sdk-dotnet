@@ -89,13 +89,13 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Perplexity sends `xhigh`.
 - Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
 - OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The provider options `reasoningEffort` and `reasoningSummary`, under the provider `Name`, set `reasoning.effort` and `reasoning.summary`.
-- xAI Responses (`XaiProvider.ResponsesModel`) sends `reasoning.effort` (`minimal` becomes `low`). `xhigh` and `max` are sent as `xhigh` on `grok-4.6` and as `high` on other models, with a `compatibility` warning when the level changes. The `grok-4.20` reasoning and non-reasoning models reject the parameter: they get no `reasoning` object and an `unsupported` warning. A `reasoningEffort` provider option wins and adds no warning.
+- xAI Responses (`XaiProvider.LanguageModel` and `XaiProvider.ResponsesModel`) sends `reasoning.effort` (`minimal` becomes `low`). `xhigh` and `max` are sent as `xhigh` on `grok-4.6` and as `high` on other models, with a `compatibility` warning when the level changes. The `grok-4.20` reasoning and non-reasoning models reject the parameter: they get no `reasoning` object and an `unsupported` warning. A `reasoningEffort` provider option wins and adds no warning.
 
 Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
 
 Groq rejects `response_format` together with tools, and Gemini before Gemini 3 rejects JSON response formatting together with function tools. When a call has a JSON schema and at least one function tool, these providers send an internal function tool whose arguments are the structured output, and turn that tool call back into text. The tool is named `json`, or `json_1`, `json_2`, and so on when a caller tool already uses the name. Its description is the output description (`OutputSpec.Object(schema, name, description)`, or `LanguageModelCallOptions.JsonSchemaDescription`), or `Respond with a JSON object.`. Tool choice `Tool("name")` is kept, `None` selects the response tool, and any other choice becomes `Required`. Groq sets `parallel_tool_calls` to false and skips the `structuredOutputs` warning on this path. Gemini 3 keeps native `responseMimeType` and `responseJsonSchema` with automatic or omitted tool choice, and uses the response tool only for `Required` or a named tool. Conversational text is dropped, calls to your own tools stay tool calls, and a response that has only the response tool finishes with `Stop`. Without function tools, both providers keep native structured output. `JsonResponseTools.ConvertJsonResponseToolStream` applies the same rewrite to a stream of `LanguageModelStreamPart`.
 
-OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
+OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
 
@@ -258,17 +258,17 @@ The HeyGen video endpoint does not document token counts or credit consumption i
 
 ## xAI Responses
 
-`XaiProvider.ResponsesModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`). The provider id is `xai.responses`. `XaiProvider.LanguageModel(modelId)` still uses Chat Completions.
+`XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.
 
 ```csharp
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Xai;
 
 var xai = XaiProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY") });
-var model = xai.ResponsesModel("grok-4.3");
+var model = xai.LanguageModel("grok-4.3");
 ```
 
-The model supports text, image, and file input, streaming, function tools, `JsonSchema` structured output, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.
+The model supports text, image, and file input, streaming, function tools, xAI provider-defined tools, `JsonSchema` structured output (with `JsonSchemaName` and `JsonSchemaDescription`), `JsonResponse`, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`, and the `itemId` on each `reasoning-delta`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.
 
 ### Provider options
 
@@ -287,9 +287,48 @@ An image file part accepts the provider option `xai.imageDetail` (`low`, `high`,
 
 `providerMetadata.xai` holds `costInUsdTicks`, `serviceTier`, `promptCacheKey`, and `safetyIdentifier` when the response reports them.
 
+### Provider-defined tools
+
+The Responses API has server-side tools that the model runs on xAI's servers during its reasoning. Pass them in `LanguageModelCallOptions.Tools` with `LanguageModelTool.ProviderDefined(id, name, args)`. `args` is a JSON object with the parameters below. Invalid arguments throw a `TypeValidationException`.
+
+```csharp
+var result = await model.DoGenerateAsync(
+    new LanguageModelCallOptions
+    {
+        Prompt = new ModelMessage[] { new UserModelMessage("What are the latest developments in AI?") },
+        Tools = new[]
+        {
+            LanguageModelTool.ProviderDefined(
+                "xai.web_search",
+                "web_search",
+                JsonDocument.Parse("""{"allowedDomains":["arxiv.org","openai.com"],"enableImageUnderstanding":true}""").RootElement),
+        },
+    },
+    CancellationToken.None);
+```
+
+- `xai.web_search`: real-time web search and page browsing. **allowedDomains** _string[]_ (max 5) and **excludedDomains** _string[]_ (max 5) cannot be used together. **enableImageSearch** _bool_ lets the model run an image search when images help the answer. **enableImageUnderstanding** _bool_ lets the model view images it finds, and uses more tokens.
+- `xai.x_search`: search X posts. **allowedXHandles** _string[]_ (max 20) and **excludedXHandles** _string[]_ (max 20) cannot be used together. **fromDate** and **toDate** _string_ (`YYYY-MM-DD`). **enableImageUnderstanding** and **enableVideoUnderstanding** _bool_.
+- `xai.code_execution`: runs Python code. No parameters.
+- `xai.view_image`: views and analyzes images. No parameters.
+- `xai.view_x_video`: views and analyzes videos from X posts. No parameters.
+- `xai.image_generation`: creates and edits images with Grok Imagine. **action** _string_: `auto` (the default), `generate`, or `edit`. The tool takes no size or format parameters. Ask for an aspect ratio in the prompt.
+- `xai.mcp`: connects to a remote MCP server. **serverUrl** _string_ (required), **serverLabel** _string_, **serverDescription** _string_, **allowedTools** _string[]_ (all tools when not set), **headers** _object_ of strings, and **authorization** _string_ (for example `Bearer token123`).
+- `xai.file_search`: searches xAI vector stores (collections). **vectorStoreIds** _string[]_ (required) and **maxNumResults** _number_. Add `file_search_call.results` to the `include` provider option to get the matching file content and scores. File search needs a grok-4 family model.
+
+Another provider-defined tool id is left out with an `unsupported` warning (`provider-defined tool <name>`). xAI can force only function tools, so a `ToolChoice.Tool(name)` that selects a provider-defined tool is not sent and adds an `unsupported` warning (`toolChoice for server-side tool "<name>"`).
+
+The result has a `GeneratedToolCall` with `ProviderExecuted` set for each server-side call, named after the tool you declared. xAI reports sub-tools such as `x_keyword_search` or `browse_page`, and they map back to that name. Web search, file search, and image generation calls also return a `GeneratedToolResult`:
+
+- web search: `{ action, sources }`. `action` is `{ type: "search", query, queries }`, `{ type: "openPage", url }`, or `{ type: "findInPage", url, pattern }`. `sources` lists `{ type: "url", url }` when xAI sends them (request them with the `web_search_call.action.sources` include).
+- file search: `{ queries, results }`, where each result has `fileId`, `filename`, `score`, and `text`. `results` is null when xAI sends none.
+- image generation: `{ result, prompt }`, where `result` is the base64 image. A call without an image gives an error result (`IsError`).
+
+Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool-call` once per server-side call, and a `tool-result` part when the call is done (`ToolResultStreamPart.IsError` marks a failed image generation). A prompt replays only the client-side tool calls: assistant tool calls with `ProviderExecuted` set and assistant tool results are not sent back. `GenerateText` and `StreamText` cannot declare provider-defined tools yet ([#403](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/403)), so use the model directly.
+
 ### Not included
 
-The xAI provider-defined tools (web search, X search, code execution, file search, image generation, view image, view X video, and MCP) are not mapped, because the port has no provider-defined tools. Stream error parts carry the message only, without the status code and retry flag that upstream adds. Tool results with image content are not sent.
+Tool results whose output is content with images (`input_image` in `function_call_output`) are not sent, because `ToolModelMessage` has no multipart content ([#327](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/327)).
 
 ## Uploaded File References
 

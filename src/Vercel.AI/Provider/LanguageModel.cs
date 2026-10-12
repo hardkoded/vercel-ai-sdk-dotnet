@@ -1404,6 +1404,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
     /// <summary>Result value.</summary>
     public JsonElement Result { get; }
 
+    /// <summary>Whether the tool failed. <see cref="Result"/> then holds the error.</summary>
+    public bool IsError { get; init; }
+
     /// <summary>Provider metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
 }

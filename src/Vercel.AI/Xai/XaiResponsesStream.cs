@@ -13,6 +13,8 @@ namespace Vercel.AI.Xai;
 internal sealed class XaiResponsesStream
 {
     private readonly Func<string> _generateId;
+    private readonly XaiToolNames _toolNames;
+    private readonly HashSet<string> _seenToolCalls = new(StringComparer.Ordinal);
     private readonly List<string> _textBlocks = new();
     private readonly HashSet<string> _textBlockSet = new(StringComparer.Ordinal);
     private readonly HashSet<string> _activeReasoning = new(StringComparer.Ordinal);
@@ -27,9 +29,10 @@ internal sealed class XaiResponsesStream
     private string? _promptCacheKey;
     private string? _safetyIdentifier;
 
-    public XaiResponsesStream(Func<string> generateId)
+    public XaiResponsesStream(Func<string> generateId, XaiToolNames toolNames)
     {
         _generateId = generateId;
+        _toolNames = toolNames;
     }
 
     /// <summary>Metadata of a reasoning item. Null fields are left out.</summary>
@@ -92,10 +95,11 @@ internal sealed class XaiResponsesStream
         return new GeneratedSource(generateId(), url, OpenAIJson.String(annotation, "title") ?? url);
     }
 
-    public static long? CreatedAt(JsonElement response)
+    /// <summary>The <c>created_at</c> time of a response. Zero is a valid time, so it gives the Unix epoch.</summary>
+    public static DateTimeOffset? CreatedAt(JsonElement response)
     {
         return OpenAIJson.Child(response, "created_at") is { ValueKind: JsonValueKind.Number } created && created.TryGetInt64(out var seconds)
-            ? seconds
+            ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
     }
 
@@ -168,7 +172,7 @@ internal sealed class XaiResponsesStream
                     parts.Add(new ResponseMetadataStreamPart(
                         OpenAIJson.String(response, "id"),
                         OpenAIJson.String(response, "model"),
-                        OpenAIJson.UnixSeconds(CreatedAt(response))));
+                        CreatedAt(response)));
                 }
 
                 break;
@@ -176,12 +180,13 @@ internal sealed class XaiResponsesStream
                 StartReasoning(Required(root, "item_id"), parts);
                 break;
             case "response.reasoning_summary_text.delta":
-                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(Required(root, "item_id")), Required(root, "delta")));
+                var summaryItem = Required(root, "item_id");
+                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(summaryItem), Required(root, "delta"), ReasoningMetadata(summaryItem, null)));
                 break;
             case "response.reasoning_text.delta":
                 var reasoningItem = Required(root, "item_id");
                 StartReasoning(reasoningItem, parts);
-                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(reasoningItem), Required(root, "delta")));
+                parts.Add(new ReasoningDeltaStreamPart(ReasoningId(reasoningItem), Required(root, "delta"), ReasoningMetadata(reasoningItem, null)));
                 break;
             case "response.output_text.delta":
                 var blockId = TextId(Required(root, "item_id"));
@@ -216,6 +221,12 @@ internal sealed class XaiResponsesStream
                 }
 
                 break;
+            case "response.image_generation_call.in_progress":
+            case "response.image_generation_call.generating":
+            case "response.image_generation_call.completed":
+                var imageItem = Required(root, "item_id");
+                StartProviderToolCall(imageItem, _toolNames.Resolve("image_generation_call", null), "{}", parts);
+                break;
             case "response.output_item.added":
             case "response.output_item.done":
                 Item(type == "response.output_item.done", root, parts);
@@ -226,7 +237,14 @@ internal sealed class XaiResponsesStream
     private void Item(bool done, JsonElement root, List<LanguageModelStreamPart> parts)
     {
         var item = OpenAIJson.Child(root, "item") ?? throw new InvalidOperationException("missing item");
-        switch (OpenAIJson.String(item, "type"))
+        var itemType = OpenAIJson.String(item, "type");
+        if (XaiResponsesOutput.IsProviderToolItem(itemType))
+        {
+            ProviderToolItem(done, itemType!, item, parts);
+            return;
+        }
+
+        switch (itemType)
         {
             case "reasoning":
                 if (done)
@@ -259,6 +277,54 @@ internal sealed class XaiResponsesStream
 
                 break;
         }
+    }
+
+    private void ProviderToolItem(bool done, string itemType, JsonElement item, List<LanguageModelStreamPart> parts)
+    {
+        var id = Required(item, "id");
+        var toolName = _toolNames.Resolve(itemType, OpenAIJson.String(item, "name"));
+
+        // A custom tool call has its final input only when the item is done.
+        if (itemType != "custom_tool_call" || done)
+        {
+            StartProviderToolCall(id, toolName, XaiResponsesOutput.ToolInput(itemType, item), parts);
+        }
+
+        if (!done)
+        {
+            return;
+        }
+
+        switch (itemType)
+        {
+            case "file_search_call":
+                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(XaiResponsesOutput.FileSearchResult(item))));
+                break;
+            case "image_generation_call":
+                var (result, isError) = XaiResponsesOutput.ImageGenerationResult(item);
+                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(result)) { IsError = isError });
+                break;
+            case "web_search_call":
+                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(XaiResponsesOutput.WebSearchResult(OpenAIJson.Child(item, "action")))));
+                break;
+            default:
+                parts.Add(new ToolResultStreamPart(id, toolName, OpenAIJson.Element(new JsonObject())));
+                break;
+        }
+    }
+
+    /// <summary>Sends the input and the call of a provider-executed tool once per item id.</summary>
+    private void StartProviderToolCall(string id, string toolName, string input, List<LanguageModelStreamPart> parts)
+    {
+        if (!_seenToolCalls.Add(id))
+        {
+            return;
+        }
+
+        parts.Add(new ToolInputStartStreamPart(id, toolName));
+        parts.Add(new ToolInputDeltaStreamPart(id, input));
+        parts.Add(new ToolInputEndStreamPart(id));
+        parts.Add(new ToolCallStreamPart(id, toolName, input) { ProviderExecuted = true });
     }
 
     private void Message(JsonElement item, List<LanguageModelStreamPart> parts)

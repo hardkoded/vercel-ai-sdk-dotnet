@@ -31,6 +31,28 @@ public sealed class MultiTurnConversationsTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should handle conversation with server-side tool calls and item references", Coverage = UpstreamCoverage.Covered)]
+    public void Should_handle_conversation_with_server_side_tool_calls_and_item_references()
+    {
+        var call = new GeneratedToolCall("ws_123", "web_search", "{}") { ProviderExecuted = true };
+        var result = new ToolModelMessage("ws_123", "web_search", "{}", isError: false, outputType: "json");
+
+        var input = Convert(
+            User(new TextContentPart("search for ai news")),
+            new AssistantModelMessage(new AssistantContentPart[]
+            {
+                new AssistantToolCallPart(call),
+                new AssistantToolResultPart("ws_123", "web_search", result),
+                new AssistantTextPart("here are the results"),
+            }));
+
+        JsonAssert.Equal(input, """
+            [{"content":[{"text":"search for ai news","type":"input_text"}],"role":"user"},
+             {"content":"here are the results","role":"assistant"}]
+            """);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should round-trip reasoning with encrypted content in multi-turn", Coverage = UpstreamCoverage.Covered)]
     public void Should_round_trip_reasoning_with_encrypted_content_in_multi_turn()
     {
