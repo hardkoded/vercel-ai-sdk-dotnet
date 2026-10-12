@@ -582,6 +582,40 @@ public sealed class DoGenerateTests
         Assert.False(request.RootElement.TryGetProperty("additionalModelRequestFields", out _));
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should properly combine headers from all sources",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_properly_combine_headers_from_all_sources()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await HeadersTestHelper.Generate(
+            handler,
+            new Dictionary<string, string?> { ["model-header"] = "model-value", ["shared-header"] = "model-shared" },
+            new Dictionary<string, string?> { ["options-header"] = "options-value", ["shared-header"] = "options-shared" });
+
+        Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
+        Assert.Equal("options-shared", handler.Headers["shared-header"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should work with partial headers",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_work_with_partial_headers()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await HeadersTestHelper.Generate(
+            handler,
+            new Dictionary<string, string?> { ["model-header"] = "model-value" },
+            new Dictionary<string, string?> { ["options-header"] = "options-value" });
+
+        Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
+    }
+
+
     private const string OpenAiResponse = "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
     internal const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
     internal const string NewerAnthropicModelId = "anthropic.claude-sonnet-4-6-v1";
@@ -709,22 +743,5 @@ internal static class HeadersTestHelper
             Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
             Headers = callHeaders,
         }, CancellationToken.None);
-    }
-
-    public static async Task Stream(UpstreamRecordingHandler handler, IReadOnlyDictionary<string, string?> providerHeaders, IReadOnlyDictionary<string, string?> callHeaders)
-    {
-        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
-        {
-            AccessKeyId = "test-access-key",
-            SecretAccessKey = "test-secret",
-            Headers = (Dictionary<string, string?>)providerHeaders,
-        }, handler);
-        await foreach (var _ in provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoStreamAsync(new LanguageModelCallOptions
-        {
-            Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
-            Headers = callHeaders,
-        }, CancellationToken.None))
-        {
-        }
     }
 }

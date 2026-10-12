@@ -1107,11 +1107,12 @@ public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning delta.</summary>
-    public ReasoningDeltaStreamPart(string id, string delta)
+    public ReasoningDeltaStreamPart(string id, string delta, JsonElement? providerMetadata = null)
         : base("reasoning-delta")
     {
         Id = id;
         Delta = delta ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning block id.</summary>
@@ -1119,6 +1120,9 @@ public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 
     /// <summary>Reasoning fragment.</summary>
     public string Delta { get; }
+
+    /// <summary>Provider metadata for this fragment, such as a reasoning signature.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A completed tool call.</summary>

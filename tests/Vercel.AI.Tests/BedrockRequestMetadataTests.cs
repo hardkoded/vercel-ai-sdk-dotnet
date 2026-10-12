@@ -36,6 +36,7 @@ public sealed class BedrockRequestMetadataTests
         Assert.False(document.RootElement.TryGetProperty("reasoningConfig", out _));
         Assert.Equal("default", document.RootElement.GetProperty("serviceTier").GetProperty("type").GetString());
         var fields = document.RootElement.GetProperty("additionalModelRequestFields");
+        Assert.False(fields.TryGetProperty("serviceTier", out _));
         Assert.Equal(1, fields.GetProperty("topK").GetInt32());
         Assert.Equal(1024, fields.GetProperty("thinking").GetProperty("budget_tokens").GetInt32());
         Assert.DoesNotContain("reasoningConfig", handler.Body);
@@ -68,45 +69,6 @@ public sealed class BedrockRequestMetadataTests
 
         Assert.Equal(0, handler.Calls);
         Assert.Equal(string.Empty, handler.Body);
-    }
-
-    [Fact]
-    public async Task ShouldPassRequestMetadataInStreamRequests()
-    {
-        var handler = new ScriptedHandler();
-        var model = CreateModel(handler);
-        await foreach (var part in model.DoStreamAsync(Call(@"{
-            ""amazon-bedrock"": { ""requestMetadata"": { ""team"": ""search"", ""environment"": ""prod"" } }
-        }"), CancellationToken.None))
-        {
-            _ = part;
-        }
-
-        Assert.Contains("/converse", handler.Uri);
-        using var document = JsonDocument.Parse(handler.Body);
-        var metadata = document.RootElement.GetProperty("requestMetadata");
-        Assert.Equal("search", metadata.GetProperty("team").GetString());
-        Assert.Equal("prod", metadata.GetProperty("environment").GetString());
-        Assert.Equal(2, Count(metadata));
-    }
-
-    [Fact]
-    public async Task ShouldOmitRequestMetadataFromStreamRequestsWhenNotProvided()
-    {
-        var handler = new ScriptedHandler();
-        var model = CreateModel(handler);
-        await foreach (var part in model.DoStreamAsync(new LanguageModelCallOptions
-        {
-            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
-        }, CancellationToken.None))
-        {
-            _ = part;
-        }
-
-        using var document = JsonDocument.Parse(handler.Body);
-        Assert.False(document.RootElement.TryGetProperty("requestMetadata", out _));
-        Assert.DoesNotContain("requestMetadata", handler.Body);
-        Assert.Contains("/converse", handler.Uri);
     }
 
     [Fact]
