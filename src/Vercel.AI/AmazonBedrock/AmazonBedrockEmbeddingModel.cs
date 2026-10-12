@@ -28,7 +28,13 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
-        _modelFamily = settings?.ModelFamily;
+        _modelFamily = settings?.ModelFamily switch
+        {
+            AmazonBedrockEmbeddingModelFamily.Titan => "titan",
+            AmazonBedrockEmbeddingModelFamily.Cohere => "cohere",
+            AmazonBedrockEmbeddingModelFamily.Nova => "nova",
+            _ => null,
+        };
     }
 
     /// <inheritdoc />

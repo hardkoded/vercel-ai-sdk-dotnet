@@ -134,7 +134,7 @@ public sealed class DoEmbedTests
     public async Task Should_support_Cohere_models_behind_application_inference_profile_ARNs()
     {
         var handler = Handler(CohereV4MultipleResponse, "12");
-        var model = Provider(handler).EmbeddingModel(CohereApplicationProfileArn, new AmazonBedrockEmbeddingModelSettings { ModelFamily = "cohere" });
+        var model = Provider(handler).EmbeddingModel(CohereApplicationProfileArn, new AmazonBedrockEmbeddingModelSettings { ModelFamily = AmazonBedrockEmbeddingModelFamily.Cohere });
 
         var result = await model.DoEmbedAsync(new[] { TestValues[0] }, null, CancellationToken.None);
 
