@@ -5,25 +5,27 @@ A tool has a name, a JSON Schema, and an `Execute` delegate. The model receives 
 <!-- snippet: tools -->
 <a id='snippet-tools'></a>
 ```cs
+var client = new AiClient(GatewayProvider.Create());
+
 var weather = Tool.Function(
     "weather",
     "Returns a short forecast.",
-    "{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}},\"required\":[\"city\"]}",
+    """{ "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }""",
     (arguments, cancellationToken) =>
     {
         var city = arguments.GetProperty("city").GetString();
-        return Task.FromResult("{\"city\":\"" + city + "\",\"forecast\":\"sunny\"}");
+        return Task.FromResult(JsonSerializer.Serialize(new { city, forecast = "sunny" }));
     });
 
 var result = await client.GenerateTextAsync(new GenerateTextOptions
 {
-    Model = model,
+    ModelId = "openai/gpt-6-astra",
     Prompt = "Weather in Lisbon?",
     Tools = new[] { weather },
     StopWhen = StopWhen.IsStepCount(4),
 });
 ```
-<sup><a href='/samples/Vercel.AI.Examples/ToolsExample.cs#L29-L47' title='Snippet source file'>snippet source</a> | <a href='#snippet-tools' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/examples/Tools/Program.cs#L15-L35' title='Snippet source file'>snippet source</a> | <a href='#snippet-tools' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The default stop condition is one step. That step’s tool calls still run, and the loop stops before a second model call. Raise `IsStepCount`, or use `HasToolCall` / `IsLoopFinished`, when the model should see the tool result.

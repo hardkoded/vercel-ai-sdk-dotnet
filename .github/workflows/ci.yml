@@ -16,5 +16,11 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Format
         run: dotnet format Vercel.AI.slnx --verify-no-changes
+      - name: Build
+        run: dotnet build Vercel.AI.slnx -c Release --nologo
+      - name: Check README and docs snippets
+        run: |
+          # The build rewrites the snippets in README.md and docs/articles from examples/*.
+          git diff --exit-code -- '*.md' || { echo "::error::README.md or docs/articles is out of date. Run dotnet build and commit the result."; exit 1; }
       - name: Test
         run: dotnet test Vercel.AI.slnx -c Release --nologo

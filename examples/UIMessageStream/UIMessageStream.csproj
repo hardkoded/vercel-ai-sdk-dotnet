@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <Description>Minimal API example that streams an AI SDK UI message response.</Description>
+  </PropertyGroup>
+</Project>

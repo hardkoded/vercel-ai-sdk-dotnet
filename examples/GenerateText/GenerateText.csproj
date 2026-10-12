@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates text with a model string resolved by the AI Gateway.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Rewrites the snippets in README.md and docs/articles from every example on build. Only this project runs it, so parallel builds do not write the same files. -->
+    <PackageReference Include="MarkdownSnippets.MsBuild" Version="27.0.2" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
