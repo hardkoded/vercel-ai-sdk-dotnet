@@ -528,7 +528,8 @@ public sealed class StreamTextOptions : GenerateTextOptions
 
     /// <summary>
     /// Called after the call is aborted, with the steps that finished before it. It does not delay the rejection of the
-    /// results. <see cref="GenerateTextOptions.OnError"/> and <see cref="GenerateTextOptions.OnFinish"/> are not called. Maps to <c>onAbort</c>.
+    /// results. The stream ends with an <see cref="AbortPart"/> after it returns. <see cref="GenerateTextOptions.OnError"/> and
+    /// <see cref="GenerateTextOptions.OnFinish"/> are not called. Maps to <c>onAbort</c>.
     /// </summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }

@@ -401,23 +401,31 @@ internal static class Generation
         }
     }
 
-    // The result tasks are already faulted when the abort fires. This closes the stream and reports the abort.
+    // The result tasks are already faulted when the abort fires. This reports the abort, then closes the stream.
+    // Like upstream, the stream ends only after OnAbort returns, so a reader that sees the end knows OnAbort ran.
     private static async Task FinishAbortAsync(StreamTextOptions options, PartBuffer buffer, List<StepResult> steps, Exception error)
     {
-        buffer.Add(new AbortPart(error is JsError ? error.ToString() : error.Message));
-        buffer.Complete();
-        if (options.OnAbort == null)
+        Exception? callbackError = null;
+        if (options.OnAbort != null)
         {
-            return;
+            try
+            {
+                await options.OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception callback)
+            {
+                callbackError = callback;
+            }
         }
 
-        try
+        buffer.Add(new AbortPart(error is JsError ? error.ToString() : error.Message));
+        if (callbackError != null)
         {
-            await options.OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None).ConfigureAwait(false);
+            buffer.Fail(callbackError);
         }
-        catch (Exception callback)
+        else
         {
-            buffer.Fail(callback);
+            buffer.Complete();
         }
     }
 
