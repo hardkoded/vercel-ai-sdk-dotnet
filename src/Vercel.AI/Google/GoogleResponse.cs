@@ -410,13 +410,9 @@ public sealed class GoogleReasoning : GeneratedReasoning
 {
     /// <summary>Creates reasoning.</summary>
     public GoogleReasoning(string text, JsonElement? providerMetadata)
-        : base(text)
+        : base(text, providerMetadata)
     {
-        ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Provider metadata.</summary>
-    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A tool call that records whether the provider executed it.</summary>

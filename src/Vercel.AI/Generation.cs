@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
@@ -208,6 +209,7 @@ internal static class Generation
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
                 var reasoning = new StringBuilder();
+                var reasoningMetadata = new List<JsonElement?>();
                 var toolCalls = new List<GeneratedToolCall>();
                 var sources = new List<GeneratedSource>();
                 var documentSources = new List<GeneratedDocumentSource>();
@@ -260,6 +262,12 @@ internal static class Generation
                                     documentSource.Filename,
                                     documentSource.ProviderMetadata));
                                 break;
+                            case ReasoningStartStreamPart reasoningStart:
+                                reasoningMetadata.Add(reasoningStart.ProviderMetadata);
+                                break;
+                            case ReasoningEndStreamPart reasoningEnd:
+                                reasoningMetadata.Add(reasoningEnd.ProviderMetadata);
+                                break;
                             case ReasoningDeltaStreamPart reasoningDelta:
                                 reasoning.Append(reasoningDelta.Delta);
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
@@ -309,7 +317,7 @@ internal static class Generation
                 }
 
                 var generated = new LanguageModelGenerateResult(
-                    BuildContent(textBlocks, reasoning.ToString(), toolCalls, sources, documentSources),
+                    BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolCalls, sources, documentSources),
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
                     rawFinish,
@@ -414,6 +422,7 @@ internal static class Generation
     private static List<GeneratedContent> BuildContent(
         List<TextBlock> textBlocks,
         string reasoning,
+        JsonElement? reasoningMetadata,
         List<GeneratedToolCall> toolCalls,
         List<GeneratedSource> sources,
         List<GeneratedDocumentSource> documentSources)
@@ -421,7 +430,7 @@ internal static class Generation
         var content = new List<GeneratedContent>();
         if (reasoning.Length > 0)
         {
-            content.Add(new GeneratedReasoning(reasoning));
+            content.Add(new GeneratedReasoning(reasoning, reasoningMetadata));
         }
 
         foreach (var block in textBlocks)
@@ -474,6 +483,63 @@ internal static class Generation
         }
     }
 
+    // Later entries override earlier ones, property by property, inside each provider's object.
+    private static JsonElement? MergeProviderMetadata(List<JsonElement?> metadata)
+    {
+        var merged = new JsonObject();
+        foreach (var item in metadata)
+        {
+            if (item is not { ValueKind: JsonValueKind.Object } root)
+            {
+                continue;
+            }
+
+            foreach (var provider in root.EnumerateObject())
+            {
+                if (provider.Value.ValueKind != JsonValueKind.Object)
+                {
+                    merged[provider.Name] = JsonNode.Parse(provider.Value.GetRawText());
+                    continue;
+                }
+
+                if (merged[provider.Name] is not JsonObject target)
+                {
+                    target = new JsonObject();
+                    merged[provider.Name] = target;
+                }
+
+                foreach (var property in provider.Value.EnumerateObject())
+                {
+                    target[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+            }
+        }
+
+        if (merged.Count == 0)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(merged.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? metadata)
+    {
+        if (metadata is not { ValueKind: JsonValueKind.Object } root)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>();
+        foreach (var provider in root.EnumerateObject())
+        {
+            options[provider.Name] = provider.Value.Clone();
+        }
+
+        return options;
+    }
+
     private static async Task<StepResult> FinishStepAsync(
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
@@ -485,6 +551,7 @@ internal static class Generation
         var sources = new List<GeneratedSource>();
         var files = new List<GeneratedFile>();
         var reasoningParts = new List<string>();
+        var reasoningMetadata = new List<JsonElement?>();
         foreach (var part in generated.Content)
         {
             switch (part)
@@ -497,6 +564,7 @@ internal static class Generation
                     break;
                 case GeneratedReasoning generatedReasoning:
                     reasoningParts.Add(generatedReasoning.Text);
+                    reasoningMetadata.Add(generatedReasoning.ProviderMetadata);
                     break;
                 case GeneratedFile file:
                     files.Add(file);
@@ -512,7 +580,7 @@ internal static class Generation
         {
             reasoning = null;
         }
-        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning));
+        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata))));
         var toolResults = new List<ExecutedTool>();
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
