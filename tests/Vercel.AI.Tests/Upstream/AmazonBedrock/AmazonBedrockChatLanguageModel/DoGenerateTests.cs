@@ -392,6 +392,195 @@ public sealed class DoGenerateTests
         Assert.Equal("{\"name\":\"Test\"}", text.Text);
     }
 
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should pass serviceTier provider option in generate requests",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_pass_serviceTier_provider_option_in_generate_requests()
+    {
+        var (_, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            ProviderOptions = Options("{\"bedrock\":{\"serviceTier\":\"priority\"}}"),
+        });
+
+        AssertMatches("{\"serviceTier\":{\"type\":\"priority\"}}", body);
+        Assert.False(body.TryGetProperty("additionalModelRequestFields", out var fields) && fields.TryGetProperty("serviceTier", out _));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::does not classify custom model IDs containing openai. as OpenAI models",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Does_not_classify_custom_model_IDs_containing_openai_as_OpenAI_models()
+    {
+        var (_, body) = await Run("custom-openai.gpt-5.6-luna", TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            ProviderOptions = Options("{\"bedrock\":{\"reasoningConfig\":{\"maxReasoningEffort\":\"medium\"}}}"),
+        });
+
+        AssertMatches("{\"additionalModelRequestFields\":{\"reasoningConfig\":{\"maxReasoningEffort\":\"medium\"}}}", body);
+        var fields = body.GetProperty("additionalModelRequestFields");
+        Assert.False(fields.TryGetProperty("reasoning", out _));
+        Assert.False(fields.TryGetProperty("reasoning_effort", out _));
+    }
+
+
+    [Theory]
+    [InlineData("us.openai.gpt-5.6-luna")]
+    [InlineData("global.openai.gpt-5.6-luna")]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::strips unsupported sampling settings for OpenAI model %s",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Strips_unsupported_sampling_settings_for_OpenAI_model(string crisModelId)
+    {
+        var (result, body) = await Run(crisModelId, OpenAiResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 0,
+            TopP = 0.5,
+            TopK = 5,
+            StopSequences = Array.Empty<string>(),
+            MaxOutputTokens = 100,
+        });
+
+        AssertEqual("{\"maxTokens\":100,\"topK\":5}", body.GetProperty("inferenceConfig"));
+        AssertWarnings(
+            result,
+            ("unsupported", "temperature is not supported by this OpenAI model on the Converse API"),
+            ("unsupported", "topP is not supported by this OpenAI model on the Converse API"),
+            ("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::does not warn about clamping an unsupported OpenAI temperature",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Does_not_warn_about_clamping_an_unsupported_OpenAI_temperature()
+    {
+        var (result, body) = await Run("us.openai.gpt-5.6-luna", OpenAiResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 2,
+        });
+
+        Assert.False(body.TryGetProperty("inferenceConfig", out _));
+        AssertWarnings(result, ("unsupported", "temperature is not supported by this OpenAI model on the Converse API"));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::keeps supported sampling settings for OpenAI gpt-oss models",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Keeps_supported_sampling_settings_for_OpenAI_gpt_oss_models()
+    {
+        var (result, body) = await Run("openai.gpt-oss-120b-1:0", OpenAiResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 0.2,
+            TopP = 0.5,
+            StopSequences = new[] { "END" },
+        });
+
+        AssertEqual("{\"temperature\":0.2,\"topP\":0.5}", body.GetProperty("inferenceConfig"));
+        AssertWarnings(result, ("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+    }
+
+
+    [Theory]
+    [InlineData("global.anthropic.claude-opus-4-7")]
+    [InlineData("eu.anthropic.claude-opus-4-8")]
+    [InlineData("us.anthropic.claude-opus-5")]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should omit unsupported sampling parameters for %s",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Should_omit_unsupported_sampling_parameters_for(string samplingModelId)
+    {
+        var (result, body) = await Run(samplingModelId, "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"OK\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}", new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 0.5,
+            TopP = 0.7,
+            TopK = 10,
+        });
+
+        if (body.TryGetProperty("inferenceConfig", out var inference))
+        {
+            Assert.False(inference.TryGetProperty("temperature", out _));
+            Assert.False(inference.TryGetProperty("topP", out _));
+            Assert.False(inference.TryGetProperty("topK", out _));
+        }
+
+        AssertWarnings(
+            result,
+            ("unsupported", "temperature is not supported by " + samplingModelId + " and will be ignored"),
+            ("unsupported", "topK is not supported by " + samplingModelId + " and will be ignored"),
+            ("unsupported", "topP is not supported by " + samplingModelId + " and will be ignored"));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature above 1 to 1 and add warning",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Should_clamp_temperature_above_1_to_1_and_add_warning()
+    {
+        var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 1.5,
+        });
+
+        Assert.Equal(1, body.GetProperty("inferenceConfig").GetProperty("temperature").GetDouble());
+        AssertWarnings(result, ("unsupported", "1.5 exceeds bedrock maximum of 1.0. clamped to 1.0"));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should clamp temperature below 0 to 0 and add warning",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Warnings are type plus message rather than feature plus details.")]
+    public async Task Should_clamp_temperature_below_0_to_0_and_add_warning()
+    {
+        var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = -0.5,
+        });
+
+        Assert.Equal(0, body.GetProperty("inferenceConfig").GetProperty("temperature").GetDouble());
+        AssertWarnings(result, ("unsupported", "-0.5 is below bedrock minimum of 0. clamped to 0"));
+    }
+
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should not clamp valid temperature between 0 and 1",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_clamp_valid_temperature_between_0_and_1()
+    {
+        var (result, body) = await Run(HaikuModelId, TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Temperature = 0.7,
+        });
+
+        Assert.Equal(0.7, body.GetProperty("inferenceConfig").GetProperty("temperature").GetDouble());
+        Assert.Empty(result.Warnings);
+    }
+
+
     private static void AssertJsonToolFallback(UpstreamRecordingHandler handler)
     {
         using var request = JsonDocument.Parse(handler.Body);
@@ -399,51 +588,19 @@ public sealed class DoGenerateTests
         Assert.False(request.RootElement.TryGetProperty("additionalModelRequestFields", out _));
     }
 
-    [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should properly combine headers from all sources",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_properly_combine_headers_from_all_sources()
-    {
-        var handler = new UpstreamRecordingHandler(TextResponse);
-        await HeadersTestHelper.Generate(
-            handler,
-            new Dictionary<string, string?> { ["model-header"] = "model-value", ["shared-header"] = "model-shared" },
-            new Dictionary<string, string?> { ["options-header"] = "options-value", ["shared-header"] = "options-shared" });
-
-        Assert.Equal("options-value", handler.Headers["options-header"]);
-        Assert.Equal("model-value", handler.Headers["model-header"]);
-        Assert.Equal("options-shared", handler.Headers["shared-header"]);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should work with partial headers",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_work_with_partial_headers()
-    {
-        var handler = new UpstreamRecordingHandler(TextResponse);
-        await HeadersTestHelper.Generate(
-            handler,
-            new Dictionary<string, string?> { ["model-header"] = "model-value" },
-            new Dictionary<string, string?> { ["options-header"] = "options-value" });
-
-        Assert.Equal("options-value", handler.Headers["options-header"]);
-        Assert.Equal("model-value", handler.Headers["model-header"]);
-    }
-
-    private const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
-    private const string NewerAnthropicModelId = "anthropic.claude-sonnet-4-6-v1";
+    private const string OpenAiResponse = "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
+    internal const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
+    internal const string NewerAnthropicModelId = "anthropic.claude-sonnet-4-6-v1";
     private const string NameSchema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}";
-    private const string TextResponse = "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"stop_sequence\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
+    internal const string TextResponse = "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"stop_sequence\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
 
-    private static readonly ModelMessage[] TestPrompt =
+    internal static readonly ModelMessage[] TestPrompt =
     {
         new SystemModelMessage("System Prompt"),
         new UserModelMessage("Hello"),
     };
 
-    private static Dictionary<string, JsonElement> Options(string json)
+    internal static Dictionary<string, JsonElement> Options(string json)
     {
         using var document = JsonDocument.Parse(json);
         var result = new Dictionary<string, JsonElement>();
@@ -461,7 +618,7 @@ public sealed class DoGenerateTests
         return document.RootElement.Clone();
     }
 
-    private static async Task<(LanguageModelGenerateResult Result, JsonElement Body)> Run(string modelId, string response, LanguageModelCallOptions options)
+    internal static async Task<(LanguageModelGenerateResult Result, JsonElement Body)> Run(string modelId, string response, LanguageModelCallOptions options)
     {
         var handler = new UpstreamRecordingHandler(response);
         var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
@@ -487,13 +644,18 @@ public sealed class DoGenerateTests
             && config.TryGetProperty("format", out _);
     }
 
-    private static void AssertEqual(string expectedJson, JsonElement actual)
+    internal static void AssertWarnings(LanguageModelGenerateResult result, params (string Type, string Message)[] expected)
+    {
+        Assert.Equal(expected, result.Warnings.Select(warning => (warning.Type, warning.Message)).ToArray());
+    }
+
+    internal static void AssertEqual(string expectedJson, JsonElement actual)
     {
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expectedJson), JsonNode.Parse(actual.GetRawText())), "Expected " + expectedJson + " but was " + actual.GetRawText());
     }
 
     // Mirrors vitest's toMatchObject: every expected property must match, extra actual properties are fine.
-    private static void AssertMatches(string expectedJson, JsonElement actual)
+    internal static void AssertMatches(string expectedJson, JsonElement actual)
     {
         Assert.True(Matches(JsonNode.Parse(expectedJson), JsonNode.Parse(actual.GetRawText())), "Expected " + expectedJson + " to match " + actual.GetRawText());
     }
