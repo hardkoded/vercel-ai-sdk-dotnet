@@ -87,13 +87,13 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Perplexity sends `xhigh`.
 - Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
 - OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The provider options `reasoningEffort` and `reasoningSummary`, under the provider `Name`, set `reasoning.effort` and `reasoning.summary`.
-- xAI Responses (`XaiProvider.ResponsesModel`) sends `reasoning.effort` (`minimal` becomes `low`). `xhigh` and `max` are sent as `xhigh` on `grok-4.6` and as `high` on other models, with a `compatibility` warning when the level changes. The `grok-4.20` reasoning and non-reasoning models reject the parameter: they get no `reasoning` object and an `unsupported` warning. A `reasoningEffort` provider option wins and adds no warning.
+- xAI Responses (`XaiProvider.LanguageModel` and `XaiProvider.ResponsesModel`) sends `reasoning.effort` (`minimal` becomes `low`). `xhigh` and `max` are sent as `xhigh` on `grok-4.6` and as `high` on other models, with a `compatibility` warning when the level changes. The `grok-4.20` reasoning and non-reasoning models reject the parameter: they get no `reasoning` object and an `unsupported` warning. A `reasoningEffort` provider option wins and adds no warning.
 
 Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
 
 Groq rejects `response_format` together with tools, and Gemini before Gemini 3 rejects JSON response formatting together with function tools. When a call has a JSON schema and at least one function tool, these providers send an internal function tool whose arguments are the structured output, and turn that tool call back into text. The tool is named `json`, or `json_1`, `json_2`, and so on when a caller tool already uses the name. Its description is the output description (`OutputSpec.Object(schema, name, description)`, or `LanguageModelCallOptions.JsonSchemaDescription`), or `Respond with a JSON object.`. Tool choice `Tool("name")` is kept, `None` selects the response tool, and any other choice becomes `Required`. Groq sets `parallel_tool_calls` to false and skips the `structuredOutputs` warning on this path. Gemini 3 keeps native `responseMimeType` and `responseJsonSchema` with automatic or omitted tool choice, and uses the response tool only for `Required` or a named tool. Conversational text is dropped, calls to your own tools stay tool calls, and a response that has only the response tool finishes with `Stop`. Without function tools, both providers keep native structured output. `JsonResponseTools.ConvertJsonResponseToolStream` applies the same rewrite to a stream of `LanguageModelStreamPart`.
 
-OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, xAI, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
+OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, Together, and the other chat wrappers) are thin wrappers over `Vercel.AI.OpenAICompatible`. They set the base URL, the provider id, and the environment variable. Perplexity embeddings use that client. Perplexity language generation uses the Agent API described above.
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
 
@@ -256,14 +256,14 @@ The HeyGen video endpoint does not document token counts or credit consumption i
 
 ## xAI Responses
 
-`XaiProvider.ResponsesModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`). The provider id is `xai.responses`. `XaiProvider.LanguageModel(modelId)` still uses Chat Completions.
+`XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.
 
 ```csharp
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Xai;
 
 var xai = XaiProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY") });
-var model = xai.ResponsesModel("grok-4.3");
+var model = xai.LanguageModel("grok-4.3");
 ```
 
 The model supports text, image, and file input, streaming, function tools, xAI provider-defined tools, `JsonSchema` structured output (with `JsonSchemaName` and `JsonSchemaDescription`), `JsonResponse`, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`, and the `itemId` on each `reasoning-delta`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.

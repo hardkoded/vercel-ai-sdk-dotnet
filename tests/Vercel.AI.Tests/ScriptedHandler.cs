@@ -81,7 +81,7 @@ internal sealed class ScriptedHandler : HttpMessageHandler
 
         if (uri.Contains("/responses"))
         {
-            return "{\"output_text\":\"ok\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
+            return "{\"status\":\"completed\",\"output_text\":\"ok\",\"output\":[{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"ok\"}]}],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
         }
 
         if (uri.Contains("/v1/messages"))
