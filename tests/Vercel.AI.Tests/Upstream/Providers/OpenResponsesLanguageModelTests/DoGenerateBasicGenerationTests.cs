@@ -26,7 +26,7 @@ public sealed class DoGenerateBasicGenerationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should produce correct content", Coverage = UpstreamCoverage.Partial, Note = "GeneratedText has no provider metadata, so the text part's itemId is not asserted. Issue #364.")]
+    [UpstreamTest(Prefix + "should produce correct content", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_produce_correct_content()
     {
         var result = await Model(JsonFixture("lmstudio-basic.1")).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
@@ -38,7 +38,7 @@ public sealed class DoGenerateBasicGenerationTests
                 "text":"reasoning content",
                 "type":"reasoning"
               },
-              {"text":"text content","type":"text"}
+              {"providerMetadata":{"lmstudio":{"itemId":"msg_p1y190hl7hj1xyfqr1cir"}},"text":"text content","type":"text"}
             ]
             """);
     }

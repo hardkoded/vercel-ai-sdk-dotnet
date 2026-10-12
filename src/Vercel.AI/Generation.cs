@@ -244,7 +244,7 @@ internal static class Generation
                         switch (part)
                         {
                             case TextStartStreamPart textStart:
-                                TextBlock.Start(textBlocks, textStart.Id);
+                                TextBlock.Start(textBlocks, textStart.Id).ProviderMetadata = textStart.ProviderMetadata;
                                 break;
                             case TextDeltaStreamPart delta:
                                 text.Append(delta.Delta);
@@ -254,6 +254,7 @@ internal static class Generation
                             case TextEndStreamPart textEnd:
                                 var ended = TextBlock.Find(textBlocks, textEnd.Id);
                                 ended.Citations = textEnd.Citations;
+                                ended.ProviderMetadata = textEnd.ProviderMetadata ?? ended.ProviderMetadata;
                                 break;
                             case DocumentSourceStreamPart documentSource:
                                 documentSources.Add(new GeneratedDocumentSource(
@@ -438,7 +439,7 @@ internal static class Generation
         {
             if (block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0)
             {
-                content.Add(new GeneratedText(block.Text.ToString(), block.Citations));
+                content.Add(new GeneratedText(block.Text.ToString(), block.Citations, block.ProviderMetadata));
             }
         }
 
@@ -461,6 +462,8 @@ internal static class Generation
         public StringBuilder Text { get; } = new();
 
         public IReadOnlyList<Citation>? Citations { get; set; }
+
+        public JsonElement? ProviderMetadata { get; set; }
 
         public static TextBlock Start(List<TextBlock> blocks, string id)
         {
@@ -553,12 +556,17 @@ internal static class Generation
         var files = new List<GeneratedFile>();
         var reasoningParts = new List<string>();
         var reasoningMetadata = new List<JsonElement?>();
+        var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
             switch (part)
             {
                 case GeneratedToolCall call:
                     toolCalls.Add(call);
+                    assistantParts.Add(new AssistantToolCallPart(call));
+                    break;
+                case GeneratedText generatedText:
+                    assistantParts.Add(new AssistantTextPart(generatedText.Text, ToProviderOptions(generatedText.ProviderMetadata)));
                     break;
                 case GeneratedSource source:
                     sources.Add(source);
@@ -566,6 +574,7 @@ internal static class Generation
                 case GeneratedReasoning generatedReasoning:
                     reasoningParts.Add(generatedReasoning.Text);
                     reasoningMetadata.Add(generatedReasoning.ProviderMetadata);
+                    assistantParts.Add(new AssistantReasoningPart(generatedReasoning.Text, ToProviderOptions(generatedReasoning.ProviderMetadata)));
                     break;
                 case GeneratedFile file:
                     files.Add(file);
@@ -581,7 +590,7 @@ internal static class Generation
         {
             reasoning = null;
         }
-        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata))));
+        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts));
         var toolResults = new List<ExecutedTool>();
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {

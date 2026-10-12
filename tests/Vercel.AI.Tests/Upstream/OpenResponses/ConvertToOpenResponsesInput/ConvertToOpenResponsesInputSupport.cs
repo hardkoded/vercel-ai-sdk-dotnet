@@ -36,6 +36,11 @@ internal static class ConvertToOpenResponsesInputSupport
         return new AssistantModelMessage(text, null, null);
     }
 
+    internal static AssistantModelMessage Assistant(params AssistantContentPart[] parts)
+    {
+        return new AssistantModelMessage(parts);
+    }
+
     internal static AssistantModelMessage AssistantToolCalls(string? text, params GeneratedToolCall[] calls)
     {
         return new AssistantModelMessage(text, calls, null);

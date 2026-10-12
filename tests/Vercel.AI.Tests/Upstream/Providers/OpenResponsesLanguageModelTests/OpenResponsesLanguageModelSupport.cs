@@ -125,6 +125,7 @@ internal static class OpenResponsesLanguageModelSupport
             {
                 case GeneratedText text:
                     json["text"] = text.Text;
+                    Add(json, null, null, text.ProviderMetadata);
                     break;
                 case GeneratedReasoning reasoning:
                     json["text"] = reasoning.Text;
@@ -142,6 +143,40 @@ internal static class OpenResponsesLanguageModelSupport
         }
 
         return array;
+    }
+
+    /// <summary>A completed response whose <c>output</c> is <paramref name="outputJson"/>.</summary>
+    internal static UpstreamCapture OutputResponse(string outputJson)
+    {
+        return new UpstreamCapture
+        {
+            ResponseBody = """{"id":"resp_1","object":"response","created_at":0,"model":"test-model","status":"completed","output":"""
+                + outputJson
+                + ""","usage":{"input_tokens":0,"output_tokens":0,"total_tokens":0}}""",
+        };
+    }
+
+    /// <summary>A prompt with one assistant message that replays <paramref name="content"/> in order, like passing the result content back.</summary>
+    internal static LanguageModelCallOptions Replay(IEnumerable<GeneratedContent> content)
+    {
+        var parts = new List<AssistantContentPart>();
+        foreach (var part in content)
+        {
+            switch (part)
+            {
+                case GeneratedReasoning reasoning:
+                    parts.Add(new AssistantReasoningPart(reasoning.Text, Options(reasoning.ProviderMetadata)));
+                    break;
+                case GeneratedText text:
+                    parts.Add(new AssistantTextPart(text.Text, Options(text.ProviderMetadata)));
+                    break;
+                case GeneratedToolCall call:
+                    parts.Add(new AssistantToolCallPart(call));
+                    break;
+            }
+        }
+
+        return new LanguageModelCallOptions { Prompt = new ModelMessage[] { new AssistantModelMessage(parts) } };
     }
 
     /// <summary>A function tool with a JSON schema.</summary>
@@ -192,6 +227,22 @@ internal static class OpenResponsesLanguageModelSupport
         {
             json["providerMetadata"] = JsonNode.Parse(metadata.GetRawText());
         }
+    }
+
+    private static Dictionary<string, JsonElement>? Options(JsonElement? metadata)
+    {
+        if (metadata is not { ValueKind: JsonValueKind.Object } root)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>();
+        foreach (var provider in root.EnumerateObject())
+        {
+            options[provider.Name] = provider.Value.Clone();
+        }
+
+        return options;
     }
 
     private static void Set(JsonObject json, string name, JsonNode? value)

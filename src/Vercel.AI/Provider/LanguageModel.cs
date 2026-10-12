@@ -163,11 +163,12 @@ public abstract class GeneratedContent
 public class GeneratedText : GeneratedContent
 {
     /// <summary>Creates text content.</summary>
-    public GeneratedText(string text, IReadOnlyList<Citation>? citations = null)
+    public GeneratedText(string text, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
         : base("text")
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
         Citations = citations;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Generated text.</summary>
@@ -178,6 +179,9 @@ public class GeneratedText : GeneratedContent
     /// <see cref="GeneratedSource"/> parts.
     /// </summary>
     public IReadOnlyList<Citation>? Citations { get; }
+
+    /// <summary>Provider metadata for this text, keyed by provider name, such as the message <c>itemId</c>.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A function tool call.</summary>
@@ -611,6 +615,81 @@ public sealed class UserModelMessage : ModelMessage
     public IReadOnlyList<UserContentPart> Content { get; }
 }
 
+/// <summary>One part of an assistant message, kept in the order the model produced it.</summary>
+public abstract class AssistantContentPart
+{
+    /// <summary>Creates a part.</summary>
+    protected AssistantContentPart(string type, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        Type = type;
+        ProviderOptions = providerOptions;
+    }
+
+    /// <summary>Part type: <c>text</c>, <c>reasoning</c>, or <c>tool-call</c>.</summary>
+    public string Type { get; }
+
+    /// <summary>Provider-specific options for this part, such as an <c>itemId</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
+}
+
+/// <summary>Text in an assistant message.</summary>
+public sealed class AssistantTextPart : AssistantContentPart
+{
+    /// <summary>Creates a text part.</summary>
+    public AssistantTextPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("text", providerOptions)
+    {
+        Text = text ?? throw new ArgumentNullException(nameof(text));
+    }
+
+    /// <summary>Text.</summary>
+    public string Text { get; }
+}
+
+/// <summary>Reasoning in an assistant message.</summary>
+public sealed class AssistantReasoningPart : AssistantContentPart
+{
+    /// <summary>Creates a reasoning part.</summary>
+    public AssistantReasoningPart(string text, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("reasoning", providerOptions)
+    {
+        Text = text ?? string.Empty;
+    }
+
+    /// <summary>Reasoning text.</summary>
+    public string Text { get; }
+}
+
+/// <summary>A tool call in an assistant message.</summary>
+public sealed class AssistantToolCallPart : AssistantContentPart
+{
+    /// <summary>Creates a tool-call part. Without <paramref name="providerOptions"/>, the call's provider metadata is used.</summary>
+    public AssistantToolCallPart(GeneratedToolCall toolCall, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("tool-call", providerOptions ?? ToOptions(toolCall))
+    {
+        ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
+    }
+
+    /// <summary>The call.</summary>
+    public GeneratedToolCall ToolCall { get; }
+
+    private static IReadOnlyDictionary<string, JsonElement>? ToOptions(GeneratedToolCall? call)
+    {
+        if (call?.ProviderMetadata is not { ValueKind: JsonValueKind.Object } metadata)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>();
+        foreach (var property in metadata.EnumerateObject())
+        {
+            options[property.Name] = property.Value.Clone();
+        }
+
+        return options;
+    }
+}
+
 /// <summary>An assistant message.</summary>
 public sealed class AssistantModelMessage : ModelMessage
 {
@@ -629,12 +708,38 @@ public sealed class AssistantModelMessage : ModelMessage
         IReadOnlyList<GeneratedToolCall>? toolCalls,
         string? reasoning,
         IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
+        : this(text, toolCalls, reasoning, reasoningProviderOptions, null)
+    {
+    }
+
+    /// <summary>
+    /// Creates an assistant message that also keeps its content parts in order. When <paramref name="parts"/> is null,
+    /// the parts are the reasoning, the text, and the tool calls, in that order.
+    /// </summary>
+    public AssistantModelMessage(
+        string? text,
+        IReadOnlyList<GeneratedToolCall>? toolCalls,
+        string? reasoning,
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions,
+        IReadOnlyList<AssistantContentPart>? parts)
         : base("assistant")
     {
         Text = text;
         ToolCalls = toolCalls ?? Array.Empty<GeneratedToolCall>();
         Reasoning = reasoning;
         ReasoningProviderOptions = reasoningProviderOptions;
+        Parts = parts ?? DefaultParts(text, ToolCalls, reasoning, reasoningProviderOptions);
+    }
+
+    /// <summary>Creates an assistant message from ordered parts. The text, reasoning, and tool calls are derived from them.</summary>
+    public AssistantModelMessage(IReadOnlyList<AssistantContentPart> parts)
+        : this(
+            JoinText(parts ?? throw new ArgumentNullException(nameof(parts)), "text"),
+            ToolCallsOf(parts),
+            JoinText(parts, "reasoning"),
+            FirstReasoningOptions(parts),
+            parts)
+    {
     }
 
     /// <summary>Assistant text.</summary>
@@ -648,6 +753,82 @@ public sealed class AssistantModelMessage : ModelMessage
 
     /// <summary>Provider options of the reasoning part, such as an OpenAI <c>itemId</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ReasoningProviderOptions { get; }
+
+    /// <summary>The content parts in the order the model produced them, each with its own provider options.</summary>
+    public IReadOnlyList<AssistantContentPart> Parts { get; }
+
+    private static IReadOnlyList<AssistantContentPart> DefaultParts(
+        string? text,
+        IReadOnlyList<GeneratedToolCall> toolCalls,
+        string? reasoning,
+        IReadOnlyDictionary<string, JsonElement>? reasoningProviderOptions)
+    {
+        var parts = new List<AssistantContentPart>();
+        if (!string.IsNullOrEmpty(reasoning) || reasoningProviderOptions != null)
+        {
+            parts.Add(new AssistantReasoningPart(reasoning ?? string.Empty, reasoningProviderOptions));
+        }
+
+        if (!string.IsNullOrEmpty(text))
+        {
+            parts.Add(new AssistantTextPart(text!));
+        }
+
+        foreach (var call in toolCalls)
+        {
+            parts.Add(new AssistantToolCallPart(call));
+        }
+
+        return parts;
+    }
+
+    private static string? JoinText(IReadOnlyList<AssistantContentPart> parts, string type)
+    {
+        var builder = new System.Text.StringBuilder();
+        var found = false;
+        foreach (var part in parts)
+        {
+            if (part is AssistantTextPart text && type == "text")
+            {
+                builder.Append(text.Text);
+                found = true;
+            }
+            else if (part is AssistantReasoningPart reasoning && type == "reasoning")
+            {
+                builder.Append(reasoning.Text);
+                found = true;
+            }
+        }
+
+        return found ? builder.ToString() : null;
+    }
+
+    private static IReadOnlyList<GeneratedToolCall> ToolCallsOf(IReadOnlyList<AssistantContentPart> parts)
+    {
+        var calls = new List<GeneratedToolCall>();
+        foreach (var part in parts)
+        {
+            if (part is AssistantToolCallPart call)
+            {
+                calls.Add(call.ToolCall);
+            }
+        }
+
+        return calls;
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? FirstReasoningOptions(IReadOnlyList<AssistantContentPart> parts)
+    {
+        foreach (var part in parts)
+        {
+            if (part is AssistantReasoningPart reasoning && reasoning.ProviderOptions != null)
+            {
+                return reasoning.ProviderOptions;
+            }
+        }
+
+        return null;
+    }
 }
 
 /// <summary>A tool result fed back to the model.</summary>

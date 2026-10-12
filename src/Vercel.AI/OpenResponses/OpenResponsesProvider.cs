@@ -347,7 +347,9 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                     {
                         foreach (var contentPart in messageContent.EnumerateArray())
                         {
-                            content.Add(new GeneratedText(OpenAIJson.String(contentPart, "text") ?? string.Empty));
+                            content.Add(new GeneratedText(
+                                OpenAIJson.String(contentPart, "text") ?? string.Empty,
+                                providerMetadata: OpenResponsesResults.MessageMetadata(_provider.Name, OpenAIJson.String(part, "id"), OpenResponsesResults.Annotations(contentPart))));
                         }
                     }
 
