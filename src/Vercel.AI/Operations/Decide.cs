@@ -192,6 +192,16 @@ public interface IDecisionCaller
     Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// A provider that returns decision models. <see cref="ProviderRegistry"/> and <see cref="CustomProvider"/> resolve
+/// decision models through it. Maps to the optional <c>decisionModel</c> factory of a provider.
+/// </summary>
+public interface IDecisionProvider
+{
+    /// <summary>Returns a decision model, or null when the provider has no such model.</summary>
+    IDecisionCaller? DecisionModel(string modelId);
+}
+
 /// <summary>Lifecycle event for decide.</summary>
 public class DecideEvent
 {

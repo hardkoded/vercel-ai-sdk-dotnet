@@ -433,6 +433,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 RequestBodyValues = body,
                 ResponseHeaders = http.Headers,
                 IsRetryable = false,
+                ErrorData = error.Clone(),
             };
         }
 
