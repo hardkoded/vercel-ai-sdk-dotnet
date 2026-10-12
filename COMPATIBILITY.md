@@ -1,6 +1,6 @@
 # Compatibility
 
-Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `269331916eb51ecd937a55df5fcf44ff8f63eaf8` (`feat(google): support Gemini 3.8 text-to-speech (#21403)`), recorded on 2026-09-23.
+Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `ba05943b69ad070558bb5bc912da99ec66d7d263` (`fix: record resolved model and response ID on decision model spans (#22542)`), recorded on 2026-10-12.
 
 This port targets AI SDK 7 / Language Model specification **V4**. Names are C# versions of the JavaScript API: `generateText` is `GenerateTextAsync`, `streamText` is `StreamTextAsync` (it returns `StreamTextResult`, not a task), `AbortSignal` is `CancellationToken`, and option properties are PascalCase.
 

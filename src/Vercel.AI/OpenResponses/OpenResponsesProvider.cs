@@ -245,6 +245,10 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             format["strict"] = true;
             body["text"] = new JsonObject { ["format"] = format };
         }
+        else if (options.JsonResponse)
+        {
+            body["text"] = new JsonObject { ["format"] = new JsonObject { ["type"] = "json_object" } };
+        }
 
         return (body, warnings);
     }
@@ -481,13 +485,11 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 case "message":
                     if (OpenAIJson.Child(part, "content") is { ValueKind: JsonValueKind.Array } messageContent)
                     {
-                        var itemId = OpenAIJson.String(part, "id");
                         foreach (var contentPart in messageContent.EnumerateArray())
                         {
-                            content.Add(new GeneratedText(OpenAIJson.String(contentPart, "text") ?? string.Empty)
-                            {
-                                ProviderMetadata = OpenResponsesResults.MessageMetadata(_provider.Name, itemId, OpenResponsesResults.Annotations(contentPart)),
-                            });
+                            content.Add(new GeneratedText(
+                                OpenAIJson.String(contentPart, "text") ?? string.Empty,
+                                providerMetadata: OpenResponsesResults.MessageMetadata(_provider.Name, OpenAIJson.String(part, "id"), OpenResponsesResults.Annotations(contentPart))));
                         }
                     }
 

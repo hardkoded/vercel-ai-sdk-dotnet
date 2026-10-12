@@ -40,10 +40,9 @@ public sealed class AmazonBedrockOptions
     public Func<DateTimeOffset>? UtcNow { get; set; }
 
     /// <summary>
-    /// Headers sent with every embedding and reranking request. Call headers override them.
-    /// The Converse language model does not send them yet.
+    /// Headers sent with every request. Call headers override them.
     /// </summary>
-    public Dictionary<string, string> Headers { get; } = new();
+    public Dictionary<string, string?> Headers { get; set; } = new();
 }
 
 /// <summary>Amazon Bedrock Converse provider.</summary>
@@ -69,6 +68,43 @@ public sealed class AmazonBedrockProvider : ProviderBase
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
+
+    /// <summary>
+    /// Adds the provider headers, then the call headers (which win; a null call value drops the header), then the
+    /// <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing.
+    /// </summary>
+    public void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
+    {
+        var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>?[] { Options.Headers, callHeaders })
+        {
+            if (source == null)
+            {
+                continue;
+            }
+
+            foreach (var header in source)
+            {
+                if (header.Value != null)
+                {
+                    merged[header.Key] = header.Value;
+                }
+                else
+                {
+                    merged.Remove(header.Key);
+                }
+            }
+        }
+
+        merged["user-agent"] = merged.TryGetValue("user-agent", out var existing)
+            ? existing + " " + AmazonBedrockFetch.UserAgent
+            : AmazonBedrockFetch.UserAgent;
+        foreach (var header in merged)
+        {
+            request.Headers.Remove(header.Key);
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+    }
 
     /// <summary>Creates a provider.</summary>
     public static AmazonBedrockProvider Create(AmazonBedrockOptions? options = null, HttpMessageHandler? handler = null)
@@ -97,32 +133,6 @@ public sealed class AmazonBedrockProvider : ProviderBase
         }
 
         return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
-    }
-
-    /// <summary>Adds the provider headers, then <paramref name="callHeaders"/>. A call header wins over a provider header with the same name, and a null call value drops it.</summary>
-    internal void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
-    {
-        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var header in Options.Headers)
-        {
-            merged[header.Key] = header.Value;
-        }
-
-        if (callHeaders != null)
-        {
-            foreach (var header in callHeaders)
-            {
-                merged[header.Key] = header.Value;
-            }
-        }
-
-        foreach (var header in merged)
-        {
-            if (header.Value != null)
-            {
-                request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-        }
     }
 }
 
@@ -158,6 +168,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),
         };
+        _provider.AddHeaders(request, options.Headers);
         Sign(request, Encoding.UTF8.GetBytes(body));
         var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);

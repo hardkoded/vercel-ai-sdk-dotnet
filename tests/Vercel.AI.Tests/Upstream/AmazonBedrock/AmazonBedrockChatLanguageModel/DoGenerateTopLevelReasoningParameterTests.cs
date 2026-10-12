@@ -73,20 +73,22 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         Assert.Equal(1024, Field(body, "thinking")!.Value.GetProperty("budget_tokens").GetInt32());
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "should map reasoning directly to reasoning_effort for OpenAI gpt-oss models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models()
+    [Theory]
+    [InlineData("medium")]
+    [UpstreamTest(Prefix + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models", Coverage = UpstreamCoverage.Partial, Note = "Covers medium. The port has no portable max reasoning level.")]
+    public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models(string reasoning)
     {
-        var (_, body) = await Generate(OpenAiModelId, "medium");
+        var (result, body) = await Generate(OpenAiModelId, reasoning);
 
-        Assert.Equal("medium", Field(body, "reasoning_effort")!.Value.GetString());
+        Assert.Equal(reasoning, Field(body, "reasoning_effort")!.Value.GetString());
         Assert.Null(Field(body, "thinking"));
         Assert.Null(Field(body, "reasoningConfig"));
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map reasoning to reasoningConfig.maxReasoningEffort for other models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_map_reasoning_to_reasoningConfig_maxReasoningEffort_for_other_models()
+    [UpstreamTest(Prefix + "should map portable reasoning for Nova 2", Coverage = UpstreamCoverage.Partial, Note = "The port does not send type enabled in the Nova 2 reasoningConfig.")]
+    public async Task Should_map_portable_reasoning_for_Nova_2()
     {
         var (_, body) = await Generate(NovaModelId, "high");
 
@@ -102,29 +104,33 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         AssertEqual("{\"type\":\"enabled\",\"budget_tokens\":5000}", Field(body, "thinking")!.Value);
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "should merge top-level reasoning with partial reasoningConfig for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_merge_top_level_reasoning_with_partial_reasoningConfig_for_newer_Anthropic_models()
+    [Theory]
+    [InlineData("amazonBedrock")]
+    [InlineData("bedrock")]
+    [UpstreamTest(Prefix + "should derive portable effort with display-only %s reasoningConfig for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_derive_portable_effort_with_display_only_reasoningConfig_for_newer_Anthropic_models(string providerKey)
     {
-        var (_, body) = await Generate(NewerAnthropicModelId, "high", "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
+        var (result, body) = await Generate(NewerAnthropicModelId, "high", "{\"" + providerKey + "\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
 
         AssertEqual("{\"type\":\"adaptive\",\"display\":\"summarized\"}", Field(body, "thinking")!.Value);
         Assert.Equal("high", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should honor reasoning \"none\" even when partial reasoningConfig is provided", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_honor_reasoning_none_even_when_partial_reasoningConfig_is_provided()
+    [UpstreamTest(Prefix + "should honor reasoning \"none\" with display-only reasoningConfig", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_honor_reasoning_none_with_display_only_reasoningConfig()
     {
-        var (_, body) = await Generate(NewerAnthropicModelId, "none", "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
+        var (result, body) = await Generate(NewerAnthropicModelId, "none", "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}");
 
         Assert.Null(Field(body, "thinking"));
         Assert.Null(Field(body, "output_config"));
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should let user-specified type win while still deriving maxReasoningEffort from reasoning", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_let_user_specified_type_win_while_still_deriving_maxReasoningEffort_from_reasoning()
+    [UpstreamTest(Prefix + "should preserve an explicit thinking budget alongside portable effort for adaptive-capable models", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_preserve_an_explicit_thinking_budget_alongside_portable_effort_for_adaptive_capable_models()
     {
         var (_, body) = await Generate(NewerAnthropicModelId, "high", "{\"bedrock\":{\"reasoningConfig\":{\"type\":\"enabled\",\"budgetTokens\":3000}}}");
 
@@ -132,13 +138,22 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         Assert.Equal("high", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "should let user-specified maxReasoningEffort win over derived for non-Anthropic models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_let_user_specified_maxReasoningEffort_win_over_derived_for_non_Anthropic_models()
+    [Theory]
+    [InlineData("amazonBedrock")]
+    [InlineData("bedrock")]
+    [UpstreamTest(Prefix + "should ignore portable max without warnings when %s reasoning effort is explicit", Coverage = UpstreamCoverage.Partial, Note = "The port has no portable max reasoning level, so it still warns that max is unsupported.")]
+    public async Task Should_ignore_portable_max_without_warnings_when_reasoning_effort_is_explicit(string providerKey)
     {
-        var (_, body) = await Generate(NovaModelId, "high", "{\"bedrock\":{\"reasoningConfig\":{\"maxReasoningEffort\":\"low\"}}}");
+        var (_, body) = await Run(NovaModelId, TextResponse, new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt,
+            Reasoning = "max",
+            MaxOutputTokens = 1024,
+            ProviderOptions = Options("{\"" + providerKey + "\":{\"reasoningConfig\":{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}}}"),
+        });
 
-        Assert.Equal("low", Field(body, "reasoningConfig")!.Value.GetProperty("maxReasoningEffort").GetString());
+        AssertEqual("{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}", Field(body, "reasoningConfig")!.Value);
+        Assert.Equal(1024, body.GetProperty("inferenceConfig").GetProperty("maxTokens").GetInt32());
     }
 
     [Fact]

@@ -352,7 +352,7 @@ public sealed class AmazonBedrockConverseResponseTests
     private static async Task<LanguageModelGenerateResult> Generate(string response, bool jsonSchema = false)
     {
         var handler = new UpstreamRecordingHandler(response);
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
             AccessKeyId = "AKIA",
             SecretAccessKey = "secret",

@@ -170,11 +170,11 @@ internal static class OpenResponsesLanguageModelTestSupport
                         new JsonObject
                         {
                             ["type"] = "acme:document_search_call",
-                            ["id"] = "call_item_" + call.ToolCallId,
+                            ["id"] = "call_item_" + call.ToolCall.ToolCallId,
                             ["status"] = "completed",
-                            ["call_id"] = call.ToolCallId,
-                            ["name"] = call.ToolName,
-                            ["query"] = JsonNode.Parse(call.InputJson),
+                            ["call_id"] = call.ToolCall.ToolCallId,
+                            ["name"] = call.ToolCall.ToolName,
+                            ["query"] = JsonNode.Parse(call.ToolCall.ArgumentsJson),
                         },
                     };
                 }

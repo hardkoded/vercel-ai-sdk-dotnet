@@ -39,12 +39,12 @@ public sealed class DoGeneratePdfInputFileTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should produce correct content", Coverage = UpstreamCoverage.Partial, Note = "GeneratedText has no provider metadata, so the text part's itemId is not asserted. Issue #364.")]
+    [UpstreamTest(Prefix + "should produce correct content", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_produce_correct_content()
     {
         var result = await Generate(JsonFixture("openai-pdf-input-file.1"));
 
-        JsonAssert.Equal(ToJson(result.Content), """[{"text":"Dummy PDF file","type":"text"}]""");
+        JsonAssert.Equal(ToJson(result.Content), """[{"providerMetadata":{"lmstudio":{"itemId":"msg_048edf44633e41ae0069d4fea0d1a08194af1e491c093df1d9"}},"text":"Dummy PDF file","type":"text"}]""");
     }
 
     [Fact]

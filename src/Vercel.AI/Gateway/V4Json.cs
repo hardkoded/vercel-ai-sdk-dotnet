@@ -77,6 +77,10 @@ public static class V4Json
                 ["schema"] = PrepareSchema(JsonNode.Parse(schema.GetRawText())),
             };
         }
+        else if (options.JsonResponse)
+        {
+            body["responseFormat"] = new JsonObject { ["type"] = "json" };
+        }
         else
         {
             body["responseFormat"] = new JsonObject { ["type"] = "text" };

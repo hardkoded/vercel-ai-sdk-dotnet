@@ -182,7 +182,6 @@ public sealed class FalImageParityTests
     }
 
     [Fact]
-    [UpstreamTest(ImagePrefix + "Image Editing::should send image_urls when useMultipleImages is true", Coverage = UpstreamCoverage.Covered)]
     public async Task Use_multiple_images_sends_every_file()
     {
         var handler = Server();

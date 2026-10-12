@@ -10,7 +10,7 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenResponses;
 
-/// <summary>The request <c>input</c>, the <c>instructions</c>, and the warnings found while converting a prompt.</summary>
+/// <summary>The converted prompt: input items, joined system instructions, and warnings.</summary>
 internal sealed class OpenResponsesInputResult
 {
     public OpenResponsesInputResult(JsonArray input, string? instructions, List<CallWarning> warnings)
@@ -20,8 +20,10 @@ internal sealed class OpenResponsesInputResult
         Warnings = warnings;
     }
 
+    /// <summary>The <c>input</c> items.</summary>
     public JsonArray Input { get; }
 
+    /// <summary>System messages joined with newlines, or null when there are none.</summary>
     public string? Instructions { get; }
 
     public List<CallWarning> Warnings { get; }
@@ -45,76 +47,90 @@ internal static class OpenResponsesInput
 
         foreach (var message in prompt)
         {
-            if (message is SystemModelMessage system)
+            switch (message)
             {
-                systemMessages.Add(system.Content);
-            }
-            else if (message is UserModelMessage user)
-            {
-                input.Add(ConvertUser(user, providerOptionsName));
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                ConvertAssistant(assistant, input, warnings, replayedExtensionItems, providerOptionsName, extensionRegistry, providerToolsByName, strictResponseInput);
-            }
-            else if (message is ToolModelMessage tool)
-            {
-                ConvertTool(tool, input, warnings, replayedExtensionItems, providerOptionsName, extensionRegistry, providerToolsByName);
+                case SystemModelMessage system:
+                    systemMessages.Add(system.Content);
+                    break;
+                case UserModelMessage user:
+                    input.Add(new JsonObject { ["type"] = "message", ["role"] = "user", ["content"] = ConvertUser(user, providerOptionsName) });
+                    break;
+                case AssistantModelMessage assistant:
+                    ConvertAssistant(assistant, input, warnings, replayedExtensionItems, providerOptionsName, strictResponseInput, extensionRegistry, providerToolsByName);
+                    break;
+                case ToolModelMessage tool:
+                    ConvertTool(tool, input, warnings, replayedExtensionItems, providerOptionsName, extensionRegistry, providerToolsByName);
+                    break;
             }
         }
 
         return new OpenResponsesInputResult(input, systemMessages.Count > 0 ? string.Join("\n", systemMessages) : null, warnings);
     }
 
-    private static JsonObject ConvertUser(UserModelMessage user, string providerOptionsName)
+    private static JsonArray ConvertUser(UserModelMessage user, string providerOptionsName)
     {
         var content = new JsonArray();
         foreach (var part in user.Content)
         {
-            if (part is TextContentPart text)
+            switch (part)
             {
-                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = text.Text });
-            }
-            else if (part is FileContentPart file)
-            {
-                if (file.ProviderReference != null)
-                {
-                    const string functionality = "file parts with provider references";
-                    throw new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
-                }
-
-                if (MediaTypes.GetTopLevelMediaType(file.MediaType) == "image")
-                {
-                    content.Add(new JsonObject
-                    {
-                        ["type"] = "input_image",
-                        ["image_url"] = file.Url ?? DataUri(file),
-                        ["detail"] = ImageDetail(file.ProviderOptions, providerOptionsName),
-                    });
-                }
-                else if (file.Url != null)
-                {
-                    content.Add(new JsonObject { ["type"] = "input_file", ["file_url"] = file.Url });
-                }
-                else
-                {
-                    content.Add(new JsonObject
-                    {
-                        ["type"] = "input_file",
-                        ["filename"] = file.FileName ?? "data",
-                        ["file_data"] = DataUri(file),
-                    });
-                }
+                case TextContentPart text:
+                    content.Add(new JsonObject { ["type"] = "input_text", ["text"] = text.Text });
+                    break;
+                case FileContentPart file:
+                    content.Add(ConvertFile(file, providerOptionsName));
+                    break;
             }
         }
 
-        return new JsonObject { ["type"] = "message", ["role"] = "user", ["content"] = content };
+        return content;
     }
 
-    private static string DataUri(FileContentPart file)
+    private static JsonObject ConvertFile(FileContentPart file, string providerOptionsName)
+    {
+        if (file.ProviderReference != null)
+        {
+            const string functionality = "file parts with provider references";
+            throw new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
+        }
+
+        if (MediaTypes.GetTopLevelMediaType(file.MediaType) == "image")
+        {
+            return new JsonObject
+            {
+                ["type"] = "input_image",
+                ["image_url"] = file.Url ?? DataUrl(file),
+                ["detail"] = ImageDetail(file.ProviderOptions, providerOptionsName),
+            };
+        }
+
+        if (file.Url != null)
+        {
+            return new JsonObject { ["type"] = "input_file", ["file_url"] = file.Url };
+        }
+
+        return new JsonObject
+        {
+            ["type"] = "input_file",
+            ["filename"] = file.FileName ?? "data",
+            ["file_data"] = DataUrl(file),
+        };
+    }
+
+    private static string DataUrl(FileContentPart file)
     {
         var data = file.Data ?? Array.Empty<byte>();
         return "data:" + MediaTypes.ResolveFullMediaType(file.MediaType, data) + ";base64," + System.Convert.ToBase64String(data);
+    }
+
+    private static string ImageDetail(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
+    {
+        var detail = ProviderData(providerOptions, providerOptionsName) is { } data
+            && data.TryGetProperty("imageDetail", out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        return detail == "low" || detail == "high" || detail == "auto" ? detail : "auto";
     }
 
     private static void ConvertAssistant(
@@ -123,194 +139,241 @@ internal static class OpenResponsesInput
         List<CallWarning> warnings,
         HashSet<string> replayedExtensionItems,
         string providerOptionsName,
+        bool strictResponseInput,
         OpenResponsesExtensionRegistry? extensionRegistry,
-        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
-        bool strictResponseInput)
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName)
     {
-        var assistantContent = new JsonArray();
-        string? assistantMessageId = null;
+        var content = new JsonArray();
+        string? messageId = null;
 
         void Flush()
         {
-            if (assistantContent.Count == 0)
+            if (content.Count == 0)
             {
                 return;
             }
 
-            if (strictResponseInput && assistantMessageId == null)
+            if (strictResponseInput && messageId == null)
             {
-                var joined = string.Concat(assistantContent.Select(part => (string?)part!["type"] == "output_text" ? (string?)part["text"] : (string?)part["refusal"]));
-                input.Add(new JsonObject { ["type"] = "message", ["role"] = "assistant", ["content"] = joined });
+                // Assistant text without an item id is sent as an easy input message.
+                input.Add(new JsonObject
+                {
+                    ["type"] = "message",
+                    ["role"] = "assistant",
+                    ["content"] = string.Concat(content.Select(part => (string?)part!["text"])),
+                });
             }
             else if (strictResponseInput)
             {
-                var strictContent = new JsonArray();
-                foreach (var part in assistantContent)
+                foreach (var part in content)
                 {
-                    var copy = part!.DeepClone().AsObject();
-                    if ((string?)copy["type"] == "output_text")
-                    {
-                        copy["annotations"] ??= new JsonArray();
-                        copy["logprobs"] ??= new JsonArray();
-                    }
-
-                    strictContent.Add(copy);
+                    part!["annotations"] ??= new JsonArray();
+                    part["logprobs"] ??= new JsonArray();
                 }
 
                 input.Add(new JsonObject
                 {
-                    ["id"] = assistantMessageId,
+                    ["id"] = messageId,
                     ["type"] = "message",
                     ["status"] = "completed",
                     ["role"] = "assistant",
-                    ["content"] = strictContent,
+                    ["content"] = content,
                 });
             }
             else
             {
-                var item = new JsonObject { ["type"] = "message", ["role"] = "assistant", ["content"] = assistantContent };
-                if (assistantMessageId != null)
+                var item = new JsonObject { ["type"] = "message", ["role"] = "assistant", ["content"] = content };
+                if (messageId != null)
                 {
-                    item["id"] = assistantMessageId;
+                    item["id"] = messageId;
                 }
 
                 input.Add(item);
             }
 
-            assistantContent = new JsonArray();
-            assistantMessageId = null;
+            content = new JsonArray();
+            messageId = null;
         }
 
-        foreach (var part in AssistantParts(assistant, providerOptionsName))
+        foreach (var part in assistant.Parts)
         {
-            var replay = GetExtensionReplay(part.ProviderOptions, providerOptionsName, extensionRegistry);
-            if (replay != null)
+            var providerData = ProviderData(part.ProviderOptions, providerOptionsName);
+            if (GetExtensionReplay(providerData, extensionRegistry) is { } replay)
             {
                 Flush();
                 AddReplayItem(replay.Item, input, replayedExtensionItems);
                 continue;
             }
 
-            if (part is AssistantToolCallPart || part is AssistantToolResultPart)
+            var toolName = part switch
             {
-                var toolName = part is AssistantToolCallPart call ? call.ToolName : ((AssistantToolResultPart)part).ToolName;
-                if (TryEncodeProviderToolPart(part, toolName, providerToolsByName, extensionRegistry, out var providerTool, out var encoded))
-                {
-                    Flush();
-                    if (encoded == null)
-                    {
-                        warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool!.ProviderToolId + " " + part.Type + " history"));
-                    }
-                    else
-                    {
-                        foreach (var item in encoded)
-                        {
-                            input.Add(item);
-                        }
-                    }
-
-                    continue;
-                }
+                AssistantToolCallPart toolCallPart => toolCallPart.ToolCall.ToolName,
+                AssistantToolResultPart toolResultPart => toolResultPart.ToolName,
+                _ => null,
+            };
+            if (toolName != null && TryEncodeProviderToolPart(part, toolName, providerToolsByName, extensionRegistry, input, warnings))
+            {
+                Flush();
+                continue;
             }
 
             switch (part)
             {
-                case AssistantReasoningPart reasoning:
+                case AssistantReasoningPart reasoning when reasoning.Text.Length > 0 || providerData != null:
                     Flush();
-                    AddReasoning(input, reasoning, providerOptionsName);
+                    AddReasoning(input, ReasoningItem(reasoning.Text, providerData));
                     break;
-
                 case AssistantTextPart text:
-                    {
-                        var data = ProviderData(text.ProviderOptions, providerOptionsName);
-                        var itemId = GetString(data, "itemId");
-                        var annotations = ParseAnnotations(data?["annotations"]);
-                        if (assistantContent.Count > 0 && assistantMessageId != itemId)
-                        {
-                            Flush();
-                        }
-
-                        assistantMessageId = itemId;
-                        var output = new JsonObject { ["type"] = "output_text", ["text"] = text.Text };
-                        if (annotations != null)
-                        {
-                            output["annotations"] = annotations;
-                        }
-
-                        assistantContent.Add(output);
-                        break;
-                    }
-
-                case AssistantToolCallPart toolCall:
+                    var itemId = ItemId(providerData);
+                    if (content.Count > 0 && messageId != itemId)
                     {
                         Flush();
-                        var itemId = GetString(ProviderData(toolCall.ProviderOptions, providerOptionsName), "itemId");
-                        var item = new JsonObject();
-                        item["type"] = "function_call";
-                        if (itemId != null)
-                        {
-                            item["id"] = itemId;
-                        }
-
-                        item["call_id"] = toolCall.ToolCallId;
-                        item["name"] = toolCall.ToolName;
-                        item["arguments"] = toolCall.InputJson;
-                        input.Add(item);
-                        break;
                     }
+
+                    messageId = itemId;
+                    var outputText = new JsonObject { ["type"] = "output_text", ["text"] = text.Text };
+                    if (Annotations(Child(providerData, "annotations")) is { } annotations)
+                    {
+                        outputText["annotations"] = annotations;
+                    }
+
+                    content.Add(outputText);
+                    break;
+                case AssistantToolCallPart toolCall:
+                    Flush();
+                    var call = toolCall.ToolCall;
+                    var item = new JsonObject { ["type"] = "function_call" };
+                    if (ItemId(providerData) is { } callItemId)
+                    {
+                        item["id"] = callItemId;
+                    }
+
+                    item["call_id"] = call.ToolCallId;
+                    item["name"] = call.ToolName;
+                    item["arguments"] = call.ArgumentsJson;
+                    input.Add(item);
+                    break;
             }
         }
 
         Flush();
     }
 
-    private static void AddReasoning(JsonArray input, AssistantReasoningPart part, string providerOptionsName)
+    /// <summary>Adds a reasoning item, or appends its content to the previous item when both have the same id.</summary>
+    private static void AddReasoning(JsonArray input, JsonObject item)
     {
-        var data = ProviderData(part.ProviderOptions, providerOptionsName);
-        var itemId = GetString(data, "itemId");
-        var summary = ParseTextParts(data?["reasoningSummary"], "summary_text");
-        var content = ParseTextParts(data?["reasoningContent"], "reasoning_text");
-        var hasReasoningContent = data != null && data.ContainsKey("reasoningContent");
-        var encrypted = GetString(data, "reasoningEncryptedContent");
-
-        var item = new JsonObject { ["type"] = "reasoning", ["summary"] = summary ?? new JsonArray() };
-        if (itemId != null)
+        if (item["id"] is { } id
+            && input.Count > 0
+            && input[input.Count - 1] is JsonObject previous
+            && (string?)previous["type"] == "reasoning"
+            && (string?)previous["id"] == (string?)id)
         {
-            item["id"] = itemId;
-        }
-
-        if (content != null)
-        {
-            item["content"] = content;
-        }
-        else if (!hasReasoningContent && part.Text.Length > 0)
-        {
-            item["content"] = new JsonArray(new JsonObject { ["type"] = "reasoning_text", ["text"] = part.Text });
-        }
-
-        if (encrypted != null)
-        {
-            item["encrypted_content"] = encrypted;
-        }
-
-        var previous = input.Count > 0 ? input[input.Count - 1] as JsonObject : null;
-        if (itemId != null && previous != null && (string?)previous["type"] == "reasoning" && (string?)previous["id"] == itemId)
-        {
-            if (item["content"] is JsonArray more)
+            if (item["content"] is JsonArray added)
             {
-                var merged = previous["content"] is JsonArray existing ? existing.DeepClone().AsArray() : new JsonArray();
-                foreach (var entry in more)
+                var merged = previous["content"] as JsonArray ?? new JsonArray();
+                foreach (var entry in added)
                 {
                     merged.Add(entry!.DeepClone());
                 }
 
                 previous["content"] = merged;
             }
+
+            return;
         }
-        else
+
+        input.Add(item);
+    }
+
+    private static JsonObject ReasoningItem(string text, JsonElement? providerData)
+    {
+        var item = new JsonObject
         {
-            input.Add(item);
+            ["type"] = "reasoning",
+            ["summary"] = TypedTexts(Child(providerData, "reasoningSummary"), "summary_text") ?? new JsonArray(),
+        };
+        if (ItemId(providerData) is { } itemId)
+        {
+            item["id"] = itemId;
         }
+
+        var hasReasoningContent = providerData is { } data && data.TryGetProperty("reasoningContent", out _);
+        if (TypedTexts(Child(providerData, "reasoningContent"), "reasoning_text") is { } content)
+        {
+            item["content"] = content;
+        }
+        else if (!hasReasoningContent && text.Length > 0)
+        {
+            item["content"] = new JsonArray(new JsonObject { ["type"] = "reasoning_text", ["text"] = text });
+        }
+
+        if (Child(providerData, "reasoningEncryptedContent") is { ValueKind: JsonValueKind.String } encrypted)
+        {
+            item["encrypted_content"] = encrypted.GetString();
+        }
+
+        return item;
+    }
+
+    /// <summary>Copies an array whose parts all have <paramref name="type"/> and a string <c>text</c>, or returns null.</summary>
+    private static JsonArray? TypedTexts(JsonElement? value, string type)
+    {
+        if (value is not { ValueKind: JsonValueKind.Array } array)
+        {
+            return null;
+        }
+
+        var parts = new JsonArray();
+        foreach (var part in array.EnumerateArray())
+        {
+            if (part.ValueKind != JsonValueKind.Object
+                || !part.TryGetProperty("type", out var partType)
+                || partType.ValueKind != JsonValueKind.String
+                || partType.GetString() != type
+                || !part.TryGetProperty("text", out var text)
+                || text.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            parts.Add(new JsonObject { ["type"] = type, ["text"] = text.GetString() });
+        }
+
+        return parts;
+    }
+
+    /// <summary>Copies the <c>url_citation</c> annotations, or returns null when any annotation is not a valid citation.</summary>
+    private static JsonArray? Annotations(JsonElement? value)
+    {
+        if (value is not { ValueKind: JsonValueKind.Array } array)
+        {
+            return null;
+        }
+
+        var annotations = new JsonArray();
+        foreach (var annotation in array.EnumerateArray())
+        {
+            if (Child(annotation, "type") is not { ValueKind: JsonValueKind.String } type
+                || type.GetString() != "url_citation"
+                || Child(annotation, "start_index") is not { ValueKind: JsonValueKind.Number } start
+                || Child(annotation, "end_index") is not { ValueKind: JsonValueKind.Number } end
+                || Child(annotation, "url") is not { ValueKind: JsonValueKind.String } url
+                || Child(annotation, "title") is not { ValueKind: JsonValueKind.String } title)
+            {
+                return null;
+            }
+
+            annotations.Add(new JsonObject
+            {
+                ["type"] = "url_citation",
+                ["start_index"] = JsonNode.Parse(start.GetRawText()),
+                ["end_index"] = JsonNode.Parse(end.GetRawText()),
+                ["url"] = url.GetString(),
+                ["title"] = title.GetString(),
+            });
+        }
+
+        return annotations;
     }
 
     private static void ConvertTool(
@@ -322,62 +385,39 @@ internal static class OpenResponsesInput
         OpenResponsesExtensionRegistry? extensionRegistry,
         IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName)
     {
-        Dictionary<string, JsonElement>? metadata = null;
-        if (tool.ProviderMetadata is { ValueKind: JsonValueKind.Object } bag)
-        {
-            metadata = bag.EnumerateObject().ToDictionary(property => property.Name, property => property.Value);
-        }
-
-        var replay = GetExtensionReplay(metadata, providerOptionsName, extensionRegistry);
-        if (replay != null)
+        if (GetExtensionReplay(ProviderData(tool.ProviderMetadata, providerOptionsName), extensionRegistry) is { } replay)
         {
             AddReplayItem(replay.Item, input, replayedExtensionItems);
             return;
         }
 
         var resultPart = new AssistantToolResultPart(tool.ToolCallId, tool.ToolName, tool);
-        if (TryEncodeProviderToolPart(resultPart, tool.ToolName, providerToolsByName, extensionRegistry, out var providerTool, out var encoded))
+        if (TryEncodeProviderToolPart(resultPart, tool.ToolName, providerToolsByName, extensionRegistry, input, warnings))
         {
-            if (encoded == null)
-            {
-                warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool!.ProviderToolId + " tool-result history"));
-            }
-            else
-            {
-                foreach (var item in encoded)
-                {
-                    input.Add(item);
-                }
-            }
-
             return;
         }
 
-        string output;
-        switch (tool.OutputType)
+        input.Add(new JsonObject
         {
-            case "execution-denied":
-                output = string.IsNullOrEmpty(tool.OutputJson) ? "Tool call execution denied." : tool.OutputJson;
-                break;
-            default:
-                output = tool.OutputJson;
-                break;
-        }
-
-        input.Add(new JsonObject { ["type"] = "function_call_output", ["call_id"] = tool.ToolCallId, ["output"] = output });
+            ["type"] = "function_call_output",
+            ["call_id"] = tool.ToolCallId,
+            ["output"] = ToolOutput(tool),
+        });
     }
 
+    /// <summary>
+    /// Encodes a tool call or tool result of a provider-defined tool through its extension and adds the items. Returns false
+    /// when the part does not belong to a registered provider tool. A part that the extension cannot encode is dropped with a warning.
+    /// </summary>
     private static bool TryEncodeProviderToolPart(
         AssistantContentPart part,
         string toolName,
         IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
         OpenResponsesExtensionRegistry? extensionRegistry,
-        out LanguageModelTool? providerTool,
-        out List<JsonObject>? encoded)
+        JsonArray input,
+        List<CallWarning> warnings)
     {
-        encoded = null;
-        providerTool = null;
-        if (!providerToolsByName.TryGetValue(toolName, out providerTool)
+        if (!providerToolsByName.TryGetValue(toolName, out var providerTool)
             || extensionRegistry == null
             || providerTool.ProviderToolId == null
             || !extensionRegistry.ByProviderToolId.TryGetValue(providerTool.ProviderToolId, out var extension))
@@ -385,202 +425,113 @@ internal static class OpenResponsesInput
             return false;
         }
 
-        if (extension.EncodeInputItem == null || extension.ItemTypes == null)
+        List<JsonObject>? encoded = null;
+        if (extension.EncodeInputItem != null && extension.ItemTypes != null)
         {
+            try
+            {
+                var items = extension.EncodeInputItem(new OpenResponsesEncodeInputItemContext(part, providerTool));
+                if (items != null
+                    && items.Count > 0
+                    && items.All(item => item != null && OpenResponsesJson.IsExtensionItem(item) && extension.ItemTypes.Contains((string)item["type"]!)))
+                {
+                    encoded = items.Select(item => item.DeepClone().AsObject()).ToList();
+                }
+            }
+            catch (Exception)
+            {
+                // Encoding failures are reported as unsupported below.
+            }
+        }
+
+        if (encoded == null)
+        {
+            warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool.ProviderToolId + " " + part.Type + " history"));
             return true;
         }
 
-        try
+        foreach (var item in encoded)
         {
-            var items = extension.EncodeInputItem(new OpenResponsesEncodeInputItemContext(part, providerTool));
-            if (items == null || items.Count == 0)
-            {
-                return true;
-            }
-
-            foreach (var item in items)
-            {
-                if (item == null || !OpenResponsesJson.IsExtensionItem(item) || !extension.ItemTypes.Contains((string)item["type"]!))
-                {
-                    return true;
-                }
-            }
-
-            encoded = items.Select(item => item.DeepClone().AsObject()).ToList();
-        }
-        catch (Exception)
-        {
-            encoded = null;
+            input.Add(item);
         }
 
         return true;
     }
 
+    /// <summary>Adds an original extension item once per prompt.</summary>
     private static void AddReplayItem(JsonObject? item, JsonArray input, HashSet<string> replayed)
     {
-        if (item == null)
-        {
-            return;
-        }
-
-        var key = (string)item["type"]! + ":" + (string)item["id"]!;
-        if (replayed.Add(key))
+        if (item != null && replayed.Add((string)item["type"]! + ":" + (string)item["id"]!))
         {
             input.Add(item.DeepClone());
         }
     }
 
-    private sealed class ExtensionReplay
+    /// <summary>
+    /// Reads the <c>openResponsesExtension</c> reference of a part. Returns null when the part has none or its extension is not
+    /// registered. The result holds the original item when the part stores it, and no item when it only references one.
+    /// </summary>
+    private static ExtensionReplay? GetExtensionReplay(JsonElement? providerData, OpenResponsesExtensionRegistry? extensionRegistry)
     {
-        public JsonObject? Item { get; set; }
-    }
-
-    private static ExtensionReplay? GetExtensionReplay(
-        IReadOnlyDictionary<string, JsonElement>? providerOptions,
-        string providerOptionsName,
-        OpenResponsesExtensionRegistry? extensionRegistry)
-    {
-        var extensionData = ProviderData(providerOptions, providerOptionsName)?["openResponsesExtension"] as JsonObject;
-        if (extensionData == null || extensionRegistry == null)
+        if (extensionRegistry == null
+            || Child(providerData, "openResponsesExtension") is not { ValueKind: JsonValueKind.Object } extensionData
+            || Child(extensionData, "id") is not { ValueKind: JsonValueKind.String } id
+            || !extensionRegistry.ByExtensionId.TryGetValue(id.GetString()!, out var extension))
         {
             return null;
         }
 
-        var id = GetString(extensionData, "id");
-        if (id == null || !extensionRegistry.ByExtensionId.TryGetValue(id, out var extension))
-        {
-            return null;
-        }
-
-        if (extensionData["item"] is JsonObject item
+        if (Child(extensionData, "item") is { ValueKind: JsonValueKind.Object } itemElement
+            && JsonNode.Parse(itemElement.GetRawText()) is JsonObject item
             && OpenResponsesJson.IsExtensionItem(item)
             && extension.ItemTypes != null
             && extension.ItemTypes.Contains((string)item["type"]!))
         {
-            return new ExtensionReplay { Item = item };
+            return new ExtensionReplay(item);
         }
 
-        return GetString(extensionData, "itemId") != null ? new ExtensionReplay() : null;
+        return Child(extensionData, "itemId") is { ValueKind: JsonValueKind.String } ? new ExtensionReplay(null) : null;
     }
 
-    /// <summary>The ordered parts of an assistant message, built from the flat fields when the message has no parts.</summary>
-    private static IReadOnlyList<AssistantContentPart> AssistantParts(AssistantModelMessage assistant, string providerOptionsName)
+    private static JsonNode ToolOutput(ToolModelMessage tool)
     {
-        if (assistant.Parts != null)
-        {
-            return assistant.Parts;
-        }
-
-        var parts = new List<AssistantContentPart>();
-        if (!string.IsNullOrEmpty(assistant.Reasoning) || ProviderData(assistant.ReasoningProviderOptions, providerOptionsName) != null)
-        {
-            parts.Add(new AssistantReasoningPart(assistant.Reasoning ?? string.Empty, assistant.ReasoningProviderOptions));
-        }
-
-        if (!string.IsNullOrEmpty(assistant.Text))
-        {
-            parts.Add(new AssistantTextPart(assistant.Text!));
-        }
-
-        foreach (var call in assistant.ToolCalls)
-        {
-            Dictionary<string, JsonElement>? options = null;
-            if (call.ProviderMetadata is { ValueKind: JsonValueKind.Object } bag)
-            {
-                options = bag.EnumerateObject().ToDictionary(property => property.Name, property => property.Value);
-            }
-
-            parts.Add(new AssistantToolCallPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted, options));
-        }
-
-        return parts;
+        return tool.OutputType == "execution-denied" && string.IsNullOrEmpty(tool.OutputJson)
+            ? "Tool call execution denied."
+            : tool.OutputJson;
     }
 
-    private static JsonObject? ProviderData(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
+    private static string? ItemId(JsonElement? providerData)
     {
-        if (providerOptions != null
-            && providerOptions.TryGetValue(providerOptionsName, out var value)
-            && value.ValueKind == JsonValueKind.Object)
-        {
-            return JsonNode.Parse(value.GetRawText())!.AsObject();
-        }
-
-        return null;
+        return Child(providerData, "itemId") is { ValueKind: JsonValueKind.String } itemId ? itemId.GetString() : null;
     }
 
-    private static string? GetString(JsonObject? data, string name)
+    private static JsonElement? Child(JsonElement? element, string name)
     {
-        if (data != null && data.TryGetPropertyValue(name, out var node) && node is JsonValue value && value.TryGetValue<string>(out var text))
-        {
-            return text;
-        }
-
-        return null;
+        return element is { ValueKind: JsonValueKind.Object } value && value.TryGetProperty(name, out var child) ? child : null;
     }
 
-    private static string ImageDetail(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
+    private static JsonElement? ProviderData(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
     {
-        var detail = GetString(ProviderData(providerOptions, providerOptionsName), "imageDetail");
-        return detail == "low" || detail == "high" || detail == "auto" ? detail : "auto";
+        return providerOptions != null
+            && providerOptions.TryGetValue(providerOptionsName, out var data)
+            && data.ValueKind == JsonValueKind.Object
+                ? data
+                : null;
     }
 
-    private static JsonArray? ParseTextParts(JsonNode? value, string type)
+    private static JsonElement? ProviderData(JsonElement? providerMetadata, string providerOptionsName)
     {
-        if (value is not JsonArray array)
-        {
-            return null;
-        }
-
-        var result = new JsonArray();
-        foreach (var entry in array)
-        {
-            if (entry is not JsonObject item || GetString(item, "type") != type || GetString(item, "text") == null)
-            {
-                return null;
-            }
-
-            result.Add(new JsonObject { ["type"] = type, ["text"] = GetString(item, "text") });
-        }
-
-        return result;
+        return Child(providerMetadata, providerOptionsName) is { ValueKind: JsonValueKind.Object } data ? data : null;
     }
 
-    private static JsonArray? ParseAnnotations(JsonNode? value)
+    private sealed class ExtensionReplay
     {
-        if (value is not JsonArray array)
+        public ExtensionReplay(JsonObject? item)
         {
-            return null;
+            Item = item;
         }
 
-        var result = new JsonArray();
-        foreach (var entry in array)
-        {
-            if (entry is not JsonObject item
-                || GetString(item, "type") != "url_citation"
-                || !IsNumber(item["start_index"])
-                || !IsNumber(item["end_index"])
-                || GetString(item, "url") == null
-                || GetString(item, "title") == null)
-            {
-                return null;
-            }
-
-            result.Add(new JsonObject
-            {
-                ["type"] = "url_citation",
-                ["start_index"] = item["start_index"]!.DeepClone(),
-                ["end_index"] = item["end_index"]!.DeepClone(),
-                ["url"] = GetString(item, "url"),
-                ["title"] = GetString(item, "title"),
-            });
-        }
-
-        return result;
-    }
-
-    private static bool IsNumber(JsonNode? node)
-    {
-        return node is JsonValue value && value.TryGetValue<double>(out _);
+        public JsonObject? Item { get; }
     }
 }
 

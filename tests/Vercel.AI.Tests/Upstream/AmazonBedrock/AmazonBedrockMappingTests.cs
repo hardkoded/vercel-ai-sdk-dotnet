@@ -212,14 +212,12 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should extract first 9 alphanumeric characters for Mistral models", Coverage = UpstreamCoverage.Covered)]
     public void Extracts_the_first_nine_alphanumeric_characters()
     {
         Assert.Equal("toolusebp", AmazonBedrockToolIds.Normalize("tooluse_bpe71yCfRu2b5i-nKGDr5g", true));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should handle IDs with various special characters", Coverage = UpstreamCoverage.Covered)]
     public void Handles_ids_with_special_characters()
     {
         Assert.Equal("tooluse12", AmazonBedrockToolIds.Normalize("tool-use_123ABC456", true));
@@ -227,7 +225,6 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should handle IDs that are already alphanumeric", Coverage = UpstreamCoverage.Covered)]
     public void Handles_ids_that_are_already_alphanumeric()
     {
         Assert.Equal("abcdefghi", AmazonBedrockToolIds.Normalize("abcdefghi", true));
@@ -235,7 +232,6 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should handle short IDs", Coverage = UpstreamCoverage.Covered)]
     public void Handles_short_ids()
     {
         Assert.Equal("abc", AmazonBedrockToolIds.Normalize("abc", true));
@@ -243,14 +239,12 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should handle IDs with only special characters", Coverage = UpstreamCoverage.Covered)]
     public void Handles_ids_with_only_special_characters()
     {
         Assert.Equal(string.Empty, AmazonBedrockToolIds.Normalize("___---___", true));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should produce valid Mistral tool call IDs (9 alphanumeric chars)", Coverage = UpstreamCoverage.Covered)]
     public void Produces_a_valid_mistral_tool_call_id()
     {
         var normalized = AmazonBedrockToolIds.Normalize("tooluse_bpe71yCfRu2b5i-nKGDr5g", true);

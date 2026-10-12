@@ -130,10 +130,14 @@ public sealed class TranslateTests
     {
         var model = new TranslateFake { Parts = new[] { new ModelStreamPart { Type = "output-text-delta", Delta = "x" } }, Completes = false };
         var result = StreamTranslate.Start(Request(model));
-        var stream = result.FullStream;
-        await model.Started.Task;
-        stream.Cancel();
-        await Task.Delay(30);
+        await foreach (var part in result.FullStream)
+        {
+            Assert.Equal("output-text-delta", part.Type);
+            break;
+        }
+
+        // The pump cancels the model stream before it rejects the result promises.
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => result.TranslationText);
         Assert.True(model.Stream!.Cancelled);
     }
 

@@ -390,7 +390,7 @@ internal static class OpenResponsesExtensionItems
         switch (part)
         {
             case GeneratedText text:
-                return new GeneratedText(text.Text, text.Citations) { ProviderMetadata = merged };
+                return new GeneratedText(text.Text, text.Citations, merged);
             case GeneratedReasoning reasoning:
                 return new GeneratedReasoning(reasoning.Text, merged);
             case GeneratedToolCall call:
