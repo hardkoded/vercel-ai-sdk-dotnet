@@ -130,10 +130,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             prepared.Add(definition);
         }
 
-        return new PreparedResponsesTools(prepared, toolChoice, warnings)
-        {
-            ResolvedToolChoice = MapChoice(toolChoice, customToolNames),
-        };
+        return new PreparedResponsesTools(prepared, MapChoice(toolChoice, customToolNames), warnings);
     }
 
     private static JsonNode? MapProviderTool(LanguageModelTool tool, HashSet<string> customToolNames)
@@ -713,7 +710,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             body["tools"] = prepared.Tools;
         }
 
-        var choice = prepared.ResolvedToolChoice ?? MapChoice(options.ToolChoice);
+        var choice = prepared.ToolChoice;
         if (choice != null)
         {
             body["tool_choice"] = choice;

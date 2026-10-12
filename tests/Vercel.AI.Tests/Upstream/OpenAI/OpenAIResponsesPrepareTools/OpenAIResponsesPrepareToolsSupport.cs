@@ -41,7 +41,7 @@ internal static class OpenAIResponsesPrepareToolsSupport
     public static void AssertToolChoice(PreparedResponsesTools result, string expectedJson)
     {
         Assert.True(
-            JsonNode.DeepEquals(JsonNode.Parse(expectedJson), result.ResolvedToolChoice),
-            "Expected " + expectedJson + " but was " + result.ResolvedToolChoice?.ToJsonString());
+            JsonNode.DeepEquals(JsonNode.Parse(expectedJson), result.ToolChoice),
+            "Expected " + expectedJson + " but was " + result.ToolChoice?.ToJsonString());
     }
 }
