@@ -665,7 +665,7 @@ public static class BatchModels
 public sealed class BatchRequestOptions : OperationRequest
 {
     /// <summary>Batch API or a provider that exposes one. Null uses <see cref="BatchModels.Default"/>.</summary>
-    public object? Provider { get; set; }
+    public ApiOrProvider<IBatchApi, IBatchProvider>? Provider { get; set; }
 
     /// <summary>Batch reference.</summary>
     public BatchReference? Batch { get; set; }
@@ -997,24 +997,21 @@ public static class Batch
 
     private static IBatchApi Resolve(BatchRequestOptions request)
     {
-        var provider = request.Provider;
-        if (provider == null)
+        var selected = request.Provider ?? (BatchModels.Default?.Invoke() is IBatchProvider fallback ? ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(fallback) : null);
+        if (selected == null)
         {
-            provider = BatchModels.Default?.Invoke() ?? throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
+            throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
         }
 
-        if (provider is IBatchApi api)
+        if (selected.Api != null)
         {
-            return api;
+            return selected.Api;
         }
 
-        if (provider is IBatchProvider factory)
+        var created = selected.Provider?.ExperimentalBatch();
+        if (created != null)
         {
-            var created = factory.ExperimentalBatch();
-            if (created != null)
-            {
-                return created;
-            }
+            return created;
         }
 
         throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
