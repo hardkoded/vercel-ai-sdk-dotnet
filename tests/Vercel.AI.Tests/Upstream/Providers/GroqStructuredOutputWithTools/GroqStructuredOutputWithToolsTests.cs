@@ -84,7 +84,7 @@ public sealed class GroqStructuredOutputWithToolsTests
     [InlineData("openai/gpt-oss-120b")]
     [InlineData("llama-3.3-70b-versatile")]
     [UpstreamTest("packages/groq/src/structured-output-with-tools.test.ts::structured output with tools::uses a response tool for %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Uses_a_response_tool_for_model(string modelId)
+    public async Task Uses_a_response_tool_for(string modelId)
     {
         var capture = new UpstreamCapture { ResponseBody = Response() };
 

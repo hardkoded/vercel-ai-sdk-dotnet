@@ -354,7 +354,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 {
                     if (item is JsonObject tool)
                     {
-                        HandleToolDelta(tool, toolCalls, pending, forwarded, signatures);
+                        var input = HandleToolDelta(tool, toolCalls, pending, forwarded, signatures);
+                        foreach (var part in ResponseToolInput(input, prepared.JsonResponseToolName))
+                        {
+                            yield return part;
+                        }
                     }
                 }
             }
@@ -372,7 +376,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         foreach (var pair in pending)
         {
-            toolCalls.ProcessDelta(new StreamingToolCallDelta(pair.Key, pair.Value.Id, null, pair.Value.Arguments.ToString()));
+            var input = toolCalls.ProcessDelta(new StreamingToolCallDelta(pair.Key, pair.Value.Id, null, pair.Value.Arguments.ToString()));
+            foreach (var part in ResponseToolInput(input, prepared.JsonResponseToolName))
+            {
+                yield return part;
+            }
         }
 
         pending.Clear();
@@ -386,9 +394,6 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
             if (call.ToolName == prepared.JsonResponseToolName)
             {
-                // The shared tracker reports only whole calls. The response-tool converter reads the input parts.
-                yield return new ToolInputStartStreamPart(call.ToolCallId, call.ToolName);
-                yield return new ToolInputDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
                 yield return new ToolInputEndStreamPart(call.ToolCallId);
             }
 
@@ -832,7 +837,26 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return parts;
     }
 
-    private static void HandleToolDelta(
+    // The response-tool converter turns these input parts into text deltas while the call streams.
+    private static IEnumerable<LanguageModelStreamPart> ResponseToolInput(StreamingToolCallInput? input, string? responseToolName)
+    {
+        if (input == null || input.Name != responseToolName)
+        {
+            yield break;
+        }
+
+        if (input.Started)
+        {
+            yield return new ToolInputStartStreamPart(input.Id, input.Name);
+        }
+
+        if (input.ArgumentsDelta != null)
+        {
+            yield return new ToolInputDeltaStreamPart(input.Id, input.ArgumentsDelta);
+        }
+    }
+
+    private static StreamingToolCallInput? HandleToolDelta(
         JsonObject tool,
         StreamingToolCallTracker tracker,
         Dictionary<int, PendingTool> pending,
@@ -843,9 +867,8 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         var signature = ReadWireSignature(tool);
         if (delta.Index == null || forwarded.Contains(delta.Index.Value))
         {
-            tracker.ProcessDelta(delta);
             Remember(signatures, delta.Id, signature);
-            return;
+            return tracker.ProcessDelta(delta);
         }
 
         var index = delta.Index.Value;
@@ -874,13 +897,14 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         if (!delta.NameIsString)
         {
-            return;
+            return null;
         }
 
-        tracker.ProcessDelta(new StreamingToolCallDelta(index, item.Id, delta.Name, item.Arguments.ToString()));
+        var input = tracker.ProcessDelta(new StreamingToolCallDelta(index, item.Id, delta.Name, item.Arguments.ToString()));
         Remember(signatures, item.Id, item.Signature);
         pending.Remove(index);
         forwarded.Add(index);
+        return input;
     }
 
     private static void Remember(Dictionary<string, string> signatures, string? id, string? signature)
