@@ -60,7 +60,7 @@ public sealed class ShouldSupportNovaEmbeddingsTests
     private static (Vercel.AI.Provider.IEmbeddingModel Model, UpstreamRecordingHandler Handler) Create()
     {
         var handler = new UpstreamRecordingHandler(NovaResponse);
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
         return (provider.EmbeddingModel("amazon.nova-2-multimodal-embeddings-v1:0"), handler);
     }
 }

@@ -92,6 +92,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
+        _provider.AddHeaders(request, null);
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");

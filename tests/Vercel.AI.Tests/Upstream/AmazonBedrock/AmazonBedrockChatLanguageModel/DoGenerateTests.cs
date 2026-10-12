@@ -74,7 +74,6 @@ public sealed class DoGenerateTests
         Assert.False(body.TryGetProperty("reasoningConfig", out _));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::merges user additionalModelRequestFields with derived thinking (generate)",
@@ -91,7 +90,6 @@ public sealed class DoGenerateTests
         AssertMatches("{\"foo\":\"bar\",\"custom\":42,\"thinking\":{\"type\":\"enabled\",\"budget_tokens\":1234}}", body.GetProperty("additionalModelRequestFields"));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should forward display in adaptive reasoningConfig to thinking",
@@ -106,7 +104,6 @@ public sealed class DoGenerateTests
 
         AssertEqual("{\"type\":\"adaptive\",\"display\":\"summarized\"}", body.GetProperty("additionalModelRequestFields").GetProperty("thinking"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -123,7 +120,6 @@ public sealed class DoGenerateTests
         AssertMatches("{\"additionalModelRequestFields\":{\"reasoningConfig\":{\"type\":\"enabled\",\"maxReasoningEffort\":\"medium\"}}}", body);
         Assert.False(body.GetProperty("additionalModelRequestFields").TryGetProperty("thinking", out _));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -142,7 +138,6 @@ public sealed class DoGenerateTests
         Assert.False(fields.TryGetProperty("reasoningConfig", out _));
         Assert.False(fields.TryGetProperty("thinking", out _));
     }
-
 
     [Theory]
     [InlineData("us.openai.gpt-5.6-luna")]
@@ -164,7 +159,6 @@ public sealed class DoGenerateTests
         Assert.False(fields.TryGetProperty("reasoningConfig", out _));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should pass maxReasoningEffort as output_config.effort for Anthropic models (generate)",
@@ -181,7 +175,6 @@ public sealed class DoGenerateTests
         Assert.False(fields.TryGetProperty("reasoningConfig", out _));
         AssertEqual("{\"effort\":\"medium\"}", fields.GetProperty("output_config"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -202,7 +195,6 @@ public sealed class DoGenerateTests
         Assert.True(fields.TryGetProperty("thinking", out _));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should merge output_config.effort and output_config.format when thinking with maxReasoningEffort and structured output",
@@ -219,7 +211,6 @@ public sealed class DoGenerateTests
         Assert.False(body.TryGetProperty("toolConfig", out _));
         AssertEqual("{\"effort\":\"medium\",\"format\":{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
-
 
     [Theory]
     [InlineData(null)]
@@ -243,7 +234,6 @@ public sealed class DoGenerateTests
         Assert.Equal("{\"answer\":\"OK\"}", text.Text);
         Assert.False(result.ProviderMetadata?.TryGetProperty("bedrock", out _) ?? false);
     }
-
 
     [Theory]
     [InlineData("anthropic.claude-sonnet-4-6-v1")]
@@ -269,7 +259,6 @@ public sealed class DoGenerateTests
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.True(result.ProviderMetadata!.Value.GetProperty("bedrock").GetProperty("isJsonResponseFromTool").GetBoolean());
     }
-
 
     [Theory]
     [InlineData("amazonBedrock")]
@@ -299,7 +288,6 @@ public sealed class DoGenerateTests
         Assert.True(result.ProviderMetadata!.Value.GetProperty("bedrock").GetProperty("isJsonResponseFromTool").GetBoolean());
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should remove a manually supplied output_config.format in jsonTool mode while preserving sibling fields",
@@ -315,7 +303,6 @@ public sealed class DoGenerateTests
 
         AssertEqual("{\"effort\":\"medium\"}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -334,7 +321,6 @@ public sealed class DoGenerateTests
         AssertEqual("{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config").GetProperty("format"));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should prefer amazonBedrock structuredOutputMode over anthropic structuredOutputMode",
@@ -352,7 +338,6 @@ public sealed class DoGenerateTests
         Assert.False(HasOutputConfigFormat(body));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use native output_config.format for models with structured output support even without thinking enabled",
@@ -369,7 +354,6 @@ public sealed class DoGenerateTests
         AssertEqual("{\"format\":{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
 
-
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should sanitize unsupported JSON schema keywords for native structured output",
@@ -384,7 +368,6 @@ public sealed class DoGenerateTests
 
         AssertEqual("{\"additionalProperties\":false,\"properties\":{\"labels\":{\"description\":\"max items: 3.\",\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"labels\"],\"type\":\"object\"}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config").GetProperty("format").GetProperty("schema"));
     }
-
 
     [Theory]
     [InlineData("us.anthropic.claude-opus-4-8")]
@@ -409,12 +392,44 @@ public sealed class DoGenerateTests
         Assert.Equal("{\"name\":\"Test\"}", text.Text);
     }
 
-
     private static void AssertJsonToolFallback(UpstreamRecordingHandler handler)
     {
         using var request = JsonDocument.Parse(handler.Body);
         Assert.Equal("json", request.RootElement.GetProperty("toolConfig").GetProperty("tools")[0].GetProperty("toolSpec").GetProperty("name").GetString());
         Assert.False(request.RootElement.TryGetProperty("additionalModelRequestFields", out _));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should properly combine headers from all sources",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_properly_combine_headers_from_all_sources()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await HeadersTestHelper.Generate(
+            handler,
+            new Dictionary<string, string?> { ["model-header"] = "model-value", ["shared-header"] = "model-shared" },
+            new Dictionary<string, string?> { ["options-header"] = "options-value", ["shared-header"] = "options-shared" });
+
+        Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
+        Assert.Equal("options-shared", handler.Headers["shared-header"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should work with partial headers",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_work_with_partial_headers()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await HeadersTestHelper.Generate(
+            handler,
+            new Dictionary<string, string?> { ["model-header"] = "model-value" },
+            new Dictionary<string, string?> { ["options-header"] = "options-value" });
+
+        Assert.Equal("options-value", handler.Headers["options-header"]);
+        Assert.Equal("model-value", handler.Headers["model-header"]);
     }
 
     private const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
@@ -449,7 +464,7 @@ public sealed class DoGenerateTests
     private static async Task<(LanguageModelGenerateResult Result, JsonElement Body)> Run(string modelId, string response, LanguageModelCallOptions options)
     {
         var handler = new UpstreamRecordingHandler(response);
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
             AccessKeyId = "test-access-key",
             SecretAccessKey = "test-secret",
@@ -508,7 +523,7 @@ public sealed class DoGenerateTests
 
     private static async Task<LanguageModelGenerateResult> Generate(UpstreamRecordingHandler handler, string modelId)
     {
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
             AccessKeyId = "test-access-key",
             SecretAccessKey = "test-secret",
@@ -520,5 +535,40 @@ public sealed class DoGenerateTests
             Prompt = new ModelMessage[] { new UserModelMessage("Generate a name") },
             JsonSchema = schema.RootElement.Clone(),
         }, CancellationToken.None);
+    }
+}
+
+internal static class HeadersTestHelper
+{
+    public static async Task Generate(UpstreamRecordingHandler handler, IReadOnlyDictionary<string, string?> providerHeaders, IReadOnlyDictionary<string, string?> callHeaders)
+    {
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        {
+            AccessKeyId = "test-access-key",
+            SecretAccessKey = "test-secret",
+            Headers = providerHeaders,
+        }, handler);
+        await provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoGenerateAsync(new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+            Headers = callHeaders,
+        }, CancellationToken.None);
+    }
+
+    public static async Task Stream(UpstreamRecordingHandler handler, IReadOnlyDictionary<string, string?> providerHeaders, IReadOnlyDictionary<string, string?> callHeaders)
+    {
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        {
+            AccessKeyId = "test-access-key",
+            SecretAccessKey = "test-secret",
+            Headers = providerHeaders,
+        }, handler);
+        await foreach (var _ in provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoStreamAsync(new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+            Headers = callHeaders,
+        }, CancellationToken.None))
+        {
+        }
     }
 }
