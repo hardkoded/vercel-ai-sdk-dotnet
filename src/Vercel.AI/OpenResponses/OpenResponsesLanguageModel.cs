@@ -521,7 +521,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         {
             foreach (var summaryPart in summaryParts.EnumerateArray())
             {
-                summary.Append(new JsonObject { ["type"] = "summary_text", ["text"] = StringOf(summaryPart, "text") });
+                summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = StringOf(summaryPart, "text") });
             }
         }
 

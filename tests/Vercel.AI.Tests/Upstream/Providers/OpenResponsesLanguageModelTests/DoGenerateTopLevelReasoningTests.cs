@@ -15,7 +15,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should map top-level reasoning to reasoning effort", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_top_level_reasoning_to_reasoning_effort()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "high";
 
@@ -28,7 +28,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should coerce top-level reasoning minimal to low", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_coerce_top_level_reasoning_minimal_to_low()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "minimal";
 
@@ -41,7 +41,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should map top-level reasoning none to none", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_top_level_reasoning_none_to_none()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "none";
 
@@ -54,7 +54,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should pass xhigh directly", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_xhigh_directly()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "xhigh";
 
@@ -67,7 +67,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should pass max directly", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_max_directly()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "max";
 
@@ -80,7 +80,7 @@ public sealed class DoGenerateTopLevelReasoningTests
     [UpstreamTest(Prefix + "should not set reasoning when not specified", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_not_set_reasoning_when_not_specified()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
 
         await Model(capture).DoGenerateAsync(options, CancellationToken.None);

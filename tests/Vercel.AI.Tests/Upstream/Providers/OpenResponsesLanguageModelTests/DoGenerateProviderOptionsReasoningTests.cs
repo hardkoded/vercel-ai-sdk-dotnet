@@ -15,7 +15,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     [UpstreamTest(Prefix + "should send a provider-native reasoning effort", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_a_provider_native_reasoning_effort()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\"}");
 
@@ -28,7 +28,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     [UpstreamTest(Prefix + "should prefer providerOptions reasoning effort over top-level reasoning", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_prefer_providerOptions_reasoning_effort_over_top_level_reasoning()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "low";
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningEffort\":\"max\",\"reasoningSummary\":\"detailed\"}");
@@ -43,7 +43,7 @@ public sealed class DoGenerateProviderOptionsReasoningTests
     [UpstreamTest(Prefix + "should combine top-level reasoning effort with providerOptions summary", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_combine_top_level_reasoning_effort_with_providerOptions_summary()
     {
-        var capture = new UpstreamCapture();
+        var capture = new UpstreamCapture { ResponseBody = OpenResponsesTestSupport.Fixture("lmstudio-basic.1") };
         var options = UpstreamChat.Prompt();
         options.Reasoning = "high";
         options.ProviderOptions = UpstreamChat.Bag("open-responses", "{\"reasoningSummary\":\"auto\"}");
