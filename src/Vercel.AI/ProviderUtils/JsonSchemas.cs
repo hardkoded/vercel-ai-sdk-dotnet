@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.ProviderUtils;
 
@@ -517,23 +518,6 @@ public static class JsonInstructions
     private const string SchemaSuffix = "You MUST answer with a JSON object that matches the JSON schema above.";
     private const string GenericSuffix = "You MUST answer with JSON.";
 
-    /// <summary>One prompt message. <see cref="Content"/> is a string for system text, or any other JSON value.</summary>
-    public sealed class PromptMessage
-    {
-        /// <summary>Creates a message.</summary>
-        public PromptMessage(string role, object? content)
-        {
-            Role = role ?? string.Empty;
-            Content = content;
-        }
-
-        /// <summary>Message role.</summary>
-        public string Role { get; }
-
-        /// <summary>Message content.</summary>
-        public object? Content { get; }
-    }
-
     /// <summary>Joins an optional prompt with a JSON schema instruction.</summary>
     public static string Inject(string? prompt, JsonNode? schema, string? schemaPrefix = null, string? schemaSuffix = null, bool prefixSpecified = false, bool suffixSpecified = false)
     {
@@ -565,8 +549,8 @@ public static class JsonInstructions
     }
 
     /// <summary>Writes the instruction into the first system message, or inserts one.</summary>
-    public static IReadOnlyList<PromptMessage> InjectIntoMessages(
-        IReadOnlyList<PromptMessage> messages,
+    public static IReadOnlyList<ModelMessage> InjectIntoMessages(
+        IReadOnlyList<ModelMessage> messages,
         JsonNode? schema = null,
         string? schemaPrefix = null,
         string? schemaSuffix = null,
@@ -579,11 +563,10 @@ public static class JsonInstructions
         }
 
         var hasSystem = messages.Count > 0 && messages[0].Role == "system";
-        var systemContent = hasSystem && messages[0].Content is string text ? text : string.Empty;
-        var system = new PromptMessage(
-            "system",
+        var systemContent = hasSystem && messages[0] is SystemModelMessage systemMessage ? systemMessage.Content : string.Empty;
+        var system = new SystemModelMessage(
             Inject(systemContent, schema, schemaPrefix, schemaSuffix, prefixSpecified, suffixSpecified));
-        var result = new List<PromptMessage> { system };
+        var result = new List<ModelMessage> { system };
         var start = hasSystem ? 1 : 0;
         for (var index = start; index < messages.Count; index++)
         {

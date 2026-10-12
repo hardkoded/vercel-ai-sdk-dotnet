@@ -17,7 +17,7 @@ public sealed class ValueHelperTests
         Coverage = UpstreamCoverage.Covered)]
     public void As_array_returns_empty_for_null()
     {
-        Assert.Empty(ProviderValues.AsArray<string>(null));
+        Assert.Empty(ProviderValues.AsArray<string>((string?)null));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class ValueHelperTests
         Coverage = UpstreamCoverage.Covered)]
     public void Filter_nullable_drops_null()
     {
-        Assert.Equal(new object[] { 1, 2, 3 }, ProviderValues.FilterNullable(1, null, 2, null, 3));
+        Assert.Equal(new object[] { 1, 2, 3 }, ProviderValues.FilterNullable<object>(1, null, 2, null, 3));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class ValueHelperTests
         Coverage = UpstreamCoverage.Covered)]
     public void Filter_nullable_keeps_false_zero_and_empty_text()
     {
-        Assert.Equal(new object[] { 0, false, "" }, ProviderValues.FilterNullable(0, false, "", null));
+        Assert.Equal(new object[] { 0, false, "" }, ProviderValues.FilterNullable<object>(0, false, "", null));
     }
 
     [Fact]
