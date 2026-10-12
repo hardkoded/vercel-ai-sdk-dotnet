@@ -42,4 +42,15 @@ public sealed class AssistantMessagesTests
             [{"arguments":"{\"query\":\"latest news\"}","call_id":"call_ws","id":"call_ws","name":"web_search","status":"completed","type":"function_call"}]
             """);
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should skip server-side tool-call parts", Coverage = UpstreamCoverage.Covered)]
+    public void Should_skip_server_side_tool_call_parts()
+    {
+        var call = new GeneratedToolCall("ws_123", "web_search", "{}") { ProviderExecuted = true };
+
+        var input = Convert(new AssistantModelMessage(new AssistantContentPart[] { new AssistantToolCallPart(call) }));
+
+        JsonAssert.Equal(input, "[]");
+    }
 }

@@ -131,59 +131,85 @@ internal static class XaiResponsesInput
 
     private static void ConvertAssistant(AssistantModelMessage assistant, JsonArray input, List<CallWarning> warnings)
     {
-        var reasoningOptions = ReasoningOptions(assistant);
-        var itemId = OpenAI.OpenAIJson.String(reasoningOptions, "itemId");
-        var encryptedContent = OpenAI.OpenAIJson.String(reasoningOptions, "reasoningEncryptedContent");
-        if (itemId != null || encryptedContent != null)
+        foreach (var part in assistant.Parts)
         {
-            var summary = new JsonArray();
-            if (!string.IsNullOrEmpty(assistant.Reasoning))
+            switch (part)
             {
-                summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = assistant.Reasoning });
+                case AssistantTextPart text:
+                    var message = new JsonObject { ["role"] = "assistant", ["content"] = text.Text };
+                    if (XaiString(part, "itemId") is { } textItemId)
+                    {
+                        message["id"] = textItemId;
+                    }
+
+                    input.Add(message);
+                    break;
+                case AssistantToolCallPart toolCall:
+                    // xAI ran provider-executed tools itself, so they are not sent back.
+                    if (toolCall.ToolCall.ProviderExecuted)
+                    {
+                        break;
+                    }
+
+                    var call = toolCall.ToolCall;
+                    input.Add(new JsonObject
+                    {
+                        ["type"] = "function_call",
+                        ["id"] = XaiString(part, "itemId") ?? call.ToolCallId,
+                        ["call_id"] = call.ToolCallId,
+                        ["name"] = call.ToolName,
+                        ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
+                        ["status"] = "completed",
+                    });
+                    break;
+                case AssistantToolResultPart:
+                    break;
+                case AssistantReasoningPart reasoning:
+                    ConvertReasoning(reasoning, input, warnings);
+                    break;
+                default:
+                    warnings.Add(new CallWarning("other", "xAI Responses API does not support " + part.Type + " in assistant messages"));
+                    break;
             }
-
-            var reasoning = new JsonObject
-            {
-                ["type"] = "reasoning",
-                ["id"] = itemId ?? string.Empty,
-                ["summary"] = summary,
-                ["status"] = "completed",
-            };
-            if (encryptedContent != null)
-            {
-                reasoning["encrypted_content"] = encryptedContent;
-            }
-
-            input.Add(reasoning);
-        }
-        else if (!string.IsNullOrEmpty(assistant.Reasoning))
-        {
-            warnings.Add(new CallWarning("other", "Reasoning parts without itemId or encrypted content cannot be sent back to xAI. Skipping."));
-        }
-
-        if (!string.IsNullOrEmpty(assistant.Text))
-        {
-            input.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistant.Text });
-        }
-
-        foreach (var call in assistant.ToolCalls)
-        {
-            input.Add(new JsonObject
-            {
-                ["type"] = "function_call",
-                ["id"] = call.ToolCallId,
-                ["call_id"] = call.ToolCallId,
-                ["name"] = call.ToolName,
-                ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
-                ["status"] = "completed",
-            });
         }
     }
 
-    private static JsonElement? ReasoningOptions(AssistantModelMessage assistant)
+    private static void ConvertReasoning(AssistantReasoningPart part, JsonArray input, List<CallWarning> warnings)
     {
-        return assistant.ReasoningProviderOptions != null && assistant.ReasoningProviderOptions.TryGetValue(XaiProvider.ProviderId, out var options)
-            ? options
+        var itemId = XaiString(part, "itemId");
+        var encryptedContent = XaiString(part, "reasoningEncryptedContent");
+        if (itemId == null && encryptedContent == null)
+        {
+            warnings.Add(new CallWarning("other", "Reasoning parts without itemId or encrypted content cannot be sent back to xAI. Skipping."));
+            return;
+        }
+
+        var summary = new JsonArray();
+        if (part.Text.Length > 0)
+        {
+            summary.Add(new JsonObject { ["type"] = "summary_text", ["text"] = part.Text });
+        }
+
+        var reasoning = new JsonObject
+        {
+            ["type"] = "reasoning",
+            ["id"] = itemId ?? string.Empty,
+            ["summary"] = summary,
+            ["status"] = "completed",
+        };
+        if (encryptedContent != null)
+        {
+            reasoning["encrypted_content"] = encryptedContent;
+        }
+
+        input.Add(reasoning);
+    }
+
+    /// <summary>A string under the part's <c>xai</c> provider options, or null when it is missing or not a string.</summary>
+    private static string? XaiString(AssistantContentPart part, string name)
+    {
+        return part.ProviderOptions != null && part.ProviderOptions.TryGetValue(XaiProvider.ProviderId, out var options)
+            ? OpenAI.OpenAIJson.String(options, name)
             : null;
     }
 

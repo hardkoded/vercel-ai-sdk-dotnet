@@ -266,7 +266,7 @@ var xai = XaiProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.
 var model = xai.ResponsesModel("grok-4.3");
 ```
 
-The model supports text, image, and file input, streaming, function tools, `JsonSchema` structured output, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.
+The model supports text, image, and file input, streaming, function tools, xAI provider-defined tools, `JsonSchema` structured output (with `JsonSchemaName` and `JsonSchemaDescription`), `JsonResponse`, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`, and the `itemId` on each `reasoning-delta`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.
 
 ### Provider options
 
@@ -285,9 +285,48 @@ An image file part accepts the provider option `xai.imageDetail` (`low`, `high`,
 
 `providerMetadata.xai` holds `costInUsdTicks`, `serviceTier`, `promptCacheKey`, and `safetyIdentifier` when the response reports them.
 
+### Provider-defined tools
+
+The Responses API has server-side tools that the model runs on xAI's servers during its reasoning. Pass them in `LanguageModelCallOptions.Tools` with `LanguageModelTool.ProviderDefined(id, name, args)`. `args` is a JSON object with the parameters below. Invalid arguments throw a `TypeValidationException`.
+
+```csharp
+var result = await model.DoGenerateAsync(
+    new LanguageModelCallOptions
+    {
+        Prompt = new ModelMessage[] { new UserModelMessage("What are the latest developments in AI?") },
+        Tools = new[]
+        {
+            LanguageModelTool.ProviderDefined(
+                "xai.web_search",
+                "web_search",
+                JsonDocument.Parse("""{"allowedDomains":["arxiv.org","openai.com"],"enableImageUnderstanding":true}""").RootElement),
+        },
+    },
+    CancellationToken.None);
+```
+
+- `xai.web_search`: real-time web search and page browsing. **allowedDomains** _string[]_ (max 5) and **excludedDomains** _string[]_ (max 5) cannot be used together. **enableImageSearch** _bool_ lets the model run an image search when images help the answer. **enableImageUnderstanding** _bool_ lets the model view images it finds, and uses more tokens.
+- `xai.x_search`: search X posts. **allowedXHandles** _string[]_ (max 20) and **excludedXHandles** _string[]_ (max 20) cannot be used together. **fromDate** and **toDate** _string_ (`YYYY-MM-DD`). **enableImageUnderstanding** and **enableVideoUnderstanding** _bool_.
+- `xai.code_execution`: runs Python code. No parameters.
+- `xai.view_image`: views and analyzes images. No parameters.
+- `xai.view_x_video`: views and analyzes videos from X posts. No parameters.
+- `xai.image_generation`: creates and edits images with Grok Imagine. **action** _string_: `auto` (the default), `generate`, or `edit`. The tool takes no size or format parameters. Ask for an aspect ratio in the prompt.
+- `xai.mcp`: connects to a remote MCP server. **serverUrl** _string_ (required), **serverLabel** _string_, **serverDescription** _string_, **allowedTools** _string[]_ (all tools when not set), **headers** _object_ of strings, and **authorization** _string_ (for example `Bearer token123`).
+- `xai.file_search`: searches xAI vector stores (collections). **vectorStoreIds** _string[]_ (required) and **maxNumResults** _number_. Add `file_search_call.results` to the `include` provider option to get the matching file content and scores. File search needs a grok-4 family model.
+
+Another provider-defined tool id is left out with an `unsupported` warning (`provider-defined tool <name>`). xAI can force only function tools, so a `ToolChoice.Tool(name)` that selects a provider-defined tool is not sent and adds an `unsupported` warning (`toolChoice for server-side tool "<name>"`).
+
+The result has a `GeneratedToolCall` with `ProviderExecuted` set for each server-side call, named after the tool you declared. xAI reports sub-tools such as `x_keyword_search` or `browse_page`, and they map back to that name. Web search, file search, and image generation calls also return a `GeneratedToolResult`:
+
+- web search: `{ action, sources }`. `action` is `{ type: "search", query, queries }`, `{ type: "openPage", url }`, or `{ type: "findInPage", url, pattern }`. `sources` lists `{ type: "url", url }` when xAI sends them (request them with the `web_search_call.action.sources` include).
+- file search: `{ queries, results }`, where each result has `fileId`, `filename`, `score`, and `text`. `results` is null when xAI sends none.
+- image generation: `{ result, prompt }`, where `result` is the base64 image. A call without an image gives an error result (`IsError`).
+
+Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool-call` once per server-side call, and a `tool-result` part when the call is done (`ToolResultStreamPart.IsError` marks a failed image generation). A prompt replays only the client-side tool calls: assistant tool calls with `ProviderExecuted` set and assistant tool results are not sent back. `GenerateText` and `StreamText` cannot declare provider-defined tools yet ([#403](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/403)), so use the model directly.
+
 ### Not included
 
-The xAI provider-defined tools (web search, X search, code execution, file search, image generation, view image, view X video, and MCP) are not mapped, because the port has no provider-defined tools. Stream error parts carry the message only, without the status code and retry flag that upstream adds. Tool results with image content are not sent.
+Tool results whose output is content with images (`input_image` in `function_call_output`) are not sent, because `ToolModelMessage` has no multipart content ([#327](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/327)).
 
 ## Uploaded File References
 
