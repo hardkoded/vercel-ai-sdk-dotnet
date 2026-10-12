@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
 using BedrockEmbeddingModel = Vercel.AI.AmazonBedrock.AmazonBedrockEmbeddingModel;
+using BedrockProvider = Vercel.AI.AmazonBedrock.AmazonBedrockProvider;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockEmbeddingModel;
 
@@ -206,12 +207,12 @@ public sealed class DoEmbedTests
         return handler;
     }
 
-    private static AmazonBedrockProvider Provider(UpstreamRecordingHandler handler)
+    private static BedrockProvider Provider(UpstreamRecordingHandler handler)
     {
-        return AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
+        return BedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
     }
 
-    private static BedrockEmbeddingModel Model(AmazonBedrockProvider provider, string modelId)
+    private static BedrockEmbeddingModel Model(BedrockProvider provider, string modelId)
     {
         return (BedrockEmbeddingModel)provider.EmbeddingModel(modelId);
     }

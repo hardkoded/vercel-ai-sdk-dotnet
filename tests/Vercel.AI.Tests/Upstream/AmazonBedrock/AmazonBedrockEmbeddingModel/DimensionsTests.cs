@@ -35,7 +35,7 @@ public sealed class DimensionsTests
     public async Task Maps_dimensions_with_provider_override(string family, int? dimensions, int? providerDimensions, int? expected)
     {
         var handler = new UpstreamRecordingHandler(family == "titan" ? TitanResponse : "{\"embeddings\":{\"float\":[[-0.09,0.05]]}}");
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
         var model = provider.EmbeddingModel(family == "titan" ? "amazon.titan-embed-text-v2:0" : "cohere.embed-v4:0");
 
         await model.DoEmbedAsync(
