@@ -32,6 +32,7 @@ The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallO
 - Perplexity sends `xhigh`.
 - Mistral sends `reasoning_effort` `high` for every level except `none`, and returns a `compatibility` warning when it changes the level. Models without reasoning effort (such as `mistral-large-latest`) get no `reasoning_effort` and an `unsupported` warning. A `reasoningEffort` provider option wins.
 - OpenResponses sends `reasoning.effort` (`minimal` becomes `low`; `xhigh` and `max` are sent unchanged). The `open-responses` provider options `reasoningEffort` and `reasoningSummary` set `reasoning.effort` and `reasoning.summary`.
+- xAI Responses (`XaiProvider.ResponsesModel`) sends `reasoning.effort` (`minimal` becomes `low`). `xhigh` and `max` are sent as `xhigh` on `grok-4.6` and as `high` on other models, with a `compatibility` warning when the level changes. The `grok-4.20` reasoning and non-reasoning models reject the parameter: they get no `reasoning` object and an `unsupported` warning. A `reasoningEffort` provider option wins and adds no warning.
 
 Moonshot native structured outputs are enabled for every model id, including Kimi, Moonshot V1, and custom or future ids. A request with a JSON schema sends `response_format.type = json_schema` with `strict: true`. A JSON request with no schema uses `json_object`.
 
@@ -197,6 +198,41 @@ Pass an `Idempotency-Key` through the call headers when retrying the same submis
 Submission and in-progress operation metadata exposes `videoId`, `mode`, and `resolution` directly under `providerMetadata.heygen`. Failed or canceled operations also expose `failureCode` when HeyGen reports it.
 
 The HeyGen video endpoint does not document token counts or credit consumption in its generation response. The provider returns the reported duration and dimensions without estimating those quantities.
+
+## xAI Responses
+
+`XaiProvider.ResponsesModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`). The provider id is `xai.responses`. `XaiProvider.LanguageModel(modelId)` still uses Chat Completions.
+
+```csharp
+using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.GetEnvironmentVariable("XAI_API_KEY") });
+var model = xai.ResponsesModel("grok-4.3");
+```
+
+The model supports text, image, and file input, streaming, function tools, `JsonSchema` structured output, reasoning, and URL citations as sources. Reasoning returns as `XaiReasoning` content, which carries the `xai.itemId` and `xai.reasoningEncryptedContent` metadata. Streams send the same metadata on `reasoning-start` and `reasoning-end`. To continue a conversation, pass that metadata back on the assistant message (`ReasoningProviderOptions`). This round trip works only for messages you build by hand. `GenerateText` and `StreamText` do not yet carry the metadata into the next step ([#344](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/344)). A request sends `topK` as `top_k` and warns about `FrequencyPenalty`, `PresencePenalty`, and `StopSequences`. A file part with a URL becomes `input_image` for images and `input_file` for other types. Inline bytes are only accepted for images. For other files, upload them with `XaiProvider.Files()` and pass a provider reference.
+
+### Provider options
+
+Pass these under the `xai` key of `ProviderOptions`.
+
+- **reasoningEffort** _string_: `none`, `low`, `medium`, `high`, or `xhigh` (`xhigh` is supported by `grok-4.6`). Overrides the portable `Reasoning` option.
+- **reasoningSummary** _string_: Deprecated. xAI ignores it, so the model accepts it and does not send it.
+- **logprobs** _bool_ and **topLogprobs** _int_ (0 to 8): `topLogprobs` also turns on `logprobs`.
+- **minP** _number_ (0 to 1), **maxTurns** _int_, **parallelToolCalls** _bool_, **promptCacheKey** _string_, **safetyIdentifier** _string_, and **user** _string_.
+- **serviceTier** _string_: `default` or `priority`. The service tier xAI used comes back in `providerMetadata.xai.serviceTier`.
+- **store** _bool_: With `false`, the request also includes `reasoning.encrypted_content` so reasoning can be sent back.
+- **previousResponseId** _string_.
+- **include** _string[]_: `file_search_call.results`, `web_search_call.action.sources`, `code_interpreter_call.outputs`, `reasoning.encrypted_content`, or `no_inline_citations`.
+
+An image file part accepts the provider option `xai.imageDetail` (`low`, `high`, or `auto`) as `FileContentPart.ProviderOptions`.
+
+`providerMetadata.xai` holds `costInUsdTicks`, `serviceTier`, `promptCacheKey`, and `safetyIdentifier` when the response reports them.
+
+### Not included
+
+The xAI provider-defined tools (web search, X search, code execution, file search, image generation, view image, view X video, and MCP) are not mapped, because the port has no provider-defined tools. Stream error parts carry the message only, without the status code and retry flag that upstream adds. Tool results with image content are not sent.
 
 ## Uploaded File References
 
