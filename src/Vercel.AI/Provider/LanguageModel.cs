@@ -133,16 +133,26 @@ public sealed class CallWarning
 {
     /// <summary>Creates a warning.</summary>
     public CallWarning(string type, string message)
+        : this(type, message, null)
+    {
+    }
+
+    /// <summary>Creates a warning for an unsupported or compatibility-mapped feature.</summary>
+    public CallWarning(string type, string message, string? feature)
     {
         Type = type;
         Message = message;
+        Feature = feature;
     }
 
     /// <summary>Warning category, such as <c>unsupported</c>.</summary>
     public string Type { get; }
 
-    /// <summary>Human-readable warning.</summary>
+    /// <summary>Human-readable warning. For <c>unsupported</c> and <c>compatibility</c> warnings this is the details text.</summary>
     public string Message { get; }
+
+    /// <summary>The feature the warning is about, such as <c>strict</c>. Set for <c>unsupported</c> and <c>compatibility</c> warnings.</summary>
+    public string? Feature { get; }
 }
 
 /// <summary>Content the model generated.</summary>

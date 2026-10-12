@@ -92,27 +92,27 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
     {
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", "topK"));
         }
 
         if (options.Seed != null)
         {
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", "seed"));
         }
 
         if (options.PresencePenalty != null)
         {
-            warnings.Add(new CallWarning("unsupported", "presencePenalty"));
+            warnings.Add(new CallWarning("unsupported", "presencePenalty", "presencePenalty"));
         }
 
         if (options.FrequencyPenalty != null)
         {
-            warnings.Add(new CallWarning("unsupported", "frequencyPenalty"));
+            warnings.Add(new CallWarning("unsupported", "frequencyPenalty", "frequencyPenalty"));
         }
 
         if (options.StopSequences != null && options.StopSequences.Count > 0)
         {
-            warnings.Add(new CallWarning("unsupported", "stopSequences"));
+            warnings.Add(new CallWarning("unsupported", "stopSequences", "stopSequences"));
         }
 
         var body = new JsonObject

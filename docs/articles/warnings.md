@@ -2,6 +2,8 @@
 
 Providers return warnings when a call uses an unsupported feature, a compatibility mode, a deprecated setting, or something else worth knowing. `LogWarnings.Log` prints them.
 
+Each `CallWarning` has a `Type`, a `Message` (the details text), and a `Feature` for `unsupported` and `compatibility` warnings, such as `strict` or `temperature`. `Feature` is `null` for other warning types.
+
 ## Turn them off or handle them yourself
 
 ```csharp

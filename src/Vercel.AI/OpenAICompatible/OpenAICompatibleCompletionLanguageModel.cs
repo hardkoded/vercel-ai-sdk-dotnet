@@ -206,17 +206,17 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", "topK"));
         }
 
         if (options.Tools != null && options.Tools.Count > 0)
         {
-            warnings.Add(new CallWarning("unsupported", "tools"));
+            warnings.Add(new CallWarning("unsupported", "tools", "tools"));
         }
 
         if (options.ToolChoice != null)
         {
-            warnings.Add(new CallWarning("unsupported", "toolChoice"));
+            warnings.Add(new CallWarning("unsupported", "toolChoice", "toolChoice"));
         }
 
         if (options.JsonSchema != null && options.JsonSchema.Value.ValueKind != JsonValueKind.Undefined && options.JsonSchema.Value.ValueKind != JsonValueKind.Null)

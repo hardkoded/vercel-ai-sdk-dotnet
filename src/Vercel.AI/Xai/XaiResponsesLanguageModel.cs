@@ -136,17 +136,17 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
         if (options.FrequencyPenalty.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "frequencyPenalty"));
+            warnings.Add(new CallWarning("unsupported", "frequencyPenalty", "frequencyPenalty"));
         }
 
         if (options.PresencePenalty.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "presencePenalty"));
+            warnings.Add(new CallWarning("unsupported", "presencePenalty", "presencePenalty"));
         }
 
         if (options.StopSequences != null)
         {
-            warnings.Add(new CallWarning("unsupported", "stopSequences"));
+            warnings.Add(new CallWarning("unsupported", "stopSequences", "stopSequences"));
         }
 
         var input = XaiResponsesInput.Convert(options.Prompt, warnings);

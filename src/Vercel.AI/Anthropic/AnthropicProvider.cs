@@ -309,7 +309,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
 
     internal static CallWarning ToCallWarning(AnthropicWarning warning)
     {
-        return new CallWarning(warning.Type, warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type);
+        return new CallWarning(warning.Type, warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type, warning.Feature);
     }
 
     private string? TryApiKey()

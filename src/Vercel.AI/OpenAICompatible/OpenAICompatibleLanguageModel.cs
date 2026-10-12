@@ -461,7 +461,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", "topK"));
         }
 
         var body = new JsonObject

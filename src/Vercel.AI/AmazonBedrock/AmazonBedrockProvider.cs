@@ -258,12 +258,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         {
             if (reasoningConfig?.BudgetTokens != null)
             {
-                warnings.Add(new CallWarning("unsupported", "budgetTokens applies only to Anthropic models on Bedrock and will be ignored for this model."));
+                warnings.Add(new CallWarning("unsupported", "budgetTokens applies only to Anthropic models on Bedrock and will be ignored for this model.", "budgetTokens"));
             }
 
             if (thinkingType == "adaptive")
             {
-                warnings.Add(new CallWarning("unsupported", "adaptive thinking type applies only to Anthropic models on Bedrock."));
+                warnings.Add(new CallWarning("unsupported", "adaptive thinking type applies only to Anthropic models on Bedrock.", "adaptive thinking"));
             }
         }
 
@@ -328,19 +328,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             if (temperature != null)
             {
                 temperature = null;
-                warnings.Add(new CallWarning("unsupported", "temperature is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "temperature is not supported when thinking is enabled", "temperature"));
             }
 
             if (topP != null)
             {
                 topP = null;
-                warnings.Add(new CallWarning("unsupported", "topP is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "topP is not supported when thinking is enabled", "topP"));
             }
 
             if (topK != null)
             {
                 topK = null;
-                warnings.Add(new CallWarning("unsupported", "topK is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "topK is not supported when thinking is enabled", "topK"));
             }
         }
 
@@ -481,10 +481,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             switch (warning)
             {
                 case UnsupportedWarning unsupported:
-                    warnings.Add(new CallWarning("unsupported", unsupported.Details ?? unsupported.Feature));
+                    warnings.Add(new CallWarning("unsupported", unsupported.Details ?? unsupported.Feature, unsupported.Feature));
                     break;
                 case CompatibilityWarning compatibility:
-                    warnings.Add(new CallWarning("compatibility", compatibility.Details ?? compatibility.Feature));
+                    warnings.Add(new CallWarning("compatibility", compatibility.Details ?? compatibility.Feature, compatibility.Feature));
                     break;
             }
         }

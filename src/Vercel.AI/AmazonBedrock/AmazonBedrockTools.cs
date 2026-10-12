@@ -61,14 +61,16 @@ public static class AmazonBedrockTools
                     {
                         warnings.Add(new CallWarning(
                             "unsupported",
-                            "Tool '" + tool.Name + "' has strict: true, but strict mode is not supported by this model on Amazon Bedrock. The strict property will be ignored."));
+                            "Tool '" + tool.Name + "' has strict: true, but strict mode is not supported by this model on Amazon Bedrock. The strict property will be ignored.",
+                            "strict"));
                     }
                 }
                 else if (tool.Strict.Value && !IsStrictSchemaCompatible(tool.InputSchema))
                 {
                     warnings.Add(new CallWarning(
                         "unsupported",
-                        "Tool '" + tool.Name + "' has strict: true, but Amazon Bedrock requires every object in a strict tool schema to set additionalProperties: false. The strict property will be ignored."));
+                        "Tool '" + tool.Name + "' has strict: true, but Amazon Bedrock requires every object in a strict tool schema to set additionalProperties: false. The strict property will be ignored.",
+                        "strict"));
                 }
                 else
                 {

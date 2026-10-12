@@ -815,7 +815,7 @@ public sealed class OpenAICompatibleImageModel : IImageModel
 
         if (Seed != null)
         {
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", "seed"));
         }
 
         var headers = _provider.CreateHeaders(Headers);

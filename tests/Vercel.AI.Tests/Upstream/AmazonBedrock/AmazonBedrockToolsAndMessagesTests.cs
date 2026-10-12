@@ -139,15 +139,14 @@ public sealed class AmazonBedrockPrepareToolsTests
 
     [Fact]
     [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should omit strict mode when the top-level object schema is open",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Strict is omitted and the warning text matches. Warnings are type plus message rather than feature plus details.")]
+        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should omit strict mode when the top-level object schema is open", Coverage = UpstreamCoverage.Covered)]
     public void Omits_strict_mode_when_the_object_schema_is_open()
     {
         var tool = Tool("testFunction", "A test function", "{\"type\":\"object\",\"properties\":{}}", true);
         var config = AmazonBedrockTools.Prepare(Anthropic, new[] { tool }, null, out var warnings);
         Assert.Null(config["tools"]![0]!["toolSpec"]!["strict"]);
         Assert.Equal("unsupported", warnings[0].Type);
+        Assert.Equal("strict", warnings[0].Feature);
         Assert.Contains("additionalProperties: false", warnings[0].Message);
     }
 

@@ -167,19 +167,19 @@ public static class OpenAICompatibleTransforms
         if (body.ContainsKey("frequency_penalty"))
         {
             body.Remove("frequency_penalty");
-            warnings.Add(new CallWarning("unsupported", "frequencyPenalty"));
+            warnings.Add(new CallWarning("unsupported", "frequencyPenalty", "frequencyPenalty"));
         }
 
         if (body.ContainsKey("presence_penalty"))
         {
             body.Remove("presence_penalty");
-            warnings.Add(new CallWarning("unsupported", "presencePenalty"));
+            warnings.Add(new CallWarning("unsupported", "presencePenalty", "presencePenalty"));
         }
 
         if (body.ContainsKey("seed"))
         {
             body.Remove("seed");
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", "seed"));
         }
 
         body.Remove("user");
