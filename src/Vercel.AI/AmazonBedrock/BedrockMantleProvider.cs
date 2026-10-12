@@ -198,9 +198,15 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(Parts(result));
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
         if (result.Text.Length > 0)
         {
             yield return new TextDeltaStreamPart("text", result.Text);

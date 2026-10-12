@@ -634,7 +634,7 @@ public sealed class OpenAIChatRequestUpstreamTests
     public async Task SendsStreamRequestBody()
     {
         var capture = new OpenAICapture { ServerSentEvents = "data: {\"id\":\"c\",\"created\":1,\"model\":\"m\",\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" };
-        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
         var body = JsonNode.Parse(capture.Body)!;
         Assert.True(body["stream"]!.GetValue<bool>());
         Assert.True(body["stream_options"]!["include_usage"]!.GetValue<bool>());
@@ -776,7 +776,7 @@ public sealed class OpenAIChatRequestUpstreamTests
     public async Task StreamSendsMessagesAndModel()
     {
         var capture = new OpenAICapture { ServerSentEvents = TextStream };
-        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
         OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
     }
 
@@ -793,7 +793,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         });
         var call = OpenAIUpstream.Hello();
         call.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await OpenAIUpstream.Read(provider.ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None));
+        await OpenAIUpstream.Read((await provider.ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None)));
         Assert.Equal("Bearer test-api-key", OpenAIUpstream.Header(capture, "authorization"));
         Assert.StartsWith("application/json", OpenAIUpstream.Header(capture, "content-type"), StringComparison.Ordinal);
         Assert.Equal("provider-header-value", OpenAIUpstream.Header(capture, "custom-provider-header"));
@@ -807,7 +807,7 @@ public sealed class OpenAIChatRequestUpstreamTests
     public async Task StreamReturnsCachedTokens()
     {
         var capture = new OpenAICapture { ServerSentEvents = UsageStream("{\"prompt_tokens\":2000,\"completion_tokens\":20,\"total_tokens\":2020,\"prompt_tokens_details\":{\"cached_tokens\":1152,\"cache_write_tokens\":256}}") };
-        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        var parts = await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
         OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true,\"stream_options\":{\"include_usage\":true}}");
         var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
@@ -874,7 +874,7 @@ public sealed class OpenAIChatRequestUpstreamTests
     {
         var chunks = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "azure-model-router.1.chunks.txt")).Where(line => line.Trim().Length > 0).ToArray();
         var capture = new OpenAICapture { ServerSentEvents = UpstreamChat.Sse(chunks) };
-        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("test-azure-model-router").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None));
+        var parts = await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("test-azure-model-router").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)));
         Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
         var metadata = Assert.IsType<ResponseMetadataStreamPart>(parts[1]);
         Assert.Equal("chatcmpl-CYPS1lijGoK8gd9lYzY3r9Sx50nbt", metadata.Id);
@@ -925,7 +925,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         var capture = new OpenAICapture { ServerSentEvents = UpstreamChat.Sse(chunks) };
         var call = OpenAIUpstream.Hello();
         call.IncludeRawChunks = true;
-        var parts = await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None));
+        var parts = await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None)));
         Assert.Equal(chunks, parts.OfType<RawStreamPart>().Select(part => part.RawJson));
     }
 
@@ -942,7 +942,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         var capture = new OpenAICapture { ServerSentEvents = events };
         var call = OpenAIUpstream.Hello();
         call.Tools = new[] { OpenAIUpstream.Tool(toolName, null, schema: Schema) };
-        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None)).ConfigureAwait(false);
+        return await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(call, CancellationToken.None))).ConfigureAwait(false);
     }
 
     private static string SparkleStream(params string[] argumentDeltas)
@@ -998,7 +998,7 @@ public sealed class OpenAIChatRequestUpstreamTests
         var capture = new OpenAICapture { ServerSentEvents = TextStream };
         var call = OpenAIUpstream.Hello();
         call.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(openai);
-        await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel(modelId).DoStreamAsync(call, CancellationToken.None)).ConfigureAwait(false);
+        await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel(modelId).DoStreamAsync(call, CancellationToken.None))).ConfigureAwait(false);
         return capture;
     }
 
@@ -1013,7 +1013,7 @@ public sealed class OpenAIChatRequestUpstreamTests
                 Head + "\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\",\"logprobs\":null}]}",
                 Head + "\"choices\":[],\"usage\":" + usage + "}"),
         };
-        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("o4-mini").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+        return await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("o4-mini").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
     }
 
     private static void AssertReasoningText(List<LanguageModelStreamPart> parts)
@@ -1102,6 +1102,6 @@ public sealed class OpenAIChatRequestUpstreamTests
     private static async Task<List<LanguageModelStreamPart>> StreamChunks(string events)
     {
         var capture = new OpenAICapture { ServerSentEvents = events };
-        return await OpenAIUpstream.Read(OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+        return await OpenAIUpstream.Read((await OpenAIUpstream.Provider(capture).ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
     }
 }

@@ -45,7 +45,7 @@ public sealed class DoStreamTests
             Obj("{\"type\":\"response.completed\",\"sequence_number\":2,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
 
         var parts = await UpstreamChat.Read(
-            CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None));
+            (await CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None)));
 
         var start = Assert.Single(parts.OfType<ToolInputStartStreamPart>());
         Assert.Equal(("call_stream_1", "documentSearch", true), (start.Id, start.ToolName, start.ProviderExecuted));
@@ -107,7 +107,7 @@ public sealed class DoStreamTests
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningEffort\":\"max\"}");
 
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
 
         Assert.Equal("{\"effort\":\"max\"}", UpstreamChat.Body(capture)["reasoning"]!.ToJsonString());
     }

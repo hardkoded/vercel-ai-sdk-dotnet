@@ -466,7 +466,7 @@ public sealed class ProdiaParityTests
     {
         var handler = new ParityHandler(_ => Multipart(LanguageJob, Output("message.txt", "text/plain", "Stream test response"), Output("image.png", "image/png", "stream-image-bytes")));
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in LanguageModel(handler).DoStreamAsync(Messages(new TextContentPart(LanguagePrompt)), CancellationToken.None).ConfigureAwait(false))
+        await foreach (var part in (await LanguageModel(handler).DoStreamAsync(Messages(new TextContentPart(LanguagePrompt)), CancellationToken.None)).ConfigureAwait(false))
         {
             parts.Add(part);
         }

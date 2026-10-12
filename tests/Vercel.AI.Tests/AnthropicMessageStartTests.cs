@@ -39,7 +39,7 @@ public sealed class AnthropicMessageStartTests
             + "data: {\"type\":\"message_stop\"}\n\n";
 
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in AnthropicParity.Client(handler).LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None))
+        await foreach (var part in (await AnthropicParity.Client(handler).LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)))
         {
             parts.Add(part);
         }

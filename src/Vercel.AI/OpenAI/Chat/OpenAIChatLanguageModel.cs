@@ -246,9 +246,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
-        LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var prepared = Prepare(ModelId, options);
         var body = prepared.Body;

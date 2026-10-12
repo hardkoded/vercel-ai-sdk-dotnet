@@ -38,7 +38,7 @@ public sealed class FileReferencesTests
 
         if (mode == "doStream")
         {
-            await UpstreamChat.Read(model.DoStreamAsync(options, CancellationToken.None));
+            await UpstreamChat.Read((await model.DoStreamAsync(options, CancellationToken.None)));
         }
         else
         {

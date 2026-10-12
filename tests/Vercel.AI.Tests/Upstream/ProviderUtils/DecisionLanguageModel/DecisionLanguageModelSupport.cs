@@ -110,7 +110,7 @@ internal sealed class RecordingLanguageModel : ILanguageModel
         return OnGenerate(options, cancellationToken);
     }
 
-    public IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         throw new NotSupportedException();
     }

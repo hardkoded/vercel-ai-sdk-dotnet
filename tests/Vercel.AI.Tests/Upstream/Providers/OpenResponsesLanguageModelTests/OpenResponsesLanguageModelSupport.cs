@@ -38,9 +38,9 @@ internal static class OpenResponsesLanguageModelSupport
         return new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(events) };
     }
 
-    internal static Task<List<LanguageModelStreamPart>> Collect(OpenResponsesLanguageModel model, LanguageModelCallOptions options)
+    internal static async Task<List<LanguageModelStreamPart>> Collect(OpenResponsesLanguageModel model, LanguageModelCallOptions options)
     {
-        return UpstreamChat.Read(model.DoStreamAsync(options, CancellationToken.None));
+        return await UpstreamChat.Read((await model.DoStreamAsync(options, CancellationToken.None)));
     }
 
     /// <summary>The expected stream parts of an upstream snapshot, stored as JSON next to the fixtures.</summary>

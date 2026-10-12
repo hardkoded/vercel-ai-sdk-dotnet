@@ -188,7 +188,7 @@ internal static class BedrockStreamSupport
     public static async Task<List<LanguageModelStreamPart>> Stream(HttpMessageHandler handler, LanguageModelCallOptions? options = null, string modelId = ModelId, Dictionary<string, string?>? providerHeaders = null)
     {
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in CreateModel(handler, modelId, providerHeaders).DoStreamAsync(options ?? Call(), CancellationToken.None))
+        await foreach (var part in (await CreateModel(handler, modelId, providerHeaders).DoStreamAsync(options ?? Call(), CancellationToken.None)))
         {
             parts.Add(part);
         }

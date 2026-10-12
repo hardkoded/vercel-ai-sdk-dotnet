@@ -103,10 +103,10 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         var capture = Stream();
         var provider = Provider(capture, "test-provider", "k", "https://api.example.com");
         provider.Options.IncludeUsage = true;
-        await UpstreamChat.Read(((OpenAICompatibleLanguageModel)provider.LanguageModel("chat")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await ((OpenAICompatibleLanguageModel)provider.LanguageModel("chat")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
         capture.Requests.Clear();
-        await UpstreamChat.Read(provider.CompletionModel("completion").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await provider.CompletionModel("completion").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(JsonNode.Parse(capture.Requests[0].Body)!["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 
@@ -117,10 +117,10 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         var capture = Stream();
         var provider = Provider(capture, "test-provider", "k", "https://api.example.com");
         provider.Options.IncludeUsage = false;
-        await UpstreamChat.Read(((OpenAICompatibleLanguageModel)provider.LanguageModel("chat")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await ((OpenAICompatibleLanguageModel)provider.LanguageModel("chat")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Null(UpstreamChat.Body(capture)["stream_options"]);
         capture.Requests.Clear();
-        await UpstreamChat.Read(provider.CompletionModel("completion").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await provider.CompletionModel("completion").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["stream_options"]);
     }
 
@@ -131,13 +131,13 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         var capture = Stream();
         var provider = Provider(capture, "test-provider", "k", "https://api.example.com");
         Assert.False(provider.Options.IncludeUsage);
-        await UpstreamChat.Read(provider.CreateChatModel("chat-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await provider.CreateChatModel("chat-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Null(UpstreamChat.Body(capture)["stream_options"]);
         capture.Requests.Clear();
-        await UpstreamChat.Read(provider.CompletionModel("completion-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await provider.CompletionModel("completion-model").DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["stream_options"]);
         capture.Requests.Clear();
-        await UpstreamChat.Read(((OpenAICompatibleLanguageModel)provider.LanguageModel("model-id")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await ((OpenAICompatibleLanguageModel)provider.LanguageModel("model-id")).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.Null(UpstreamChat.Body(capture)["stream_options"]);
     }
 
