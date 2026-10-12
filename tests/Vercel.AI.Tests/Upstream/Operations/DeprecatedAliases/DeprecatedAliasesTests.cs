@@ -44,7 +44,7 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel through the registry, a custom fallback, and the deprecated alias map. String ids through a default provider (issue #389) and the deprecated EvaluationModel accessors (issue #390) are not ported.")]
+    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel through the default provider, the registry, a custom fallback, and the deprecated alias map. The deprecated EvaluationModel accessors are not ported (issue #390).")]
     public async Task Resolves_deprecated_provider_factories_through_default_custom_and_registry_access()
     {
         var legacy = new LegacyProvider();
@@ -52,10 +52,18 @@ public sealed class DeprecatedAliasesTests
         registry.Register("legacy", legacy);
         var custom = new CustomProvider { FallbackProvider = legacy };
         var aliases = new CustomProvider().AddEvaluationModel("alias", new LegacyModel());
-        foreach (var model in new[] { registry.DecisionModel("legacy|model"), custom.DecisionModel("model"), aliases.DecisionModel("alias") })
+        DecisionModels.DefaultProvider = legacy;
+        try
         {
-            var output = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "message", Questions = DecisionQuestions() });
-            Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
+            foreach (var model in new object[] { "model", registry.DecisionModel("legacy|model"), custom.DecisionModel("model"), aliases.DecisionModel("alias") })
+            {
+                var output = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "message", Questions = DecisionQuestions() });
+                Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
+            }
+        }
+        finally
+        {
+            DecisionModels.DefaultProvider = null;
         }
     }
 
