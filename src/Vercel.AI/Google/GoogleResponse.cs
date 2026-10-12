@@ -396,13 +396,9 @@ public sealed class GoogleText : GeneratedText
 {
     /// <summary>Creates text.</summary>
     public GoogleText(string text, JsonElement? providerMetadata)
-        : base(text)
+        : base(text, null, providerMetadata)
     {
-        ProviderMetadata = providerMetadata;
     }
-
-    /// <summary>Provider metadata, such as a thought signature.</summary>
-    public new JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Reasoning text that can carry a thought signature.</summary>

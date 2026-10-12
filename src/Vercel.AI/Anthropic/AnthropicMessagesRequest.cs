@@ -155,11 +155,12 @@ public static class AnthropicMessagesRequest
         }
 
         var validator = new AnthropicCacheControlValidator();
-        var promptJson = ToPrompt(options);
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
         var toolNames = ProviderToolNames(options);
         var toolsets = ToolsetNames(options);
-        var converted = AnthropicPrompt.Convert(promptJson, sendReasoning, validator, toolNames, toolsets);
+        var converted = PromptOverride(options) is { } promptJson
+            ? AnthropicPrompt.ConvertJson(promptJson, sendReasoning, validator, toolNames, toolsets)
+            : AnthropicPrompt.Convert(options.Prompt, sendReasoning, validator, toolNames, toolsets);
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
@@ -857,7 +858,7 @@ public static class AnthropicMessagesRequest
         }
     }
 
-    private static JsonElement ToPrompt(LanguageModelCallOptions options)
+    private static JsonElement? PromptOverride(LanguageModelCallOptions options)
     {
         var provider = ReadProvider(options, "anthropic");
         if (provider != null && provider.Value.TryGetProperty("prompt", out var prompt) && prompt.ValueKind == JsonValueKind.Array)
@@ -865,115 +866,7 @@ public static class AnthropicMessagesRequest
             return prompt;
         }
 
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage system)
-            {
-                messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var parts = new JsonArray();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart text)
-                    {
-                        parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
-                    }
-                    else if (part is FileContentPart file)
-                    {
-                        var data = new JsonObject();
-                        if (!string.IsNullOrEmpty(file.Url))
-                        {
-                            data["type"] = "url";
-                            data["url"] = file.Url;
-                        }
-                        else if (file.Data != null)
-                        {
-                            data["type"] = "data";
-                            data["data"] = Convert.ToBase64String(file.Data);
-                        }
-
-                        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = data };
-                        AnthropicJson.Set(node, "filename", file.FileName);
-                        parts.Add(node);
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = parts });
-            }
-            else if (message is AssistantModelMessage assistant)
-            {
-                var parts = new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Reasoning))
-                {
-                    parts.Add(new JsonObject { ["type"] = "reasoning", ["text"] = assistant.Reasoning });
-                }
-
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = assistant.Text });
-                }
-
-                foreach (var call in assistant.ToolCalls)
-                {
-                    JsonNode input;
-                    try
-                    {
-                        input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson) ?? new JsonObject();
-                    }
-                    catch (JsonException)
-                    {
-                        input = new JsonObject { ["rawInvalidInput"] = call.ArgumentsJson };
-                    }
-
-                    parts.Add(new JsonObject
-                    {
-                        ["type"] = "tool-call",
-                        ["toolCallId"] = call.ToolCallId,
-                        ["toolName"] = call.ToolName,
-                        ["input"] = input,
-                    });
-                }
-
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = parts });
-            }
-            else if (message is ToolModelMessage tool)
-            {
-                JsonNode value;
-                try
-                {
-                    value = JsonNode.Parse(tool.OutputJson) ?? JsonValue.Create(tool.OutputJson)!;
-                }
-                catch (JsonException)
-                {
-                    value = JsonValue.Create(tool.OutputJson)!;
-                }
-
-                messages.Add(new JsonObject
-                {
-                    ["role"] = "tool",
-                    ["content"] = new JsonArray
-                    {
-                        new JsonObject
-                        {
-                            ["type"] = "tool-result",
-                            ["toolName"] = tool.ToolName,
-                            ["toolCallId"] = tool.ToolCallId,
-                            ["output"] = new JsonObject
-                            {
-                                ["type"] = tool.IsError ? "error-json" : "json",
-                                ["value"] = value,
-                            },
-                        },
-                    },
-                });
-            }
-        }
-
-        using var document = JsonDocument.Parse(messages.ToJsonString());
-        return document.RootElement.Clone();
+        return null;
     }
 
     private static IEnumerable<string> HeaderBetas(LanguageModelCallOptions options)
