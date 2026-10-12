@@ -337,6 +337,26 @@ class Scanner:
             return
         self.adv()
 
+    def skip_type_args(self) -> None:
+        """Skip `<...>` type arguments. The `>` of `=>` does not close them."""
+        depth = 0
+        while not self.eof():
+            c = self.ch()
+            if c in "\"'`":
+                self.skip_string(c)
+                continue
+            if c == "=" and self.ch(1) == ">":
+                self.adv(2)
+                continue
+            if c == "<":
+                depth += 1
+            elif c == ">":
+                depth -= 1
+                if depth == 0:
+                    self.adv()
+                    return
+            self.adv()
+
     def skip_balanced_paren(self) -> None:
         if self.ch() != "(":
             return
@@ -447,6 +467,10 @@ def parse_invocation(ts: Scanner, brace: list[int]) -> tuple[list[str], str | No
                 return None
             modifiers.append(mod)
             ts.skip_ws_comments()
+            if ts.ch() == "<":
+                # Generic type arguments, as in `it.each<Case>([...])`.
+                ts.skip_type_args()
+                ts.skip_ws_comments()
             if ts.ch() == "(":
                 if HOOKS.intersection(modifiers):
                     ts.skip_balanced_paren()
