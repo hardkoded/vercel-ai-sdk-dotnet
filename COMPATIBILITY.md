@@ -28,7 +28,7 @@ The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by t
 | OpenTelemetry | `Vercel.AI.OpenTelemetry` |
 | MCP tools | `Vercel.AI.Mcp` |
 
-`@ai-sdk/typesafe-ai` is `Vercel.AI.TypeSafeAi`. It provides the experimental TypeSafe evaluation model. See [TypeSafe](docs/articles/typesafe-ai.md). The [TypeSafe.AI.Sdk](https://github.com/hardkoded/typesafe-sdk-dotnet) package remains available as a standalone client.
+`@ai-sdk/typesafe-ai` is `Vercel.AI.TypeSafeAi`. It provides the experimental TypeSafe decision model. See [TypeSafe](docs/articles/typesafe-ai.md). The [TypeSafe.AI.Sdk](https://github.com/hardkoded/typesafe-sdk-dotnet) package remains available as a standalone client.
 
 ## Not ported
 

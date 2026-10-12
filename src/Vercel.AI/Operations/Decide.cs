@@ -11,7 +11,7 @@ using Vercel.AI.Util;
 namespace Vercel.AI.Operations;
 
 /// <summary>Markers for values that are not JSON.</summary>
-public static class EvaluationValues
+public static class DecisionValues
 {
     /// <summary>A function, which JSON cannot represent.</summary>
     public static readonly object Function = new FunctionMarker();
@@ -44,11 +44,11 @@ public static class EvaluationValues
     }
 }
 
-/// <summary>One evaluation question.</summary>
-public sealed class EvaluationQuestion
+/// <summary>One decision question.</summary>
+public class DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
-    public EvaluationQuestion(string type, object? instructions, object? criteria = null)
+    public DecisionQuestion(string type, object? instructions, object? criteria = null)
     {
         Type = type ?? string.Empty;
         Instructions = instructions;
@@ -66,10 +66,10 @@ public sealed class EvaluationQuestion
 }
 
 /// <summary>One model answer. Numbers are returned unchanged.</summary>
-public sealed class EvaluationAnswer
+public class DecisionAnswer
 {
     /// <summary>Creates an answer.</summary>
-    public EvaluationAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null)
+    public DecisionAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null)
     {
         Type = type;
         Choice = choice;
@@ -95,10 +95,10 @@ public sealed class EvaluationAnswer
 }
 
 /// <summary>Declared rounding precision.</summary>
-public sealed class EvaluationRounding
+public class DecisionRounding
 {
     /// <summary>Creates rounding limits.</summary>
-    public EvaluationRounding(int? probabilityDecimals = null, int? scoreDecimals = null)
+    public DecisionRounding(int? probabilityDecimals = null, int? scoreDecimals = null)
     {
         ProbabilityDecimals = probabilityDecimals;
         ScoreDecimals = scoreDecimals;
@@ -111,13 +111,13 @@ public sealed class EvaluationRounding
     public int? ScoreDecimals { get; }
 }
 
-/// <summary>Model response for <c>doEvaluate</c>.</summary>
-public sealed class EvaluationModelResult
+/// <summary>Model response for <c>doDecide</c>.</summary>
+public class DecisionModelResult
 {
     /// <summary>Creates a model result.</summary>
-    public EvaluationModelResult(IReadOnlyDictionary<string, EvaluationAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, EvaluationRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public DecisionModelResult(IReadOnlyDictionary<string, DecisionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
     {
-        Answers = answers ?? new Dictionary<string, EvaluationAnswer>();
+        Answers = answers ?? new Dictionary<string, DecisionAnswer>();
         Warnings = warnings ?? Array.Empty<OperationWarning>();
         Usage = usage;
         Rounding = rounding;
@@ -126,7 +126,7 @@ public sealed class EvaluationModelResult
     }
 
     /// <summary>Answers keyed by question id.</summary>
-    public IReadOnlyDictionary<string, EvaluationAnswer> Answers { get; }
+    public IReadOnlyDictionary<string, DecisionAnswer> Answers { get; }
 
     /// <summary>Warnings.</summary>
     public IReadOnlyList<OperationWarning> Warnings { get; }
@@ -135,7 +135,7 @@ public sealed class EvaluationModelResult
     public OperationUsage? Usage { get; }
 
     /// <summary>Rounding declaration.</summary>
-    public EvaluationRounding? Rounding { get; }
+    public DecisionRounding? Rounding { get; }
 
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
@@ -144,11 +144,11 @@ public sealed class EvaluationModelResult
     public ProviderResponse? Response { get; }
 }
 
-/// <summary>Arguments for <c>doEvaluate</c>.</summary>
-public sealed class EvaluationModelCall
+/// <summary>Arguments for <c>doDecide</c>.</summary>
+public class DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public EvaluationModelCall(object? state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public DecisionModelCall(object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
     {
         State = state;
         Questions = questions;
@@ -161,7 +161,7 @@ public sealed class EvaluationModelCall
     public object? State { get; }
 
     /// <summary>Questions.</summary>
-    public IReadOnlyDictionary<string, EvaluationQuestion> Questions { get; }
+    public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
 
     /// <summary>Provider options.</summary>
     public JsonElement ProviderOptions { get; }
@@ -173,8 +173,8 @@ public sealed class EvaluationModelCall
     public CancellationToken CancellationToken { get; }
 }
 
-/// <summary>Evaluation model used by <see cref="Evaluate"/>.</summary>
-public interface IEvaluationCaller
+/// <summary>Decision model used by <see cref="Decide"/>.</summary>
+public interface IDecisionCaller
 {
     /// <summary>Provider id.</summary>
     string Provider { get; }
@@ -188,15 +188,15 @@ public interface IEvaluationCaller
     /// <summary>Question types this model can answer.</summary>
     IReadOnlyList<string> SupportedQuestionTypes { get; }
 
-    /// <summary>Evaluates every question in one call.</summary>
-    Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken);
+    /// <summary>Decides every question in one call.</summary>
+    Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken);
 }
 
-/// <summary>Lifecycle event for evaluate.</summary>
-public sealed class EvaluateEvent
+/// <summary>Lifecycle event for decide.</summary>
+public class DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object? state, IReadOnlyDictionary<string, EvaluationQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, EvaluationAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -219,7 +219,7 @@ public sealed class EvaluateEvent
     /// <summary>Call id.</summary>
     public string CallId { get; }
 
-    /// <summary><c>ai.evaluate</c> or <c>ai.evaluate.doEvaluate</c>.</summary>
+    /// <summary><c>ai.decide</c>.</summary>
     public string OperationId { get; }
 
     /// <summary>Runtime context. Telemetry receives the filtered copy.</summary>
@@ -235,7 +235,7 @@ public sealed class EvaluateEvent
     public object? State { get; }
 
     /// <summary>Questions.</summary>
-    public IReadOnlyDictionary<string, EvaluationQuestion> Questions { get; }
+    public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
 
     /// <summary>Resolved retry limit.</summary>
     public int MaxRetries { get; }
@@ -247,7 +247,7 @@ public sealed class EvaluateEvent
     public JsonElement ProviderOptions { get; }
 
     /// <summary>Answers, once the call has finished.</summary>
-    public IReadOnlyDictionary<string, EvaluationAnswer>? Answers { get; }
+    public IReadOnlyDictionary<string, DecisionAnswer>? Answers { get; }
 
     /// <summary>Usage, once the call has finished.</summary>
     public OperationUsage? Usage { get; }
@@ -266,10 +266,10 @@ public sealed class EvaluateEvent
 }
 
 /// <summary>Model-call telemetry event.</summary>
-public sealed class EvaluateModelEvent
+public class DecisionModelEvent
 {
     /// <summary>Creates a model event.</summary>
-    public EvaluateModelEvent(string callId, string operationId, string provider, string modelId, object? state, IReadOnlyDictionary<string, EvaluationQuestion> questions, IReadOnlyDictionary<string, EvaluationAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecisionModelEvent(string callId, string operationId, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -287,7 +287,7 @@ public sealed class EvaluateModelEvent
     /// <summary>Call id.</summary>
     public string CallId { get; }
 
-    /// <summary><c>ai.evaluate.doEvaluate</c>.</summary>
+    /// <summary><c>ai.decide.doDecide</c>.</summary>
     public string OperationId { get; }
 
     /// <summary>Provider id.</summary>
@@ -300,10 +300,10 @@ public sealed class EvaluateModelEvent
     public object? State { get; }
 
     /// <summary>Questions.</summary>
-    public IReadOnlyDictionary<string, EvaluationQuestion> Questions { get; }
+    public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
 
     /// <summary>Answers after the model returns.</summary>
-    public IReadOnlyDictionary<string, EvaluationAnswer>? Answers { get; }
+    public IReadOnlyDictionary<string, DecisionAnswer>? Answers { get; }
 
     /// <summary>Provider usage before total tokens are derived.</summary>
     public OperationUsage? Usage { get; }
@@ -318,20 +318,45 @@ public sealed class EvaluateModelEvent
     public string? FunctionId { get; }
 }
 
+#pragma warning disable CS0618
 /// <summary>Telemetry callbacks. Generic <c>onStart</c> and <c>onEnd</c> are not invoked.</summary>
-public sealed class EvaluateTelemetry
+public class DecideTelemetry
 {
-    /// <summary><c>experimental_onEvaluateStart</c>.</summary>
+    /// <summary><c>experimental_onDecideStart</c>.</summary>
+    public Func<DecideEvent, Task>? OnDecideStart { get; set; }
+
+    /// <summary><c>experimental_onDecideEnd</c>.</summary>
+    public Func<DecideEvent, Task>? OnDecideEnd { get; set; }
+
+    /// <summary><c>experimental_onDecisionModelCallStart</c>.</summary>
+    public Func<DecisionModelEvent, Task>? OnDecisionModelCallStart { get; set; }
+
+    /// <summary><c>experimental_onDecisionModelCallEnd</c>.</summary>
+    public Func<DecisionModelEvent, Task>? OnDecisionModelCallEnd { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="OnDecideStart"/>. It runs only when <see cref="OnDecideStart"/> is not set.</summary>
+    [Obsolete("Use OnDecideStart instead.")]
     public Func<EvaluateEvent, Task>? OnEvaluateStart { get; set; }
 
-    /// <summary><c>experimental_onEvaluateEnd</c>.</summary>
+    /// <summary>Deprecated alias of <see cref="OnDecideEnd"/>. It runs only when <see cref="OnDecideEnd"/> is not set.</summary>
+    [Obsolete("Use OnDecideEnd instead.")]
     public Func<EvaluateEvent, Task>? OnEvaluateEnd { get; set; }
 
-    /// <summary><c>experimental_onEvaluationModelCallStart</c>.</summary>
+    /// <summary>Deprecated alias of <see cref="OnDecisionModelCallStart"/>. It runs only when <see cref="OnDecisionModelCallStart"/> is not set.</summary>
+    [Obsolete("Use OnDecisionModelCallStart instead.")]
     public Func<EvaluateModelEvent, Task>? OnModelStart { get; set; }
 
-    /// <summary><c>experimental_onEvaluationModelCallEnd</c>.</summary>
+    /// <summary>Deprecated alias of <see cref="OnDecisionModelCallEnd"/>. It runs only when <see cref="OnDecisionModelCallEnd"/> is not set.</summary>
+    [Obsolete("Use OnDecisionModelCallEnd instead.")]
     public Func<EvaluateModelEvent, Task>? OnModelEnd { get; set; }
+
+    internal Func<EvaluateEvent, Task>? LegacyOnStart => OnEvaluateStart;
+
+    internal Func<EvaluateEvent, Task>? LegacyOnEnd => OnEvaluateEnd;
+
+    internal Func<EvaluateModelEvent, Task>? LegacyOnModelStart => OnModelStart;
+
+    internal Func<EvaluateModelEvent, Task>? LegacyOnModelEnd => OnModelEnd;
 
     /// <summary><c>onError</c>.</summary>
     public Func<string, Exception, Task>? OnError { get; set; }
@@ -351,12 +376,13 @@ public sealed class EvaluateTelemetry
     /// <summary>When false, telemetry callbacks are skipped.</summary>
     public bool IsEnabled { get; set; } = true;
 }
+#pragma warning restore CS0618
 
-/// <summary>Evaluation result.</summary>
-public sealed class EvaluateResult
+/// <summary>Decision result.</summary>
+public class DecisionResult
 {
     /// <summary>Creates a result.</summary>
-    public EvaluateResult(IReadOnlyDictionary<string, EvaluationAnswer> answers, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, EvaluationRounding? rounding, JsonElement? providerMetadata, ProviderResponse response)
+    public DecisionResult(IReadOnlyDictionary<string, DecisionAnswer> answers, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, DecisionRounding? rounding, JsonElement? providerMetadata, ProviderResponse response)
     {
         Answers = answers;
         Usage = usage;
@@ -367,7 +393,7 @@ public sealed class EvaluateResult
     }
 
     /// <summary>Answers, with provider numbers unchanged.</summary>
-    public IReadOnlyDictionary<string, EvaluationAnswer> Answers { get; }
+    public IReadOnlyDictionary<string, DecisionAnswer> Answers { get; }
 
     /// <summary>Usage. <see cref="OperationUsage.TotalTokens"/> is input plus output when both are set.</summary>
     public OperationUsage Usage { get; }
@@ -376,7 +402,7 @@ public sealed class EvaluateResult
     public IReadOnlyList<OperationWarning> Warnings { get; }
 
     /// <summary>Rounding declaration.</summary>
-    public EvaluationRounding? Rounding { get; }
+    public DecisionRounding? Rounding { get; }
 
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
@@ -385,11 +411,11 @@ public sealed class EvaluateResult
     public ProviderResponse Response { get; }
 }
 
-/// <summary>Options for <see cref="Evaluate.EvaluateAsync"/>.</summary>
-public sealed class EvaluateRequest : OperationRequest
+/// <summary>Options for <see cref="Decide.DecideAsync"/>.</summary>
+public sealed class DecideRequest : OperationRequest
 {
-    /// <summary>Evaluation model.</summary>
-    public IEvaluationCaller? Model { get; set; }
+    /// <summary>Decision model.</summary>
+    public IDecisionCaller? Model { get; set; }
 
     /// <summary>
     /// Shared state: a string, a JSON object (<c>IDictionary&lt;string, object?&gt;</c>), or a list of parts (<c>IList&lt;object?&gt;</c>).
@@ -398,25 +424,25 @@ public sealed class EvaluateRequest : OperationRequest
     public object? State { get; set; }
 
     /// <summary>Nonempty question map.</summary>
-    public IReadOnlyDictionary<string, EvaluationQuestion>? Questions { get; set; }
+    public IReadOnlyDictionary<string, DecisionQuestion>? Questions { get; set; }
 
-    /// <summary>Called when evaluation begins. Receives the full runtime context.</summary>
-    public Func<EvaluateEvent, Task>? OnStart { get; set; }
+    /// <summary>Called when the decision begins. Receives the full runtime context.</summary>
+    public Func<DecideEvent, Task>? OnStart { get; set; }
 
-    /// <summary>Called when evaluation completes. Receives the full runtime context.</summary>
-    public Func<EvaluateEvent, Task>? OnEnd { get; set; }
+    /// <summary>Called when the decision completes. Receives the full runtime context.</summary>
+    public Func<DecideEvent, Task>? OnEnd { get; set; }
 
     /// <summary>Telemetry. Generic operation callbacks on the integration are not called.</summary>
-    public EvaluateTelemetry? Telemetry { get; set; }
+    public DecideTelemetry? Telemetry { get; set; }
 }
 
-/// <summary>Evaluates typed questions. Maps to <c>evaluate</c>.</summary>
-public static class Evaluate
+/// <summary>Decides typed questions. Maps to <c>experimental_decide</c>.</summary>
+public static class Decide
 {
     private const double Tolerance = 1e-6;
 
-    /// <summary>Evaluates every question in one model call.</summary>
-    public static async Task<EvaluateResult> EvaluateAsync(EvaluateRequest request, CancellationToken cancellationToken = default)
+    /// <summary>Decides every question in one model call.</summary>
+    public static async Task<DecisionResult> DecideAsync(DecideRequest request, CancellationToken cancellationToken = default)
     {
         if (request == null)
         {
@@ -429,13 +455,16 @@ public static class Evaluate
             throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
         }
 
-        var questions = request.Questions ?? new Dictionary<string, EvaluationQuestion>();
+        var questions = request.Questions ?? new Dictionary<string, DecisionQuestion>();
         ValidateInput(request.State, questions);
         foreach (var pair in questions)
         {
             if (!model.SupportedQuestionTypes.Contains(pair.Value.Type))
             {
+                // The deprecated subclass lets both the old and the new catch clauses match.
+#pragma warning disable CS0618
                 throw new EvaluationUnsupportedQuestionTypeException(pair.Key, pair.Value.Type, model.Provider, model.ModelId);
+#pragma warning restore CS0618
             }
         }
 
@@ -446,27 +475,27 @@ public static class Evaluate
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var telemetry = request.Telemetry;
         var enabled = telemetry == null || telemetry.IsEnabled;
-        var userStart = new EvaluateEvent(callId, "ai.evaluate", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions);
+        var userStart = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions);
         await OperationCallbacks.NotifyAsync(userStart, request.OnStart).ConfigureAwait(false);
         if (enabled)
         {
-            await OperationCallbacks.NotifyAsync(WithTelemetry(userStart, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnEvaluateStart).ConfigureAwait(false);
+            await NotifyTelemetryAsync(WithTelemetry(userStart, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnDecideStart, telemetry?.LegacyOnStart).ConfigureAwait(false);
         }
 
         try
         {
             var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State, token).ConfigureAwait(false);
-            var modelEvent = new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
+            var modelEvent = new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
             if (enabled)
             {
-                await OperationCallbacks.NotifyAsync(modelEvent, telemetry?.OnModelStart).ConfigureAwait(false);
+                await NotifyTelemetryAsync(modelEvent, telemetry?.OnDecisionModelCallStart, telemetry?.LegacyOnModelStart).ConfigureAwait(false);
             }
 
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
             {
                 OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                return await model.DoEvaluateAsync(new EvaluationModelCall(preparedState, questions, providerOptions, headers, ct), ct).ConfigureAwait(false);
+                return await model.DoDecideAsync(new DecisionModelCall(preparedState, questions, providerOptions, headers, ct), ct).ConfigureAwait(false);
             }, null).ConfigureAwait(false);
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
             ValidateAnswers(questions, result.Answers, result.Rounding);
@@ -478,7 +507,7 @@ public static class Evaluate
 
             if (enabled)
             {
-                await OperationCallbacks.NotifyAsync(new EvaluateModelEvent(callId, "ai.evaluate.doEvaluate", model.Provider, model.ModelId, preparedState, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnModelEnd).ConfigureAwait(false);
+                await NotifyTelemetryAsync(new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, result.Answers, result.Usage, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId), telemetry?.OnDecisionModelCallEnd, telemetry?.LegacyOnModelEnd).ConfigureAwait(false);
             }
 
             WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
@@ -487,15 +516,15 @@ public static class Evaluate
             var usage = new OperationUsage(input, output, input != null && output != null ? input + output : null);
             var now = request.Now?.Invoke() ?? DateTime.UtcNow;
             var response = new ProviderResponse(result.Response?.Headers, result.Response?.Body, result.Response?.Id, result.Response?.Timestamp ?? now, result.Response?.ModelId ?? model.ModelId, result.Response?.ProviderMetadata);
-            var evaluation = new EvaluateResult(result.Answers, usage, result.Warnings, result.Rounding, result.ProviderMetadata, response);
-            var end = new EvaluateEvent(callId, "ai.evaluate", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, result.Answers, usage, result.Warnings);
+            var decision = new DecisionResult(result.Answers, usage, result.Warnings, result.Rounding, result.ProviderMetadata, response);
+            var end = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, result.Answers, usage, result.Warnings);
             await OperationCallbacks.NotifyAsync(end, request.OnEnd).ConfigureAwait(false);
             if (enabled)
             {
-                await OperationCallbacks.NotifyAsync(WithTelemetry(end, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnEvaluateEnd).ConfigureAwait(false);
+                await NotifyTelemetryAsync(WithTelemetry(end, Filter(context, telemetry?.IncludeRuntimeContext), telemetry), telemetry?.OnDecideEnd, telemetry?.LegacyOnEnd).ConfigureAwait(false);
             }
 
-            return evaluation;
+            return decision;
         }
         catch (Exception error)
         {
@@ -516,7 +545,7 @@ public static class Evaluate
     }
 
     /// <summary>Validates state and questions before any model call.</summary>
-    public static void ValidateInput(object? state, IReadOnlyDictionary<string, EvaluationQuestion>? questions)
+    public static void ValidateInput(object? state, IReadOnlyDictionary<string, DecisionQuestion>? questions)
     {
         var validState = state is IList<object?> parts
             ? parts.All(IsStatePart)
@@ -581,7 +610,7 @@ public static class Evaluate
     }
 
     /// <summary>Validates answers without rewriting provider numbers.</summary>
-    public static void ValidateAnswers(IReadOnlyDictionary<string, EvaluationQuestion> questions, IReadOnlyDictionary<string, EvaluationAnswer>? answers, EvaluationRounding? rounding)
+    public static void ValidateAnswers(IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers, DecisionRounding? rounding)
     {
         double Error(int? decimals)
         {
@@ -592,7 +621,7 @@ public static class Evaluate
 
             if (decimals < 0 || decimals > 15)
             {
-                throw new InvalidResponseDataException(answers, "Evaluation rounding decimals must be integers between 0 and 15.");
+                throw new InvalidResponseDataException(answers, "Decision rounding decimals must be integers between 0 and 15.");
             }
 
             return 0.5 * Math.Pow(10, -decimals.Value);
@@ -602,7 +631,7 @@ public static class Evaluate
         var scoreError = Error(rounding?.ScoreDecimals);
         if (answers == null || !SameKeys(answers.Keys, questions.Keys))
         {
-            throw new InvalidResponseDataException(answers, "Evaluation must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(answers, "Decision must return exactly one answer for every question.");
         }
 
         foreach (var pair in questions)
@@ -745,7 +774,7 @@ public static class Evaluate
             return true;
         }
 
-        if (value is DateTime || ReferenceEquals(value, EvaluationValues.Function) || ReferenceEquals(value, EvaluationValues.Undefined) || ReferenceEquals(value, EvaluationValues.SparseArray))
+        if (value is DateTime || ReferenceEquals(value, DecisionValues.Function) || ReferenceEquals(value, DecisionValues.Undefined) || ReferenceEquals(value, DecisionValues.SparseArray))
         {
             return false;
         }
@@ -814,8 +843,21 @@ public static class Evaluate
         }
     }
 
-    private static EvaluateEvent WithTelemetry(EvaluateEvent source, IReadOnlyDictionary<string, object?> context, EvaluateTelemetry? telemetry)
+#pragma warning disable CS0618
+    private static Task NotifyTelemetryAsync(DecideEvent source, Func<DecideEvent, Task>? current, Func<EvaluateEvent, Task>? deprecated)
     {
-        return new EvaluateEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.State, source.Questions, source.MaxRetries, source.Headers, source.ProviderOptions, source.Answers, source.Usage, source.Warnings, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId);
+        return current != null ? OperationCallbacks.NotifyAsync(source, current) : deprecated != null ? OperationCallbacks.NotifyAsync(EvaluateEvent.From(source), deprecated) : Task.CompletedTask;
+    }
+
+    private static Task NotifyTelemetryAsync(DecisionModelEvent source, Func<DecisionModelEvent, Task>? current, Func<EvaluateModelEvent, Task>? deprecated)
+    {
+        return current != null ? OperationCallbacks.NotifyAsync(source, current) : deprecated != null ? OperationCallbacks.NotifyAsync(EvaluateModelEvent.From(source), deprecated) : Task.CompletedTask;
+    }
+
+#pragma warning restore CS0618
+
+    private static DecideEvent WithTelemetry(DecideEvent source, IReadOnlyDictionary<string, object?> context, DecideTelemetry? telemetry)
+    {
+        return new DecideEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.State, source.Questions, source.MaxRetries, source.Headers, source.ProviderOptions, source.Answers, source.Usage, source.Warnings, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId);
     }
 }

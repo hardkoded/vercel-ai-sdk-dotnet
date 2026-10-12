@@ -9,7 +9,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.TypeSafeAi;
 
-namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiEvaluationModel;
+namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 
 /// <summary>A request the test server received.</summary>
 internal sealed class TypeSafeAiServerCall
@@ -63,14 +63,14 @@ internal sealed class TypeSafeAiServer : HttpMessageHandler
     }
 }
 
-/// <summary>Fixtures and helpers shared by the <c>typesafe-ai-evaluation-model.test.ts</c> port.</summary>
-internal static class TypesafeAiEvaluationModelSupport
+/// <summary>Fixtures and helpers shared by the <c>typesafe-ai-decision-model.test.ts</c> port.</summary>
+internal static class TypesafeAiDecisionModelSupport
 {
     internal const string Url = "https://api.typesafe.ai/v1/systemone";
 
-    internal static readonly string NativeRequestJson = Fixture("evaluation-request.json");
+    internal static readonly string NativeRequestJson = Fixture("decision-request.json");
 
-    internal static readonly string NativeResponseJson = Fixture("evaluation-response.json");
+    internal static readonly string NativeResponseJson = Fixture("decision-response.json");
 
     internal static JsonObject NativeRequest => JsonNode.Parse(NativeRequestJson)!.AsObject();
 
@@ -90,14 +90,14 @@ internal static class TypesafeAiEvaluationModelSupport
     }
 
     /// <summary>The questions of the native request, with <c>noul</c> spelled <c>boolean</c> as the public API does.</summary>
-    internal static Dictionary<string, EvaluationQuestion> Questions()
+    internal static Dictionary<string, DecisionQuestion> Questions()
     {
-        var questions = new Dictionary<string, EvaluationQuestion>();
+        var questions = new Dictionary<string, DecisionQuestion>();
         foreach (var pair in NativeRequest["questions"]!.AsObject())
         {
             var question = pair.Value!.AsObject();
             var type = question["type"]!.GetValue<string>();
-            questions[pair.Key] = new EvaluationQuestion(
+            questions[pair.Key] = new DecisionQuestion(
                 type == "noul" ? "boolean" : type,
                 ToObject(question["instructions"]),
                 ToObject(question["criteria"]));
@@ -106,14 +106,14 @@ internal static class TypesafeAiEvaluationModelSupport
         return questions;
     }
 
-    internal static EvaluationModelCall Call(
-        IReadOnlyDictionary<string, EvaluationQuestion>? questions = null,
+    internal static DecisionModelCall Call(
+        IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         object? state = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new EvaluationModelCall(
+        return new DecisionModelCall(
             state ?? JsonState(ToObject(NativeRequest["state"])),
             questions ?? Questions(),
             document.RootElement.Clone(),

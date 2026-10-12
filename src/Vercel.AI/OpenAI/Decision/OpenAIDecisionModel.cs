@@ -13,7 +13,9 @@ using Vercel.AI.ProviderUtils;
 namespace Vercel.AI.OpenAI;
 
 /// <summary>Answers questions through the OpenAI Decisions API (<c>POST /decisions</c>).</summary>
-public sealed class OpenAIDecisionModel : IEvaluationCaller
+#pragma warning disable CS0618
+public sealed class OpenAIDecisionModel : IDecisionCaller, IEvaluationCaller
+#pragma warning restore CS0618
 {
     private const int MaxSafetyIdentifierLength = 128;
 
@@ -40,14 +42,15 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
     /// <inheritdoc />
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
 
-    /// <inheritdoc />
-    public Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
+    [Obsolete("Use DoDecideAsync instead.")]
+    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
     {
-        return DoDecideAsync(call, cancellationToken);
+        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Sends every question in one Decisions request.</summary>
-    public async Task<EvaluationModelResult> DoDecideAsync(EvaluationModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
     {
         if (call == null)
         {
@@ -106,7 +109,7 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
         var root = document.RootElement.Clone();
         var parsed = ParseAnswers(root, response.Body);
 
-        var answers = new Dictionary<string, EvaluationAnswer>();
+        var answers = new Dictionary<string, DecisionAnswer>();
         foreach (var answer in parsed)
         {
             if (answer.Type == "refusal")
@@ -116,13 +119,13 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
                     throw new InvalidResponseDataException(root, "OpenAI Decisions refused an unnamed question.");
                 }
 
-                answers[answer.Name] = new EvaluationAnswer("refusal");
+                answers[answer.Name] = new DecisionAnswer("refusal");
                 continue;
             }
 
             if (answer.Type == "predicate")
             {
-                answers[answer.Name!] = new EvaluationAnswer("boolean", probability: answer.Probability);
+                answers[answer.Name!] = new DecisionAnswer("boolean", probability: answer.Probability);
                 continue;
             }
 
@@ -138,8 +141,8 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
             }
 
             answers[answer.Name!] = answer.Type == "choice"
-                ? new EvaluationAnswer("choice", choice: answer.Choice, probabilities: probabilities)
-                : new EvaluationAnswer("score", score: answer.Score, probabilities: probabilities);
+                ? new DecisionAnswer("choice", choice: answer.Choice, probabilities: probabilities)
+                : new DecisionAnswer("score", score: answer.Score, probabilities: probabilities);
         }
 
         var names = parsed.Select(answer => answer.Name).ToArray();
@@ -179,12 +182,12 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
             modelId = modelElement.GetString();
         }
 
-        return new EvaluationModelResult(
+        return new DecisionModelResult(
             answers,
             warnings,
             usage,
             // The Decisions API reports probabilities and scores to two decimal places.
-            new EvaluationRounding(2, 2),
+            new DecisionRounding(2, 2),
             providerMetadata,
             new ProviderResponse(response.Headers, root, modelId: modelId ?? ModelId));
     }
@@ -260,7 +263,7 @@ public sealed class OpenAIDecisionModel : IEvaluationCaller
         return value as string ?? JsonSerializer.Serialize(value, Text);
     }
 
-    private static JsonObject BuildQuestion(string name, EvaluationQuestion question)
+    private static JsonObject BuildQuestion(string name, DecisionQuestion question)
     {
         var instructions = ToText(question.Instructions);
         switch (question.Type)

@@ -22,11 +22,15 @@ public sealed class TypeSafeAiOptions
     public IDictionary<string, string>? Headers { get; set; }
 }
 
-/// <summary>TypeSafe's experimental evaluation capability. It has no language, embedding, or image models.</summary>
+/// <summary>TypeSafe's experimental decision capability. It has no language, embedding, or image models.</summary>
 public sealed class TypeSafeAiProvider
 {
-    /// <summary>Provider id of the evaluation model.</summary>
-    public const string EvaluationProviderId = "typesafe.evaluation";
+    /// <summary>Provider id of the decision model.</summary>
+    public const string DecisionProviderId = "typesafe.decision";
+
+    /// <summary>Deprecated alias of <see cref="DecisionProviderId"/>.</summary>
+    [Obsolete("Use DecisionProviderId instead.")]
+    public const string EvaluationProviderId = DecisionProviderId;
 
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.typesafe.ai/v1";
@@ -58,16 +62,28 @@ public sealed class TypeSafeAiProvider
         return new TypeSafeAiProvider(options, handler is null ? null : new HttpClient(handler, disposeHandler: false));
     }
 
-    /// <summary>Returns an evaluation model. The id may be one this library does not know yet.</summary>
+    /// <summary>Returns a decision model. The id may be one this library does not know yet.</summary>
+    public TypeSafeAiDecisionModel DecisionModel(string modelId)
+    {
+        return new TypeSafeAiDecisionModel(modelId, DecisionConfig());
+    }
+
+    /// <summary>Deprecated alias of <see cref="DecisionModel(string)"/>.</summary>
+    [Obsolete("Use DecisionModel instead.")]
     public TypeSafeAiEvaluationModel EvaluationModel(string modelId)
     {
-        return new TypeSafeAiEvaluationModel(modelId, new TypeSafeAiEvaluationModelConfig
+        return new TypeSafeAiEvaluationModel(modelId, DecisionConfig());
+    }
+
+    private TypeSafeAiDecisionModelConfig DecisionConfig()
+    {
+        return new TypeSafeAiDecisionModelConfig
         {
-            Provider = EvaluationProviderId,
+            Provider = DecisionProviderId,
             BaseUrl = _baseUrl,
             Headers = Headers,
             HttpClient = _httpClient,
-        });
+        };
     }
 
     /// <summary>TypeSafe has no language models.</summary>
