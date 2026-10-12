@@ -908,11 +908,12 @@ public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 {
     /// <summary>Creates a reasoning delta.</summary>
-    public ReasoningDeltaStreamPart(string id, string delta)
+    public ReasoningDeltaStreamPart(string id, string delta, JsonElement? providerMetadata = null)
         : base("reasoning-delta")
     {
         Id = id;
         Delta = delta ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Reasoning block id.</summary>
@@ -920,6 +921,9 @@ public sealed class ReasoningDeltaStreamPart : LanguageModelStreamPart
 
     /// <summary>Reasoning fragment.</summary>
     public string Delta { get; }
+
+    /// <summary>Provider metadata for this fragment, such as a reasoning signature.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A completed tool call.</summary>
@@ -1149,8 +1153,18 @@ public sealed class ErrorStreamPart : LanguageModelStreamPart
         Message = message ?? "Unknown provider error.";
     }
 
+    /// <summary>Creates an error part that carries a provider error with status and retry metadata.</summary>
+    public ErrorStreamPart(Vercel.AI.Prompt.ProviderStreamError error)
+        : this(error?.Message ?? "Unknown provider error.")
+    {
+        ProviderError = error;
+    }
+
     /// <summary>Error message.</summary>
     public string Message { get; }
+
+    /// <summary>The provider error with status, retry, and raw data, when the provider reports one.</summary>
+    public Vercel.AI.Prompt.ProviderStreamError? ProviderError { get; }
 }
 
 /// <summary>Marks the start of a stream and carries call warnings.</summary>

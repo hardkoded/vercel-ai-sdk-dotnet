@@ -79,14 +79,14 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId) => new AmazonBedrockEmbeddingModel(this, modelId);
 
-    internal Uri ConverseUri(string modelId)
+    internal Uri ConverseUri(string modelId, string operation = "converse")
     {
         if (!HostnameParts.IsValidHostnamePart(Options.Region))
         {
             throw new ArgumentException("An AWS region must be a single DNS label.", nameof(AmazonBedrockOptions.Region));
         }
 
-        return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/converse");
+        return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/" + operation);
     }
 }
 
@@ -117,12 +117,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        var body = bodyObject.ToJsonString();
-        var request = new HttpRequestMessage(HttpMethod.Post, _provider.ConverseUri(ModelId))
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
-        Sign(request, Encoding.UTF8.GetBytes(body));
+        var request = CreateRequest(_provider.ConverseUri(ModelId), bodyObject, options);
         var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -137,24 +132,411 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        foreach (var part in result.Content)
+        var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
+        var request = CreateRequest(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options);
+        using var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
         {
-            if (part is GeneratedText text)
+            var errorText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw AmazonBedrockErrors.Create((int)response.StatusCode, errorText);
+        }
+
+        var (headers, chunks) = await AmazonBedrockEventStreamResponseHandler
+            .HandleAsync(response, AmazonBedrockStreamSchema.Validate, cancellationToken)
+            .ConfigureAwait(false);
+
+        var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
+        var finishReason = FinishReason.Other;
+        string? rawFinishReason = null;
+        JsonElement? usage = null;
+        JsonObject? metadataPayload = null;
+        var isJsonResponseFromTool = false;
+        string? stopSequence = null;
+        var extractor = usesJsonInstruction ? new JsonObjectTextExtractor() : null;
+        var blocks = new Dictionary<int, StreamBlock>();
+
+        yield return new StreamStartStreamPart(warnings);
+        DateTimeOffset? timestamp = null;
+        if (headers.TryGetValue("date", out var date)
+            && DateTimeOffset.TryParse(date, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var parsedDate))
+        {
+            timestamp = parsedDate;
+        }
+
+        headers.TryGetValue("x-amzn-requestid", out var requestId);
+        yield return new ResponseMetadataStreamPart(requestId, ModelId, timestamp);
+
+        await foreach (var chunk in chunks.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            if (options.IncludeRawChunks && chunk.Success)
             {
-                yield return new TextDeltaStreamPart("text", text.Text);
+                yield return new RawStreamPart(chunk.RawValue.GetRawText());
             }
-            else if (part is GeneratedReasoning reasoning && reasoning.Text.Length > 0)
+
+            if (!chunk.Success)
             {
-                yield return new ReasoningDeltaStreamPart("reasoning", reasoning.Text);
+                finishReason = FinishReason.Error;
+                rawFinishReason = null;
+                yield return new ErrorStreamPart(chunk.Error ?? "Amazon Bedrock stream chunk could not be parsed.");
+                continue;
             }
-            else if (part is GeneratedToolCall call)
+
+            var value = chunk.Value;
+            var errorType = StreamErrorTypes.FirstOrDefault(type => Present(value, type));
+            if (errorType is not null)
             {
-                yield return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson);
+                finishReason = FinishReason.Error;
+                rawFinishReason = null;
+                yield return new ErrorStreamPart(CreateStreamError(errorType, value.GetProperty(errorType), chunk.RawValue));
+                continue;
+            }
+
+            if (Present(value, "messageStop"))
+            {
+                var stop = value.GetProperty("messageStop");
+                rawFinishReason = ReadString(stop, "stopReason");
+                finishReason = MapFinishReason(rawFinishReason, isJsonResponseFromTool);
+                stopSequence = null;
+                if (stop.TryGetProperty("additionalModelResponseFields", out var extra)
+                    && extra.ValueKind == JsonValueKind.Object
+                    && extra.TryGetProperty("delta", out var delta)
+                    && delta.ValueKind == JsonValueKind.Object)
+                {
+                    stopSequence = ReadString(delta, "stop_sequence");
+                }
+            }
+
+            if (Present(value, "metadata"))
+            {
+                var metadata = value.GetProperty("metadata");
+                if (Present(metadata, "usage"))
+                {
+                    usage = metadata.GetProperty("usage");
+                }
+
+                var payload = new JsonObject();
+                if (Present(metadata, "usage"))
+                {
+                    var usageObject = new JsonObject();
+                    var usageElement = metadata.GetProperty("usage");
+                    if (Present(usageElement, "cacheWriteInputTokens"))
+                    {
+                        usageObject["cacheWriteInputTokens"] = JsonNode.Parse(usageElement.GetProperty("cacheWriteInputTokens").GetRawText());
+                    }
+
+                    if (Present(usageElement, "cacheDetails"))
+                    {
+                        usageObject["cacheDetails"] = JsonNode.Parse(usageElement.GetProperty("cacheDetails").GetRawText());
+                    }
+
+                    if (usageObject.Count > 0)
+                    {
+                        payload["usage"] = usageObject;
+                    }
+                }
+
+                foreach (var name in new[] { "trace", "performanceConfig", "serviceTier" })
+                {
+                    if (Present(metadata, name))
+                    {
+                        payload[name] = JsonNode.Parse(metadata.GetProperty(name).GetRawText());
+                    }
+                }
+
+                if (payload.Count > 0)
+                {
+                    metadataPayload = payload;
+                }
+            }
+
+            if (Present(value, "contentBlockStart"))
+            {
+                var start = value.GetProperty("contentBlockStart");
+                var hasToolUse = start.TryGetProperty("start", out var startBody)
+                    && startBody.ValueKind == JsonValueKind.Object
+                    && Present(startBody, "toolUse");
+                if (!hasToolUse)
+                {
+                    var index = start.GetProperty("contentBlockIndex").GetInt32();
+                    blocks[index] = new StreamBlock(StreamBlockKind.Text);
+                    yield return new TextStartStreamPart(index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+            }
+
+            JsonElement? deltaBody = null;
+            var deltaIndex = 0;
+            if (Present(value, "contentBlockDelta"))
+            {
+                var blockDelta = value.GetProperty("contentBlockDelta");
+                deltaIndex = blockDelta.GetProperty("contentBlockIndex").GetInt32();
+                if (Present(blockDelta, "delta"))
+                {
+                    deltaBody = blockDelta.GetProperty("delta");
+                }
+            }
+
+            var deltaId = deltaIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (deltaBody is { } textBody && textBody.TryGetProperty("text", out var textValue) && textValue.ValueKind == JsonValueKind.String && textValue.GetString()!.Length > 0)
+            {
+                if (!blocks.ContainsKey(deltaIndex))
+                {
+                    blocks[deltaIndex] = new StreamBlock(StreamBlockKind.Text);
+                    yield return new TextStartStreamPart(deltaId);
+                }
+
+                var incoming = textValue.GetString()!;
+                var textDelta = extractor is null ? incoming : extractor.Process(incoming);
+                if (textDelta.Length > 0)
+                {
+                    yield return new TextDeltaStreamPart(deltaId, textDelta);
+                }
+            }
+
+            if (Present(value, "contentBlockStop"))
+            {
+                var index = value.GetProperty("contentBlockStop").GetProperty("contentBlockIndex").GetInt32();
+                var id = index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (blocks.TryGetValue(index, out var block))
+                {
+                    if (block.Kind == StreamBlockKind.Reasoning)
+                    {
+                        yield return new ReasoningEndStreamPart(id, block.RedactedContent is null ? null : ReasoningMetadata("redactedContent", block.RedactedContent));
+                    }
+                    else if (block.Kind == StreamBlockKind.Text)
+                    {
+                        yield return new TextEndStreamPart(id);
+                    }
+                    else if (block.IsJsonResponseTool)
+                    {
+                        isJsonResponseFromTool = true;
+                        yield return new TextStartStreamPart(id);
+                        yield return new TextDeltaStreamPart(id, block.JsonText.ToString());
+                        yield return new TextEndStreamPart(id);
+                    }
+                    else
+                    {
+                        yield return new ToolInputEndStreamPart(block.ToolCallId!);
+                        var input = block.JsonText.Length == 0 ? "{}" : block.JsonText.ToString();
+                        yield return new ToolCallStreamPart(block.ToolCallId!, block.ToolName!, input);
+                    }
+
+                    blocks.Remove(index);
+                }
+            }
+
+            if (deltaBody is { } reasoningBody
+                && reasoningBody.TryGetProperty("reasoningContent", out var reasoningContent)
+                && reasoningContent.ValueKind == JsonValueKind.Object)
+            {
+                var reasoningText = ReadString(reasoningContent, "text");
+                var signature = ReadString(reasoningContent, "signature");
+                var data = ReadString(reasoningContent, "data");
+                var redacted = ReadString(reasoningContent, "redactedContent");
+                if (!string.IsNullOrEmpty(reasoningText))
+                {
+                    if (!blocks.ContainsKey(deltaIndex))
+                    {
+                        blocks[deltaIndex] = new StreamBlock(StreamBlockKind.Reasoning);
+                        yield return new ReasoningStartStreamPart(deltaId);
+                    }
+
+                    yield return new ReasoningDeltaStreamPart(deltaId, reasoningText!);
+                }
+                else if (!string.IsNullOrEmpty(signature) || !string.IsNullOrEmpty(data))
+                {
+                    if (!blocks.ContainsKey(deltaIndex))
+                    {
+                        blocks[deltaIndex] = new StreamBlock(StreamBlockKind.Reasoning);
+                        yield return new ReasoningStartStreamPart(deltaId);
+                    }
+
+                    yield return string.IsNullOrEmpty(signature)
+                        ? new ReasoningDeltaStreamPart(deltaId, string.Empty, ReasoningMetadata("redactedData", data!))
+                        : new ReasoningDeltaStreamPart(deltaId, string.Empty, ReasoningMetadata("signature", signature!));
+                }
+                else if (!string.IsNullOrEmpty(redacted))
+                {
+                    if (!blocks.TryGetValue(deltaIndex, out var existing))
+                    {
+                        existing = new StreamBlock(StreamBlockKind.Reasoning);
+                        blocks[deltaIndex] = existing;
+                        yield return new ReasoningStartStreamPart(deltaId);
+                    }
+
+                    // Accumulated and attached once on reasoning-end: the merged provider metadata of a
+                    // reasoning part is last-write-wins, so per-delta metadata would drop earlier chunks.
+                    if (existing.Kind == StreamBlockKind.Reasoning)
+                    {
+                        existing.RedactedContent = (existing.RedactedContent ?? string.Empty) + redacted;
+                    }
+                }
+            }
+
+            if (Present(value, "contentBlockStart"))
+            {
+                var start = value.GetProperty("contentBlockStart");
+                if (start.TryGetProperty("start", out var startBody)
+                    && startBody.ValueKind == JsonValueKind.Object
+                    && Present(startBody, "toolUse"))
+                {
+                    var toolUse = startBody.GetProperty("toolUse");
+                    var index = start.GetProperty("contentBlockIndex").GetInt32();
+                    var name = ReadString(toolUse, "name")!;
+                    var isJsonResponseTool = usesJsonTool && string.Equals(name, JsonToolName, StringComparison.Ordinal);
+                    var toolCallId = AmazonBedrockToolIds.Normalize(ReadString(toolUse, "toolUseId")!, isMistral);
+                    blocks[index] = new StreamBlock(StreamBlockKind.ToolCall)
+                    {
+                        ToolCallId = toolCallId,
+                        ToolName = name,
+                        IsJsonResponseTool = isJsonResponseTool,
+                    };
+
+                    // The json response tool is emitted as text, so it has no tool events.
+                    if (!isJsonResponseTool)
+                    {
+                        yield return new ToolInputStartStreamPart(toolCallId, name);
+                    }
+                }
+            }
+
+            if (deltaBody is { } toolBody
+                && toolBody.TryGetProperty("toolUse", out var toolDelta)
+                && toolDelta.ValueKind == JsonValueKind.Object
+                && blocks.TryGetValue(deltaIndex, out var toolBlock)
+                && toolBlock.Kind == StreamBlockKind.ToolCall)
+            {
+                var input = ReadString(toolDelta, "input") ?? string.Empty;
+                if (!toolBlock.IsJsonResponseTool)
+                {
+                    yield return new ToolInputDeltaStreamPart(toolBlock.ToolCallId!, input);
+                }
+
+                toolBlock.JsonText.Append(input);
             }
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        if (isJsonResponseFromTool || stopSequence is not null)
+        {
+            metadataPayload ??= new JsonObject();
+            if (isJsonResponseFromTool)
+            {
+                metadataPayload["isJsonResponseFromTool"] = true;
+            }
+
+            metadataPayload["stopSequence"] = stopSequence;
+        }
+
+        JsonElement? providerMetadata = null;
+        if (metadataPayload is not null)
+        {
+            var wrapper = new JsonObject { ["amazonBedrock"] = metadataPayload, ["bedrock"] = metadataPayload.DeepClone() };
+            using var metadataDocument = JsonDocument.Parse(wrapper.ToJsonString());
+            providerMetadata = metadataDocument.RootElement.Clone();
+        }
+
+        yield return new FinishStreamPart(finishReason, AmazonBedrockUsage.Convert(usage), rawFinishReason, providerMetadata);
+    }
+
+    private static readonly string[] StreamErrorTypes =
+    {
+        "internalServerException",
+        "modelStreamErrorException",
+        "serviceUnavailableException",
+        "throttlingException",
+        "validationException",
+    };
+
+    private enum StreamBlockKind
+    {
+        Text,
+        Reasoning,
+        ToolCall,
+    }
+
+    private sealed class StreamBlock
+    {
+        public StreamBlock(StreamBlockKind kind)
+        {
+            Kind = kind;
+        }
+
+        public StreamBlockKind Kind { get; }
+
+        public string? ToolCallId { get; init; }
+
+        public string? ToolName { get; init; }
+
+        public bool IsJsonResponseTool { get; init; }
+
+        public StringBuilder JsonText { get; } = new StringBuilder();
+
+        public string? RedactedContent { get; set; }
+    }
+
+    private static bool Present(JsonElement element, string name)
+    {
+        return element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            && value.ValueKind != JsonValueKind.Undefined;
+    }
+
+    private static string? ReadString(JsonElement element, string name)
+    {
+        return element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+    }
+
+    private static JsonElement ReasoningMetadata(string key, string value)
+    {
+        var payload = new JsonObject { [key] = value };
+        var wrapper = new JsonObject { ["amazonBedrock"] = payload, ["bedrock"] = payload.DeepClone() };
+        using var document = JsonDocument.Parse(wrapper.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static Vercel.AI.Prompt.ProviderStreamError CreateStreamError(string type, JsonElement error, JsonElement data)
+    {
+        var message = ReadString(error, "message") ?? "Amazon Bedrock stream failed with " + type;
+        var (status, retryable) = AmazonBedrockStreamError.Metadata(type);
+        return new Vercel.AI.Prompt.ProviderStreamError(message, data, type, null, status, retryable);
+    }
+
+    private static FinishReason MapFinishReason(string? raw, bool isJsonResponseFromTool)
+    {
+        if (isJsonResponseFromTool && string.Equals(raw, "tool_use", StringComparison.Ordinal))
+        {
+            return FinishReason.Stop;
+        }
+
+        return string.Equals(raw, "guardrail_intervened", StringComparison.Ordinal)
+            ? FinishReason.ContentFilter
+            : FinishReasons.Parse(raw);
+    }
+
+    private HttpRequestMessage CreateRequest(Uri uri, JsonObject bodyObject, LanguageModelCallOptions options)
+    {
+        var body = bodyObject.ToJsonString();
+        var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        if (options.Headers is not null)
+        {
+            foreach (var header in options.Headers)
+            {
+                if (header.Value is not null)
+                {
+                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+        }
+
+        Sign(request, Encoding.UTF8.GetBytes(body));
+        return request;
     }
 
     private void Sign(HttpRequestMessage request, byte[] payload)
@@ -179,7 +561,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var capabilities = AnthropicModelCapabilities.Get(ModelId);
         var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(ModelId, reasoningConfig?.BudgetTokens);
 
-        reasoningConfig = ResolveReasoningConfig(options.Reasoning, reasoningConfig, warnings, isAnthropicModel, capabilities);
+        reasoningConfig = ResolveReasoningConfig(options.Reasoning, reasoningConfig, warnings, isAnthropicModel, Regex.IsMatch(ModelId, @"^(?:[^.]+\.)?openai\..+$", RegexOptions.CultureInvariant), ModelId, capabilities);
         var isThinkingEnabled = reasoningConfig?.Type == "enabled" || reasoningConfig?.Type == "adaptive";
 
         var structuredOutputMode = ReadString(bedrock, "structuredOutputMode")
@@ -362,6 +744,11 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["additionalModelRequestFields"] = additional;
         }
 
+        if (isAnthropicModel)
+        {
+            body["additionalModelResponseFieldPaths"] = new JsonArray("/delta/stop_sequence");
+        }
+
         var inference = new JsonObject();
         if (maxTokens is { } max)
         {
@@ -399,9 +786,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["inferenceConfig"] = inference;
         }
 
-        if (toolConfig.Count > 0)
+        var serviceTier = ReadString(bedrock, "serviceTier");
+        if (serviceTier != null)
         {
-            body["toolConfig"] = toolConfig;
+            body["serviceTier"] = new JsonObject { ["type"] = serviceTier };
         }
 
         var requestMetadata = ReadRequestMetadata(options);
@@ -410,8 +798,35 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             body["requestMetadata"] = requestMetadata;
         }
 
+        // Every other provider option, such as guardrailConfig, goes to the request as is.
+        if (bedrock is { ValueKind: JsonValueKind.Object } bedrockObject)
+        {
+            foreach (var property in bedrockObject.EnumerateObject())
+            {
+                if (!NonPassthroughOptions.Contains(property.Name))
+                {
+                    body[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+            }
+        }
+
+        if (toolConfig.Count > 0)
+        {
+            body.Remove("toolConfig");
+            body["toolConfig"] = toolConfig;
+        }
+
         return body;
     }
+
+    private static readonly HashSet<string> NonPassthroughOptions = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "reasoningConfig",
+        "additionalModelRequestFields",
+        "serviceTier",
+        "structuredOutputMode",
+        "requestMetadata",
+    };
 
     private static IReadOnlyList<ModelMessage> InjectJsonInstructionIntoMessages(IReadOnlyList<ModelMessage> messages, JsonElement schema)
     {
@@ -434,6 +849,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         BedrockReasoningConfig? user,
         List<CallWarning> warnings,
         bool isAnthropicModel,
+        bool isOpenAIModel,
+        string modelId,
         AnthropicModelCapabilities capabilities)
     {
         if (!ReasoningMap.IsCustomReasoning(reasoning))
@@ -441,8 +858,17 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             return user;
         }
 
+        // Preserve disabled thinking without deriving settings or warnings that will not be sent.
+        if (user?.Type == "disabled")
+        {
+            return new BedrockReasoningConfig { Type = "disabled", Display = user.Display };
+        }
+
         var modelWarnings = new List<ModelWarning>();
         BedrockReasoningConfig? result = user;
+        var hasPortableReasoning = reasoning != "none";
+        var isNovaReasoningModel = modelId.IndexOf("amazon.nova-2-lite-v1:0", StringComparison.Ordinal) >= 0;
+        var supportsPortableReasoning = isOpenAIModel || isNovaReasoningModel || user != null;
         if (isAnthropicModel)
         {
             if (reasoning == "none")
@@ -451,29 +877,34 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
             else if (capabilities.SupportsAdaptiveThinking)
             {
-                var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, ReasoningEffortMap, modelWarnings);
+                var effort = user?.MaxReasoningEffort
+                    ?? ReasoningMap.MapReasoningToProviderEffort(reasoning!, ReasoningEffortMap, modelWarnings);
                 result = new BedrockReasoningConfig { Type = "adaptive", MaxReasoningEffort = effort }.MergeUser(user);
             }
             else
             {
-                var budget = ReasoningMap.MapReasoningToProviderBudget(reasoning!, capabilities.MaxOutputTokens, capabilities.MaxOutputTokens, modelWarnings);
+                var budget = user?.BudgetTokens
+                    ?? ReasoningMap.MapReasoningToProviderBudget(reasoning!, capabilities.MaxOutputTokens, capabilities.MaxOutputTokens, modelWarnings);
                 if (budget != null)
                 {
                     result = new BedrockReasoningConfig { Type = "enabled", BudgetTokens = budget }.MergeUser(user);
                 }
             }
         }
-        else if (reasoning != "none")
+        else if (hasPortableReasoning)
         {
-            var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, ReasoningEffortMap, modelWarnings);
-            result = new BedrockReasoningConfig { MaxReasoningEffort = effort }.MergeUser(user);
-        }
-
-        // When the merged type ends up disabled, drop the derived effort and budget.
-        if (result?.Type == "disabled")
-        {
-            result.MaxReasoningEffort = null;
-            result.BudgetTokens = null;
+            if (supportsPortableReasoning)
+            {
+                var effort = user?.MaxReasoningEffort
+                    ?? ReasoningMap.MapReasoningToProviderEffort(reasoning!, isNovaReasoningModel ? NovaReasoningEffortMap : ReasoningEffortMap, modelWarnings);
+                result = new BedrockReasoningConfig { Type = isNovaReasoningModel ? "enabled" : null, MaxReasoningEffort = effort }.MergeUser(user);
+            }
+            else
+            {
+                warnings.Add(new CallWarning(
+                    "unsupported",
+                    "Portable reasoning is not supported for this model and will be ignored. If the model supports a provider-specific reasoning configuration, use providerOptions.amazonBedrock.reasoningConfig."));
+            }
         }
 
         foreach (var warning in modelWarnings)
@@ -499,6 +930,17 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         { "medium", "medium" },
         { "high", "high" },
         { "xhigh", "max" },
+        { "max", "max" },
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> NovaReasoningEffortMap = new Dictionary<string, string>
+    {
+        { "minimal", "low" },
+        { "low", "low" },
+        { "medium", "medium" },
+        { "high", "high" },
+        { "xhigh", "high" },
+        { "max", "high" },
     };
 
     /// <summary>Reads provider options from <c>amazonBedrock</c>, then <c>bedrock</c>, then <c>amazon-bedrock</c>.</summary>
@@ -685,15 +1127,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         var raw = root.TryGetProperty("stopReason", out var stop) ? stop.GetString() : "end_turn";
-        var mapped = raw;
-        if (jsonTool && string.Equals(raw, "tool_use", StringComparison.Ordinal))
-        {
-            mapped = "stop";
-        }
-        else if (string.Equals(raw, "guardrail_intervened", StringComparison.Ordinal))
-        {
-            mapped = "content-filter";
-        }
 
         JsonElement? usageElement = root.TryGetProperty("usage", out var usageProperty) ? usageProperty : null;
         var usage = AmazonBedrockUsage.Convert(usageElement);
@@ -723,7 +1156,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             providerMetadata = document.RootElement.Clone();
         }
 
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(mapped), usage, raw, warnings, responseId, providerMetadata, responseHeaders: headers);
+        return new LanguageModelGenerateResult(content, MapFinishReason(raw, jsonTool), usage, raw, warnings, responseId, providerMetadata, responseHeaders: headers);
     }
 
     private static string Extract(JsonObjectTextExtractor? extractor, string text) => extractor?.Process(text) ?? text;

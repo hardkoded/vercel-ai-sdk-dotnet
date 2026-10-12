@@ -271,6 +271,7 @@ internal static class Generation
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
                                 reasoning.Append(reasoningDelta.Delta);
+                                reasoningMetadata.Add(reasoningDelta.ProviderMetadata);
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:

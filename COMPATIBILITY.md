@@ -59,7 +59,7 @@ Not emitted yet, because the core stream does not surface them:
 - Gateway language, embedding, and image calls use `https://ai-gateway.vercel.sh/v4/ai`, the V4 specification headers, `ai-gateway-protocol-version: 0.0.1`, and `ai-gateway-auth-method: api-key`. They are not only the OpenAI-compatible `/v1/chat/completions` route.
 - OpenResponses defaults to `https://ai-gateway.vercel.sh/v1/responses`.
 - Azure OpenAI uses the deployments URL, the `api-key` header, and API version `2024-10-21`.
-- Amazon Bedrock uses the Converse API and Signature Version 4. Streaming is generate-then-delta.
+- Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.
 - Cohere chat streaming is generate-then-delta.
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
 - MiniMax uses the OpenAI-compatible `/v1` base. The JavaScript package also has an Anthropic-compatible path.
