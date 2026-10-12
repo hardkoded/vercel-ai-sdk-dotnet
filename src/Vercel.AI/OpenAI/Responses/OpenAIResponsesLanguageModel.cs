@@ -94,8 +94,20 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var prepared = new JsonArray();
         var warnings = new List<CallWarning>();
+        var customToolNames = new HashSet<string>();
         foreach (var tool in tools)
         {
+            if (tool.IsProviderDefined)
+            {
+                var mapped = MapProviderTool(tool, customToolNames);
+                if (mapped != null)
+                {
+                    prepared.Add(mapped);
+                }
+
+                continue;
+            }
+
             var normalized = OpenAIJsonSchema.Normalize(tool.InputSchema);
             foreach (var warning in normalized.Warnings)
             {
@@ -118,7 +130,229 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             prepared.Add(definition);
         }
 
-        return new PreparedResponsesTools(prepared, toolChoice, warnings);
+        return new PreparedResponsesTools(prepared, MapChoice(toolChoice, customToolNames), warnings);
+    }
+
+    private static JsonNode? MapProviderTool(LanguageModelTool tool, HashSet<string> customToolNames)
+    {
+        var args = tool.Args.ValueKind == JsonValueKind.Object ? tool.Args : (JsonElement?)null;
+
+        JsonNode? Arg(string name) =>
+            args is { } a && a.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null
+                ? JsonNode.Parse(value.GetRawText())
+                : null;
+
+        JsonObject? Object(string name) => Arg(name) as JsonObject;
+
+        void Set(JsonObject target, string name, JsonNode? value)
+        {
+            if (value != null)
+            {
+                target[name] = value;
+            }
+        }
+
+        var result = new JsonObject();
+        switch (tool.ProviderToolId)
+        {
+            case "openai.file_search":
+                result["type"] = "file_search";
+                Set(result, "vector_store_ids", Arg("vectorStoreIds"));
+                Set(result, "max_num_results", Arg("maxNumResults"));
+                if (Object("ranking") is { } ranking)
+                {
+                    var options = new JsonObject();
+                    Set(options, "ranker", ranking["ranker"]?.DeepClone());
+                    Set(options, "score_threshold", ranking["scoreThreshold"]?.DeepClone());
+                    result["ranking_options"] = options;
+                }
+
+                Set(result, "filters", Arg("filters"));
+                return result;
+            case "openai.local_shell":
+            case "openai.apply_patch":
+            case "openai.computer":
+            case "openai.programmatic_tool_calling":
+                result["type"] = tool.ProviderToolId.Substring("openai.".Length);
+                return result;
+            case "openai.shell":
+                result["type"] = "shell";
+                if (Object("environment") is { } environment)
+                {
+                    result["environment"] = MapShellEnvironment(environment);
+                }
+
+                return result;
+            case "openai.web_search_preview":
+                result["type"] = "web_search_preview";
+                Set(result, "search_context_size", Arg("searchContextSize"));
+                Set(result, "user_location", Arg("userLocation"));
+                return result;
+            case "openai.web_search":
+                result["type"] = "web_search";
+                if (Object("filters") is { } filters)
+                {
+                    var mappedFilters = new JsonObject();
+                    Set(mappedFilters, "allowed_domains", filters["allowedDomains"]?.DeepClone());
+                    Set(mappedFilters, "blocked_domains", filters["blockedDomains"]?.DeepClone());
+                    result["filters"] = mappedFilters;
+                }
+
+                Set(result, "external_web_access", Arg("externalWebAccess"));
+                Set(result, "search_context_size", Arg("searchContextSize"));
+                Set(result, "user_location", Arg("userLocation"));
+                return result;
+            case "openai.code_interpreter":
+                result["type"] = "code_interpreter";
+                var container = Arg("container");
+                if (container is JsonValue)
+                {
+                    result["container"] = container;
+                }
+                else
+                {
+                    var auto = new JsonObject { ["type"] = "auto" };
+                    Set(auto, "file_ids", (container as JsonObject)?["fileIds"]?.DeepClone());
+                    result["container"] = auto;
+                }
+
+                return result;
+            case "openai.image_generation":
+                result["type"] = "image_generation";
+                Set(result, "action", Arg("action"));
+                Set(result, "background", Arg("background"));
+                Set(result, "input_fidelity", Arg("inputFidelity"));
+                if (Object("inputImageMask") is { } mask)
+                {
+                    var mappedMask = new JsonObject();
+                    Set(mappedMask, "file_id", mask["fileId"]?.DeepClone());
+                    Set(mappedMask, "image_url", mask["imageUrl"]?.DeepClone());
+                    result["input_image_mask"] = mappedMask;
+                }
+
+                Set(result, "model", Arg("model"));
+                Set(result, "moderation", Arg("moderation"));
+                Set(result, "partial_images", Arg("partialImages"));
+                Set(result, "quality", Arg("quality"));
+                Set(result, "output_compression", Arg("outputCompression"));
+                Set(result, "output_format", Arg("outputFormat"));
+                Set(result, "size", Arg("size"));
+                return result;
+            case "openai.mcp":
+                result["type"] = "mcp";
+                Set(result, "server_label", Arg("serverLabel"));
+                var allowed = Arg("allowedTools");
+                if (allowed is JsonArray)
+                {
+                    result["allowed_tools"] = allowed;
+                }
+                else if (allowed is JsonObject allowedObject)
+                {
+                    var mappedAllowed = new JsonObject();
+                    Set(mappedAllowed, "read_only", allowedObject["readOnly"]?.DeepClone());
+                    Set(mappedAllowed, "tool_names", allowedObject["toolNames"]?.DeepClone());
+                    result["allowed_tools"] = mappedAllowed;
+                }
+
+                Set(result, "authorization", Arg("authorization"));
+                Set(result, "connector_id", Arg("connectorId"));
+                Set(result, "headers", Arg("headers"));
+                var approval = Arg("requireApproval");
+                JsonNode requireApproval = "never";
+                if (approval is JsonValue)
+                {
+                    requireApproval = approval;
+                }
+                else if (approval is JsonObject approvalObject && approvalObject["never"] is JsonObject never)
+                {
+                    var names = new JsonObject();
+                    Set(names, "tool_names", never["toolNames"]?.DeepClone());
+                    requireApproval = new JsonObject { ["never"] = names };
+                }
+
+                result["require_approval"] = requireApproval;
+                Set(result, "server_description", Arg("serverDescription"));
+                Set(result, "server_url", Arg("serverUrl"));
+                return result;
+            case "openai.custom":
+                result["type"] = "custom";
+                result["name"] = tool.Name;
+                Set(result, "description", Arg("description"));
+                if (Arg("async") is { } asyncMode)
+                {
+                    result["async"] = asyncMode;
+                }
+
+                Set(result, "format", Arg("format"));
+                customToolNames.Add(tool.Name);
+                return result;
+            case "openai.tool_search":
+                result["type"] = "tool_search";
+                Set(result, "execution", Arg("execution"));
+                Set(result, "description", Arg("description"));
+                Set(result, "parameters", Arg("parameters"));
+                return result;
+            default:
+                return null;
+        }
+    }
+
+    private static JsonObject MapShellEnvironment(JsonObject environment)
+    {
+        var type = environment["type"]?.GetValue<string>();
+        var result = new JsonObject();
+        if (type == "containerReference")
+        {
+            result["type"] = "container_reference";
+            result["container_id"] = environment["containerId"]?.DeepClone();
+            return result;
+        }
+
+        if (type == "containerAuto")
+        {
+            result["type"] = "container_auto";
+            if (environment["fileIds"] is { } fileIds)
+            {
+                result["file_ids"] = fileIds.DeepClone();
+            }
+
+            if (environment["memoryLimit"] is { } memoryLimit)
+            {
+                result["memory_limit"] = memoryLimit.DeepClone();
+            }
+
+            if (environment["networkPolicy"] is JsonObject policy)
+            {
+                if (policy["type"]?.GetValue<string>() == "disabled")
+                {
+                    result["network_policy"] = new JsonObject { ["type"] = "disabled" };
+                }
+                else
+                {
+                    var allowlist = new JsonObject
+                    {
+                        ["type"] = "allowlist",
+                        ["allowed_domains"] = policy["allowedDomains"]?.DeepClone(),
+                    };
+                    if (policy["domainSecrets"] is { } secrets)
+                    {
+                        allowlist["domain_secrets"] = secrets.DeepClone();
+                    }
+
+                    result["network_policy"] = allowlist;
+                }
+            }
+
+            return result;
+        }
+
+        result["type"] = "local";
+        if (environment["skills"] is { } localSkills)
+        {
+            result["skills"] = localSkills.DeepClone();
+        }
+
+        return result;
     }
 
     private static HashSet<string>? OutputSchemaToolNames(IReadOnlyList<LanguageModelTool>? tools)
@@ -476,7 +710,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             body["tools"] = prepared.Tools;
         }
 
-        var choice = MapChoice(options.ToolChoice);
+        var choice = prepared.ToolChoice;
         if (choice != null)
         {
             body["tool_choice"] = choice;
@@ -1004,7 +1238,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return item;
     }
 
-    private static JsonNode? MapChoice(ToolChoice? toolChoice)
+    private static JsonNode? MapChoice(ToolChoice? toolChoice, ISet<string>? customToolNames = null)
     {
         if (toolChoice == null)
         {
@@ -1018,6 +1252,25 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         if (toolChoice is ToolChoice.NamedChoice named)
         {
+            switch (named.ToolName)
+            {
+                case "code_interpreter":
+                case "file_search":
+                case "image_generation":
+                case "web_search_preview":
+                case "web_search":
+                case "mcp":
+                case "apply_patch":
+                case "computer":
+                case "programmatic_tool_calling":
+                    return new JsonObject { ["type"] = named.ToolName };
+            }
+
+            if (customToolNames != null && customToolNames.Contains(named.ToolName))
+            {
+                return new JsonObject { ["type"] = "custom", ["name"] = named.ToolName };
+            }
+
             return new JsonObject { ["type"] = "function", ["name"] = named.ToolName };
         }
 
