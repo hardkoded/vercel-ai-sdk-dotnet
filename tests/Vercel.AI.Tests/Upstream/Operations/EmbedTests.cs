@@ -143,7 +143,7 @@ public sealed class EmbedTests
         });
         Assert.Equal("call-1", seen!.CallId);
         Assert.Equal("ai.embed", seen.OperationId);
-        Assert.Equal("value", seen.Value);
+        Assert.Equal("value", seen.Value.One);
         Assert.Equal(0, seen.MaxRetries);
         Assert.Equal("test-provider", seen.Provider);
     }
@@ -235,7 +235,7 @@ public sealed class EmbedTests
         await Embed.EmbedAsync(new EmbedRequest { Model = new EmbedFake(), Value = "value", GenerateCallId = () => "call-1", OnEnd = item => { seen = item; return Task.CompletedTask; } });
         Assert.Equal("call-1", seen!.CallId);
         Assert.Equal("ai.embed", seen.OperationId);
-        Assert.Equal("value", seen.Value);
+        Assert.Equal("value", seen.Value.One);
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public sealed class EmbedTests
     {
         EmbedEndEvent? seen = null;
         await Embed.EmbedAsync(new EmbedRequest { Model = new EmbedFake { Respond = _ => Vector(new[] { 0.5 }, 7) }, Value = "value", OnEnd = item => { seen = item; return Task.CompletedTask; } });
-        Assert.Equal(new[] { 0.5 }, (double[])seen!.Embedding);
+        Assert.Equal(new[] { 0.5 }, seen!.Embedding.One!);
         Assert.Equal((double?)7, seen.Usage.Tokens);
     }
 
@@ -280,7 +280,7 @@ public sealed class EmbedTests
         EmbedEndEvent? seen = null;
         var response = new ProviderResponse(id: "rid");
         await Embed.EmbedAsync(new EmbedRequest { Model = new EmbedFake { Respond = _ => new EmbeddingModelResponse(new[] { new[] { 1.0 } }, 1, response: response) }, Value = "value", OnEnd = item => { seen = item; return Task.CompletedTask; } });
-        Assert.Equal("rid", ((ProviderResponse)seen!.Response!).Id);
+        Assert.Equal("rid", seen!.Response!.One!.Id);
     }
 
     [Fact]
@@ -712,7 +712,7 @@ public sealed class EmbedTests
         await EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = new EmbedFake(), Values = values, GenerateCallId = () => "many", OnStart = item => { seen = item; return Task.CompletedTask; } });
         Assert.Equal("many", seen!.CallId);
         Assert.Equal("ai.embedMany", seen.OperationId);
-        Assert.Same(values, seen.Value);
+        Assert.Same(values, seen.Value.Many);
     }
 
     [Fact]
@@ -798,8 +798,8 @@ public sealed class EmbedTests
     {
         EmbedEndEvent? seen = null;
         await EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = new EmbedFake { MaxEmbeddingsPerCall = 1 }, Values = new[] { "a", "b" }, MaxRetries = 0, OnEnd = item => { seen = item; return Task.CompletedTask; } });
-        Assert.Equal(2, ((IReadOnlyList<double[]>)seen!.Embedding).Count);
-        Assert.Equal(2, ((IReadOnlyList<ProviderResponse?>)seen.Response!).Count);
+        Assert.Equal(2, seen!.Embedding.Many!.Count);
+        Assert.Equal(2, seen.Response!.Many!.Count);
     }
 
     [Fact]
@@ -809,7 +809,7 @@ public sealed class EmbedTests
         EmbedEndEvent? seen = null;
         await EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = new EmbedFake { Respond = _ => Vector(new[] { 3.0 }, 9) }, Values = new[] { "a" }, OnEnd = item => { seen = item; return Task.CompletedTask; } });
         Assert.Equal((double?)9, seen!.Usage.Tokens);
-        Assert.Equal(3, ((IReadOnlyList<double[]>)seen.Embedding)[0][0]);
+        Assert.Equal(3, seen.Embedding.Many![0][0]);
     }
 
     [Fact]
@@ -827,7 +827,7 @@ public sealed class EmbedTests
     {
         EmbedEndEvent? seen = null;
         await EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = new EmbedFake { Respond = _ => new EmbeddingModelResponse(new[] { new[] { 1.0 } }, 1, response: new ProviderResponse(id: "body")) }, Values = new[] { "a" }, OnEnd = item => { seen = item; return Task.CompletedTask; } });
-        Assert.Equal("body", ((IReadOnlyList<ProviderResponse?>)seen!.Response!)[0]!.Id);
+        Assert.Equal("body", seen!.Response!.Many![0]!.Id);
     }
 
     [Fact]

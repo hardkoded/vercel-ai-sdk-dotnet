@@ -103,7 +103,7 @@ public interface IEmbeddingCaller
 public sealed class EmbedStartEvent
 {
     /// <summary>Creates a start event.</summary>
-    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
+    public EmbedStartEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, EmbedEventValue<string, IReadOnlyList<string>> value, int maxRetries, IReadOnlyDictionary<string, string> headers, JsonElement? providerOptions, int? dimensions = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -133,7 +133,7 @@ public sealed class EmbedStartEvent
     public string ModelId { get; }
 
     /// <summary>A string for embed, or the value list for embedMany.</summary>
-    public object Value { get; }
+    public EmbedEventValue<string, IReadOnlyList<string>> Value { get; }
 
     /// <summary>Requested output dimensions, when specified.</summary>
     public int? Dimensions { get; }
@@ -152,7 +152,7 @@ public sealed class EmbedStartEvent
 public sealed class EmbedEndEvent
 {
     /// <summary>Creates an end event.</summary>
-    public EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object value, object embedding, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, object? response)
+    public EmbedEndEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, EmbedEventValue<string, IReadOnlyList<string>> value, EmbedEventValue<double[], IReadOnlyList<double[]>> embedding, OperationUsage usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>> response)
     {
         CallId = callId;
         OperationId = operationId;
@@ -183,10 +183,10 @@ public sealed class EmbedEndEvent
     public string ModelId { get; }
 
     /// <summary>Embedded value or values.</summary>
-    public object Value { get; }
+    public EmbedEventValue<string, IReadOnlyList<string>> Value { get; }
 
     /// <summary>One vector, or the vector list for embedMany.</summary>
-    public object Embedding { get; }
+    public EmbedEventValue<double[], IReadOnlyList<double[]>> Embedding { get; }
 
     /// <summary>Token usage.</summary>
     public OperationUsage Usage { get; }
@@ -198,7 +198,7 @@ public sealed class EmbedEndEvent
     public JsonElement? ProviderMetadata { get; }
 
     /// <summary>One response for embed, or the response list for embedMany.</summary>
-    public object? Response { get; }
+    public EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>> Response { get; }
 }
 
 /// <summary>Telemetry callbacks for an embedding operation.</summary>
@@ -420,7 +420,7 @@ public static class Embed
         var context = request.RuntimeContext ?? EmptyContext;
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
-        var start = new EmbedStartEvent(callId, "ai.embed", context, model.Provider, model.ModelId, request.Value, maxRetries, headers, request.ProviderOptions, request.Dimensions);
+        var start = new EmbedStartEvent(callId, "ai.embed", context, model.Provider, model.ModelId, EmbedEventValue<string, IReadOnlyList<string>>.FromOne(request.Value), maxRetries, headers, request.ProviderOptions, request.Dimensions);
         await OperationCallbacks.NotifyAsync(start, onStart, TelemetryStart(telemetry)).ConfigureAwait(false);
         try
         {
@@ -442,7 +442,7 @@ public static class Embed
             var warnings = outcome.Warnings ?? Array.Empty<OperationWarning>();
             WarningLog.Write(warnings, model.Provider, model.ModelId);
             var resultUsage = new OperationUsage(tokens: outcome.Tokens);
-            var end = new EmbedEndEvent(callId, "ai.embed", context, model.Provider, model.ModelId, request.Value, outcome.Embeddings[0], resultUsage, warnings, outcome.ProviderMetadata, outcome.Response);
+            var end = new EmbedEndEvent(callId, "ai.embed", context, model.Provider, model.ModelId, EmbedEventValue<string, IReadOnlyList<string>>.FromOne(request.Value), EmbedEventValue<double[], IReadOnlyList<double[]>>.FromOne(outcome.Embeddings[0]), resultUsage, warnings, outcome.ProviderMetadata, EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromOne(outcome.Response));
             await OperationCallbacks.NotifyAsync(end, onEnd, TelemetryEnd(telemetry)).ConfigureAwait(false);
             return new EmbedResult(request.Value, outcome.Embeddings[0], resultUsage, warnings, outcome.ProviderMetadata, outcome.Response);
         }
@@ -562,7 +562,7 @@ public static class EmbedMany
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
         var values = request.Values ?? Array.Empty<string>();
-        var start = new EmbedStartEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, maxRetries, headers, request.ProviderOptions, request.Dimensions);
+        var start = new EmbedStartEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values), maxRetries, headers, request.ProviderOptions, request.Dimensions);
         await OperationCallbacks.NotifyAsync(start, onStart, Embed.TelemetryStart(telemetry)).ConfigureAwait(false);
         try
         {
@@ -576,7 +576,7 @@ public static class EmbedMany
                 WarningLog.Write(single.Warnings, model.Provider, model.ModelId);
                 var usage = new OperationUsage(tokens: single.Tokens);
                 var singleResponses = new ProviderResponse?[] { single.Response };
-                var end = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, singleResponses);
+                var end = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values), EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(single.Embeddings), usage, single.Warnings, single.ProviderMetadata, EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromMany(singleResponses));
                 await OperationCallbacks.NotifyAsync(end, onEnd, Embed.TelemetryEnd(telemetry)).ConfigureAwait(false);
                 return new EmbedManyResult(values, single.Embeddings, usage, single.Warnings, single.ProviderMetadata, singleResponses);
             }
@@ -613,7 +613,7 @@ public static class EmbedMany
 
             WarningLog.Write(warnings, model.Provider, model.ModelId);
             var total = new OperationUsage(tokens: tokens);
-            var endEvent = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, values, embeddings, total, warnings, metadata, responses);
+            var endEvent = new EmbedEndEvent(callId, "ai.embedMany", context, model.Provider, model.ModelId, EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values), EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(embeddings), total, warnings, metadata, EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromMany(responses));
             await OperationCallbacks.NotifyAsync(endEvent, onEnd, Embed.TelemetryEnd(telemetry)).ConfigureAwait(false);
             return new EmbedManyResult(values, embeddings, total, warnings, metadata, responses);
         }

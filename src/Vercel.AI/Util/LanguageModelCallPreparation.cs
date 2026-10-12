@@ -32,7 +32,7 @@ public sealed class LanguageModelCallOptionsInput
     public IReadOnlyList<string>? StopSequences { get; set; }
 
     /// <summary>Provider reasoning options.</summary>
-    public object? Reasoning { get; set; }
+    public string? Reasoning { get; set; }
 }
 
 /// <summary>Validates language-model call options. <see cref="PrepareCallSettings"/> is the deprecated alias.</summary>

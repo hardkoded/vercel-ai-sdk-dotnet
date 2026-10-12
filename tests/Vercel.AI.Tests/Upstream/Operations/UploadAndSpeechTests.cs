@@ -17,7 +17,7 @@ public sealed class UploadAndSpeechTests
     {
         var store = new RecordingFiles();
         var data = new byte[] { 1, 2, 3 };
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new UploadData("data", data), MediaType = "application/octet-stream" });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new UploadData("data", data), MediaType = "application/octet-stream" });
         Assert.Equal("data", store.Call!.Data.Type);
         Assert.Same(data, store.Call.Data.Data);
     }
@@ -27,7 +27,7 @@ public sealed class UploadAndSpeechTests
     public async Task Passes_tagged_base64_string_data()
     {
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new UploadData("data", "aGVsbG8="), MediaType = "text/plain" });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new UploadData("data", "aGVsbG8="), MediaType = "text/plain" });
         Assert.Equal("aGVsbG8=", store.Call!.Data.Data);
     }
 
@@ -36,7 +36,7 @@ public sealed class UploadAndSpeechTests
     public async Task Defaults_text_uploads_to_text_plain()
     {
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new UploadData("text", "hello") });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new UploadData("text", "hello") });
         Assert.Equal("text/plain", store.Call!.MediaType);
     }
 
@@ -45,7 +45,7 @@ public sealed class UploadAndSpeechTests
     public async Task Defaults_stream_uploads_to_octet_stream()
     {
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new UploadData("stream", new UploadStream()) });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new UploadData("stream", new UploadStream()) });
         Assert.Equal("application/octet-stream", store.Call!.MediaType);
     }
 
@@ -54,7 +54,7 @@ public sealed class UploadAndSpeechTests
     public async Task Cancels_the_stream_when_the_provider_has_no_files_api()
     {
         var stream = new UploadStream();
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = new EmptyProvider(), Data = new UploadData("stream", stream) }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromProvider(new EmptyProvider()), Data = new UploadData("stream", stream) }));
         Assert.Contains("files()", error.Message);
         Assert.Same(error, stream.CancelError);
     }
@@ -64,7 +64,7 @@ public sealed class UploadAndSpeechTests
     public async Task Cancels_the_stream_when_the_upload_rejects()
     {
         var stream = new UploadStream();
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = new RecordingFiles { Fail = true }, Data = new UploadData("stream", stream) }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(new RecordingFiles { Fail = true }), Data = new UploadData("stream", stream) }));
         Assert.Equal("upload failed", error.Message);
         Assert.Same(error, stream.CancelError);
     }
@@ -75,7 +75,7 @@ public sealed class UploadAndSpeechTests
     {
         using var source = new CancellationTokenSource();
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream", CancellationToken = source.Token, Headers = new Dictionary<string, string> { ["x-test"] = "1" } });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream", CancellationToken = source.Token, Headers = new Dictionary<string, string> { ["x-test"] = "1" } });
         Assert.Equal(source.Token, store.Call!.CancellationToken);
         Assert.Equal("1", store.Call.Headers!["x-test"]);
     }
@@ -87,7 +87,7 @@ public sealed class UploadAndSpeechTests
         var created = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc);
         var expires = created.AddDays(1);
         var store = new RecordingFiles { Result = new UploadFileModelResult(new ProviderFileReference("file-1"), byteSize: 12, createdAt: created, expiresAt: expires) };
-        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Equal((long?)12, result.ByteSize);
         Assert.Equal((DateTime?)created, result.CreatedAt);
         Assert.Equal((DateTime?)expires, result.ExpiresAt);
@@ -99,7 +99,7 @@ public sealed class UploadAndSpeechTests
     {
         var store = new RecordingFiles();
         var options = OperationJson.Parse("{\"openai\":{\"purpose\":\"assistants\"}}");
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream", ProviderOptions = options, ProviderOptionsSpecified = true });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream", ProviderOptions = options, ProviderOptionsSpecified = true });
         Assert.Equal("assistants", store.Call!.ProviderOptions!.Value.GetProperty("openai").GetProperty("purpose").GetString());
     }
 
@@ -108,7 +108,7 @@ public sealed class UploadAndSpeechTests
     public async Task Leaves_provider_options_unset_when_omitted()
     {
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Null(store.Call!.ProviderOptions);
     }
 
@@ -117,7 +117,7 @@ public sealed class UploadAndSpeechTests
     public async Task Passes_the_filename()
     {
         var store = new RecordingFiles();
-        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream", Filename = "notes.txt" });
+        await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream", Filename = "notes.txt" });
         Assert.Equal("notes.txt", store.Call!.Filename);
     }
 
@@ -126,7 +126,7 @@ public sealed class UploadAndSpeechTests
     public async Task Passes_provider_warnings()
     {
         var store = new RecordingFiles { Result = new UploadFileModelResult(new ProviderFileReference("file-1"), warnings: new[] { OperationWarning.Other("check") }) };
-        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = store, Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Equal("check", result.Warnings[0].Message);
     }
 
@@ -135,7 +135,7 @@ public sealed class UploadAndSpeechTests
     public async Task Resolves_the_files_api_from_the_provider()
     {
         var store = new RecordingFiles();
-        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = new FilesProvider(store), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromProvider(new FilesProvider(store)), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Equal("file-1", result.ProviderReference.Id);
     }
 
@@ -143,7 +143,7 @@ public sealed class UploadAndSpeechTests
     [UpstreamTest("packages/ai/src/upload-file/upload-file.test.ts::uploadFile::should throw when ProviderV4 has no files() method", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_the_provider_has_no_files_api()
     {
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = new EmptyProvider(), Data = new byte[] { 1 } }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromProvider(new EmptyProvider()), Data = new byte[] { 1 } }));
         Assert.Equal("The provider does not support file uploads. Make sure it exposes a files() method.", error.Message);
     }
 
@@ -151,7 +151,7 @@ public sealed class UploadAndSpeechTests
     [UpstreamTest("packages/ai/src/upload-file/upload-file.test.ts::uploadFile::should return result without providerMetadata when not provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Omits_provider_metadata_when_the_provider_does()
     {
-        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = new RecordingFiles(), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
+        var result = await UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<IFileStore, IFileStoreProvider>.FromApi(new RecordingFiles()), Data = new byte[] { 1 }, MediaType = "application/octet-stream" });
         Assert.Null(result.ProviderMetadata);
     }
 
@@ -160,7 +160,7 @@ public sealed class UploadAndSpeechTests
     public async Task Delegates_skill_upload_to_the_skills_api()
     {
         var store = new RecordingSkills();
-        await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = store, Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) }, DisplayTitle = "Demo" });
+        await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = ApiOrProvider<ISkillStore, ISkillStoreProvider>.FromApi(store), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) }, DisplayTitle = "Demo" });
         Assert.Equal("Demo", store.Call!.DisplayTitle);
         Assert.Equal("data", store.Call.Files[0].Data.Type);
     }
@@ -170,7 +170,7 @@ public sealed class UploadAndSpeechTests
     public async Task Returns_the_skill_reference_and_warnings()
     {
         var store = new RecordingSkills { Result = new UploadSkillResult(new ProviderFileReference("skill-1"), new[] { OperationWarning.Other("named") }) };
-        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = store, Files = new[] { new SkillFile("SKILL.md", "hello") } });
+        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = ApiOrProvider<ISkillStore, ISkillStoreProvider>.FromApi(store), Files = new[] { new SkillFile("SKILL.md", "hello") } });
         Assert.Equal("skill-1", result.ProviderReference.Id);
         Assert.Equal("named", result.Warnings[0].Message);
     }
@@ -180,7 +180,7 @@ public sealed class UploadAndSpeechTests
     public async Task Resolves_the_skills_api_from_the_provider()
     {
         var store = new RecordingSkills();
-        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = new SkillsProvider(store), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) } });
+        var result = await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = ApiOrProvider<ISkillStore, ISkillStoreProvider>.FromProvider(new SkillsProvider(store)), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) } });
         Assert.Equal("skill-1", result.ProviderReference.Id);
     }
 
@@ -188,7 +188,7 @@ public sealed class UploadAndSpeechTests
     [UpstreamTest("packages/ai/src/upload-skill/upload-skill.test.ts::uploadSkill::should throw when ProviderV4 has no skills() method", Coverage = UpstreamCoverage.Covered)]
     public async Task Throws_when_the_provider_has_no_skills_api()
     {
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = new EmptyProvider(), Files = Array.Empty<SkillFile>() }));
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = ApiOrProvider<ISkillStore, ISkillStoreProvider>.FromProvider(new EmptyProvider()), Files = Array.Empty<SkillFile>() }));
         Assert.Equal("The provider does not support skills. Make sure it exposes a skills() method.", error.Message);
     }
 
@@ -198,7 +198,7 @@ public sealed class UploadAndSpeechTests
     {
         var store = new RecordingSkills();
         var options = OperationJson.Parse("{\"anthropic\":{\"display\":true}}");
-        await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = store, Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) }, ProviderOptions = options });
+        await UploadSkill.UploadSkillAsync(new UploadSkillRequest { Api = ApiOrProvider<ISkillStore, ISkillStoreProvider>.FromApi(store), Files = new[] { new SkillFile("SKILL.md", new byte[] { 1 }) }, ProviderOptions = options });
         Assert.True(store.Call!.ProviderOptions!.Value.GetProperty("anthropic").GetProperty("display").GetBoolean());
     }
 
