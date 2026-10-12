@@ -78,7 +78,7 @@ The model validates only the extension discriminator fields. Validate the other 
 Extension delegates cannot cross a workflow boundary. `OpenResponsesLanguageModel.Serialize()` throws a `SerializationError` when extensions are registered. Create the provider inside the workflow step.
 - Perplexity language generation posts to `{base}/v1/agent` (the Agent API). Preset ids are `fast`, `low`, `medium`, `high`, and `xhigh`. Any other id is sent as an Agent API model id. Legacy Sonar model ids are not aliased, and Sonar provider options are not translated. Embeddings stay on the OpenAI-compatible embeddings route. Sonar PDF input, video input, and image or video results have no Agent API equivalent.
 
-Set `LanguageModelCallOptions.JsonResponse` to ask for JSON without a schema (upstream `responseFormat: { type: 'json' }`). OpenAI, OpenAI-compatible, and Open Responses providers send `json_object`, and the Gateway sends `json`. `JsonSchema` wins when both are set.
+Set `LanguageModelCallOptions.JsonResponse` to ask for JSON without a schema (upstream `responseFormat: { type: 'json' }`). OpenAI, OpenAI-compatible, Open Responses, Cohere, and xAI providers send `json_object`, Google sends `responseMimeType: application/json`, and the Gateway sends `json`. Anthropic ignores it and warns that the JSON response format requires a schema. Amazon Bedrock and Hugging Face also ignore it, as upstream does. `JsonSchema` wins when both are set.
 
 The portable `Reasoning` option on `GenerateTextOptions` and `LanguageModelCallOptions` accepts `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`. Budget-based reasoning uses 95 percent of the output budget for `max`. Providers with a lower ceiling coerce `max` and return a `compatibility` warning:
 

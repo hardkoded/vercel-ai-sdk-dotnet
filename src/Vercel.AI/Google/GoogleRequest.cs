@@ -170,6 +170,11 @@ public static class GoogleRequest
         }
 
         GoogleJson.Set(config, "seed", options.Seed);
+        if (options.JsonResponse && options.JsonSchema == null)
+        {
+            config["responseMimeType"] = "application/json";
+        }
+
         if (options.JsonSchema != null && responseTool == null)
         {
             config["responseMimeType"] = "application/json";

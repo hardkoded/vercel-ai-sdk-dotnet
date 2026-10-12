@@ -235,19 +235,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             if (temperature != null)
             {
                 temperature = null;
-                warnings.Add(new CallWarning("unsupported", "temperature is not supported by " + ModelId + " and will be ignored"));
+                warnings.Add(new CallWarning("unsupported", "temperature", "temperature is not supported by " + ModelId + " and will be ignored"));
             }
 
             if (topK != null)
             {
                 topK = null;
-                warnings.Add(new CallWarning("unsupported", "topK is not supported by " + ModelId + " and will be ignored"));
+                warnings.Add(new CallWarning("unsupported", "topK", "topK is not supported by " + ModelId + " and will be ignored"));
             }
 
             if (topP != null)
             {
                 topP = null;
-                warnings.Add(new CallWarning("unsupported", "topP is not supported by " + ModelId + " and will be ignored"));
+                warnings.Add(new CallWarning("unsupported", "topP", "topP is not supported by " + ModelId + " and will be ignored"));
             }
         }
 
@@ -260,12 +260,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         {
             if (temperature > 1)
             {
-                warnings.Add(new CallWarning("unsupported", FormatNumber(temperature.Value) + " exceeds bedrock maximum of 1.0. clamped to 1.0"));
+                warnings.Add(new CallWarning("unsupported", "temperature", FormatNumber(temperature.Value) + " exceeds bedrock maximum of 1.0. clamped to 1.0"));
                 temperature = 1;
             }
             else if (temperature < 0)
             {
-                warnings.Add(new CallWarning("unsupported", FormatNumber(temperature.Value) + " is below bedrock minimum of 0. clamped to 0"));
+                warnings.Add(new CallWarning("unsupported", "temperature", FormatNumber(temperature.Value) + " is below bedrock minimum of 0. clamped to 0"));
                 temperature = 0;
             }
         }
@@ -346,12 +346,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         {
             if (reasoningConfig?.BudgetTokens != null)
             {
-                warnings.Add(new CallWarning("unsupported", "budgetTokens applies only to Anthropic models on Bedrock and will be ignored for this model."));
+                warnings.Add(new CallWarning("unsupported", "budgetTokens", "budgetTokens applies only to Anthropic models on Bedrock and will be ignored for this model."));
             }
 
             if (thinkingType == "adaptive")
             {
-                warnings.Add(new CallWarning("unsupported", "adaptive thinking type applies only to Anthropic models on Bedrock."));
+                warnings.Add(new CallWarning("unsupported", "adaptive thinking", "adaptive thinking type applies only to Anthropic models on Bedrock."));
             }
         }
 
@@ -415,19 +415,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             if (temperature != null)
             {
                 temperature = null;
-                warnings.Add(new CallWarning("unsupported", "temperature is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "temperature", "temperature is not supported when thinking is enabled"));
             }
 
             if (topP != null)
             {
                 topP = null;
-                warnings.Add(new CallWarning("unsupported", "topP is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "topP", "topP is not supported when thinking is enabled"));
             }
 
             if (topK != null)
             {
                 topK = null;
-                warnings.Add(new CallWarning("unsupported", "topK is not supported when thinking is enabled"));
+                warnings.Add(new CallWarning("unsupported", "topK", "topK is not supported when thinking is enabled"));
             }
         }
 
@@ -437,19 +437,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             if (!isOpenAiGptOssModel && temperature != null)
             {
                 temperature = null;
-                warnings.Add(new CallWarning("unsupported", "temperature is not supported by this OpenAI model on the Converse API"));
+                warnings.Add(new CallWarning("unsupported", "temperature", "temperature is not supported by this OpenAI model on the Converse API"));
             }
 
             if (!isOpenAiGptOssModel && topP != null)
             {
                 topP = null;
-                warnings.Add(new CallWarning("unsupported", "topP is not supported by this OpenAI model on the Converse API"));
+                warnings.Add(new CallWarning("unsupported", "topP", "topP is not supported by this OpenAI model on the Converse API"));
             }
 
             if (stopSequences != null)
             {
                 stopSequences = null;
-                warnings.Add(new CallWarning("unsupported", "stopSequences is not supported by this OpenAI model on the Converse API"));
+                warnings.Add(new CallWarning("unsupported", "stopSequences", "stopSequences is not supported by this OpenAI model on the Converse API"));
             }
         }
 
@@ -595,10 +595,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             switch (warning)
             {
                 case UnsupportedWarning unsupported:
-                    warnings.Add(new CallWarning("unsupported", unsupported.Details ?? unsupported.Feature));
+                    warnings.Add(new CallWarning("unsupported", unsupported.Feature, unsupported.Details));
                     break;
                 case CompatibilityWarning compatibility:
-                    warnings.Add(new CallWarning("compatibility", compatibility.Details ?? compatibility.Feature));
+                    warnings.Add(new CallWarning("compatibility", compatibility.Feature, compatibility.Details));
                     break;
             }
         }

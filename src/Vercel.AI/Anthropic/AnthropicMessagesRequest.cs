@@ -94,7 +94,7 @@ public static class AnthropicMessagesRequest
             temperature = 0;
         }
 
-        if (options.JsonSchema == null && options.JsonSchemaName != null)
+        if (options.JsonSchema == null && (options.JsonResponse || options.JsonSchemaName != null))
         {
             warnings.Add(new AnthropicWarning("unsupported", "responseFormat", "JSON response format requires a schema. The response format is ignored."));
         }

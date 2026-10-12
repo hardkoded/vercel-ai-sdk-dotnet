@@ -138,7 +138,7 @@ public sealed class CohereLanguageModel : ILanguageModel
             ["stop_sequences"] = options.StopSequences == null ? null : new JsonArray(options.StopSequences.Select(stop => (JsonNode?)stop).ToArray()),
             ["response_format"] = options.JsonSchema is { } schema
                 ? new JsonObject { ["type"] = "json_object", ["json_schema"] = JsonNode.Parse(schema.GetRawText()) }
-                : null,
+                : options.JsonResponse ? new JsonObject { ["type"] = "json_object" } : null,
             ["messages"] = Messages(options.Prompt, documents),
         };
         AddTools(body, options);

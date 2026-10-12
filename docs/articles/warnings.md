@@ -17,6 +17,10 @@ LogWarnings.Logger = (Action<LogWarningsOptions>)(options =>
 
 Set `LogWarnings.Logger` back to `null` to use the default logger.
 
+## Language model warnings
+
+A language model call returns its warnings in `LanguageModelGenerateResult.Warnings` as `CallWarning` values. `Type` is the category, such as `unsupported` or `compatibility`. For those two types, `Feature` names the setting or feature, for example `temperature`, and `Message` holds the details. `Feature` is `null` when a provider does not set it yet.
+
 ## Deprecation warnings
 
 The default logger emits each deprecation code once. Its type is `DeprecationWarning`, and every message carries a stable `AISDK_DEP_*` code. A provider deprecation is scoped to the provider, so the same setting from two models of one provider prints once.
