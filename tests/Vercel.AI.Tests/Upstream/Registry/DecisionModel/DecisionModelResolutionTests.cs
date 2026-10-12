@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
-using Vercel.AI.Provider;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.Registry.DecisionModel.DecisionModelSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
@@ -97,7 +96,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
             gatewayCalls++;
             return GatewayProvider.Create();
         };
-        DecisionModels.DefaultProvider = new PlainProvider();
+        DecisionModels.DefaultProvider = new MockProvider();
         var error = Assert.Throws<InvalidOperationException>(() => DecisionModels.Resolve("typesafe-ai/jev"));
         Assert.Equal("The default provider does not support decision models.", error.Message);
         Assert.Equal(0, gatewayCalls);
@@ -129,7 +128,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     public void Preserves_errors_thrown_by_provider_factories()
     {
         var error = new NoSuchModelError("missing", "decisionModel");
-        DecisionModels.DefaultProvider = new FactoryProvider(_ => throw error);
+        DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => throw error);
         Assert.Same(error, Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve("missing")));
     }
 
@@ -137,7 +136,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     [UpstreamTest(Prefix + "reports missing models returned by the default provider", Coverage = UpstreamCoverage.Covered)]
     public void Reports_missing_models_returned_by_the_default_provider()
     {
-        DecisionModels.DefaultProvider = new FactoryProvider(_ => null);
+        DecisionModels.DefaultProvider = new DecisionFactoryProvider(_ => null);
         var error = Assert.Throws<NoSuchModelError>(() => DecisionModels.Resolve("missing"));
         Assert.Equal("missing", error.ModelId);
         Assert.Equal("decisionModel", error.ModelType);
@@ -149,7 +148,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     [UpstreamTest(Prefix + "decides with %s model resolution and forwards options in one call", Coverage = UpstreamCoverage.Covered)]
     public async Task Decides_with_model_resolution_and_forwards_options_in_one_call(string resolution)
     {
-        var mock = new DecisionMockModel(_ => Task.FromResult(RouteResult()));
+        var mock = new DecisionMockModel { OnDecide = _ => RouteResult() };
         var provider = new CustomProvider().AddDecisionModel("route", mock);
         DecisionModels.DefaultProvider = provider;
         var questions = RouteQuestions();
@@ -170,7 +169,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         Assert.Equal("billing", result.Answers["route"].Choice);
         Assert.Equal(12, result.Usage.TotalTokens);
         var call = Assert.Single(mock.Calls);
-        Assert.Same(questions["route"], call.Questions["route"]);
+        Assert.Same(questions, call.Questions);
         Assert.Equal(source.Token, call.CancellationToken);
         Assert.Equal("header", call.Headers["x-test"]);
         Assert.Equal("""{"test":{"flag":true}}""", call.ProviderOptions.GetRawText());
@@ -180,7 +179,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     [UpstreamTest(Prefix + "rejects unsupported questions before I/O after resolving a string", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_unsupported_questions_before_IO_after_resolving_a_string()
     {
-        var mock = new DecisionMockModel(_ => throw new InvalidOperationException("unreachable"), new[] { "choice" });
+        var mock = new DecisionMockModel { OnDecide = _ => throw new InvalidOperationException("unreachable"), SupportedQuestionTypes = new[] { "choice" } };
         DecisionModels.DefaultProvider = new CustomProvider().AddDecisionModel("choice", mock);
         await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest
         {

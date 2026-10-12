@@ -23,7 +23,7 @@ public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
         var calls = 0;
         var provider = new CustomProvider
         {
-            FallbackProvider = new FactoryProvider(_ =>
+            FallbackProvider = new DecisionFactoryProvider(_ =>
             {
                 calls++;
                 return null;
@@ -62,15 +62,17 @@ public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
         var error = Assert.Throws<NoSuchModelError>(() => provider.DecisionModel(modelId));
         Assert.Equal(modelId, error.ModelId);
         Assert.Equal("decisionModel", error.ModelType);
+        Assert.Equal("No such decisionModel: " + modelId, error.Message);
     }
 
     [Fact]
     [UpstreamTest(Prefix + "reports an unavailable fallback model", Coverage = UpstreamCoverage.Covered)]
     public void Reports_an_unavailable_fallback_model()
     {
-        var provider = new CustomProvider { FallbackProvider = new FactoryProvider(_ => null) };
+        var provider = new CustomProvider { FallbackProvider = new DecisionFactoryProvider(_ => null) };
         var error = Assert.Throws<NoSuchModelError>(() => provider.DecisionModel("missing"));
         Assert.Equal("missing", error.ModelId);
         Assert.Equal("decisionModel", error.ModelType);
+        Assert.Equal("No such decisionModel: missing", error.Message);
     }
 }

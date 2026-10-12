@@ -125,6 +125,17 @@ public interface IEvaluationCaller
     Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Deprecated provider factory for decision models. Implement <see cref="IDecisionProvider"/> instead. A provider that
+/// implements both is asked through <see cref="IDecisionProvider"/> only.
+/// </summary>
+[Obsolete("Implement IDecisionProvider instead.")]
+public interface IEvaluationProvider
+{
+    /// <summary>Returns a decision model, or null when the provider has no such model.</summary>
+    IEvaluationCaller? EvaluationModel(string modelId);
+}
+
 /// <summary>Deprecated alias of <see cref="DecisionUnsupportedQuestionTypeException"/>.</summary>
 [Obsolete("Use DecisionUnsupportedQuestionTypeException instead.")]
 public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsupportedQuestionTypeException

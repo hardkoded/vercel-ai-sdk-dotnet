@@ -14,7 +14,6 @@ public sealed class RegistryUpstreamTests
 {
     private const string Registry = "packages/ai/src/registry/provider-registry.test.ts::";
     private const string Custom = "packages/ai/src/registry/custom-provider.test.ts::";
-    private const string Evaluation = "packages/ai/src/registry/decision-model.test.ts::";
 
     [Theory]
     [InlineData("embeddingModel")]
@@ -314,62 +313,6 @@ public sealed class RegistryUpstreamTests
         Assert.Throws<AiSdkException>(() => new CustomProvider().SkillStore());
     }
 
-
-    [Fact]
-    [UpstreamTest(Evaluation + "decision registry::preserves model identity, receiver, and colons inside model IDs", Coverage = UpstreamCoverage.Covered)]
-    public void Registry_evaluation_keeps_model_identity_and_colons()
-    {
-        var model = new FakeModel("model:version");
-        var provider = new StubProvider(model);
-        var registry = new ProviderRegistry();
-        registry.Register("provider", provider);
-        Assert.Same(model, registry.EvaluationModel("provider:model:version"));
-        Assert.Equal(new[] { "model:version" }, provider.Requests);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "decision registry::preserves legacy provider extensions and custom separators", Coverage = UpstreamCoverage.Partial, Note = "Checks the multi-character separator. .NET has no ProviderV3 to adapt.")]
-    public void Registry_evaluation_splits_on_a_custom_separator()
-    {
-        var model = new FakeModel("model::version");
-        var provider = new StubProvider(model);
-        var registry = new ProviderRegistry("::");
-        registry.Register("provider", provider);
-        Assert.Same(model, registry.EvaluationModel("provider::model::version"));
-        Assert.Equal(new[] { "model::version" }, provider.Requests);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "decision registry::identifies unknown providers with the existing marker-based error", Coverage = UpstreamCoverage.Covered)]
-    public void Registry_evaluation_marks_unknown_providers()
-    {
-        var registry = new ProviderRegistry();
-        registry.Register("known", new StubProvider(null));
-        var error = Assert.Throws<NoSuchProviderError>(() => registry.EvaluationModel("missing:model"));
-        Assert.True(NoSuchProviderError.IsInstance(error));
-        Assert.True(NoSuchModelError.IsInstance(error));
-        Assert.Equal("missing", error.ProviderId);
-        Assert.Equal("evaluationModel", error.ModelType);
-        Assert.Equal(new[] { "known" }, error.AvailableProviders);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "decision registry::reports malformed IDs", Coverage = UpstreamCoverage.Covered)]
-    public void Registry_evaluation_reports_malformed_ids()
-    {
-        Assert.Contains("must be in the format \"providerId:modelId\"", Assert.Throws<NoSuchModelError>(() => new ProviderRegistry().EvaluationModel("model")).Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "decision registry::reports missing decision capabilities or models", Coverage = UpstreamCoverage.Partial, Note = "Checks a provider that returns no model. A provider without evaluation support throws its own AiSdkException.")]
-    public void Registry_evaluation_reports_a_provider_without_the_model()
-    {
-        var registry = new ProviderRegistry();
-        registry.Register("provider", new StubProvider(null));
-        var error = Assert.Throws<NoSuchModelError>(() => registry.EvaluationModel("provider:model"));
-        Assert.Equal("No such evaluationModel: provider:model", error.Message);
-    }
-
     private static object Resolve(ProviderRegistry registry, string modelType, string id)
     {
         return modelType switch
@@ -463,8 +406,6 @@ public sealed class RegistryUpstreamTests
 
         public override IVideoModel VideoModel(string modelId) => Get<IVideoModel>(modelId)!;
 
-        public override IEvaluationModel EvaluationModel(string modelId) => Get<IEvaluationModel>(modelId)!;
-
         public override IFileStore FileStore() => Files ?? base.FileStore();
 
         public override ISkillStore SkillStore() => Skills ?? base.SkillStore();
@@ -477,7 +418,7 @@ public sealed class RegistryUpstreamTests
         }
     }
 
-    private sealed class FakeModel : IEmbeddingModel, IImageModel, ITranscriptionModel, ISpeechModel, IRerankingModel, IVideoModel, IEvaluationModel
+    private sealed class FakeModel : IEmbeddingModel, IImageModel, ITranscriptionModel, ISpeechModel, IRerankingModel, IVideoModel
     {
         public FakeModel(string modelId)
         {
@@ -501,8 +442,6 @@ public sealed class RegistryUpstreamTests
         public Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<EvaluationResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class FakeStore : IFileStore, ISkillStore

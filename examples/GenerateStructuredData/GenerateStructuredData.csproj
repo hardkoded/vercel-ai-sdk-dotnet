@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a JSON object that matches a schema.</Description>
+  </PropertyGroup>
+</Project>

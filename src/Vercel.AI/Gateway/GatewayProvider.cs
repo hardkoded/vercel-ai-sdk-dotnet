@@ -28,7 +28,7 @@ public sealed class GatewayOptions
 /// Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes
 /// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>).
 /// </summary>
-public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionModelProvider
+public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "gateway";
@@ -87,7 +87,8 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return new GatewayDecisionModel(this, modelId);
     }
 
-    Operations.IDecisionCaller? Operations.IDecisionModelProvider.DecisionModel(string modelId)
+    /// <inheritdoc />
+    Operations.IDecisionCaller Operations.IDecisionProvider.DecisionModel(string modelId)
     {
         return DecisionModel(modelId);
     }

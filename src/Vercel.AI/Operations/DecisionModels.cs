@@ -7,13 +7,6 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
-/// <summary>A provider or registry that can return decision models. Maps to a provider with a <c>decisionModel</c> factory.</summary>
-public interface IDecisionModelProvider
-{
-    /// <summary>Returns the decision model for <paramref name="modelId"/>, or null when there is none.</summary>
-    IDecisionCaller? DecisionModel(string modelId);
-}
-
 /// <summary>Resolves decision models, including string model ids. Maps to <c>resolveDecisionModel</c>.</summary>
 public static class DecisionModels
 {
@@ -24,43 +17,53 @@ public static class DecisionModels
 
     /// <summary>
     /// The global default provider (<c>AI_SDK_DEFAULT_PROVIDER</c>). A string model id is resolved through it. It must
-    /// implement <see cref="IDecisionModelProvider"/>. When null, string ids go through Gateway.
+    /// implement <see cref="IDecisionProvider"/> or the deprecated <see cref="IEvaluationProvider"/>. When null, string ids go through Gateway.
     /// </summary>
     public static object? DefaultProvider { get; set; }
 
     /// <summary>Creates the provider used when <see cref="DefaultProvider"/> is null. Null uses a shared <see cref="GatewayProvider"/>.</summary>
-    public static Func<IDecisionModelProvider>? GatewayFactory { get; set; }
+    public static Func<IDecisionProvider>? GatewayFactory { get; set; }
 
     /// <summary>Resolves a decision model instance or a string model id.</summary>
     public static IDecisionCaller Resolve(object? model)
     {
         if (model is IDecisionCaller caller)
         {
-            return EnsureVersion(caller);
+            return Validate(caller);
         }
 
         if (model is string id)
         {
             var provider = DefaultProvider ?? (GatewayFactory != null ? GatewayFactory() : SharedGateway.Value);
-            if (provider is not IDecisionModelProvider decisionProvider)
+#pragma warning disable CS0618 // IEvaluationProvider is the deprecated factory that string ids still resolve through.
+            if (provider is not (IDecisionProvider or IEvaluationProvider))
+#pragma warning restore CS0618
             {
                 throw new InvalidOperationException(MissingProviderMessage);
             }
 
-            var resolved = decisionProvider.DecisionModel(id) ?? throw new NoSuchModelError(id, "decisionModel");
-            return EnsureVersion(resolved);
+            return Validate(FromProvider(provider, id) ?? throw new NoSuchModelError(id, "decisionModel"));
         }
 
         throw new InvalidArgumentException("model", model, "model is required");
     }
 
-    internal static IDecisionCaller EnsureVersion(IDecisionCaller model)
+#pragma warning disable CS0618
+    // Asks the decision factory, then the deprecated evaluation factory. Null when the provider has neither or returns no model.
+    internal static IDecisionCaller? FromProvider(object provider, string modelId)
     {
-        if (model.SpecificationVersion != "v4")
+        if (provider is IDecisionProvider decision)
         {
-            throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
+            return decision.DecisionModel(modelId);
         }
 
-        return model;
+        return provider is IEvaluationProvider evaluation && evaluation.EvaluationModel(modelId) is { } legacy ? DecisionCaller.FromLegacy(legacy) : null;
+    }
+#pragma warning restore CS0618
+
+    // Maps to resolveDecisionModel for a model instance.
+    internal static IDecisionCaller Validate(IDecisionCaller model)
+    {
+        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
     }
 }
