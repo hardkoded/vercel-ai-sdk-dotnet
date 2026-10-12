@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -170,7 +171,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     }
 
     /// <inheritdoc />
-    public override async Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
         var batch = await RetrieveAsync(call, cancellationToken).ConfigureAwait(false);
@@ -195,16 +196,20 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             throw new InvalidResponseDataException(batch, "OpenAI batch \"" + batchId + "\" completed without batch output.");
         }
 
-        var headers = Headers(call);
-        var items = new List<BatchItem>();
+        return ReadResultFiles(fileIds, Headers(call), cancellationToken);
+    }
+
+    // Each file downloads only when the caller reaches it, so a malformed row fails the stream after the rows before it.
+    private async IAsyncEnumerable<BatchItem> ReadResultFiles(List<string> fileIds, Dictionary<string, string?> headers, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         foreach (var fileId in fileIds)
         {
             var uri = Url("files/" + Uri.EscapeDataString(fileId) + "/content");
-            var lines = await CollectAsync(_provider.Http.SendJsonLinesAsync(HttpMethod.Get, uri, null, headers, _provider.MaxBatchLineBytes, cancellationToken), cancellationToken).ConfigureAwait(false);
-            items.AddRange(lines.Select(Convert));
+            await foreach (var line in _provider.Http.SendJsonLinesAsync(HttpMethod.Get, uri, null, headers, _provider.MaxBatchLineBytes, cancellationToken).ConfigureAwait(false))
+            {
+                yield return Convert(line);
+            }
         }
-
-        return items;
     }
 
     private Uri Url(string path) => ApiKeys.Combine(_provider.Options.BaseUrl, path);

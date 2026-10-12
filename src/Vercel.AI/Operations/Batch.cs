@@ -634,8 +634,11 @@ public interface IBatchApi
     /// <summary>Reads status.</summary>
     Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken);
 
-    /// <summary>Opens the result stream.</summary>
-    Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    /// <summary>
+    /// Opens the result stream. Errors found while opening, such as a batch that is not complete, throw from the task.
+    /// Errors found while reading, such as a malformed row, throw from the stream.
+    /// </summary>
+    Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
 
     /// <summary>Cancels a batch.</summary>
     Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken);
@@ -803,40 +806,37 @@ public static class Batch
         return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetStatusAsync(Call(api, request, token, request.Batch!.Id), ct), null).ConfigureAwait(false);
     }
 
-    /// <summary>Opens results immediately and normalizes them as they are read.</summary>
+    /// <summary>
+    /// Opens results immediately and normalizes them as they are read. Each item is read from the provider only when
+    /// the caller asks for it. Use <see cref="GetAllBatchResultsAsync"/> to read every result into a list.
+    /// </summary>
     public static IAsyncEnumerable<BatchItemResult> GetBatchResults(BatchRequestOptions request, CancellationToken cancellationToken = default)
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
         var token = Token(request, cancellationToken);
-        var queue = new PartQueue<BatchItemResult>();
-        _ = OpenResultsAsync(api, request, token, queue);
-        return ReadResults(queue, token);
+        var opening = OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct), null);
+        return ReadResults(opening, request, token);
     }
 
-    private static async Task OpenResultsAsync(IBatchApi api, BatchRequestOptions request, CancellationToken cancellationToken, PartQueue<BatchItemResult> queue)
+    /// <summary>Reads every result of <see cref="GetBatchResults"/> into a list.</summary>
+    public static async Task<IReadOnlyList<BatchItemResult>> GetAllBatchResultsAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
     {
-        try
+        var results = new List<BatchItemResult>();
+        await foreach (var result in GetBatchResults(request, cancellationToken).ConfigureAwait(false))
         {
-            var items = await OperationRetry.ExecuteAsync(request.MaxRetries, cancellationToken, request.AbortReason, ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct), null).ConfigureAwait(false);
-            foreach (var item in items)
-            {
-                queue.Enqueue(await ConvertAsync(item, request, cancellationToken).ConfigureAwait(false));
-            }
+            results.Add(result);
+        }
 
-            queue.Complete(null);
-        }
-        catch (Exception error)
-        {
-            queue.Complete(error);
-        }
+        return results;
     }
 
-    private static async IAsyncEnumerable<BatchItemResult> ReadResults(PartQueue<BatchItemResult> queue, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<BatchItemResult> ReadResults(Task<IAsyncEnumerable<BatchItem>> opening, BatchRequestOptions request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        while (await queue.WaitAsync(cancellationToken).ConfigureAwait(false))
+        var items = await opening.ConfigureAwait(false);
+        await foreach (var item in items.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            yield return queue.Dequeue();
+            yield return await ConvertAsync(item, request, cancellationToken).ConfigureAwait(false);
         }
     }
 
