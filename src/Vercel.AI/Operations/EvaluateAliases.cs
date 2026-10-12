@@ -69,12 +69,11 @@ public sealed class EvaluationModelCall : DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
     public EvaluationModelCall(object? state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
-        : base(state, EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken)
+        : base(state, questions == null ? null! : EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken)
     {
     }
 
-    /// <summary>Creates a call.</summary>
-    public EvaluationModelCall(object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    private EvaluationModelCall(object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
         : base(state, questions, providerOptions, headers, cancellationToken)
     {
     }
@@ -91,12 +90,11 @@ public sealed class EvaluationModelResult : DecisionModelResult
 {
     /// <summary>Creates a model result.</summary>
     public EvaluationModelResult(IReadOnlyDictionary<string, EvaluationAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, EvaluationRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
-        : base(EvaluateAliases.ToDecision(answers), warnings, usage, rounding, providerMetadata, response)
+        : base(answers == null ? null! : EvaluateAliases.ToDecision(answers), warnings, usage, rounding, providerMetadata, response)
     {
     }
 
-    /// <summary>Creates a model result.</summary>
-    public EvaluationModelResult(IReadOnlyDictionary<string, DecisionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    private EvaluationModelResult(IReadOnlyDictionary<string, DecisionAnswer> answers, IReadOnlyList<OperationWarning>? warnings = null, OperationUsage? usage = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
         : base(answers, warnings, usage, rounding, providerMetadata, response)
     {
     }
@@ -232,7 +230,7 @@ public static class Evaluate
         var result = await Decide.DecideAsync(
             new DecideRequest
             {
-                Model = request.Model == null ? null : request.Model as IDecisionCaller ?? new LegacyDecisionCaller(request.Model),
+                Model = request.Model == null ? null : DecisionCaller.FromLegacy(request.Model),
                 State = request.State,
                 Questions = request.Questions == null ? null : EvaluateAliases.ToDecision(request.Questions),
                 OnStart = onStart == null ? null : e => onStart(EvaluateEvent.From(e)),
@@ -261,6 +259,26 @@ public static class Evaluate
     public static void ValidateAnswers(IReadOnlyDictionary<string, EvaluationQuestion> questions, IReadOnlyDictionary<string, EvaluationAnswer>? answers, EvaluationRounding? rounding)
     {
         Decide.ValidateAnswers(EvaluateAliases.ToDecision(questions), answers == null ? null : EvaluateAliases.ToDecision(answers), rounding);
+    }
+}
+
+/// <summary>Helpers for <see cref="IDecisionCaller"/>.</summary>
+public static class DecisionCaller
+{
+    /// <summary>
+    /// Wraps a model that implements only the deprecated <see cref="IEvaluationCaller"/> so
+    /// <see cref="Decide.DecideAsync"/> can run it. A model that already implements
+    /// <see cref="IDecisionCaller"/> is returned unchanged.
+    /// </summary>
+    [Obsolete("Implement IDecisionCaller on the model instead.")]
+    public static IDecisionCaller FromLegacy(IEvaluationCaller model)
+    {
+        if (model == null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return model as IDecisionCaller ?? new LegacyDecisionCaller(model);
     }
 }
 

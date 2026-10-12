@@ -31,9 +31,10 @@ public class TypeSafeAiDecisionModelConfig
     public HttpClient? HttpClient { get; set; }
 }
 
-#pragma warning disable CS0618
 /// <summary>Answers questions through the TypeSafe <c>/systemone</c> route.</summary>
+#pragma warning disable CS0618
 public class TypeSafeAiDecisionModel : IDecisionCaller, IEvaluationCaller
+#pragma warning restore CS0618
 {
     private static readonly HttpClient SharedClient = new HttpClient();
 
@@ -94,6 +95,12 @@ public class TypeSafeAiDecisionModel : IDecisionCaller, IEvaluationCaller
             throw new ArgumentNullException(nameof(options));
         }
 
+        return new TypeSafeAiDecisionModel(options.ModelId, DeserializeConfig(options, httpClient));
+    }
+
+    /// <summary>Reads the config written by <see cref="Serialize"/>.</summary>
+    internal static TypeSafeAiDecisionModelConfig DeserializeConfig(SerializedModelOptions options, HttpClient? httpClient)
+    {
         var config = new TypeSafeAiDecisionModelConfig { HttpClient = httpClient };
         if (options.Config.TryGetValue("provider", out var provider) && provider is string providerId)
         {
@@ -111,7 +118,7 @@ public class TypeSafeAiDecisionModel : IDecisionCaller, IEvaluationCaller
             config.Headers = () => copy;
         }
 
-        return new TypeSafeAiDecisionModel(options.ModelId, config);
+        return config;
     }
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
@@ -504,5 +511,15 @@ public sealed class TypeSafeAiEvaluationModel : TypeSafeAiDecisionModel
         : base(modelId, config)
     {
     }
+
+    /// <summary>Deprecated alias of <see cref="TypeSafeAiDecisionModel.Deserialize"/>.</summary>
+    public static new TypeSafeAiEvaluationModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return new TypeSafeAiEvaluationModel(options.ModelId, DeserializeConfig(options, httpClient));
+    }
 }
-#pragma warning restore CS0618

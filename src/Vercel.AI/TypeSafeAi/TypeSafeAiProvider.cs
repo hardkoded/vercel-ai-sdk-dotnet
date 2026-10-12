@@ -70,7 +70,7 @@ public sealed class TypeSafeAiProvider
 
     /// <summary>Deprecated alias of <see cref="DecisionModel(string)"/>.</summary>
     [Obsolete("Use DecisionModel instead.")]
-    public TypeSafeAiDecisionModel EvaluationModel(string modelId)
+    public TypeSafeAiEvaluationModel EvaluationModel(string modelId)
     {
         return new TypeSafeAiEvaluationModel(modelId, DecisionConfig());
     }

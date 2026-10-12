@@ -12,9 +12,10 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAI;
 
-#pragma warning disable CS0618
 /// <summary>Answers questions through the OpenAI Decisions API (<c>POST /decisions</c>).</summary>
+#pragma warning disable CS0618
 public sealed class OpenAIDecisionModel : IDecisionCaller, IEvaluationCaller
+#pragma warning restore CS0618
 {
     private const int MaxSafetyIdentifierLength = 128;
 
@@ -448,4 +449,3 @@ public sealed class OpenAIDecisionModel : IDecisionCaller, IEvaluationCaller
         public List<KeyValuePair<string, double>>? Probabilities { get; set; }
     }
 }
-#pragma warning restore CS0618

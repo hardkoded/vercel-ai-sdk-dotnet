@@ -11,9 +11,10 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Gateway;
 
-#pragma warning disable CS0618
 /// <summary>Answers questions through the Gateway <c>/decision-model</c> route.</summary>
+#pragma warning disable CS0618
 public sealed class GatewayDecisionModel : IDecisionCaller, IEvaluationCaller
+#pragma warning restore CS0618
 {
     private readonly GatewayProvider _provider;
 
@@ -426,4 +427,3 @@ internal static class GatewayDecisionProviderOptions
         return value.ValueKind == JsonValueKind.Number && value.GetDouble() >= 0 && value.GetDouble() <= 1;
     }
 }
-#pragma warning restore CS0618

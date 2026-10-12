@@ -412,7 +412,7 @@ public class DecisionResult
 }
 
 /// <summary>Options for <see cref="Decide.DecideAsync"/>.</summary>
-public class DecideRequest : OperationRequest
+public sealed class DecideRequest : OperationRequest
 {
     /// <summary>Decision model.</summary>
     public IDecisionCaller? Model { get; set; }
@@ -461,7 +461,10 @@ public static class Decide
         {
             if (!model.SupportedQuestionTypes.Contains(pair.Value.Type))
             {
-                throw new DecisionUnsupportedQuestionTypeException(pair.Key, pair.Value.Type, model.Provider, model.ModelId);
+                // The deprecated subclass lets both the old and the new catch clauses match.
+#pragma warning disable CS0618
+                throw new EvaluationUnsupportedQuestionTypeException(pair.Key, pair.Value.Type, model.Provider, model.ModelId);
+#pragma warning restore CS0618
             }
         }
 

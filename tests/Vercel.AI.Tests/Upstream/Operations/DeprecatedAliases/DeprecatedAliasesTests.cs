@@ -26,7 +26,7 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps the function alias and accepts existing model implementations", Coverage = UpstreamCoverage.Partial, Note = "C# cannot make two methods the same object, so the test checks that EvaluateAsync and DecideAsync return the same answers.")]
+    [UpstreamTest(Prefix + "keeps the function alias and accepts existing model implementations", Coverage = UpstreamCoverage.Partial, Note = "C# cannot make two methods the same object, so the test checks that EvaluateAsync and DecideAsync (through DecisionCaller.FromLegacy) return the same answers from a legacy model.")]
     public async Task Keeps_the_function_alias_and_accepts_existing_model_implementations()
     {
         var legacy = new LegacyModel();
@@ -34,8 +34,10 @@ public sealed class DeprecatedAliasesTests
         Assert.Equal("billing", output.Answers["route"].Choice);
         Assert.Equal(1, legacy.Calls);
 
-        var current = await DecideOperation.DecideAsync(new DecideRequest { Model = new LegacyAdapterModel(), State = "message", Questions = new Dictionary<string, DecisionQuestion>(Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value)) });
+        var wrapped = new LegacyModel();
+        var current = await DecideOperation.DecideAsync(new DecideRequest { Model = DecisionCaller.FromLegacy(wrapped), State = "message", Questions = new Dictionary<string, DecisionQuestion>(Questions.ToDictionary(pair => pair.Key, pair => (DecisionQuestion)pair.Value)) });
         Assert.Equal(output.Answers["route"].Choice, current.Answers["route"].Choice);
+        Assert.Equal(1, wrapped.Calls);
     }
 
     [Fact]
@@ -123,22 +125,6 @@ public sealed class DeprecatedAliasesTests
         {
             Calls++;
             return Task.FromResult(EvaluationModelResult.From(Result()));
-        }
-    }
-
-    private sealed class LegacyAdapterModel : IDecisionCaller
-    {
-        public string Provider => "legacy";
-
-        public string ModelId => "legacy-model";
-
-        public string SpecificationVersion => "v4";
-
-        public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice" };
-
-        public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(Result());
         }
     }
 }

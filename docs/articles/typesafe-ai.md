@@ -25,7 +25,7 @@ var result = await Decide.DecideAsync(new DecideRequest
 | `BaseUrl` | Defaults to `https://api.typesafe.ai/v1`. A trailing slash is removed. |
 | `Headers` | Sent with every request. Headers on the call win over them. |
 
-`DecisionModel(id)` accepts any model id, including ids this library does not know yet. The provider id is `typesafe.decision`. `EvaluationModel(id)` is a deprecated alias of `DecisionModel(id)`. `TypeSafeAiEvaluationModel`, `TypeSafeAiEvaluationModelConfig`, and `EvaluationProviderId` are deprecated aliases too. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw `NoSuchModelError`.
+`DecisionModel(id)` accepts any model id, including ids this library does not know yet. The provider id is `typesafe.decision`. `EvaluationModel(id)` is a deprecated alias of `DecisionModel(id)` and returns a `TypeSafeAiEvaluationModel`. `TypeSafeAiEvaluationModel`, `TypeSafeAiEvaluationModelConfig`, and `EvaluationProviderId` are deprecated aliases too. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw `NoSuchModelError`.
 
 ## Decision model
 

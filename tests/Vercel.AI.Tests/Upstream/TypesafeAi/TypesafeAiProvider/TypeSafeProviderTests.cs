@@ -25,7 +25,7 @@ public sealed class TypeSafeProviderTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "retains the deprecated factory alias", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "retains the deprecated factory alias", Coverage = UpstreamCoverage.Partial, Note = "C# cannot make two methods the same object, so the test checks that EvaluationModel returns a model with the decision provider id instead of checking function identity.")]
     public void Retains_the_deprecated_factory_alias()
     {
 #pragma warning disable CS0618

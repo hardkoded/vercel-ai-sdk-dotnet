@@ -108,11 +108,13 @@ public sealed class DecideTests
     public async Task Rejects_unsupported_types_before_deciding_any_answer()
     {
         var model = new DecideModel { Supported = new[] { "choice", "score" } };
-        var error = await Assert.ThrowsAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "refund", Questions = SampleQuestions() }));
+        var error = await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "refund", Questions = SampleQuestions() }));
+        Assert.Equal("AI_DecisionUnsupportedQuestionTypeError", error.ErrorName);
         Assert.Equal("refund", error.QuestionId);
         Assert.Equal("boolean", error.QuestionType);
         Assert.Equal("mock-provider", error.Provider);
         Assert.Equal("mock-model-id", error.ModelId);
+        Assert.True(DecisionUnsupportedQuestionTypeError.IsInstance(error));
         Assert.Empty(model.Calls);
     }
 
