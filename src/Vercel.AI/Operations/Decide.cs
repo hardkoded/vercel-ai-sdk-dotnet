@@ -414,8 +414,11 @@ public class DecisionResult
 /// <summary>Options for <see cref="Decide.DecideAsync"/>.</summary>
 public sealed class DecideRequest : OperationRequest
 {
-    /// <summary>Decision model.</summary>
-    public IDecisionCaller? Model { get; set; }
+    /// <summary>
+    /// Decision model: an <see cref="IDecisionCaller"/> or a string model id. A string id goes through
+    /// <see cref="DecisionModels.DefaultProvider"/>, or Gateway when none is set.
+    /// </summary>
+    public object? Model { get; set; }
 
     /// <summary>
     /// Shared state: a string, a JSON object (<c>IDictionary&lt;string, object?&gt;</c>), or a list of parts (<c>IList&lt;object?&gt;</c>).
@@ -449,11 +452,7 @@ public static class Decide
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
-        if (model.SpecificationVersion != "v4")
-        {
-            throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
-        }
+        var model = DecisionModels.Resolve(request.Model);
 
         var questions = request.Questions ?? new Dictionary<string, DecisionQuestion>();
         ValidateInput(request.State, questions);

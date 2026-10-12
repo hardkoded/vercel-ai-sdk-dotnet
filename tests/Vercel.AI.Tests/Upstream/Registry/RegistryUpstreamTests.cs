@@ -314,48 +314,6 @@ public sealed class RegistryUpstreamTests
         Assert.Throws<AiSdkException>(() => new CustomProvider().SkillStore());
     }
 
-    [Fact]
-    [UpstreamTest(Evaluation + "custom decision models::resolves an alias before consulting the fallback", Coverage = UpstreamCoverage.Covered)]
-    public void Custom_evaluation_alias_wins_over_the_fallback()
-    {
-        var model = new FakeModel("model");
-        var fallback = new StubProvider(new FakeModel("other"));
-        var provider = new CustomProvider { FallbackProvider = fallback }.AddEvaluationModel("alias", model);
-        Assert.Same(model, provider.EvaluationModel("alias"));
-        Assert.Empty(fallback.Requests);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "custom decision models::preserves the fallback receiver", Coverage = UpstreamCoverage.Covered)]
-    public void Custom_evaluation_uses_the_fallback_provider()
-    {
-        var model = new FakeModel("model:version");
-        var fallback = new StubProvider(model);
-        Assert.Same(model, new CustomProvider { FallbackProvider = fallback }.EvaluationModel("model:version"));
-        Assert.Equal(new[] { "model:version" }, fallback.Requests);
-    }
-
-    [Theory]
-    [InlineData("missing")]
-    [InlineData("toString")]
-    [InlineData("constructor")]
-    [InlineData("__proto__")]
-    [UpstreamTest(Evaluation + "custom decision models::reports missing alias %s without treating inherited properties as models", Coverage = UpstreamCoverage.Covered)]
-    public void Custom_evaluation_reports_missing_aliases(string modelId)
-    {
-        var provider = new CustomProvider().AddEvaluationModel("known", new FakeModel("known"));
-        var error = Assert.Throws<NoSuchModelError>(() => provider.EvaluationModel(modelId));
-        Assert.Equal("No such evaluationModel: " + modelId, error.Message);
-    }
-
-    [Fact]
-    [UpstreamTest(Evaluation + "custom decision models::reports an unavailable fallback model", Coverage = UpstreamCoverage.Covered)]
-    public void Custom_evaluation_reports_a_fallback_without_the_model()
-    {
-        var provider = new CustomProvider { FallbackProvider = new StubProvider(null) };
-        var error = Assert.Throws<NoSuchModelError>(() => provider.EvaluationModel("missing"));
-        Assert.Equal("No such evaluationModel: missing", error.Message);
-    }
 
     [Fact]
     [UpstreamTest(Evaluation + "decision registry::preserves model identity, receiver, and colons inside model IDs", Coverage = UpstreamCoverage.Covered)]

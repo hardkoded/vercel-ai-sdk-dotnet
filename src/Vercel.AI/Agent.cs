@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Provider;
+using IDecisionCaller = Vercel.AI.Operations.IDecisionCaller;
+using IDecisionModelProvider = Vercel.AI.Operations.IDecisionModelProvider;
+using DecisionModels = Vercel.AI.Operations.DecisionModels;
 using Vercel.AI.Util;
 
 namespace Vercel.AI;
@@ -133,7 +136,7 @@ public sealed class AgentOptions
 /// Looks up provider models by <c>provider:model</c> ids. Maps to <c>createProviderRegistry</c>.
 /// Everything after the first separator is the model id, so model ids may contain the separator.
 /// </summary>
-public sealed class ProviderRegistry
+public sealed class ProviderRegistry : IDecisionModelProvider
 {
     private readonly Dictionary<string, ProviderBase> _providers = new(StringComparer.OrdinalIgnoreCase);
     private readonly string _separator;
@@ -206,6 +209,17 @@ public sealed class ProviderRegistry
         return Model(providerAndModel, "videoModel", (provider, modelId) => provider.VideoModel(modelId));
     }
 
+    /// <summary>Resolves <c>provider:model</c> to a decision model. The provider must implement <see cref="IDecisionModelProvider"/>.</summary>
+    public IDecisionCaller DecisionModel(string providerAndModel)
+    {
+        return Model(providerAndModel, "decisionModel", (provider, modelId) => (provider as IDecisionModelProvider)?.DecisionModel(modelId) is { } found ? DecisionModels.EnsureVersion(found) : null);
+    }
+
+    IDecisionCaller? IDecisionModelProvider.DecisionModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
     /// <summary>Resolves <c>provider:model</c> to an evaluation model.</summary>
     public IEvaluationModel EvaluationModel(string providerAndModel)
     {
@@ -255,7 +269,7 @@ public sealed class ProviderRegistry
 /// A provider backed by caller-supplied models. Maps to <c>customProvider</c>. A model id that is not registered goes to
 /// <see cref="FallbackProvider"/>, or throws <see cref="NoSuchModelError"/> when there is none.
 /// </summary>
-public sealed class CustomProvider : ProviderBase
+public sealed class CustomProvider : ProviderBase, IDecisionModelProvider
 {
     private readonly Dictionary<string, ILanguageModel> _language = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEmbeddingModel> _embedding = new(StringComparer.Ordinal);
@@ -265,6 +279,7 @@ public sealed class CustomProvider : ProviderBase
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEvaluationModel> _evaluation = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, object> _decision = new(StringComparer.Ordinal);
 
     /// <summary>Creates a custom provider.</summary>
     public CustomProvider(string name = "custom")
@@ -345,6 +360,21 @@ public sealed class CustomProvider : ProviderBase
         return Add(_video, modelId, model);
     }
 
+    /// <summary>Registers a decision model under <paramref name="alias"/>.</summary>
+    public CustomProvider AddDecisionModel(string alias, IDecisionCaller model)
+    {
+        return Add(_decision, alias, (object)(model ?? throw new ArgumentNullException(nameof(model))));
+    }
+
+    /// <summary>
+    /// Registers a string alias for a decision model. The id is resolved through
+    /// <see cref="DecisionModels.DefaultProvider"/>, or Gateway when none is set.
+    /// </summary>
+    public CustomProvider AddDecisionModel(string alias, string modelId)
+    {
+        return Add(_decision, alias, (object)(modelId ?? throw new ArgumentNullException(nameof(modelId))));
+    }
+
     /// <summary>Registers an evaluation model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddEvaluationModel(string modelId, IEvaluationModel model)
     {
@@ -391,6 +421,18 @@ public sealed class CustomProvider : ProviderBase
     public override IVideoModel VideoModel(string modelId)
     {
         return Find(_video, modelId, "videoModel", fallback => fallback.VideoModel(modelId));
+    }
+
+    /// <summary>Returns the decision model registered under <paramref name="modelId"/>, then asks the fallback provider.</summary>
+    public IDecisionCaller DecisionModel(string modelId)
+    {
+        if (_decision.TryGetValue(modelId, out var registered))
+        {
+            return DecisionModels.Resolve(registered);
+        }
+
+        var found = (FallbackProvider as IDecisionModelProvider)?.DecisionModel(modelId);
+        return found == null ? throw new NoSuchModelError(modelId, "decisionModel") : DecisionModels.EnsureVersion(found);
     }
 
     /// <inheritdoc />
