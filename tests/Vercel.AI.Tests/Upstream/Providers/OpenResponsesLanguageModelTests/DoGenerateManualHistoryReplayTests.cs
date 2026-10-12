@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
 using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelSupport;
+using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelTestSupport;
 
 namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 
@@ -112,5 +113,133 @@ public sealed class DoGenerateManualHistoryReplayTests
     private static JsonNode? SecondInput(UpstreamCapture capture)
     {
         return JsonNode.Parse(capture.Requests[1].Body)!["input"];
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should decode and losslessly replay a registered hosted-tool receipt", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_decode_and_losslessly_replay_a_registered_hosted_tool_receipt()
+    {
+        const string receiptJson = "{\"id\":\"search_1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call_1\",\"name\":\"documentSearch\",\"provider_executed\":false,\"query\":{\"text\":\"climate\"},\"result\":{\"documents\":[{\"id\":\"doc_1\",\"score\":0.9}]},\"opaque_receipt\":{\"trace_id\":\"trace_1\",\"implementation_version\":3}}";
+        const string reference = "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_1\"}}}";
+        var capture = new UpstreamCapture();
+        PrepareOutputResponse(capture, Obj(receiptJson));
+
+        var model = CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true));
+        var first = await model.DoGenerateAsync(TestPrompt(), CancellationToken.None);
+
+        Assert.Equal(3, first.Content.Count);
+        var replay = Assert.IsType<GeneratedCustom>(first.Content[0]);
+        Assert.Equal("open-responses.extension-replay", replay.Kind);
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"item\":" + receiptJson + "}}}", replay.ProviderMetadata);
+        var call = Assert.IsType<GeneratedToolCall>(first.Content[1]);
+        Assert.Equal("call_1", call.ToolCallId);
+        Assert.Equal("documentSearch", call.ToolName);
+        Assert.Equal("{\"text\":\"climate\"}", call.ArgumentsJson);
+        Assert.False(call.ProviderExecuted);
+        AssertMetadata(reference, call.ProviderMetadata);
+        var result = Assert.IsType<GeneratedToolResult>(first.Content[2]);
+        Assert.Equal("call_1", result.ToolCallId);
+        Assert.Equal("documentSearch", result.ToolName);
+        AssertJson(Obj("{\"documents\":[{\"id\":\"doc_1\",\"score\":0.9}]}"), JsonNode.Parse(result.ResultJson));
+        AssertMetadata(reference, result.ProviderMetadata);
+
+        await model.DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[]
+                {
+                    new AssistantModelMessage(new AssistantContentPart[]
+                    {
+                        new AssistantCustomPart("open-responses.extension-replay", Options(replay.ProviderMetadata)),
+                        new AssistantToolCallPart(new GeneratedToolCall("call_1", "documentSearch", "{\"text\":\"climate\"}"), Options(call.ProviderMetadata)),
+                        new AssistantToolResultPart(
+                            "call_1",
+                            "documentSearch",
+                            new ToolModelMessage("call_1", "documentSearch", "{\"documents\":[{\"id\":\"doc_1\",\"score\":0.9}]}", false, "json"),
+                            Options(result.ProviderMetadata)),
+                    }),
+                },
+            },
+            CancellationToken.None);
+
+        AssertJson(Arr("[" + receiptJson + "]"), RequestBody(capture, 1)["input"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should replay a source-only extension item through response history", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_replay_a_source_only_extension_item_through_response_history()
+    {
+        const string sourceItem = "{\"id\":\"source_1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"url\":\"https://example.com/documentation\",\"title\":\"Extension documentation\",\"opaque_receipt\":{\"trace_id\":\"trace_source_1\"}}";
+        var capture = new UpstreamCapture();
+        PrepareOutputResponse(capture, Obj(sourceItem));
+
+        var extension = CreateDocumentSearchExtension(providerExecuted: true);
+        extension.DecodeItem = context => new GeneratedContent[]
+        {
+            new GeneratedSource((string)context.Item["id"]!, (string)context.Item["url"]!, (string)context.Item["title"]!),
+        };
+
+        var model = CreateModel(capture, "gemma-7b-it", extension);
+        var first = await model.DoGenerateAsync(TestPrompt(), CancellationToken.None);
+
+        Assert.Equal(2, first.Content.Count);
+        var replay = Assert.IsType<GeneratedCustom>(first.Content[0]);
+        Assert.Equal("open-responses.extension-replay", replay.Kind);
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"item\":" + sourceItem + "}}}", replay.ProviderMetadata);
+        var source = Assert.IsType<GeneratedSource>(first.Content[1]);
+        Assert.Equal("source_1", source.Id);
+        Assert.Equal("https://example.com/documentation", source.Url);
+        Assert.Equal("Extension documentation", source.Title);
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"source_1\"}}}", source.ProviderMetadata);
+
+        await model.DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[]
+                {
+                    new AssistantModelMessage(new AssistantContentPart[]
+                    {
+                        new AssistantCustomPart("open-responses.extension-replay", Options(replay.ProviderMetadata)),
+                    }),
+                },
+            },
+            CancellationToken.None);
+
+        AssertJson(Arr("[" + sourceItem + "]"), RequestBody(capture, 1)["input"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should encode client-executed extension calls and results without original wire metadata", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_encode_client_executed_extension_calls_and_results_without_original_wire_metadata()
+    {
+        var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
+
+        await CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: false)).DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[]
+                {
+                    new AssistantModelMessage(new AssistantContentPart[]
+                    {
+                        new AssistantToolCallPart(new GeneratedToolCall("call_client", "documentSearch", "{\"text\":\"weather\"}")),
+                    }),
+                    new ToolModelMessage("call_client", "documentSearch", "{\"documents\":[\"forecast\"]}", false, "json"),
+                },
+                Tools = new[]
+                {
+                    LanguageModelTool.ProviderDefined("acme.document_search", "documentSearch", JsonDocumentElement("{}")),
+                },
+            },
+            CancellationToken.None);
+
+        AssertJson(
+            Arr("[{\"type\":\"acme:document_search_call\",\"id\":\"call_item_call_client\",\"status\":\"completed\",\"call_id\":\"call_client\",\"name\":\"documentSearch\",\"query\":{\"text\":\"weather\"}},{\"type\":\"acme:document_search_result\",\"id\":\"result_item_call_client\",\"status\":\"completed\",\"call_id\":\"call_client\",\"name\":\"documentSearch\",\"result\":{\"type\":\"json\",\"value\":{\"documents\":[\"forecast\"]}}}]"),
+            RequestBody(capture, 0)["input"]);
+    }
+
+    private static System.Text.Json.JsonElement JsonDocumentElement(string json)
+    {
+        return UpstreamChat.Json(json);
     }
 }

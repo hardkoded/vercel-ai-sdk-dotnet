@@ -2,9 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
 using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelSupport;
+using static Vercel.AI.Tests.OpenResponsesLanguageModelTests.OpenResponsesLanguageModelTestSupport;
 
 namespace Vercel.AI.Tests.OpenResponsesLanguageModelTests;
 
@@ -27,6 +29,40 @@ public sealed class DoStreamTests
               {"type":"reasoning-end","id":"rs_1","providerMetadata":{"lmstudio":{"itemId":"rs_1","reasoningSummary":[{"type":"summary_text","text":"Thinking."}],"reasoningContent":null}}}
             ]
             """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should decode registered extension events and completed items", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_decode_registered_extension_events_and_completed_items()
+    {
+        const string receiptJson = "{\"id\":\"search_stream_1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]},\"opaque_receipt\":{\"cursor\":\"cursor_1\"}}";
+        const string reference = "{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}";
+        var capture = new UpstreamCapture();
+        PrepareStreamChunks(
+            capture,
+            Obj("{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"),
+            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":1,\"output_index\":0,\"item\":" + receiptJson + "}"),
+            Obj("{\"type\":\"response.completed\",\"sequence_number\":2,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
+
+        var parts = await UpstreamChat.Read(
+            CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None));
+
+        var start = Assert.Single(parts.OfType<ToolInputStartStreamPart>());
+        Assert.Equal(("call_stream_1", "documentSearch", true), (start.Id, start.ToolName, start.ProviderExecuted));
+        var delta = Assert.Single(parts.OfType<ToolInputDeltaStreamPart>());
+        Assert.Equal(("call_stream_1", "{\"text\":\"streamed query\"}"), (delta.Id, delta.Delta));
+        var replay = Assert.Single(parts.OfType<CustomStreamPart>());
+        Assert.Equal("open-responses.extension-replay", replay.Kind);
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"item\":" + receiptJson + "}}}", replay.ProviderMetadata);
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal(("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true), (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted));
+        AssertMetadata(reference, call.ProviderMetadata);
+        var result = Assert.Single(parts.OfType<ToolResultStreamPart>());
+        Assert.Equal(("call_stream_1", "documentSearch"), (result.ToolCallId, result.ToolName));
+        AssertJson(Obj("{\"documents\":[\"doc_1\"]}"), JsonNode.Parse(result.Result.GetRawText()));
+        AssertMetadata(reference, result.ProviderMetadata);
+        var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
     }
 
     [Fact]

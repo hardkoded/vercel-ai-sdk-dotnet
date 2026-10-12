@@ -24,6 +24,58 @@ Native wire protocols have their own request mappers:
 - Amazon Bedrock signs a Converse request with Signature Version 4. It signs the caller's headers too, and sends a header with a non-ASCII value without signing it. Provider options come from `amazonBedrock`, then `bedrock`. `reasoningConfig` (`type`, `budgetTokens`, `maxReasoningEffort` of `low`, `medium`, `high`, `xhigh`, or `max`, and `display`) becomes `additionalModelRequestFields.thinking` and `output_config.effort` on Anthropic models, `reasoning_effort` or `reasoning.effort` on OpenAI models, and a `reasoningConfig` field on other models such as Nova. The top-level `Reasoning` option fills in `reasoningConfig`, and fields you set win. `serviceTier` (`reserved`, `priority`, `default`, or `flex`) selects the inference service tier and is sent as `serviceTier.type`. `Temperature` is clamped to the 0 to 1 range with a warning. Models that reject sampling settings, such as Claude Opus 4.7, drop `Temperature`, `TopP`, and `TopK` with a warning. OpenAI models drop `StopSequences`, and OpenAI models other than gpt-oss also drop `Temperature` and `TopP`, each with a warning. Structured output (`JsonSchema`) on an Anthropic model follows `structuredOutputMode` (`outputFormat`, `jsonTool`, or `auto`, read from `amazonBedrock`, then `anthropic`). In `auto`, models that support it send a sanitized `additionalModelRequestFields.output_config.format`, and `jsonTool` removes a manually set `format`. Otherwise a forced `json` tool carries it, and the tool input comes back as the response text with `providerMetadata.bedrock.isJsonResponseFromTool` set. Models that reject forced tool use, and models that reject `strict` tools when you also pass tools, get a JSON instruction in the system message instead, and the first JSON object in the reply becomes the text. `DoStreamAsync` calls `/converse-stream` and decodes the AWS event stream (`application/vnd.amazon.eventstream`) as it arrives, so text, reasoning, and tool input are emitted as they are generated. A frame that fails its checksum, or bytes left over when the stream ends, throw. A modeled exception frame (`internalServerException`, `modelStreamErrorException`, `serviceUnavailableException`, `throttlingException`, `validationException`) becomes an `ErrorStreamPart` whose `Error` carries `StatusCode` (500, 424, 503, 429, 400) and `IsRetryable`, and the stream finishes with `FinishReason.Error`. Streamed reasoning text carries its signature on a `ReasoningDeltaStreamPart.ProviderMetadata`, and redacted reasoning content is attached once on the `ReasoningEndStreamPart`. Every provider option that is not one of `reasoningConfig`, `additionalModelRequestFields`, `serviceTier`, `structuredOutputMode`, or `requestMetadata` (for example `guardrailConfig`) goes into the request as is. Anthropic models also ask Bedrock for `/delta/stop_sequence` so `providerMetadata.bedrock.stopSequence` is set. `AmazonBedrockOptions.Headers` and `LanguageModelCallOptions.Headers` are sent on Converse, Converse stream, embedding, and rerank requests before signing. Call headers win over provider headers, and every request carries the `ai-sdk-amazon-bedrock` user agent. `AmazonBedrockFetch` and `AmazonBedrockSigV4Fetch` apply the same signing and the `ai-sdk-amazon-bedrock` user agent to any other Bedrock call.
 - Cohere speaks chat, embed, and rerank.
 - OpenResponses posts to `{base}/responses`. The default base is the Gateway Open Responses route. `OpenResponsesOptions.Name` (default `open-responses`) is the key for provider options and provider metadata, and the model's provider id is `{Name}.responses`. System messages become `instructions`. Text and tool calls stream as they arrive, and reasoning streams from `reasoning_summary_text` and `reasoning_text` deltas. Reasoning, text, and tool-call parts carry their `itemId` in provider metadata (`GeneratedText.ProviderMetadata` and streamed `text-end` parts also carry `url_citation` annotations), and reasoning keeps its summary, content, and encrypted content. Each reasoning content part becomes its own `GeneratedReasoning`. `AssistantModelMessage.Parts` keeps the text, reasoning, and tool-call parts in order, each with its own provider options (`AssistantTextPart`, `AssistantReasoningPart`, `AssistantToolCallPart`), so a later turn replays the items in the original order with their ids and annotations. `GenerateText` builds these parts from the model output. `StrictResponseInput` serializes assistant history using the strict OpenAI Responses input schemas: assistant text without an item id is sent as an easy input message, and text with an item id as a complete output message.
+- OpenResponses warns and ignores `StopSequences`, `TopK`, and `Seed`. `OpenResponsesOptions.Headers` are sent with every request. It sends function tools. A provider-defined tool (`LanguageModelTool.ProviderDefined(id, name, args)`) is omitted with an `unsupported` warning (`provider-defined tool <id>`) unless an extension registers it. A `ToolChoice.Tool(name)` that selects an omitted provider tool is omitted too.
+
+### OpenResponses extensions (experimental)
+
+Open Responses implementations can add namespaced tools, items, and streaming events. Register an `OpenResponsesExtension` in `OpenResponsesOptions.Extensions` to encode and decode an implementation's wire formats. This API is experimental and may change.
+
+The provider-tool id uses dot notation (`acme.document_search`). Open Responses wire types use colon notation (`acme:document_search`). The namespace in `Id` must match the namespace in every registered wire type.
+
+```csharp
+var extension = new OpenResponsesExtension
+{
+    Id = "acme.document_search",
+    ToolType = "acme:document_search",
+    ItemTypes = new[] { "acme:document_search_receipt" },
+    EncodeTool = context => new JsonObject
+    {
+        ["name"] = context.Name,
+        ["index"] = context.Args.GetProperty("index").GetString(),
+    },
+    DecodeItem = context => new GeneratedContent[]
+    {
+        new GeneratedToolCall((string)context.Item["call_id"]!, (string)context.Item["name"]!, context.Item["query"]!.ToJsonString())
+        {
+            ProviderExecuted = true,
+        },
+        new GeneratedToolResult((string)context.Item["call_id"]!, (string)context.Item["name"]!, context.Item["result"]!.ToJsonString()),
+    },
+};
+
+var acme = OpenResponsesProvider.Create(new OpenResponsesOptions
+{
+    Name = "acme",
+    BaseUrl = "https://api.acme.example/v1",
+    Extensions = new[] { extension },
+});
+```
+
+Set `ProviderExecuted` on each decoded tool call or `ToolInputStartStreamPart`. It can vary by item or event. An extension can define:
+
+- `EncodeTool`: encodes a provider tool from `OpenResponsesToolContext` (`Name`, `Args`). Returning `null` omits the tool with an `unsupported` warning. A tool choice that selects the omitted tool is omitted too.
+- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the `type`.
+- `DecodeItem`: maps a completed item (`OpenResponsesDecodeItemContext.Item`, plus `Mode` of `Generate` or `Stream`) to content parts.
+- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a registered namespaced `type`.
+- `DecodeEvent`: maps a streaming event to stream parts. `OpenResponsesDecodeEventContext.State` lasts for one response stream.
+
+Tool, item, and event capabilities are independent. Capability fields must be provided in pairs.
+
+Each decoded item adds a `GeneratedCustom` part of kind `open-responses.extension-replay` (a `CustomStreamPart` when streaming). It stores the original item in provider metadata, and the other decoded parts reference it by `itemId`. Pass the result back with `AssistantModelMessage.FromGeneratedContent(result.Content)` to replay the original item once, opaque fields included. This also preserves items that decode only to source parts.
+
+The model validates only the extension discriminator fields. Validate the other item and event fields in the codec. The original item is stored in provider metadata and can appear in persisted messages, telemetry, logs, or UI payloads.
+
+Extension delegates cannot cross a workflow boundary. `OpenResponsesLanguageModel.Serialize()` throws a `SerializationError` when extensions are registered. Create the provider inside the workflow step.
 - Perplexity language generation posts to `{base}/v1/agent` (the Agent API). Preset ids are `fast`, `low`, `medium`, `high`, and `xhigh`. Any other id is sent as an Agent API model id. Legacy Sonar model ids are not aliased, and Sonar provider options are not translated. Embeddings stay on the OpenAI-compatible embeddings route. Sonar PDF input, video input, and image or video results have no Agent API equivalent.
 
 Set `LanguageModelCallOptions.JsonResponse` to ask for JSON without a schema (upstream `responseFormat: { type: 'json' }`). OpenAI, OpenAI-compatible, Open Responses, Cohere, and xAI providers send `json_object`, Google sends `responseMimeType: application/json`, and the Gateway sends `json`. Anthropic ignores it and warns that the JSON response format requires a schema. Amazon Bedrock and Hugging Face also ignore it, as upstream does. `JsonSchema` wins when both are set.

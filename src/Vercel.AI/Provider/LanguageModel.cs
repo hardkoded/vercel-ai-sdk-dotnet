@@ -222,6 +222,9 @@ public class GeneratedToolCall : GeneratedContent
 
     /// <summary>Provider-specific metadata for this call, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
+    public bool ProviderExecuted { get; init; }
 }
 
 /// <summary>Reasoning text kept separate from the answer.</summary>
@@ -367,6 +370,30 @@ public sealed class GeneratedToolResult : GeneratedContent
 
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
+
+    /// <summary>Provider-specific metadata for this result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
+}
+
+/// <summary>
+/// A provider-specific content part, identified by <see cref="Kind"/>. It carries no data of its own; the provider keeps it in
+/// <see cref="ProviderMetadata"/>.
+/// </summary>
+public sealed class GeneratedCustom : GeneratedContent
+{
+    /// <summary>Creates a custom content part.</summary>
+    public GeneratedCustom(string kind, JsonElement? providerMetadata = null)
+        : base("custom")
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Provider-scoped kind, such as <c>open-responses.extension-replay</c>.</summary>
+    public string Kind { get; }
+
+    /// <summary>Provider metadata for this part, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A generated file.</summary>
@@ -468,8 +495,33 @@ public sealed class LanguageModelTool
         Strict = strict;
     }
 
+    private LanguageModelTool(string providerToolId, string name, JsonElement args)
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        ProviderToolId = providerToolId ?? throw new ArgumentNullException(nameof(providerToolId));
+        Args = args;
+    }
+
+    /// <summary>
+    /// Creates a provider-defined tool. Maps to <c>{ type: 'provider', id, name, args }</c>.
+    /// <paramref name="id"/> is <c>&lt;provider&gt;.&lt;tool&gt;</c>. <paramref name="args"/> must be a JSON object.
+    /// </summary>
+    public static LanguageModelTool ProviderDefined(string id, string name, JsonElement args)
+    {
+        return new LanguageModelTool(id, name, args);
+    }
+
     /// <summary>Tool name.</summary>
     public string Name { get; }
+
+    /// <summary>Provider-defined tool id, or null for a function tool.</summary>
+    public string? ProviderToolId { get; }
+
+    /// <summary>Whether this is a provider-defined tool rather than a function tool.</summary>
+    public bool IsProviderDefined => ProviderToolId != null;
+
+    /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
+    public JsonElement Args { get; }
 
     /// <summary>Tool description.</summary>
     public string? Description { get; }
@@ -639,7 +691,7 @@ public abstract class AssistantContentPart
         ProviderOptions = providerOptions;
     }
 
-    /// <summary>Part type: <c>text</c>, <c>reasoning</c>, or <c>tool-call</c>.</summary>
+    /// <summary>Part type: <c>text</c>, <c>reasoning</c>, <c>tool-call</c>, <c>tool-result</c>, or <c>custom</c>.</summary>
     public string Type { get; }
 
     /// <summary>Provider-specific options for this part, such as an <c>itemId</c>.</summary>
@@ -756,6 +808,63 @@ public sealed class AssistantModelMessage : ModelMessage
     {
     }
 
+    /// <summary>
+    /// Creates an assistant message from generated content, keeping order and each part's provider metadata as its provider options.
+    /// This is how a generate result is replayed as history. Sources and files have no assistant part and are skipped.
+    /// </summary>
+    public static AssistantModelMessage FromGeneratedContent(IReadOnlyList<GeneratedContent> content)
+    {
+        if (content == null)
+        {
+            throw new ArgumentNullException(nameof(content));
+        }
+
+        var parts = new List<AssistantContentPart>();
+        foreach (var item in content)
+        {
+            switch (item)
+            {
+                case GeneratedText text:
+                    parts.Add(new AssistantTextPart(text.Text, MetadataToOptions(text.ProviderMetadata)));
+                    break;
+                case GeneratedReasoning reasoning:
+                    parts.Add(new AssistantReasoningPart(reasoning.Text, MetadataToOptions(reasoning.ProviderMetadata)));
+                    break;
+                case GeneratedToolCall call:
+                    parts.Add(new AssistantToolCallPart(call));
+                    break;
+                case GeneratedToolResult result:
+                    parts.Add(new AssistantToolResultPart(
+                        result.ToolCallId,
+                        result.ToolName,
+                        new ToolModelMessage(result.ToolCallId, result.ToolName, result.ResultJson, result.IsError),
+                        MetadataToOptions(result.ProviderMetadata)));
+                    break;
+                case GeneratedCustom custom:
+                    parts.Add(new AssistantCustomPart(custom.Kind, MetadataToOptions(custom.ProviderMetadata)));
+                    break;
+            }
+        }
+
+        return new AssistantModelMessage(parts);
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement>? MetadataToOptions(JsonElement? metadata)
+    {
+        if (metadata is not { ValueKind: JsonValueKind.Object } bag)
+        {
+            return null;
+        }
+
+        var options = new Dictionary<string, JsonElement>();
+        foreach (var property in bag.EnumerateObject())
+        {
+            options[property.Name] = property.Value;
+        }
+
+        return options;
+    }
+
     /// <summary>Assistant text.</summary>
     public string? Text { get; }
 
@@ -843,6 +952,46 @@ public sealed class AssistantModelMessage : ModelMessage
 
         return null;
     }
+}
+
+/// <summary>A provider-executed tool result in an assistant message.</summary>
+public sealed class AssistantToolResultPart : AssistantContentPart
+{
+    /// <summary>Creates a tool-result part. <paramref name="output"/> carries the output type and value.</summary>
+    public AssistantToolResultPart(
+        string toolCallId,
+        string toolName,
+        ToolModelMessage output,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("tool-result", providerOptions)
+    {
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+        ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
+        Output = output ?? throw new ArgumentNullException(nameof(output));
+    }
+
+    /// <summary>Matching tool call id.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Tool name.</summary>
+    public string ToolName { get; }
+
+    /// <summary>The output, as a tool message with the same call id and name. Use its <see cref="ToolModelMessage.OutputType"/> and <see cref="ToolModelMessage.OutputJson"/>.</summary>
+    public ToolModelMessage Output { get; }
+}
+
+/// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
+public sealed class AssistantCustomPart : AssistantContentPart
+{
+    /// <summary>Creates a custom part.</summary>
+    public AssistantCustomPart(string kind, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("custom", providerOptions)
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+    }
+
+    /// <summary>Provider-scoped kind.</summary>
+    public string Kind { get; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
@@ -1254,6 +1403,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>Result value.</summary>
     public JsonElement Result { get; }
+
+    /// <summary>Provider metadata for this result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
 }
 
 /// <summary>A cited URL.</summary>

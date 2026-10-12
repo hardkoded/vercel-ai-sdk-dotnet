@@ -2,7 +2,90 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+
 namespace Vercel.AI.OpenResponses;
+
+/// <summary>Input of <see cref="OpenResponsesExtension.EncodeTool"/> and <see cref="OpenResponsesExtension.EncodeToolChoice"/>.</summary>
+public sealed class OpenResponsesToolContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesToolContext(string name, JsonElement args)
+    {
+        Name = name;
+        Args = args;
+    }
+
+    /// <summary>Tool name.</summary>
+    public string Name { get; }
+
+    /// <summary>Provider-tool arguments, a JSON object.</summary>
+    public JsonElement Args { get; }
+}
+
+/// <summary>Whether an item is decoded from a generate response or from a stream.</summary>
+public enum OpenResponsesItemMode
+{
+    /// <summary>A <c>DoGenerateAsync</c> response.</summary>
+    Generate,
+
+    /// <summary>A <c>DoStreamAsync</c> stream.</summary>
+    Stream,
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.DecodeItem"/>.</summary>
+public sealed class OpenResponsesDecodeItemContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesDecodeItemContext(JsonObject item, OpenResponsesItemMode mode)
+    {
+        Item = item;
+        Mode = mode;
+    }
+
+    /// <summary>The completed item. It has a namespaced <c>type</c>, a string <c>id</c>, and a string <c>status</c>.</summary>
+    public JsonObject Item { get; }
+
+    /// <summary>Where the item came from.</summary>
+    public OpenResponsesItemMode Mode { get; }
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.EncodeInputItem"/>.</summary>
+public sealed class OpenResponsesEncodeInputItemContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesEncodeInputItemContext(AssistantContentPart part, LanguageModelTool tool)
+    {
+        Part = part;
+        Tool = tool;
+    }
+
+    /// <summary>The history part: an <see cref="AssistantToolCallPart"/> or an <see cref="AssistantToolResultPart"/>.</summary>
+    public AssistantContentPart Part { get; }
+
+    /// <summary>The provider-defined tool the part belongs to.</summary>
+    public LanguageModelTool Tool { get; }
+}
+
+/// <summary>Input of <see cref="OpenResponsesExtension.DecodeEvent"/>.</summary>
+public sealed class OpenResponsesDecodeEventContext
+{
+    /// <summary>Creates the context.</summary>
+    public OpenResponsesDecodeEventContext(JsonObject @event, IDictionary<string, object?> state)
+    {
+        Event = @event;
+        State = state;
+    }
+
+    /// <summary>The event. It has a namespaced <c>type</c> and a numeric <c>sequence_number</c>.</summary>
+    public JsonObject Event { get; }
+
+    /// <summary>State that lasts for one response stream.</summary>
+    public IDictionary<string, object?> State { get; }
+}
 
 /// <summary>
 /// One Open Responses extension. Tool, item, and event capabilities are registered independently.
@@ -21,20 +104,20 @@ public sealed class OpenResponsesExtension
     /// <summary>Namespaced event types. Required together with <see cref="DecodeEvent"/>.</summary>
     public IReadOnlyList<string>? EventTypes { get; set; }
 
-    /// <summary>Encodes a provider tool. Present or absent together with <see cref="ToolType"/>.</summary>
-    public Func<object, object?>? EncodeTool { get; set; }
+    /// <summary>Encodes a provider tool. Return null when its arguments cannot be encoded. The model adds <see cref="ToolType"/> and omits a tool choice that selects the omitted tool. Present or absent together with <see cref="ToolType"/>.</summary>
+    public Func<OpenResponsesToolContext, JsonObject?>? EncodeTool { get; set; }
 
-    /// <summary>Encodes a tool choice. Requires a tool encoder.</summary>
-    public Func<object, object?>? EncodeToolChoice { get; set; }
+    /// <summary>Encodes a specific tool choice. The model adds <see cref="ToolType"/>. The default is an object holding only <see cref="ToolType"/>. Requires a tool encoder.</summary>
+    public Func<OpenResponsesToolContext, JsonObject?>? EncodeToolChoice { get; set; }
 
-    /// <summary>Decodes a completed item. Present or absent together with <see cref="ItemTypes"/>.</summary>
-    public Func<object, object?>? DecodeItem { get; set; }
+    /// <summary>Decodes a completed item into content parts. The model adds a <c>open-responses.extension-replay</c> custom part holding the original item. Present or absent together with <see cref="ItemTypes"/>.</summary>
+    public Func<OpenResponsesDecodeItemContext, IReadOnlyList<GeneratedContent>?>? DecodeItem { get; set; }
 
-    /// <summary>Encodes a history item. Requires an item decoder.</summary>
-    public Func<object, object?>? EncodeInputItem { get; set; }
+    /// <summary>Encodes a history part when no original wire item is available. Every returned item must use one of <see cref="ItemTypes"/>. Requires an item decoder.</summary>
+    public Func<OpenResponsesEncodeInputItemContext, IReadOnlyList<JsonObject>?>? EncodeInputItem { get; set; }
 
-    /// <summary>Decodes a streaming event. Present or absent together with <see cref="EventTypes"/>.</summary>
-    public Func<object, object?>? DecodeEvent { get; set; }
+    /// <summary>Decodes a streaming event into stream parts. Present or absent together with <see cref="EventTypes"/>.</summary>
+    public Func<OpenResponsesDecodeEventContext, IReadOnlyList<LanguageModelStreamPart>?>? DecodeEvent { get; set; }
 }
 
 /// <summary>Indexes extensions by id and by wire type.</summary>
@@ -198,5 +281,133 @@ public static class OpenResponsesExtensions
         }
 
         map[key] = extension;
+    }
+}
+
+/// <summary>Decodes extension items and events for generate and stream.</summary>
+internal static class OpenResponsesExtensionItems
+{
+    /// <summary>Kind of the custom part that holds an extension item for replay.</summary>
+    public const string ReplayKind = "open-responses.extension-replay";
+
+    /// <summary>
+    /// Decodes a completed extension item. Returns null when no extension decodes it. Otherwise the result starts with a replay
+    /// part that holds the original item, followed by the decoded parts, each tagged with the extension id and item id.
+    /// </summary>
+    public static List<GeneratedContent>? Decode(OpenResponsesExtensionRegistry registry, string providerOptionsName, JsonObject item, OpenResponsesItemMode mode)
+    {
+        var type = (string)item["type"]!;
+        if (!registry.ByItemType.TryGetValue(type, out var extension) || extension.DecodeItem == null)
+        {
+            return null;
+        }
+
+        var decoded = extension.DecodeItem(new OpenResponsesDecodeItemContext(item, mode));
+        if (decoded == null)
+        {
+            return null;
+        }
+
+        var result = new List<GeneratedContent>
+        {
+            new GeneratedCustom(
+                ReplayKind,
+                ProviderMetadata(providerOptionsName, new JsonObject
+                {
+                    ["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["item"] = item.DeepClone() },
+                })),
+        };
+        foreach (var part in decoded)
+        {
+            result.Add(WithExtensionReference(part, providerOptionsName, extension, item));
+        }
+
+        return result;
+    }
+
+    /// <summary>Converts decoded extension content to a stream part.</summary>
+    public static LanguageModelStreamPart ToStreamPart(GeneratedContent part)
+    {
+        switch (part)
+        {
+            case GeneratedToolCall call:
+                return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted };
+            case GeneratedToolResult toolResult:
+                return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { ProviderMetadata = toolResult.ProviderMetadata };
+            case GeneratedSource source:
+                return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
+            case GeneratedDocumentSource documentSource:
+                return new DocumentSourceStreamPart(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, documentSource.ProviderMetadata);
+            case GeneratedCustom custom:
+                return new CustomStreamPart(custom.Kind, custom.ProviderMetadata);
+            case GeneratedReasoning reasoning:
+                return new ReasoningDeltaStreamPart(string.Empty, reasoning.Text);
+            case GeneratedText text:
+                return new TextDeltaStreamPart(string.Empty, text.Text, text.ProviderMetadata);
+            default:
+                throw new InvalidOperationException("Open Responses extension content of type " + part.Type + " cannot be streamed.");
+        }
+    }
+
+    private static GeneratedContent WithExtensionReference(GeneratedContent part, string providerOptionsName, OpenResponsesExtension extension, JsonObject item)
+    {
+        JsonElement? existing;
+        switch (part)
+        {
+            case GeneratedText text:
+                existing = text.ProviderMetadata;
+                break;
+            case GeneratedReasoning reasoning:
+                existing = reasoning.ProviderMetadata;
+                break;
+            case GeneratedToolCall call:
+                existing = call.ProviderMetadata;
+                break;
+            case GeneratedToolResult toolResult:
+                existing = toolResult.ProviderMetadata;
+                break;
+            case GeneratedSource source:
+                existing = source.ProviderMetadata;
+                break;
+            case GeneratedDocumentSource documentSource:
+                existing = documentSource.ProviderMetadata;
+                break;
+            case GeneratedCustom custom:
+                existing = custom.ProviderMetadata;
+                break;
+            default:
+                return part;
+        }
+
+        var metadata = existing is { ValueKind: JsonValueKind.Object } element
+            ? JsonNode.Parse(element.GetRawText())!.AsObject()
+            : new JsonObject();
+        var inner = metadata[providerOptionsName] as JsonObject ?? new JsonObject();
+        inner["openResponsesExtension"] = new JsonObject { ["id"] = extension.Id, ["itemId"] = (string)item["id"]! };
+        metadata[providerOptionsName] = inner;
+        var merged = JsonSerializer.SerializeToElement(metadata);
+
+        switch (part)
+        {
+            case GeneratedText text:
+                return new GeneratedText(text.Text, text.Citations, merged);
+            case GeneratedReasoning reasoning:
+                return new GeneratedReasoning(reasoning.Text, merged);
+            case GeneratedToolCall call:
+                return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, merged) { ProviderExecuted = call.ProviderExecuted };
+            case GeneratedToolResult toolResult:
+                return new GeneratedToolResult(toolResult.ToolCallId, toolResult.ToolName, toolResult.ResultJson, toolResult.IsError) { ProviderMetadata = merged };
+            case GeneratedSource source:
+                return new GeneratedSource(source.Id, source.Url, source.Title, merged);
+            case GeneratedDocumentSource documentSource:
+                return new GeneratedDocumentSource(documentSource.Id, documentSource.MediaType, documentSource.Title, documentSource.Filename, merged);
+            default:
+                return new GeneratedCustom(((GeneratedCustom)part).Kind, merged);
+        }
+    }
+
+    private static JsonElement ProviderMetadata(string providerOptionsName, JsonObject inner)
+    {
+        return JsonSerializer.SerializeToElement(new JsonObject { [providerOptionsName] = inner });
     }
 }

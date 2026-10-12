@@ -35,11 +35,15 @@ internal static class OpenResponsesInput
     public static OpenResponsesInputResult Convert(
         IReadOnlyList<ModelMessage> prompt,
         string providerOptionsName = OpenResponsesProvider.ProviderName,
-        bool strictResponseInput = false)
+        bool strictResponseInput = false,
+        OpenResponsesExtensionRegistry? extensionRegistry = null,
+        IReadOnlyDictionary<string, LanguageModelTool>? providerToolsByName = null)
     {
+        providerToolsByName ??= new Dictionary<string, LanguageModelTool>(StringComparer.Ordinal);
         var input = new JsonArray();
         var warnings = new List<CallWarning>();
         var systemMessages = new List<string>();
+        var replayedExtensionItems = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var message in prompt)
         {
@@ -52,15 +56,10 @@ internal static class OpenResponsesInput
                     input.Add(new JsonObject { ["type"] = "message", ["role"] = "user", ["content"] = ConvertUser(user, providerOptionsName) });
                     break;
                 case AssistantModelMessage assistant:
-                    ConvertAssistant(assistant, input, providerOptionsName, strictResponseInput);
+                    ConvertAssistant(assistant, input, warnings, replayedExtensionItems, providerOptionsName, strictResponseInput, extensionRegistry, providerToolsByName);
                     break;
                 case ToolModelMessage tool:
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "function_call_output",
-                        ["call_id"] = tool.ToolCallId,
-                        ["output"] = ToolOutput(tool),
-                    });
+                    ConvertTool(tool, input, warnings, replayedExtensionItems, providerOptionsName, extensionRegistry, providerToolsByName);
                     break;
             }
         }
@@ -134,7 +133,15 @@ internal static class OpenResponsesInput
         return detail == "low" || detail == "high" || detail == "auto" ? detail : "auto";
     }
 
-    private static void ConvertAssistant(AssistantModelMessage assistant, JsonArray input, string providerOptionsName, bool strictResponseInput)
+    private static void ConvertAssistant(
+        AssistantModelMessage assistant,
+        JsonArray input,
+        List<CallWarning> warnings,
+        HashSet<string> replayedExtensionItems,
+        string providerOptionsName,
+        bool strictResponseInput,
+        OpenResponsesExtensionRegistry? extensionRegistry,
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName)
     {
         var content = new JsonArray();
         string? messageId = null;
@@ -191,6 +198,25 @@ internal static class OpenResponsesInput
         foreach (var part in assistant.Parts)
         {
             var providerData = ProviderData(part.ProviderOptions, providerOptionsName);
+            if (GetExtensionReplay(providerData, extensionRegistry) is { } replay)
+            {
+                Flush();
+                AddReplayItem(replay.Item, input, replayedExtensionItems);
+                continue;
+            }
+
+            var toolName = part switch
+            {
+                AssistantToolCallPart toolCallPart => toolCallPart.ToolCall.ToolName,
+                AssistantToolResultPart toolResultPart => toolResultPart.ToolName,
+                _ => null,
+            };
+            if (toolName != null && TryEncodeProviderToolPart(part, toolName, providerToolsByName, extensionRegistry, input, warnings))
+            {
+                Flush();
+                continue;
+            }
+
             switch (part)
             {
                 case AssistantReasoningPart reasoning when reasoning.Text.Length > 0 || providerData != null:
@@ -350,6 +376,123 @@ internal static class OpenResponsesInput
         return annotations;
     }
 
+    private static void ConvertTool(
+        ToolModelMessage tool,
+        JsonArray input,
+        List<CallWarning> warnings,
+        HashSet<string> replayedExtensionItems,
+        string providerOptionsName,
+        OpenResponsesExtensionRegistry? extensionRegistry,
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName)
+    {
+        if (GetExtensionReplay(ProviderData(tool.ProviderMetadata, providerOptionsName), extensionRegistry) is { } replay)
+        {
+            AddReplayItem(replay.Item, input, replayedExtensionItems);
+            return;
+        }
+
+        var resultPart = new AssistantToolResultPart(tool.ToolCallId, tool.ToolName, tool);
+        if (TryEncodeProviderToolPart(resultPart, tool.ToolName, providerToolsByName, extensionRegistry, input, warnings))
+        {
+            return;
+        }
+
+        input.Add(new JsonObject
+        {
+            ["type"] = "function_call_output",
+            ["call_id"] = tool.ToolCallId,
+            ["output"] = ToolOutput(tool),
+        });
+    }
+
+    /// <summary>
+    /// Encodes a tool call or tool result of a provider-defined tool through its extension and adds the items. Returns false
+    /// when the part does not belong to a registered provider tool. A part that the extension cannot encode is dropped with a warning.
+    /// </summary>
+    private static bool TryEncodeProviderToolPart(
+        AssistantContentPart part,
+        string toolName,
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
+        OpenResponsesExtensionRegistry? extensionRegistry,
+        JsonArray input,
+        List<CallWarning> warnings)
+    {
+        if (!providerToolsByName.TryGetValue(toolName, out var providerTool)
+            || extensionRegistry == null
+            || providerTool.ProviderToolId == null
+            || !extensionRegistry.ByProviderToolId.TryGetValue(providerTool.ProviderToolId, out var extension))
+        {
+            return false;
+        }
+
+        List<JsonObject>? encoded = null;
+        if (extension.EncodeInputItem != null && extension.ItemTypes != null)
+        {
+            try
+            {
+                var items = extension.EncodeInputItem(new OpenResponsesEncodeInputItemContext(part, providerTool));
+                if (items != null
+                    && items.Count > 0
+                    && items.All(item => item != null && OpenResponsesJson.IsExtensionItem(item) && extension.ItemTypes.Contains((string)item["type"]!)))
+                {
+                    encoded = items.Select(item => item.DeepClone().AsObject()).ToList();
+                }
+            }
+            catch (Exception)
+            {
+                // Encoding failures are reported as unsupported below.
+            }
+        }
+
+        if (encoded == null)
+        {
+            warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool.ProviderToolId + " " + part.Type + " history"));
+            return true;
+        }
+
+        foreach (var item in encoded)
+        {
+            input.Add(item);
+        }
+
+        return true;
+    }
+
+    /// <summary>Adds an original extension item once per prompt.</summary>
+    private static void AddReplayItem(JsonObject? item, JsonArray input, HashSet<string> replayed)
+    {
+        if (item != null && replayed.Add((string)item["type"]! + ":" + (string)item["id"]!))
+        {
+            input.Add(item.DeepClone());
+        }
+    }
+
+    /// <summary>
+    /// Reads the <c>openResponsesExtension</c> reference of a part. Returns null when the part has none or its extension is not
+    /// registered. The result holds the original item when the part stores it, and no item when it only references one.
+    /// </summary>
+    private static ExtensionReplay? GetExtensionReplay(JsonElement? providerData, OpenResponsesExtensionRegistry? extensionRegistry)
+    {
+        if (extensionRegistry == null
+            || Child(providerData, "openResponsesExtension") is not { ValueKind: JsonValueKind.Object } extensionData
+            || Child(extensionData, "id") is not { ValueKind: JsonValueKind.String } id
+            || !extensionRegistry.ByExtensionId.TryGetValue(id.GetString()!, out var extension))
+        {
+            return null;
+        }
+
+        if (Child(extensionData, "item") is { ValueKind: JsonValueKind.Object } itemElement
+            && JsonNode.Parse(itemElement.GetRawText()) is JsonObject item
+            && OpenResponsesJson.IsExtensionItem(item)
+            && extension.ItemTypes != null
+            && extension.ItemTypes.Contains((string)item["type"]!))
+        {
+            return new ExtensionReplay(item);
+        }
+
+        return Child(extensionData, "itemId") is { ValueKind: JsonValueKind.String } ? new ExtensionReplay(null) : null;
+    }
+
     private static JsonNode ToolOutput(ToolModelMessage tool)
     {
         return tool.OutputType == "execution-denied" && string.IsNullOrEmpty(tool.OutputJson)
@@ -379,5 +522,44 @@ internal static class OpenResponsesInput
     private static JsonElement? ProviderData(JsonElement? providerMetadata, string providerOptionsName)
     {
         return Child(providerMetadata, providerOptionsName) is { ValueKind: JsonValueKind.Object } data ? data : null;
+    }
+
+    private sealed class ExtensionReplay
+    {
+        public ExtensionReplay(JsonObject? item)
+        {
+            Item = item;
+        }
+
+        public JsonObject? Item { get; }
+    }
+}
+
+/// <summary>JSON shape checks for Open Responses extension records.</summary>
+internal static class OpenResponsesJson
+{
+    public static bool IsNamespacedType(JsonNode? node)
+    {
+        return node is JsonValue value && value.TryGetValue<string>(out var text) && text.Contains(':');
+    }
+
+    public static bool IsExtensionRecord(JsonObject value)
+    {
+        return IsNamespacedType(value["type"]);
+    }
+
+    public static bool IsExtensionItem(JsonObject value)
+    {
+        return IsExtensionRecord(value) && IsString(value["id"]) && IsString(value["status"]);
+    }
+
+    public static bool IsExtensionEvent(JsonObject value)
+    {
+        return IsExtensionRecord(value) && value["sequence_number"] is JsonValue number && number.TryGetValue<double>(out _);
+    }
+
+    private static bool IsString(JsonNode? node)
+    {
+        return node is JsonValue value && value.TryGetValue<string>(out _);
     }
 }

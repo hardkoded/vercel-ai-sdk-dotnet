@@ -33,6 +33,12 @@ public sealed class OpenResponsesOptions
     /// without an item ID are sent as easy input messages. Maps to <c>strictResponseInput</c>.
     /// </summary>
     public bool StrictResponseInput { get; set; }
+
+    /// <summary>Extra headers sent with every request.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; set; }
+
+    /// <summary>Codecs for Open Responses extension tools, items, and streaming events. Experimental.</summary>
+    public IReadOnlyList<OpenResponsesExtension>? Extensions { get; set; }
 }
 
 /// <summary>Open Responses provider.</summary>
@@ -46,11 +52,15 @@ public sealed class OpenResponsesProvider : ProviderBase
         : base((options ?? new OpenResponsesOptions()).Name ?? ProviderName)
     {
         Options = options ?? new OpenResponsesOptions();
+        ExtensionRegistry = OpenResponsesExtensions.CreateRegistry(Options.Extensions);
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
     }
 
     /// <summary>Options.</summary>
     public OpenResponsesOptions Options { get; }
+
+    /// <summary>The registered extensions, indexed.</summary>
+    public OpenResponsesExtensionRegistry ExtensionRegistry { get; }
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
@@ -97,6 +107,29 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    private OpenResponsesExtensionRegistry Registry => _provider.ExtensionRegistry;
+
+    /// <summary>
+    /// Serializes the model id and config for a workflow boundary. Maps to <c>[WORKFLOW_SERIALIZE]</c>.
+    /// Throws a <see cref="SerializationError"/> when extensions are registered, because their codecs cannot cross the boundary.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        if (Registry.ByExtensionId.Count > 0)
+        {
+            throw new SerializationError(
+                "Open Responses models with registered extensions cannot be serialized across workflow boundaries. Recreate the provider with its extension codecs inside the workflow step.");
+        }
+
+        var config = new Dictionary<string, object?>
+        {
+            ["provider"] = Provider,
+            ["providerOptionsName"] = _provider.Name,
+            ["url"] = RequestUri().ToString(),
+        };
+        return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+    }
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
@@ -126,7 +159,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     {
         var (body, warnings) = Prepare(options);
         body["stream"] = true;
-        var session = new OpenResponsesStream(_provider.Name);
+        var session = new OpenResponsesStream(_provider.Name, Registry);
         var enumerator = _provider.Http.SendSseAsync(RequestUri(), body.ToJsonString(), Headers(options), cancellationToken)
             .GetAsyncEnumerator(cancellationToken);
         try
@@ -177,8 +210,18 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             warnings.Add(new CallWarning("unsupported", "seed"));
         }
 
-        var converted = OpenResponsesInput.Convert(options.Prompt, _provider.Name, _provider.Options.StrictResponseInput);
+        var providerToolsByName = new Dictionary<string, LanguageModelTool>(StringComparer.Ordinal);
+        foreach (var tool in options.Tools ?? Array.Empty<LanguageModelTool>())
+        {
+            if (tool.IsProviderDefined)
+            {
+                providerToolsByName[tool.Name] = tool;
+            }
+        }
+
+        var converted = OpenResponsesInput.Convert(options.Prompt, _provider.Name, _provider.Options.StrictResponseInput, Registry, providerToolsByName);
         warnings.AddRange(converted.Warnings);
+        var encodedProviderTools = new Dictionary<string, OpenResponsesExtension>(StringComparer.Ordinal);
 
         var body = new JsonObject { ["model"] = ModelId, ["input"] = converted.Input };
         OpenAIJson.Set(body, "instructions", converted.Instructions);
@@ -188,8 +231,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         OpenAIJson.Set(body, "presence_penalty", options.PresencePenalty);
         OpenAIJson.Set(body, "frequency_penalty", options.FrequencyPenalty);
         OpenAIJson.Set(body, "reasoning", Reasoning(options, warnings));
-        OpenAIJson.Set(body, "tools", Tools(options.Tools));
-        OpenAIJson.Set(body, "tool_choice", ToolChoice(options.ToolChoice));
+        OpenAIJson.Set(body, "tools", Tools(options.Tools, encodedProviderTools, warnings));
+        OpenAIJson.Set(body, "tool_choice", ToolChoice(options.Tools, options.ToolChoice, encodedProviderTools, warnings));
         if (options.JsonSchema is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null } schema)
         {
             var format = new JsonObject
@@ -251,7 +294,14 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         return reasoning;
     }
 
-    private static JsonArray? Tools(IReadOnlyList<LanguageModelTool>? tools)
+    /// <summary>
+    /// Converts function tools, and provider-defined tools through their extension. A provider tool that no extension
+    /// encodes is dropped with a warning. <paramref name="encodedProviderTools"/> receives the encoded provider tools by name.
+    /// </summary>
+    private JsonArray? Tools(
+        IReadOnlyList<LanguageModelTool>? tools,
+        Dictionary<string, OpenResponsesExtension> encodedProviderTools,
+        List<CallWarning> warnings)
     {
         if (tools == null || tools.Count == 0)
         {
@@ -261,6 +311,37 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         var converted = new JsonArray();
         foreach (var tool in tools)
         {
+            if (tool.IsProviderDefined)
+            {
+                JsonObject? encoded = null;
+                if (Registry.ByProviderToolId.TryGetValue(tool.ProviderToolId!, out var extension))
+                {
+                    try
+                    {
+                        if (extension.EncodeTool!(new OpenResponsesToolContext(tool.Name, tool.Args)) is { } fields)
+                        {
+                            encoded = WithType(fields, extension.ToolType!);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Encoding failures are reported as unsupported below.
+                    }
+                }
+
+                if (encoded == null)
+                {
+                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId));
+                }
+                else
+                {
+                    converted.Add(encoded);
+                    encodedProviderTools[tool.Name] = extension!;
+                }
+
+                continue;
+            }
+
             var function = new JsonObject { ["type"] = "function", ["name"] = tool.Name };
             OpenAIJson.Set(function, "description", tool.Description);
             function["parameters"] = OpenAIJson.Node(tool.InputSchema);
@@ -272,14 +353,69 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             converted.Add(function);
         }
 
-        return converted;
+        return converted.Count > 0 ? converted : null;
     }
 
-    private static JsonNode? ToolChoice(ToolChoice? toolChoice)
+    /// <summary>
+    /// Converts the tool choice. A named provider tool is encoded through its extension, and omitted when that tool was not
+    /// encoded or its extension cannot encode the choice.
+    /// </summary>
+    private static JsonNode? ToolChoice(
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        Dictionary<string, OpenResponsesExtension> encodedProviderTools,
+        List<CallWarning> warnings)
     {
-        return toolChoice is ToolChoice.NamedChoice named
-            ? new JsonObject { ["type"] = "function", ["name"] = named.ToolName }
-            : toolChoice?.Type;
+        if (toolChoice is not ToolChoice.NamedChoice named)
+        {
+            return toolChoice?.Type;
+        }
+
+        var tool = tools?.FirstOrDefault(candidate => candidate.IsProviderDefined && candidate.Name == named.ToolName);
+        if (tool == null)
+        {
+            return new JsonObject { ["type"] = "function", ["name"] = named.ToolName };
+        }
+
+        if (!encodedProviderTools.TryGetValue(named.ToolName, out var extension))
+        {
+            return null;
+        }
+
+        JsonObject? fields = new JsonObject();
+        if (extension.EncodeToolChoice != null)
+        {
+            try
+            {
+                fields = extension.EncodeToolChoice(new OpenResponsesToolContext(tool.Name, tool.Args));
+            }
+            catch (Exception)
+            {
+                fields = null;
+            }
+
+            if (fields == null)
+            {
+                warnings.Add(new CallWarning("unsupported", "tool choice for provider-defined tool " + tool.ProviderToolId));
+                return null;
+            }
+        }
+
+        return WithType(fields!, extension.ToolType!);
+    }
+
+    private static JsonObject WithType(JsonObject fields, string type)
+    {
+        var result = new JsonObject { ["type"] = type };
+        foreach (var pair in fields)
+        {
+            if (pair.Key != "type")
+            {
+                result[pair.Key] = pair.Value?.DeepClone();
+            }
+        }
+
+        return result;
     }
 
     private LanguageModelGenerateResult Parse(
@@ -366,6 +502,16 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                         OpenAIJson.String(part, "arguments") ?? string.Empty,
                         OpenResponsesResults.ItemMetadata(_provider.Name, OpenAIJson.String(part, "id"))));
                     break;
+                default:
+                    if (OpenAIJson.Node(part) is JsonObject item
+                        && OpenResponsesJson.IsExtensionItem(item)
+                        && OpenResponsesExtensionItems.Decode(Registry, _provider.Name, item, OpenResponsesItemMode.Generate) is { } decoded)
+                    {
+                        content.AddRange(decoded);
+                        hasToolCalls |= decoded.Any(decodedPart => decodedPart is GeneratedToolCall);
+                    }
+
+                    break;
             }
         }
 
@@ -394,6 +540,11 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         {
             ["Authorization"] = "Bearer " + ApiKeys.Require(_provider.Options.ApiKey, _provider.Options.ApiKeyEnvironmentVariable),
         };
+        foreach (var pair in _provider.Options.Headers ?? new Dictionary<string, string>())
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
         if (options.Headers != null)
         {
             foreach (var pair in options.Headers)

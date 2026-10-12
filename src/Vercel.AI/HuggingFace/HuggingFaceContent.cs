@@ -42,7 +42,7 @@ public sealed class HuggingFaceToolCall : GeneratedToolCall
     }
 
     /// <summary>True when Hugging Face executed the tool.</summary>
-    public bool ProviderExecuted { get; }
+    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A tool result returned in the response output.</summary>

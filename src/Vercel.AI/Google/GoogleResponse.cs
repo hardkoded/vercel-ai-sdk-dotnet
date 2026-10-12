@@ -426,7 +426,7 @@ public sealed class GoogleToolCall : GeneratedToolCall
     }
 
     /// <summary>True when Gemini executed the tool itself.</summary>
-    public bool ProviderExecuted { get; }
+    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A provider-executed tool result.</summary>

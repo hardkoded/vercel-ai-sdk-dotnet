@@ -127,6 +127,8 @@ internal static class OpenResponsesResults
 internal sealed class OpenResponsesStream
 {
     private readonly string _providerOptionsName;
+    private readonly OpenResponsesExtensionRegistry _registry;
+    private readonly Dictionary<string, object?> _extensionState = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(StringComparer.Ordinal);
     private string? _activeReasoningId;
     private bool _hasToolCalls;
@@ -134,9 +136,10 @@ internal sealed class OpenResponsesStream
     private string? _rawFinishReason;
     private LanguageModelUsage _usage = LanguageModelUsage.Null;
 
-    public OpenResponsesStream(string providerOptionsName)
+    public OpenResponsesStream(string providerOptionsName, OpenResponsesExtensionRegistry registry)
     {
         _providerOptionsName = providerOptionsName;
+        _registry = registry;
     }
 
     public List<LanguageModelStreamPart> Accept(string data, bool includeRaw)
@@ -184,6 +187,12 @@ internal sealed class OpenResponsesStream
         var item = OpenAIJson.Child(chunk, "item");
         var itemType = OpenAIJson.String(item, "type");
         var itemId = OpenAIJson.String(item, "id") ?? string.Empty;
+        if (type != null && type.Contains(':'))
+        {
+            AcceptExtensionEvent(type, chunk, parts);
+            return;
+        }
+
         switch (type)
         {
             case "response.output_item.added" when itemType == "function_call":
@@ -209,6 +218,9 @@ internal sealed class OpenResponsesStream
                     OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)));
                 _hasToolCalls = true;
                 _toolCallsByItemId.Remove(itemId);
+                break;
+            case "response.output_item.done" when itemType != null && itemType.Contains(':'):
+                AcceptExtensionItem(item!.Value, parts);
                 break;
             case "response.output_item.added" when itemType == "reasoning":
                 parts.Add(new ReasoningStartStreamPart(itemId));
@@ -273,6 +285,59 @@ internal sealed class OpenResponsesStream
                 _rawFinishReason = OpenAIJson.String(error, "code");
                 parts.Add(new ErrorStreamPart(OpenAIJson.String(error, "message") ?? string.Empty));
                 break;
+        }
+    }
+
+    private void AcceptExtensionEvent(string type, JsonElement chunk, List<LanguageModelStreamPart> parts)
+    {
+        if (OpenAIJson.Node(chunk) is not JsonObject @event
+            || !OpenResponsesJson.IsExtensionEvent(@event)
+            || !_registry.ByEventType.TryGetValue(type, out var extension)
+            || extension.DecodeEvent == null)
+        {
+            return;
+        }
+
+        IReadOnlyList<LanguageModelStreamPart>? decoded;
+        try
+        {
+            decoded = extension.DecodeEvent(new OpenResponsesDecodeEventContext(@event, _extensionState));
+        }
+        catch (Exception exception)
+        {
+            parts.Add(new ErrorStreamPart(exception.Message));
+            return;
+        }
+
+        foreach (var part in decoded ?? Array.Empty<LanguageModelStreamPart>())
+        {
+            parts.Add(part);
+            _hasToolCalls |= part is ToolCallStreamPart || part is ToolInputStartStreamPart;
+        }
+    }
+
+    private void AcceptExtensionItem(JsonElement item, List<LanguageModelStreamPart> parts)
+    {
+        if (OpenAIJson.Node(item) is not JsonObject extensionItem || !OpenResponsesJson.IsExtensionItem(extensionItem))
+        {
+            return;
+        }
+
+        List<GeneratedContent>? decoded;
+        try
+        {
+            decoded = OpenResponsesExtensionItems.Decode(_registry, _providerOptionsName, extensionItem, OpenResponsesItemMode.Stream);
+        }
+        catch (Exception exception)
+        {
+            parts.Add(new ErrorStreamPart(exception.Message));
+            return;
+        }
+
+        foreach (var part in decoded ?? new List<GeneratedContent>())
+        {
+            parts.Add(OpenResponsesExtensionItems.ToStreamPart(part));
+            _hasToolCalls |= part is GeneratedToolCall;
         }
     }
 
