@@ -17,6 +17,16 @@ dotnet add package Vercel.AI
 
 String model ids such as `openai/gpt-4.1-mini` are resolved by the Gateway, which ships inside this package.
 
+## Skill for Coding Agents
+
+If you use a coding agent such as Claude Code, Cursor, or Codex, install the skill from this repo so the agent knows the C# API names and how they map to the JavaScript AI SDK:
+
+```bash
+npx skills add hardkoded/vercel-ai-sdk-dotnet
+```
+
+The skill lives in [`skills/vercel-ai-dotnet/SKILL.md`](skills/vercel-ai-dotnet/SKILL.md).
+
 ## What you can call
 
 `Vercel.AI` is a server library:
