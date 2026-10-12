@@ -42,6 +42,31 @@ public sealed class Tool
     /// </summary>
     public bool NeedsApproval { get; set; }
 
+    private Tool(string providerToolId, string name, JsonElement args)
+    {
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        ProviderToolId = providerToolId ?? throw new ArgumentNullException(nameof(providerToolId));
+        ProviderToolArgs = args;
+    }
+
+    /// <summary>Provider-defined tool id (<c>&lt;provider&gt;.&lt;tool&gt;</c>), or null for a function tool.</summary>
+    public string? ProviderToolId { get; }
+
+    /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
+    public JsonElement ProviderToolArgs { get; }
+
+    /// <summary>Whether this is a provider-defined tool, which the provider executes. Maps to <c>{ type: 'provider', id, args }</c>.</summary>
+    public bool IsProviderDefined => ProviderToolId != null;
+
+    /// <summary>
+    /// Declares a provider-defined tool. The provider executes it, so it has no <see cref="Execute"/>.
+    /// <paramref name="args"/> must be a JSON object. Maps to <see cref="LanguageModelTool.ProviderDefined"/>.
+    /// </summary>
+    public static Tool ProviderDefined(string id, string name, JsonElement args)
+    {
+        return new Tool(id, name, args.Clone());
+    }
+
     /// <summary>Creates a tool from a JSON schema string.</summary>
     public static Tool Function(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute, bool? strict = null)
     {

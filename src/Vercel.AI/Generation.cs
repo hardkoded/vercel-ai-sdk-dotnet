@@ -108,7 +108,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -212,6 +212,7 @@ internal static class Generation
                 var reasoning = new StringBuilder();
                 var reasoningMetadata = new List<JsonElement?>();
                 var toolCalls = new List<GeneratedToolCall>();
+                var toolContent = new List<GeneratedContent>();
                 var sources = new List<GeneratedSource>();
                 var documentSources = new List<GeneratedDocumentSource>();
                 FinishReason? finish = null;
@@ -276,9 +277,14 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata);
+                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted };
                                 toolCalls.Add(call);
+                                toolContent.Add(call);
                                 buffer.Add(new ToolCallPart(call));
+                                break;
+                            case ToolResultStreamPart streamedResult:
+                                var providerResult = new GeneratedToolResult(streamedResult.ToolCallId, streamedResult.ToolName, streamedResult.Result.GetRawText(), streamedResult.IsError) { ProviderMetadata = streamedResult.ProviderMetadata };
+                                toolContent.Add(providerResult);
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 buffer.Add(new ToolInputStartPart(
@@ -320,7 +326,7 @@ internal static class Generation
                 }
 
                 var generated = new LanguageModelGenerateResult(
-                    BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolCalls, sources, documentSources),
+                    BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolContent, sources, documentSources),
                     finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
                     usage,
                     rawFinish,
@@ -340,7 +346,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || step.ToolCalls.Count == 0 || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -434,7 +440,7 @@ internal static class Generation
         List<TextBlock> textBlocks,
         string reasoning,
         JsonElement? reasoningMetadata,
-        List<GeneratedToolCall> toolCalls,
+        List<GeneratedContent> toolContent,
         List<GeneratedSource> sources,
         List<GeneratedDocumentSource> documentSources)
     {
@@ -452,7 +458,7 @@ internal static class Generation
             }
         }
 
-        content.AddRange(toolCalls);
+        content.AddRange(toolContent);
         content.AddRange(sources);
         content.AddRange(documentSources);
         return content;
@@ -599,12 +605,26 @@ internal static class Generation
         {
             reasoning = null;
         }
-        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts));
+        // Upstream lists the provider's own results beside the client's; an error result is left out.
         var toolResults = new List<ExecutedTool>();
+        foreach (var part in generated.Content)
+        {
+            if (part is GeneratedToolResult providerResult && !providerResult.IsError)
+            {
+                toolResults.Add(new ExecutedTool(providerResult.ToolCallId, providerResult.ToolName, providerResult.ResultJson, false));
+            }
+        }
+
+        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts));
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
             foreach (var call in toolCalls)
             {
+                if (call.ProviderExecuted)
+                {
+                    continue;
+                }
+
                 if (IsAwaitingApproval(FindTool(options, call.ToolName), options))
                 {
                     continue;
@@ -693,11 +713,30 @@ internal static class Generation
         return tool != null && tool.NeedsApproval && options.ApproveTool == null;
     }
 
+    // A provider-executed call is already done, so only the calls the caller must run keep the loop going.
+    private static bool HasClientToolCall(StepResult step)
+    {
+        foreach (var call in step.ToolCalls)
+        {
+            if (!call.ProviderExecuted)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
     private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
     {
         foreach (var call in step.ToolCalls)
         {
+            if (call.ProviderExecuted)
+            {
+                continue;
+            }
+
             var tool = FindTool(options, call.ToolName);
             if ((tool != null && tool.Execute == null) || IsAwaitingApproval(tool, options))
             {
@@ -754,7 +793,9 @@ internal static class Generation
                 continue;
             }
 
-            tools.Add(new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict));
+            tools.Add(tool.IsProviderDefined
+                ? LanguageModelTool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.ProviderToolArgs)
+                : new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict));
         }
 
         return tools;
