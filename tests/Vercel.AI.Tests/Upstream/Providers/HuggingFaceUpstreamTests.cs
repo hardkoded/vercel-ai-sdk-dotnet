@@ -296,9 +296,9 @@ public sealed class HuggingFaceUpstreamTests
     public async Task Stream_sends_stream_true()
     {
         var capture = new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse("{\"type\":\"response.completed\",\"response\":{\"id\":\"resp_test\",\"status\":\"completed\"},\"sequence_number\":1}") };
-        await UpstreamChat.Read(Responses(capture).DoStreamAsync(
+        await UpstreamChat.Read((await Responses(capture).DoStreamAsync(
             new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") }, Temperature = 0.7 },
-            CancellationToken.None));
+            CancellationToken.None)));
         JsonAssert.Equal(
             JsonNode.Parse(capture.Requests[0].Body),
             "{\"model\":\"deepseek-ai/DeepSeek-V3-0324\",\"temperature\":0.7,\"stream\":true,\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Hello\"}]}]}");
@@ -705,7 +705,7 @@ public sealed class HuggingFaceUpstreamTests
     private static async Task<List<LanguageModelStreamPart>> Stream(params string[] events)
     {
         var capture = new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(events) };
-        return await UpstreamChat.Read(Responses(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        return await UpstreamChat.Read((await Responses(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
     }
 
     private static async Task<LanguageModelGenerateResult> Generate(string body)

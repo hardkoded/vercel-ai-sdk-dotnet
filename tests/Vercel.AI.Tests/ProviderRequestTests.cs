@@ -180,7 +180,7 @@ public sealed class ProviderRequestTests
         yield return Chat("moonshot", "api.moonshot.ai", h => MoonshotProvider.Create(Key(), h));
         yield return Chat("perplexity", "api.perplexity.ai", h => PerplexityProvider.Create(Key(), h));
         yield return Chat("together", "api.together.xyz", h => TogetherAIProvider.Create(Key(), h));
-        yield return Chat("xai", "api.x.ai", h => XaiProvider.Create(Key(), h));
+        yield return Row("api.x.ai/v1/responses", "Authorization", "Bearer secret", h => XaiProvider.Create(Key(), h), "chat");
         yield return Chat("zai", "api.z.ai", h => ZaiProvider.Create(Key(), h));
         yield return Chat("gmicloud", "api.gmi-serving.com", h => GmiCloudProvider.Create(Key(), h));
         yield return Chat("mistral", "api.mistral.ai", h => MistralProvider.Create(Key(), h));

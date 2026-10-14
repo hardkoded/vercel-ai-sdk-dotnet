@@ -99,6 +99,8 @@ internal static class Generation
                     callOptions.ToolChoice = update.ToolChoice;
                 }
 
+                callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
+
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
@@ -207,6 +209,8 @@ internal static class Generation
                     callOptions.ToolChoice = update.ToolChoice;
                 }
 
+                callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
+
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
                 var reasoning = new StringBuilder();
@@ -219,7 +223,8 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
-                var enumerator = current.DoStreamAsync(callOptions, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
                 var disposal = abort.Track(enumerator);
                 try
                 {
@@ -535,6 +540,51 @@ internal static class Generation
 
         using var document = JsonDocument.Parse(merged.ToJsonString());
         return document.RootElement.Clone();
+    }
+
+    // Deep merge, as upstream mergeObjects: nested objects merge, other values from the step replace the call's.
+    private static IReadOnlyDictionary<string, JsonElement>? MergeProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? options,
+        IReadOnlyDictionary<string, JsonElement>? step)
+    {
+        if (step == null || options == null)
+        {
+            return step ?? options;
+        }
+
+        var merged = new Dictionary<string, JsonElement>();
+        foreach (var pair in options)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in step)
+        {
+            merged[pair.Key] = merged.TryGetValue(pair.Key, out var current) ? MergeJson(current, pair.Value) : pair.Value;
+        }
+
+        return merged;
+    }
+
+    private static JsonElement MergeJson(JsonElement current, JsonElement step)
+    {
+        if (current.ValueKind != JsonValueKind.Object || step.ValueKind != JsonValueKind.Object)
+        {
+            return step;
+        }
+
+        var merged = new Dictionary<string, JsonElement>();
+        foreach (var property in current.EnumerateObject())
+        {
+            merged[property.Name] = property.Value;
+        }
+
+        foreach (var property in step.EnumerateObject())
+        {
+            merged[property.Name] = merged.TryGetValue(property.Name, out var value) ? MergeJson(value, property.Value) : property.Value;
+        }
+
+        return JsonSerializer.SerializeToElement(merged);
     }
 
     private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? metadata)

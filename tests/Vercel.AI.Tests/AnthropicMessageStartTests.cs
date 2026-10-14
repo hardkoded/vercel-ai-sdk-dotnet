@@ -39,7 +39,7 @@ public sealed class AnthropicMessageStartTests
             + "data: {\"type\":\"message_stop\"}\n\n";
 
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in AnthropicParity.Client(handler).LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None))
+        await foreach (var part in (await AnthropicParity.Client(handler).LanguageModel("claude-3-haiku-20240307").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)))
         {
             parts.Add(part);
         }
@@ -87,7 +87,19 @@ public sealed class AnthropicMessageStartTests
     public void ShouldIgnoreMessageStartAccountingPartsWhenReplayingAssistantContent()
     {
         var result = AnthropicPrompt.Convert(
-            AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"custom\",\"kind\":\"anthropic.message_start\",\"providerOptions\":{\"anthropic\":{\"id\":\"msg_usage\",\"model\":\"claude-haiku-4-5\",\"usage\":{\"input_tokens\":13,\"output_tokens\":1}}}},{\"type\":\"text\",\"text\":\"Hi!\"}]}]"),
+            new ModelMessage[]
+            {
+                new AssistantModelMessage(new AssistantContentPart[]
+                {
+                    new AssistantCustomPart(
+                        "anthropic.message_start",
+                        new Dictionary<string, JsonElement>
+                        {
+                            ["anthropic"] = AnthropicParity.Json("{\"id\":\"msg_usage\",\"model\":\"claude-haiku-4-5\",\"usage\":{\"input_tokens\":13,\"output_tokens\":1}}"),
+                        }),
+                    new AssistantTextPart("Hi!"),
+                }),
+            },
             sendReasoning: false);
 
         Assert.Equal("[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Hi!\"}]}]", result.Messages.ToJsonString());

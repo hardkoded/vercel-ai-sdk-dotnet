@@ -98,7 +98,7 @@ public sealed class ExtractReasoningMiddlewareTests
         if (testCase.Reasoning != null)
         {
             var modelParts = new List<LanguageModelStreamPart>();
-            await foreach (var part in model.DoStreamAsync(new LanguageModelCallOptions(), CancellationToken.None))
+            await foreach (var part in (await model.DoStreamAsync(new LanguageModelCallOptions(), CancellationToken.None)))
             {
                 modelParts.Add(part);
             }

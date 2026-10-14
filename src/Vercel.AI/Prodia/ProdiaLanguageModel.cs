@@ -114,11 +114,19 @@ public sealed class ProdiaLanguageModel : ILanguageModel
     }
 
     /// <summary>Runs <see cref="DoGenerateAsync"/> and replays the result as stream parts. Generated images are not streamed.</summary>
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(
+            Parts(result),
+            response: new LanguageModelStreamResponse(result.ResponseHeaders));
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
         yield return new StreamStartStreamPart(result.Warnings);
         yield return new ResponseMetadataStreamPart(null, result.ResponseModelId, result.ResponseTimestamp);
         foreach (var part in result.Content.OfType<GeneratedText>())

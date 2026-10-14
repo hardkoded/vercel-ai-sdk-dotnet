@@ -745,7 +745,7 @@ public sealed class GoogleVertexUpstreamTests
 
         handler.MediaType = "text/event-stream";
         handler.ResponseText = "data: [DONE]\n\n";
-        await GoogleUpstream.Collect(model.DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None)).ConfigureAwait(false);
+        await GoogleUpstream.Collect((await model.DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
         Assert.True(JsonNode.Parse(handler.Body)!["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 

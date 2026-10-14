@@ -170,7 +170,7 @@ public sealed class TogetherAIUpstreamTests
     {
         var capture = Stream();
         var model = (OpenAICompatibleLanguageModel)TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("m");
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 
@@ -529,7 +529,7 @@ public sealed class TogetherAIUpstreamTests
             ResponseBody = UpstreamChat.Sse("{\"choices\":[{\"text\":\"Hi\",\"finish_reason\":\"stop\"}]}"),
         };
         var model = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).CompletionModel("together-completion-model");
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 

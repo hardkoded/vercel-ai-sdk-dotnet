@@ -115,7 +115,7 @@ public sealed class ZaiUpstreamTests
         var options = UpstreamChat.Prompt();
         options.Tools = new[] { new LanguageModelTool("weather", null, UpstreamChat.Json("{\"type\":\"object\",\"properties\":{}}")) };
         options.ProviderOptions = UpstreamChat.Bag("zai", "{\"toolStream\":true}");
-        var parts = await UpstreamChat.Read(Chat(capture).DoStreamAsync(options, CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Chat(capture).DoStreamAsync(options, CancellationToken.None)));
         var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
         Assert.Equal("call-weather", call.ToolCallId);
         Assert.Equal("weather", call.ToolName);
@@ -150,7 +150,7 @@ public sealed class ZaiUpstreamTests
         var options = UpstreamChat.Prompt();
         options.IncludeRawChunks = true;
         options.ProviderOptions = UpstreamChat.Bag("zai", "{\"toolStream\":true}");
-        var parts = await UpstreamChat.Read(Chat(capture).DoStreamAsync(options, CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Chat(capture).DoStreamAsync(options, CancellationToken.None)));
         var body = UpstreamChat.Body(capture);
         Assert.True(body["stream"]!.GetValue<bool>());
         Assert.True(body["tool_stream"]!.GetValue<bool>());

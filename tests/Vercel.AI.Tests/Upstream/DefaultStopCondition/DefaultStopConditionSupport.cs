@@ -51,7 +51,12 @@ internal static class DefaultStopConditionSupport
                 Usage));
         }
 
-        public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+        }
+
+        private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
             LanguageModelCallOptions options,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {

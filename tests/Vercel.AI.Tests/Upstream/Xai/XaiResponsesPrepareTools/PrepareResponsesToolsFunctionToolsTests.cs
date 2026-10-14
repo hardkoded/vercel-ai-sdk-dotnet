@@ -4,16 +4,17 @@
 
 using Vercel.AI.Provider;
 using Vercel.AI.Xai;
+using static Vercel.AI.Tests.Upstream.Xai.XaiResponsesPrepareTools.PrepareResponsesToolsSupport;
 
 namespace Vercel.AI.Tests.Upstream.Xai.XaiResponsesPrepareTools;
 
 /// <summary>Port of <c>xai-responses-prepare-tools.test.ts</c> &gt; <c>prepareResponsesTools &gt; function tools</c>.</summary>
 public sealed class PrepareResponsesToolsFunctionToolsTests
 {
+    private const string Prefix = TestFile + " > function tools::";
+
     [Fact]
-    [UpstreamTest(
-        PrepareResponsesToolsSupport.TestFile + " > function tools::should prepare function tools",
-        Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should prepare function tools", Coverage = UpstreamCoverage.Covered)]
     public void Should_prepare_function_tools()
     {
         var tool = new LanguageModelTool(

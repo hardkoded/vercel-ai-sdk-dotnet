@@ -298,7 +298,8 @@ public sealed class OpenAIBatchServiceTests
             BatchResultDownloads = new BatchResultDownloads { MaxLineBytes = maxLineBytes },
         }, handler);
         var batch = provider.ExperimentalBatch()!;
-        var results = batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var stream = await batch.DoGetResultsAsync(new BatchOperationCall("batch_123", null, new Dictionary<string, string>(), CancellationToken.None), CancellationToken.None);
+        var results = stream.ToListAsync().AsTask();
         if (maxLineBytes == 16)
         {
             var error = await Assert.ThrowsAsync<DownloadError>(() => results);
@@ -384,7 +385,29 @@ public sealed class OpenAIBatchServiceTests
         await AssertForwardsCancellation(
             2,
             () => new RecordingHandler().Add(BatchUrl, BatchResponse(outputFileId: "file-output")).Add(OutputUrl, ResultLine("france", ResponsesResultBody("Paris"))),
-            (batch, token) => batch.DoGetResultsAsync(Call("batch_123"), token));
+            async (batch, token) =>
+            {
+                var stream = await batch.DoGetResultsAsync(Call("batch_123"), token);
+                await stream.ToListAsync();
+            });
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "errors the result stream when a JSONL line is malformed", Coverage = UpstreamCoverage.Covered)]
+    public async Task Errors_the_result_stream_when_a_JSONL_line_is_malformed()
+    {
+        var handler = new ChunkedHandler()
+            .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
+            .Add(OutputUrl, ResultLine("france", ResponsesResultBody("Paris")) + "\n", "{not json}\n");
+        var batch = Batch(handler);
+
+        var stream = await batch.DoGetResultsAsync(Call("batch_123"), CancellationToken.None);
+        await using var reader = stream.GetAsyncEnumerator();
+
+        Assert.True(await reader.MoveNextAsync());
+        Assert.Equal("france", reader.Current.Id);
+        Assert.Equal("succeeded", reader.Current.Status);
+        await Assert.ThrowsAsync<JsonParseException>(async () => await reader.MoveNextAsync());
     }
 
     [Fact]
@@ -402,7 +425,8 @@ public sealed class OpenAIBatchServiceTests
         var batch = Batch(handler);
 
         await batch.DoGetStatusAsync(Call("batch_123"), CancellationToken.None);
-        var results = await batch.DoGetResultsAsync(Call("batch_123"), CancellationToken.None);
+        var stream = await batch.DoGetResultsAsync(Call("batch_123"), CancellationToken.None);
+        var results = await stream.ToListAsync();
 
         Assert.Equal(new[] { BatchUrl, BatchUrl, OutputUrl, ErrorsUrl }, handler.RequestUrls);
         Assert.Equal(4, results.Count);

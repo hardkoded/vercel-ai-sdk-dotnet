@@ -8,7 +8,9 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.Xai;
 
-/// <summary>Xai provider. OpenAI Chat Completions compatible at <c>https://api.x.ai/v1</c>.</summary>
+/// <summary>
+/// xAI provider at <c>https://api.x.ai/v1</c>. <see cref="LanguageModel(string)"/> returns the Responses API model, as upstream does.
+/// </summary>
 public sealed class XaiProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -29,14 +31,26 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
-    /// <summary>
-    /// Creates a Responses API model. The provider id is <c>xai.responses</c>.
-    /// <see cref="OpenAICompatibleProvider.LanguageModel(string)"/> stays on Chat Completions.
-    /// </summary>
+    /// <summary>Creates a Responses API model, like <see cref="ResponsesModel(string)"/>. The provider id is <c>xai.responses</c>.</summary>
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return ResponsesModel(modelId);
+    }
+
+    /// <summary>Creates a Responses API model. The provider id is <c>xai.responses</c>.</summary>
     public XaiResponsesLanguageModel ResponsesModel(string modelId)
     {
         return new XaiResponsesLanguageModel(this, modelId);
     }
+
+#pragma warning disable CS0809 // The base member stays current for the other OpenAI-compatible providers.
+    /// <summary>Creates a Chat Completions model. Upstream xAI has no chat model; use <see cref="LanguageModel(string)"/> or <see cref="ResponsesModel(string)"/>.</summary>
+    [Obsolete("xAI language models use the Responses API, as upstream does. Use LanguageModel or ResponsesModel. The Chat Completions model will be removed.")]
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId)
+    {
+        return base.CreateChatModel(modelId);
+    }
+#pragma warning restore CS0809
 
     /// <summary>xAI file store.</summary>
     public XaiFiles Files()

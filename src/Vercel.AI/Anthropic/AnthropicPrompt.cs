@@ -37,8 +37,24 @@ public sealed class AnthropicPromptResult
 /// <summary>Converts SDK prompt messages into Anthropic message blocks.</summary>
 public static class AnthropicPrompt
 {
-    /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
+    /// <summary>Converts SDK prompt messages. Maps to <c>convertToAnthropicPrompt</c>.</summary>
     public static AnthropicPromptResult Convert(
+        IReadOnlyList<ModelMessage> prompt,
+        bool sendReasoning = true,
+        AnthropicCacheControlValidator? cacheControl = null,
+        IReadOnlyDictionary<string, string>? providerToolNames = null,
+        IReadOnlyDictionary<string, string>? toolsetNames = null)
+    {
+        if (prompt == null)
+        {
+            throw new ArgumentNullException(nameof(prompt));
+        }
+
+        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames);
+    }
+
+    /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
+    internal static AnthropicPromptResult ConvertJson(
         JsonElement prompt,
         bool sendReasoning = true,
         AnthropicCacheControlValidator? cacheControl = null,
@@ -823,6 +839,151 @@ public static class AnthropicPrompt
         {
             betas.Add(beta);
         }
+    }
+
+    // Writes the typed prompt in the SDK message JSON shape that ConvertJson reads.
+    private static JsonElement ToJson(IReadOnlyList<ModelMessage> prompt)
+    {
+        var messages = new JsonArray();
+        foreach (var message in prompt)
+        {
+            if (message is SystemModelMessage system)
+            {
+                var node = new JsonObject { ["role"] = "system", ["content"] = system.Content };
+                AnthropicJson.Set(node, "providerOptions", Options(system.ProviderOptions));
+                messages.Add(node);
+            }
+            else if (message is UserModelMessage user)
+            {
+                var parts = new JsonArray();
+                foreach (var part in user.Content)
+                {
+                    if (part is TextContentPart text)
+                    {
+                        parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+                    }
+                    else if (part is FileContentPart file)
+                    {
+                        parts.Add(FileJson(file));
+                    }
+                }
+
+                messages.Add(new JsonObject { ["role"] = "user", ["content"] = parts });
+            }
+            else if (message is AssistantModelMessage assistant)
+            {
+                var parts = new JsonArray();
+                foreach (var part in assistant.Parts)
+                {
+                    JsonObject? node = part switch
+                    {
+                        AssistantTextPart text => new JsonObject { ["type"] = "text", ["text"] = text.Text },
+                        AssistantReasoningPart reasoning => new JsonObject { ["type"] = "reasoning", ["text"] = reasoning.Text },
+                        AssistantToolCallPart call => new JsonObject
+                        {
+                            ["type"] = "tool-call",
+                            ["toolCallId"] = call.ToolCall.ToolCallId,
+                            ["toolName"] = call.ToolCall.ToolName,
+                            ["input"] = ToolInput(call.ToolCall.ArgumentsJson),
+                        },
+                        _ => null,
+                    };
+                    if (node != null)
+                    {
+                        AnthropicJson.Set(node, "providerOptions", Options(part.ProviderOptions));
+                        parts.Add(node);
+                    }
+                }
+
+                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = parts });
+            }
+            else if (message is ToolModelMessage tool)
+            {
+                JsonNode value;
+                try
+                {
+                    value = JsonNode.Parse(tool.OutputJson) ?? JsonValue.Create(tool.OutputJson)!;
+                }
+                catch (JsonException)
+                {
+                    value = JsonValue.Create(tool.OutputJson)!;
+                }
+
+                var output = new JsonObject { ["type"] = tool.IsError ? "error-json" : "json", ["value"] = value };
+                AnthropicJson.Set(output, "providerOptions", tool.OutputProviderOptions is { } outputOptions ? AnthropicJson.Node(outputOptions) : null);
+                var result = new JsonObject
+                {
+                    ["type"] = "tool-result",
+                    ["toolName"] = tool.ToolName,
+                    ["toolCallId"] = tool.ToolCallId,
+                    ["output"] = output,
+                };
+                AnthropicJson.Set(result, "providerOptions", tool.ProviderMetadata is { } metadata ? AnthropicJson.Node(metadata) : null);
+                messages.Add(new JsonObject { ["role"] = "tool", ["content"] = new JsonArray { result } });
+            }
+        }
+
+        using var document = JsonDocument.Parse(messages.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static JsonObject FileJson(FileContentPart file)
+    {
+        var data = new JsonObject();
+        if (file.ProviderReference != null)
+        {
+            var reference = new JsonObject();
+            foreach (var pair in file.ProviderReference)
+            {
+                reference[pair.Key] = pair.Value;
+            }
+
+            data["type"] = "reference";
+            data["reference"] = reference;
+        }
+        else if (!string.IsNullOrEmpty(file.Url))
+        {
+            data["type"] = "url";
+            data["url"] = file.Url;
+        }
+        else if (file.Data != null)
+        {
+            data["type"] = "data";
+            data["data"] = System.Convert.ToBase64String(file.Data);
+        }
+
+        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = data };
+        AnthropicJson.Set(node, "filename", file.FileName);
+        AnthropicJson.Set(node, "providerOptions", Options(file.ProviderOptions));
+        return node;
+    }
+
+    private static JsonNode ToolInput(string argumentsJson)
+    {
+        try
+        {
+            return JsonNode.Parse(string.IsNullOrWhiteSpace(argumentsJson) ? "{}" : argumentsJson) ?? new JsonObject();
+        }
+        catch (JsonException)
+        {
+            return new JsonObject { ["rawInvalidInput"] = argumentsJson };
+        }
+    }
+
+    private static JsonObject? Options(IReadOnlyDictionary<string, JsonElement>? options)
+    {
+        if (options == null)
+        {
+            return null;
+        }
+
+        var node = new JsonObject();
+        foreach (var pair in options)
+        {
+            node[pair.Key] = AnthropicJson.Node(pair.Value);
+        }
+
+        return node;
     }
 
     private static List<PromptBlock> Group(JsonElement prompt)

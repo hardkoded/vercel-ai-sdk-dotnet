@@ -4,6 +4,7 @@
 
 using System.Text;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests;
 
@@ -608,7 +609,7 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "throws the \"not passed as inline bytes\" message when URL source with top-level-only media type", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_rejects_a_url()
     {
-        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("image", null));
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("url", "image")));
         Assert.Contains("not passed as inline bytes", error.Message);
     }
 
@@ -624,7 +625,7 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "throws the \"could not be auto-detected\" message when top-level segment is unsupported (e.g. text)", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_rejects_text()
     {
-        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType("text", "hello"));
+        var error = Assert.Throws<UnsupportedFunctionalityException>(() => MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", "text") { Base64 = "hello" }));
         Assert.Contains("could not be auto-detected", error.Message);
     }
 
@@ -632,7 +633,7 @@ public sealed class DetectMediaTypeTests
     [UpstreamTest(ResolveFull + "accepts base64 string data", Coverage = UpstreamCoverage.Covered)]
     public void Resolve_full_media_type_accepts_base64()
     {
-        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType("image", ByteEncoding.ToBase64(Png)));
+        Assert.Equal("image/png", MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", "image") { Base64 = ByteEncoding.ToBase64(Png) }));
     }
 
     private static byte[] Bytes(params int[] values)

@@ -111,7 +111,7 @@ public sealed class DeepInfraUpstreamTests
                 "{\"choices\":[],\"usage\":{\"prompt_tokens\":19,\"completion_tokens\":84,\"total_tokens\":1184,\"completion_tokens_details\":{\"reasoning_tokens\":1081}}}"),
         };
         var model = DeepInfraProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("google/gemma-2-9b-it");
-        var parts = await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         Assert.Equal(1165, finish.Usage.OutputTokens);
         Assert.Equal(84, finish.Usage.TextTokens);

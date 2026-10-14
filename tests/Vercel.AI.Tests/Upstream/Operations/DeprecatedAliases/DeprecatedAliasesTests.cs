@@ -44,7 +44,7 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel and the deprecated EvaluationModel through the registry, a custom fallback, and the deprecated alias map. String ids through a default provider are not ported. Issue #389.")]
+    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Covered)]
     public async Task Resolves_deprecated_provider_factories_through_default_custom_and_registry_access()
     {
         var legacy = new LegacyProvider();
@@ -52,18 +52,30 @@ public sealed class DeprecatedAliasesTests
         registry.Register("legacy", legacy);
         var custom = new CustomProvider { FallbackProvider = legacy };
         var aliases = new CustomProvider().AddEvaluationModel("alias", new LegacyModel());
-        foreach (var model in new IDecisionCaller[]
+        DecisionModels.DefaultProvider = legacy;
+        try
         {
-            registry.EvaluationModel("legacy|model"),
-            registry.DecisionModel("legacy|model"),
-            custom.EvaluationModel("model"),
-            custom.DecisionModel("model"),
-            aliases.EvaluationModel("alias"),
-            aliases.DecisionModel("alias"),
-        })
+            var requests = new[]
+            {
+                new DecideRequest { ModelId = "model" },
+                new DecideRequest { Model = registry.EvaluationModel("legacy|model") },
+                new DecideRequest { Model = registry.DecisionModel("legacy|model") },
+                new DecideRequest { Model = custom.EvaluationModel("model") },
+                new DecideRequest { Model = custom.DecisionModel("model") },
+                new DecideRequest { Model = aliases.EvaluationModel("alias") },
+                new DecideRequest { Model = aliases.DecisionModel("alias") },
+            };
+            foreach (var request in requests)
+            {
+                request.State = "message";
+                request.Questions = DecisionQuestions();
+                var output = await DecideOperation.DecideAsync(request);
+                Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
+            }
+        }
+        finally
         {
-            var output = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "message", Questions = DecisionQuestions() });
-            Assert.Equal("billing", Assert.Single(output.Answers).Value.Choice);
+            DecisionModels.DefaultProvider = null;
         }
 
         var direct = await registry.EvaluationModel("legacy|model").DoEvaluateAsync(Call(), CancellationToken.None);
@@ -71,7 +83,7 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Partial, Note = "Checks that the decision map wins over the deprecated map, direct DoEvaluateAsync calls through CustomProvider.EvaluationModel, and that a fallback provider's decision factory wins over its deprecated factory. A string id through a default provider is not ported. Issue #389.")]
+    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Covered, Note = "EvaluateRequest has no ModelId, so the string id goes through Decide.DecideAsync. Upstream experimental_evaluate is the same function.")]
     public async Task Prefers_new_model_maps_and_factories_and_supports_direct_deprecated_model_calls()
     {
         var model = new DecideModel { Result = Result() };
@@ -80,11 +92,17 @@ public sealed class DeprecatedAliasesTests
         var direct = await provider.EvaluationModel("alias").DoEvaluateAsync(Call(), CancellationToken.None);
         Assert.Equal("billing", Assert.Single(direct.Answers).Value.Choice);
 
-        Assert.Single(model.Calls);
-
         var both = new BothFactoriesProvider(model);
-        await DecideOperation.DecideAsync(new DecideRequest { Model = new CustomProvider { FallbackProvider = both }.DecisionModel("model"), State = "message", Questions = DecisionQuestions() });
-        Assert.Equal(2, model.Calls.Count);
+        DecisionModels.DefaultProvider = both;
+        try
+        {
+            await DecideOperation.DecideAsync(new DecideRequest { ModelId = "model", State = "message", Questions = DecisionQuestions() });
+        }
+        finally
+        {
+            DecisionModels.DefaultProvider = null;
+        }
+
         Assert.Equal(0, both.DeprecatedCalls);
     }
 

@@ -1,0 +1,182 @@
+[
+  {
+    "type": "stream-start",
+    "warnings": []
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "modelId": "grok-4.5",
+    "timestamp": "1970-01-01T00:00:00.000Z",
+    "type": "response-metadata"
+  },
+  {
+    "id": "ig_00000000-0000-4000-8000-000000000002_call-00000000-0000-4000-8000-00000000000b-0",
+    "toolName": "image_generation",
+    "type": "tool-input-start"
+  },
+  {
+    "delta": "{}",
+    "id": "ig_00000000-0000-4000-8000-000000000002_call-00000000-0000-4000-8000-00000000000b-0",
+    "type": "tool-input-delta"
+  },
+  {
+    "id": "ig_00000000-0000-4000-8000-000000000002_call-00000000-0000-4000-8000-00000000000b-0",
+    "type": "tool-input-end"
+  },
+  {
+    "input": "{}",
+    "providerExecuted": true,
+    "toolCallId": "ig_00000000-0000-4000-8000-000000000002_call-00000000-0000-4000-8000-00000000000b-0",
+    "toolName": "image_generation",
+    "type": "tool-call"
+  },
+  {
+    "result": {
+      "prompt": "A delicate origami paper boat sailing gently on a tranquil pond covered with floating green lily pads and autumn leaves, soft sunlight filtering through trees, peaceful nature scene, highly detailed, realistic style",
+      "result": "ZmFrZUltYWdlQmFzZTY0RGF0YQ=="
+    },
+    "toolCallId": "ig_00000000-0000-4000-8000-000000000002_call-00000000-0000-4000-8000-00000000000b-0",
+    "toolName": "image_generation",
+    "type": "tool-result"
+  },
+  {
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-start"
+  },
+  {
+    "delta": "Here's",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " a",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " serene",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " image",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " of",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " a",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " paper",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " boat",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " sailing",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " on",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " a",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " leaf",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": "-",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": "covered",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": " pond",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "delta": ":",
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-delta"
+  },
+  {
+    "id": "text-msg_00000000-0000-4000-8000-000000000002",
+    "type": "text-end"
+  },
+  {
+    "finishReason": {
+      "raw": "completed",
+      "unified": "stop"
+    },
+    "providerMetadata": {
+      "xai": {
+        "costInUsdTicks": 123456,
+        "serviceTier": "default"
+      }
+    },
+    "type": "finish",
+    "usage": {
+      "inputTokens": {
+        "cacheRead": 20,
+        "noCache": 80,
+        "total": 100
+      },
+      "outputTokens": {
+        "reasoning": 30,
+        "text": 20,
+        "total": 50
+      },
+      "raw": {
+        "context_details": {
+          "input_tokens": 80,
+          "output_tokens": 20
+        },
+        "cost_in_usd_ticks": 123456,
+        "input_tokens": 100,
+        "input_tokens_details": {
+          "cached_tokens": 20
+        },
+        "num_server_side_tools_used": 1,
+        "num_sources_used": 0,
+        "output_tokens": 50,
+        "output_tokens_details": {
+          "reasoning_tokens": 30
+        },
+        "server_side_tool_usage_details": {
+          "code_interpreter_calls": 0,
+          "document_search_calls": 0,
+          "file_search_calls": 0,
+          "image_generation_calls": 1,
+          "mcp_calls": 0,
+          "web_search_calls": 0,
+          "x_search_calls": 0
+        },
+        "total_tokens": 150
+      }
+    }
+  }
+]

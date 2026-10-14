@@ -28,7 +28,7 @@ public sealed class GroqUpstreamTests
     public async Task Stream_sends_stream_true_without_usage_options()
     {
         var capture = Stream();
-        await UpstreamChat.Read(Chat(capture, "gemma2-9b-it").DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None));
+        await UpstreamChat.Read((await Chat(capture, "gemma2-9b-it").DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None)));
         Assert.Equal("{\"model\":\"gemma2-9b-it\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"stream\":true}", capture.Requests[0].Body);
     }
 

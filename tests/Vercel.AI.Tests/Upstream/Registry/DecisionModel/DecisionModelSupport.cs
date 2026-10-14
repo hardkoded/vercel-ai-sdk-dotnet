@@ -4,11 +4,41 @@
 
 #pragma warning disable CS0618
 
+using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 
 namespace Vercel.AI.Tests.Upstream.Registry.DecisionModel;
+
+/// <summary>Keeps tests that replace <c>DecisionModels.DefaultProvider</c> from racing each other.</summary>
+[CollectionDefinition("DecisionDefaultProvider", DisableParallelization = true)]
+public sealed class DecisionDefaultProviderCollection
+{
+}
+
+/// <summary>Restores the global default provider and the Gateway key after each test.</summary>
+public abstract class DecisionDefaultProviderFixture : IDisposable
+{
+    private readonly string? _gatewayKey = Environment.GetEnvironmentVariable("AI_GATEWAY_API_KEY");
+
+    protected DecisionDefaultProviderFixture()
+    {
+        Reset();
+    }
+
+    public void Dispose()
+    {
+        Reset();
+        Environment.SetEnvironmentVariable("AI_GATEWAY_API_KEY", _gatewayKey);
+    }
+
+    private static void Reset()
+    {
+        DecisionModels.DefaultProvider = null;
+        DecisionModels.GatewayFactory = null;
+    }
+}
 
 /// <summary>Maps to <c>MockProviderV4</c>: a provider with no decision factory.</summary>
 internal sealed class MockProvider : ProviderBase
@@ -115,4 +145,29 @@ internal sealed class MockVideoModel : IVideoModel
     public string ModelId => "mock-model-id";
 
     public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken) => throw new NotImplementedException();
+}
+
+internal static class DecisionModelSupport
+{
+    internal static DecisionModelResult RouteResult()
+    {
+        return new DecisionModelResult(
+            new Dictionary<string, DecisionAnswer> { ["route"] = new DecisionAnswer("choice", choice: "billing") },
+            Array.Empty<OperationWarning>(),
+            new OperationUsage(10, 2, 12));
+    }
+
+    internal static Dictionary<string, DecisionQuestion> RouteQuestions()
+    {
+        return new Dictionary<string, DecisionQuestion>
+        {
+            ["route"] = new DecisionQuestion("choice", "Team?", new Dictionary<string, object?> { ["billing"] = "Charges", ["support"] = "Other" }),
+        };
+    }
+
+    internal static JsonElement Json(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
+    }
 }

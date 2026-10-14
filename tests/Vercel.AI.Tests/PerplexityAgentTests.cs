@@ -320,7 +320,7 @@ public sealed class PerplexityAgentTests
     {
         var sse = File.ReadAllText(Fixture("perplexity-agent-web-search.sse"));
         var handler = new AgentHandler(sse, sse: true);
-        var parts = await Read(Create(handler).LanguageModel("fast").DoStreamAsync(Prompt("Find TypeScript"), CancellationToken.None));
+        var parts = await Read((await Create(handler).LanguageModel("fast").DoStreamAsync(Prompt("Find TypeScript"), CancellationToken.None)));
 
         Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
         var text = string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta));
@@ -339,7 +339,7 @@ public sealed class PerplexityAgentTests
     public async Task Stream_accepts_null_event_fields()
     {
         var sse = File.ReadAllText(Fixture("perplexity-agent-null-events.sse"));
-        var parts = await Read(Create(new AgentHandler(sse, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(sse, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
 
         Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
         Assert.Equal(FinishReason.Other, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
@@ -358,7 +358,7 @@ public sealed class PerplexityAgentTests
     public async Task Stream_recovers_terminal_text_without_repeating_parts()
     {
         var done = Event("{\"type\":\"response.output_text.done\",\"item_id\":\"msg-123\",\"output_index\":0,\"content_index\":0,\"text\":\"Hello from Perplexity.\"}");
-        var parts = await Read(Create(new AgentHandler(done, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(done, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         Assert.Equal(new[] { "text-start", "text-delta", "text-end" }, parts.Where(part => part.Type.StartsWith("text-", StringComparison.Ordinal)).Select(part => part.Type));
         Assert.Equal("Hello from Perplexity.", string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
 
@@ -371,7 +371,7 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + message + "}"),
             Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"output\":[" + message + "]}") + "}"),
         });
-        var recovered = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var recovered = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var deltas = recovered.OfType<TextDeltaStreamPart>().ToList();
         Assert.Equal(new[] { "msg-123", "msg-123", "msg-123:1", "msg-123:1" }, deltas.Select(part => part.Id));
         Assert.Equal("Hello world.Second part.", string.Concat(deltas.Select(part => part.Delta)));
@@ -389,7 +389,7 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.output_item.done\",\"item\":" + message + "}"),
             Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"output\":[{\"type\":\"search_results\",\"results\":[" + search + "]}," + message + "]}") + "}"),
         });
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var source = Assert.Single(parts.OfType<SourceStreamPart>());
 
         Assert.Equal("7", source.Id);
@@ -406,25 +406,25 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.reasoning.search_queries\",\"sequence_number\":1,\"thought\":\"Searching. \"}"),
             Event("{\"type\":\"response.reasoning.stopped\",\"sequence_number\":5,\"thought\":\"Done.\"}"),
         });
-        var reasoned = await Read(Create(new AgentHandler(reasoning, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var reasoned = await Read((await Create(new AgentHandler(reasoning, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         Assert.Equal("Planning. Searching. Done.", string.Concat(reasoned.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta)));
         Assert.Contains(reasoned, part => part is ReasoningStartStreamPart start && start.Id == "reasoning-0");
         Assert.Contains(reasoned, part => part is ReasoningEndStreamPart end && end.Id == "reasoning-0");
 
         var incomplete = Event("{\"type\":\"response.incomplete\",\"response\":" + SampleResponse("{\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}") + "}");
-        var incompleteParts = await Read(Create(new AgentHandler(incomplete, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var incompleteParts = await Read((await Create(new AgentHandler(incomplete, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         Assert.Equal("Hello from Perplexity.", string.Concat(incompleteParts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
         var incompleteFinish = Assert.Single(incompleteParts.OfType<FinishStreamPart>());
         Assert.Equal(FinishReason.Length, incompleteFinish.FinishReason);
         Assert.Equal(120, incompleteFinish.Usage.InputTokens);
 
         var failed = Event("{\"type\":\"response.failed\",\"error\":{\"message\":\"Agent run failed\",\"type\":\"server_error\"}}");
-        var failedParts = await Read(Create(new AgentHandler(failed, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var failedParts = await Read((await Create(new AgentHandler(failed, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         Assert.Equal("Agent run failed", Assert.Single(failedParts.OfType<ErrorStreamPart>()).Message);
         Assert.Equal(FinishReason.Error, Assert.Single(failedParts.OfType<FinishStreamPart>()).FinishReason);
 
         var malformed = "data: {not-json}\n\n";
-        var malformedParts = await Read(Create(new AgentHandler(malformed, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var malformedParts = await Read((await Create(new AgentHandler(malformed, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         Assert.Contains(malformedParts, part => part is ErrorStreamPart);
         Assert.Equal(FinishReason.Error, Assert.Single(malformedParts.OfType<FinishStreamPart>()).FinishReason);
 
@@ -433,7 +433,7 @@ public sealed class PerplexityAgentTests
             + Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"output\":[" + finance + "]}") + "}");
         var rawOptions = Prompt("Hello");
         rawOptions.IncludeRawChunks = true;
-        var rawParts = await Read(Create(new AgentHandler(rawEvents, sse: true)).LanguageModel("low").DoStreamAsync(rawOptions, CancellationToken.None));
+        var rawParts = await Read((await Create(new AgentHandler(rawEvents, sse: true)).LanguageModel("low").DoStreamAsync(rawOptions, CancellationToken.None)));
         Assert.DoesNotContain(rawParts, part => part is ErrorStreamPart);
         Assert.Contains(rawParts.OfType<RawStreamPart>(), part => part.RawJson.Contains("finance_results"));
         Assert.Equal(FinishReason.Stop, Assert.Single(rawParts.OfType<FinishStreamPart>()).FinishReason);
@@ -448,7 +448,7 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.output_item.done\",\"item\":" + call + "}"),
             Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"status\":\"requires_action\",\"output\":[" + call + "]}") + "}"),
         });
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var tool = Assert.Single(parts.OfType<ToolCallStreamPart>());
 
         Assert.Equal("call-123", tool.ToolCallId);
@@ -752,7 +752,7 @@ public sealed class PerplexityAgentTests
         var events = Event(first) + CreateStreamEvents(financePrefix: finance);
         var options = Prompt("Hello");
         options.IncludeRawChunks = true;
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None)));
 
         Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
         Assert.Contains(parts.OfType<RawStreamPart>(), part => part.RawJson == first);
@@ -762,7 +762,7 @@ public sealed class PerplexityAgentTests
     [Fact]
     public async Task StreamsTypedAgentApiEventsAsTextSourcesUsageAndMetadata()
     {
-        var parts = await Read(Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
 
         Assert.Contains(parts, part => part is StreamStartStreamPart);
@@ -784,7 +784,7 @@ public sealed class PerplexityAgentTests
     public async Task SendsTheAgentApiStreamingRequestBody()
     {
         var handler = new AgentHandler(CreateStreamEvents(), sse: true);
-        await Read(Create(handler).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        await Read((await Create(handler).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var body = Body(handler);
 
         Assert.Equal("low", body.GetProperty("preset").GetString());
@@ -798,7 +798,7 @@ public sealed class PerplexityAgentTests
         var created = "{\"type\":\"response.created\",\"sequence_number\":0,\"response\":" + SampleResponse("{\"output\":[],\"usage\":null}") + "}";
         var options = Prompt("Hello");
         options.IncludeRawChunks = true;
-        var parts = await Read(Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(CreateStreamEvents(), sse: true)).LanguageModel("low").DoStreamAsync(options, CancellationToken.None)));
         var raw = parts.OfType<RawStreamPart>().ToList();
 
         Assert.Equal(6, raw.Count);
@@ -811,7 +811,7 @@ public sealed class PerplexityAgentTests
         var call = "{\"id\":\"fc-123\",\"type\":\"function_call\",\"status\":\"completed\",\"call_id\":\"call-123\",\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"San Francisco\\\"}\"}";
         var events = Event("{\"type\":\"response.output_item.done\",\"item\":" + call + "}")
             + Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"status\":\"requires_action\",\"output\":[" + call + "]}") + "}");
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var tool = Assert.Single(parts.OfType<ToolCallStreamPart>());
 
         Assert.Equal("call-123", tool.ToolCallId);
@@ -824,7 +824,7 @@ public sealed class PerplexityAgentTests
     public async Task StreamsSourcesFromFetchUrlReasoningEvents()
     {
         var events = Event("{\"type\":\"response.reasoning.fetch_url_results\",\"sequence_number\":0,\"contents\":[{\"title\":\"Fetched page\",\"url\":\"https://example.com/fetched\",\"snippet\":\"Fetched content.\"}]}");
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var source = Assert.Single(parts.OfType<SourceStreamPart>());
 
         Assert.Equal("https://example.com/fetched", source.Url);
@@ -843,7 +843,7 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.reasoning.fetch_url_results\",\"sequence_number\":4,\"contents\":[],\"thought\":\"Checking details. \"}"),
             Event("{\"type\":\"response.reasoning.stopped\",\"sequence_number\":5,\"thought\":\"Done.\"}"),
         });
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var thoughts = parts.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta).ToList();
 
         Assert.Equal(new[] { "Planning. ", "Searching. ", "Reviewing results. ", "Fetching details. ", "Checking details. ", "Done." }, thoughts);
@@ -854,7 +854,7 @@ public sealed class PerplexityAgentTests
     public async Task HandlesIncompleteTerminalEventsAndPreservesUsage()
     {
         var events = Event("{\"type\":\"response.incomplete\",\"response\":" + SampleResponse("{\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}") + "}");
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var text = Assert.Single(parts.OfType<TextDeltaStreamPart>());
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
 
@@ -889,7 +889,7 @@ public sealed class PerplexityAgentTests
             Event("{\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":" + message + "}"),
             Event("{\"type\":\"response.completed\",\"response\":" + SampleResponse("{\"output\":[" + message + "]}") + "}"),
         });
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
 
         Assert.Equal(new[] { "Hello ", "world.", "Second ", "part." }, deltas.Select(part => part.Delta));
@@ -902,7 +902,7 @@ public sealed class PerplexityAgentTests
         var second = "{\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Another citation.\",\"annotations\":[{\"type\":\"url_citation\",\"url\":\"https://example.com/second\",\"title\":\"Second\"}]}]}";
         var events = Event("{\"type\":\"response.output_item.done\",\"item\":" + message + ",\"output_index\":0}")
             + Event("{\"type\":\"" + terminalType + "\",\"response\":" + SampleResponse("{\"status\":\"" + status + "\",\"output\":[" + message + "," + second + "]}") + "}");
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var sources = parts.OfType<SourceStreamPart>().ToList();
 
         Assert.Equal(2, sources.Count);
@@ -917,7 +917,7 @@ public sealed class PerplexityAgentTests
         var message = "{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}";
         var response = SampleResponse("{\"output\":[" + message + "]}");
         var events = Event("{\"type\":\"" + type + "\",\"item_id\":\"msg-123\",\"output_index\":0,\"content_index\":0,\"text\":\"Hello from Perplexity.\",\"item\":" + message + ",\"response\":" + response + "}");
-        var parts = await Read(Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None));
+        var parts = await Read((await Create(new AgentHandler(events, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
         var text = parts.Where(part => part.Type.StartsWith("text-", StringComparison.Ordinal)).ToList();
 
         Assert.Equal("text-start", text[0].Type);

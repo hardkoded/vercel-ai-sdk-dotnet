@@ -472,7 +472,7 @@ public sealed class CohereChatParityTests
         var handler = ChunksFixture("cohere-text");
         var options = TestPrompt();
         options.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await UpstreamChat.Read(Model(handler, provider => provider.Headers["Custom-Provider-Header"] = "provider-header-value").DoStreamAsync(options, CancellationToken.None)).ConfigureAwait(false);
+        await UpstreamChat.Read((await Model(handler, provider => provider.Headers["Custom-Provider-Header"] = "provider-header-value").DoStreamAsync(options, CancellationToken.None))).ConfigureAwait(false);
         AssertHeaders(handler.Calls[0]);
     }
 
@@ -707,9 +707,9 @@ public sealed class CohereChatParityTests
         return Model(handler).DoGenerateAsync(options, CancellationToken.None);
     }
 
-    private static Task<List<LanguageModelStreamPart>> Stream(ParityHandler handler, LanguageModelCallOptions options)
+    private static async Task<List<LanguageModelStreamPart>> Stream(ParityHandler handler, LanguageModelCallOptions options)
     {
-        return UpstreamChat.Read(Model(handler).DoStreamAsync(options, CancellationToken.None));
+        return await UpstreamChat.Read((await Model(handler).DoStreamAsync(options, CancellationToken.None)));
     }
 
     private static LanguageModelCallOptions TestPrompt()

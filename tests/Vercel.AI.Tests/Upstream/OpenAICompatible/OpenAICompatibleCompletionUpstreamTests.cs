@@ -110,7 +110,6 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var model = Model(capture);
         var result = await model.DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal("test-value", result.ResponseHeaders["test-header"]);
-        Assert.Equal("test-value", model.LastResponseHeaders["test-header"]);
     }
 
     [Fact]
@@ -244,7 +243,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
     public async Task Stream_sends_stream_true_and_the_prompt()
     {
         var capture = StreamCapture();
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None)));
         var body = JsonNode.Parse(capture.Requests[0].Body)!;
         Assert.True(body["stream"]!.GetValue<bool>());
         Assert.Equal("user:\nHello\n\nassistant:\n", body["prompt"]!.GetValue<string>());
@@ -258,8 +257,9 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var capture = StreamCapture();
         capture.ResponseHeaders["test-header"] = "test-value";
         var model = Model(capture);
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
-        Assert.Equal("test-value", model.LastResponseHeaders["test-header"]);
+        var result = await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None);
+        await UpstreamChat.Read(result);
+        Assert.Equal("test-value", result.Response!.Headers["test-header"]);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
     public async Task Stream_sends_the_model_id()
     {
         var capture = StreamCapture();
-        await UpstreamChat.Read(Model(capture, "gpt-3.5-turbo-instruct").DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture, "gpt-3.5-turbo-instruct").DoStreamAsync(UpstreamChat.Prompt("Hello"), CancellationToken.None)));
         Assert.Equal("gpt-3.5-turbo-instruct", JsonNode.Parse(capture.Requests[0].Body)!["model"]!.GetValue<string>());
     }
 
@@ -278,7 +278,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var capture = StreamCapture();
         var options = UpstreamChat.Prompt();
         options.Headers = new Dictionary<string, string?> { ["X-Custom"] = "yes" };
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
         Assert.Equal("yes", capture.Requests[0].Headers["X-Custom"]);
     }
 
@@ -289,7 +289,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var capture = StreamCapture();
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("openai-compatible", "{\"suffix\":\"END\"}");
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
         Assert.Equal("END", JsonNode.Parse(capture.Requests[0].Body)!["suffix"]!.GetValue<string>());
     }
 
@@ -300,7 +300,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var capture = StreamCapture();
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("other", "{\"suffix\":\"END\"}");
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["suffix"]);
     }
 
@@ -311,7 +311,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
         var capture = StreamCapture();
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("myProvider", "{\"user\":\"ada\"}");
-        await UpstreamChat.Read(Named(capture, "my-provider").DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Named(capture, "my-provider").DoStreamAsync(options, CancellationToken.None)));
         Assert.Equal("ada", JsonNode.Parse(capture.Requests[0].Body)!["user"]!.GetValue<string>());
     }
 
@@ -326,7 +326,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
             ["my-provider"] = UpstreamChat.Json("{\"user\":\"raw\"}"),
             ["myProvider"] = UpstreamChat.Json("{\"user\":\"camel\"}"),
         };
-        await UpstreamChat.Read(Named(capture, "my-provider").DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Named(capture, "my-provider").DoStreamAsync(options, CancellationToken.None)));
         Assert.Equal("camel", JsonNode.Parse(capture.Requests[0].Body)!["user"]!.GetValue<string>());
     }
 
@@ -338,7 +338,7 @@ public sealed class OpenAICompatibleCompletionUpstreamTests
 
     private static async Task<List<LanguageModelStreamPart>> Read(string body)
     {
-        return await UpstreamChat.Read(Model(StreamCapture(body)).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        return await UpstreamChat.Read((await Model(StreamCapture(body)).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
     }
 
     private static OpenAICompatibleCompletionLanguageModel Model(UpstreamCapture capture, string modelId = "m")

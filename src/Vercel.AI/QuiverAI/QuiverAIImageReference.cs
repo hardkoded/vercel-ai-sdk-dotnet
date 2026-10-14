@@ -3,15 +3,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
-using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.QuiverAI;
 
-/// <summary>Builds the reference image objects accepted by <c>providerOptions.quiverai.referenceImages</c>.</summary>
-public static class QuiverAIImageReference
+/// <summary>
+/// A reference image accepted by <c>providerOptions.quiverai.referenceImages</c>: <c>{ "url" }</c> or <c>{ "base64" }</c>.
+/// Exactly one of <see cref="Url"/> and <see cref="Base64"/> is set. Serializes to that JSON shape.
+/// </summary>
+public sealed class QuiverAIImageReference
 {
     private const int MaxReferenceBase64Length = 16_777_216;
     private const int MaxReferenceBytes = 12_582_912;
@@ -31,21 +34,37 @@ public static class QuiverAIImageReference
     private static readonly Regex SvgClose = new Regex("</svg>\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex SvgSelfClose = new Regex("<svg(?:\\s[^>]*)?/>\\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant);
 
-    /// <summary>Returns <c>{ "url" }</c> for an HTTP or HTTPS URL.</summary>
-    public static JsonObject Prepare(Uri input)
+    private QuiverAIImageReference(string? url, string? base64)
     {
-        return new JsonObject { ["url"] = ValidateImageUrl(input.ToString()) };
+        Url = url;
+        Base64 = base64;
+    }
+
+    /// <summary>HTTP or HTTPS image URL, or <see langword="null"/> for a base64 reference.</summary>
+    [JsonPropertyName("url")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Url { get; }
+
+    /// <summary>Base64-encoded image data without a data URL prefix, or <see langword="null"/> for a URL reference.</summary>
+    [JsonPropertyName("base64")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Base64 { get; }
+
+    /// <summary>Returns a URL reference for an HTTP or HTTPS URL.</summary>
+    public static QuiverAIImageReference Prepare(Uri input)
+    {
+        return new QuiverAIImageReference(ValidateImageUrl(input.ToString()), null);
     }
 
     /// <summary>
-    /// Returns <c>{ "url" }</c> for a URL, or <c>{ "base64" }</c> for a base64 string or a base64 data URL.
+    /// Returns a URL reference for a URL, or a base64 reference for a base64 string or a base64 data URL.
     /// Throws <see cref="InvalidArgumentException"/> for other schemes, invalid base64, or unsupported images.
     /// </summary>
-    public static JsonObject Prepare(string input)
+    public static QuiverAIImageReference Prepare(string input)
     {
         if (Scheme.IsMatch(input))
         {
-            return new JsonObject { ["url"] = ValidateImageUrl(input) };
+            return new QuiverAIImageReference(ValidateImageUrl(input), null);
         }
 
         if (input.StartsWith("data:", StringComparison.Ordinal))
@@ -57,18 +76,18 @@ public static class QuiverAIImageReference
             }
 
             ValidateReferenceBase64(match.Groups[2].Value, "input");
-            return new JsonObject { ["base64"] = match.Groups[2].Value };
+            return new QuiverAIImageReference(null, match.Groups[2].Value);
         }
 
         ValidateReferenceBase64(input, "input");
-        return new JsonObject { ["base64"] = input };
+        return new QuiverAIImageReference(null, input);
     }
 
-    /// <summary>Returns <c>{ "base64" }</c> for PNG, JPEG, WebP, GIF, or SVG bytes.</summary>
-    public static JsonObject Prepare(byte[] input)
+    /// <summary>Returns a base64 reference for PNG, JPEG, WebP, GIF, or SVG bytes.</summary>
+    public static QuiverAIImageReference Prepare(byte[] input)
     {
         ValidateReferenceBytes(input, "input");
-        return new JsonObject { ["base64"] = Convert.ToBase64String(input) };
+        return new QuiverAIImageReference(null, Convert.ToBase64String(input));
     }
 
     internal static string ValidateImageUrl(string url)

@@ -11,61 +11,43 @@ namespace Vercel.AI.Tests.Upstream.Xai.XaiResponsesLanguageModel;
 public sealed class DoStreamTextStreamingTests
 {
     private const string Prefix = TestFile + " > doStream > text streaming::";
-    private const string SnapshotNote = "Asserts part order, ids, counts, and the finish part, not each delta. reasoning-delta parts carry no provider metadata.";
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = SnapshotNote)]
+    [UpstreamTest(Prefix + "should stream web search with real response", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_stream_web_search_with_real_response()
+    {
+        var parts = await Collect(
+            Model(ChunksFixture("xai-web-search-tool.1.chunks.txt")),
+            WithTools(ProviderTool("xai.web_search", "web_search")));
+
+        JsonAssert.Equal(ToJson(parts), Expected("xai-web-search-tool.1.stream.json").ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should stream text deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas()
     {
         var parts = await Collect(Model(ChunksFixture("xai-text-streaming.1.chunks.txt")), HelloPrompt());
 
-        AssertStream(
-            parts,
-            id: "769f3302-64f9-4c72-2b48-860c87fd9b2a",
-            timestamp: new DateTimeOffset(2025, 11, 22, 23, 18, 20, TimeSpan.Zero),
-            reasoningDeltas: 59,
-            textDeltas: 626,
-            reasoningTokens: 237,
-            outputTokens: 863);
+        JsonAssert.Equal(ToJson(parts), Expected("xai-text-streaming.1.stream.json").ToJsonString());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream text deltas with reasoning", Coverage = UpstreamCoverage.Partial, Note = SnapshotNote)]
+    [UpstreamTest(Prefix + "should stream text deltas with reasoning", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas_with_reasoning()
     {
         var parts = await Collect(Model(ChunksFixture("xai-text-with-reasoning-streaming.1.chunks.txt")), HelloPrompt());
 
-        AssertStream(
-            parts,
-            id: "bf3b2b34-79d4-a45c-7be8-d1e5f96386c2",
-            timestamp: new DateTimeOffset(2025, 11, 22, 23, 54, 28, TimeSpan.Zero),
-            reasoningDeltas: 66,
-            textDeltas: 600,
-            reasoningTokens: 323,
-            outputTokens: 923);
+        JsonAssert.Equal(ToJson(parts), Expected("xai-text-with-reasoning-streaming.1.stream.json").ToJsonString());
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream text deltas with encrypted reasoning", Coverage = UpstreamCoverage.Partial, Note = SnapshotNote)]
+    [UpstreamTest(Prefix + "should stream text deltas with encrypted reasoning", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas_with_encrypted_reasoning()
     {
         var parts = await Collect(Model(ChunksFixture("xai-text-with-reasoning-streaming-store-false.1.chunks.txt")), HelloPrompt());
 
-        AssertStream(
-            parts,
-            id: "0b824fe9-3250-2588-0bbf-0810402fc822",
-            timestamp: new DateTimeOffset(2025, 11, 23, 1, 11, 25, TimeSpan.Zero),
-            reasoningDeltas: 64,
-            textDeltas: 578,
-            reasoningTokens: 253,
-            outputTokens: 831);
-        var end = First<ReasoningEndStreamPart>(parts);
-        var xai = end.ProviderMetadata!.Value.GetProperty("xai");
-        Assert.Equal("rs_0b824fe9-3250-2588-0bbf-0810402fc822", xai.GetProperty("itemId").GetString());
-        var encrypted = xai.GetProperty("reasoningEncryptedContent").GetString()!;
-        Assert.Equal(1731, encrypted.Length);
-        Assert.StartsWith("WjtnRFdCMihg", encrypted, StringComparison.Ordinal);
-        Assert.EndsWith("jndXaAUM", encrypted, StringComparison.Ordinal);
+        JsonAssert.Equal(ToJson(parts), Expected("xai-text-with-reasoning-streaming-store-false.1.stream.json").ToJsonString());
     }
 
     [Fact]
@@ -175,6 +157,17 @@ public sealed class DoStreamTextStreamingTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should stream x_search tool call", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_stream_x_search_tool_call()
+    {
+        var parts = await Collect(
+            Model(ChunksFixture("xai-x-search-tool.chunks.txt")),
+            WithTools(ProviderTool("xai.x_search", "x_search")));
+
+        JsonAssert.Equal(ToJson(parts), Expected("xai-x-search-tool.stream.json").ToJsonString());
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should not emit duplicate text-delta from response.output_item.done after streaming", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_not_emit_duplicate_text_delta_from_response_output_item_done_after_streaming()
     {
@@ -192,52 +185,5 @@ public sealed class DoStreamTextStreamingTests
         var deltas = parts.OfType<TextDeltaStreamPart>().ToList();
         Assert.Equal(new[] { "Hello", " ", "world" }, deltas.Select(delta => delta.Delta));
         Assert.DoesNotContain(deltas, delta => delta.Delta == "Hello world");
-    }
-
-    private static void AssertStream(
-        List<LanguageModelStreamPart> parts,
-        string id,
-        DateTimeOffset timestamp,
-        int reasoningDeltas,
-        int textDeltas,
-        int reasoningTokens,
-        int outputTokens)
-    {
-        // The recorded stream: start, metadata, one reasoning block, one text block, finish.
-        var types = new List<string>();
-        foreach (var part in parts)
-        {
-            if (types.Count == 0 || types[^1] != part.Type)
-            {
-                types.Add(part.Type);
-            }
-        }
-
-        Assert.Equal(
-            new[] { "stream-start", "response-metadata", "reasoning-start", "reasoning-delta", "reasoning-end", "text-start", "text-delta", "text-end", "finish" },
-            types);
-        Assert.Empty(First<StreamStartStreamPart>(parts).Warnings);
-        var metadata = First<ResponseMetadataStreamPart>(parts);
-        Assert.Equal(id, metadata.Id);
-        Assert.Equal("grok-code-fast-1", metadata.ModelId);
-        Assert.Equal(timestamp, metadata.Timestamp);
-        var reasoningStart = First<ReasoningStartStreamPart>(parts);
-        Assert.Equal("reasoning-rs_" + id, reasoningStart.Id);
-        JsonAssert.Equal(reasoningStart.ProviderMetadata!.Value, "{\"xai\":{\"itemId\":\"rs_" + id + "\"}}");
-        Assert.Equal(reasoningDeltas, parts.OfType<ReasoningDeltaStreamPart>().Count());
-        Assert.Equal("reasoning-rs_" + id, First<ReasoningEndStreamPart>(parts).Id);
-        Assert.Equal("text-msg_" + id, First<TextStartStreamPart>(parts).Id);
-        Assert.Equal(textDeltas, parts.OfType<TextDeltaStreamPart>().Count());
-        Assert.Equal("text-msg_" + id, First<TextEndStreamPart>(parts).Id);
-        var finish = First<FinishStreamPart>(parts);
-        Assert.Equal(FinishReason.Stop, finish.FinishReason);
-        Assert.Equal("completed", finish.RawFinishReason);
-        Assert.Equal(216, finish.Usage.InputTokens);
-        Assert.Equal(24, finish.Usage.NoCacheInputTokens);
-        Assert.Equal(192, finish.Usage.CacheReadTokens);
-        Assert.Null(finish.Usage.CacheWriteTokens);
-        Assert.Equal(outputTokens, finish.Usage.OutputTokens);
-        Assert.Equal(reasoningTokens, finish.Usage.ReasoningTokens);
-        Assert.Equal(textDeltas, finish.Usage.TextTokens);
     }
 }

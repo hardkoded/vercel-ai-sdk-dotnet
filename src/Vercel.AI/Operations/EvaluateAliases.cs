@@ -372,32 +372,6 @@ internal sealed class EvaluationDecisionCaller : IEvaluationDecisionCaller
     }
 }
 
-internal static class DecisionModels
-{
-    // Asks the decision factory, then the deprecated evaluation factory. Null when the provider has neither or returns no model.
-    public static IDecisionCaller? FromProvider(object provider, string modelId)
-    {
-        if (provider is IDecisionProvider decision)
-        {
-            return decision.DecisionModel(modelId);
-        }
-
-        return provider is IEvaluationProvider evaluation && evaluation.EvaluationModel(modelId) is { } legacy ? DecisionCaller.FromLegacy(legacy) : null;
-    }
-
-    // Maps to asEvaluationModel: a model that already has DoEvaluateAsync is returned unchanged.
-    public static IEvaluationDecisionCaller AsEvaluationModel(IDecisionCaller model)
-    {
-        return model as IEvaluationDecisionCaller ?? new EvaluationDecisionCaller(model);
-    }
-
-    // Maps to resolveDecisionModel for a model instance.
-    public static IDecisionCaller Validate(IDecisionCaller model)
-    {
-        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
-    }
-}
-
 internal static class EvaluateAliases
 {
     public static IReadOnlyDictionary<string, DecisionQuestion> ToDecision(IReadOnlyDictionary<string, EvaluationQuestion> questions)
