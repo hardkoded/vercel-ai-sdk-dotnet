@@ -194,7 +194,7 @@ public static class AnthropicToolPreparer
                     warnings.Add(new AnthropicWarning(
                         "unsupported",
                         "toolChoice",
-                        "toolChoice 'required' is not supported by this model because it rejects forced tool use. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."));
+                        "toolChoice 'required' is not supported with this model or thinking configuration. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."));
                     return new AnthropicPreparedTools(prepared, Choice("auto", null, disableParallelToolUse), warnings, betas);
                 }
 
@@ -207,7 +207,7 @@ public static class AnthropicToolPreparer
                     warnings.Add(new AnthropicWarning(
                         "unsupported",
                         "toolChoice",
-                        "toolChoice 'tool' is not supported by this model because it rejects forced tool use. Only the '" + toolName + "' tool is sent with 'auto' tool choice. Instruct the model to use the tool in the prompt and verify that a tool call was made."));
+                        "toolChoice 'tool' is not supported with this model or thinking configuration. Only the '" + toolName + "' tool is sent with 'auto' tool choice. Instruct the model to use the tool in the prompt and verify that a tool call was made."));
                     var filtered = new JsonArray();
                     foreach (var item in prepared)
                     {
