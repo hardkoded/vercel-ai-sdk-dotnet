@@ -149,6 +149,20 @@ public sealed class IsUrlSupportedTests
     }
 
     [Fact]
+    [UpstreamTest(File + "case sensitivity::should preserve case-sensitive URL paths when matching provider patterns", Coverage = UpstreamCoverage.Covered)]
+    public void Preserves_case_sensitive_url_paths()
+    {
+        var url = "https://assets.example/Images/Photo.PNG";
+        var pattern = new Regex(@"^https://assets\.example/Images/Photo\.PNG$");
+
+        Assert.Matches(pattern, url);
+        Assert.True(UrlSupport.IsUrlSupported(
+            "image/png",
+            url,
+            new Dictionary<string, IReadOnlyList<Regex>> { ["image/*"] = new[] { pattern } }));
+    }
+
+    [Fact]
     [UpstreamTest(File + "case sensitivity::should be case-insensitive for media types", Coverage = UpstreamCoverage.Covered)]
     public void Media_types_are_case_insensitive()
     {
@@ -159,20 +173,32 @@ public sealed class IsUrlSupportedTests
     }
 
     [Fact]
-    [UpstreamTest(File + "case sensitivity::should handle case-insensitive regex for URLs if specified", Coverage = UpstreamCoverage.Covered)]
-    public void Urls_are_compared_after_lowercasing()
+    [UpstreamTest(File + "case sensitivity::should preserve case-sensitive URL query values", Coverage = UpstreamCoverage.Covered)]
+    public void Preserves_case_sensitive_url_query_values()
     {
         Assert.True(UrlSupport.IsUrlSupported(
-            "text/plain",
-            "https://EXAMPLE.com/path",
-            Urls(("text/plain", new[] { @"https://example\.com/path" }))));
+            "image/png",
+            "https://assets.example/photo.png?token=AbC123",
+            Urls(("image/*", new[] { @"^https://assets\.example/photo\.png\?token=AbC123$" }))));
     }
 
     [Fact]
-    [UpstreamTest(File + "case sensitivity::should be case-insensitive for URL paths by default regex", Coverage = UpstreamCoverage.Covered)]
-    public void Url_paths_are_lowercased_before_the_pattern()
+    [UpstreamTest(File + "case sensitivity::should handle case-insensitive regex for URLs if specified", Coverage = UpstreamCoverage.Covered)]
+    public void Honors_case_insensitive_regex_for_urls()
     {
-        Assert.True(UrlSupport.IsUrlSupported(
+        var map = new Dictionary<string, IReadOnlyList<Regex>>
+        {
+            ["text/plain"] = new[] { new Regex(@"https://example\.com/path", RegexOptions.IgnoreCase) },
+        };
+
+        Assert.True(UrlSupport.IsUrlSupported("text/plain", "https://EXAMPLE.com/path", map));
+    }
+
+    [Fact]
+    [UpstreamTest(File + "case sensitivity::should be case-sensitive for URL paths unless the regex specifies otherwise", Coverage = UpstreamCoverage.Covered)]
+    public void Url_paths_are_case_sensitive_unless_the_regex_specifies_otherwise()
+    {
+        Assert.False(UrlSupport.IsUrlSupported(
             "text/plain",
             "https://example.com/PATH",
             Urls(("text/plain", new[] { @"https://example\.com/path" }))));
