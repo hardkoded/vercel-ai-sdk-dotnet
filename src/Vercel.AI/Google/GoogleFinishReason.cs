@@ -19,6 +19,9 @@ public static class GoogleFinishReason
             case "STOP":
                 return hasToolCalls ? FinishReason.ToolCalls : FinishReason.Stop;
             case "MAX_TOKENS":
+            // Gemini 4 long decode: the per-request cap was reached while budget remains.
+            // Continued automatically, so it only surfaces when continuing fails.
+            case "CONTINUATION":
                 return FinishReason.Length;
             case "IMAGE_SAFETY":
             case "RECITATION":
