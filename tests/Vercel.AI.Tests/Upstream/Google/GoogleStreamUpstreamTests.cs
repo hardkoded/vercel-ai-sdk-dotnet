@@ -303,7 +303,7 @@ public sealed class GoogleStreamUpstreamTests
         }
 
         var provider = GoogleProvider.Create(settings, LastHandler);
-        return await GoogleUpstream.Collect(provider.LanguageModel(modelId).DoStreamAsync(options, CancellationToken.None)).ConfigureAwait(false);
+        return await GoogleUpstream.Collect((await provider.LanguageModel(modelId).DoStreamAsync(options, CancellationToken.None))).ConfigureAwait(false);
     }
 
     private static async Task<List<LanguageModelStreamPart>> VertexStream(LanguageModelCallOptions options, string fixture)
@@ -311,7 +311,7 @@ public sealed class GoogleStreamUpstreamTests
         LastHandler = new RecordingHandler { ResponseText = FixtureSse(fixture), MediaType = "text/event-stream" };
         var settings = new VertexOptions { Project = "test-project", Region = "us-central1", ApiKey = "test-api-key", GenerateId = () => "test-id" };
         var provider = GoogleVertexProvider.Create(settings, LastHandler);
-        return await GoogleUpstream.Collect(provider.LanguageModel("gemini-pro").DoStreamAsync(options, CancellationToken.None)).ConfigureAwait(false);
+        return await GoogleUpstream.Collect((await provider.LanguageModel("gemini-pro").DoStreamAsync(options, CancellationToken.None))).ConfigureAwait(false);
     }
 
     private static string[] FixtureLines(string name)

@@ -605,7 +605,7 @@ internal static class AnthropicAssertions
         handler.ResponseBody = "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude-sonnet-4-6\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hi\"}}\n\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}\n\ndata: {\"type\":\"message_stop\"}\n\n";
         var provider = AnthropicParity.Aws(handler, new AnthropicOptions { Region = "us-west-2", WorkspaceId = "wrkspc_test", ApiKey = "test-api-key" });
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in provider.LanguageModel("claude-sonnet-4-6").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None).ConfigureAwait(false))
+        await foreach (var part in (await provider.LanguageModel("claude-sonnet-4-6").DoStreamAsync(AnthropicParity.Hello(), CancellationToken.None)).ConfigureAwait(false))
         {
             parts.Add(part);
         }
@@ -1010,7 +1010,7 @@ internal static class AnthropicAssertions
             }));
         var result = await provider.Skills().UploadSkillAsync(new[] { new AnthropicSkillFile("index.ts", new byte[] { 1 }) }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("skill_123", result.Id);
-        Assert.Equal("skill_123", result.ProviderReference.GetProperty("anthropic").GetString());
+        Assert.Equal("skill_123", result.ProviderReference["anthropic"]);
         Assert.Equal("test-skill", result.Name);
         Assert.Empty(new List<AnthropicWarning>());
     }
@@ -1087,10 +1087,15 @@ internal static class AnthropicAssertions
 
     public static void ContainerForward()
     {
-        var steps = AnthropicParity.Json("[{\"providerMetadata\":{}},{\"providerMetadata\":{\"anthropic\":{\"container\":{\"id\":\"cont_1\"}}}}]");
+        var steps = new[] { ContainerStep("{}"), ContainerStep("{\"anthropic\":{\"container\":{\"id\":\"cont_1\"}}}") };
         var forwarded = AnthropicContainer.ForwardFromLastStep(steps);
-        Assert.Equal("cont_1", forwarded!["providerOptions"]!["anthropic"]!["container"]!["id"]!.GetValue<string>());
-        Assert.Null(AnthropicContainer.ForwardFromLastStep(AnthropicParity.Json("[]")));
+        Assert.Equal("cont_1", forwarded!.ProviderOptions!["anthropic"].GetProperty("container").GetProperty("id").GetString());
+        Assert.Null(AnthropicContainer.ForwardFromLastStep(Array.Empty<StepResult>()));
+    }
+
+    private static StepResult ContainerStep(string providerMetadata)
+    {
+        return new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Stop, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>(), AnthropicParity.Json(providerMetadata));
     }
 
     public static void ThinkingBudgetRequest()
@@ -1379,18 +1384,29 @@ internal static class AnthropicAssertions
 
     public static void PromptSystemAndTrim()
     {
-        var prompt = AnthropicParity.Json("[{\"role\":\"system\",\"content\":\"Be brief\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hi\"}]},{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"OK  \"}]}]");
+        var prompt = new ModelMessage[]
+        {
+            new SystemModelMessage("Be brief"),
+            new UserModelMessage("Hi"),
+            new AssistantModelMessage(new AssistantContentPart[] { new AssistantTextPart("OK  ") }),
+        };
         var converted = AnthropicPrompt.Convert(prompt);
         Assert.Equal("Be brief", converted.System![0]!["text"]!.GetValue<string>());
         Assert.Equal("OK", converted.Messages[1]!["content"]![0]!["text"]!.GetValue<string>());
-        var invalid = AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"tool-call\",\"toolCallId\":\"1\",\"toolName\":\"t\",\"input\":\"nope\"}]}]");
+        var invalid = new ModelMessage[]
+        {
+            new AssistantModelMessage(new AssistantContentPart[] { new AssistantToolCallPart(new GeneratedToolCall("1", "t", "nope")) }),
+        };
         var tools = AnthropicPrompt.Convert(invalid);
         Assert.True(tools.Messages[0]!["content"]![0]!["input"]!["rawInvalidInput"] != null);
     }
 
     public static void PromptUrlImage()
     {
-        var prompt = AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"file\",\"mediaType\":\"image/*\",\"data\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\"}}]}]");
+        var prompt = new ModelMessage[]
+        {
+            new UserModelMessage(new UserContentPart[] { new FileContentPart("image/*", "https://example.com/image.png", null, null) }),
+        };
         var converted = AnthropicPrompt.Convert(prompt);
         Assert.Equal("[{\"role\":\"user\",\"content\":[{\"type\":\"image\",\"source\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\"}}]}]", converted.Messages.ToJsonString());
     }
@@ -1513,13 +1529,23 @@ internal static class AnthropicAssertions
 
     public static void PromptMore()
     {
-        var combined = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"A\"}]},{\"role\":\"tool\",\"content\":[{\"type\":\"tool-result\",\"toolCallId\":\"1\",\"toolName\":\"lookup\",\"output\":{\"type\":\"json\",\"value\":{\"ok\":true}}}]}]"));
+        var combined = AnthropicPrompt.Convert(new ModelMessage[]
+        {
+            new UserModelMessage("A"),
+            new ToolModelMessage("1", "lookup", "{\"ok\":true}", false),
+        });
         Assert.Single(combined.Messages);
         Assert.Contains("tool_result", combined.Messages.ToJsonString());
-        var compaction = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"\",\"providerOptions\":{\"anthropic\":{\"type\":\"compaction\"}}}]}]"));
+        var compaction = AnthropicPrompt.Convert(new ModelMessage[] { CompactionMessage(string.Empty) });
         Assert.Empty(compaction.Messages);
-        var kept = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"summary\",\"providerOptions\":{\"anthropic\":{\"type\":\"compaction\"}}}]}]"));
+        var kept = AnthropicPrompt.Convert(new ModelMessage[] { CompactionMessage("summary") });
         Assert.Equal("compaction", kept.Messages[0]!["content"]![0]!["type"]!.GetValue<string>());
+    }
+
+    private static AssistantModelMessage CompactionMessage(string text)
+    {
+        var options = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"type\":\"compaction\"}") };
+        return new AssistantModelMessage(new AssistantContentPart[] { new AssistantTextPart(text, options) });
     }
 
     public static void PartialRequest()
@@ -1539,7 +1565,7 @@ internal static class AnthropicAssertions
 
     public static void PartialPrompt()
     {
-        var converted = AnthropicPrompt.Convert(AnthropicParity.Json("[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]}]"));
+        var converted = AnthropicPrompt.Convert(new ModelMessage[] { new UserModelMessage("Hello") });
         Assert.Equal("user", converted.Messages[0]!["role"]!.GetValue<string>());
         Assert.Equal("Hello", converted.Messages[0]!["content"]![0]!["text"]!.GetValue<string>());
     }

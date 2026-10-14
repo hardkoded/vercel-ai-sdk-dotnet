@@ -16,21 +16,19 @@ public sealed class DoGenerateSettingsAndOptionsResponseFormatTests
         """;
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should send response format json schema",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "LanguageModelCallOptions has no response format description, so the case sends no description.")]
+    [UpstreamTest(Prefix + "should send response format json schema", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_response_format_json_schema()
     {
         var capture = EmptyResponse();
         var options = HelloPrompt();
         options.JsonSchema = UpstreamChat.Json(RecipeSchema);
         options.JsonSchemaName = "recipe";
+        options.JsonSchemaDescription = "A recipe object";
 
         await Model(capture).DoGenerateAsync(options, CancellationToken.None);
 
         var expected = "{\"input\":[{\"content\":[{\"text\":\"hello\",\"type\":\"input_text\"}],\"role\":\"user\"}],\"model\":\"grok-4-fast-non-reasoning\","
-            + "\"text\":{\"format\":{\"name\":\"recipe\",\"schema\":" + RecipeSchema + ",\"strict\":true,\"type\":\"json_schema\"}}}";
+            + "\"text\":{\"format\":{\"description\":\"A recipe object\",\"name\":\"recipe\",\"schema\":" + RecipeSchema + ",\"strict\":true,\"type\":\"json_schema\"}}}";
         JsonAssert.Equal(Body(capture), expected);
     }
 

@@ -46,7 +46,7 @@ public sealed class DeepSeekUpstreamTests
     {
         var capture = Ok("file_1", "comic-cat.png");
         var stream = new UploadStream();
-        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = Store(capture), Data = new UploadData("stream", stream), MediaType = "image/png", Filename = "comic-cat.png" }));
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => UploadFile.UploadFileAsync(new UploadFileRequest { Api = ApiOrProvider<Vercel.AI.Operations.IFileStore, IFileStoreProvider>.FromApi(Store(capture)), Data = new UploadData("stream", stream), MediaType = "image/png", Filename = "comic-cat.png" }));
         Assert.True(stream.Cancelled);
         Assert.Empty(capture.Requests);
     }

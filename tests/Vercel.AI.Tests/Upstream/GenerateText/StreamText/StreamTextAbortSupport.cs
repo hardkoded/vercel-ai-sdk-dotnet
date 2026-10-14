@@ -78,9 +78,9 @@ internal static class StreamTextAbortSupport
             throw new NotSupportedException();
         }
 
-        public IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
         {
-            return new Source(this);
+            return Task.FromResult(new LanguageModelStreamResult(new Source(this)));
         }
 
         internal sealed class Source : IAsyncEnumerable<LanguageModelStreamPart>
@@ -146,9 +146,9 @@ internal static class StreamTextAbortSupport
             throw new NotSupportedException();
         }
 
-        public IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
         {
-            return _next();
+            return Task.FromResult(new LanguageModelStreamResult(_next()));
         }
     }
 }

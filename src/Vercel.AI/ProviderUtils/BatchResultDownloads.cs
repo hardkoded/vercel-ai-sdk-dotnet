@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Vercel.AI.Operations;
 
@@ -14,55 +15,52 @@ public sealed class BatchResultDownloads
     public int? MaxLineBytes { get; set; }
 }
 
-/// <summary>Batch API that only downloads results. Start, status, cancel, and list are not implemented.</summary>
+/// <summary>Batch API that downloads results. Start, status, cancel, and list throw unless a provider overrides them.</summary>
 public abstract class BatchResultsApiBase : IBatchApi
 {
     /// <inheritdoc />
     public abstract string Provider { get; }
 
     /// <inheritdoc />
-    public bool CanCancel => false;
+    public virtual bool CanCancel => false;
 
     /// <inheritdoc />
-    public bool CanList => false;
+    public virtual bool CanList => false;
 
     /// <inheritdoc />
-    public abstract Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
+    public abstract Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken);
 
     /// <inheritdoc />
-    public Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch start");
     }
 
     /// <inheritdoc />
-    public Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch status");
     }
 
     /// <inheritdoc />
-    public Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch cancellation");
     }
 
     /// <inheritdoc />
-    public Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public virtual Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         throw Unsupported("batch listing");
     }
 
-    /// <summary>Reads every row of a JSON Lines download.</summary>
-    protected static async Task<List<JsonElement>> CollectAsync(IAsyncEnumerable<JsonElement> lines, CancellationToken cancellationToken)
+    /// <summary>Converts each row of a JSON Lines download as it is read.</summary>
+    protected static async IAsyncEnumerable<BatchItem> ConvertRows(IAsyncEnumerable<JsonElement> rows, Func<JsonElement, BatchItem> convert, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var rows = new List<JsonElement>();
-        await foreach (var line in lines.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (var row in rows.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            rows.Add(line);
+            yield return convert(row);
         }
-
-        return rows;
     }
 
     /// <summary>Text of a string property, or null.</summary>

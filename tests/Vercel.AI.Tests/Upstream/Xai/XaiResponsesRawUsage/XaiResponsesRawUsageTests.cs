@@ -46,7 +46,7 @@ public sealed class XaiResponsesRawUsageTests
                 "{\"type\":\"response.completed\",\"response\":" + CreateResponse(CompleteUsage, "completed") + "}"),
         };
 
-        var parts = await UpstreamChat.Read(Model(capture).DoStreamAsync(UpstreamChat.Prompt("hello"), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Model(capture).DoStreamAsync(UpstreamChat.Prompt("hello"), CancellationToken.None)));
 
         AssertCompleteUsage(parts.OfType<FinishStreamPart>().Single().Usage);
     }

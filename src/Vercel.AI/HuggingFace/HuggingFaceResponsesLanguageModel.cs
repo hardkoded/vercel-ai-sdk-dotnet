@@ -37,9 +37,6 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
@@ -48,7 +45,6 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         var body = BuildBody(options, warnings);
         body["stream"] = false;
         var response = await _provider.PostJsonAsync(ResponsesUri(), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = response.Headers;
         var parsed = ReadResponse(response.Body);
         return new LanguageModelGenerateResult(
             parsed.Content,
@@ -65,16 +61,28 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         options = options ?? new LanguageModelCallOptions();
         var warnings = new List<CallWarning>();
         var body = BuildBody(options, warnings);
         body["stream"] = true;
-        using var sse = await _provider.PostSseAsync(ResponsesUri(), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = sse.Headers;
+        var requestJson = body.ToJsonString();
+        var sse = await _provider.PostSseAsync(ResponsesUri(), requestJson, _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(
+            StreamAsync(sse, warnings, cancellationToken),
+            LanguageModelStreamRequest.FromJson(requestJson),
+            new LanguageModelStreamResponse(sse.Headers));
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        OpenAICompatibleSseResponse sse,
+        List<CallWarning> warnings,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var disposable = sse;
         yield return new StreamStartStreamPart(warnings);
         var state = new StreamState();
         await foreach (var data in sse.ReadAsync(cancellationToken).ConfigureAwait(false))

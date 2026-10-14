@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
@@ -45,7 +46,7 @@ public sealed class DoStreamTests
             Obj("{\"type\":\"response.completed\",\"sequence_number\":2,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
 
         var parts = await UpstreamChat.Read(
-            CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None));
+            (await CreateModel(capture, "gemma-7b-it", CreateDocumentSearchExtension(providerExecuted: true)).DoStreamAsync(TestPrompt(), CancellationToken.None)));
 
         var start = Assert.Single(parts.OfType<ToolInputStartStreamPart>());
         Assert.Equal(("call_stream_1", "documentSearch", true), (start.Id, start.ToolName, start.ProviderExecuted));
@@ -66,18 +67,23 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves $expectedType stream errors", Coverage = UpstreamCoverage.Partial, Note = "Checks both cases: the error message and the error finish. ErrorStreamPart carries only a message, so the error type, code, and data are not asserted. Issue #366.")]
+    [UpstreamTest(Prefix + "preserves $expectedType stream errors", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_expectedType_stream_errors()
     {
-        foreach (var (json, message) in new[]
+        foreach (var (json, expectedType, expectedMessage, expectedCode) in new[]
         {
-            ("{\"type\":\"response.failed\",\"sequence_number\":1,\"response\":{\"status\":\"failed\",\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}}}", "Rate limit reached"),
-            ("{\"type\":\"error\",\"sequence_number\":1,\"error\":{\"code\":\"503\",\"message\":\"Service unavailable\"}}", "Service unavailable"),
+            ("{\"type\":\"response.failed\",\"sequence_number\":1,\"response\":{\"status\":\"failed\",\"error\":{\"code\":\"429\",\"message\":\"Rate limit reached\"}}}", "response.failed", "Rate limit reached", "429"),
+            ("{\"type\":\"error\",\"sequence_number\":1,\"error\":{\"code\":\"503\",\"message\":\"Service unavailable\"}}", "error", "Service unavailable", "503"),
         })
         {
             var parts = await Collect(Model(StreamResponse(json)), UpstreamChat.Prompt());
 
-            Assert.Equal(message, parts.OfType<ErrorStreamPart>().First().Message);
+            var error = parts.OfType<ErrorStreamPart>().First().Error;
+            Assert.NotNull(error);
+            Assert.Equal(expectedMessage, error.Message);
+            Assert.Equal(expectedType, error.Type);
+            Assert.Equal(expectedCode, error.Code);
+            JsonAssert.Equal((JsonElement)error.Data!, json);
             Assert.Equal(FinishReason.Error, Assert.IsType<FinishStreamPart>(parts[^1]).FinishReason);
         }
     }
@@ -107,7 +113,7 @@ public sealed class DoStreamTests
         var options = UpstreamChat.Prompt();
         options.ProviderOptions = UpstreamChat.Bag("lmstudio", "{\"reasoningEffort\":\"max\"}");
 
-        await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
 
         Assert.Equal("{\"effort\":\"max\"}", UpstreamChat.Body(capture)["reasoning"]!.ToJsonString());
     }

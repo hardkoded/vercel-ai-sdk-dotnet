@@ -274,8 +274,8 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IEvaluationModel> _evaluation = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Operations.IDecisionCaller> _decision = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, Operations.IDecisionCaller> _legacyDecision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _decision = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _legacyDecision = new(StringComparer.Ordinal);
 
     /// <summary>Creates a custom provider.</summary>
     public CustomProvider(string name = "custom")
@@ -365,17 +365,37 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     /// <summary>Registers a decision model under <paramref name="modelId"/>. Maps to <c>decisionModels</c>.</summary>
     public CustomProvider AddDecisionModel(string modelId, Operations.IDecisionCaller model)
     {
-        return Add(_decision, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_decision, modelId, () => model);
+    }
+
+    /// <summary>
+    /// Registers a string alias for a decision model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="DecisionModel"/> is called.
+    /// </summary>
+    public CustomProvider AddDecisionModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_decision, modelId, () => Operations.DecisionModels.Resolve(null, providerModelId));
     }
 
     /// <summary>
     /// Registers a deprecated decision model under <paramref name="modelId"/>. Maps to <c>evaluationModels</c>.
-    /// These models are ignored once any model is added with <see cref="AddDecisionModel"/>.
+    /// These models are ignored once any model is added with <c>AddDecisionModel</c>.
     /// </summary>
     [Obsolete("Use AddDecisionModel instead.")]
     public CustomProvider AddEvaluationModel(string modelId, Operations.IEvaluationCaller model)
     {
-        return Add(_legacyDecision, modelId, Operations.DecisionCaller.FromLegacy(model));
+        var legacy = Operations.DecisionCaller.FromLegacy(model);
+        return Add(_legacyDecision, modelId, () => legacy);
     }
 
     /// <inheritdoc />
@@ -433,7 +453,8 @@ public sealed class CustomProvider : ProviderBase, Operations.IDecisionProvider
     public Operations.IDecisionCaller DecisionModel(string modelId)
     {
         var models = _decision.Count > 0 ? _decision : _legacyDecision;
-        return Operations.DecisionModels.Validate(Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId)));
+        var factory = Find(models, modelId, "decisionModel", fallback => Operations.DecisionModels.FromProvider(fallback, modelId) is { } found ? () => found : null);
+        return Operations.DecisionModels.Validate(factory());
     }
 
     /// <inheritdoc />

@@ -64,7 +64,8 @@ public class AnthropicOptions
 }
 
 /// <summary>Anthropic Messages provider.</summary>
-public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
+#pragma warning disable CS0618
+public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider, Operations.IEvaluationProvider
 {
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
@@ -156,6 +157,25 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
     public override IEvaluationModel EvaluationModel(string modelId)
     {
         return new AnthropicEvaluationModel(this, modelId);
+    }
+
+    /// <summary>Decision model. Wraps the Messages language model with structured output. The provider id is <c>anthropic.decision</c>.</summary>
+    public Operations.DecisionLanguageModel DecisionModel(string modelId)
+    {
+        return new Operations.DecisionLanguageModel(LanguageModel(modelId), "anthropic.decision");
+    }
+
+    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
+    /// <summary>Deprecated alias of the decision factory. <see cref="EvaluationModel(string)"/> keeps returning the rubric model.</summary>
+    Operations.IEvaluationCaller? Operations.IEvaluationProvider.EvaluationModel(string modelId)
+    {
+#pragma warning disable CS0618
+        return DecisionModel(modelId);
+#pragma warning restore CS0618
     }
 
     /// <summary>Message Batches API. Downloads batch results.</summary>
@@ -392,6 +412,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider
             || trimmed.Equals("https://api.anthropic.com/v1", StringComparison.OrdinalIgnoreCase);
     }
 }
+#pragma warning restore CS0618
 
 /// <summary>Anthropic Messages language model.</summary>
 public sealed class AnthropicLanguageModel : ILanguageModel
@@ -436,9 +457,12 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(
-        LanguageModelCallOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var prepared = Prepare(options, true);
         var body = prepared.Body.ToJsonString();

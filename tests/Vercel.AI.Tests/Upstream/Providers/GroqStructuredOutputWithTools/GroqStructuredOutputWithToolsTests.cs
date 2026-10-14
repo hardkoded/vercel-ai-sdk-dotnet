@@ -170,7 +170,7 @@ public sealed class GroqStructuredOutputWithToolsTests
                 "{\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"2031-06-17\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}],\"x_groq\":{\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":8}}}"),
         };
 
-        var parts = await UpstreamChat.Read(Model(capture, "openai/gpt-oss-120b").DoStreamAsync(Options(), CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Model(capture, "openai/gpt-oss-120b").DoStreamAsync(Options(), CancellationToken.None)));
 
         Assert.DoesNotContain(parts, part => part.Type.StartsWith("tool-", StringComparison.Ordinal));
         Assert.Equal("{\"date\":\"2031-06-17\"}", string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));

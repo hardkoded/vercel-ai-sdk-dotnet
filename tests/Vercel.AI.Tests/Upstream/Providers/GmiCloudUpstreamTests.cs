@@ -124,7 +124,7 @@ public sealed class GmiCloudUpstreamTests
             "The request is invalid: Invalid max_tokens value, the valid range of max_tokens is [1, 393216]. Please check the request body, required fields, and request format.",
             provider.Options.SelectErrorMessage!(MaxTokensBody));
         var model = (OpenAICompatibleLanguageModel)provider.LanguageModel("deepseek-ai/DeepSeek-V4-Flash-0731");
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 

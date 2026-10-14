@@ -46,7 +46,7 @@ public sealed class FireworksChatReasoningTests
         options.Reasoning = "max";
         options.TopK = 1;
 
-        var parts = await UpstreamChat.Read(Model(capture).DoStreamAsync(options, CancellationToken.None));
+        var parts = await UpstreamChat.Read((await Model(capture).DoStreamAsync(options, CancellationToken.None)));
 
         var body = UpstreamChat.Body(capture);
         Assert.Equal("high", body["reasoning_effort"]!.GetValue<string>());

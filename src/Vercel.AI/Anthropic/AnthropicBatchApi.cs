@@ -23,7 +23,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     public override string Provider => _provider.ModelProvider.Replace(".messages", string.Empty) + ".batch";
 
     /// <inheritdoc />
-    public override async Task<IReadOnlyList<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
         var headers = await _provider.CreateHeadersAsync(Array.Empty<string>(), call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), null, cancellationToken).ConfigureAwait(false);
@@ -50,8 +50,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
             throw new AiSdkException("Anthropic batch \"" + batchId + "\" completed without batch output.");
         }
 
-        var lines = await CollectAsync(_provider.Http.SendJsonLinesAsync(HttpMethod.Get, new Uri(url), null, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken), cancellationToken).ConfigureAwait(false);
-        return lines.Select(Convert).ToList();
+        var lines = await _provider.Http.OpenJsonLinesAsync(HttpMethod.Get, new Uri(url), null, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken).ConfigureAwait(false);
+        return ConvertRows(lines, Convert, cancellationToken);
     }
 
     private static BatchItem Convert(JsonElement line)

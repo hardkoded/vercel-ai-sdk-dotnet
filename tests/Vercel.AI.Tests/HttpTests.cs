@@ -73,7 +73,7 @@ public sealed class HttpTests
             new OpenAICompatibleOptions { ApiKey = "secret", ProviderName = "openai-compatible" },
             handler);
         var parts = new List<LanguageModelStreamPart>();
-        await foreach (var part in provider.LanguageModel("m").DoStreamAsync(Prompt(), CancellationToken.None))
+        await foreach (var part in (await provider.LanguageModel("m").DoStreamAsync(Prompt(), CancellationToken.None)))
         {
             parts.Add(part);
         }

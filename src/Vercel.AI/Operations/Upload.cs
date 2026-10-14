@@ -190,7 +190,7 @@ public sealed class UploadFileResult
 public sealed class UploadFileRequest
 {
     /// <summary>Files API or a provider that exposes one.</summary>
-    public object? Api { get; set; }
+    public ApiOrProvider<IFileStore, IFileStoreProvider>? Api { get; set; }
 
     /// <summary>Tagged data, bytes, or a string shorthand.</summary>
     public object? Data { get; set; }
@@ -316,14 +316,14 @@ public static class UploadFile
         return true;
     }
 
-    private static IFileStore Resolve(object? api)
+    private static IFileStore Resolve(ApiOrProvider<IFileStore, IFileStoreProvider>? api)
     {
-        if (api is IFileStore store)
+        if (api?.Api is IFileStore store)
         {
             return store;
         }
 
-        if (api is IFileStoreProvider provider)
+        if (api?.Provider is IFileStoreProvider provider)
         {
             var files = provider.Files();
             if (files != null)
@@ -434,7 +434,7 @@ public interface ISkillStoreProvider
 public sealed class UploadSkillRequest
 {
     /// <summary>Skills API or a provider that exposes one.</summary>
-    public object? Api { get; set; }
+    public ApiOrProvider<ISkillStore, ISkillStoreProvider>? Api { get; set; }
 
     /// <summary>Skill files.</summary>
     public IReadOnlyList<SkillFile> Files { get; set; } = Array.Empty<SkillFile>();
@@ -468,14 +468,14 @@ public static class UploadSkill
         return await store.UploadSkillAsync(new UploadSkillCall(files, request.DisplayTitle, request.ProviderOptions), cancellationToken).ConfigureAwait(false);
     }
 
-    private static ISkillStore Resolve(object? api)
+    private static ISkillStore Resolve(ApiOrProvider<ISkillStore, ISkillStoreProvider>? api)
     {
-        if (api is ISkillStore store)
+        if (api?.Api is ISkillStore store)
         {
             return store;
         }
 
-        if (api is ISkillStoreProvider provider)
+        if (api?.Provider is ISkillStoreProvider provider)
         {
             var skills = provider.Skills();
             if (skills != null)

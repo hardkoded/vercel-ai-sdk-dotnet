@@ -208,8 +208,11 @@ public sealed class TranscribeResult
 /// <summary>Options for <see cref="Transcribe.TranscribeAsync"/>.</summary>
 public sealed class TranscribeRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Model instance. Takes precedence over <see cref="ModelId"/>.</summary>
+    public ITranscriptionCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="TranscriptionModels.Default"/>.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio bytes.</summary>
     public byte[]? Audio { get; set; }
@@ -224,8 +227,11 @@ public sealed class TranscribeRequest : OperationRequest
 /// <summary>Options for <see cref="StreamTranscribe.Start"/>.</summary>
 public sealed class StreamTranscribeRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Model instance. Takes precedence over <see cref="ModelId"/>.</summary>
+    public ITranscriptionCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="TranscriptionModels.Default"/>.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio stream.</summary>
     public AudioChunkStream? Audio { get; set; }
@@ -236,7 +242,7 @@ public sealed class StreamTranscribeRequest : OperationRequest
     /// <summary>Requests raw provider chunks.</summary>
     public bool? IncludeRawChunks { get; set; }
 
-    /// <summary>True when <see cref="Model"/> was a string id.</summary>
+    /// <summary>True when the model was resolved from <see cref="ModelId"/>.</summary>
     public bool ModelWasString { get; set; }
 }
 
@@ -536,7 +542,7 @@ public static class Transcribe
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = Resolve(request.Model);
+        var model = Resolve(request.Model, request.ModelId);
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
@@ -562,9 +568,9 @@ public static class Transcribe
         return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"));
     }
 
-    internal static ITranscriptionCaller Resolve(object? model)
+    internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)
     {
-        if (model is ITranscriptionCaller caller)
+        if (model is { } caller)
         {
             if (caller.SpecificationVersion != "v4" && caller.SpecificationVersion != "v3" && caller.SpecificationVersion != "v2")
             {
@@ -574,12 +580,12 @@ public static class Transcribe
             return caller;
         }
 
-        if (model is string id)
+        if (modelId is { } id)
         {
             return TranscriptionModels.Default?.Invoke(id) ?? throw new InvalidOperationException("The default provider does not support transcription models.");
         }
 
-        throw new InvalidArgumentException("model", model, "model is required");
+        throw new InvalidArgumentException("model", null, "model is required");
     }
 }
 
@@ -595,14 +601,14 @@ public static class StreamTranscribe
         }
 
         ITranscriptionCaller model;
-        if (request.Model is string id)
+        if (request.Model is null && request.ModelId is { } id)
         {
             request.ModelWasString = true;
             model = TranscriptionModels.Default?.Invoke(id) ?? throw StreamTranscribeResult.Unsupported(new MissingTranscriptionCaller(id), true);
         }
         else
         {
-            model = request.Model as ITranscriptionCaller ?? throw new InvalidArgumentException("model", request.Model, "model is required");
+            model = request.Model ?? throw new InvalidArgumentException("model", null, "model is required");
         }
 
         if (!model.CanStream)

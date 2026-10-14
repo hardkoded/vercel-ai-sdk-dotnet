@@ -159,12 +159,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
-    /// <summary>JSON request body sent by the most recent call, or null before the first call.</summary>
-    public string? LastRequestBody { get; private set; }
-
     /// <summary>Turns a <c>/converse-stream</c> response into chunks. Tests replace it, as upstream mocks the response handler.</summary>
     internal Func<HttpResponseMessage, Func<JsonElement, string?>, CancellationToken, Task<(IReadOnlyDictionary<string, string> Headers, IAsyncEnumerable<AmazonBedrockStreamChunk> Stream)>> StreamResponseHandler { get; set; }
         = AmazonBedrockEventStreamResponseHandler.HandleAsync;
@@ -173,7 +167,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        var request = CreateRequest(_provider.ConverseUri(ModelId), bodyObject, options);
+        var request = CreateRequest(_provider.ConverseUri(ModelId), bodyObject, options, out _);
         var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -182,25 +176,48 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         var headers = CopyHeaders(response);
-        LastResponseHeaders = headers;
         using var document = JsonDocument.Parse(text);
         return Parse(document.RootElement, warnings, headers, usesJsonTool, usesJsonInstruction);
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<LanguageModelStreamPart> DoStreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        var request = CreateRequest(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options);
-        using var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        var request = CreateRequest(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options, out var requestBody);
+        var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        try
         {
-            var errorText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            throw AmazonBedrockErrors.Create((int)response.StatusCode, errorText);
-        }
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                throw AmazonBedrockErrors.Create((int)response.StatusCode, errorText);
+            }
 
-        var (headers, chunks) = await StreamResponseHandler(response, AmazonBedrockStreamSchema.Validate, cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = headers;
+            var (headers, chunks) = await StreamResponseHandler(response, AmazonBedrockStreamSchema.Validate, cancellationToken).ConfigureAwait(false);
+            return new LanguageModelStreamResult(
+                StreamAsync(response, headers, chunks, options, warnings, usesJsonTool, usesJsonInstruction, cancellationToken),
+                LanguageModelStreamRequest.FromJson(requestBody),
+                new LanguageModelStreamResponse(headers));
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        HttpResponseMessage response,
+        IReadOnlyDictionary<string, string> headers,
+        IAsyncEnumerable<AmazonBedrockStreamChunk> chunks,
+        LanguageModelCallOptions options,
+        IReadOnlyList<CallWarning> warnings,
+        bool usesJsonTool,
+        bool usesJsonInstruction,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var disposable = response;
 
         var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
         var finishReason = FinishReason.Other;
@@ -574,10 +591,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             : FinishReasons.Parse(raw);
     }
 
-    private HttpRequestMessage CreateRequest(Uri uri, JsonObject bodyObject, LanguageModelCallOptions options)
+    private HttpRequestMessage CreateRequest(Uri uri, JsonObject bodyObject, LanguageModelCallOptions options, out string body)
     {
-        var body = bodyObject.ToJsonString();
-        LastRequestBody = body;
+        body = bodyObject.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),

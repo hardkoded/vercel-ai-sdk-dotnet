@@ -245,7 +245,7 @@ public sealed class OpenAIDecisionModel : IDecisionCaller, IEvaluationCaller
 
             var inline = data["data"]!;
             // Direct DoDecideAsync calls can bypass the media type detection in DecisionState.
-            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : MediaTypes.DetectMediaType(inline, "image");
+            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : inline is byte[] inlineBytes ? MediaTypes.DetectMediaType(inlineBytes, "image") : MediaTypes.DetectMediaType((string)inline, "image");
             if (resolved == null || !ImageMediaTypes.Contains(resolved))
             {
                 throw new UnsupportedFunctionalityException("OpenAI decision image media type", "'OpenAI decision image media type: " + mediaType + "' functionality not supported.");

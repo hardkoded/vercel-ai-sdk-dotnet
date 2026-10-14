@@ -84,7 +84,7 @@ public sealed class GoogleStructuredOutputWithToolsTests
     {
         var handler = new RecordingHandler { ResponseText = "data: " + chunk.ToJsonString() + "\n\n", MediaType = "text/event-stream" };
         var provider = GoogleUpstream.Client(handler);
-        return await GoogleUpstream.Collect(provider.LanguageModel(modelId).DoStreamAsync(options, CancellationToken.None));
+        return await GoogleUpstream.Collect((await provider.LanguageModel(modelId).DoStreamAsync(options, CancellationToken.None)));
     }
 
     private static string[] DeclarationNames(JsonObject body)

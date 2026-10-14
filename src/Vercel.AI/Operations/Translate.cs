@@ -94,8 +94,11 @@ public static class SpeechTranslationModels
 /// <summary>Options for <see cref="StreamTranslate.Start"/>.</summary>
 public sealed class StreamTranslateRequest : OperationRequest
 {
-    /// <summary>Model instance or string id.</summary>
-    public object? Model { get; set; }
+    /// <summary>Model instance. Takes precedence over <see cref="ModelId"/>.</summary>
+    public ISpeechTranslationCaller? Model { get; set; }
+
+    /// <summary>Model id resolved through <see cref="SpeechTranslationModels.Default"/>.</summary>
+    public string? ModelId { get; set; }
 
     /// <summary>Audio stream.</summary>
     public AudioChunkStream? Audio { get; set; }
@@ -408,19 +411,19 @@ public static class StreamTranslate
             throw new ArgumentNullException(nameof(request));
         }
 
-        var model = Resolve(request.Model);
+        var model = Resolve(request.Model, request.ModelId);
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         return new StreamTranslateResult(model, request, token);
     }
 
-    private static ISpeechTranslationCaller Resolve(object? model)
+    private static ISpeechTranslationCaller Resolve(ISpeechTranslationCaller? model, string? modelId)
     {
-        if (model is string id)
+        if (model is null && modelId is { } id)
         {
             return SpeechTranslationModels.Default?.Invoke(id) ?? throw new InvalidOperationException(MissingProviderMessage);
         }
 
-        if (model is ISpeechTranslationCaller caller)
+        if (model is { } caller)
         {
             if (caller.SpecificationVersion != "v4")
             {
@@ -430,6 +433,6 @@ public static class StreamTranslate
             return caller;
         }
 
-        throw new InvalidArgumentException("model", model, "model is required");
+        throw new InvalidArgumentException("model", null, "model is required");
     }
 }

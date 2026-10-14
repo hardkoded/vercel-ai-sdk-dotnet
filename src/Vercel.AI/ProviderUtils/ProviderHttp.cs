@@ -123,23 +123,65 @@ public sealed class ProviderHttp
         int? maxLineBytes,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        var lines = await OpenJsonLinesAsync(method, uri, jsonBody, headers, maxLineBytes, cancellationToken).ConfigureAwait(false);
+        await foreach (var value in lines.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            yield return value;
+        }
+    }
+
+    /// <summary>
+    /// Sends a request and returns once the response status is known. Failed responses throw here.
+    /// The returned sequence reads one JSON value per line of the body. Enumerate it once: it disposes the response when it ends.
+    /// A row above <paramref name="maxLineBytes"/> UTF-8 bytes throws a <see cref="Util.DownloadError"/> and cancels the download.
+    /// </summary>
+    public async Task<IAsyncEnumerable<JsonElement>> OpenJsonLinesAsync(
+        HttpMethod method,
+        Uri uri,
+        string? jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        int? maxLineBytes,
+        CancellationToken cancellationToken)
+    {
         var limit = maxLineBytes ?? JsonStreams.DefaultMaxLineBytes;
         if (limit <= 0)
         {
             throw new Util.InvalidArgumentError("maxLineBytes", limit, "maxLineBytes must be a positive safe integer.");
         }
 
-        using var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
+        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        try
         {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            throw MapStatus((int)response.StatusCode, body);
-        }
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                throw MapStatus((int)response.StatusCode, body);
+            }
 
-        using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, null, null, cancellationToken, limit, uri.ToString()).ConfigureAwait(false))
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return ReadJsonLinesAsync(response, stream, limit, uri, cancellationToken);
+        }
+        catch
         {
-            yield return value;
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private static async IAsyncEnumerable<JsonElement> ReadJsonLinesAsync(
+        HttpResponseMessage response,
+        Stream stream,
+        int maxLineBytes,
+        Uri uri,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using (response)
+        using (stream)
+        {
+            await foreach (var value in JsonStreams.ReadJsonLinesAsync(stream, null, null, cancellationToken, maxLineBytes, uri.ToString()).ConfigureAwait(false))
+            {
+                yield return value;
+            }
         }
     }
 

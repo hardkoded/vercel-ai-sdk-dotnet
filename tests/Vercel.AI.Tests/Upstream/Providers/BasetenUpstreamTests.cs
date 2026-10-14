@@ -80,7 +80,7 @@ public sealed class BasetenUpstreamTests
     {
         var capture = Stream();
         var model = (OpenAICompatibleLanguageModel)BasetenProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("m");
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
         Assert.Equal("https://inference.baseten.co/v1/chat/completions", capture.Requests[0].Uri!.GetLeftPart(UriPartial.Path));
     }
@@ -251,7 +251,7 @@ public sealed class BasetenUpstreamTests
     {
         var capture = Stream();
         var model = (OpenAICompatibleLanguageModel)BasetenProvider.Create(new BasetenOptions { ApiKey = "secret", ModelUrl = SyncUrl + "/v1" }, capture).LanguageModel(string.Empty);
-        await UpstreamChat.Read(model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        await UpstreamChat.Read((await model.DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
         Assert.Equal("placeholder", model.ModelId);
     }

@@ -267,7 +267,7 @@ public sealed class TranslateTests
         SpeechTranslationModels.Default = null;
         try
         {
-            var error = Assert.Throws<InvalidOperationException>(() => StreamTranslate.Start(new StreamTranslateRequest { Model = "gpt-translate", Audio = new AudioChunkStream(), InputAudioFormat = "pcm16", TargetLanguage = "es" }));
+            var error = Assert.Throws<InvalidOperationException>(() => StreamTranslate.Start(new StreamTranslateRequest { ModelId = "gpt-translate", Audio = new AudioChunkStream(), InputAudioFormat = "pcm16", TargetLanguage = "es" }));
             Assert.Equal(StreamTranslate.MissingProviderMessage, error.Message);
         }
         finally

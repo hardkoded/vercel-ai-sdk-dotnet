@@ -93,3 +93,7 @@ In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to th
 `UIMessageStream` writes the citations of a step on its `text-end` chunk (`citations`) and still writes retrieved URL sources as `source-url`. It does not write a `source-document` chunk, so document sources stay on `StepResult.Content` and the model stream only. Document sources are not in `Sources`, which holds URL sources.
 
 Providers that do not send citations leave `Citations` null. A null value does not mean `Sources` is a complete retrieval set.
+
+## Stream result
+
+`ILanguageModel.DoStreamAsync` returns `Task<LanguageModelStreamResult>`, as upstream `doStream` returns `{ stream, request, response }`. `Stream` holds the `LanguageModelStreamPart` values (the result is also directly enumerable), `Request.Body` holds the JSON request body, and `Response.Headers` holds the HTTP response headers. Both `Request` and `Response` are null when a model does not report them. Amazon Bedrock, the OpenAI-compatible chat and completion models, and Hugging Face Responses fill them in. A language-model middleware's `WrapStreamAsync` takes and returns the same result type, so a middleware that transforms the stream passes `Request` and `Response` along.
