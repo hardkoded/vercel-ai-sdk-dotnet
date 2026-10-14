@@ -41,7 +41,7 @@ public sealed class EndpointSpecificResponseErrorMetadataTests
         {
             var capture = new UpstreamCapture { MediaType = "text/event-stream", ResponseBody = UpstreamChat.Sse(json) };
 
-            var parts = await UpstreamChat.Read(Model(capture, ReadMetadata).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
+            var parts = await UpstreamChat.Read(await Model(capture, ReadMetadata).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None));
 
             var error = Assert.Single(parts.OfType<ErrorStreamPart>()).Error;
             Assert.NotNull(error);
