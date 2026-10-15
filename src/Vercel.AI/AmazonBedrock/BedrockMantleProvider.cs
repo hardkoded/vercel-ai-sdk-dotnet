@@ -2,9 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using Vercel.AI.OpenAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -135,7 +133,10 @@ public sealed class BedrockMantleProvider : ProviderBase
     }
 }
 
-/// <summary>Mantle language model.</summary>
+/// <summary>
+/// Mantle language model. Delegates to the OpenAI Chat Completions or Responses model, with the request
+/// signed for <c>bedrock-mantle</c>.
+/// </summary>
 public sealed class BedrockMantleLanguageModel : ILanguageModel
 {
     private readonly BedrockMantleProvider _provider;
@@ -144,8 +145,8 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     /// <summary>Creates a model.</summary>
     public BedrockMantleLanguageModel(BedrockMantleProvider provider, string modelId, bool responses)
     {
-        _provider = provider;
-        ModelId = modelId;
+        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _responses = responses;
     }
 
@@ -159,156 +160,46 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var path = _responses ? "/responses" : "/chat/completions";
-        var url = BedrockMantleRoutes.Url(_provider.Options.Region, _provider.Options.BaseUrl, ModelId, path);
-        var body = Build(options);
-        var json = body.ToJsonString();
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json"),
-        };
-        var headers = _provider.Options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
-        foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
-        {
-            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
-
-        var apiKey = _provider.Options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
-        AmazonBedrockSigner.Apply(
-            request,
-            Encoding.UTF8.GetBytes(json),
-            _provider.Options.Region,
-            "bedrock-mantle",
-            apiKey,
-            _provider.Options.AccessKeyId,
-            _provider.Options.SecretAccessKey,
-            _provider.Options.SessionToken,
-            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
-        }
-
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        return Parse(document.RootElement);
+        return Inner().DoGenerateAsync(options, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        return new LanguageModelStreamResult(Parts(result));
+        return Inner().DoStreamAsync(options, cancellationToken);
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    private ILanguageModel Inner()
     {
-        await Task.CompletedTask.ConfigureAwait(false);
-        if (result.Text.Length > 0)
+        var options = _provider.Options;
+        var baseUrl = BedrockMantleRoutes.Url(options.Region, options.BaseUrl, ModelId, string.Empty);
+        var apiKey = options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        var signing = new AmazonBedrockSigningHandler(
+            new HttpClientMessageHandler(_provider.HttpClient),
+            options.Region,
+            "bedrock-mantle",
+            apiKey,
+            options.AccessKeyId,
+            options.SecretAccessKey,
+            options.SessionToken,
+            options.UtcNow);
+        var openAI = new OpenAIOptions
         {
-            yield return new TextDeltaStreamPart("text", result.Text);
+            ProviderName = "bedrock-mantle",
+            BaseUrl = baseUrl,
+
+            // The signing handler replaces the Authorization header, so any non-empty key does.
+            ApiKey = "bedrock-mantle",
+        };
+        var headers = options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
+        foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
+        {
+            openAI.Headers[header.Key] = header.Value;
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
-    }
-
-    private JsonObject Build(LanguageModelCallOptions options)
-    {
-        if (_responses)
-        {
-            var input = new JsonArray();
-            foreach (var message in options.Prompt)
-            {
-                if (message is UserModelMessage user)
-                {
-                    var text = new StringBuilder();
-                    foreach (var part in user.Content)
-                    {
-                        if (part is TextContentPart textPart)
-                        {
-                            text.Append(textPart.Text);
-                        }
-                    }
-
-                    input.Add(new JsonObject
-                    {
-                        ["role"] = "user",
-                        ["content"] = text.ToString(),
-                    });
-                }
-            }
-
-            return new JsonObject { ["model"] = ModelId, ["input"] = input };
-        }
-
-        var messages = new JsonArray();
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage system)
-            {
-                messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
-            }
-            else if (message is UserModelMessage user)
-            {
-                var text = new StringBuilder();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart textPart)
-                    {
-                        text.Append(textPart.Text);
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = text.ToString() });
-            }
-        }
-
-        var body = new JsonObject { ["model"] = ModelId, ["messages"] = messages };
-        if (options.MaxOutputTokens is { } max)
-        {
-            body["max_tokens"] = max;
-        }
-
-        if (options.Temperature is { } temperature)
-        {
-            body["temperature"] = temperature;
-        }
-
-        return body;
-    }
-
-    private static LanguageModelGenerateResult Parse(JsonElement root)
-    {
-        var text = string.Empty;
-        if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var choice in choices.EnumerateArray())
-            {
-                if (choice.TryGetProperty("message", out var message) && message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
-                {
-                    text = content.GetString() ?? string.Empty;
-                    break;
-                }
-            }
-        }
-        else if (root.TryGetProperty("output_text", out var outputText) && outputText.ValueKind == JsonValueKind.String)
-        {
-            text = outputText.GetString() ?? string.Empty;
-        }
-
-        var raw = "stop";
-        if (root.TryGetProperty("choices", out var finishChoices) && finishChoices.GetArrayLength() > 0)
-        {
-            var first = finishChoices[0];
-            if (first.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
-            {
-                raw = finish.GetString() ?? raw;
-            }
-        }
-
-        return new LanguageModelGenerateResult(new GeneratedContent[] { new GeneratedText(text) }, FinishReasons.Parse(raw), LanguageModelUsage.Empty, raw);
+        var provider = new OpenAIProvider(new HttpClient(signing, disposeHandler: false), openAI);
+        return _responses ? provider.ResponsesModel(ModelId) : provider.ChatModel(ModelId);
     }
 }
