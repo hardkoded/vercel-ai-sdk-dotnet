@@ -35,9 +35,40 @@ var result = await Decide.DecideAsync(new DecideRequest
 - Per-answer `confidence` values are in `ProviderMetadata` under `typesafe.confidence`, keyed by question id.
 - `Usage` holds `input_tokens` and `output_tokens`. A missing or null `usage` leaves them null.
 - `Response.ModelId` is the model id the API reported, or the requested id when the API sent none.
-- The state goes as a string, a JSON object, or a list, like the Gateway model. A file part throws `UnsupportedFunctionalityException`.
+- The state goes as a string, a JSON object, or a list, like the Gateway model. See [Images](#images) for file parts.
 - A `choice` question accepts at most 255 options and a `score` question at most 10 levels. A larger question throws `InvalidArgumentError` before any request.
-- Every `typesafe` provider option is reported as an `unsupported` warning (`providerOptions.typesafe.<name>`) and is not sent.
+- `providerOptions.typesafe.longContext` is the only `typesafe` provider option that is sent. Every other one is reported as an `unsupported` warning (`providerOptions.typesafe.<name>`) and is not sent.
+
+## Model ids
+
+`jev-1.13.0`, `jev-1.14.0`, `jev-latest`, and `jev-preview` are sent exactly as you pass them. Any other id is sent too. The default context window is 64k tokens for input and 32k for output.
+
+## Long context
+
+`providerOptions.typesafe.longContext` takes a boolean. `true` sends the `TypeSafe-Danger-Zone-Long-Context: true` header and raises the context window to 262k tokens. `false` or no value sends no header and no warning. Any other value (`"true"`, `1`, `null`) throws `InvalidArgumentError` before any request.
+
+```csharp
+var result = await Decide.DecideAsync(new DecideRequest
+{
+    Model = provider.DecisionModel("jev-latest"),
+    State = state,
+    Questions = questions,
+    ProviderOptions = new Dictionary<string, object?> { ["typesafe"] = new Dictionary<string, object?> { ["longContext"] = true } },
+});
+```
+
+## Images
+
+A file part with the `image/png` or `image/jpeg` media type and inline data (base64 or bytes) is sent as an image. Any other file part throws `UnsupportedFunctionalityException` before any request: a non-inline data type (functionality `TypeSafe AI decision file input: <mediaType> (<data type>)`) or another media type, such as `application/pdf`, `image/webp`, or `image/gif` (functionality `TypeSafe AI decision image media type: <mediaType>`).
+
+With at least one image the request is `multipart/form-data` and carries the `TypeSafe-Danger-Zone-Images: true` header:
+
+- The `request` part is `application/json` (file name `request.json`) with `{ model, state, assets, questions }`.
+- Each image is a part named `image-<state index>`, with the media type as content type and `filename` (or `image-<index>.png` / `image-<index>.jpeg`) as file name.
+- `assets` maps each image reference to `{ type: "image", part: "image-<index>" }`.
+- `state` is one string: the parts joined with a newline, text as text, JSON as its JSON text, and each image as its reference.
+
+The reference is the asset id. Set it with `providerOptions.typesafe.reference` on the file part, and use it in question instructions and criteria (`Does [photo] show a cat?`). Without one, a new id is generated for every call. A reference that is empty, whitespace, or not a string throws `InvalidArgumentError`, and so does a duplicate (parameter `providerOptions.typesafe.reference`). Text-only requests stay `application/json`, with no `assets` and no image header.
 
 ## Errors
 
