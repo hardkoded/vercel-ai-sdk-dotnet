@@ -65,6 +65,14 @@ public static class DecisionModels
     }
 #pragma warning restore CS0618
 
+#pragma warning disable CS0618
+    // Maps to asEvaluationModel: a model that already has DoEvaluateAsync is returned unchanged.
+    internal static IEvaluationDecisionCaller AsEvaluationModel(IDecisionCaller model)
+    {
+        return model as IEvaluationDecisionCaller ?? new EvaluationDecisionCaller(model);
+    }
+#pragma warning restore CS0618
+
     // Maps to resolveDecisionModel for a model instance.
     internal static IDecisionCaller Validate(IDecisionCaller model)
     {

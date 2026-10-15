@@ -111,7 +111,7 @@ internal sealed class EvaluationFactoryProvider : ProviderBase, IEvaluationProvi
 }
 
 /// <summary>Maps to <c>DecisionMockModelV4</c>, which either factory may return.</summary>
-internal sealed class DecisionMockModel : IDecisionCaller, IEvaluationCaller
+internal sealed class DecisionMockModel : IEvaluationDecisionCaller
 {
     public string Provider => "mock-provider";
 

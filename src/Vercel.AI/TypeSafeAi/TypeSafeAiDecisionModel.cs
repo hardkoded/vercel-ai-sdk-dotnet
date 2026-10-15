@@ -33,7 +33,7 @@ public class TypeSafeAiDecisionModelConfig
 
 /// <summary>Answers questions through the TypeSafe <c>/systemone</c> route.</summary>
 #pragma warning disable CS0618
-public class TypeSafeAiDecisionModel : IDecisionCaller, IEvaluationCaller
+public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 #pragma warning restore CS0618
 {
     private static readonly HttpClient SharedClient = new HttpClient();

@@ -333,7 +333,7 @@ internal static class OpenResponsesExtensionItems
             case GeneratedToolCall call:
                 return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted };
             case GeneratedToolResult toolResult:
-                return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { ProviderMetadata = toolResult.ProviderMetadata };
+                return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { IsError = toolResult.IsError, ProviderMetadata = toolResult.ProviderMetadata };
             case GeneratedSource source:
                 return new SourceStreamPart(source.Id, source.Url, source.Title, source.ProviderMetadata);
             case GeneratedDocumentSource documentSource:

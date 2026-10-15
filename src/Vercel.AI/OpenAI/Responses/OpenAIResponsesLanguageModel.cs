@@ -424,7 +424,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             providerOptionsName,
             hasContinuation,
             OpenAIJson.Bool(openai, "store") ?? true,
-            outputSchemaToolNames: OutputSchemaToolNames(options.Tools));
+            outputSchemaToolNames: OutputSchemaToolNames(options.Tools),
+            isReasoningModel: reasoning,
+            hasConversation: OpenAIJson.String(openai, "conversation") != null);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -1053,7 +1055,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool hasContinuation,
         bool store,
         ISet<string>? customToolNames = null,
-        ISet<string>? outputSchemaToolNames = null)
+        ISet<string>? outputSchemaToolNames = null,
+        bool isReasoningModel = false,
+        bool hasConversation = false)
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -1110,7 +1114,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     break;
                 case AssistantModelMessage assistant:
                     AddStoredReasoning(input, assistant, providerOptionsName, hasContinuation, store);
-                    if (!string.IsNullOrEmpty(assistant.Text))
+                    if (assistant.Parts.Any(part => part is AssistantTextPart && TextItemId(part, providerOptionsName) != null))
+                    {
+                        AddStoredText(input, assistant, providerOptionsName, explicitItem, store, isReasoningModel, hasConversation);
+                    }
+                    else if (!string.IsNullOrEmpty(assistant.Text))
                     {
                         input.Add(MessageItem("assistant", JsonValue.Create(assistant.Text)!, explicitItem));
                     }
@@ -1158,6 +1166,57 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return new ResponsesInput(input, warnings);
+    }
+
+    private static string? TextItemId(AssistantContentPart part, string providerOptionsName) =>
+        OpenAIJson.String(ProviderOptionsFor(part.ProviderOptions, providerOptionsName), "itemId");
+
+    // Stored messages of reasoning models are bound to the reasoning item that produced them. When the reasoning
+    // has been removed (for example with pruneMessages), referencing the message fails, so it is sent with its content.
+    private static void AddStoredText(
+        JsonArray input,
+        AssistantModelMessage assistant,
+        string providerOptionsName,
+        bool explicitItem,
+        bool store,
+        bool isReasoningModel,
+        bool hasConversation)
+    {
+        var emittedTextItemIds = new HashSet<string>();
+        var hasPrecedingReasoning = false;
+        foreach (var part in assistant.Parts)
+        {
+            if (part is AssistantReasoningPart)
+            {
+                hasPrecedingReasoning = true;
+                continue;
+            }
+
+            if (part is not AssistantTextPart text)
+            {
+                continue;
+            }
+
+            var id = TextItemId(part, providerOptionsName);
+
+            // A conversation already holds its items, so sending them again fails with "Duplicate item found".
+            if (hasConversation && id != null)
+            {
+                continue;
+            }
+
+            if (store && id != null && (!isReasoningModel || hasPrecedingReasoning))
+            {
+                if (emittedTextItemIds.Add(id))
+                {
+                    input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = id });
+                }
+
+                continue;
+            }
+
+            input.Add(MessageItem("assistant", JsonValue.Create(text.Text)!, explicitItem));
+        }
     }
 
     // Reasoning already held by a conversation or previous response is filtered out.
