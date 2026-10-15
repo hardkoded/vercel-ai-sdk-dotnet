@@ -41,6 +41,9 @@ public class AnthropicOptions
     /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
     public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
 
+    /// <summary>Optional rewrite of the combined request headers. Receives the call's provider options and returns the headers to send.</summary>
+    public Func<Dictionary<string, string?>, IReadOnlyDictionary<string, JsonElement>?, Dictionary<string, string?>>? TransformRequestHeaders { get; set; }
+
     /// <summary>AWS region. Used when the AWS base URL is not set explicitly.</summary>
     public string? Region { get; set; }
 
@@ -461,7 +464,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     {
         var prepared = Prepare(options, false);
         var body = prepared.Body.ToJsonString();
-        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
@@ -477,7 +480,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     {
         var prepared = Prepare(options, true);
         var body = prepared.Body.ToJsonString();
-        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         yield return new StreamStartStreamPart(Warnings(prepared));
         var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool);
         await foreach (var data in _provider.Http.SendSseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false))
@@ -487,6 +490,13 @@ public sealed class AnthropicLanguageModel : ILanguageModel
                 yield return part;
             }
         }
+    }
+
+    private async Task<Dictionary<string, string?>> CreateHeadersAsync(AnthropicPreparedRequest prepared, LanguageModelCallOptions options, string body, CancellationToken cancellationToken)
+    {
+        var headers = await _provider.CreateHeadersAsync(prepared.Betas, options.Headers, body, cancellationToken).ConfigureAwait(false);
+        var transform = _provider.Options.TransformRequestHeaders;
+        return transform == null ? headers : transform(headers, options.ProviderOptions);
     }
 
     private AnthropicPreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
