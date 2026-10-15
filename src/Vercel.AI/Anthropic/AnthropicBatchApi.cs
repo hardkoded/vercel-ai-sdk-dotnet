@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -48,6 +49,13 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         if (url == null)
         {
             throw new AiSdkException("Anthropic batch \"" + batchId + "\" completed without batch output.");
+        }
+
+        // The results URL comes from the response. Off the provider origin it must pass download validation and gets no credentials.
+        if (!ProviderValues.IsSameOrigin(url, baseUrl))
+        {
+            DownloadUrls.ValidateDownloadUrl(url);
+            headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["user-agent"] = headers.TryGetValue("user-agent", out var userAgent) ? userAgent : null };
         }
 
         var lines = await _provider.Http.OpenJsonLinesAsync(HttpMethod.Get, new Uri(url), null, headers, _provider.Options.BatchResultDownloads?.MaxLineBytes, cancellationToken).ConfigureAwait(false);
