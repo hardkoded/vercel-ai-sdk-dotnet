@@ -2,9 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Gateway;
@@ -153,7 +155,7 @@ public static class V4Json
     }
 
     /// <summary>Parses one SSE JSON object into a stream part.</summary>
-    public static LanguageModelStreamPart? ParseStreamPart(string json)
+    public static LanguageModelStreamPart? ParseStreamPart(string json, bool includeRawChunks = false)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -183,12 +185,62 @@ public static class V4Json
             case "finish-step":
                 var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
+            case "stream-start":
+                return new StreamStartStreamPart(ReadWarnings(root));
+            case "raw":
+                return includeRawChunks
+                    ? new RawStreamPart(root.TryGetProperty("rawValue", out var rawValue) ? rawValue.GetRawText() : json)
+                    : null;
+            case "response-metadata":
+                DateTimeOffset? timestamp = null;
+                if (root.TryGetProperty("timestamp", out var stamp) && stamp.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(stamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsedStamp))
+                {
+                    timestamp = parsedStamp;
+                }
+
+                return new ResponseMetadataStreamPart(
+                    root.TryGetProperty("id", out var metadataId) && metadataId.ValueKind == JsonValueKind.String ? metadataId.GetString() : null,
+                    root.TryGetProperty("modelId", out var metadataModel) && metadataModel.ValueKind == JsonValueKind.String ? metadataModel.GetString() : null,
+                    timestamp);
             case "error":
-                var message = root.TryGetProperty("error", out var error) ? error.ToString() : "Provider stream error.";
-                return new ErrorStreamPart(message ?? "Provider stream error.");
+                if (!root.TryGetProperty("error", out var error))
+                {
+                    return new ErrorStreamPart("Provider stream error.");
+                }
+
+                if (error.ValueKind != JsonValueKind.Object)
+                {
+                    return new ErrorStreamPart(error.ValueKind == JsonValueKind.String ? error.GetString() ?? "Provider stream error." : error.ToString());
+                }
+
+                return new ErrorStreamPart(new ProviderStreamError(
+                    error.TryGetProperty("message", out var errorMessage) && errorMessage.ValueKind == JsonValueKind.String ? errorMessage.GetString() ?? string.Empty : error.ToString(),
+                    error.Clone(),
+                    error.TryGetProperty("type", out var errorType) && errorType.ValueKind == JsonValueKind.String ? errorType.GetString() : null,
+                    error.TryGetProperty("code", out var errorCode) ? errorCode.Clone() : null,
+                    error.TryGetProperty("statusCode", out var errorStatus) && errorStatus.ValueKind == JsonValueKind.Number ? errorStatus.GetInt32() : null,
+                    error.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False ? retryable.GetBoolean() : null));
             default:
                 return null;
         }
+    }
+
+    private static List<CallWarning> ReadWarnings(JsonElement root)
+    {
+        var warnings = new List<CallWarning>();
+        if (root.TryGetProperty("warnings", out var array) && array.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var warning in array.EnumerateArray())
+            {
+                var type = warning.TryGetProperty("type", out var typeElement) ? typeElement.GetString() ?? "other" : "other";
+                var feature = warning.TryGetProperty("feature", out var featureElement) ? featureElement.GetString() : null;
+                var text = warning.TryGetProperty("message", out var messageElement) ? messageElement.GetString() : null;
+                warnings.Add(feature != null ? new CallWarning(type, feature, text) : new CallWarning(type, text ?? string.Empty));
+            }
+        }
+
+        return warnings;
     }
 
     private static JsonObject Message(ModelMessage message)

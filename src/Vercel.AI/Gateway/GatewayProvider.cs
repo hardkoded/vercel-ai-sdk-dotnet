@@ -215,7 +215,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
                 LanguageModelStreamPart? part;
                 try
                 {
-                    part = V4Json.ParseStreamPart(data);
+                    part = V4Json.ParseStreamPart(data, options.IncludeRawChunks);
                 }
                 catch (JsonException)
                 {
