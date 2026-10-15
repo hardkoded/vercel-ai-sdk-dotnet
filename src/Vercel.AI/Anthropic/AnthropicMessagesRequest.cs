@@ -316,7 +316,7 @@ public static class AnthropicMessagesRequest
             usesJsonTool ? false : supportsStructured,
             supportsStrictTools && capabilities.SupportsStructuredOutput,
             eagerDefault,
-            capabilities.RejectsForcedToolUse);
+            capabilities.RejectsForcedToolUse || thinkingType == "enabled");
         warnings.AddRange(preparedTools.Warnings);
         betas.AddRange(preparedTools.Betas);
         warnings.AddRange(validator.Warnings);

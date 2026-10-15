@@ -251,6 +251,7 @@ public static class GoogleRequest
         }
 
         GoogleJson.Set(body, "serviceTier", vertex ? null : serviceTier);
+        GoogleJson.Set(body, "continuationToken", GoogleJson.String(google, "continuationToken"));
         return new GooglePreparedRequest(body, warnings, extra, tools, responseTool?.Name);
     }
 

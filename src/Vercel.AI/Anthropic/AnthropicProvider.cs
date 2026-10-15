@@ -338,6 +338,11 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
 
     internal static CallWarning ToCallWarning(AnthropicWarning warning)
     {
+        if (warning.Feature != null && warning.Message == null)
+        {
+            return new CallWarning(warning.Type, warning.Feature, warning.Details);
+        }
+
         return new CallWarning(warning.Type, warning.Details ?? warning.Message ?? warning.Feature ?? warning.Type);
     }
 

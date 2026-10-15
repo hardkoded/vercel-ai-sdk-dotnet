@@ -31,7 +31,7 @@ public sealed class RejectsForcedToolUseTests
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);
         Assert.Equal("toolChoice", warning.Feature);
-        Assert.Equal("toolChoice 'required' is not supported by this model because it rejects forced tool use. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made.", warning.Details);
+        Assert.Equal("toolChoice 'required' is not supported with this model or thinking configuration. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made.", warning.Details);
     }
 
     [Fact]

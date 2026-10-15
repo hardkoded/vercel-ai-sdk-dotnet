@@ -11,7 +11,7 @@ public static class UrlSupport
 {
     /// <summary>
     /// True when a pattern registered for <paramref name="mediaType"/>, its <c>type/*</c> prefix, or <c>*</c> matches <paramref name="url"/>.
-    /// The media type and URL are compared in lower case. A top-level-only media type such as <c>image</c> only matches <c>image/*</c>.
+    /// The media type is compared in lower case; the URL keeps its case, so patterns decide case sensitivity. A top-level-only media type such as <c>image</c> only matches <c>image/*</c>.
     /// </summary>
     public static bool IsUrlSupported(string mediaType, string url, IReadOnlyDictionary<string, IReadOnlyList<Regex>> supportedUrls)
     {
@@ -30,7 +30,6 @@ public static class UrlSupport
             throw new ArgumentNullException(nameof(supportedUrls));
         }
 
-        url = url.ToLowerInvariant();
         mediaType = mediaType.ToLowerInvariant();
         var topLevelOnly = mediaType.IndexOf('/') < 0;
         foreach (var pair in supportedUrls)
