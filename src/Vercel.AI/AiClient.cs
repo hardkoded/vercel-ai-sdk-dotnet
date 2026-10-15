@@ -58,8 +58,8 @@ public interface IAiClient
     /// <summary>Generates video. Maps to <c>generateVideo</c>.</summary>
     Task<VideoResult> GenerateVideoAsync(GenerateVideoOptions options, CancellationToken cancellationToken = default);
 
-    /// <summary>Scores a candidate. Uses <see cref="EvaluateOptions.Model"/> or a language model.</summary>
-    Task<EvaluationResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default);
+    /// <summary>Scores a candidate against a rubric. Uses <see cref="EvaluateOptions.RubricModel"/> or a language model.</summary>
+    Task<RubricResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default);
 
     /// <summary>Uploads a file through <paramref name="store"/>.</summary>
     Task<UploadedFile> UploadFileAsync(IFileStore store, string fileName, byte[] data, string mediaType, CancellationToken cancellationToken = default);
@@ -210,16 +210,16 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public async Task<EvaluationResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default)
+    public async Task<RubricResult> EvaluateAsync(EvaluateOptions options, CancellationToken cancellationToken = default)
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        if (options.EvaluationModel != null)
+        if (options.RubricModel != null)
         {
-            return await options.EvaluationModel.DoEvaluateAsync(options.Rubric, options.Candidate, cancellationToken).ConfigureAwait(false);
+            return await options.RubricModel.DoEvaluateAsync(options.Rubric, options.Candidate, cancellationToken).ConfigureAwait(false);
         }
 
         var generated = await GenerateTextAsync(new GenerateTextOptions
@@ -242,7 +242,7 @@ public sealed class AiClient : IAiClient
             reason = reasonElement.GetString();
         }
 
-        return new EvaluationResult(score, reason);
+        return new RubricResult(score, reason);
     }
 
     /// <inheritdoc />
@@ -399,10 +399,18 @@ public sealed class GenerateVideoOptions
 /// <summary>Evaluation options.</summary>
 public sealed class EvaluateOptions
 {
-    /// <summary>Dedicated evaluation model.</summary>
-    public IEvaluationModel? EvaluationModel { get; set; }
+    /// <summary>Dedicated rubric model.</summary>
+    public IRubricModel? RubricModel { get; set; }
 
-    /// <summary>Language model used when <see cref="EvaluationModel"/> is null.</summary>
+    /// <summary>Deprecated name of <see cref="RubricModel"/>. Setting it sets <see cref="RubricModel"/>.</summary>
+    [Obsolete("Use RubricModel instead.")]
+    public IEvaluationModel? EvaluationModel
+    {
+        get => RubricModel is LegacyRubricModel legacy ? legacy.Inner : RubricModel as IEvaluationModel;
+        set => RubricModel = value == null ? null : RubricModels.FromLegacy(value);
+    }
+
+    /// <summary>Language model used when <see cref="RubricModel"/> is null.</summary>
     public ILanguageModel? Model { get; set; }
 
     /// <summary>Gateway model id used when no model instance is set.</summary>

@@ -359,7 +359,38 @@ public interface IRerankingModel
     Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken);
 }
 
-/// <summary>Evaluation result.</summary>
+/// <summary>Score of a candidate against a rubric. Returned by <see cref="IRubricModel"/>.</summary>
+public sealed class RubricResult
+{
+    /// <summary>Creates a rubric result.</summary>
+    public RubricResult(double score, string? reason)
+    {
+        Score = score;
+        Reason = reason;
+    }
+
+    /// <summary>Score assigned by the evaluator.</summary>
+    public double Score { get; }
+
+    /// <summary>Explanation.</summary>
+    public string? Reason { get; }
+}
+
+/// <summary>A model that scores a candidate against a rubric. Used by <see cref="IAiClient.EvaluateAsync"/>.</summary>
+public interface IRubricModel
+{
+    /// <summary>Provider id.</summary>
+    string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    string ModelId { get; }
+
+    /// <summary>Scores a candidate against a rubric.</summary>
+    Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken);
+}
+
+/// <summary>Deprecated name of <see cref="RubricResult"/>.</summary>
+[Obsolete("Use RubricResult instead.")]
 public sealed class EvaluationResult
 {
     /// <summary>Creates an evaluation result.</summary>
@@ -376,7 +407,8 @@ public sealed class EvaluationResult
     public string? Reason { get; }
 }
 
-/// <summary>Evaluation model specification.</summary>
+/// <summary>Deprecated name of <see cref="IRubricModel"/>. Pass it to <see cref="EvaluateOptions.EvaluationModel"/> or <see cref="CustomProvider.AddEvaluationModel(string, IEvaluationModel)"/>.</summary>
+[Obsolete("Implement IRubricModel instead.")]
 public interface IEvaluationModel
 {
     /// <summary>Provider id.</summary>
@@ -388,6 +420,47 @@ public interface IEvaluationModel
     /// <summary>Scores a candidate against a rubric.</summary>
     Task<EvaluationResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken);
 }
+
+/// <summary>Helpers for <see cref="IRubricModel"/>.</summary>
+public static class RubricModels
+{
+    /// <summary>
+    /// Wraps a model that implements only the deprecated <see cref="IEvaluationModel"/>. A model that already implements
+    /// <see cref="IRubricModel"/> is returned unchanged.
+    /// </summary>
+    [Obsolete("Implement IRubricModel on the model instead.")]
+    public static IRubricModel FromLegacy(IEvaluationModel model)
+    {
+        if (model == null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return model as IRubricModel ?? new LegacyRubricModel(model);
+    }
+}
+
+#pragma warning disable CS0618
+internal sealed class LegacyRubricModel : IRubricModel
+{
+    public LegacyRubricModel(IEvaluationModel inner)
+    {
+        Inner = inner;
+    }
+
+    public IEvaluationModel Inner { get; }
+
+    public string Provider => Inner.Provider;
+
+    public string ModelId => Inner.ModelId;
+
+    public async Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken)
+    {
+        var result = await Inner.DoEvaluateAsync(rubric, candidate, cancellationToken).ConfigureAwait(false);
+        return new RubricResult(result.Score, result.Reason);
+    }
+}
+#pragma warning restore CS0618
 
 /// <summary>A submitted batch job.</summary>
 public sealed class BatchJob
@@ -553,10 +626,10 @@ public abstract class ProviderBase
         throw Unsupported(modelId, "reranking");
     }
 
-    /// <summary>Returns an evaluation model.</summary>
-    public virtual IEvaluationModel EvaluationModel(string modelId)
+    /// <summary>Returns a model that scores a candidate against a rubric.</summary>
+    public virtual IRubricModel RubricModel(string modelId)
     {
-        throw Unsupported(modelId, "evaluation");
+        throw Unsupported(modelId, "rubric");
     }
 
     /// <summary>Returns a batch model.</summary>
