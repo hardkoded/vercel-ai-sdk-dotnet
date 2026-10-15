@@ -151,12 +151,24 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         var warnings = new List<OperationWarning>();
+        var longContext = false;
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty("typesafe", out var options)
             && options.ValueKind == JsonValueKind.Object)
         {
             foreach (var option in options.EnumerateObject())
             {
+                if (option.Name == "longContext")
+                {
+                    if (option.Value.ValueKind != JsonValueKind.True && option.Value.ValueKind != JsonValueKind.False)
+                    {
+                        throw new InvalidArgumentError("providerOptions.typesafe.longContext", option.Value.ToString(), "TypeSafe longContext must be a boolean.");
+                    }
+
+                    longContext = option.Value.ValueKind == JsonValueKind.True;
+                    continue;
+                }
+
                 warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.typesafe." + option.Name));
             }
         }
@@ -177,12 +189,18 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             questions[pair.Key] = question;
         }
 
+        var state = BuildState(call.State, out var images, out var assets);
         var body = new JsonObject
         {
             ["model"] = ModelId,
-            ["state"] = ToNode(LegacyState(call.State)),
-            ["questions"] = questions,
+            ["state"] = state,
         };
+        if (images.Count > 0)
+        {
+            body["assets"] = assets;
+        }
+
+        body["questions"] = questions;
 
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (_config.Headers is { } providerHeaders)
@@ -198,6 +216,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             headers["User-Agent"] = ProviderExchange.UserAgent("typesafe-ai");
         }
 
+        if (images.Count > 0)
+        {
+            headers["TypeSafe-Danger-Zone-Images"] = "true";
+        }
+
+        if (longContext)
+        {
+            headers["TypeSafe-Danger-Zone-Long-Context"] = "true";
+        }
+
         foreach (var pair in call.Headers)
         {
             headers[pair.Key] = pair.Value;
@@ -205,7 +233,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         var uri = ApiKeys.Combine(_config.BaseUrl, "/systemone");
         var requestBody = body.ToJsonString();
-        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = ProviderExchange.Json(requestBody) };
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = RequestContent(requestBody, images) };
         foreach (var pair in headers)
         {
             if (!string.IsNullOrEmpty(pair.Value) && !pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
@@ -467,27 +495,143 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         };
     }
 
-    /// <summary>TypeSafe takes the state as a string, a JSON object, or a list. A single text or JSON part is sent as its value.</summary>
-    private static object? LegacyState(object? state)
+    private sealed class StateImage
     {
+        public StateImage(int index, string reference, string mediaType, string fileName, byte[] bytes)
+        {
+            Index = index;
+            Reference = reference;
+            MediaType = mediaType;
+            FileName = fileName;
+            Bytes = bytes;
+        }
+
+        public int Index { get; }
+
+        public string Reference { get; }
+
+        public string MediaType { get; }
+
+        public string FileName { get; }
+
+        public byte[] Bytes { get; }
+    }
+
+    private static HttpContent RequestContent(string requestBody, IReadOnlyList<StateImage> images)
+    {
+        if (images.Count == 0)
+        {
+            return ProviderExchange.Json(requestBody);
+        }
+
+        var form = new MultipartFormDataContent();
+        form.Add(ProviderExchange.Json(requestBody), "request", "request.json");
+        foreach (var image in images)
+        {
+            var part = new ByteArrayContent(image.Bytes);
+            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(image.MediaType);
+            form.Add(part, "image-" + image.Index, image.FileName);
+        }
+
+        return form;
+    }
+
+    /// <summary>
+    /// TypeSafe takes the state as a string, a JSON object, or a list. A single text or JSON part is sent as its value.
+    /// With images, the parts are joined with a newline and each image is replaced by its asset reference.
+    /// </summary>
+    private static JsonNode? BuildState(object? state, out List<StateImage> images, out JsonObject assets)
+    {
+        images = new List<StateImage>();
+        assets = new JsonObject();
         var values = new List<object?>();
+        var lines = new List<string>();
+        var index = 0;
         foreach (var item in (IEnumerable<object?>)state!)
         {
             var part = (IDictionary<string, object?>)item!;
             switch ((string)part["type"]!)
             {
                 case "file":
-                    throw new UnsupportedFunctionalityException("TypeSafe evaluation file input", "'TypeSafe evaluation file input' functionality not supported.");
+                    var image = ImagePart(part, index, assets);
+                    images.Add(image);
+                    lines.Add(image.Reference);
+                    break;
                 case "text":
                     values.Add(part["text"]);
+                    lines.Add((string)part["text"]!);
                     break;
                 default:
                     values.Add(part["value"]);
+                    lines.Add(ToNode(part["value"])?.ToJsonString() ?? "null");
                     break;
+            }
+
+            index++;
+        }
+
+        if (images.Count > 0)
+        {
+            return string.Join("\n", lines);
+        }
+
+        return ToNode(values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values);
+    }
+
+    private static StateImage ImagePart(IDictionary<string, object?> part, int index, JsonObject assets)
+    {
+        var mediaType = (string)part["mediaType"]!;
+        var data = part["data"] as IDictionary<string, object?>;
+        var dataType = data?["type"] as string;
+        if (data == null || dataType != "data")
+        {
+            throw new UnsupportedFunctionalityException(
+                "TypeSafe AI decision file input: " + mediaType + " (" + dataType + ")",
+                "'TypeSafe AI decision file input: " + mediaType + " (" + dataType + ")' functionality not supported.");
+        }
+
+        string extension;
+        switch (mediaType)
+        {
+            case "image/png":
+                extension = "png";
+                break;
+            case "image/jpeg":
+                extension = "jpeg";
+                break;
+            default:
+                throw new UnsupportedFunctionalityException(
+                    "TypeSafe AI decision image media type: " + mediaType,
+                    "'TypeSafe AI decision image media type: " + mediaType + "' functionality not supported.");
+        }
+
+        string? reference = null;
+        if (part.TryGetValue("providerOptions", out var providerOptions)
+            && ToNode(providerOptions) is JsonObject partOptions
+            && partOptions["typesafe"] is JsonObject typesafe
+            && typesafe.TryGetPropertyValue("reference", out var node))
+        {
+            if (node is not JsonValue value || !value.TryGetValue<string>(out reference) || string.IsNullOrWhiteSpace(reference))
+            {
+                throw new InvalidArgumentError("providerOptions.typesafe.reference", node?.ToJsonString(), "TypeSafe image reference must be a non-empty string.");
             }
         }
 
-        return values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values;
+        reference ??= JsonValues.GenerateId("image_");
+        if (assets.ContainsKey(reference))
+        {
+            throw new InvalidArgumentError("providerOptions.typesafe.reference", reference, "Duplicate TypeSafe image reference: " + reference);
+        }
+
+        var bytes = data["data"] switch
+        {
+            byte[] raw => raw,
+            string base64 => Convert.FromBase64String(base64),
+            _ => throw new InvalidArgumentError("data", data["data"], "TypeSafe image data must be a base64 string or bytes."),
+        };
+        var fileName = part.TryGetValue("filename", out var name) && name is string text && text.Length > 0 ? text : "image-" + index + "." + extension;
+        assets[reference] = new JsonObject { ["type"] = "image", ["part"] = "image-" + index };
+        return new StateImage(index, reference, mediaType, fileName, bytes);
     }
 
     private static JsonNode? ToNode(object? value)

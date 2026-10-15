@@ -30,6 +30,23 @@ public sealed class TypesafeAiDecisionModelTests
         Assert.Equal("application/json", call.Headers["content-type"]);
     }
 
+    [Theory]
+    [InlineData("jev-1.13.0")]
+    [InlineData("jev-1.14.0")]
+    [InlineData("jev-latest")]
+    [InlineData("jev-preview")]
+    [UpstreamTest(Prefix + "sends the model ID or alias unchanged", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_the_model_ID_or_alias_unchanged(string modelId)
+    {
+        var server = Server();
+        await CreateProvider(server).DecisionModel(modelId).DoDecideAsync(Call(), CancellationToken.None);
+        var body = JsonNode.Parse(Assert.Single(server.Calls).Body)!.AsObject();
+        Assert.Equal(modelId, body["model"]!.GetValue<string>());
+        var expected = NativeRequest;
+        expected["model"] = modelId;
+        Assert.True(JsonNode.DeepEquals(expected, body), body.ToJsonString());
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "preserves native scores, probabilities, confidence metadata, and usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_native_scores_probabilities_confidence_metadata_and_usage()

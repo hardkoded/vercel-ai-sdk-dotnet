@@ -11,6 +11,20 @@ using Vercel.AI.TypeSafeAi;
 
 namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 
+/// <summary>One part of a <c>multipart/form-data</c> request.</summary>
+internal sealed class TypeSafeAiFormPart
+{
+    public string Name { get; init; } = string.Empty;
+
+    public string? FileName { get; init; }
+
+    public string? ContentType { get; init; }
+
+    public byte[] Bytes { get; init; } = Array.Empty<byte>();
+
+    public string Text => Encoding.UTF8.GetString(Bytes);
+}
+
 /// <summary>A request the test server received.</summary>
 internal sealed class TypeSafeAiServerCall
 {
@@ -19,6 +33,8 @@ internal sealed class TypeSafeAiServerCall
     public string Body { get; init; } = string.Empty;
 
     public Dictionary<string, string> Headers { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public List<TypeSafeAiFormPart> Form { get; init; } = new();
 }
 
 /// <summary>Stands in for <c>createTestServer</c>: records calls and answers with a configured response.</summary>
@@ -37,8 +53,22 @@ internal sealed class TypeSafeAiServer : HttpMessageHandler
         var call = new TypeSafeAiServerCall
         {
             Url = request.RequestUri!.AbsoluteUri,
-            Body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
+            Body = request.Content == null || request.Content is MultipartContent ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false),
         };
+        if (request.Content is MultipartContent multipart)
+        {
+            foreach (var part in multipart)
+            {
+                call.Form.Add(new TypeSafeAiFormPart
+                {
+                    Name = part.Headers.ContentDisposition!.Name!.Trim('"'),
+                    FileName = part.Headers.ContentDisposition.FileName?.Trim('"'),
+                    ContentType = part.Headers.ContentType?.ToString(),
+                    Bytes = await part.ReadAsByteArrayAsync().ConfigureAwait(false),
+                });
+            }
+        }
+
         foreach (var header in request.Headers)
         {
             call.Headers[header.Key] = string.Join(",", header.Value);
@@ -119,6 +149,37 @@ internal static class TypesafeAiDecisionModelSupport
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
             CancellationToken.None);
+    }
+
+    internal static Dictionary<string, object?> FilePart(string mediaType, object? data, string? filename = null, object? reference = null, bool withReference = false)
+    {
+        var part = new Dictionary<string, object?>
+        {
+            ["type"] = "file",
+            ["mediaType"] = mediaType,
+            ["data"] = data is IDictionary<string, object?> ? data : new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
+        };
+        if (filename != null)
+        {
+            part["filename"] = filename;
+        }
+
+        if (withReference)
+        {
+            part["providerOptions"] = new Dictionary<string, object?> { ["typesafe"] = new Dictionary<string, object?> { ["reference"] = reference } };
+        }
+
+        return part;
+    }
+
+    internal static Dictionary<string, object?> TextPart(string text)
+    {
+        return new Dictionary<string, object?> { ["type"] = "text", ["text"] = text };
+    }
+
+    internal static Dictionary<string, object?> JsonPart(object? value)
+    {
+        return new Dictionary<string, object?> { ["type"] = "json", ["value"] = value };
     }
 
     internal static List<object?> JsonState(object? value)
