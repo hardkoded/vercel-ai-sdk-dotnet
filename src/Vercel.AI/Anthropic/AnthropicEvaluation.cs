@@ -82,7 +82,7 @@ public sealed class AnthropicEvaluationResult
 }
 
 /// <summary>Builds and scores Anthropic evaluation requests on the Messages API.</summary>
-public sealed class AnthropicEvaluationModel : IEvaluationModel
+public sealed class AnthropicEvaluationModel : IRubricModel
 {
     private readonly AnthropicProvider _provider;
     private readonly string _modelId;
@@ -104,17 +104,17 @@ public sealed class AnthropicEvaluationModel : IEvaluationModel
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
 
     /// <inheritdoc />
-    public async Task<EvaluationResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken)
+    public async Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken)
     {
         var questions = new[] { new AnthropicEvaluationQuestion("score", "score", new[] { "low", "high" }) };
         var result = await EvaluateAsync(questions, null, cancellationToken).ConfigureAwait(false);
         AnthropicEvaluationAnswer? answer;
         if (!result.Answers.TryGetValue("score", out answer) || answer == null || answer.Score == null)
         {
-            return new EvaluationResult(0, candidate);
+            return new RubricResult(0, candidate);
         }
 
-        return new EvaluationResult(answer.Score.Value, rubric);
+        return new RubricResult(answer.Score.Value, rubric);
     }
 
     /// <summary>Evaluates questions and maps <c>q0</c>, <c>q1</c>, … back onto the question names.</summary>

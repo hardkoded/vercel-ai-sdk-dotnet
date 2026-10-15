@@ -126,6 +126,16 @@ public interface IEvaluationCaller
 }
 
 /// <summary>
+/// A decision model that also has the deprecated <see cref="IEvaluationCaller.DoEvaluateAsync"/>. Returned by the deprecated
+/// <c>EvaluationModel</c> accessors of <see cref="ProviderRegistry"/> and <see cref="CustomProvider"/>. Both methods decide
+/// the same way.
+/// </summary>
+[Obsolete("Use IDecisionCaller instead.")]
+public interface IEvaluationDecisionCaller : IDecisionCaller, IEvaluationCaller
+{
+}
+
+/// <summary>
 /// Deprecated provider factory for decision models. Implement <see cref="IDecisionProvider"/> instead. A provider that
 /// implements both is asked through <see cref="IDecisionProvider"/> only.
 /// </summary>
@@ -294,7 +304,7 @@ public static class DecisionCaller
 }
 
 #pragma warning disable CS0618
-internal sealed class LegacyDecisionCaller : IDecisionCaller
+internal sealed class LegacyDecisionCaller : IEvaluationDecisionCaller
 {
     private readonly IEvaluationCaller _inner;
 
@@ -316,9 +326,49 @@ internal sealed class LegacyDecisionCaller : IDecisionCaller
         return AdaptAsync(call, cancellationToken);
     }
 
+    public Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    {
+        return _inner.DoEvaluateAsync(call, cancellationToken);
+    }
+
     private async Task<DecisionModelResult> AdaptAsync(DecisionModelCall call, CancellationToken cancellationToken)
     {
         return await _inner.DoEvaluateAsync(EvaluationModelCall.From(call), cancellationToken).ConfigureAwait(false);
+    }
+}
+
+// Maps to the object asEvaluationModel builds for a model without doEvaluate. A model that implements both interfaces
+// without IEvaluationDecisionCaller keeps its own DoEvaluateAsync.
+internal sealed class EvaluationDecisionCaller : IEvaluationDecisionCaller
+{
+    private readonly IDecisionCaller _inner;
+
+    public EvaluationDecisionCaller(IDecisionCaller inner)
+    {
+        _inner = inner;
+    }
+
+    public string Provider => _inner.Provider;
+
+    public string ModelId => _inner.ModelId;
+
+    public string SpecificationVersion => _inner.SpecificationVersion;
+
+    public IReadOnlyList<string> SupportedQuestionTypes => _inner.SupportedQuestionTypes;
+
+    public Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken)
+    {
+        return _inner.DoDecideAsync(call, cancellationToken);
+    }
+
+    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    {
+        if (_inner is IEvaluationCaller legacy)
+        {
+            return await legacy.DoEvaluateAsync(call, cancellationToken).ConfigureAwait(false);
+        }
+
+        return EvaluationModelResult.From(await _inner.DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
     }
 }
 

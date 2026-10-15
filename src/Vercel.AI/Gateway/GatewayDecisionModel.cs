@@ -13,7 +13,7 @@ namespace Vercel.AI.Gateway;
 
 /// <summary>Answers questions through the Gateway <c>/decision-model</c> route.</summary>
 #pragma warning disable CS0618
-public sealed class GatewayDecisionModel : IDecisionCaller, IEvaluationCaller
+public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
 #pragma warning restore CS0618
 {
     private readonly GatewayProvider _provider;

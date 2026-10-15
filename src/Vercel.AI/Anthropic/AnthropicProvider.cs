@@ -154,7 +154,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 
     /// <inheritdoc />
-    public override IEvaluationModel EvaluationModel(string modelId)
+    public override IRubricModel RubricModel(string modelId)
     {
         return new AnthropicEvaluationModel(this, modelId);
     }
@@ -170,13 +170,19 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return DecisionModel(modelId);
     }
 
-    /// <summary>Deprecated alias of the decision factory. <see cref="EvaluationModel(string)"/> keeps returning the rubric model.</summary>
+    /// <summary>Deprecated alias of <see cref="DecisionModel"/>. Maps to <c>evaluationModel</c>.</summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public Operations.DecisionLanguageModel EvaluationModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
+#pragma warning disable CS0618
     Operations.IEvaluationCaller? Operations.IEvaluationProvider.EvaluationModel(string modelId)
     {
-#pragma warning disable CS0618
         return DecisionModel(modelId);
-#pragma warning restore CS0618
     }
+#pragma warning restore CS0618
 
     /// <summary>Message Batches API. Downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()

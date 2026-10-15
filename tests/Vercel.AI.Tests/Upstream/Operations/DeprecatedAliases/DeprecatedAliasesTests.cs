@@ -44,7 +44,7 @@ public sealed class DeprecatedAliasesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Partial, Note = "Checks DecisionModel through the default provider, the registry, a custom fallback, and the deprecated alias map. The deprecated EvaluationModel accessors are not ported (issue #390).")]
+    [UpstreamTest(Prefix + "resolves deprecated provider factories through default, custom, and registry access", Coverage = UpstreamCoverage.Covered)]
     public async Task Resolves_deprecated_provider_factories_through_default_custom_and_registry_access()
     {
         var legacy = new LegacyProvider();
@@ -58,8 +58,11 @@ public sealed class DeprecatedAliasesTests
             var requests = new[]
             {
                 new DecideRequest { ModelId = "model" },
+                new DecideRequest { Model = registry.EvaluationModel("legacy|model") },
                 new DecideRequest { Model = registry.DecisionModel("legacy|model") },
+                new DecideRequest { Model = custom.EvaluationModel("model") },
                 new DecideRequest { Model = custom.DecisionModel("model") },
+                new DecideRequest { Model = aliases.EvaluationModel("alias") },
                 new DecideRequest { Model = aliases.DecisionModel("alias") },
             };
             foreach (var request in requests)
@@ -74,19 +77,32 @@ public sealed class DeprecatedAliasesTests
         {
             DecisionModels.DefaultProvider = null;
         }
+
+        var direct = await registry.EvaluationModel("legacy|model").DoEvaluateAsync(Call(), CancellationToken.None);
+        Assert.Equal("billing", Assert.Single(direct.Answers).Value.Choice);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Partial, Note = "Checks that the decision map wins over the deprecated map, and that a fallback provider's decision factory wins over its deprecated factory. The default provider (issue #389) and direct DoEvaluateAsync calls through CustomProvider.EvaluationModel (issue #390) are not ported.")]
+    [UpstreamTest(Prefix + "prefers new model maps and factories and supports direct deprecated model calls", Coverage = UpstreamCoverage.Covered, Note = "EvaluateRequest has no ModelId, so the string id goes through Decide.DecideAsync. Upstream experimental_evaluate is the same function.")]
     public async Task Prefers_new_model_maps_and_factories_and_supports_direct_deprecated_model_calls()
     {
         var model = new DecideModel { Result = Result() };
         var provider = new CustomProvider().AddDecisionModel("alias", model).AddEvaluationModel("alias", new LegacyModel());
         Assert.Same(model, provider.DecisionModel("alias"));
+        var direct = await provider.EvaluationModel("alias").DoEvaluateAsync(Call(), CancellationToken.None);
+        Assert.Equal("billing", Assert.Single(direct.Answers).Value.Choice);
 
         var both = new BothFactoriesProvider(model);
-        await DecideOperation.DecideAsync(new DecideRequest { Model = new CustomProvider { FallbackProvider = both }.DecisionModel("model"), State = "message", Questions = DecisionQuestions() });
-        Assert.Single(model.Calls);
+        DecisionModels.DefaultProvider = both;
+        try
+        {
+            await DecideOperation.DecideAsync(new DecideRequest { ModelId = "model", State = "message", Questions = DecisionQuestions() });
+        }
+        finally
+        {
+            DecisionModels.DefaultProvider = null;
+        }
+
         Assert.Equal(0, both.DeprecatedCalls);
     }
 
@@ -157,6 +173,12 @@ public sealed class DeprecatedAliasesTests
         });
         Assert.Equal(4, current);
         Assert.Equal(0, deprecated);
+    }
+
+    private static EvaluationModelCall Call()
+    {
+        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = "message" } };
+        return new EvaluationModelCall(state, Questions, default, new Dictionary<string, string>(), CancellationToken.None);
     }
 
     private static Dictionary<string, DecisionQuestion> DecisionQuestions()
