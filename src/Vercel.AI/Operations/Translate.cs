@@ -143,8 +143,8 @@ public sealed class StreamTranslateResult
         _model = model;
         _startedAt = request.Now?.Invoke() ?? DateTime.UtcNow;
         var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pipe.Token);
-        FullStreamCore = new OperationFullStream<ModelStreamPart>(() => new QueueEnumerator(this), () => _pipe.Cancel());
-        _ = PumpAsync(request, linked.Token);
+        FullStreamCore = new OperationFullStream<ModelStreamPart>(token => new QueueEnumerator(this, token), CancelPipe);
+        _ = PumpAsync(request, linked);
     }
 
     /// <summary>Source transcript. Accessing it claims the stream.</summary>
@@ -245,8 +245,9 @@ public sealed class StreamTranslateResult
         }
     }
 
-    private async Task PumpAsync(StreamTranslateRequest request, CancellationToken cancellationToken)
+    private async Task PumpAsync(StreamTranslateRequest request, CancellationTokenSource linked)
     {
+        var cancellationToken = linked.Token;
         var audio = request.Audio ?? new AudioChunkStream();
         ModelPartStream? stream = null;
         try
@@ -286,6 +287,23 @@ public sealed class StreamTranslateResult
             }
 
             _queue.Complete(reason);
+        }
+        finally
+        {
+            linked.Dispose();
+            _pipe.Dispose();
+        }
+    }
+
+    private void CancelPipe()
+    {
+        try
+        {
+            _pipe.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The pump already ended and released the source.
         }
     }
 
@@ -361,11 +379,13 @@ public sealed class StreamTranslateResult
     private sealed class QueueEnumerator : IAsyncEnumerator<ModelStreamPart>
     {
         private readonly StreamTranslateResult _owner;
+        private readonly CancellationToken _token;
         private ModelStreamPart? _current;
 
-        public QueueEnumerator(StreamTranslateResult owner)
+        public QueueEnumerator(StreamTranslateResult owner, CancellationToken token)
         {
             _owner = owner;
+            _token = token;
         }
 
         public ModelStreamPart Current
@@ -376,7 +396,7 @@ public sealed class StreamTranslateResult
         public async ValueTask<bool> MoveNextAsync()
         {
             // The pump completes the queue on every exit, including cancellation with the abort reason.
-            if (!await _owner._queue.WaitAsync(CancellationToken.None).ConfigureAwait(false))
+            if (!await _owner._queue.WaitAsync(_token).ConfigureAwait(false))
             {
                 return false;
             }
@@ -389,7 +409,7 @@ public sealed class StreamTranslateResult
         {
             if (_owner._translation.IsPending)
             {
-                _owner._pipe.Cancel();
+                _owner.CancelPipe();
             }
 
             return default;
