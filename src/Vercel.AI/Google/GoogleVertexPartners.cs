@@ -2,10 +2,13 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Google;
 
@@ -57,6 +60,8 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     public const string ModelProviderName = "googleVertex.anthropic.messages";
 
     private static readonly IReadOnlyDictionary<string, string> NoUrls = new Dictionary<string, string>();
+
+    private const string LabelsHeader = "x-vertex-ai-labels";
 
     private readonly GoogleVertexAnthropicOptions _vertex;
 
@@ -122,6 +127,51 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
         return clone;
     }
 
+    /// <summary>Sends <c>providerOptions.vertex.labels</c> as the <c>x-vertex-ai-labels</c> header. An explicit header wins.</summary>
+    public static Dictionary<string, string?> TransformHeaders(Dictionary<string, string?> headers, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        if (providerOptions == null
+            || !providerOptions.TryGetValue("vertex", out var vertex)
+            || vertex.ValueKind != JsonValueKind.Object
+            || !vertex.TryGetProperty("labels", out var labels))
+        {
+            return headers;
+        }
+
+        if (labels.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidArgumentError("providerOptions.vertex.labels", labels.ToString(), "labels must be an object with string values.");
+        }
+
+        foreach (var property in labels.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                throw new InvalidArgumentError("providerOptions.vertex.labels", labels.ToString(), "labels must be an object with string values.");
+            }
+        }
+
+        var result = new Dictionary<string, string?>(headers, StringComparer.OrdinalIgnoreCase);
+        if (result.TryGetValue(LabelsHeader, out var existing) && existing != null)
+        {
+            return result;
+        }
+
+        result[LabelsHeader] = Convert.ToBase64String(Encoding.UTF8.GetBytes(Compact(labels)));
+        return result;
+    }
+
+    private static string Compact(JsonElement labels)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            labels.WriteTo(writer);
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
     /// <summary>Generated bearer token, then configured headers, call headers, and beta flags.</summary>
     public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
     {
@@ -171,6 +221,7 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
             BaseUrl = GoogleVertexEndpoints.AnthropicBaseUrl(vertex.Project, vertex.Location, vertex.BaseUrl),
             Name = ModelProviderName,
             TransformRequestBody = TransformBody,
+            TransformRequestHeaders = TransformHeaders,
         };
         foreach (var pair in vertex.Headers)
         {
