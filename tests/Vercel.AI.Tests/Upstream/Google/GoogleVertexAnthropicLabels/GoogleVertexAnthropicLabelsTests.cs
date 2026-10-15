@@ -100,8 +100,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::sends labels in the header and preserves authentication and other headers", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::sends labels in the header and preserves authentication and other headers", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::sends labels in the header and preserves authentication and other headers", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::sends labels in the header and preserves authentication and other headers", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Sends_labels_in_the_header_and_preserves_authentication_and_other_headers(string mode)
     {
         var (model, handler) = Create(mode);
@@ -121,8 +121,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("generate","{}")]
     [InlineData("stream","")]
     [InlineData("stream","{}")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::omits the header when labels are absent", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::omits the header when labels are absent", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::omits the header when labels are absent", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::omits the header when labels are absent", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Omits_the_header_when_labels_are_absent(string mode, string providerOptions)
     {
         var (model, handler) = Create(mode);
@@ -134,8 +134,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::encodes an empty labels map", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::encodes an empty labels map", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::encodes an empty labels map", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::encodes an empty labels map", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Encodes_an_empty_labels_map(string mode)
     {
         var (model, handler) = Create(mode);
@@ -147,8 +147,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::encodes labels as UTF-8", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::encodes labels as UTF-8", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::encodes labels as UTF-8", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::encodes labels as UTF-8", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Encodes_labels_as_UTF8(string mode)
     {
         var (model, handler) = Create(mode);
@@ -162,8 +162,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("generate","X-Vertex-AI-Labels")]
     [InlineData("stream","x-vertex-ai-labels")]
     [InlineData("stream","X-Vertex-AI-Labels")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::preserves an explicit request header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::preserves an explicit request header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::preserves an explicit request header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::preserves an explicit request header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Preserves_an_explicit_request_header(string mode, string headerName)
     {
         var (model, handler) = Create(mode);
@@ -175,8 +175,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::preserves an explicit provider labels header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::preserves an explicit provider labels header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::preserves an explicit provider labels header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::preserves an explicit provider labels header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Preserves_an_explicit_provider_labels_header(string mode)
     {
         var (model, handler) = Create(mode, options => options.Headers["X-Vertex-AI-Labels"] = "provider-labels");
@@ -194,8 +194,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("stream","\"invalid\"")]
     [InlineData("stream","{\"team\":123}")]
     [InlineData("stream","[\"team\"]")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::rejects invalid labels before sending a request", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::rejects invalid labels before sending a request", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::rejects invalid labels before sending a request", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::rejects invalid labels before sending a request", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Rejects_invalid_labels_before_sending_a_request(string mode, string labels)
     {
         var (model, handler) = Create(mode);
@@ -207,8 +207,8 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::generate::keeps labels isolated across concurrent and subsequent calls", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels::stream::keeps labels isolated across concurrent and subsequent calls", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > generate::keeps labels isolated across concurrent and subsequent calls", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::Node Vertex Anthropic labels > stream::keeps labels isolated across concurrent and subsequent calls", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
     public async Task Keeps_labels_isolated_across_concurrent_and_subsequent_calls(string mode)
     {
         var (model, handler) = Create(mode);
