@@ -128,4 +128,10 @@ public class OpenAICompatibleOptions
 
     /// <summary>Origin for image calls when it differs from <see cref="BaseUrl"/>.</summary>
     public string? ImageBaseUrl { get; set; }
+
+    /// <summary>
+    /// Client for URLs read from response bodies (Fal, Replicate, Luma, Prodia). It must not follow redirects:
+    /// each hop is validated before it is requested. Null uses <see cref="Util.Download"/>, which does not follow them either.
+    /// </summary>
+    public HttpClient? DownloadHttpClient { get; set; }
 }

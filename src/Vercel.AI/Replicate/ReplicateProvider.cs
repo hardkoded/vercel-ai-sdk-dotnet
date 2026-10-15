@@ -38,6 +38,12 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     public static new ReplicateProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        options ??= new OpenAICompatibleOptions();
+        if (handler is not null)
+        {
+            options.DownloadHttpClient ??= client;
+        }
+
         return new ReplicateProvider(client, options);
     }
 
@@ -72,7 +78,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
         var sameOrigin = ProviderValues.IsSameOrigin(url, Options.BaseUrl);
         if (!sameOrigin)
         {
-            DownloadUrls.ValidateDownloadUrl(url);
+            return ProviderExchange.DownloadAsync(Options, url, cancellationToken);
         }
 
         var outgoing = sameOrigin && headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;

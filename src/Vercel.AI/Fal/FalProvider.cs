@@ -39,6 +39,12 @@ public sealed class FalProvider : OpenAICompatibleProvider
     public static new FalProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        options ??= new OpenAICompatibleOptions();
+        if (handler is not null)
+        {
+            options.DownloadHttpClient ??= client;
+        }
+
         return new FalProvider(client, options);
     }
 
@@ -80,7 +86,7 @@ public sealed class FalProvider : OpenAICompatibleProvider
     {
         if (!ProviderValues.IsSameOrigin(url, trustedOrigin))
         {
-            DownloadUrls.ValidateDownloadUrl(url);
+            return (await ProviderExchange.DownloadAsync(Options, url, cancellationToken).ConfigureAwait(false)).Bytes;
         }
 
         var response = await ProviderExchange.SendAsync(_httpClient, HttpMethod.Get, new Uri(url), null, null, cancellationToken).ConfigureAwait(false);

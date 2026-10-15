@@ -67,6 +67,66 @@ internal static class ProviderExchange
         }
     }
 
+    /// <summary>
+    /// Downloads a URL taken from a response body. Each redirect hop is validated before it is requested.
+    /// Without <c>DownloadHttpClient</c> the request goes through <see cref="Util.Download"/>.
+    /// </summary>
+    public static async Task<ProviderExchangeResult> DownloadAsync(Vercel.AI.OpenAICompatible.OpenAICompatibleOptions options, string url, CancellationToken cancellationToken)
+    {
+        var client = options.DownloadHttpClient;
+        Util.DownloadFetch? fetch = client is null ? null : (hopUrl, request) => FetchWithAsync(client, hopUrl, request);
+        var result = await Util.Download.GetAsync(new Uri(url), null, cancellationToken, fetch).ConfigureAwait(false);
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (result.MediaType is not null)
+        {
+            headers["Content-Type"] = result.MediaType;
+        }
+
+        return new ProviderExchangeResult(Encoding.UTF8.GetString(result.Data), result.Data, headers);
+    }
+
+    private static async Task<Util.DownloadResponse> FetchWithAsync(HttpClient client, string url, Util.DownloadRequest request)
+    {
+        using (var message = new HttpRequestMessage(HttpMethod.Get, url))
+        {
+            var userAgent = request.Headers.Get("user-agent");
+            if (!string.IsNullOrEmpty(userAgent))
+            {
+                message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+            }
+
+            using (var response = await client.SendAsync(message, request.AbortSignal).ConfigureAwait(false))
+            {
+                // A client that follows redirects already requested the target. Still refuse its body.
+                var finalUri = response.RequestMessage?.RequestUri;
+                if (finalUri is not null && finalUri.AbsoluteUri != new Uri(url).AbsoluteUri)
+                {
+                    Util.Download.ValidateDownloadUrl(finalUri.AbsoluteUri);
+                }
+
+                var headers = new Util.HeaderCollection();
+                foreach (var header in response.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        headers.Add(header.Key, value);
+                    }
+                }
+
+                foreach (var header in response.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        headers.Add(header.Key, value);
+                    }
+                }
+
+                var body = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                return new Util.DownloadResponse((int)response.StatusCode, response.ReasonPhrase, headers, body);
+            }
+        }
+    }
+
     /// <summary>JSON content whose media type is <c>application/json</c> without a charset parameter.</summary>
     public static StringContent Json(string json)
     {

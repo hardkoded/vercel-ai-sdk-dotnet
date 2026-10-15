@@ -162,8 +162,7 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
             return (image.Data!, image.MediaType!);
         }
 
-        Download.ValidateDownloadUrl(image.Url!);
-        var response = await ProviderExchange.SendAsync(_provider.HttpClient, HttpMethod.Get, new Uri(image.Url!), null, null, cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange.DownloadAsync(_provider.Options, image.Url!, cancellationToken).ConfigureAwait(false);
         var mediaType = response.Headers.TryGetValue("Content-Type", out var value) && value.Length > 0 ? value : "application/octet-stream";
         return (response.Bytes, mediaType);
     }
