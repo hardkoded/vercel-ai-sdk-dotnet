@@ -165,3 +165,40 @@ internal sealed class RecordingHandler : HttpMessageHandler
         return message;
     }
 }
+
+/// <summary>Returns scripted responses in order and records every request. The last response repeats.</summary>
+internal sealed class SequencedHandler : HttpMessageHandler
+{
+    private readonly List<(string Body, string MediaType, HttpStatusCode Status)> _responses = new();
+
+    public List<string> Uris { get; } = new();
+
+    public List<string> Methods { get; } = new();
+
+    public List<string> Bodies { get; } = new();
+
+    public SequencedHandler Json(string body, HttpStatusCode status = HttpStatusCode.OK)
+    {
+        _responses.Add((body, "application/json", status));
+        return this;
+    }
+
+    public SequencedHandler Sse(string body)
+    {
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK));
+        return this;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var index = Uris.Count;
+        Uris.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
+        Methods.Add(request.Method.Method);
+        Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false));
+        var response = _responses[Math.Min(index, _responses.Count - 1)];
+        return new HttpResponseMessage(response.Status)
+        {
+            Content = new StringContent(response.Body, Encoding.UTF8, response.MediaType),
+        };
+    }
+}

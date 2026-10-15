@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 
@@ -201,15 +202,113 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     {
         var input = GoogleInteractionsInput.Convert(options.Prompt);
         input["model"] = ModelId;
-        using var document = await _provider.Http.SendJsonAsync(
+        var background = Background(options);
+        if (background)
+        {
+            input["background"] = true;
+        }
+
+        if (options.MaxOutputTokens is { } maxOutputTokens)
+        {
+            input["generation_config"] = new JsonObject { ["max_output_tokens"] = maxOutputTokens };
+        }
+
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
+        var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Post,
-            ProviderUtils.ApiKeys.Combine(InteractionsBase(_provider.Options.BaseUrl), "interactions"),
+            ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
             GoogleJson.Write(input),
-            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
+            headers,
             cancellationToken).ConfigureAwait(false);
-        var parsed = GoogleInteractionsOutput.Parse(JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject());
-        var status = document.RootElement.TryGetProperty("status", out var value) ? value.GetString() : null;
-        return new LanguageModelGenerateResult(parsed.Content, GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall), LanguageModelUsage.Empty, status);
+
+        // A background call (such as Gemini 4 long decode, where the server runs every hop) may return a non-terminal
+        // status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
+        if (background)
+        {
+            document = await PollUntilTerminalAsync(document, baseUrl, headers, cancellationToken).ConfigureAwait(false);
+        }
+
+        using (document)
+        {
+            var response = JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
+            var parsed = GoogleInteractionsOutput.Parse(response);
+            var status = (string?)response["status"];
+            return new LanguageModelGenerateResult(parsed.Content, GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall), Usage(response["usage"] as JsonObject), status);
+        }
+    }
+
+    private static bool Background(LanguageModelCallOptions options)
+    {
+        return options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("background", out var flag)
+            && flag.ValueKind == JsonValueKind.True;
+    }
+
+    private static bool IsTerminal(string? status)
+    {
+        return status == "completed" || status == "failed" || status == "cancelled" || status == "incomplete";
+    }
+
+    private async Task<JsonDocument> PollUntilTerminalAsync(JsonDocument first, string baseUrl, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+    {
+        var current = first;
+        var delay = TimeSpan.FromSeconds(1);
+        var deadline = DateTime.UtcNow + TimeSpan.FromMinutes(30);
+        while (true)
+        {
+            var status = current.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            if (IsTerminal(status))
+            {
+                return current;
+            }
+
+            var id = current.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new InvalidOperationException("The Interactions response has no id to poll.");
+            }
+
+            if (DateTime.UtcNow + delay > deadline)
+            {
+                throw new TimeoutException("Polling the Interactions response for '" + id + "' timed out.");
+            }
+
+            current.Dispose();
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 10));
+            current = await _provider.Http.SendJsonAsync(
+                HttpMethod.Get,
+                ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id!)),
+                null,
+                headers,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    // total_output_tokens is the text count. Thought tokens add to the output total.
+    private static LanguageModelUsage Usage(JsonObject? usage)
+    {
+        if (usage == null)
+        {
+            return LanguageModelUsage.Empty;
+        }
+
+        var input = Count(usage, "total_input_tokens");
+        var output = Count(usage, "total_output_tokens");
+        var thought = Count(usage, "total_thought_tokens");
+        var cached = Count(usage, "total_cached_tokens");
+        int? outputTotal = output == null && thought == null ? null : (output ?? 0) + (thought ?? 0);
+        int? noCache = input == null ? null : input - (cached ?? 0);
+        var raw = JsonSerializer.SerializeToElement(usage);
+        return new LanguageModelUsage(input, outputTotal, input == null && outputTotal == null ? null : (input ?? 0) + (outputTotal ?? 0), cached, null, thought, raw, noCache, output);
+    }
+
+    private static int? Count(JsonObject usage, string name)
+    {
+        return usage[name] is JsonValue value && value.TryGetValue<int>(out var count) ? count : null;
     }
 
     /// <inheritdoc />

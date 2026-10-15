@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Google;
@@ -268,6 +269,42 @@ public static class GoogleResponse
         }
 
         return JsonSerializer.SerializeToElement(wrapped, GoogleJson.Metadata);
+    }
+
+    /// <summary>
+    /// Adds the long decode fields to provider metadata built by <see cref="Parse"/>, and replaces <c>usageMetadata</c> when
+    /// <paramref name="usage"/> is set. Absent values are not written.
+    /// </summary>
+    internal static JsonElement? WithLongDecode(JsonElement? metadata, string? continuationToken, int? initialPromptTokenCount, JsonElement? usage)
+    {
+        if (metadata is not { ValueKind: JsonValueKind.Object } element || (continuationToken == null && initialPromptTokenCount == null && usage == null))
+        {
+            return metadata;
+        }
+
+        var root = new JsonObject();
+        foreach (var property in element.EnumerateObject())
+        {
+            var payload = JsonNode.Parse(property.Value.GetRawText()) as JsonObject ?? new JsonObject();
+            if (usage is { } summed)
+            {
+                payload["usageMetadata"] = JsonNode.Parse(summed.GetRawText());
+            }
+
+            if (continuationToken != null)
+            {
+                payload["continuationToken"] = continuationToken;
+            }
+
+            if (initialPromptTokenCount is { } initial)
+            {
+                payload["initialPromptTokenCount"] = initial;
+            }
+
+            root[property.Name] = payload;
+        }
+
+        return JsonSerializer.SerializeToElement(root);
     }
 
     private static JsonElement? feedbackOrNull(JsonElement root)
