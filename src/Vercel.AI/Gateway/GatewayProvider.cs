@@ -196,37 +196,17 @@ public sealed class GatewayLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var collected = new List<LanguageModelStreamPart>();
+        // The request is sent here, so HTTP errors surface from this call as they do upstream.
+        IAsyncEnumerable<string> events;
         try
         {
-            await foreach (var data in _provider.Http.SendSseAsync(
+            events = await _provider.Http.OpenSseAsync(
                 _provider.Route("language-model"),
                 V4Json.CallOptions(options),
                 _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
-                cancellationToken).ConfigureAwait(false))
-            {
-                LanguageModelStreamPart? part;
-                try
-                {
-                    part = V4Json.ParseStreamPart(data);
-                }
-                catch (JsonException)
-                {
-                    continue;
-                }
-
-                if (part != null)
-                {
-                    collected.Add(part);
-                }
-            }
+                cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -237,9 +217,55 @@ public sealed class GatewayLanguageModel : ILanguageModel
             throw GatewayProvider.MapFailure(exception);
         }
 
-        foreach (var part in collected)
+        return new LanguageModelStreamResult(StreamAsync(events, cancellationToken));
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var enumerator = events.GetAsyncEnumerator(cancellationToken);
+        try
         {
-            yield return part;
+            while (true)
+            {
+                bool hasEvent;
+                try
+                {
+                    hasEvent = await enumerator.MoveNextAsync().ConfigureAwait(false);
+                }
+                catch (ApiException exception)
+                {
+                    throw GatewayProvider.MapFailure(exception);
+                }
+                catch (ApiTimeoutException exception)
+                {
+                    throw GatewayProvider.MapFailure(exception);
+                }
+
+                if (!hasEvent)
+                {
+                    yield break;
+                }
+
+                // A chunk that does not parse fails the stream, as upstream calls controller.error.
+                LanguageModelStreamPart? part;
+                try
+                {
+                    part = V4Json.ParseStreamPart(enumerator.Current);
+                }
+                catch (JsonException exception)
+                {
+                    throw new JsonParseException(enumerator.Current, exception);
+                }
+
+                if (part != null)
+                {
+                    yield return part;
+                }
+            }
+        }
+        finally
+        {
+            await enumerator.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

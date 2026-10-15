@@ -97,17 +97,54 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            throw MapStatus((int)response.StatusCode, body);
-        }
-
-        using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+        var events = await OpenSseAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false);
+        await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             yield return data;
+        }
+    }
+
+    /// <summary>
+    /// Posts JSON and returns once the response status is known. A failed response throws here.
+    /// The returned sequence yields SSE data payloads as they arrive. Enumerate it once: it disposes the response when it ends or the consumer stops.
+    /// </summary>
+    public async Task<IAsyncEnumerable<string>> OpenSseAsync(
+        Uri uri,
+        string jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                throw MapStatus((int)response.StatusCode, body);
+            }
+
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return ReadSseAsync(response, stream, cancellationToken);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private static async IAsyncEnumerable<string> ReadSseAsync(
+        HttpResponseMessage response,
+        Stream stream,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using (response)
+        using (stream)
+        {
+            await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+            {
+                yield return data;
+            }
         }
     }
 

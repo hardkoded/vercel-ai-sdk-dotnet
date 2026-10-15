@@ -2,10 +2,13 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -175,25 +178,61 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var body = Build(options, streaming: false);
-        return await SendAsync(body, streaming: false, cancellationToken).ConfigureAwait(false);
+        return await SendAsync(body, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var result = await SendAsync(Build(options, streaming: true), streaming: true, cancellationToken).ConfigureAwait(false);
-        return new LanguageModelStreamResult(Parts(result));
+        using var request = CreateRequest(Build(options, streaming: true), streaming: true);
+        var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                throw AmazonBedrockErrors.Create((int)response.StatusCode, AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text));
+            }
+
+            var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            var eventStream = response.Content.Headers.ContentType?.MediaType?.IndexOf(AmazonBedrockAnthropicFetch.EventStreamContentType, StringComparison.OrdinalIgnoreCase) >= 0;
+            return new LanguageModelStreamResult(StreamAsync(response, body, eventStream, options.IncludeRawChunks, cancellationToken));
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        HttpResponseMessage response,
+        Stream body,
+        bool eventStream,
+        bool includeRawChunks,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        await Task.CompletedTask.ConfigureAwait(false);
-        if (result.Text.Length > 0)
+        using (response)
+        using (body)
         {
-            yield return new TextDeltaStreamPart("text", result.Text);
-        }
+            var reader = new AnthropicStream(includeRawChunks, false);
+            var events = eventStream
+                ? AmazonBedrockAnthropicFetch.TransformEventStreamToSse(body, cancellationToken)
+                : SseParser.ReadDataAsync(body, cancellationToken);
+            yield return new StreamStartStreamPart(Array.Empty<CallWarning>());
+            await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
+            {
+                if (data == "[DONE]")
+                {
+                    yield break;
+                }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+                foreach (var part in reader.Push(data))
+                {
+                    yield return part;
+                }
+            }
+        }
     }
 
     private JsonObject Build(LanguageModelCallOptions options, bool streaming)
@@ -245,7 +284,22 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
         return AmazonBedrockAnthropicRequests.Transform(raw);
     }
 
-    private async Task<LanguageModelGenerateResult> SendAsync(JsonObject body, bool streaming, CancellationToken cancellationToken)
+    private async Task<LanguageModelGenerateResult> SendAsync(JsonObject body, CancellationToken cancellationToken)
+    {
+        using var request = CreateRequest(body, streaming: false);
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var anthropic = AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text);
+            throw AmazonBedrockErrors.Create((int)response.StatusCode, anthropic);
+        }
+
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        return Parse(document.RootElement);
+    }
+
+    private HttpRequestMessage CreateRequest(JsonObject body, bool streaming)
     {
         var json = body.ToJsonString();
         var url = AmazonBedrockAnthropicRequests.BuildUrl(_provider.ResolveBaseUrl(), ModelId, streaming);
@@ -264,16 +318,7 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
             _provider.Options.SecretAccessKey,
             _provider.Options.SessionToken,
             _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            var anthropic = AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text);
-            throw AmazonBedrockErrors.Create((int)response.StatusCode, anthropic);
-        }
-
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        return Parse(document.RootElement);
+        return request;
     }
 
     private static LanguageModelGenerateResult Parse(JsonElement root)

@@ -161,9 +161,52 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
+        using var request = CreateRequest(Build(options));
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
+        }
+
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        return Parse(document.RootElement);
+    }
+
+    /// <inheritdoc />
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    {
+        var body = Build(options);
+        body["stream"] = true;
+        if (!_responses)
+        {
+            body["stream_options"] = new JsonObject { ["include_usage"] = true };
+        }
+
+        using var request = CreateRequest(body);
+        var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
+            }
+
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return new LanguageModelStreamResult(StreamAsync(response, stream, options.IncludeRawChunks, cancellationToken));
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private HttpRequestMessage CreateRequest(JsonObject body)
+    {
         var path = _responses ? "/responses" : "/chat/completions";
         var url = BedrockMantleRoutes.Url(_provider.Options.Region, _provider.Options.BaseUrl, ModelId, path);
-        var body = Build(options);
         var json = body.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -186,33 +229,145 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             _provider.Options.SecretAccessKey,
             _provider.Options.SessionToken,
             _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
-        }
-
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        return Parse(document.RootElement);
+        return request;
     }
 
-    /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        HttpResponseMessage response,
+        Stream body,
+        bool includeRawChunks,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        return new LanguageModelStreamResult(Parts(result));
+        using (response)
+        using (body)
+        {
+            yield return new StreamStartStreamPart(Array.Empty<CallWarning>());
+            var textOpen = false;
+            string? finishReason = null;
+            LanguageModelUsage usage = LanguageModelUsage.Empty;
+            await foreach (var data in SseParser.ReadDataAsync(body, cancellationToken).ConfigureAwait(false))
+            {
+                if (includeRawChunks)
+                {
+                    yield return new RawStreamPart(data);
+                }
+
+                JsonDocument? document = null;
+                string? parseError = null;
+                try
+                {
+                    document = JsonDocument.Parse(data);
+                }
+                catch (JsonException exception)
+                {
+                    parseError = "JSON parsing failed: Text: " + data + ".\nError message: " + exception.Message;
+                }
+
+                if (document is null)
+                {
+                    yield return new ErrorStreamPart(parseError ?? "JSON parsing failed.");
+                    finishReason = "error";
+                    continue;
+                }
+
+                using (document)
+                {
+                    var root = document.RootElement;
+                    if (root.ValueKind != JsonValueKind.Object)
+                    {
+                        continue;
+                    }
+
+                    if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+                    {
+                        yield return new ErrorStreamPart(error.TryGetProperty("message", out var errorMessage) && errorMessage.ValueKind == JsonValueKind.String
+                            ? errorMessage.GetString() ?? error.GetRawText()
+                            : error.GetRawText());
+                        finishReason = "error";
+                        continue;
+                    }
+
+                    var delta = ReadTextDelta(root, ref finishReason, ref usage);
+                    if (!string.IsNullOrEmpty(delta))
+                    {
+                        if (!textOpen)
+                        {
+                            textOpen = true;
+                            yield return new TextStartStreamPart("text");
+                        }
+
+                        yield return new TextDeltaStreamPart("text", delta!);
+                    }
+                }
+            }
+
+            if (textOpen)
+            {
+                yield return new TextEndStreamPart("text");
+            }
+
+            var raw = finishReason ?? "stop";
+            yield return new FinishStreamPart(FinishReasons.Parse(raw), usage, raw);
+        }
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    private string? ReadTextDelta(JsonElement root, ref string? finishReason, ref LanguageModelUsage usage)
     {
-        await Task.CompletedTask.ConfigureAwait(false);
-        if (result.Text.Length > 0)
+        string? delta = null;
+        if (_responses)
         {
-            yield return new TextDeltaStreamPart("text", result.Text);
+            var type = root.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String ? typeElement.GetString() : null;
+            if (type == "response.output_text.delta" && root.TryGetProperty("delta", out var textDelta) && textDelta.ValueKind == JsonValueKind.String)
+            {
+                delta = textDelta.GetString();
+            }
+            else if (type == "response.completed" && root.TryGetProperty("response", out var completed) && completed.ValueKind == JsonValueKind.Object)
+            {
+                finishReason = "stop";
+                if (completed.TryGetProperty("usage", out var responseUsage))
+                {
+                    usage = ReadUsage(responseUsage, "input_tokens", "output_tokens", usage);
+                }
+            }
+
+            return delta;
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        if (root.TryGetProperty("choices", out var choices) && choices.ValueKind == JsonValueKind.Array && choices.GetArrayLength() > 0)
+        {
+            var choice = choices[0];
+            if (choice.TryGetProperty("delta", out var deltaElement)
+                && deltaElement.ValueKind == JsonValueKind.Object
+                && deltaElement.TryGetProperty("content", out var content)
+                && content.ValueKind == JsonValueKind.String)
+            {
+                delta = content.GetString();
+            }
+
+            if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
+            {
+                finishReason = finish.GetString();
+            }
+        }
+
+        if (root.TryGetProperty("usage", out var chatUsage))
+        {
+            usage = ReadUsage(chatUsage, "prompt_tokens", "completion_tokens", usage);
+        }
+
+        return delta;
+    }
+
+    private static LanguageModelUsage ReadUsage(JsonElement element, string inputName, string outputName, LanguageModelUsage fallback)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            return fallback;
+        }
+
+        int? input = element.TryGetProperty(inputName, out var inputTokens) && inputTokens.ValueKind == JsonValueKind.Number ? inputTokens.GetInt32() : null;
+        int? output = element.TryGetProperty(outputName, out var outputTokens) && outputTokens.ValueKind == JsonValueKind.Number ? outputTokens.GetInt32() : null;
+        return new LanguageModelUsage(input, output, null);
     }
 
     private JsonObject Build(LanguageModelCallOptions options)

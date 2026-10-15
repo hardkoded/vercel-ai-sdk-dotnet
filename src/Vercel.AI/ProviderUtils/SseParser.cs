@@ -22,10 +22,22 @@ public static class SseParser
 
         using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
         var data = new System.Text.StringBuilder();
+
+        // StreamReader.ReadLineAsync takes no token on netstandard2.0. Closing the stream ends a read that waits for data.
+        using var cancelRegistration = cancellationToken.Register(static state => ((Stream)state!).Dispose(), stream);
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var line = await reader.ReadLineAsync().ConfigureAwait(false);
+            string? line;
+            try
+            {
+                line = await reader.ReadLineAsync().ConfigureAwait(false);
+            }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+
             if (line is null)
             {
                 if (data.Length > 0)
