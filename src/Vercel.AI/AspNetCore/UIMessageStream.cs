@@ -106,7 +106,9 @@ public sealed class UIMessageStreamResult : IResult
 
         ValidateKeepAlive(keepAliveMs);
 
-        using var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
+        // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
+        // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
+        var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
         var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, cancellationToken), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
