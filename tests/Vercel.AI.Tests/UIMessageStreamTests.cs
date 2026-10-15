@@ -57,6 +57,34 @@ public sealed class UIMessageStreamTests
     }
 
     [Fact]
+    public async Task WriteAsync_DoesNotUseSynchronousIo()
+    {
+        var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
+        var stream = client.StreamTextAsync(new StreamTextOptions
+        {
+            Model = new TestLanguageModel
+            {
+                StreamParts = new LanguageModelStreamPart[]
+                {
+                    new TextDeltaStreamPart("text", "Hi"),
+                    new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+                },
+            },
+            Prompt = "hi",
+        });
+        using var destination = new AsyncOnlyStream();
+        await UIMessageStreamResult.WriteAsync(stream, destination);
+        Assert.Contains("data: [DONE]", Encoding.UTF8.GetString(destination.ToArray()));
+    }
+
+    private sealed class AsyncOnlyStream : MemoryStream
+    {
+        public override void Flush() => throw new InvalidOperationException("Synchronous operations are disallowed.");
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    [Fact]
     public async Task ShouldPassThroughTheOriginalStreamWhenKeepAliveMsIsUndefined()
     {
         var source = new ChunkList("data");
