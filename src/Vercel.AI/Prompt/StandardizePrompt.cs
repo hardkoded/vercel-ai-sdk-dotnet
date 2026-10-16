@@ -6,38 +6,126 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.Prompt;
 
-/// <summary>A prompt message used by <see cref="Prompts.StandardizePrompt"/>.</summary>
-public sealed class PromptMessage
+/// <summary>
+/// Instructions for a call: a string, one system message, or a list of system messages.
+/// Maps to <c>Instructions</c>. A single system message is kept as a one-item <see cref="Messages"/> list.
+/// </summary>
+public sealed class Instructions
 {
-    /// <summary>Creates a message.</summary>
-    public PromptMessage(string role, object? content)
+    private Instructions(string? text, IReadOnlyList<SystemModelMessage>? messages)
     {
-        Role = role ?? throw new ArgumentNullException(nameof(role));
-        Content = content;
+        Text = text;
+        Messages = messages;
     }
 
-    /// <summary>Message role.</summary>
-    public string Role { get; }
+    /// <summary>The instruction text, when the instructions are a string.</summary>
+    public string? Text { get; }
 
-    /// <summary>Message content. System messages must be a string.</summary>
-    public object? Content { get; }
+    /// <summary>The system messages, when the instructions are one or more system messages.</summary>
+    public IReadOnlyList<SystemModelMessage>? Messages { get; }
+
+    /// <summary>Creates instructions from a string.</summary>
+    public static Instructions From(string text)
+    {
+        return new Instructions(text ?? throw new ArgumentNullException(nameof(text)), null);
+    }
+
+    /// <summary>Creates instructions from one system message.</summary>
+    public static Instructions From(SystemModelMessage message)
+    {
+        return new Instructions(null, new[] { message ?? throw new ArgumentNullException(nameof(message)) });
+    }
+
+    /// <summary>Creates instructions from a list of system messages.</summary>
+    public static Instructions From(IReadOnlyList<SystemModelMessage> messages)
+    {
+        if (messages is null)
+        {
+            throw new ArgumentNullException(nameof(messages));
+        }
+
+        if (messages.Any(message => message is null))
+        {
+            throw new InvalidPromptException("instructions must be a string, SystemModelMessage, or array of SystemModelMessage");
+        }
+
+        return new Instructions(null, messages);
+    }
+
+    /// <summary>Converts a string to instructions.</summary>
+    public static implicit operator Instructions(string text)
+    {
+        return From(text);
+    }
+
+    /// <summary>Converts a system message to instructions.</summary>
+    public static implicit operator Instructions(SystemModelMessage message)
+    {
+        return From(message);
+    }
+
+    /// <summary>Converts an array of system messages to instructions.</summary>
+    public static implicit operator Instructions(SystemModelMessage[] messages)
+    {
+        return From(messages);
+    }
+}
+
+/// <summary>The prompt of a call: a user string or a list of messages. Maps to <c>prompt: string | ModelMessage[]</c>.</summary>
+public sealed class PromptInput
+{
+    private PromptInput(string? text, IReadOnlyList<ModelMessage>? messages)
+    {
+        Text = text;
+        Messages = messages;
+    }
+
+    /// <summary>The user text, when the prompt is a string.</summary>
+    public string? Text { get; }
+
+    /// <summary>The messages, when the prompt is a message list.</summary>
+    public IReadOnlyList<ModelMessage>? Messages { get; }
+
+    /// <summary>Creates a prompt from a user string.</summary>
+    public static PromptInput From(string text)
+    {
+        return new PromptInput(text ?? throw new ArgumentNullException(nameof(text)), null);
+    }
+
+    /// <summary>Creates a prompt from a message list.</summary>
+    public static PromptInput From(IReadOnlyList<ModelMessage> messages)
+    {
+        return new PromptInput(null, messages ?? throw new ArgumentNullException(nameof(messages)));
+    }
+
+    /// <summary>Converts a string to a prompt.</summary>
+    public static implicit operator PromptInput(string text)
+    {
+        return From(text);
+    }
+
+    /// <summary>Converts an array of messages to a prompt.</summary>
+    public static implicit operator PromptInput(ModelMessage[] messages)
+    {
+        return From(messages);
+    }
 }
 
 /// <summary>A standardized prompt. Maps to the result of <c>standardizePrompt</c>.</summary>
 public sealed class StandardizedPrompt
 {
     /// <summary>Creates a standardized prompt.</summary>
-    public StandardizedPrompt(object? instructions, IReadOnlyList<PromptMessage> messages)
+    public StandardizedPrompt(Instructions? instructions, IReadOnlyList<ModelMessage> messages)
     {
         Instructions = instructions;
-        Messages = messages ?? Array.Empty<PromptMessage>();
+        Messages = messages ?? Array.Empty<ModelMessage>();
     }
 
-    /// <summary>Instructions. A string, one system message, or a list of system messages.</summary>
-    public object? Instructions { get; }
+    /// <summary>Instructions, or null when there are none.</summary>
+    public Instructions? Instructions { get; }
 
     /// <summary>User and assistant messages, plus system messages when they are allowed.</summary>
-    public IReadOnlyList<PromptMessage> Messages { get; }
+    public IReadOnlyList<ModelMessage> Messages { get; }
 }
 
 /// <summary>The prompt input is invalid. Maps to <c>InvalidPromptError</c>.</summary>
@@ -62,17 +150,14 @@ public sealed class StandardizePromptInput
     /// <summary>Legacy system string. Used when <see cref="Instructions"/> is null.</summary>
     public string? System { get; set; }
 
-    /// <summary>Instructions string, system message, or list of system messages.</summary>
-    public object? Instructions { get; set; }
+    /// <summary>Instructions. They win over <see cref="System"/>.</summary>
+    public Instructions? Instructions { get; set; }
 
-    /// <summary>True when <see cref="Instructions"/> was set, including an explicit null.</summary>
-    public bool InstructionsSet { get; set; }
-
-    /// <summary>A user string or a message list.</summary>
-    public object? Prompt { get; set; }
+    /// <summary>A user string or a message list. Cannot be combined with <see cref="Messages"/>.</summary>
+    public PromptInput? Prompt { get; set; }
 
     /// <summary>Message list. Cannot be combined with <see cref="Prompt"/>.</summary>
-    public IReadOnlyList<PromptMessage>? Messages { get; set; }
+    public IReadOnlyList<ModelMessage>? Messages { get; set; }
 }
 
 /// <summary>Prompt normalization. Maps to <c>standardizePrompt</c>.</summary>
@@ -96,15 +181,14 @@ public static class Prompts
             throw new InvalidPromptException("prompt and messages cannot be defined at the same time");
         }
 
-        var instructions = input.InstructionsSet ? input.Instructions : input.System;
-        ValidateInstructions(instructions);
+        var instructions = input.Instructions ?? (input.System != null ? Instructions.From(input.System) : null);
 
-        IReadOnlyList<PromptMessage> messages;
-        if (input.Prompt is string text)
+        IReadOnlyList<ModelMessage> messages;
+        if (input.Prompt?.Text is { } text)
         {
-            messages = new[] { new PromptMessage("user", text) };
+            messages = new ModelMessage[] { new UserModelMessage(text) };
         }
-        else if (input.Prompt is IReadOnlyList<PromptMessage> promptMessages)
+        else if (input.Prompt?.Messages is { } promptMessages)
         {
             messages = promptMessages;
         }
@@ -122,54 +206,11 @@ public static class Prompts
             throw new InvalidPromptException("messages must not be empty");
         }
 
-        foreach (var message in messages)
+        if (!input.AllowSystemInMessages && messages.Any(message => message is SystemModelMessage))
         {
-            if (!string.Equals(message.Role, "system", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (!input.AllowSystemInMessages)
-            {
-                throw new InvalidPromptException("System messages are not allowed in the prompt or messages fields. Use the instructions option instead.");
-            }
-
-            if (message.Content is not string)
-            {
-                throw new InvalidPromptException("The messages do not match the ModelMessage[] schema.");
-            }
+            throw new InvalidPromptException("System messages are not allowed in the prompt or messages fields. Use the instructions option instead.");
         }
 
         return new StandardizedPrompt(instructions, messages);
-    }
-
-    private static void ValidateInstructions(object? instructions)
-    {
-        if (instructions is null || instructions is string)
-        {
-            return;
-        }
-
-        if (instructions is PromptMessage message)
-        {
-            if (string.Equals(message.Role, "system", StringComparison.Ordinal))
-            {
-                return;
-            }
-        }
-        else if (instructions is IReadOnlyList<PromptMessage> list)
-        {
-            foreach (var item in list)
-            {
-                if (!string.Equals(item.Role, "system", StringComparison.Ordinal))
-                {
-                    throw new InvalidPromptException("instructions must be a string, SystemModelMessage, or array of SystemModelMessage");
-                }
-            }
-
-            return;
-        }
-
-        throw new InvalidPromptException("instructions must be a string, SystemModelMessage, or array of SystemModelMessage");
     }
 }
