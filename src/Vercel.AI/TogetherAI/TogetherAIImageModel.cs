@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
@@ -151,7 +152,8 @@ public sealed class TogetherAIImageModel : IImageModel
         }
 
         var parts = size!.Split('x');
-        if (parts.Length != 2 || !int.TryParse(parts[0], out var width) || !int.TryParse(parts[1], out var height))
+        if (parts.Length != 2 || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var width)
+            || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var height))
         {
             return null;
         }

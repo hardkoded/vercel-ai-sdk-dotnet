@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -72,7 +73,7 @@ public sealed class ProviderHttp
         }
     }
 
-    /// <summary>Posts JSON and returns the raw bytes.</summary>
+    /// <summary>Sends a request and returns the raw bytes.</summary>
     public async Task<byte[]> SendBytesAsync(
         HttpMethod method,
         Uri uri,
@@ -80,14 +81,43 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        using var response = await SendRawAsync(method, uri, content, headers, cancellationToken).ConfigureAwait(false);
+        return (await SendBinaryAsync(method, uri, content, headers, cancellationToken).ConfigureAwait(false)).Body;
+    }
+
+    /// <summary>Sends a request, with retries, and returns the raw bytes, headers, and media type. A null <paramref name="content"/> sends no body.</summary>
+    internal async Task<ProviderBinaryResponse> SendBinaryAsync(
+        HttpMethod method,
+        Uri uri,
+        HttpContent? content,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        // A retry needs a fresh body, so keep the bytes and rebuild the content for each attempt.
+        Func<HttpContent>? rebuild = null;
+        if (content != null && _retry.MaxRetries > 0)
+        {
+            var body = await CancellableReads.ReadAsByteArrayAsync(content, cancellationToken).ConfigureAwait(false);
+            var contentHeaders = content.Headers.ToList();
+            rebuild = () =>
+            {
+                var copy = new ByteArrayContent(body);
+                foreach (var header in contentHeaders)
+                {
+                    copy.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+
+                return copy;
+            };
+        }
+
+        using var response = await SendRawAsync(method, uri, content, headers, cancellationToken, rebuild).ConfigureAwait(false);
         var bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw MapStatus((int)response.StatusCode, Encoding.UTF8.GetString(bytes));
         }
 
-        return bytes;
+        return new ProviderBinaryResponse(bytes, CopyHeaders(response), response.Content.Headers.ContentType?.MediaType);
     }
 
     /// <summary>Posts JSON and yields SSE data payloads.</summary>
@@ -292,11 +322,11 @@ public sealed class ProviderHttp
 
                 var retryAfter = ReadRetryAfter(response);
                 response.Dispose();
-                await Task.Delay(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
             {
-                throw new ApiUserAbortException();
+                throw new ApiUserAbortException(exception, cancellationToken);
             }
             catch (OperationCanceledException exception)
             {
@@ -306,7 +336,7 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
@@ -316,8 +346,20 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    private static async Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
     }
 
@@ -398,7 +440,7 @@ public sealed class ProviderHttp
         if (response.Headers.TryGetValues("retry-after-ms", out var millisecondsValues))
         {
             var raw = millisecondsValues.FirstOrDefault();
-            if (int.TryParse(raw, out var milliseconds))
+            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds))
             {
                 return TimeSpan.FromMilliseconds(milliseconds);
             }
@@ -428,4 +470,21 @@ public sealed class ProviderTextResponse
 
     /// <summary>Response headers.</summary>
     public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
+/// <summary>Response body bytes, headers, and media type.</summary>
+internal sealed class ProviderBinaryResponse
+{
+    public ProviderBinaryResponse(byte[] body, IReadOnlyDictionary<string, string> headers, string? mediaType)
+    {
+        Body = body;
+        Headers = headers;
+        MediaType = mediaType;
+    }
+
+    public byte[] Body { get; }
+
+    public IReadOnlyDictionary<string, string> Headers { get; }
+
+    public string? MediaType { get; }
 }

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -106,7 +107,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
         var json = body.ToJsonString();
         var uri = new Uri(AmazonBedrockEndpoints.Resolve(null, _provider.Options.Region, "bedrock-runtime") + "/model/" + Uri.EscapeDataString(ModelId) + "/invoke");
-        var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
@@ -121,8 +122,8 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
 
         var token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
         AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);

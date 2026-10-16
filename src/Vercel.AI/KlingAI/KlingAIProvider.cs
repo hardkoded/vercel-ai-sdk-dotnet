@@ -69,6 +69,12 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
         var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
+        if (handler is not null)
+        {
+            options ??= new KlingAIOptions();
+            options.DownloadHttpClient ??= client;
+        }
+
         return new KlingAIProvider(client, options);
     }
 
@@ -89,7 +95,7 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new KlingAIOptions();
+        options = options?.Copy() ?? new KlingAIOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl.TrimEnd('/');
         options.ApiKeyEnvironmentVariable = KlingAIAuth.ApiKeyEnvironmentVariable;

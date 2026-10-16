@@ -28,11 +28,11 @@ public sealed class QuiverAIImageReference
         "image/webp",
     };
 
-    private static readonly Regex Scheme = new Regex("^[a-z][a-z\\d+.-]*://", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex DataUrl = new Regex("^data:([^;,]+);base64,(.+)$", RegexOptions.Singleline | RegexOptions.CultureInvariant);
-    private static readonly Regex SvgStart = new Regex("^(?:<\\?xml[\\s\\S]*?\\?>\\s*)?(?:<!--[\\s\\S]*?-->\\s*)?(?:<!DOCTYPE[\\s\\S]*?>\\s*)?<svg[\\s>]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex SvgClose = new Regex("</svg>\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex SvgSelfClose = new Regex("<svg(?:\\s[^>]*)?/>\\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant);
+    private static readonly Regex Scheme = new Regex("^[a-z][a-z0-9+.-]*://", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex DataUrl = new Regex("^data:([^;,]+);base64,(.+)$", RegexOptions.Singleline | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex SvgStart = new Regex("^(?:<\\?xml[\\s\\S]*?\\?>\\s*)?(?:<!--[\\s\\S]*?-->\\s*)?(?:<!DOCTYPE[\\s\\S]*?>\\s*)?<svg[\\s>]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex SvgClose = new Regex("</svg>\\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex SvgSelfClose = new Regex("<svg(?:\\s[^>]*)?/>\\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
 
     private QuiverAIImageReference(string? url, string? base64)
     {
@@ -62,14 +62,14 @@ public sealed class QuiverAIImageReference
     /// </summary>
     public static QuiverAIImageReference Prepare(string input)
     {
-        if (Scheme.IsMatch(input))
+        if (SafeRegex.IsMatch(Scheme, input))
         {
             return new QuiverAIImageReference(ValidateImageUrl(input), null);
         }
 
         if (input.StartsWith("data:", StringComparison.Ordinal))
         {
-            var match = DataUrl.Match(input);
+            var match = SafeRegex.Match(DataUrl, input);
             if (!match.Success || !SupportedMediaTypes.Contains(match.Groups[1].Value))
             {
                 throw new InvalidArgumentException("input", input, "QuiverAI reference image data URLs must use base64 encoding and a supported image media type.");
@@ -152,6 +152,6 @@ public sealed class QuiverAIImageReference
         }
 
         var normalized = (text.StartsWith("\uFEFF", StringComparison.Ordinal) ? text.Substring(1) : text).Trim();
-        return SvgStart.IsMatch(normalized) && (SvgClose.IsMatch(normalized) || SvgSelfClose.IsMatch(normalized));
+        return SafeRegex.IsMatch(SvgStart, normalized) && (SafeRegex.IsMatch(SvgClose, normalized) || SafeRegex.IsMatch(SvgSelfClose, normalized));
     }
 }

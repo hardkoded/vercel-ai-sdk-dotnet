@@ -71,6 +71,42 @@ public sealed class UntrustedUrlTests
         await Assert.ThrowsAsync<DownloadError>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/out.png", null, Download.ValidateDownloadUrl, null, CancellationToken.None));
     }
 
+    private static HttpResponseMessage Redirect(string location)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.Found);
+        response.Headers.Location = new Uri(location);
+        return response;
+    }
+
+    [Fact]
+    public async Task A_redirect_to_a_private_address_is_never_requested()
+    {
+        var handler = new ParityHandler(_ => Redirect("http://169.254.169.254/latest/meta-data/"));
+        using var client = new HttpClient(handler);
+        await Assert.ThrowsAsync<DownloadException>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None));
+        Assert.Single(handler.Calls);
+    }
+
+    [Fact]
+    public async Task A_redirect_off_the_trusted_origin_is_followed_without_the_credentials()
+    {
+        var handler = new ParityHandler(call => call.Uri.Host == "api.example.com" ? Redirect("https://cdn.example.com/out.png") : ParityHandler.Bytes(new byte[] { 7 }, "image/png"));
+        using var client = new HttpClient(handler);
+        var result = await ProviderExchange.GetResponseUrlAsync(client, Origin + "/out.png", Origin, DownloadUrls.ValidateDownloadUrl, Credentials, CancellationToken.None);
+        Assert.Equal(new byte[] { 7 }, result.Bytes);
+        Assert.Equal("secret", handler.Calls[0].Header("x-api-key"));
+        Assert.Null(handler.Calls[1].Header("x-api-key"));
+    }
+
+    [Fact]
+    public async Task Redirects_are_capped()
+    {
+        var handler = new ParityHandler(_ => Redirect("https://cdn.example.com/loop"));
+        using var client = new HttpClient(handler);
+        await Assert.ThrowsAsync<DownloadError>(() => ProviderExchange.GetResponseUrlAsync(client, "https://cdn.example.com/loop", null, DownloadUrls.ValidateDownloadUrl, null, CancellationToken.None));
+        Assert.Equal(11, handler.Calls.Count);
+    }
+
     [Fact]
     public async Task A_body_that_declares_more_than_the_size_limit_is_rejected_without_reading_it()
     {

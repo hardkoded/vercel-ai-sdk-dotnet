@@ -43,12 +43,18 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     public static new LumaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        options ??= new OpenAICompatibleOptions();
+        if (handler is not null)
+        {
+            options.DownloadHttpClient ??= client;
+        }
+
         return new LumaProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "LUMA_API_KEY";

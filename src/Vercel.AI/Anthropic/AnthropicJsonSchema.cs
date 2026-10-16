@@ -36,7 +36,8 @@ public static class AnthropicJsonSchema
     /// <summary>Returns a schema Anthropic's constrained decoder accepts.</summary>
     public static JsonNode Sanitize(JsonNode schema)
     {
-        return SanitizeNode(JsonDocument.Parse(schema.ToJsonString()).RootElement);
+        using var document = JsonDocument.Parse(schema.ToJsonString());
+        return SanitizeNode(document.RootElement);
     }
 
     private static JsonNode SanitizeNode(JsonElement schema)

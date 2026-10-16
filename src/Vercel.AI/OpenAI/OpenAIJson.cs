@@ -308,6 +308,19 @@ internal static class OpenAIJson
         }
     }
 
+    /// <summary>Parses a response body. Invalid JSON throws <see cref="JsonParseException"/>.</summary>
+    public static JsonDocument ParseResponse(string body)
+    {
+        try
+        {
+            return JsonDocument.Parse(body);
+        }
+        catch (JsonException exception)
+        {
+            throw new JsonParseException(body, exception);
+        }
+    }
+
     public static Dictionary<string, string> CopyHeaders(HttpResponseMessage response)
     {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

@@ -121,7 +121,7 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
 
         var json = body.ToJsonString();
         var uri = new Uri(AmazonBedrockEndpoints.Resolve(_provider.Options.AgentRuntimeBaseUrl, _provider.Options.Region, "bedrock-agent-runtime") + "/rerank");
-        var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
@@ -137,8 +137,8 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
 
         var token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
         AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);

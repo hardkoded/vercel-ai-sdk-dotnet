@@ -218,6 +218,24 @@ public sealed class ElevenLabsParityTests
             rest);
     }
 
+    [Theory]
+    [InlineData(null, "true")]
+    [InlineData("{}", "true")]
+    [InlineData("{\"languageCode\":\"en\"}", "true")]
+    [InlineData("{\"diarize\":false}", "false")]
+    [UpstreamTest(Transcription + " > transcription::should send diarize once %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Transcription_sends_diarize_once(string? elevenlabsOptions, string expected)
+    {
+        var handler = TranscriptHandler();
+        var request = elevenlabsOptions is null
+            ? null
+            : new ElevenLabsTranscriptionRequest { ProviderOptions = Options(elevenlabsOptions) };
+        await TranscriptionModel(handler).TranscribeAsync(Audio(), request, CancellationToken.None);
+
+        var diarize = Fields(handler.Calls[0].Text).Where(field => field.Name == "diarize").Select(field => field.Value).ToArray();
+        Assert.Equal(new[] { expected }, diarize);
+    }
+
     [Fact]
     [UpstreamTest(Transcription + " > response headers::should include response data with timestamp, modelId and headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Transcription_response_has_timestamp_model_headers_and_body()

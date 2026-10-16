@@ -169,7 +169,7 @@ public sealed class LumaImageModel : IImageModel
         }
 
         var imageUrl = await PollForImageUrlAsync(generationId, headers, pollIntervalMillis ?? DefaultPollIntervalMillis, maxPollAttempts ?? DefaultMaxPollAttempts, cancellationToken).ConfigureAwait(false);
-        var image = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, imageUrl, _provider.Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, null, cancellationToken).ConfigureAwait(false);
+        var image = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, imageUrl, _provider.Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
         var mediaType = MediaTypes.DetectMediaType(image.Bytes, "image") ?? "image/png";
         return new LumaImageGeneration(new[] { new GeneratedImage(mediaType, image.Bytes, null) }, warnings, timestamp, ModelId, submitted.Headers);
     }
