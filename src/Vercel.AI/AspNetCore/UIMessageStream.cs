@@ -382,12 +382,15 @@ public sealed class UIMessageStreamResult : IResult
         yield return "data: [DONE]\n\n";
     }
 
+    private static readonly TimeSpan SourceStopGrace = TimeSpan.FromSeconds(1);
+
     private static async IAsyncEnumerable<string> KeepAlive(
         IAsyncEnumerable<string> source,
         int keepAliveMs,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var enumerator = source.GetAsyncEnumerator(cancellationToken);
+        using var readCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var enumerator = source.GetAsyncEnumerator(readCancellation.Token);
         Task<bool>? pending = null;
         CancellationTokenSource? timer = null;
         try
@@ -433,11 +436,14 @@ public sealed class UIMessageStreamResult : IResult
                 timer.Dispose();
             }
 
-            if (pending != null && !pending.IsCompleted && cancellationToken.IsCancellationRequested)
+            if (pending != null && !pending.IsCompleted)
             {
+                // The consumer stopped while a read is in flight. Stop the read and wait for it before the enumerator is disposed.
+                // A source that ignores cancellation gets a short grace period, so a stalled source cannot hold up the response.
+                readCancellation.Cancel();
                 try
                 {
-                    await pending.ConfigureAwait(false);
+                    await Task.WhenAny(pending, Task.Delay(SourceStopGrace)).ConfigureAwait(false);
                 }
                 catch (Exception)
                 {

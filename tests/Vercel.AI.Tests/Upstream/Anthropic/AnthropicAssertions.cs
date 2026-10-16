@@ -1024,7 +1024,7 @@ internal static class AnthropicAssertions
         Assert.Equal("POST", handler.Method);
         Assert.Equal("files-api-2025-04-14", handler.Headers["anthropic-beta"]);
         Assert.Equal("test-api-key", handler.Headers["x-api-key"]);
-        Assert.Contains("name=file", handler.Body);
+        Assert.Contains("name=\"file\"", handler.Body);
         Assert.Contains("filename=\"blob\"", handler.Body);
         Assert.Equal("file_1", file.Id);
         Assert.Equal("v4", provider.Files().SpecificationVersion);
