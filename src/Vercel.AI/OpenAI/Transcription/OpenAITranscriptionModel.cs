@@ -206,17 +206,14 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
         }
 
         var timestamp = OpenAIClock.Now(_clock);
-        using var request = new HttpRequestMessage(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, _path));
-        request.Content = Build(call);
-        OpenAIJson.ApplyHeaders(request, _provider.CreateOpenAIHeaders(call.Headers));
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var body = Encoding.UTF8.GetString(await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false));
-        if (!response.IsSuccessStatusCode)
-        {
-            throw ProviderHttp.MapStatus((int)response.StatusCode, body);
-        }
-
-        using var document = JsonDocument.Parse(body);
+        var response = await _provider.Http.SendBinaryAsync(
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, _path),
+            Build(call),
+            _provider.CreateOpenAIHeaders(call.Headers),
+            cancellationToken).ConfigureAwait(false);
+        var body = Encoding.UTF8.GetString(response.Body);
+        using var document = OpenAIJson.ParseResponse(body);
         var root = document.RootElement;
         var segments = new List<TranscriptSegment>();
         var speakers = new JsonArray();
@@ -249,7 +246,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
             languageName != null && LanguageCodes.TryGetValue(languageName, out var code) ? code : null,
             root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
             speakers.Count > 0 ? SpeakerMetadata(speakers) : null,
-            new OpenAITranscriptionResponse(timestamp, ModelId, OpenAIJson.CopyHeaders(response), body));
+            new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body));
     }
 
     /// <summary>Builds the multipart body so tests can inspect field names.</summary>

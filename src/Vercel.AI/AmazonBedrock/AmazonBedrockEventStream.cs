@@ -40,6 +40,9 @@ internal static class AmazonBedrockEventStreamDecoder
     private const int PreludeLength = 12;
     private const int MessageCrcLength = 4;
 
+    // AWS event-stream messages are at most 16 MiB.
+    private const uint MaxMessageLength = 16 * 1024 * 1024;
+
     /// <summary>
     /// Reads frames from <paramref name="body"/> and passes each to <paramref name="processEvent"/>,
     /// which enqueues zero or more outputs. A frame that does not decode, or bytes left at the end of
@@ -50,7 +53,8 @@ internal static class AmazonBedrockEventStreamDecoder
         Action<DecodedEvent, Action<T>> processEvent,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var buffer = new byte[0];
+        var buffer = new byte[8192];
+        var count = 0;
         var chunk = new byte[8192];
         var outputs = new List<T>();
         while (true)
@@ -61,23 +65,32 @@ internal static class AmazonBedrockEventStreamDecoder
                 break;
             }
 
-            var combined = new byte[buffer.Length + read];
-            Buffer.BlockCopy(buffer, 0, combined, 0, buffer.Length);
-            Buffer.BlockCopy(chunk, 0, combined, buffer.Length, read);
-            buffer = combined;
-
-            while (buffer.Length >= 4)
+            if (count + read > buffer.Length)
             {
-                var totalLength = checked((int)ReadUInt32(buffer, 0));
-                if (buffer.Length < totalLength)
+                Array.Resize(ref buffer, Math.Max(buffer.Length * 2, count + read));
+            }
+
+            Buffer.BlockCopy(chunk, 0, buffer, count, read);
+            count += read;
+
+            while (count >= 4)
+            {
+                var declaredLength = ReadUInt32(buffer, 0);
+                if (declaredLength > MaxMessageLength)
+                {
+                    throw new AiSdkException(
+                        "Amazon Bedrock event-stream frame length " + declaredLength + " exceeds the maximum of " + MaxMessageLength + " bytes.");
+                }
+
+                var totalLength = (int)declaredLength;
+                if (count < totalLength)
                 {
                     break;
                 }
 
                 var decoded = Decode(buffer, totalLength);
-                var rest = new byte[buffer.Length - totalLength];
-                Buffer.BlockCopy(buffer, totalLength, rest, 0, rest.Length);
-                buffer = rest;
+                Buffer.BlockCopy(buffer, totalLength, buffer, 0, count - totalLength);
+                count -= totalLength;
 
                 outputs.Clear();
                 processEvent(decoded, outputs.Add);
@@ -88,10 +101,10 @@ internal static class AmazonBedrockEventStreamDecoder
             }
         }
 
-        if (buffer.Length > 0)
+        if (count > 0)
         {
             throw new AiSdkException(
-                "Incomplete Amazon Bedrock event-stream frame: " + buffer.Length + " buffered bytes remain at end of stream.");
+                "Incomplete Amazon Bedrock event-stream frame: " + count + " buffered bytes remain at end of stream.");
         }
     }
 
