@@ -534,6 +534,12 @@ public class GenerateTextOptions
     /// <summary>Called before each step. Maps to <c>prepareStep</c>.</summary>
     public Func<PrepareStepContext, PrepareStepUpdate?>? PrepareStep { get; set; }
 
+    /// <summary>
+    /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
+    /// <see cref="StreamTextOptions"/> does not call it yet. Maps to <c>onLanguageModelCallEnd</c>.
+    /// </summary>
+    public Func<LanguageModelCallEndEvent, CancellationToken, Task>? OnLanguageModelCallEnd { get; set; }
+
     /// <summary>Called after each step. Maps to <c>onStepEnd</c>.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
 
@@ -545,6 +551,55 @@ public class GenerateTextOptions
 
     /// <summary>Approves a tool call before it runs. A false result records an error tool result.</summary>
     public Func<ToolApprovalRequest, CancellationToken, Task<bool>>? ApproveTool { get; set; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
+public sealed class LanguageModelCallEndEvent
+{
+    /// <summary>Creates an event.</summary>
+    public LanguageModelCallEndEvent(
+        string provider,
+        string modelId,
+        FinishReason finishReason,
+        LanguageModelUsage usage,
+        IReadOnlyList<GeneratedContent> content,
+        string? responseId,
+        JsonElement? providerMetadata,
+        TimeSpan responseTime)
+    {
+        Provider = provider;
+        ModelId = modelId;
+        FinishReason = finishReason;
+        Usage = usage;
+        Content = content;
+        ResponseId = responseId;
+        ProviderMetadata = providerMetadata;
+        ResponseTime = responseTime;
+    }
+
+    /// <summary>Provider id of the model that was called.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id the provider reported, or the requested one when it reported none.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Finish reason.</summary>
+    public FinishReason FinishReason { get; }
+
+    /// <summary>Usage of this model call.</summary>
+    public LanguageModelUsage Usage { get; }
+
+    /// <summary>Content the model generated, including its tool calls.</summary>
+    public IReadOnlyList<GeneratedContent> Content { get; }
+
+    /// <summary>Provider response id.</summary>
+    public string? ResponseId { get; }
+
+    /// <summary>Provider metadata of the response, when the provider sent any.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Time the model call took. Maps to <c>performance.responseTimeMs</c>.</summary>
+    public TimeSpan ResponseTime { get; }
 }
 
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>

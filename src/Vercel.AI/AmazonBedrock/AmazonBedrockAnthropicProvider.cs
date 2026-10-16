@@ -2,11 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Vercel.AI.Anthropic;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -35,6 +33,9 @@ public sealed class AmazonBedrockAnthropicOptions
 
     /// <summary>Clock used for signing.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
+
+    /// <summary>Extra headers sent on every call. The SDK user-agent suffix is appended.</summary>
+    public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>Builds InvokeModel URLs and the Bedrock Anthropic request body.</summary>
@@ -47,15 +48,51 @@ public static class AmazonBedrockAnthropicRequests
         return baseUrl.TrimEnd('/') + "/model/" + Uri.EscapeDataString(modelId) + "/" + action;
     }
 
+    private static readonly Dictionary<string, string> ToolVersionMap = new(StringComparer.Ordinal)
+    {
+        ["bash_20241022"] = "bash_20250124",
+        ["text_editor_20241022"] = "text_editor_20250728",
+        ["computer_20241022"] = "computer_20250124",
+    };
+
+    private static readonly Dictionary<string, string> ToolNameMap = new(StringComparer.Ordinal)
+    {
+        ["text_editor_20250728"] = "str_replace_based_edit_tool",
+    };
+
+    private static readonly Dictionary<string, string> ToolBetaMap = new(StringComparer.Ordinal)
+    {
+        ["bash_20250124"] = "computer-use-2025-01-24",
+        ["bash_20241022"] = "computer-use-2024-10-22",
+        ["text_editor_20250124"] = "computer-use-2025-01-24",
+        ["text_editor_20241022"] = "computer-use-2024-10-22",
+        ["text_editor_20250429"] = "computer-use-2025-01-24",
+        ["text_editor_20250728"] = "computer-use-2025-01-24",
+        ["computer_20250124"] = "computer-use-2025-01-24",
+        ["computer_20241022"] = "computer-use-2024-10-22",
+        ["tool_search_tool_regex_20251119"] = "tool-search-tool-2025-10-19",
+        ["tool_search_tool_bm25_20251119"] = "tool-search-tool-2025-10-19",
+    };
+
     /// <summary>
-    /// Drops <c>model</c> and <c>stream</c>, keeps a tool choice type and name, and sets
-    /// <c>anthropic_version</c> to <c>bedrock-2023-05-31</c>.
+    /// Drops <c>model</c> and <c>stream</c>, keeps a tool choice type and name, renames the thinking
+    /// block binding field, upgrades computer-use tool versions, moves the betas into
+    /// <c>anthropic_beta</c>, and sets <c>anthropic_version</c> to <c>bedrock-2023-05-31</c>.
     /// </summary>
-    public static JsonObject Transform(JsonObject source)
+    public static JsonObject Transform(JsonObject source, IReadOnlyList<string>? betas = null)
     {
         var result = (JsonObject)(JsonNode.Parse(source.ToJsonString()) ?? new JsonObject());
         result.Remove("model");
         result.Remove("stream");
+        var requiredBetas = new List<string>();
+        if (betas != null)
+        {
+            foreach (var beta in betas)
+            {
+                AddBeta(requiredBetas, beta);
+            }
+        }
+
         if (result["tool_choice"] is JsonObject choice)
         {
             var transformed = new JsonObject();
@@ -72,8 +109,95 @@ public static class AmazonBedrockAnthropicRequests
             result["tool_choice"] = transformed;
         }
 
+        // Bedrock names the binding field `mismatch_behavior`; the Messages API names it `prefix_mismatch_behavior`.
+        if (result["thinking"] is JsonObject thinking && thinking["block_binding"] is JsonObject binding)
+        {
+            var renamed = new JsonObject();
+            if (binding["prefix_mismatch_behavior"] is JsonNode mismatch)
+            {
+                renamed["mismatch_behavior"] = mismatch.DeepClone();
+            }
+
+            thinking["block_binding"] = renamed;
+        }
+
+        if (result["tools"] is JsonArray tools)
+        {
+            for (var index = 0; index < tools.Count; index++)
+            {
+                if (tools[index] is JsonObject tool)
+                {
+                    TransformTool(tool, requiredBetas);
+                }
+            }
+        }
+
+        if (requiredBetas.Count > 0)
+        {
+            var array = new JsonArray();
+            foreach (var beta in requiredBetas)
+            {
+                array.Add(beta);
+            }
+
+            result["anthropic_beta"] = array;
+        }
+
         result["anthropic_version"] = "bedrock-2023-05-31";
         return result;
+    }
+
+    private static void TransformTool(JsonObject tool, List<string> requiredBetas)
+    {
+        // Bedrock rejects the per-tool field, but the beta alone enables the same behavior.
+        var eager = tool["eager_input_streaming"];
+        tool.Remove("eager_input_streaming");
+        if (eager is JsonValue eagerValue && eagerValue.TryGetValue<bool>(out var enabled) && enabled)
+        {
+            AddBeta(requiredBetas, "fine-grained-tool-streaming-2025-05-14");
+        }
+
+        var toolType = tool["type"] is JsonValue typeValue && typeValue.TryGetValue<string>(out var text) ? text : null;
+        if (toolType == null)
+        {
+            return;
+        }
+
+        if (ToolVersionMap.TryGetValue(toolType, out var newType))
+        {
+            if (ToolBetaMap.TryGetValue(newType, out var versionBeta))
+            {
+                AddBeta(requiredBetas, versionBeta);
+            }
+
+            tool["type"] = newType;
+            if (ToolNameMap.TryGetValue(newType, out var newName))
+            {
+                tool["name"] = newName;
+            }
+
+            return;
+        }
+
+        if (ToolBetaMap.TryGetValue(toolType, out var beta))
+        {
+            AddBeta(requiredBetas, beta);
+        }
+
+        if (ToolNameMap.TryGetValue(toolType, out var name))
+        {
+            tool["name"] = name;
+        }
+
+        return;
+    }
+
+    private static void AddBeta(List<string> betas, string beta)
+    {
+        if (!betas.Contains(beta))
+        {
+            betas.Add(beta);
+        }
     }
 
     /// <summary>Rewrites a Bedrock error body into the Anthropic <c>{ type: error, error }</c> shape.</summary>
@@ -153,7 +277,7 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     }
 }
 
-/// <summary>Anthropic language model invoked through Bedrock.</summary>
+/// <summary>Anthropic language model invoked through Bedrock. Delegates to <see cref="Vercel.AI.Anthropic.AnthropicLanguageModel"/>.</summary>
 public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
 {
     private readonly AmazonBedrockAnthropicProvider _provider;
@@ -161,8 +285,8 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     /// <summary>Creates a model.</summary>
     public AmazonBedrockAnthropicLanguageModel(AmazonBedrockAnthropicProvider provider, string modelId)
     {
-        _provider = provider;
-        ModelId = modelId;
+        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
     }
 
     /// <inheritdoc />
@@ -175,183 +299,90 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var body = Build(options, streaming: false);
-        return await SendAsync(body, cancellationToken).ConfigureAwait(false);
+        return Inner().DoGenerateAsync(options, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        using var request = CreateRequest(Build(options, streaming: true), streaming: true);
-        var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (!response.IsSuccessStatusCode)
-            {
-                var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                throw AmazonBedrockErrors.Create((int)response.StatusCode, AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text));
-            }
-
-            var body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            var eventStream = response.Content.Headers.ContentType?.MediaType?.IndexOf(AmazonBedrockAnthropicFetch.EventStreamContentType, StringComparison.OrdinalIgnoreCase) >= 0;
-            return new LanguageModelStreamResult(StreamAsync(response, body, eventStream, options.IncludeRawChunks, cancellationToken));
-        }
-        catch
-        {
-            response.Dispose();
-            throw;
-        }
+        return Inner().DoStreamAsync(options, cancellationToken);
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
-        HttpResponseMessage response,
-        Stream body,
-        bool eventStream,
-        bool includeRawChunks,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    private ILanguageModel Inner()
     {
-        using (response)
-        using (body)
-        {
-            var reader = new AnthropicStream(includeRawChunks, false);
-            var events = eventStream
-                ? AmazonBedrockAnthropicFetch.TransformEventStreamToSse(body, cancellationToken)
-                : SseParser.ReadDataAsync(body, cancellationToken);
-            yield return new StreamStartStreamPart(Array.Empty<CallWarning>());
-            await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
-            {
-                if (data == "[DONE]")
-                {
-                    yield break;
-                }
-
-                foreach (var part in reader.Push(data))
-                {
-                    yield return part;
-                }
-            }
-        }
-    }
-
-    private JsonObject Build(LanguageModelCallOptions options, bool streaming)
-    {
-        var messages = new JsonArray();
-        var system = new StringBuilder();
-        foreach (var message in options.Prompt)
-        {
-            if (message is SystemModelMessage systemMessage)
-            {
-                if (system.Length > 0)
-                {
-                    system.Append('\n');
-                }
-
-                system.Append(systemMessage.Content);
-            }
-            else if (message is UserModelMessage user)
-            {
-                var content = new JsonArray();
-                foreach (var part in user.Content)
-                {
-                    if (part is TextContentPart text)
-                    {
-                        content.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
-                    }
-                }
-
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = content });
-            }
-        }
-
-        var raw = new JsonObject
-        {
-            ["model"] = ModelId,
-            ["messages"] = messages,
-            ["max_tokens"] = options.MaxOutputTokens ?? 4096,
-        };
-        if (streaming)
-        {
-            raw["stream"] = true;
-        }
-
-        if (system.Length > 0)
-        {
-            raw["system"] = system.ToString();
-        }
-
-        return AmazonBedrockAnthropicRequests.Transform(raw);
-    }
-
-    private async Task<LanguageModelGenerateResult> SendAsync(JsonObject body, CancellationToken cancellationToken)
-    {
-        using var request = CreateRequest(body, streaming: false);
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            var anthropic = AmazonBedrockAnthropicRequests.ToAnthropicErrorBody(text);
-            throw AmazonBedrockErrors.Create((int)response.StatusCode, anthropic);
-        }
-
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        return Parse(document.RootElement);
-    }
-
-    private HttpRequestMessage CreateRequest(JsonObject body, bool streaming)
-    {
-        var json = body.ToJsonString();
-        var url = AmazonBedrockAnthropicRequests.BuildUrl(_provider.ResolveBaseUrl(), ModelId, streaming);
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json"),
-        };
-        var apiKey = _provider.Options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
-        AmazonBedrockSigner.Apply(
-            request,
-            Encoding.UTF8.GetBytes(json),
-            _provider.Options.Region,
+        var baseUrl = _provider.ResolveBaseUrl();
+        var options = _provider.Options;
+        var apiKey = options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        var signing = new AmazonBedrockSigningHandler(
+            new HttpClientMessageHandler(_provider.HttpClient),
+            options.Region,
             "bedrock",
             apiKey,
-            _provider.Options.AccessKeyId,
-            _provider.Options.SecretAccessKey,
-            _provider.Options.SessionToken,
-            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        return request;
+            options.AccessKeyId,
+            options.SecretAccessKey,
+            options.SessionToken,
+            options.UtcNow);
+        var client = new HttpClient(AmazonBedrockAnthropicFetch.Create(signing), disposeHandler: false);
+        var provider = new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers);
+        return new Vercel.AI.Anthropic.AnthropicLanguageModel(provider, ModelId);
+    }
+}
+
+/// <summary>The Anthropic Messages provider that Bedrock models run on.</summary>
+internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.AnthropicProvider
+{
+    private readonly string _baseUrl;
+    private readonly string _modelId;
+    private readonly IReadOnlyDictionary<string, string?> _headers;
+
+    public AmazonBedrockAnthropicInnerProvider(HttpClient httpClient, string baseUrl, string modelId, IReadOnlyDictionary<string, string?> headers)
+        : base(httpClient, new Vercel.AI.Anthropic.AnthropicOptions { BaseUrl = baseUrl, Name = AmazonBedrockAnthropicProvider.ProviderId })
+    {
+        _baseUrl = baseUrl;
+        _modelId = modelId;
+        _headers = headers;
     }
 
-    private static LanguageModelGenerateResult Parse(JsonElement root)
+    // Bedrock Anthropic does not support URL sources, so images and files are downloaded and sent as base64.
+    protected internal override IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>();
+
+    protected internal override bool SupportsNativeStructuredOutput => AmazonBedrockModelSupport.SupportsNativeStructuredOutput(_modelId);
+
+    protected internal override bool SupportsStrictTools => AmazonBedrockModelSupport.SupportsStrictTools(_modelId);
+
+    protected internal override Uri RequestUri(string modelId, bool streaming)
     {
-        var content = new List<GeneratedContent>();
-        if (root.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
+        return new Uri(AmazonBedrockAnthropicRequests.BuildUrl(_baseUrl, modelId, streaming));
+    }
+
+    protected internal override JsonObject TransformRequestBody(JsonObject body, IReadOnlyList<string> betas)
+    {
+        return AmazonBedrockAnthropicRequests.Transform(body, betas);
+    }
+
+    public override Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    {
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in ProviderValues.WithUserAgentSuffix(_headers, "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version))
         {
-            foreach (var part in parts.EnumerateArray())
+            headers[pair.Key] = pair.Value;
+        }
+
+        if (betas.Count > 0)
+        {
+            headers["anthropic-beta"] = string.Join(",", betas);
+        }
+
+        if (callHeaders != null)
+        {
+            foreach (var pair in callHeaders)
             {
-                var type = part.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
-                if (type == "text")
-                {
-                    content.Add(new GeneratedText(part.TryGetProperty("text", out var text) ? text.GetString() ?? string.Empty : string.Empty));
-                }
+                headers[pair.Key] = pair.Value;
             }
         }
 
-        var raw = root.TryGetProperty("stop_reason", out var stop) ? stop.GetString() : "end_turn";
-        int? input = null;
-        int? output = null;
-        if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
-        {
-            if (usage.TryGetProperty("input_tokens", out var inputTokens) && inputTokens.ValueKind == JsonValueKind.Number)
-            {
-                input = inputTokens.GetInt32();
-            }
-
-            if (usage.TryGetProperty("output_tokens", out var outputTokens) && outputTokens.ValueKind == JsonValueKind.Number)
-            {
-                output = outputTokens.GetInt32();
-            }
-        }
-
-        return new LanguageModelGenerateResult(content, FinishReasons.Parse(raw), new LanguageModelUsage(input, output, null), raw);
+        return Task.FromResult(headers);
     }
 }
