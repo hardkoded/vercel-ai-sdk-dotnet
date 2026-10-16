@@ -34,6 +34,8 @@ internal sealed class ProviderExchangeResult
 /// <summary>Sends one provider request and keeps the response headers.</summary>
 internal static class ProviderExchange
 {
+    private const long MaxErrorBodyBytes = 1024 * 1024;
+
     /// <summary>Sends <paramref name="content"/> and returns the body when the status is successful.</summary>
     public static async Task<ProviderExchangeResult> SendAsync(
         HttpClient httpClient,
@@ -120,6 +122,60 @@ internal static class ProviderExchange
         }
 
         throw new DownloadError(uri.AbsoluteUri, "Too many redirects (max " + maxRedirects + ")");
+    }
+
+    /// <summary>
+    /// Gets a URL that came from response text. A URL off <paramref name="trustedOrigin"/> must pass <paramref name="validateUrl"/>
+    /// and gets no <paramref name="trustedHeaders"/>. When the client follows a redirect, the final URL is checked too.
+    /// The body is read in chunks and stops at the download size limit.
+    /// </summary>
+    public static async Task<ProviderExchangeResult> GetResponseUrlAsync(
+        HttpClient httpClient,
+        string url,
+        string? trustedOrigin,
+        Action<string> validateUrl,
+        IReadOnlyDictionary<string, string?>? trustedHeaders,
+        CancellationToken cancellationToken)
+    {
+        var trusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
+        if (!trusted)
+        {
+            validateUrl(url);
+        }
+
+        var uri = new Uri(url);
+        using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+        {
+            Apply(request, trusted ? trustedHeaders : null);
+            using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+            {
+                var finalUri = response.RequestMessage?.RequestUri;
+                if (finalUri != null
+                    && finalUri != uri
+                    && (trustedOrigin == null || !ProviderValues.IsSameOrigin(finalUri.AbsoluteUri, trustedOrigin)))
+                {
+                    validateUrl(finalUri.AbsoluteUri);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = string.Empty;
+                    try
+                    {
+                        errorBody = Encoding.UTF8.GetString(await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false));
+                    }
+                    catch (DownloadError)
+                    {
+                        // An oversized error body is dropped. The status is the error.
+                    }
+
+                    throw ProviderHttp.MapStatus((int)response.StatusCode, errorBody);
+                }
+
+                var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken).ConfigureAwait(false);
+                return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, Copy(response));
+            }
+        }
     }
 
     /// <summary>JSON content whose media type is <c>application/json</c> without a charset parameter.</summary>
