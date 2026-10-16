@@ -7,7 +7,7 @@ var provider = TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = "..." 
 var result = await Decide.DecideAsync(new DecideRequest
 {
     Model = provider.DecisionModel("jev-latest"),
-    State = new Dictionary<string, object?> { ["message"] = "I was charged twice." },
+    State = DecisionState.FromJson(JsonSerializer.SerializeToElement(new { message = "I was charged twice." })),
     Questions = new Dictionary<string, DecisionQuestion>
     {
         ["requestsRefund"] = new DecisionQuestion("boolean", "Is the customer requesting a refund?"),

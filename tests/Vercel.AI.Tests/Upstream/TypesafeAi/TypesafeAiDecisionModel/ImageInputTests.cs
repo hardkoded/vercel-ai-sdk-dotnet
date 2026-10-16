@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.TypeSafeAi;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel.TypesafeAiDecisionModelSupport;
 
 namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
@@ -31,7 +32,7 @@ public sealed class ImageInputTests
         var server = Server();
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["cat"] = new DecisionQuestion(
+            ["cat"] = Q(
                 "boolean",
                 "Does " + reference + " show a cat?",
                 new Dictionary<string, object?> { ["true"] = new Dictionary<string, object?> { ["image"] = reference } }),
@@ -165,7 +166,7 @@ public sealed class ImageInputTests
         var server = Server();
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["same"] = new DecisionQuestion("boolean", "Is the dog in `photo` the dog in [poster]?"),
+            ["same"] = Q("boolean", "Is the dog in `photo` the dog in [poster]?"),
         };
         await Decide(
             server,

@@ -63,13 +63,11 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var state = ((IEnumerable<object?>)call.State!).Select(item => (IDictionary<string, object?>)item!).ToList();
-        foreach (var part in state)
+        foreach (var part in call.State.OfType<DecisionModelFilePart>())
         {
-            if ((string)part["type"]! == "file" && MediaTypes.GetTopLevelMediaType((string)part["mediaType"]!) != "image")
+            if (MediaTypes.GetTopLevelMediaType(part.MediaType) != "image")
             {
-                var mediaType = (string)part["mediaType"]!;
-                throw new UnsupportedFunctionalityException("Decision file media type: " + mediaType, "'Decision file media type: " + mediaType + "' functionality not supported.");
+                throw new UnsupportedFunctionalityException("Decision file media type: " + part.MediaType, "'Decision file media type: " + part.MediaType + "' functionality not supported.");
             }
         }
 
@@ -95,10 +93,10 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
         // Preflight the entire map before building a schema or invoking the model.
         foreach (var pair in entries)
         {
-            if ((pair.Value.Type == "choice" && ((IDictionary<string, object?>)pair.Value.Criteria!).Count == 0)
-                || (pair.Value.Type == "score" && ((IList<object?>)pair.Value.Criteria!).Count < 2))
+            if ((pair.Value.Type == "choice" && pair.Value.Criteria is not DecisionChoiceCriteria { Count: > 0 })
+                || (pair.Value.Type == "score" && pair.Value.Criteria is not DecisionScoreCriteria { Count: >= 2 }))
             {
-                throw new InvalidArgumentException("questions." + pair.Key + ".criteria", pair.Value.Criteria?.ToString() ?? string.Empty, "Choice requires at least one option; Score requires at least two levels.");
+                throw new InvalidArgumentException("questions." + pair.Key + ".criteria", pair.Value.Criteria?.ToNode().ToJsonString() ?? string.Empty, "Choice requires at least one option; Score requires at least two levels.");
             }
         }
 
@@ -114,7 +112,7 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             required.Add(key);
             if (question.Type == "choice")
             {
-                var options = (IDictionary<string, object?>)question.Criteria!;
+                var options = ((DecisionChoiceCriteria)question.Criteria!).Options;
                 var codes = new JsonArray();
                 var criteria = new JsonObject();
                 var i = 0;
@@ -122,23 +120,23 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
                 {
                     var code = "c" + i.ToString(CultureInfo.InvariantCulture);
                     codes.Add(code);
-                    criteria[code] = new JsonObject { ["label"] = option.Key, ["description"] = ToNode(option.Value) };
+                    criteria[code] = new JsonObject { ["label"] = option.Key, ["description"] = option.Value?.ToNode() };
                     i++;
                 }
 
                 properties[key] = new JsonObject { ["type"] = "string", ["enum"] = codes };
-                rubrics[key] = new JsonObject { ["id"] = id, ["type"] = "choice", ["instructions"] = ToNode(question.Instructions), ["criteria"] = criteria };
+                rubrics[key] = new JsonObject { ["id"] = id, ["type"] = "choice", ["instructions"] = question.Instructions.ToNode(), ["criteria"] = criteria };
             }
             else
             {
                 var description = question.Type == "score"
-                    ? "A finite fractional score from 0 to " + (((IList<object?>)question.Criteria!).Count - 1).ToString(CultureInfo.InvariantCulture) + ", inclusive. Ordered rubric levels are indexed from zero."
+                    ? "A finite fractional score from 0 to " + (question.Criteria!.Count - 1).ToString(CultureInfo.InvariantCulture) + ", inclusive. Ordered rubric levels are indexed from zero."
                     : "Estimated probability that the answer is true, from 0 to 1 inclusive. 0 means certainly false and 1 means certainly true.";
                 properties[key] = new JsonObject { ["type"] = "number", ["description"] = description };
-                var rubric = new JsonObject { ["id"] = id, ["type"] = question.Type, ["instructions"] = ToNode(question.Instructions) };
+                var rubric = new JsonObject { ["id"] = id, ["type"] = question.Type, ["instructions"] = question.Instructions.ToNode() };
                 if (question.Criteria != null)
                 {
-                    rubric["criteria"] = ToNode(question.Criteria);
+                    rubric["criteria"] = question.Criteria.ToNode();
                 }
 
                 rubrics[key] = rubric;
@@ -158,29 +156,24 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             new TextContentPart(new JsonObject { ["questions"] = rubrics }.ToJsonString(Text)),
             new TextContentPart("Shared state:"),
         };
-        foreach (var part in state)
+        foreach (var part in call.State)
         {
-            switch ((string)part["type"]!)
+            switch (part)
             {
-                case "text":
-                    content.Add(new TextContentPart((string)part["text"]!));
+                case DecisionModelTextPart textPart:
+                    content.Add(new TextContentPart(textPart.Text));
                     break;
-                case "json":
-                    content.Add(new TextContentPart(JsonSerializer.Serialize(part["value"], Text)));
+                case DecisionModelJsonPart json:
+                    content.Add(new TextContentPart(JsonSerializer.Serialize(json.Value, Text)));
                     break;
-                default:
-                    var data = (IDictionary<string, object?>)part["data"]!;
-                    var mediaType = (string)part["mediaType"]!;
-                    var fileName = part.TryGetValue("filename", out var name) ? name as string : null;
-                    var fileOptions = part.TryGetValue("providerOptions", out var options) ? ToProviderOptions(options) : null;
-                    if ((string)data["type"]! == "url")
+                case DecisionModelFilePart file:
+                    if (file.Data.DataType == "url")
                     {
-                        content.Add(new FileContentPart(mediaType, data["url"]?.ToString(), null, fileName) { ProviderOptions = fileOptions });
+                        content.Add(new FileContentPart(file.MediaType, file.Data.Url?.ToString(), null, file.FileName) { ProviderOptions = file.ProviderOptions });
                     }
                     else
                     {
-                        var inline = data["data"]!;
-                        content.Add(new FileContentPart(mediaType, null, inline as byte[] ?? Convert.FromBase64String((string)inline), fileName) { ProviderOptions = fileOptions });
+                        content.Add(new FileContentPart(file.MediaType, null, file.Data.Bytes ?? Convert.FromBase64String(file.Data.Base64!), file.FileName) { ProviderOptions = file.ProviderOptions });
                     }
 
                     break;
@@ -254,7 +247,7 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             var value = values.GetProperty("q" + index.ToString(CultureInfo.InvariantCulture));
             if (question.Type == "choice")
             {
-                var options = ((IDictionary<string, object?>)question.Criteria!).Keys.ToList();
+                var options = ((DecisionChoiceCriteria)question.Criteria!).Options.Keys.ToList();
                 var choiceIndex = -1;
                 if (value.ValueKind == JsonValueKind.String)
                 {
@@ -292,7 +285,7 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             }
             else
             {
-                if (!TryGetFinite(value, out var score) || score < 0 || score > ((IList<object?>)question.Criteria!).Count - 1)
+                if (!TryGetFinite(value, out var score) || score < 0 || score > question.Criteria!.Count - 1)
                 {
                     throw new InvalidResponseDataException(values, "Question \"" + id + "\" returned a score outside its rubric.");
                 }
@@ -341,37 +334,5 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
     {
         number = 0;
         return value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out number) && !double.IsInfinity(number) && !double.IsNaN(number);
-    }
-
-    private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(object? value)
-    {
-        if (value is null)
-        {
-            return null;
-        }
-
-        if (value is IReadOnlyDictionary<string, JsonElement> typed)
-        {
-            return typed;
-        }
-
-        var element = value is JsonElement json ? json : JsonSerializer.SerializeToElement(value, Text);
-        if (element.ValueKind != JsonValueKind.Object)
-        {
-            return null;
-        }
-
-        var options = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
-        foreach (var property in element.EnumerateObject())
-        {
-            options[property.Name] = property.Value.Clone();
-        }
-
-        return options;
-    }
-
-    private static JsonNode? ToNode(object? value)
-    {
-        return value == null ? null : JsonSerializer.SerializeToNode(value, Text);
     }
 }

@@ -3,52 +3,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Vercel.AI.Prompt;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
-/// <summary>Markers for values that are not JSON.</summary>
-public static class DecisionValues
-{
-    /// <summary>A function, which JSON cannot represent.</summary>
-    public static readonly object Function = new FunctionMarker();
-
-    /// <summary>An omitted value, which JSON cannot represent.</summary>
-    public static readonly object Undefined = new UndefinedMarker();
-
-    /// <summary>Not a number.</summary>
-    public static readonly object NotANumber = double.NaN;
-
-    /// <summary>A sparse array. Holes are not JSON.</summary>
-    public static readonly object SparseArray = new SparseMarker();
-
-    /// <summary>A <see cref="DateTime"/>, rejected the way a JavaScript Date is rejected.</summary>
-    public static object Date()
-    {
-        return DateTime.UtcNow;
-    }
-
-    private sealed class FunctionMarker
-    {
-    }
-
-    private sealed class UndefinedMarker
-    {
-    }
-
-    private sealed class SparseMarker
-    {
-    }
-}
-
-/// <summary>One decision question.</summary>
+/// <summary>One decision question. Maps to <c>DecisionModelV4Question</c>.</summary>
 public class DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
-    public DecisionQuestion(string type, object? instructions, object? criteria = null)
+    /// <param name="type"><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</param>
+    /// <param name="instructions">Instructions as a string, JSON object, or JSON array.</param>
+    /// <param name="criteria">
+    /// <see cref="DecisionChoiceCriteria"/> for a choice, <see cref="DecisionScoreCriteria"/> for a score, and an optional
+    /// <see cref="DecisionBooleanCriteria"/> for a boolean. A box question has no criteria.
+    /// </param>
+    public DecisionQuestion(string type, DecisionInput instructions, DecisionCriteria? criteria = null)
     {
         Type = type ?? string.Empty;
         Instructions = instructions;
@@ -58,11 +29,11 @@ public class DecisionQuestion
     /// <summary><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</summary>
     public string Type { get; }
 
-    /// <summary>Instructions. A JSON string, object, or array.</summary>
-    public object? Instructions { get; }
+    /// <summary>Instructions. A string, JSON object, or JSON array.</summary>
+    public DecisionInput Instructions { get; }
 
-    /// <summary>Choice map, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
-    public object? Criteria { get; }
+    /// <summary>Choice options, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
+    public DecisionCriteria? Criteria { get; }
 }
 
 /// <summary>One model answer. Numbers are returned unchanged.</summary>
@@ -177,7 +148,7 @@ public class DecisionModelResult
 public class DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public DecisionModelCall(object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public DecisionModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
     {
         State = state;
         Questions = questions;
@@ -186,8 +157,8 @@ public class DecisionModelCall
         CancellationToken = cancellationToken;
     }
 
-    /// <summary>Shared state as an ordered list of <c>text</c>, <c>json</c>, and <c>file</c> part dictionaries. See <see cref="DecisionState"/>.</summary>
-    public object? State { get; }
+    /// <summary>Shared state as an ordered list of text, JSON, and file parts. See <see cref="DecisionState.PrepareDecisionStateAsync"/>.</summary>
+    public IReadOnlyList<DecisionModelStatePart> State { get; }
 
     /// <summary>Questions.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
@@ -235,7 +206,7 @@ public interface IDecisionProvider
 public class DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -271,7 +242,7 @@ public class DecideEvent
     public string ModelId { get; }
 
     /// <summary>The public state, as the caller passed it.</summary>
-    public object? State { get; }
+    public DecisionState? State { get; }
 
     /// <summary>Questions.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
@@ -308,7 +279,7 @@ public class DecideEvent
 public class DecisionModelEvent
 {
     /// <summary>Creates a model event.</summary>
-    public DecisionModelEvent(string callId, string operationId, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecisionModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -336,7 +307,7 @@ public class DecisionModelEvent
     public string ModelId { get; }
 
     /// <summary>The normalized list of state parts the model receives.</summary>
-    public object? State { get; }
+    public IReadOnlyList<DecisionModelStatePart>? State { get; }
 
     /// <summary>Questions.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
@@ -463,10 +434,10 @@ public sealed class DecideRequest : OperationRequest
     public string? ModelId { get; set; }
 
     /// <summary>
-    /// Shared state: a string, a JSON object (<c>IDictionary&lt;string, object?&gt;</c>), or a list of parts (<c>IList&lt;object?&gt;</c>).
-    /// A JSON array is not valid state. Wrap it in an object or in a <c>json</c> part. See <see cref="DecisionState"/>.
+    /// Shared state: a string, a JSON object, or a list of parts. A JSON array is not valid state.
+    /// Wrap it in an object or in a <see cref="DecisionJsonPart"/>. See <see cref="DecisionState"/>.
     /// </summary>
-    public object? State { get; set; }
+    public DecisionState? State { get; set; }
 
     /// <summary>Nonempty question map.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion>? Questions { get; set; }
@@ -525,7 +496,7 @@ public static class Decide
 
         try
         {
-            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State, token).ConfigureAwait(false);
+            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token).ConfigureAwait(false);
             var modelEvent = new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
             if (enabled)
             {
@@ -586,14 +557,11 @@ public static class Decide
     }
 
     /// <summary>Validates state and questions before any model call.</summary>
-    public static void ValidateInput(object? state, IReadOnlyDictionary<string, DecisionQuestion>? questions)
+    public static void ValidateInput(DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion>? questions)
     {
-        var validState = state is IList<object?> parts
-            ? parts.All(IsStatePart)
-            : (state is string || state is IDictionary<string, object?>) && IsJson(state, new HashSet<object>(ReferenceComparer.Instance));
-        if (!validState)
+        if (state == null || (state.Parts != null && state.Parts.Any(part => part == null)))
         {
-            throw new InvalidArgumentException("state", state, "must be a string, JSON object, or array of text, file, or json parts");
+            throw new InvalidArgumentException("state", state, DecisionState.InvalidMessage);
         }
 
         if (questions == null || questions.Count == 0)
@@ -605,40 +573,32 @@ public static class Decide
         {
             var parameter = "questions." + pair.Key;
             var question = pair.Value;
-            if (question == null || !IsInput(question.Instructions, new HashSet<object>(ReferenceComparer.Instance)))
+            if (question == null || question.Instructions == null)
             {
                 throw new InvalidArgumentException(parameter, question, "instructions must be a JSON-compatible string, object, or array");
-            }
-
-            if (question.Type == "box")
-            {
-                continue;
             }
 
             var criteria = question.Criteria;
             switch (question.Type)
             {
+                case "box":
+                    break;
                 case "choice":
-                    if (criteria is not IDictionary<string, object?> options || options.Count == 0)
+                    if (criteria is not DecisionChoiceCriteria { Count: > 0 })
                     {
                         throw new InvalidArgumentException(parameter, question, "choice criteria must be a nonempty option map");
                     }
 
                     break;
                 case "score":
-                    if (criteria is not IList<object?> levels || levels.Count < 2)
+                    if (criteria is not DecisionScoreCriteria { Count: >= 2 })
                     {
                         throw new InvalidArgumentException(parameter, question, "score criteria must contain at least two ordered levels");
                     }
 
                     break;
                 case "boolean":
-                    if (criteria == null)
-                    {
-                        continue;
-                    }
-
-                    if (criteria is not IDictionary<string, object?> descriptions || descriptions.Keys.Any(key => key != "true" && key != "false"))
+                    if (criteria != null && criteria is not DecisionBooleanCriteria)
                     {
                         throw new InvalidArgumentException(parameter, question, "boolean criteria may only describe true and false");
                     }
@@ -646,11 +606,6 @@ public static class Decide
                     break;
                 default:
                     throw new InvalidArgumentException(parameter, question, "question type must be choice, score, boolean, or box");
-            }
-
-            if (!IsJson(criteria, new HashSet<object>(ReferenceComparer.Instance)) || Values(criteria).Any(value => value != null && !IsInput(value, new HashSet<object>(ReferenceComparer.Instance))))
-            {
-                throw new InvalidArgumentException(parameter, question, "criteria descriptions must be JSON-compatible strings, objects, arrays, or null");
             }
         }
     }
@@ -695,7 +650,7 @@ public static class Decide
             switch (pair.Value.Type)
             {
                 case "choice":
-                    var options = (IDictionary<string, object?>)pair.Value.Criteria!;
+                    var options = ((DecisionChoiceCriteria)pair.Value.Criteria!).Options;
                     if (answer.Choice == null || !options.ContainsKey(answer.Choice))
                     {
                         throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" selected an unknown option.");
@@ -713,7 +668,7 @@ public static class Decide
 
                     break;
                 case "score":
-                    var levels = (IList<object?>)pair.Value.Criteria!;
+                    var levels = ((DecisionScoreCriteria)pair.Value.Criteria!).Levels;
                     if (answer.Score == null || double.IsNaN(answer.Score.Value) || double.IsInfinity(answer.Score.Value) || answer.Score < 0 || answer.Score > levels.Count - 1)
                     {
                         throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" score must be in [0, " + (levels.Count - 1).ToString(CultureInfo.InvariantCulture) + "].");
@@ -786,85 +741,6 @@ public static class Decide
         return rightList.All(set.Contains);
     }
 
-    private static bool IsStatePart(object? value)
-    {
-        if (value is not IDictionary<string, object?> part || !part.TryGetValue("type", out var type))
-        {
-            return false;
-        }
-
-        switch (type as string)
-        {
-            case "text":
-                return part.TryGetValue("text", out var text) && text is string;
-            case "json":
-                return part.TryGetValue("value", out var json) && IsJson(json, new HashSet<object>(ReferenceComparer.Instance));
-            case "file":
-                return part.TryGetValue("mediaType", out var mediaType) && mediaType is string
-                    && part.TryGetValue("data", out var data) && (data is FilePartInput || data is byte[] || data is Uri || data is string)
-                    && (!part.TryGetValue("filename", out var filename) || filename == null || filename is string);
-            default:
-                return false;
-        }
-    }
-
-    private static bool IsInput(object? value, HashSet<object> ancestors)
-    {
-        return (value is string || value is IList<object?> || value is IDictionary<string, object?>) && IsJson(value, ancestors);
-    }
-
-    private static bool IsJson(object? value, HashSet<object> ancestors)
-    {
-        if (value == null || value is string || value is bool)
-        {
-            return true;
-        }
-
-        if (value is double number)
-        {
-            return !double.IsNaN(number) && !double.IsInfinity(number);
-        }
-
-        if (value is int || value is long || value is JsonElement)
-        {
-            return true;
-        }
-
-        if (value is DateTime || ReferenceEquals(value, DecisionValues.Function) || ReferenceEquals(value, DecisionValues.Undefined) || ReferenceEquals(value, DecisionValues.SparseArray))
-        {
-            return false;
-        }
-
-        if (value is not IList<object?> && value is not IDictionary<string, object?>)
-        {
-            return false;
-        }
-
-        if (!ancestors.Add(value))
-        {
-            return false;
-        }
-
-        var valid = Values(value).All(item => IsJson(item, ancestors));
-        ancestors.Remove(value);
-        return valid;
-    }
-
-    private static IEnumerable<object?> Values(object? value)
-    {
-        if (value is IList<object?> list)
-        {
-            return list;
-        }
-
-        if (value is IDictionary<string, object?> map)
-        {
-            return map.Values;
-        }
-
-        return Array.Empty<object?>();
-    }
-
     private static IReadOnlyDictionary<string, object?> Filter(IReadOnlyDictionary<string, object?> context, IReadOnlyDictionary<string, bool>? include)
     {
         if (include == null)
@@ -882,21 +758,6 @@ public static class Decide
         }
 
         return filtered;
-    }
-
-    private sealed class ReferenceComparer : IEqualityComparer<object>
-    {
-        public static readonly ReferenceComparer Instance = new ReferenceComparer();
-
-        bool IEqualityComparer<object>.Equals(object? x, object? y)
-        {
-            return ReferenceEquals(x, y);
-        }
-
-        int IEqualityComparer<object>.GetHashCode(object obj)
-        {
-            return RuntimeHelpers.GetHashCode(obj);
-        }
     }
 
 #pragma warning disable CS0618

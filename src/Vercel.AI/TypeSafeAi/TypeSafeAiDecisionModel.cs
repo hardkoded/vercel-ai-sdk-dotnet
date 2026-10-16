@@ -138,7 +138,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         foreach (var pair in call.Questions)
         {
-            var count = CriteriaCount(pair.Value.Criteria);
+            var count = pair.Value.Criteria?.Count ?? 0;
             if (pair.Value.Type == "choice" && count > 255)
             {
                 throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Choice questions support at most 255 options.");
@@ -179,11 +179,11 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             var question = new JsonObject
             {
                 ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type,
-                ["instructions"] = ToNode(pair.Value.Instructions),
+                ["instructions"] = pair.Value.Instructions.ToNode(),
             };
             if (pair.Value.Criteria != null && pair.Value.Type != "box")
             {
-                question["criteria"] = ToNode(pair.Value.Criteria);
+                question["criteria"] = pair.Value.Criteria.ToNode();
             }
 
             questions[pair.Key] = question;
@@ -495,17 +495,6 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         return headers;
     }
 
-    private static int CriteriaCount(object? criteria)
-    {
-        return criteria switch
-        {
-            JsonElement { ValueKind: JsonValueKind.Object } element => element.EnumerateObject().Count(),
-            JsonElement { ValueKind: JsonValueKind.Array } element => element.GetArrayLength(),
-            ICollection collection => collection.Count,
-            _ => 0,
-        };
-    }
-
     private sealed class StateImage
     {
         public StateImage(int index, string reference, bool insertReference, string mediaType, string fileName, byte[] bytes)
@@ -554,51 +543,47 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     /// TypeSafe takes the state as a string, a JSON object, or a list. A single text or JSON part is sent as its value.
     /// With images, the parts are joined with a newline and each image is replaced by its asset reference.
     /// </summary>
-    private static JsonNode? BuildState(object? state, out List<StateImage> images, out JsonObject assets)
+    private static JsonNode? BuildState(IReadOnlyList<DecisionModelStatePart> items, out List<StateImage> images, out JsonObject assets)
     {
         images = new List<StateImage>();
         assets = new JsonObject();
-        var items = ((IEnumerable<object?>)state!).Select(item => (IDictionary<string, object?>)item!).ToList();
         var stateStrings = new List<string>();
         foreach (var part in items)
         {
-            switch ((string)part["type"]!)
+            switch (part)
             {
-                case "text":
-                    stateStrings.Add((string)part["text"]!);
+                case DecisionModelTextPart text:
+                    stateStrings.Add(text.Text);
                     break;
-                case "file":
-                    break;
-                default:
-                    JsonStrings(ToNode(part["value"]), stateStrings);
+                case DecisionModelJsonPart json:
+                    JsonStrings(JsonNode.Parse(json.Value.GetRawText()), stateStrings);
                     break;
             }
         }
 
-        // Each entry is a text value (string) or a JSON value (JsonValue wrapper); null marks a skipped image.
-        var stateParts = new List<(bool IsText, object? Value)>();
-        var values = new List<object?>();
+        // Each entry is a text value or a JSON value; a skipped image adds none.
+        var stateParts = new List<(bool IsText, JsonNode? Value)>();
+        var values = new JsonArray();
         for (var index = 0; index < items.Count; index++)
         {
-            var part = items[index];
-            switch ((string)part["type"]!)
+            switch (items[index])
             {
-                case "file":
-                    var image = ImagePart(part, index, assets, stateStrings);
+                case DecisionModelFilePart file:
+                    var image = ImagePart(file, index, assets, stateStrings);
                     images.Add(image);
                     if (image.InsertReference)
                     {
-                        stateParts.Add((true, image.Reference));
+                        stateParts.Add((true, JsonValue.Create(image.Reference)));
                     }
 
                     break;
-                case "text":
-                    values.Add(part["text"]);
-                    stateParts.Add((true, part["text"]));
+                case DecisionModelTextPart text:
+                    values.Add(JsonValue.Create(text.Text));
+                    stateParts.Add((true, JsonValue.Create(text.Text)));
                     break;
-                default:
-                    values.Add(part["value"]);
-                    stateParts.Add((false, part["value"]));
+                case DecisionModelJsonPart json:
+                    values.Add(JsonNode.Parse(json.Value.GetRawText()));
+                    stateParts.Add((false, JsonNode.Parse(json.Value.GetRawText())));
                     break;
             }
         }
@@ -607,13 +592,18 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         {
             if (stateParts.Count == 1 && !stateParts[0].IsText)
             {
-                return ToNode(stateParts[0].Value);
+                return stateParts[0].Value;
             }
 
-            return string.Join("\n", stateParts.Select(part => part.IsText ? (string)part.Value! : ToNode(part.Value)?.ToJsonString() ?? "null"));
+            return string.Join("\n", stateParts.Select(part => part.IsText ? part.Value!.GetValue<string>() : part.Value?.ToJsonString() ?? "null"));
         }
 
-        return ToNode(values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values);
+        if (values.Count == 1 && (values[0] is JsonObject or JsonArray || (values[0] is JsonValue single && single.TryGetValue<string>(out _))))
+        {
+            return values[0]!.DeepClone();
+        }
+
+        return values;
     }
 
     private static void JsonStrings(JsonNode? node, List<string> strings)
@@ -640,12 +630,11 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
     }
 
-    private static StateImage ImagePart(IDictionary<string, object?> part, int index, JsonObject assets, List<string> stateStrings)
+    private static StateImage ImagePart(DecisionModelFilePart part, int index, JsonObject assets, List<string> stateStrings)
     {
-        var mediaType = (string)part["mediaType"]!;
-        var data = part["data"] as IDictionary<string, object?>;
-        var dataType = data?["type"] as string;
-        if (data == null || dataType != "data")
+        var mediaType = part.MediaType;
+        var dataType = part.Data.DataType;
+        if (dataType != "data")
         {
             throw new UnsupportedFunctionalityException(
                 "TypeSafe AI decision file input: " + mediaType + " (" + dataType + ")",
@@ -669,9 +658,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         string? reference = null;
         bool? insertOption = null;
-        if (part.TryGetValue("providerOptions", out var providerOptions)
-            && ToNode(providerOptions) is JsonObject partOptions
-            && partOptions["typesafe"] is JsonObject typesafe)
+        if (part.ProviderOptions != null
+            && part.ProviderOptions.TryGetValue("typesafe", out var typesafeOptions)
+            && typesafeOptions.ValueKind == JsonValueKind.Object
+            && JsonNode.Parse(typesafeOptions.GetRawText()) is JsonObject typesafe)
         {
             if (typesafe.TryGetPropertyValue("reference", out var node))
             {
@@ -708,20 +698,12 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             throw new InvalidArgumentError("providerOptions.typesafe.reference", reference, "Duplicate TypeSafe image reference: " + reference);
         }
 
-        var bytes = data["data"] switch
-        {
-            byte[] raw => raw,
-            string base64 => Convert.FromBase64String(base64),
-            _ => throw new InvalidArgumentError("data", data["data"], "TypeSafe image data must be a base64 string or bytes."),
-        };
-        var fileName = part.TryGetValue("filename", out var name) && name is string text && text.Length > 0 ? text : "image-" + index + "." + extension;
+        var bytes = part.Data.Bytes ?? (part.Data.Base64 != null
+            ? Convert.FromBase64String(part.Data.Base64)
+            : throw new InvalidArgumentError("data", null, "TypeSafe image data must be a base64 string or bytes."));
+        var fileName = part.FileName is { Length: > 0 } name ? name : "image-" + index + "." + extension;
         assets[reference] = new JsonObject { ["type"] = "image", ["part"] = "image-" + index };
         return new StateImage(index, reference, insertReference, mediaType, fileName, bytes);
-    }
-
-    private static JsonNode? ToNode(object? value)
-    {
-        return value == null ? null : JsonNode.Parse(JsonSerializer.Serialize(value));
     }
 }
 

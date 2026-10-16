@@ -5,6 +5,7 @@
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -28,7 +29,7 @@ public sealed class TelemetryTests
         await DecideOperation.DecideAsync(new DecideRequest
         {
             Model = new DecideModel { Result = new DecisionModelResult(SampleAnswers(), usage: new OperationUsage(30, 4)) },
-            State = state,
+            State = S(state),
             Questions = SampleQuestions(),
             GenerateCallId = () => "test-call-id",
             RuntimeContext = new Dictionary<string, object?> { ["requestId"] = "request-1", ["secret"] = "hidden" },

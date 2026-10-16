@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Registry.DecisionModel.DecisionModelSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -66,13 +67,13 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         };
         DecisionModels.GatewayFactory = () => GatewayProvider.Create(handler: capture);
         const string modelId = "typesafe-ai/jev";
-        var questions = new Dictionary<string, DecisionQuestion> { ["correct"] = new DecisionQuestion("boolean", "Is this correct?") };
+        var questions = new Dictionary<string, DecisionQuestion> { ["correct"] = Q("boolean", "Is this correct?") };
 
         var result = await DecideOperation.DecideAsync(new DecideRequest
         {
             Model = resolution == "string" ? null : new CustomProvider().AddDecisionModel("check", modelId).DecisionModel("check"),
             ModelId = resolution == "string" ? modelId : null,
-            State = state,
+            State = S(state),
             Questions = questions,
         });
 
@@ -161,7 +162,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         {
             Model = resolution == "string" ? null : registry.DecisionModel("provider:route"),
             ModelId = resolution == "string" ? "route" : null,
-            State = new Dictionary<string, object?> { ["message"] = "Charged twice" },
+            State = S(new Dictionary<string, object?> { ["message"] = "Charged twice" }),
             Questions = questions,
             Headers = new Dictionary<string, string> { ["x-test"] = "header" },
             ProviderOptions = Json("""{"test":{"flag":true}}"""),
@@ -187,7 +188,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         {
             ModelId = "choice",
             State = "test",
-            Questions = new Dictionary<string, DecisionQuestion> { ["flag"] = new DecisionQuestion("boolean", "Yes?") },
+            Questions = new Dictionary<string, DecisionQuestion> { ["flag"] = Q("boolean", "Yes?") },
         }));
         Assert.Empty(mock.Calls);
     }

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.Operations.Decide;
 
@@ -13,7 +14,7 @@ internal static class DecideSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["topic"] = new DecisionQuestion(
+            ["topic"] = Q(
                 "choice",
                 "Pick a \"team\".\nKeep this string.",
                 new Dictionary<string, object?>
@@ -22,11 +23,11 @@ internal static class DecideSupport
                     ["support"] = new List<object?> { "help", new Dictionary<string, object?> { ["urgent"] = true } },
                     ["other"] = null,
                 }),
-            ["severity"] = new DecisionQuestion(
+            ["severity"] = Q(
                 "score",
                 new Dictionary<string, object?> { ["task"] = "Rate severity" },
                 new List<object?> { new Dictionary<string, object?> { ["level"] = "low" }, new List<object?> { "medium", "high" }, null }),
-            ["refund"] = new DecisionQuestion(
+            ["refund"] = Q(
                 "boolean",
                 new List<object?> { "Refund?", new Dictionary<string, object?> { ["locale"] = "en" } },
                 new Dictionary<string, object?>
@@ -34,10 +35,10 @@ internal static class DecideSupport
                     ["true"] = new Dictionary<string, object?> { ["requested"] = true },
                     ["false"] = new List<object?> { "status only" },
                 }),
-            ["noCriteria"] = new DecisionQuestion("boolean", "No criteria."),
-            ["emptyCriteria"] = new DecisionQuestion("boolean", "Empty criteria.", new Dictionary<string, object?>()),
-            ["nullCriteria"] = new DecisionQuestion("boolean", "Null criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = null }),
-            ["falseCriteria"] = new DecisionQuestion("boolean", "False criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = "No refund requested" }),
+            ["noCriteria"] = Q("boolean", "No criteria."),
+            ["emptyCriteria"] = Q("boolean", "Empty criteria.", new Dictionary<string, object?>()),
+            ["nullCriteria"] = Q("boolean", "Null criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = null }),
+            ["falseCriteria"] = Q("boolean", "False criteria.", new Dictionary<string, object?> { ["true"] = null, ["false"] = "No refund requested" }),
         };
     }
 
@@ -66,9 +67,9 @@ internal static class DecideSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["topic"] = new DecisionQuestion("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = new Dictionary<string, object?> { ["includes"] = new List<object?> { "help" } } }),
-            ["severity"] = new DecisionQuestion("score", new List<object?> { "Severity?" }, new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = new DecisionQuestion("boolean", "Refund?", new Dictionary<string, object?> { ["true"] = "Money back", ["false"] = null }),
+            ["topic"] = Q("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = new Dictionary<string, object?> { ["includes"] = new List<object?> { "help" } } }),
+            ["severity"] = Q("score", new List<object?> { "Severity?" }, new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = Q("boolean", "Refund?", new Dictionary<string, object?> { ["true"] = "Money back", ["false"] = null }),
         };
     }
 

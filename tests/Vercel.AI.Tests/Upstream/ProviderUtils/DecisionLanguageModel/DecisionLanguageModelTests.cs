@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.ProviderUtils.DecisionLanguageModelSuite.DecisionLanguageModelSupport;
 
 namespace Vercel.AI.Tests.Upstream.ProviderUtils.DecisionLanguageModelSuite;
@@ -179,7 +180,7 @@ public sealed class DecisionLanguageModelTests
         const string whenTrue = "{\"meaning\":\"A refund is requested\"}";
         const string whenFalse = "[\"No refund requested\"]";
         var questions = Questions();
-        questions["flag"] = new DecisionQuestion("boolean", instructions, new Dictionary<string, object?> { ["true"] = whenTrue, ["false"] = whenFalse });
+        questions["flag"] = Q("boolean", instructions, new Dictionary<string, object?> { ["true"] = whenTrue, ["false"] = whenFalse });
 
         var result = await model.DoDecideAsync(Call(questions));
 
@@ -220,7 +221,7 @@ public sealed class DecisionLanguageModelTests
         var (model, _, _) = Setup(Text("{\"q0\":0.25}"));
 
         var result = await model.DoDecideAsync(Call(
-            new Dictionary<string, DecisionQuestion> { ["flag"] = new DecisionQuestion("boolean", "Yes?") },
+            new Dictionary<string, DecisionQuestion> { ["flag"] = Q("boolean", "Yes?") },
             TextState("test")));
 
         var flag = Assert.Single(result.Answers);
@@ -429,7 +430,7 @@ public sealed class DecisionLanguageModelTests
     private static Dictionary<string, DecisionQuestion> WithFlag()
     {
         var questions = Questions();
-        questions["flag"] = new DecisionQuestion("boolean", "Yes?");
+        questions["flag"] = Q("boolean", "Yes?");
         return questions;
     }
 

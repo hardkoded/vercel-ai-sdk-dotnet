@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision.OpenAIDecisionSupport;
 
 namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision;
@@ -138,7 +139,7 @@ public sealed class OpenAIDecisionTests
         var (model, capture) = Setup();
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new DecisionQuestion(
+            ["department"] = Q(
                 "choice",
                 new Dictionary<string, object?> { ["task"] = "route" },
                 new Dictionary<string, object?>
@@ -146,11 +147,11 @@ public sealed class OpenAIDecisionTests
                     ["technical"] = null,
                     ["billing"] = new Dictionary<string, object?> { ["rubric"] = new List<object?> { "charges" } },
                 }),
-            ["severity"] = new DecisionQuestion(
+            ["severity"] = Q(
                 "score",
                 new List<object?> { "severity" },
                 new List<object?> { null, new Dictionary<string, object?> { ["meaning"] = "high" } }),
-            ["refund"] = new DecisionQuestion(
+            ["refund"] = Q(
                 "boolean",
                 "Refund?",
                 new Dictionary<string, object?>
@@ -381,7 +382,7 @@ public sealed class OpenAIDecisionTests
         }
 
         var questions = Questions();
-        questions["refund"] = new DecisionQuestion("boolean", "Refund?", parsed);
+        questions["refund"] = Q("boolean", "Refund?", parsed);
         await model.DoDecideAsync(Call(questions));
         Assert.Equal(expected, RequestBody(capture)["questions"]![2]!["instructions"]!.GetValue<string>());
     }

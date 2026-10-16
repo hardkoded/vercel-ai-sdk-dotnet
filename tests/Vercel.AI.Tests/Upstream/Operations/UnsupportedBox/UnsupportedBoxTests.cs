@@ -7,6 +7,7 @@ using Vercel.AI.Google;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
 namespace Vercel.AI.Tests.Upstream.Operations.UnsupportedBox;
@@ -52,8 +53,8 @@ public sealed class UnsupportedBoxTests
             await Assert.ThrowsAnyAsync<DecisionUnsupportedQuestionTypeException>(() => DecideOperation.DecideAsync(new DecideRequest
             {
                 Model = model,
-                State = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/cat.png") } },
-                Questions = new Dictionary<string, DecisionQuestion> { ["target"] = new DecisionQuestion("box", "The cat") },
+                State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/cat.png") } }),
+                Questions = new Dictionary<string, DecisionQuestion> { ["target"] = Q("box", "The cat") },
             }));
         }
         finally
