@@ -12,6 +12,8 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Signs an HTTP request with AWS Signature Version 4.</summary>
 public static class AwsSigV4
 {
+    private static readonly Regex Whitespace = new Regex("\\s+", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+
     // The transport can change these after signing, so they are never signed.
     private static readonly HashSet<string> UnsignedHeaders = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -80,7 +82,7 @@ public static class AwsSigV4
                 continue;
             }
 
-            canonicalHeaders.Append(name).Append(':').Append(Regex.Replace(headers[name].Trim(), "\\s+", " ")).Append('\n');
+            canonicalHeaders.Append(name).Append(':').Append(Whitespace.Replace(headers[name].Trim(), " ")).Append('\n');
             if (signed.Length > 0)
             {
                 signed.Append(';');
