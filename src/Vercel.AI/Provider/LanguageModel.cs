@@ -1313,11 +1313,13 @@ public sealed class ToolInputStartStreamPart : LanguageModelStreamPart
         JsonElement? providerMetadata = null,
         bool? providerExecuted = null,
         bool? dynamic = null,
-        string? title = null)
+        string? title = null,
+        ToolInputEncoding? inputEncoding = null)
         : base("tool-input-start")
     {
         Id = id ?? string.Empty;
         ToolName = toolName ?? string.Empty;
+        InputEncoding = inputEncoding;
         ProviderMetadata = providerMetadata;
         ProviderExecuted = providerExecuted;
         Dynamic = dynamic;
@@ -1341,6 +1343,22 @@ public sealed class ToolInputStartStreamPart : LanguageModelStreamPart
 
     /// <summary>Optional tool title.</summary>
     public string? Title { get; }
+
+    /// <summary>
+    /// Encoding of the input deltas. Defaults to JSON when <see langword="null"/>. Text deltas concatenate
+    /// to a raw string. The final tool call input must still be JSON-encoded, whatever the delta encoding.
+    /// </summary>
+    public ToolInputEncoding? InputEncoding { get; }
+}
+
+/// <summary>Encoding of the deltas that follow a tool-input-start part.</summary>
+public enum ToolInputEncoding
+{
+    /// <summary>The deltas concatenate to JSON text.</summary>
+    Json,
+
+    /// <summary>The deltas concatenate to a raw string, such as OpenAI custom-tool code or HTML.</summary>
+    Text,
 }
 
 /// <summary>A streamed tool-argument fragment.</summary>
