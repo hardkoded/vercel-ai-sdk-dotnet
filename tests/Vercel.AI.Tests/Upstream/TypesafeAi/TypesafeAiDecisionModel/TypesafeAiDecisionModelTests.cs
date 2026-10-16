@@ -205,7 +205,7 @@ public sealed class TypesafeAiDecisionModelTests
         var restored = TypeSafeAiDecisionModel.Deserialize(serialized, new HttpClient(server));
         await restored.DoDecideAsync(Call(), CancellationToken.None);
         Assert.Equal("Bearer restored-key", server.Calls[0].Headers["authorization"]);
-        Assert.Equal(new[] { "choice", "score", "boolean" }, restored.SupportedQuestionTypes);
+        Assert.Equal(new[] { "choice", "score", "boolean", "box" }, restored.SupportedQuestionTypes);
     }
 
     [Fact]
@@ -240,6 +240,39 @@ public sealed class TypesafeAiDecisionModelTests
         {
             Assert.Equal(pair.Value, actual[pair.Key]);
         }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    [UpstreamTest(Prefix + "sends box questions and enables the images header (image: %s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_box_questions_and_enables_the_images_header(bool withImage)
+    {
+        var server = Server();
+        var response = JsonNode.Parse(NativeResponseJson)!.AsObject();
+        response["answers"]!["target"] = JsonNode.Parse("{\"type\":\"box\",\"box\":{\"top\":0.25,\"bottom\":0.82,\"left\":0.44,\"right\":0.84},\"confidence\":0.92}");
+        server.ResponseBody = response.ToJsonString();
+        var questions = Questions();
+        questions["target"] = new DecisionQuestion("box", "The mug");
+        var model = CreateProvider(server).DecisionModel("jev-latest");
+        var state = withImage
+            ? new List<object?> { FilePart("image/png", "AQID") }
+            : null;
+        var result = await model.DoDecideAsync(Call(questions, state), CancellationToken.None);
+        Assert.Contains("box", model.SupportedQuestionTypes);
+        var box = result.Answers["target"].Box!;
+        Assert.Equal("box", result.Answers["target"].Type);
+        Assert.Equal((0.25, 0.82, 0.44, 0.84), (box.Top, box.Bottom, box.Left, box.Right));
+        Assert.Equal(0.92, result.ProviderMetadata!.Value.GetProperty("typesafe").GetProperty("confidence").GetProperty("target").GetDouble());
+        var call = Assert.Single(server.Calls);
+        Assert.Equal("true", call.Headers["typesafe-danger-zone-images"]);
+        var body = withImage
+            ? JsonNode.Parse(call.Form.Single(part => part.Name == "request").Text)!
+            : JsonNode.Parse(call.Body)!;
+        var target = body["questions"]!["target"]!.AsObject();
+        Assert.Equal(2, target.Count);
+        Assert.Equal("box", target["type"]!.GetValue<string>());
+        Assert.Equal("The mug", target["instructions"]!.GetValue<string>());
     }
 
     private sealed class CancellingHandler : HttpMessageHandler

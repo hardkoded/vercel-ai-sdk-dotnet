@@ -24,7 +24,7 @@ public sealed class TypeSafeProviderTests
         Assert.Equal("v4", model.SpecificationVersion);
         Assert.Equal("typesafe.decision", model.Provider);
         Assert.Equal("jev-latest", model.ModelId);
-        Assert.Equal(new[] { "choice", "score", "boolean" }, model.SupportedQuestionTypes);
+        Assert.Equal(new[] { "choice", "score", "boolean", "box" }, model.SupportedQuestionTypes);
     }
 
     [Fact]

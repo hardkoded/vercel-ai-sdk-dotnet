@@ -57,7 +57,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean", "box" };
 
     /// <summary>Serializes the model id and the JSON-serializable part of the config for a workflow boundary.</summary>
     public SerializedModelOptions Serialize()
@@ -181,7 +181,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                 ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type,
                 ["instructions"] = ToNode(pair.Value.Instructions),
             };
-            if (pair.Value.Criteria != null)
+            if (pair.Value.Criteria != null && pair.Value.Type != "box")
             {
                 question["criteria"] = ToNode(pair.Value.Criteria);
             }
@@ -216,7 +216,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             headers["User-Agent"] = ProviderExchange.UserAgent("typesafe-ai");
         }
 
-        if (images.Count > 0)
+        if (images.Count > 0 || call.Questions.Values.Any(question => question.Type == "box"))
         {
             headers["TypeSafe-Danger-Zone-Images"] = "true";
         }
@@ -305,6 +305,17 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                             "score",
                             score: Property(answer, "score", JsonValueKind.Number).GetDouble(),
                             probabilities: Probabilities(answer));
+                        AddConfidence(confidence, pair.Name, answer);
+                        break;
+                    case "box":
+                        var box = Property(answer, "box", JsonValueKind.Object);
+                        answers[pair.Name] = new DecisionAnswer(
+                            "box",
+                            box: new DecisionBox(
+                                Property(box, "top", JsonValueKind.Number).GetDouble(),
+                                Property(box, "bottom", JsonValueKind.Number).GetDouble(),
+                                Property(box, "left", JsonValueKind.Number).GetDouble(),
+                                Property(box, "right", JsonValueKind.Number).GetDouble()));
                         AddConfidence(confidence, pair.Name, answer);
                         break;
                     case "noul":
