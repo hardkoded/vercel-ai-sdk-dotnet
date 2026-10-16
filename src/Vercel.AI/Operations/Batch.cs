@@ -705,7 +705,8 @@ public static class Batch
             throw new UnsupportedFunctionalityException("batch cancellation", "The provider does not support batch cancellation.");
         }
 
-        var token = Token(request, cancellationToken);
+        using var scope = Token(request, cancellationToken);
+        var token = scope.Token;
         return await api.DoCancelAsync(Call(api, request, token, request.Batch!.Id), token).ConfigureAwait(false);
     }
 
@@ -719,7 +720,8 @@ public static class Batch
             throw new UnsupportedFunctionalityException("batch listing", "The provider does not support listing batches.");
         }
 
-        var token = Token(request, cancellationToken);
+        using var scope = Token(request, cancellationToken);
+        var token = scope.Token;
         var call = Call(api, request, token, null);
         call.Receiver = api;
         var page = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoListAsync(call, ct), null).ConfigureAwait(false);
@@ -745,7 +747,8 @@ public static class Batch
         var requests = request.Requests ?? Array.Empty<BatchRequest>();
         ValidateRequests(requests);
         var api = Resolve(request);
-        var token = Token(request, cancellationToken);
+        using var scope = Token(request, cancellationToken);
+        var token = scope.Token;
         var normalized = new List<NormalizedBatchRequest>();
         var tools = new Dictionary<string, string>();
         foreach (var item in requests)
@@ -802,7 +805,8 @@ public static class Batch
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
-        var token = Token(request, cancellationToken);
+        using var scope = Token(request, cancellationToken);
+        var token = scope.Token;
         return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetStatusAsync(Call(api, request, token, request.Batch!.Id), ct), null).ConfigureAwait(false);
     }
 
@@ -814,9 +818,10 @@ public static class Batch
     {
         var api = Resolve(request);
         ValidateReference(api, request.Batch);
-        var token = Token(request, cancellationToken);
+        var scope = Token(request, cancellationToken);
+        var token = scope.Token;
         var opening = OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => api.DoGetResultsAsync(Call(api, request, ct, request.Batch!.Id), ct), null);
-        return ReadResults(opening, request, token);
+        return ReadResults(opening, request, scope, token);
     }
 
     /// <summary>Reads every result of <see cref="GetBatchResults"/> into a list.</summary>
@@ -831,12 +836,19 @@ public static class Batch
         return results;
     }
 
-    private static async IAsyncEnumerable<BatchItemResult> ReadResults(Task<IAsyncEnumerable<BatchItem>> opening, BatchRequestOptions request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<BatchItemResult> ReadResults(Task<IAsyncEnumerable<BatchItem>> opening, BatchRequestOptions request, BatchTokenScope scope, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var items = await opening.ConfigureAwait(false);
-        await foreach (var item in items.WithCancellation(cancellationToken).ConfigureAwait(false))
+        try
         {
-            yield return await ConvertAsync(item, request, cancellationToken).ConfigureAwait(false);
+            var items = await opening.ConfigureAwait(false);
+            await foreach (var item in items.WithCancellation(cancellationToken).ConfigureAwait(false))
+            {
+                yield return await ConvertAsync(item, request, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            scope.Dispose();
         }
     }
 
@@ -1017,16 +1029,37 @@ public static class Batch
         throw new UnsupportedFunctionalityException("batch processing", "The provider does not support batch processing. Make sure it exposes an experimental_batch() method.");
     }
 
-    private static CancellationToken Token(BatchRequestOptions request, CancellationToken cancellationToken)
+    private static BatchTokenScope Token(BatchRequestOptions request, CancellationToken cancellationToken)
     {
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
-        if (request.TimeoutMs is int timeout)
+        return request.TimeoutMs is int timeout ? new BatchTokenScope(token, timeout) : new BatchTokenScope(token);
+    }
+
+    // Owns the timeout and linked sources of one call, so the timer and the registration on the caller's token are released.
+    private sealed class BatchTokenScope : IDisposable
+    {
+        private readonly CancellationTokenSource? _timeout;
+        private readonly CancellationTokenSource? _linked;
+
+        public BatchTokenScope(CancellationToken token)
         {
-            var source = new CancellationTokenSource(timeout);
-            return CancellationTokenSource.CreateLinkedTokenSource(token, source.Token).Token;
+            Token = token;
         }
 
-        return token;
+        public BatchTokenScope(CancellationToken token, int timeoutMs)
+        {
+            _timeout = new CancellationTokenSource(timeoutMs);
+            _linked = CancellationTokenSource.CreateLinkedTokenSource(token, _timeout.Token);
+            Token = _linked.Token;
+        }
+
+        public CancellationToken Token { get; }
+
+        public void Dispose()
+        {
+            _linked?.Dispose();
+            _timeout?.Dispose();
+        }
     }
 
     private static BatchOperationCall Call(IBatchApi api, BatchRequestOptions request, CancellationToken cancellationToken, string? batchId, IReadOnlyList<NormalizedBatchRequest>? requests = null)
