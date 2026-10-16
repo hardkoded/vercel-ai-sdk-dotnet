@@ -91,7 +91,7 @@ public sealed class AnthropicSkills
     /// <summary>Uploads skill files, then reads the latest version metadata.</summary>
     public async Task<AnthropicSkillUpload> UploadSkillAsync(IReadOnlyList<AnthropicSkillFile> files, string? displayTitle, CancellationToken cancellationToken)
     {
-        var form = new MultipartFormDataContent();
+        using var form = new MultipartFormDataContent();
         if (!string.IsNullOrEmpty(displayTitle))
         {
             form.Add(new StringContent(displayTitle!), "display_title");
@@ -101,9 +101,7 @@ public sealed class AnthropicSkills
         {
             var content = new ByteArrayContent(file.Data);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            form.Add(content, "files[]", file.Path);
-            content.Headers.Remove("Content-Disposition");
-            content.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"files[]\"; filename=\"" + file.Path + "\"");
+            MultipartForm.AddFile(form, content, "files[]", file.Path);
         }
 
         var headers = WithBeta(_headers());

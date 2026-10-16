@@ -167,9 +167,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        var request = CreateRequest(_provider.ConverseUri(ModelId), bodyObject, options, out _);
-        var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var request = CreateRequest(_provider.ConverseUri(ModelId), bodyObject, options, out _);
+        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
@@ -184,19 +184,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        var request = CreateRequest(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options, out var requestBody);
+        using var request = CreateRequest(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options, out var requestBody);
         var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         try
         {
             if (!response.IsSuccessStatusCode)
             {
-                var errorText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var errorText = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
                 throw AmazonBedrockErrors.Create((int)response.StatusCode, errorText);
             }
 
             var (headers, chunks) = await StreamResponseHandler(response, AmazonBedrockStreamSchema.Validate, cancellationToken).ConfigureAwait(false);
             return new LanguageModelStreamResult(
-                StreamAsync(response, headers, chunks, options, warnings, usesJsonTool, usesJsonInstruction, cancellationToken),
+                new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(response, headers, chunks, options, warnings, usesJsonTool, usesJsonInstruction, cancellationToken), response),
                 LanguageModelStreamRequest.FromJson(requestBody),
                 new LanguageModelStreamResponse(headers));
         }
@@ -598,8 +598,17 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),
         };
-        _provider.AddHeaders(request, options.Headers);
-        Sign(request, Encoding.UTF8.GetBytes(body));
+        try
+        {
+            _provider.AddHeaders(request, options.Headers);
+            Sign(request, Encoding.UTF8.GetBytes(body));
+        }
+        catch
+        {
+            request.Dispose();
+            throw;
+        }
+
         return request;
     }
 

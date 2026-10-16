@@ -98,7 +98,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
         var prepared = Prepare(options, stream: true);
         var sse = await _provider.PostSseAsync(_provider.CompletionsUri(ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
-            StreamAsync(options, prepared, sse, cancellationToken),
+            new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(options, prepared, sse, cancellationToken), sse),
             LanguageModelStreamRequest.FromJson(prepared.Json),
             new LanguageModelStreamResponse(sse.Headers));
     }
