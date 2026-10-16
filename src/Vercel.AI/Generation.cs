@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -101,7 +102,24 @@ internal static class Generation
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
 
+                var started = Stopwatch.StartNew();
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                started.Stop();
+                if (options.OnLanguageModelCallEnd != null)
+                {
+                    await options.OnLanguageModelCallEnd(
+                        new LanguageModelCallEndEvent(
+                            current.Provider,
+                            generated.ResponseModelId ?? current.ModelId,
+                            generated.FinishReason,
+                            generated.Usage,
+                            generated.Content,
+                            generated.ResponseId,
+                            generated.ProviderMetadata,
+                            started.Elapsed),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
                 steps.Add(step);

@@ -60,6 +60,7 @@ Not emitted yet, because the core stream does not surface them:
 - OpenResponses defaults to `https://ai-gateway.vercel.sh/v1/responses`.
 - Azure OpenAI uses the deployments URL, the `api-key` header, and API version `2024-10-21`.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.
+- Amazon Bedrock Anthropic and Mantle delegate to the Anthropic Messages and OpenAI models. The Mantle Responses model does not turn off `supportsWebSearchSourcesInclude`, and the Bedrock Anthropic provider has no `credentialProvider` or `tools` member.
 - Cohere chat streaming is generate-then-delta.
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
 - MiniMax uses the OpenAI-compatible `/v1` base. The JavaScript package also has an Anthropic-compatible path.

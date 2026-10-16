@@ -776,7 +776,7 @@ public static class JsonStreams
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var count = await reader.ReadAsync(chunk, 0, chunk.Length).ConfigureAwait(false);
+                var count = await CancellableReads.ReadAsync(reader, chunk, cancellationToken).ConfigureAwait(false);
                 if (count == 0)
                 {
                     break;

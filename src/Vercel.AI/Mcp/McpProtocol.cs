@@ -583,6 +583,18 @@ public static class McpNdjson
         output.Write(bytes, 0, bytes.Length);
     }
 
+    /// <summary>Writes one newline-delimited message without blocking a thread when the pipe is full.</summary>
+    public static async Task WriteAsync(Stream? output, JsonElement message, CancellationToken cancellationToken = default)
+    {
+        if (output is null)
+        {
+            throw new MCPClientError("StdioClientTransport not connected");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(Serialize(message));
+        await output.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Buffer that reassembles newline-delimited messages split across chunks.</summary>
     public sealed class Buffer
     {

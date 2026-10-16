@@ -32,8 +32,8 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw MapStatus((int)response.StatusCode, body);
@@ -58,7 +58,7 @@ public sealed class ProviderHttp
         var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
         try
         {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 throw MapStatus((int)response.StatusCode, body);
@@ -80,8 +80,8 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var response = await SendRawAsync(method, uri, content, headers, cancellationToken).ConfigureAwait(false);
-        var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        using var response = await SendRawAsync(method, uri, content, headers, cancellationToken).ConfigureAwait(false);
+        var bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw MapStatus((int)response.StatusCode, Encoding.UTF8.GetString(bytes));
@@ -97,10 +97,10 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        using var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
             throw MapStatus((int)response.StatusCode, body);
         }
 
@@ -154,7 +154,7 @@ public sealed class ProviderHttp
         {
             if (!response.IsSuccessStatusCode)
             {
-                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
                 throw MapStatus((int)response.StatusCode, body);
             }
 
