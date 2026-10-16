@@ -22,7 +22,7 @@ public sealed class UrlImageResponsesTests
     [Theory]
     [InlineData("generations")]
     [InlineData("edits")]
-    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::URL image responses (%s)::downloads URL-only images using the custom fetch and abort signal", Coverage = UpstreamCoverage.Partial, Note = "HttpClient hands the handler a linked token, so the caller's token identity cannot be asserted. Cancellation reaching the download is asserted by 'propagates cancellation during download'.")]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::URL image responses (%s)::downloads URL-only images using the custom fetch and abort signal", Coverage = UpstreamCoverage.Partial, Note = "HttpClient hands the handler a linked token, so the caller's token identity cannot be asserted. Cancellation reaching the download is asserted by 'propagates cancellation during download'. See #498.")]
     public async Task Downloads_url_only_images_using_the_custom_fetch_and_abort_signal(string endpoint)
     {
         var (model, fetch, options) = Setup(endpoint, "{\"b64_json\":null,\"url\":\"" + ImageUrl + "\"}");
@@ -92,7 +92,7 @@ public sealed class UrlImageResponsesTests
     [Theory]
     [InlineData("generations")]
     [InlineData("edits")]
-    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::URL image responses (%s)::propagates image download failures", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai-compatible/src/image/openai-compatible-image-model.test.ts::URL image responses (%s)::propagates image download failures", Coverage = UpstreamCoverage.Partial, Note = "Asserts the 404 status. The download error carries no url. See #498.")]
     public async Task Propagates_image_download_failures(string endpoint)
     {
         var (model, fetch, options) = Setup(endpoint, "{\"url\":\"" + ImageUrl + "\"}");
