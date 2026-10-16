@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -65,6 +66,60 @@ internal static class ProviderExchange
                 response.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// Sends a GET and follows redirects by hand. A redirect away from <paramref name="trustedOrigin"/> must pass download URL validation,
+    /// so a provider cannot bounce the request to a private address. Headers are only sent to the trusted origin.
+    /// </summary>
+    public static async Task<ProviderExchangeResult> GetWithValidatedRedirectsAsync(
+        HttpClient httpClient,
+        Uri uri,
+        IReadOnlyDictionary<string, string?>? headers,
+        string trustedOrigin,
+        CancellationToken cancellationToken)
+    {
+        const int maxRedirects = 10;
+        var current = uri;
+        for (var hop = 0; hop <= maxRedirects; hop++)
+        {
+            var trusted = ProviderValues.IsSameOrigin(current.AbsoluteUri, trustedOrigin);
+            if (!trusted)
+            {
+                Download.ValidateDownloadUrl(current.AbsoluteUri);
+            }
+
+            using (var request = new HttpRequestMessage(HttpMethod.Get, current))
+            {
+                if (trusted)
+                {
+                    Apply(request, headers);
+                }
+
+                using (var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false))
+                {
+                    var status = (int)response.StatusCode;
+                    if (status is 301 or 302 or 303 or 307 or 308 && response.Headers.Location is { } location)
+                    {
+                        current = location.IsAbsoluteUri ? location : new Uri(current, location);
+                        continue;
+                    }
+
+                    var bytes = response.Content == null
+                        ? Array.Empty<byte>()
+                        : await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                    var body = Encoding.UTF8.GetString(bytes);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw ProviderHttp.MapStatus(status, body);
+                    }
+
+                    return new ProviderExchangeResult(body, bytes, Copy(response));
+                }
+            }
+        }
+
+        throw new DownloadError(uri.AbsoluteUri, "Too many redirects (max " + maxRedirects + ")");
     }
 
     /// <summary>JSON content whose media type is <c>application/json</c> without a charset parameter.</summary>

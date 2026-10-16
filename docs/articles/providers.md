@@ -264,6 +264,209 @@ Submission and in-progress operation metadata exposes `videoId`, `mode`, and `re
 
 The HeyGen video endpoint does not document token counts or credit consumption in its generation response. The provider returns the reported duration and dimensions without estimating those quantities.
 
+## Kling AI
+
+The Kling AI provider (`Vercel.AI.KlingAI`) supports Kling AI video generation models: text-to-video, image-to-video, reference-to-video (multi-image), motion control, and multi-shot video generation. It supports video generation only.
+
+### Provider instance
+
+```csharp
+using Vercel.AI.KlingAI;
+
+var klingai = KlingAIProvider.Create(new KlingAIOptions { ApiKey = Environment.GetEnvironmentVariable("KLINGAI_API_KEY") });
+```
+
+These settings are optional:
+
+- **ApiKey** _string_: The Kling AI API key, sent as a bearer token. Defaults to the `KLINGAI_API_KEY` environment variable. Create one in the [Kling AI developer console](https://kling.ai/dev/api-key).
+- **AccessKey** _string_: The legacy access key. Defaults to the `KLINGAI_ACCESS_KEY` environment variable. Prefer `ApiKey`.
+- **SecretKey** _string_: The legacy secret key. Defaults to the `KLINGAI_SECRET_KEY` environment variable. Prefer `ApiKey`.
+- **BaseUrl** _string_: The API URL prefix. Defaults to `https://api-singapore.klingai.com`.
+- **Headers** _IDictionary&lt;string, string&gt;_: Additional request headers.
+
+`AddKlingAI` registers the provider with dependency injection. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw a `NoSuchModelError`.
+
+### Authentication
+
+Kling AI supports two authentication schemes:
+
+- **API key** (recommended): a single key sent as a bearer token. Set `KLINGAI_API_KEY` or pass `ApiKey`.
+- **Access key and secret key** (legacy): a key pair the provider uses to sign a short-lived JWT (HS256, valid for 30 minutes) for each request. Set `KLINGAI_ACCESS_KEY` and `KLINGAI_SECRET_KEY`, or pass `AccessKey` and `SecretKey`.
+
+Credentials are resolved in this order, and explicit settings win over environment variables:
+
+1. `ApiKey`
+2. `AccessKey` and `SecretKey`
+3. The `KLINGAI_API_KEY` environment variable
+4. The `KLINGAI_ACCESS_KEY` and `KLINGAI_SECRET_KEY` environment variables
+
+The credentials are read when a request is sent, so a missing key fails then and not when the provider is created. `KlingAIAuth.ResolveAuthToken` and `KlingAIAuth.GenerateAuthToken` expose the same logic.
+
+### Video models
+
+Create a model with `klingai.VideoModel("kling-v3.0-t2v")` or its alias `klingai.Video("kling-v3.0-t2v")`. `KlingAIVideoModel` implements `IVideoCaller`, so pass it as the `Model` of `GenerateVideoRequest`. The suffix of the model id selects the mode: `-t2v`, `-i2v`, or `-motion-control`. Any other model id throws a `NoSuchModelError` when the video starts. Not every option works with every model version and mode. See the [Kling AI capability map](https://app.klingai.com/global/dev/document-api/apiReference/model/skillsMap).
+
+The model creates a task, then polls it until it finishes. The result is the video URL, and the bytes are not downloaded.
+
+#### Text to video
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)klingai.VideoModel("kling-v3.0-t2v"),
+    Prompt = new VideoPrompt("A chicken flying into the sunset in the style of 90s anime."),
+    AspectRatio = "16:9",
+    Duration = 5,
+    ProviderOptions = OperationJson.Parse("""{ "klingai": { "mode": "std" } }"""),
+});
+```
+
+#### Image to video
+
+Pass an image in the prompt to use it as the start frame. Set `imageTail` for start and end frame control, or pass a `last_frame` in `FrameImages`.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)klingai.VideoModel("kling-v3.0-i2v"),
+    Prompt = new VideoPrompt("The cat slowly turns its head and blinks", "https://example.com/start-frame.png"),
+    Duration = 5,
+    ProviderOptions = OperationJson.Parse("""{ "klingai": { "mode": "pro", "imageTail": "https://example.com/end-frame.png" } }"""),
+});
+```
+
+#### Multi-shot video
+
+Kling v3.0 can split a video into up to 6 storyboard shots, each with its own prompt and duration:
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)klingai.VideoModel("kling-v3.0-t2v"),
+    Prompt = new VideoPrompt(""),
+    AspectRatio = "16:9",
+    Duration = 10,
+    ProviderOptions = OperationJson.Parse("""
+        {
+          "klingai": {
+            "mode": "pro",
+            "multiShot": true,
+            "shotType": "customize",
+            "multiPrompt": [
+              { "index": 1, "prompt": "A sunrise over a calm ocean, warm golden light.", "duration": "4" },
+              { "index": 2, "prompt": "A flock of seagulls take flight from the beach.", "duration": "3" },
+              { "index": 3, "prompt": "Waves crash against rocky cliffs at sunset.", "duration": "3" }
+            ],
+            "sound": "on"
+          }
+        }
+        """),
+});
+```
+
+Multi-shot also works with image-to-video.
+
+#### Reference to video
+
+Pass images in `InputReferences` on an image-to-video model to combine them. The request goes to the multi-image endpoint. Video references are ignored with a warning, and a model that is not image-to-video ignores all references with a warning.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)klingai.VideoModel("kling-v1.6-i2v"),
+    Prompt = new VideoPrompt("The two characters meet and walk together through a sunny park"),
+    InputReferences = new[]
+    {
+        new VideoReference("https://example.com/character-1.png", "image/png"),
+        new VideoReference("https://example.com/character-2.png", "image/png"),
+    },
+    AspectRatio = "16:9",
+    Duration = 5,
+});
+```
+
+#### Motion control
+
+Transfer the motion of a reference video to a character image. `videoUrl`, `characterOrientation`, and `mode` are required, and a call without them throws an `AiSdkException`.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)klingai.VideoModel("kling-v3.0-motion-control"),
+    Prompt = new VideoPrompt("The character performs a smooth dance move", "https://example.com/character.png"),
+    ProviderOptions = OperationJson.Parse("""
+        {
+          "klingai": {
+            "videoUrl": "https://example.com/reference-motion.mp4",
+            "characterOrientation": "image",
+            "mode": "std",
+            "elementList": [{ "element_id": 829836802793406551 }]
+          }
+        }
+        """),
+});
+```
+
+#### Caller-managed callbacks
+
+Use `StartVideo.StartVideoAsync` with `WebhookUrl` to register your own callback receiver. The URL is sent as `callback_url` and wins over `providerOptions.klingai.callback_url`. Without `WebhookUrl`, a raw `callback_url` option is passed through unchanged.
+
+Kling AI sends progress notifications (`submitted` and `processing`) as well as terminal ones (`succeed` and `failed`). Your receiver must filter the progress notifications and match each callback to its task. Call `GetVideoStatus.GetVideoStatusAsync` with the operation from `StartVideoAsync` to read the result after a terminal notification. The model does not handle webhooks itself (`CanWebhook` is false), so `GenerateVideo` with a webhook polls instead.
+
+#### Provider options
+
+Set the options under the `klingai` key of `ProviderOptions`. An option of the wrong type or with an unknown enum value throws an `InvalidArgumentException`. Keys that are not listed are sent to the API as is.
+
+Common options:
+
+- **mode** _"std" | "pro"_: `std` is cost-effective. `pro` has higher quality and takes longer.
+- **pollIntervalMs** _number_ and **pollTimeoutMs** _number_: Accepted and not sent to the API. Pass `PollIntervalMs` and `PollTimeoutMs` to `GenerateVideoRequest` instead.
+- **watermarkEnabled** _boolean_: Also generate a watermarked result.
+
+Text-to-video and image-to-video options:
+
+- **negativePrompt** _string_: What to avoid (max 2500 characters).
+- **sound** _"on" | "off"_: Generate audio. V2.6 and later, and needs `mode: "pro"`. A `GenerateAudio` value on the request wins.
+- **cfgScale** _number_: How closely to follow the prompt, in [0, 1]. V2.x models do not support it.
+- **cameraControl** _object_: A `type` preset (`simple`, `down_back`, `forward_up`, `right_turn_forward`, `left_turn_forward`) and an optional `config` with `horizontal`, `vertical`, `pan`, `tilt`, `roll`, and `zoom`.
+- **multiShot** _boolean_, **shotType** _"customize" | "intelligence"_, **multiPrompt** _array of `{ index, prompt, duration }`_: Multi-shot generation (v3.0+). `shotType` is required with `multiShot`. `multiPrompt` is required for `customize`.
+- **voiceList** _array of `{ voice_id }`_: Voice references (v3.0+, up to 2), used as `<<<voice_1>>>` in the prompt. It needs `sound: "on"` and cannot be combined with `elementList` on image-to-video.
+
+Image-to-video only:
+
+- **imageTail** _string_: The end frame, as a URL or raw base64. Most models need `mode: "pro"`.
+- **staticMask** _string_ and **dynamicMasks** _array of `{ mask, trajectories }`_: Motion brush.
+
+Image-to-video and motion control:
+
+- **elementList** _array of `{ element_id }`_: Reference elements (v3.0+). Up to 3 for image-to-video and 1 for motion control.
+
+Motion control only:
+
+- **videoUrl** _string_ (required): The reference motion video (.mp4 or .mov, up to 100 MB, 3 to 30 seconds).
+- **characterOrientation** _"image" | "video"_ (required): `image` follows the image (reference video up to 10 s). `video` follows the video (up to 30 s).
+- **keepOriginalSound** _"yes" | "no"_: Keep the reference video's sound. Defaults to `yes` on the API.
+
+#### Warnings
+
+The model reports `Unsupported` warnings for `Resolution`, `Seed`, `Fps`, and `N` greater than 1 on every mode. Other warnings depend on the mode: `AspectRatio` on image-to-video and motion control, `Duration` on motion control, an image on text-to-video, and video files used as images or references.
+
+Status polls send the credentials to the configured Kling AI origin only. A redirect to another origin is checked with the download URL rules before it is followed, and a private address throws a `DownloadError`.
+
+#### Provider metadata
+
+`providerMetadata.klingai` has the `taskId` and a `videos` array. Each entry has the `id` and `url`, and the `watermarkUrl` and `duration` when Kling AI reports them.
+
+#### Video model ids
+
+Text to video: `kling-v3.0-t2v`, `kling-v2.6-t2v`, `kling-v2.5-turbo-t2v`, `kling-v2.1-master-t2v`, `kling-v2-master-t2v`, `kling-v1.6-t2v`, `kling-v1-t2v`.
+
+Image to video: `kling-v3.0-i2v`, `kling-v2.6-i2v`, `kling-v2.5-turbo-i2v`, `kling-v2.1-master-i2v`, `kling-v2.1-i2v`, `kling-v2-master-i2v`, `kling-v1.6-i2v`, `kling-v1.5-i2v`, `kling-v1-i2v`.
+
+Motion control: `kling-v3.0-motion-control`, `kling-v2.6-motion-control`.
+
+Any other model id with one of the three suffixes is also accepted.
+
 ## xAI Responses
 
 `XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.
