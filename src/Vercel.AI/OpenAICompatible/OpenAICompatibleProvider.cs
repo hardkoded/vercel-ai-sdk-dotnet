@@ -220,9 +220,9 @@ public class OpenAICompatibleProvider : ProviderBase
         {
             response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {
@@ -300,9 +300,9 @@ public class OpenAICompatibleProvider : ProviderBase
         {
             response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {
@@ -349,9 +349,9 @@ public class OpenAICompatibleProvider : ProviderBase
         {
             response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {

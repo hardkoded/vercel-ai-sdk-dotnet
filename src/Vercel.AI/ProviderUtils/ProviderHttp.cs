@@ -97,17 +97,54 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-            throw MapStatus((int)response.StatusCode, body);
-        }
-
-        using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+        var events = await OpenSseAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false);
+        await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             yield return data;
+        }
+    }
+
+    /// <summary>
+    /// Posts JSON and returns once the response status is known. A failed response throws here.
+    /// The returned sequence yields SSE data payloads as they arrive. Enumerate it once: it disposes the response when it ends or the consumer stops.
+    /// </summary>
+    public async Task<IAsyncEnumerable<string>> OpenSseAsync(
+        Uri uri,
+        string jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+                throw MapStatus((int)response.StatusCode, body);
+            }
+
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return ReadSseAsync(response, stream, cancellationToken);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
+    private static async IAsyncEnumerable<string> ReadSseAsync(
+        HttpResponseMessage response,
+        Stream stream,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using (response)
+        using (stream)
+        {
+            await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+            {
+                yield return data;
+            }
         }
     }
 
@@ -255,11 +292,11 @@ public sealed class ProviderHttp
 
                 var retryAfter = ReadRetryAfter(response);
                 response.Dispose();
-                await Task.Delay(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
             {
-                throw new ApiUserAbortException();
+                throw new ApiUserAbortException(exception, cancellationToken);
             }
             catch (OperationCanceledException exception)
             {
@@ -269,7 +306,7 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
@@ -279,8 +316,20 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    private static async Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
     }
 

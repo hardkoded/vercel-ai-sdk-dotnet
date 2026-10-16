@@ -482,7 +482,14 @@ public static class Rerank
         {
             if (telemetry?.OnError != null)
             {
-                await telemetry.OnError(callId, error).ConfigureAwait(false);
+                try
+                {
+                    await telemetry.OnError(callId, error).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Callback failures are isolated.
+                }
             }
 
             throw;

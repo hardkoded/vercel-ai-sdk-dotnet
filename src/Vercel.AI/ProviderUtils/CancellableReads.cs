@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Provider;
+
 namespace Vercel.AI.ProviderUtils;
 
 /// <summary>
@@ -28,22 +30,36 @@ internal static class CancellableReads
 #endif
     }
 
-    internal static Task<string> ReadAsStringAsync(HttpContent content, CancellationToken cancellationToken)
+    internal static async Task<string> ReadAsStringAsync(HttpContent content, CancellationToken cancellationToken)
     {
+        try
+        {
 #if NET
-        return content.ReadAsStringAsync(cancellationToken);
+            return await content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 #else
-        return WaitAsync(content.ReadAsStringAsync(), cancellationToken);
+            return await WaitAsync(content.ReadAsStringAsync(), cancellationToken).ConfigureAwait(false);
 #endif
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested && exception is not ApiUserAbortException)
+        {
+            throw new ApiUserAbortException(exception, cancellationToken);
+        }
     }
 
-    internal static Task<byte[]> ReadAsByteArrayAsync(HttpContent content, CancellationToken cancellationToken)
+    internal static async Task<byte[]> ReadAsByteArrayAsync(HttpContent content, CancellationToken cancellationToken)
     {
+        try
+        {
 #if NET
-        return content.ReadAsByteArrayAsync(cancellationToken);
+            return await content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
 #else
-        return WaitAsync(content.ReadAsByteArrayAsync(), cancellationToken);
+            return await WaitAsync(content.ReadAsByteArrayAsync(), cancellationToken).ConfigureAwait(false);
 #endif
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested && exception is not ApiUserAbortException)
+        {
+            throw new ApiUserAbortException(exception, cancellationToken);
+        }
     }
 
 #if !NET

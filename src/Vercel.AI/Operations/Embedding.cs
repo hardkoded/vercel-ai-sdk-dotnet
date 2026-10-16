@@ -450,7 +450,14 @@ public static class Embed
         {
             if (telemetry?.OnError != null)
             {
-                await telemetry.OnError(callId, error).ConfigureAwait(false);
+                try
+                {
+                    await telemetry.OnError(callId, error).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Callback failures are isolated.
+                }
             }
 
             throw;
@@ -621,7 +628,14 @@ public static class EmbedMany
         {
             if (telemetry?.OnError != null)
             {
-                await telemetry.OnError(callId, error).ConfigureAwait(false);
+                try
+                {
+                    await telemetry.OnError(callId, error).ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // Callback failures are isolated.
+                }
             }
 
             throw;

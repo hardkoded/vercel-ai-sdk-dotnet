@@ -160,12 +160,21 @@ public sealed class ApiTimeoutException : ApiConnectionException
     }
 }
 
-/// <summary>The call was cancelled through a <see cref="CancellationToken"/>.</summary>
-public sealed class ApiUserAbortException : AiSdkException
+/// <summary>
+/// The call was cancelled through a <see cref="CancellationToken"/>. It derives from <see cref="OperationCanceledException"/>,
+/// so <c>catch (OperationCanceledException)</c> handles every caller cancel. It is not an <see cref="AiSdkException"/>.
+/// </summary>
+public sealed class ApiUserAbortException : OperationCanceledException
 {
     /// <summary>Creates the exception.</summary>
     public ApiUserAbortException()
         : base("The operation was cancelled.")
+    {
+    }
+
+    /// <summary>Creates the exception for a cancelled <paramref name="cancellationToken"/>, with the original cancel as the cause.</summary>
+    public ApiUserAbortException(Exception? innerException, CancellationToken cancellationToken)
+        : base("The operation was cancelled.", innerException, cancellationToken)
     {
     }
 }

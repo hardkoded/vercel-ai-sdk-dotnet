@@ -129,10 +129,13 @@ public class OpenAICompatibleOptions
     /// <summary>Origin for image calls when it differs from <see cref="BaseUrl"/>.</summary>
     public string? ImageBaseUrl { get; set; }
 
-    /// <summary>Copies the options, so a provider can set defaults without changing the caller's object. The copy keeps the runtime type.</summary>
-    internal OpenAICompatibleOptions Copy()
+    /// <summary>
+    /// Returns a copy. Providers change the copy, so the options the caller passed in are left as they were.
+    /// </summary>
+    public OpenAICompatibleOptions Copy()
     {
         var copy = (OpenAICompatibleOptions)MemberwiseClone();
+        copy.AdditionalApiKeyEnvironmentVariables = (string[])AdditionalApiKeyEnvironmentVariables.Clone();
         copy.Headers = new Dictionary<string, string>(Headers);
         copy.QueryParameters = new Dictionary<string, string>(QueryParameters);
         return copy;

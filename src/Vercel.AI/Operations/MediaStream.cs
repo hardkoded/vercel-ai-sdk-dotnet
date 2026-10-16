@@ -177,11 +177,17 @@ public sealed class ModelPartStream
 /// <summary>A single-consumer stream with an explicit <see cref="Cancel"/>.</summary>
 public sealed class OperationFullStream<T> : IAsyncEnumerable<T>
 {
-    private readonly Func<IAsyncEnumerator<T>> _open;
+    private readonly Func<CancellationToken, IAsyncEnumerator<T>> _open;
     private readonly Action _cancel;
 
     /// <summary>Creates a stream.</summary>
     public OperationFullStream(Func<IAsyncEnumerator<T>> open, Action cancel)
+        : this(_ => open(), cancel)
+    {
+    }
+
+    /// <summary>Creates a stream whose enumerator observes the token passed to <see cref="GetAsyncEnumerator"/>.</summary>
+    public OperationFullStream(Func<CancellationToken, IAsyncEnumerator<T>> open, Action cancel)
     {
         _open = open;
         _cancel = cancel;
@@ -196,7 +202,7 @@ public sealed class OperationFullStream<T> : IAsyncEnumerable<T>
     /// <summary>Returns the single enumerator.</summary>
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        return _open();
+        return _open(cancellationToken);
     }
 }
 
