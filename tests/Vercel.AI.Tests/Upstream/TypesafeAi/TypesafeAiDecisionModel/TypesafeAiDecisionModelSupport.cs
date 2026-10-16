@@ -151,7 +151,7 @@ internal static class TypesafeAiDecisionModelSupport
             CancellationToken.None);
     }
 
-    internal static Dictionary<string, object?> FilePart(string mediaType, object? data, string? filename = null, object? reference = null, bool withReference = false)
+    internal static Dictionary<string, object?> FilePart(string mediaType, object? data, string? filename = null, object? reference = null, bool withReference = false, bool? insertReference = null)
     {
         var part = new Dictionary<string, object?>
         {
@@ -164,9 +164,20 @@ internal static class TypesafeAiDecisionModelSupport
             part["filename"] = filename;
         }
 
-        if (withReference)
+        if (withReference || insertReference != null)
         {
-            part["providerOptions"] = new Dictionary<string, object?> { ["typesafe"] = new Dictionary<string, object?> { ["reference"] = reference } };
+            var options = new Dictionary<string, object?>();
+            if (withReference)
+            {
+                options["reference"] = reference;
+            }
+
+            if (insertReference != null)
+            {
+                options["insertReference"] = insertReference;
+            }
+
+            part["providerOptions"] = new Dictionary<string, object?> { ["typesafe"] = options };
         }
 
         return part;
