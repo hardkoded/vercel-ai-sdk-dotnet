@@ -138,6 +138,14 @@ public sealed class UiMessageResponseTests
         Assert.Equal("boom", seen);
         Assert.Contains("\"type\":\"error\"", Body(buffer), StringComparison.Ordinal);
         Assert.Contains("\"errorText\":\"handled error\"", Body(buffer), StringComparison.Ordinal);
+
+        // Without onError the error text is masked, as in the upstream default.
+        using var masked = new MemoryStream();
+        await Assert.ThrowsAsync<AiSdkException>(() => UIMessageStreamResult.WriteAsync(
+            Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" }),
+            masked));
+        Assert.Contains("\"errorText\":\"An error occurred.\"", Body(masked), StringComparison.Ordinal);
+        Assert.DoesNotContain("boom", Body(masked), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -275,7 +283,42 @@ public sealed class UiMessageResponseTests
             throwOnExecute: true);
         Assert.Contains("\"type\":\"tool-output-error\"", failed, StringComparison.Ordinal);
         Assert.Contains("\"toolCallId\":\"call_2\"", failed, StringComparison.Ordinal);
-        Assert.Contains("tool failed", failed, StringComparison.Ordinal);
+        Assert.Contains("\"errorText\":\"An error occurred.\"", failed, StringComparison.Ordinal);
+        Assert.DoesNotContain("tool failed", failed, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::maps tool result, tool error, tool denial, and approval parts",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Covers application-executed tool errors through onError. No tool metadata, dynamic tools, denial chunks, or approval chunks in .NET. Provider-executed tool errors cannot be produced by a model stream part.")]
+    public async Task Routes_application_executed_tool_errors_through_onError()
+    {
+        var model = new TestLanguageModel
+        {
+            StreamParts = new LanguageModelStreamPart[]
+            {
+                new ToolCallStreamPart("call-3", "lookup", "{}"),
+                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(1, 1, 2), "tool-calls"),
+            },
+        };
+        var stream = Client().StreamTextAsync(new StreamTextOptions
+        {
+            Model = model,
+            Prompt = "hi",
+            Tools = new[]
+            {
+                Tool.Function(
+                    "lookup",
+                    "find",
+                    "{\"type\":\"object\"}",
+                    (_, _) => Task.FromException<string>(new InvalidOperationException("tool failed"))),
+            },
+        });
+        using var buffer = new MemoryStream();
+        await UIMessageStreamResult.WriteAsync(stream, buffer, onError: message => "handled: " + message);
+
+        Assert.Contains("\"errorText\":\"handled: tool failed\"", Body(buffer), StringComparison.Ordinal);
     }
 
     private static async Task<string> Write(

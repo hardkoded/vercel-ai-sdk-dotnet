@@ -27,7 +27,7 @@ public static class UIMessageStreamExtensions
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="onError">
-    /// Optional mapper for <c>error</c> chunk text. Null writes <see cref="ErrorPart.Message"/>.
+    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. Errors of provider-executed tools are not masked.
     /// </param>
     public static IResult ToUIMessageStreamResult(
         this StreamTextResult result,
@@ -57,7 +57,7 @@ public sealed class UIMessageStreamResult : IResult
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes the part message.</param>
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
     public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
@@ -86,7 +86,7 @@ public sealed class UIMessageStreamResult : IResult
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes the part message.</param>
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
@@ -202,6 +202,8 @@ public sealed class UIMessageStreamResult : IResult
         var stepOpen = false;
         string? textId = null;
         string? reasoningId = null;
+        var providerExecutedIds = new HashSet<string>(StringComparer.Ordinal);
+        onError ??= _ => "An error occurred.";
 
         yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
 
@@ -242,6 +244,11 @@ public sealed class UIMessageStreamResult : IResult
                     };
                     if (inputStart.ProviderExecuted is bool providerExecuted)
                     {
+                        if (providerExecuted)
+                        {
+                            providerExecutedIds.Add(inputStart.Id);
+                        }
+
                         inputStartChunk["providerExecuted"] = providerExecuted;
                     }
 
@@ -279,7 +286,9 @@ public sealed class UIMessageStreamResult : IResult
                         {
                             ["type"] = "tool-output-error",
                             ["toolCallId"] = toolResult.Result.ToolCallId,
-                            ["errorText"] = toolResult.Result.OutputJson,
+                            ["errorText"] = providerExecutedIds.Contains(toolResult.Result.ToolCallId)
+                                ? toolResult.Result.OutputJson
+                                : onError(toolResult.Result.ModelOutput ?? toolResult.Result.OutputJson),
                         });
                     }
                     else
@@ -348,7 +357,7 @@ public sealed class UIMessageStreamResult : IResult
                     yield return Frame(new JsonObject { ["type"] = "abort", ["reason"] = abortPart.Reason });
                     break;
                 case ErrorPart error:
-                    var errorText = onError != null ? onError(error.Message) : error.Message;
+                    var errorText = onError(error.Message);
                     yield return Frame(new JsonObject { ["type"] = "error", ["errorText"] = errorText });
                     break;
                 case FinishPart finish:

@@ -282,17 +282,14 @@ public sealed class OpenAIImageModel : IImageModel
             content.Add(mask, "mask", call.Mask.FileName ?? "mask.png");
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "images/edits")) { Content = content };
-        OpenAIJson.ApplyHeaders(request, _provider.CreateOpenAIHeaders(call.Headers));
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw ProviderHttp.MapStatus((int)response.StatusCode, body);
-        }
-
-        using var document = JsonDocument.Parse(body);
-        return Read(document.RootElement, warnings, timestamp, OpenAIJson.CopyHeaders(response));
+        var response = await _provider.Http.SendBinaryAsync(
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "images/edits"),
+            content,
+            _provider.CreateOpenAIHeaders(call.Headers),
+            cancellationToken).ConfigureAwait(false);
+        using var document = OpenAIJson.ParseResponse(System.Text.Encoding.UTF8.GetString(response.Body));
+        return Read(document.RootElement, warnings, timestamp, response.Headers);
     }
 
     private OpenAIImageGeneration Read(JsonElement root, IReadOnlyList<OpenAICallWarning> warnings, DateTimeOffset timestamp, IReadOnlyDictionary<string, string> headers)

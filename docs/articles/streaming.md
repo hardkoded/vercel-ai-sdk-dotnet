@@ -90,6 +90,8 @@ foreach (var part in result.Content.OfType<GeneratedText>())
 
 In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to the id of the text block they end. `StreamTextAsync` keeps them on the matching text part in `StepResult.Content`. `SimulateStreamingMiddleware` copies `GeneratedText.Citations` onto the text-end part it emits, and emits a text block that has citations even when its text is empty. Citation-derived sources can arrive at the end of the provider stream, after the SDK knows whether the provider sent retrieval data.
 
+`ToUIMessageStreamResult` and `UIMessageStreamResult` mask error text by default, as upstream does. An `error` chunk and an application-executed tool error send `An error occurred.` to the client. Pass `onError` to choose the text. The function receives the error message. Errors of provider-executed tools are not masked.
+
 `UIMessageStream` writes the citations of a step on its `text-end` chunk (`citations`) and still writes retrieved URL sources as `source-url`. It does not write a `source-document` chunk, so document sources stay on `StepResult.Content` and the model stream only. Document sources are not in `Sources`, which holds URL sources.
 
 Providers that do not send citations leave `Citations` null. A null value does not mean `Sources` is a complete retrieval set.
