@@ -5,10 +5,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.KlingAI;
-using KlingAIVideoModelType = Vercel.AI.KlingAI.KlingAIVideoModel;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Tests.MoreProviders;
+using KlingAIVideoModelType = Vercel.AI.KlingAI.KlingAIVideoModel;
 
 namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIVideoModel;
 

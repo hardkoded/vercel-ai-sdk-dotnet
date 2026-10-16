@@ -7,8 +7,8 @@ using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream.KlingAI.KlingAIVideoModel;
-using KlingAIVideoModelType = Vercel.AI.KlingAI.KlingAIVideoModel;
 using KlingAIProviderType = Vercel.AI.KlingAI.KlingAIProvider;
+using KlingAIVideoModelType = Vercel.AI.KlingAI.KlingAIVideoModel;
 
 namespace Vercel.AI.Tests.Upstream.KlingAI.KlingAIProvider;
 
