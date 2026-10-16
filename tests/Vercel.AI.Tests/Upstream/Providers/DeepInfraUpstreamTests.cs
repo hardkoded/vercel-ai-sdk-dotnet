@@ -35,8 +35,8 @@ public sealed class DeepInfraUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"images\":[]}" };
         var model = Image(capture, "stabilityai/sdxl");
-        model.Seed = 3;
-        await model.DoGenerateAsync(new ImageCallOptions("a cat") { AspectRatio = "16:9", Count = 2 }, CancellationToken.None);
+        var seed = 3;
+        await model.DoGenerateAsync(new ImageCallOptions("a cat") { AspectRatio = "16:9", Count = 2, Seed = seed }, CancellationToken.None);
         var body = JsonNode.Parse(capture.Requests[0].Body)!;
         Assert.Equal("a cat", body["prompt"]!.GetValue<string>());
         Assert.Equal("16:9", body["aspect_ratio"]!.GetValue<string>());
@@ -71,7 +71,7 @@ public sealed class DeepInfraUpstreamTests
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.JsonSchema = UpstreamChat.Json("{\"type\":\"object\"}");
-        options.ProviderOptions = UpstreamChat.Bag("deepinfra", "{\"responseFormat\":\"json\"}");
+        var providerOptions = UpstreamChat.Bag("deepinfra", "{\"responseFormat\":\"json\"}");
         var model = (OpenAICompatibleLanguageModel)DeepInfraProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("m");
         await model.DoGenerateAsync(options, CancellationToken.None);
         Assert.Equal("json_schema", UpstreamChat.Body(capture)["response_format"]!["type"]!.GetValue<string>());
@@ -137,8 +137,8 @@ public sealed class DeepInfraUpstreamTests
         var options = new OpenAICompatibleOptions { ApiKey = "secret" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var model = (DeepInfraImageModel)DeepInfraProvider.Create(options, capture).ImageModel(ImageModelId);
-        model.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        var requestHeaders = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        await model.DoGenerateAsync(new ImageCallOptions(Prompt) { Headers = requestHeaders }, CancellationToken.None);
         var headers = capture.Requests[0].Headers;
         Assert.StartsWith("application/json", headers["Content-Type"], StringComparison.Ordinal);
         Assert.Equal("provider-header-value", headers["Custom-Provider-Header"]);
@@ -170,10 +170,10 @@ public sealed class DeepInfraUpstreamTests
     public async Task Image_generation_records_timestamp_headers_and_model_id()
     {
         var model = new DeepInfraImageModel(DeepInfraProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, new UpstreamCapture { ResponseBody = ImageResponse }), ImageModelId, () => Stamp);
-        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
-        Assert.Equal(Stamp, model.LastResponseTimestamp);
+        var result = await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal(Stamp, result.Response!.Timestamp);
         Assert.Equal(ImageModelId, model.ModelId);
-        Assert.NotEmpty(model.LastResponseHeaders);
+        Assert.NotEmpty(result.Response!.Headers);
     }
 
     [Fact]
@@ -183,10 +183,10 @@ public sealed class DeepInfraUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = ImageResponse };
         capture.ResponseHeaders["x-request-id"] = "test-request-id";
         var model = Image(capture, ImageModelId);
-        await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
-        Assert.Equal("test-request-id", model.LastResponseHeaders["x-request-id"]);
-        Assert.StartsWith("application/json", model.LastResponseHeaders["content-type"], StringComparison.Ordinal);
-        Assert.Equal(Encoding.UTF8.GetByteCount(ImageResponse).ToString(CultureInfo.InvariantCulture), model.LastResponseHeaders["content-length"]);
+        var result = await model.DoGenerateAsync(new ImageCallOptions(Prompt), CancellationToken.None);
+        Assert.Equal("test-request-id", result.Response!.Headers["x-request-id"]);
+        Assert.StartsWith("application/json", result.Response!.Headers["content-type"], StringComparison.Ordinal);
+        Assert.Equal(Encoding.UTF8.GetByteCount(ImageResponse).ToString(CultureInfo.InvariantCulture), result.Response!.Headers["content-length"]);
     }
 
     [Fact]
@@ -205,8 +205,8 @@ public sealed class DeepInfraUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = EditResponse };
         var model = EditModel(capture);
-        model.Files = new[] { Png() };
-        var result = await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Size = "1024x1024" }, CancellationToken.None);
+        var files = new[] { Png() };
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Size = "1024x1024", Files = files }, CancellationToken.None);
         Assert.Equal(EditedImage, Assert.Single(result.Images).Data);
         Assert.Equal("https://edit.example.com/openai/images/edits", capture.Requests[0].Uri!.AbsoluteUri);
         Assert.Contains("name=model", capture.Requests[0].Body, StringComparison.Ordinal);
@@ -220,9 +220,9 @@ public sealed class DeepInfraUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = EditResponse };
         var model = EditModel(capture);
-        model.Files = new[] { Png() };
-        model.Mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
-        var result = await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool"), CancellationToken.None);
+        var files = new[] { Png() };
+        var mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool") { Files = files, Mask = mask }, CancellationToken.None);
         Assert.Equal(EditedImage, Assert.Single(result.Images).Data);
         Assert.Equal("https://edit.example.com/openai/images/edits", capture.Requests[0].Uri!.AbsoluteUri);
         Assert.Contains("name=mask", capture.Requests[0].Body, StringComparison.Ordinal);
@@ -234,8 +234,8 @@ public sealed class DeepInfraUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = EditResponse };
         var model = EditModel(capture);
-        model.Files = new[] { Png(), Png() };
-        var result = await model.DoGenerateAsync(new ImageCallOptions("Combine these images"), CancellationToken.None);
+        var files = new[] { Png(), Png() };
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Combine these images") { Files = files }, CancellationToken.None);
         Assert.Equal(EditedImage, Assert.Single(result.Images).Data);
         Assert.Equal(2, Regex.Matches(capture.Requests[0].Body, "name=image;").Count);
     }
@@ -245,11 +245,11 @@ public sealed class DeepInfraUpstreamTests
     public async Task Edits_record_timestamp_headers_and_model_id()
     {
         var provider = DeepInfraProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret", ImageBaseUrl = "https://edit.example.com/inference" }, new UpstreamCapture { ResponseBody = EditResponse });
-        var model = new DeepInfraImageModel(provider, EditModelId, () => Stamp) { Files = new[] { Png() } };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
-        Assert.Equal(Stamp, model.LastResponseTimestamp);
+        var model = new DeepInfraImageModel(provider, EditModelId, () => Stamp);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = new[] { Png() } }, CancellationToken.None);
+        Assert.Equal(Stamp, result.Response!.Timestamp);
         Assert.Equal(EditModelId, model.ModelId);
-        Assert.NotEmpty(model.LastResponseHeaders);
+        Assert.NotEmpty(result.Response!.Headers);
     }
 
     [Fact]
@@ -258,9 +258,9 @@ public sealed class DeepInfraUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = EditResponse };
         var model = EditModel(capture);
-        model.Files = new[] { Png() };
-        model.ProviderOptions = UpstreamChat.Bag("deepinfra", "{\"guidance\":7.5}");
-        await model.DoGenerateAsync(new ImageCallOptions("Edit with custom options"), CancellationToken.None);
+        var files = new[] { Png() };
+        var providerOptions = UpstreamChat.Bag("deepinfra", "{\"guidance\":7.5}");
+        await model.DoGenerateAsync(new ImageCallOptions("Edit with custom options") { Files = files, ProviderOptions = providerOptions }, CancellationToken.None);
         Assert.Equal("https://edit.example.com/openai/images/edits", capture.Requests[0].Uri!.AbsoluteUri);
         Assert.Matches("name=guidance\\r\\n\\r\\n7.5\\r\\n", capture.Requests[0].Body);
     }
@@ -348,8 +348,6 @@ public sealed class DeepInfraUpstreamTests
     {
         var model = Assert.IsType<DeepInfraImageModel>(DeepInfraProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }).ImageModel("deepinfra-image-model"));
         Assert.Equal("deepinfra-image-model", model.ModelId);
-        Assert.Null(model.Seed);
-        Assert.Null(model.Files);
     }
 
     private static DeepInfraImageModel Image(UpstreamCapture capture, string modelId)

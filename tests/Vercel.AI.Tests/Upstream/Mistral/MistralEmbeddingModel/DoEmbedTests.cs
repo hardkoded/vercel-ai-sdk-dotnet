@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Mistral;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.Upstream.Mistral.MistralEmbeddingModel;
 
@@ -68,14 +69,14 @@ public sealed class DoEmbedTests
         var provider = MistralProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture);
         var model = (OpenAICompatibleEmbeddingModel)provider.EmbeddingModel("mistral-embed");
 
-        await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
+        var result = await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
 
-        var headers = new Dictionary<string, string>(model.LastResponseHeaders, StringComparer.OrdinalIgnoreCase);
+        var headers = new Dictionary<string, string>(result.Response!.Headers, StringComparer.OrdinalIgnoreCase);
         Assert.Equal(3, headers.Count);
         Assert.Equal("267", headers["content-length"]);
         Assert.Equal("application/json; charset=utf-8", headers["content-type"]);
         Assert.Equal("test-value", headers["test-header"]);
-        JsonAssert.Equal(JsonNode.Parse(model.LastResponseBody!), Response);
+        JsonAssert.Equal(JsonNode.Parse(result.Response!.Body!), Response);
     }
 
     [Fact]
@@ -99,9 +100,9 @@ public sealed class DoEmbedTests
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = MistralProvider.Create(options, capture);
         var model = (OpenAICompatibleEmbeddingModel)provider.EmbeddingModel("mistral-embed");
-        model.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        var requestHeaders = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
 
-        await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
+        await model.DoEmbedAsync(new EmbeddingCallOptions(TestValues) { Headers = requestHeaders }, CancellationToken.None);
 
         var headers = capture.Requests[0].Headers;
         Assert.Equal("Bearer test-api-key", headers["Authorization"]);

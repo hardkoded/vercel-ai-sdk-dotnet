@@ -3,24 +3,75 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.OpenAICompatible;
 
 namespace Vercel.AI.Provider;
+
+/// <summary>Raw HTTP response of an embedding call. Maps to <c>response</c> of <c>doEmbed</c>.</summary>
+public sealed class EmbeddingResponseInfo
+{
+    /// <summary>Creates response info.</summary>
+    public EmbeddingResponseInfo(IReadOnlyDictionary<string, string>? headers, string? body)
+    {
+        Headers = headers ?? new Dictionary<string, string>();
+        Body = body;
+    }
+
+    /// <summary>HTTP response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+
+    /// <summary>Raw HTTP response body.</summary>
+    public string? Body { get; }
+}
 
 /// <summary>Embedding vector result.</summary>
 public sealed class EmbeddingResult
 {
     /// <summary>Creates an embedding result.</summary>
-    public EmbeddingResult(IReadOnlyList<float[]> embeddings, int? tokens)
+    public EmbeddingResult(IReadOnlyList<float[]> embeddings, int? tokens, IReadOnlyList<CallWarning>? warnings = null, EmbeddingResponseInfo? response = null)
     {
         Embeddings = embeddings ?? throw new ArgumentNullException(nameof(embeddings));
         Tokens = tokens;
+        Warnings = warnings ?? Array.Empty<CallWarning>();
+        Response = response;
     }
+
+    /// <summary>Warnings of this call.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
+
+    /// <summary>Raw HTTP response of this call, when the provider reports it.</summary>
+    public EmbeddingResponseInfo? Response { get; }
 
     /// <summary>One vector per input value.</summary>
     public IReadOnlyList<float[]> Embeddings { get; }
 
     /// <summary>Token usage, when the provider reports it.</summary>
     public int? Tokens { get; }
+}
+
+/// <summary>Per-call embedding settings. Maps to the options of <c>doEmbed</c>.</summary>
+public sealed class EmbeddingCallOptions
+{
+    /// <summary>Creates call options.</summary>
+    public EmbeddingCallOptions(IReadOnlyList<string> values)
+    {
+        Values = values ?? throw new ArgumentNullException(nameof(values));
+    }
+
+    /// <summary>Values to embed.</summary>
+    public IReadOnlyList<string> Values { get; }
+
+    /// <summary>Provider options, keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    /// <summary>Requested vector width. A provider option for the same setting wins.</summary>
+    public int? Dimensions { get; set; }
+
+    /// <summary>End-user identifier.</summary>
+    public string? User { get; set; }
 }
 
 /// <summary>Embedding model specification.</summary>
@@ -60,17 +111,50 @@ public sealed class GeneratedImage
     public string? Url { get; }
 }
 
+/// <summary>Response metadata of an image call. Maps to <c>response</c> of <c>doGenerate</c> on an image model.</summary>
+public sealed class ImageResponseInfo
+{
+    /// <summary>Creates response info.</summary>
+    public ImageResponseInfo(DateTimeOffset timestamp, string? modelId, IReadOnlyDictionary<string, string>? headers)
+    {
+        Timestamp = timestamp;
+        ModelId = modelId;
+        Headers = headers ?? new Dictionary<string, string>();
+    }
+
+    /// <summary>Time the call started.</summary>
+    public DateTimeOffset Timestamp { get; }
+
+    /// <summary>Model id the provider reported.</summary>
+    public string? ModelId { get; }
+
+    /// <summary>HTTP response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
 /// <summary>Image generation result.</summary>
 public class ImageGenerationResult
 {
     /// <summary>Creates an image result.</summary>
-    public ImageGenerationResult(IReadOnlyList<GeneratedImage> images)
+    public ImageGenerationResult(IReadOnlyList<GeneratedImage> images, IReadOnlyList<CallWarning>? warnings = null, ImageResponseInfo? response = null, LanguageModelUsage? usage = null)
     {
         Images = images ?? Array.Empty<GeneratedImage>();
+        CallWarnings = warnings ?? Array.Empty<CallWarning>();
+        Response = response;
+        Usage = usage;
     }
 
     /// <summary>Generated images.</summary>
     public IReadOnlyList<GeneratedImage> Images { get; }
+
+    /// <summary>Warnings of this call. Maps to <c>warnings</c>.</summary>
+    public IReadOnlyList<CallWarning> CallWarnings { get; }
+
+    /// <summary>Response metadata of this call, when the model reports it.</summary>
+    public ImageResponseInfo? Response { get; }
+
+    /// <summary>Token usage, when the response included it.</summary>
+    public LanguageModelUsage? Usage { get; }
 }
 
 /// <summary>Image model specification.</summary>
@@ -106,6 +190,21 @@ public sealed class ImageCallOptions
 
     /// <summary>Aspect ratio such as <c>16:9</c>.</summary>
     public string? AspectRatio { get; set; }
+
+    /// <summary>Seed. Models that do not support it add a warning.</summary>
+    public int? Seed { get; set; }
+
+    /// <summary>Input images for an edit. Maps to <c>files</c>.</summary>
+    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
+
+    /// <summary>Edit mask.</summary>
+    public OpenAICompatibleImageFile? Mask { get; set; }
+
+    /// <summary>Provider options, keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>

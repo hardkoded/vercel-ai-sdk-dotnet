@@ -39,10 +39,10 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture, "black-forest-labs");
-        model.ProviderOptions = UpstreamChat.Bag("blackForestLabs", "{\"quality\":\"hd\"}");
-        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("blackForestLabs", "{\"quality\":\"hd\"}");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { ProviderOptions = providerOptions }, CancellationToken.None);
         Assert.Equal("hd", JsonNode.Parse(capture.Requests[0].Body)!["quality"]!.GetValue<string>());
-        Assert.DoesNotContain(model.LastWarnings, warning => warning.Type == "deprecated");
+        Assert.DoesNotContain(result.CallWarnings, warning => warning.Type == "deprecated");
         Assert.NotNull(result);
     }
 
@@ -52,8 +52,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        model.ProviderOptions = UpstreamChat.Bag("openaiCompatible", "{\"size\":\"auto\",\"quality\":\"high\",\"output_format\":\"jpeg\",\"output_compression\":80,\"background\":\"opaque\"}");
-        await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "1024x1024" }, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("openaiCompatible", "{\"size\":\"auto\",\"quality\":\"high\",\"output_format\":\"jpeg\",\"output_compression\":80,\"background\":\"opaque\"}");
+        await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "1024x1024", ProviderOptions = providerOptions }, CancellationToken.None);
         var body = JsonNode.Parse(capture.Requests[0].Body)!;
         Assert.Equal("auto", body["size"]!.GetValue<string>());
         Assert.Equal("high", body["quality"]!.GetValue<string>());
@@ -68,9 +68,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture, "black-forest-labs");
-        model.ProviderOptions = UpstreamChat.Bag("black-forest-labs", "{\"quality\":\"hd\"}");
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "deprecated" && warning.Message.Contains("blackForestLabs"));
+        var providerOptions = UpstreamChat.Bag("black-forest-labs", "{\"quality\":\"hd\"}");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { ProviderOptions = providerOptions }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "deprecated" && warning.Message.Contains("blackForestLabs"));
     }
 
     [Fact]
@@ -79,9 +79,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture, "black-forest-labs");
-        model.ProviderOptions = UpstreamChat.Bag("blackForestLabs", "{\"quality\":\"hd\"}");
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.DoesNotContain(model.LastWarnings, warning => warning.Type == "deprecated");
+        var providerOptions = UpstreamChat.Bag("blackForestLabs", "{\"quality\":\"hd\"}");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { ProviderOptions = providerOptions }, CancellationToken.None);
+        Assert.DoesNotContain(result.CallWarnings, warning => warning.Type == "deprecated");
     }
 
     [Fact]
@@ -90,10 +90,10 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        model.Seed = 123;
-        await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "16:9" }, CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "unsupported" && warning.Message == "This model does not support aspect ratio. Use `size` instead.");
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "unsupported" && warning.Message == "seed");
+        var seed = 123;
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "16:9", Seed = seed }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "This model does not support aspect ratio. Use `size` instead.");
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "seed");
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["seed"]);
     }
 
@@ -103,8 +103,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        model.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        var requestHeaders = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        await model.DoGenerateAsync(new ImageCallOptions("draw") { Headers = requestHeaders }, CancellationToken.None);
         Assert.Equal("request-header-value", capture.Requests[0].Headers["Custom-Request-Header"]);
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
     }
@@ -162,10 +162,10 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         capture.ResponseHeaders["x-request-id"] = "req-1";
         var model = Image(capture, clock: () => stamp);
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Equal(stamp, model.LastResponseTimestamp);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Equal(stamp, result.Response!.Timestamp);
         Assert.Equal("dall-e-3", model.ModelId);
-        Assert.Equal("req-1", model.LastResponseHeaders["x-request-id"]);
+        Assert.Equal("req-1", result.Response!.Headers["x-request-id"]);
     }
 
     [Fact]
@@ -174,9 +174,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var model = Image(new UpstreamCapture { ResponseBody = "{\"data\":[]}" });
         var before = DateTimeOffset.UtcNow;
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
         var after = DateTimeOffset.UtcNow;
-        Assert.InRange(model.LastResponseTimestamp!.Value, before, after);
+        Assert.InRange(result.Response!.Timestamp, before, after);
         Assert.Equal("dall-e-3", model.ModelId);
     }
 
@@ -186,10 +186,10 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"b64_json\":\"aGVsbG8=\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":4,\"total_tokens\":16}}" };
         var model = Image(capture);
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Equal(12, model.LastUsage!.InputTokens);
-        Assert.Equal(4, model.LastUsage.OutputTokens);
-        Assert.Equal(16, model.LastUsage.TotalTokens);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Equal(12, result.Usage!.InputTokens);
+        Assert.Equal(4, result.Usage.OutputTokens);
+        Assert.Equal(16, result.Usage.TotalTokens);
     }
 
     [Fact]
@@ -198,8 +198,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Null(model.LastUsage);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Null(result.Usage);
     }
 
     [Fact]
@@ -208,9 +208,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[],\"usage\":{\"input_tokens\":null,\"output_tokens\":null,\"total_tokens\":null}}" };
         var model = Image(capture);
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Null(model.LastUsage!.InputTokens);
-        Assert.Null(model.LastUsage.OutputTokens);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Null(result.Usage!.InputTokens);
+        Assert.Null(result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -219,10 +219,10 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[],\"usage\":{\"input_tokens\":3,\"output_tokens\":1,\"total_tokens\":4,\"extra\":9}}" };
         var model = Image(capture);
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
-        Assert.Equal(3, model.LastUsage!.InputTokens);
-        Assert.Equal(1, model.LastUsage.OutputTokens);
-        Assert.Equal(4, model.LastUsage.TotalTokens);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        Assert.Equal(3, result.Usage!.InputTokens);
+        Assert.Equal(1, result.Usage.OutputTokens);
+        Assert.Equal(4, result.Usage.TotalTokens);
     }
 
     [Fact]
@@ -231,8 +231,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        model.ProviderOptions = UpstreamChat.Bag("openaiCompatible", "{\"user\":\"test-user-id\"}");
-        await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "1024x1024" }, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("openaiCompatible", "{\"user\":\"test-user-id\"}");
+        await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "1024x1024", ProviderOptions = providerOptions }, CancellationToken.None);
         Assert.Equal("test-user-id", JsonNode.Parse(capture.Requests[0].Body)!["user"]!.GetValue<string>());
     }
 
@@ -242,8 +242,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture);
-        model.ProviderOptions = UpstreamChat.Bag("openaiCompatible", "{}");
-        await model.DoGenerateAsync(new ImageCallOptions("draw"), CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("openaiCompatible", "{}");
+        await model.DoGenerateAsync(new ImageCallOptions("draw") { ProviderOptions = providerOptions }, CancellationToken.None);
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["user"]);
     }
 
@@ -254,8 +254,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 137, 80, 78, 71 };
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "cat.png") };
-        await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "cat.png") };
+        await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Files = files }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
         Assert.Contains("cat.png", capture.Requests[0].Body);
         Assert.Contains("Turn the cat into a dog", capture.Requests[0].Body);
@@ -268,9 +268,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 137, 80, 78, 71 };
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image.png") };
-        model.Mask = new OpenAICompatibleImageFile("image/png", bytes, null, "mask.png");
-        await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image.png") };
+        var mask = new OpenAICompatibleImageFile("image/png", bytes, null, "mask.png");
+        await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool") { Files = files, Mask = mask }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
         Assert.True(
             capture.Requests[0].Body.IndexOf("name=\"mask\"", StringComparison.Ordinal) >= 0
@@ -285,8 +285,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 104, 101, 108, 108, 111 };
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image-0.png") };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image-0.png") };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.Contains("hello", capture.Requests[0].Body);
     }
 
@@ -297,12 +297,12 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 137, 80, 78, 71 };
-        model.Files = new[]
+        var files = new[]
         {
             new OpenAICompatibleImageFile("image/png", bytes, null, "one.png"),
             new OpenAICompatibleImageFile("image/png", bytes, null, "two.png"),
         };
-        await model.DoGenerateAsync(new ImageCallOptions("combine"), CancellationToken.None);
+        await model.DoGenerateAsync(new ImageCallOptions("combine") { Files = files }, CancellationToken.None);
         Assert.Contains("one.png", capture.Requests[0].Body);
         Assert.Contains("two.png", capture.Requests[0].Body);
     }
@@ -315,12 +315,12 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         capture.ResponseHeaders["x-request-id"] = "req-1";
         var model = Image(capture, clock: () => stamp);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, "image.png") };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, "image.png") };
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
-        Assert.Equal(stamp, model.LastResponseTimestamp);
+        Assert.Equal(stamp, result.Response!.Timestamp);
         Assert.Equal("dall-e-3", model.ModelId);
-        Assert.Equal("req-1", model.LastResponseHeaders["x-request-id"]);
+        Assert.Equal("req-1", result.Response!.Headers["x-request-id"]);
     }
 
     [Fact]
@@ -329,11 +329,11 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"b64_json\":\"aGVsbG8=\"}],\"usage\":{\"input_tokens\":5,\"output_tokens\":2,\"total_tokens\":7}}" };
         var model = Image(capture);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1, 2, 3 }, null, "a.png") };
-        await model.DoGenerateAsync(new ImageCallOptions("edit"), CancellationToken.None);
-        Assert.Equal(5, model.LastUsage!.InputTokens);
-        Assert.Equal(2, model.LastUsage.OutputTokens);
-        Assert.Equal(7, model.LastUsage.TotalTokens);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1, 2, 3 }, null, "a.png") };
+        var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
+        Assert.Equal(5, result.Usage!.InputTokens);
+        Assert.Equal(2, result.Usage.OutputTokens);
+        Assert.Equal(7, result.Usage.TotalTokens);
     }
 
     [Fact]
@@ -341,9 +341,9 @@ public sealed class OpenAICompatibleImageUpstreamTests
     public async Task Omitted_edit_usage_stays_unset()
     {
         var model = Image(EditCapture());
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1 }, null, "a.png") };
-        await model.DoGenerateAsync(new ImageCallOptions("edit"), CancellationToken.None);
-        Assert.Null(model.LastUsage);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1 }, null, "a.png") };
+        var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
+        Assert.Null(result.Usage);
     }
 
     private static UpstreamCapture EditCapture()

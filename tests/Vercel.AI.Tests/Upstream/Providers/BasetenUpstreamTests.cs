@@ -152,8 +152,8 @@ public sealed class BasetenUpstreamTests
         var capture = EmbeddingCapture();
         capture.ResponseHeaders["x-request-id"] = "abc123";
         var model = Embed(capture, SyncUrl, null);
-        await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
-        Assert.Equal("abc123", model.LastResponseHeaders["x-request-id"]);
+        var result = await model.DoEmbedAsync(TestValues, null, CancellationToken.None);
+        Assert.Equal("abc123", result.Response!.Headers["x-request-id"]);
     }
 
     [Fact]

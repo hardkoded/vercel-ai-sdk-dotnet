@@ -26,15 +26,6 @@ public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRera
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>Headers for this call.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Raw response body from the most recent call.</summary>
-    public string? LastResponseBody { get; private set; }
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
     /// <inheritdoc />
     public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
     {
@@ -67,7 +58,7 @@ public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRera
             body["rank_fields"] = JsonNode.Parse(rankFields.GetRawText());
         }
 
-        var headers = _provider.CreateHeaders(Headers);
+        var headers = _provider.CreateHeaders();
         if (call.Headers != null)
         {
             foreach (var header in call.Headers)
@@ -77,8 +68,6 @@ public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRera
         }
 
         var response = await _provider.PostJsonAsync(_provider.RerankUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
-        LastResponseBody = response.Body;
-        LastResponseHeaders = response.Headers;
         using var parsed = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var root = parsed.RootElement;
         var ranking = new List<Operations.RerankModelRank>();

@@ -39,9 +39,6 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
     /// <summary>When set, sent as <c>expires_after[seconds]</c> with anchor <c>created_at</c>.</summary>
     public int? ExpiresAfterSeconds { get; set; }
 
-    /// <summary>Headers for the next upload.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
     /// <summary>Provider id.</summary>
     public string Provider => "deepseek.files";
 
@@ -87,7 +84,7 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
             form.Add(new StringContent(seconds.ToString(CultureInfo.InvariantCulture)), "expires_after[seconds]");
         }
 
-        var headers = _provider.CreateHeaders(Headers);
+        var headers = _provider.CreateHeaders();
         if (callHeaders != null)
         {
             foreach (var header in callHeaders)

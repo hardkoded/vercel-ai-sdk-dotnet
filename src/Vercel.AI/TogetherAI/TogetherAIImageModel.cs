@@ -21,7 +21,7 @@ public sealed class TogetherAIImageModel : IImageModel
     private readonly TogetherAIProvider _provider;
     private readonly Func<DateTimeOffset>? _clock;
 
-    /// <summary>Creates an image model. <paramref name="clock"/> sets <see cref="LastResponseTimestamp"/> and defaults to UTC now.</summary>
+    /// <summary>Creates an image model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
     public TogetherAIImageModel(TogetherAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -38,35 +38,11 @@ public sealed class TogetherAIImageModel : IImageModel
     /// <summary>Together accepts one image per call.</summary>
     public int MaxImagesPerCall => 1;
 
-    /// <summary>Random seed. Omitted for non-diffusion models.</summary>
-    public int? Seed { get; set; }
-
-    /// <summary>Provider-specific fields merged into the body.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
-
-    /// <summary>Headers for this call.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Reference images. Only the first is sent, as <c>image_url</c>.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
-
-    /// <summary>When set, the call fails. Together does not accept masks.</summary>
-    public bool Mask { get; set; }
-
-    /// <summary>Warnings from the most recent call.</summary>
-    public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
-    /// <summary>Time the most recent call started.</summary>
-    public DateTimeOffset? LastResponseTimestamp { get; private set; }
-
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        if (Mask)
+        if (options.Mask != null)
         {
             throw new AiSdkException(
                 "Together AI does not support mask-based image editing. Use FLUX Kontext models (e.g., black-forest-labs/FLUX.1-kontext-pro) with a reference image and descriptive prompt instead.");
@@ -80,12 +56,12 @@ public sealed class TogetherAIImageModel : IImageModel
         }
 
         var nonDiffusion = ModelId == NonDiffusionModelId;
-        if (nonDiffusion && Seed != null)
+        if (nonDiffusion && options.Seed != null)
         {
             warnings.Add(new CallWarning("unsupported", "The " + ModelId + " model does not support the `seed` option."));
         }
 
-        if (Files != null && Files.Count > 1)
+        if (options.Files != null && options.Files.Count > 1)
         {
             warnings.Add(new CallWarning("other", "Together AI only supports a single input image. Additional images are ignored."));
         }
@@ -96,9 +72,9 @@ public sealed class TogetherAIImageModel : IImageModel
             ["prompt"] = options.Prompt,
             ["response_format"] = "base64",
         };
-        if (Seed != null && !nonDiffusion)
+        if (options.Seed != null && !nonDiffusion)
         {
-            body["seed"] = Seed.Value;
+            body["seed"] = options.Seed.Value;
         }
 
         if (options.Count > 1)
@@ -113,12 +89,12 @@ public sealed class TogetherAIImageModel : IImageModel
             body["height"] = size.Value.Height;
         }
 
-        if (Files != null && Files.Count > 0)
+        if (options.Files != null && options.Files.Count > 0)
         {
-            body["image_url"] = ImageUrl(Files[0]);
+            body["image_url"] = ImageUrl(options.Files[0]);
         }
 
-        OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
+        OpenAICompatibleImages.MergeOptions(body, Provider, options.ProviderOptions, warnings);
         if (nonDiffusion)
         {
             foreach (var name in DiffusionOptions)
@@ -127,11 +103,8 @@ public sealed class TogetherAIImageModel : IImageModel
             }
         }
 
-        var response = await _provider.PostJsonAsync(_provider.ImagesUri(), body.ToJsonString(), _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
-        LastWarnings = warnings;
-        LastResponseHeaders = response.Headers;
-        LastResponseTimestamp = timestamp;
-        return ReadImages(response.Body);
+        var response = await _provider.PostJsonAsync(_provider.ImagesUri(), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
     }
 
     private static string ImageUrl(OpenAICompatibleImageFile file)
@@ -161,7 +134,7 @@ public sealed class TogetherAIImageModel : IImageModel
         return (width, height);
     }
 
-    private static ImageGenerationResult ReadImages(string? json)
+    private static ImageGenerationResult ReadImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo response)
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var images = new List<GeneratedImage>();
@@ -179,6 +152,6 @@ public sealed class TogetherAIImageModel : IImageModel
             }
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, warnings, response);
     }
 }

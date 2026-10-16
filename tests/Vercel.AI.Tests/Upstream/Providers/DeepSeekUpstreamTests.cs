@@ -193,8 +193,7 @@ public sealed class DeepSeekUpstreamTests
     {
         var capture = Ok("file_1", "photo.png");
         var store = Store(capture);
-        store.Headers = new Dictionary<string, string?> { ["X-Custom"] = "yes" };
-        await store.UploadFileAsync("photo.png", Png, "image/png", CancellationToken.None);
+        await store.UploadFileAsync(Call(Png, "image/png", "photo.png", new Dictionary<string, string> { ["X-Custom"] = "yes" }), CancellationToken.None);
         Assert.Equal("Bearer secret", capture.Requests[0].Headers["Authorization"]);
         Assert.Equal("yes", capture.Requests[0].Headers["X-Custom"]);
     }

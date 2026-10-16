@@ -269,22 +269,30 @@ public sealed class GoogleVertexMaasProvider
     public string BaseUrl { get; }
 
     /// <summary>True after <see cref="LanguageModel"/> has created the inner provider.</summary>
-    public bool ClientCreated { get; private set; }
+    public bool ClientCreated => Volatile.Read(ref _client) != null;
 
     private HttpMessageHandler? Handler { get; }
+
+    private readonly object _clientGate = new();
 
     private OpenAICompatibleProvider? _client;
 
     /// <summary>Returns a chat model and caches the inner provider.</summary>
     public ILanguageModel LanguageModel(string modelId)
     {
-        ClientCreated = true;
-        _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
+        return Client().LanguageModel(modelId);
+    }
+
+    private OpenAICompatibleProvider Client()
+    {
+        lock (_clientGate)
         {
-            BaseUrl = BaseUrl,
-            ProviderName = "vertex.maas",
-        }, _options, Handler);
-        return _client.LanguageModel(modelId);
+            return _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
+            {
+                BaseUrl = BaseUrl,
+                ProviderName = "vertex.maas",
+            }, _options, Handler);
+        }
     }
 
     /// <summary>Sets Llama 4 <c>max_tokens</c> when the caller did not.</summary>
@@ -331,25 +339,33 @@ public sealed class GoogleVertexXaiProvider
     public string BaseUrl { get; }
 
     /// <summary>True after the inner provider has been created.</summary>
-    public bool ClientCreated { get; private set; }
+    public bool ClientCreated => Volatile.Read(ref _client) != null;
 
     private HttpMessageHandler? Handler { get; }
+
+    private readonly object _clientGate = new();
 
     private OpenAICompatibleProvider? _client;
 
     /// <summary>Returns a chat model.</summary>
     public ILanguageModel LanguageModel(string modelId)
     {
-        ClientCreated = true;
-        _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
+        return Client().LanguageModel(modelId);
+    }
+
+    private OpenAICompatibleProvider Client()
+    {
+        lock (_clientGate)
         {
-            BaseUrl = BaseUrl,
-            ProviderName = "googleVertex.xai",
-            IncludeUsage = true,
-            SupportsStructuredOutputs = true,
-            TransformRequestBody = (body, _) => TransformBody(body),
-        }, _options, Handler);
-        return _client.LanguageModel(modelId);
+            return _client ??= new GoogleVertexOpenAICompatibleProvider(new OpenAICompatibleOptions
+            {
+                BaseUrl = BaseUrl,
+                ProviderName = "googleVertex.xai",
+                IncludeUsage = true,
+                SupportsStructuredOutputs = true,
+                TransformRequestBody = (body, _) => TransformBody(body),
+            }, _options, Handler);
+        }
     }
 
     /// <summary>Removes <c>reasoning_effort</c>. Vertex Grok does not accept it.</summary>
