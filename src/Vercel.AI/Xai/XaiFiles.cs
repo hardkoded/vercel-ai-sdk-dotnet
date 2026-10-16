@@ -465,10 +465,10 @@ public sealed class XaiFiles : IFileStore
             {
                 foreach (var part in parts)
                 {
-                    WriteAscii(stream, "--" + boundary + "\r\nContent-Disposition: form-data; name=\"" + part.Name + "\"");
+                    WriteAscii(stream, "--" + boundary + "\r\nContent-Disposition: form-data; name=" + MultipartForm.Quote(part.Name));
                     if (part.FileName != null)
                     {
-                        WriteAscii(stream, "; filename=\"" + part.FileName + "\"");
+                        WriteAscii(stream, "; filename=" + MultipartForm.Quote(part.FileName));
                     }
 
                     WriteAscii(stream, "\r\n");

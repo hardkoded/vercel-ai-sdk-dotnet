@@ -205,7 +205,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "REVAI_API_KEY";
@@ -317,7 +317,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                         var transcript = await ProviderExchange.SendAsync(
                             _provider._httpClient,
                             HttpMethod.Get,
-                            ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + jobId + "/transcript"),
+                            ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + Uri.EscapeDataString(jobId) + "/transcript"),
                             null,
                             headers,
                             cancellationToken).ConfigureAwait(false);
@@ -353,7 +353,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                 var statusResponse = await ProviderExchange.SendAsync(
                     _provider._httpClient,
                     HttpMethod.Get,
-                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + jobId),
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + Uri.EscapeDataString(jobId)),
                     null,
                     headers,
                     cancellationToken).ConfigureAwait(false);

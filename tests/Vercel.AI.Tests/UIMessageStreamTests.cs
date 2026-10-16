@@ -173,6 +173,37 @@ public sealed class UIMessageStreamTests
     }
 
     [Fact]
+    public async Task ShouldStopTheInFlightSourceReadBeforeDisposingTheSourceWhenTheConsumerStops()
+    {
+        var state = new IteratorState();
+        var enumerator = UIMessageStreamResult.CreateSseStreamWithKeepAlive(BlockedIterator(state), 1).GetAsyncEnumerator();
+        Assert.Equal(": stream-open\n\n", await ReadChunk(enumerator));
+        Assert.Equal(": keep-alive\n\n", await ReadChunk(enumerator));
+
+        await enumerator.DisposeAsync();
+
+        Assert.True(state.Finished);
+    }
+
+    private sealed class IteratorState
+    {
+        public bool Finished { get; set; }
+    }
+
+    private static async IAsyncEnumerable<string> BlockedIterator(IteratorState state, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            yield return "never";
+        }
+        finally
+        {
+            state.Finished = true;
+        }
+    }
+
+    [Fact]
     public async Task ShouldResetTheKeepAliveTimerAfterSourceActivity()
     {
         var source = new GatedSource();

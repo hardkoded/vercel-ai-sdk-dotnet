@@ -183,7 +183,7 @@ public sealed class ProdiaLanguageModel : ILanguageModel
         var data = file.Data;
         if (data == null)
         {
-            var response = await ProviderExchange.DownloadAsync(_provider.Options, file.Url!, cancellationToken).ConfigureAwait(false);
+            var response = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, file.Url!, null, Download.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
             data = response.Bytes;
         }
 

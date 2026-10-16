@@ -5,7 +5,9 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -33,6 +35,11 @@ internal sealed class ProviderExchangeResult
 /// <summary>Sends one provider request and keeps the response headers.</summary>
 internal static class ProviderExchange
 {
+    private const long MaxErrorBodyBytes = 1024 * 1024;
+    private const int MaxRedirects = 10;
+
+    private static readonly Lazy<HttpClient> NoRedirectClient = new Lazy<HttpClient>(() => new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }));
+
     /// <summary>Sends <paramref name="content"/> and returns the body when the status is successful.</summary>
     public static async Task<ProviderExchangeResult> SendAsync(
         HttpClient httpClient,
@@ -46,12 +53,21 @@ internal static class ProviderExchange
         {
             Apply(request, headers);
             request.Content = content;
-            var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response;
+            try
+            {
+                response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new ApiUserAbortException(exception, cancellationToken);
+            }
+
             try
             {
                 var bytes = response.Content == null
                     ? Array.Empty<byte>()
-                    : await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                    : await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
                 var body = Encoding.UTF8.GetString(bytes);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -68,63 +84,84 @@ internal static class ProviderExchange
     }
 
     /// <summary>
-    /// Downloads a URL taken from a response body. Each redirect hop is validated before it is requested.
-    /// Without <c>DownloadHttpClient</c> the request goes through <see cref="Util.Download"/>.
+    /// Gets a URL that came from response text. Redirects are followed here, one hop at a time. A hop off <paramref name="trustedOrigin"/>
+    /// must pass <paramref name="validateUrl"/> before it is requested, and gets no <paramref name="trustedHeaders"/>.
+    /// Hops off the trusted origin use <paramref name="downloadClient"/> (null uses <paramref name="httpClient"/>); it should not follow redirects.
+    /// When a client follows one anyway, the final URL is checked too. The body is read in chunks and stops at the download size limit.
     /// </summary>
-    public static async Task<ProviderExchangeResult> DownloadAsync(Vercel.AI.OpenAICompatible.OpenAICompatibleOptions options, string url, CancellationToken cancellationToken)
+    public static async Task<ProviderExchangeResult> GetResponseUrlAsync(
+        HttpClient httpClient,
+        string url,
+        string? trustedOrigin,
+        Action<string> validateUrl,
+        IReadOnlyDictionary<string, string?>? trustedHeaders,
+        CancellationToken cancellationToken,
+        HttpClient? downloadClient = null)
     {
-        var client = options.DownloadHttpClient;
-        Util.DownloadFetch? fetch = client is null ? null : (hopUrl, request) => FetchWithAsync(client, hopUrl, request);
-        var result = await Util.Download.GetAsync(new Uri(url), null, cancellationToken, fetch).ConfigureAwait(false);
-        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        if (result.MediaType is not null)
+        var current = new Uri(url);
+        for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
         {
-            headers["Content-Type"] = result.MediaType;
+            var trusted = trustedOrigin != null && ProviderValues.IsSameOrigin(current.AbsoluteUri, trustedOrigin);
+            if (!trusted)
+            {
+                validateUrl(current.AbsoluteUri);
+            }
+
+            using (var request = new HttpRequestMessage(HttpMethod.Get, current))
+            {
+                Apply(request, trusted ? trustedHeaders : null);
+                var client = trusted ? httpClient : downloadClient ?? httpClient;
+                using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
+                {
+                    var location = response.Headers.Location;
+                    if (IsRedirect(response.StatusCode) && location != null)
+                    {
+                        current = new Uri(current, location);
+                        continue;
+                    }
+
+                    var finalUri = response.RequestMessage?.RequestUri;
+                    if (finalUri != null
+                        && finalUri != current
+                        && (trustedOrigin == null || !ProviderValues.IsSameOrigin(finalUri.AbsoluteUri, trustedOrigin)))
+                    {
+                        validateUrl(finalUri.AbsoluteUri);
+                    }
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var errorBody = string.Empty;
+                        try
+                        {
+                            errorBody = Encoding.UTF8.GetString(await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, MaxErrorBodyBytes, cancellationToken).ConfigureAwait(false));
+                        }
+                        catch (DownloadError)
+                        {
+                            // An oversized error body is dropped. The status is the error.
+                        }
+
+                        throw ProviderHttp.MapStatus((int)response.StatusCode, errorBody);
+                    }
+
+                    var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken).ConfigureAwait(false);
+                    return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, Copy(response));
+                }
+            }
         }
 
-        return new ProviderExchangeResult(Encoding.UTF8.GetString(result.Data), result.Data, headers);
+        throw new DownloadError(url, "Too many redirects (max " + MaxRedirects + ")");
     }
 
-    private static async Task<Util.DownloadResponse> FetchWithAsync(HttpClient client, string url, Util.DownloadRequest request)
+    /// <summary>Client for hops off the provider origin: it never follows a redirect, so the loop can check each hop first.</summary>
+    public static HttpClient DownloadClient(Vercel.AI.OpenAICompatible.OpenAICompatibleOptions options)
     {
-        using (var message = new HttpRequestMessage(HttpMethod.Get, url))
-        {
-            var userAgent = request.Headers.Get("user-agent");
-            if (!string.IsNullOrEmpty(userAgent))
-            {
-                message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
-            }
+        return options.DownloadHttpClient ?? NoRedirectClient.Value;
+    }
 
-            using (var response = await client.SendAsync(message, request.AbortSignal).ConfigureAwait(false))
-            {
-                // A client that follows redirects already requested the target. Still refuse its body.
-                var finalUri = response.RequestMessage?.RequestUri;
-                if (finalUri is not null && finalUri.AbsoluteUri != new Uri(url).AbsoluteUri)
-                {
-                    Util.Download.ValidateDownloadUrl(finalUri.AbsoluteUri);
-                }
-
-                var headers = new Util.HeaderCollection();
-                foreach (var header in response.Headers)
-                {
-                    foreach (var value in header.Value)
-                    {
-                        headers.Add(header.Key, value);
-                    }
-                }
-
-                foreach (var header in response.Content.Headers)
-                {
-                    foreach (var value in header.Value)
-                    {
-                        headers.Add(header.Key, value);
-                    }
-                }
-
-                var body = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                return new Util.DownloadResponse((int)response.StatusCode, response.ReasonPhrase, headers, body);
-            }
-        }
+    private static bool IsRedirect(System.Net.HttpStatusCode status)
+    {
+        var code = (int)status;
+        return code == 301 || code == 302 || code == 303 || code == 307 || code == 308;
     }
 
     /// <summary>JSON content whose media type is <c>application/json</c> without a charset parameter.</summary>

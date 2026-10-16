@@ -393,10 +393,19 @@ public sealed class OpenAIRealtimeModel : IRealtimeModel
     private async Task<IRealtimeSession> ConnectCoreAsync(CancellationToken cancellationToken)
     {
         var socket = new System.Net.WebSockets.ClientWebSocket();
-        var headers = _provider.CreateOpenAIHeaders();
-        socket.Options.SetRequestHeader("Authorization", headers["Authorization"] ?? string.Empty);
-        socket.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
-        await socket.ConnectAsync(BuildUri(), cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var headers = _provider.CreateOpenAIHeaders();
+            socket.Options.SetRequestHeader("Authorization", headers["Authorization"] ?? string.Empty);
+            socket.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
+            await socket.ConnectAsync(BuildUri(), cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
+
         return new WebSocketRealtimeSession(socket);
     }
 #endif

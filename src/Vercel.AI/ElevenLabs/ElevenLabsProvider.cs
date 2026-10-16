@@ -248,7 +248,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "ELEVENLABS_API_KEY";
@@ -500,11 +500,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
 
             form.Add(file, "file", "audio." + ProviderValues.MediaTypeToExtension(audio.MediaType));
-            form.Add(new StringContent("true"), "diarize");
+            form.Add(new StringContent((elevenlabs != null ? FormValue(Child(elevenlabs, "diarize")) : null) ?? "true"), "diarize");
             if (elevenlabs != null)
             {
                 // Option defaults apply once the elevenlabs object is present, as in the upstream schema.
-                form.Add(new StringContent(FormValue(Child(elevenlabs, "diarize")) ?? "false"), "diarize");
                 AddField(form, "language_code", FormValue(Child(elevenlabs, "languageCode")));
                 AddField(form, "tag_audio_events", FormValue(Child(elevenlabs, "tagAudioEvents")) ?? "true");
                 AddField(form, "num_speakers", FormValue(Child(elevenlabs, "numSpeakers")));

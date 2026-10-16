@@ -210,7 +210,7 @@ public class OpenAICompatibleProvider : ProviderBase
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json ?? string.Empty, Encoding.UTF8, "application/json"),
         };
@@ -220,9 +220,9 @@ public class OpenAICompatibleProvider : ProviderBase
         {
             response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {
@@ -231,8 +231,16 @@ public class OpenAICompatibleProvider : ProviderBase
 
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            response.Dispose();
+            string body;
+            try
+            {
+                body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                response.Dispose();
+            }
+
             var error = ProviderHttp.MapStatus((int)response.StatusCode, body);
             var message = Options.SelectErrorMessage?.Invoke(body) ?? OpenAICompatibleChat.ReadErrorMessage(body);
             if (!string.IsNullOrEmpty(message) && message != error.Message)
@@ -253,7 +261,7 @@ public class OpenAICompatibleProvider : ProviderBase
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
         ApplyHeaders(request, headers);
         return await ReadTextAsync(request, cancellationToken).ConfigureAwait(false);
     }
@@ -276,7 +284,7 @@ public class OpenAICompatibleProvider : ProviderBase
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json ?? string.Empty, Encoding.UTF8, "application/json"),
         };
@@ -286,25 +294,37 @@ public class OpenAICompatibleProvider : ProviderBase
 
     private async Task<OpenAICompatibleBinaryResponse> ReadBinaryAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        using var ownedRequest = request;
         HttpResponseMessage response;
         try
         {
             response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {
             throw new ApiConnectionException("The connection to the provider failed.", exception);
         }
 
-        var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-        var copied = CopyHeaders(response);
-        var status = (int)response.StatusCode;
-        var success = response.IsSuccessStatusCode;
-        response.Dispose();
+        byte[] bytes;
+        IReadOnlyDictionary<string, string> copied;
+        int status;
+        bool success;
+        try
+        {
+            bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            copied = CopyHeaders(response);
+            status = (int)response.StatusCode;
+            success = response.IsSuccessStatusCode;
+        }
+        finally
+        {
+            response.Dispose();
+        }
+
         if (!success)
         {
             var body = Encoding.UTF8.GetString(bytes);
@@ -323,25 +343,37 @@ public class OpenAICompatibleProvider : ProviderBase
 
     private async Task<ProviderTextResponse> ReadTextAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        using var ownedRequest = request;
         HttpResponseMessage response;
         try
         {
             response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            throw new ApiUserAbortException();
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
         catch (HttpRequestException exception)
         {
             throw new ApiConnectionException("The connection to the provider failed.", exception);
         }
 
-        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        var copied = CopyHeaders(response);
-        var status = (int)response.StatusCode;
-        var success = response.IsSuccessStatusCode;
-        response.Dispose();
+        string body;
+        IReadOnlyDictionary<string, string> copied;
+        int status;
+        bool success;
+        try
+        {
+            body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            copied = CopyHeaders(response);
+            status = (int)response.StatusCode;
+            success = response.IsSuccessStatusCode;
+        }
+        finally
+        {
+            response.Dispose();
+        }
+
         if (!success)
         {
             var error = ProviderHttp.MapStatus(status, body);

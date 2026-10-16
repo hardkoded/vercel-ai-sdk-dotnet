@@ -25,10 +25,10 @@ public static class SseParser
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var line = await reader.ReadLineAsync().ConfigureAwait(false);
+            var line = await CancellableReads.ReadLineAsync(reader, cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
-                if (data.Length > 0)
+                if (data.Length > 0 && data.ToString() != "[DONE]")
                 {
                     yield return data.ToString();
                 }
@@ -55,7 +55,7 @@ public static class SseParser
 
             if (StartsWithOrdinal(line, "data:"))
             {
-                var value = line.Substring(5).TrimStart();
+                var value = line.Length > 5 && line[5] == ' ' ? line.Substring(6) : line.Substring(5);
                 if (data.Length > 0)
                 {
                     data.Append('\n');

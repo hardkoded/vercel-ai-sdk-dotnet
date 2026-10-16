@@ -257,34 +257,42 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var current = first;
         var delay = TimeSpan.FromSeconds(1);
         var deadline = DateTime.UtcNow + TimeSpan.FromMinutes(30);
-        while (true)
+        try
         {
-            var status = current.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-            if (IsTerminal(status))
+            while (true)
             {
-                return current;
-            }
+                var status = current.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+                if (IsTerminal(status))
+                {
+                    return current;
+                }
 
-            var id = current.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new InvalidOperationException("The Interactions response has no id to poll.");
-            }
+                var id = current.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
+                if (string.IsNullOrEmpty(id))
+                {
+                    throw new InvalidOperationException("The Interactions response has no id to poll.");
+                }
 
-            if (DateTime.UtcNow + delay > deadline)
-            {
-                throw new TimeoutException("Polling the Interactions response for '" + id + "' timed out.");
-            }
+                if (DateTime.UtcNow + delay > deadline)
+                {
+                    throw new TimeoutException("Polling the Interactions response for '" + id + "' timed out.");
+                }
 
+                current.Dispose();
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 10));
+                current = await _provider.Http.SendJsonAsync(
+                    HttpMethod.Get,
+                    ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id!)),
+                    null,
+                    headers,
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
             current.Dispose();
-            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-            delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 10));
-            current = await _provider.Http.SendJsonAsync(
-                HttpMethod.Get,
-                ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id!)),
-                null,
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            throw;
         }
     }
 

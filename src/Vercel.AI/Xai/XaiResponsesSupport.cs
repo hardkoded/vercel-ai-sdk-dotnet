@@ -13,8 +13,9 @@ internal static class XaiReasoningEffort
 {
     // grok-4.20 reasoning and non-reasoning models, including dated variants, reject the effort parameter for every value.
     private static readonly Regex ModelsWithoutReasoningEffort = new Regex(
-        @"^grok-4\.20(-\d{4})?-(non-)?reasoning$",
-        RegexOptions.CultureInvariant);
+        @"^grok-4\.20(-[0-9]{4})?-(non-)?reasoning\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100));
 
     /// <summary>False for models that reject the reasoning effort parameter. Maps to <c>supportsReasoningEffort</c>.</summary>
     public static bool Supports(string modelId)

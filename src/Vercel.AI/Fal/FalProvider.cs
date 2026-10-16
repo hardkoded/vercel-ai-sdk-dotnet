@@ -50,7 +50,7 @@ public sealed class FalProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "FAL_API_KEY";
@@ -84,12 +84,7 @@ public sealed class FalProvider : OpenAICompatibleProvider
     /// <summary>Downloads a generated file. A URL outside <paramref name="trustedOrigin"/> must pass download validation.</summary>
     internal async Task<byte[]> DownloadAsync(string url, string trustedOrigin, CancellationToken cancellationToken)
     {
-        if (!ProviderValues.IsSameOrigin(url, trustedOrigin))
-        {
-            return (await ProviderExchange.DownloadAsync(Options, url, cancellationToken).ConfigureAwait(false)).Bytes;
-        }
-
-        var response = await ProviderExchange.SendAsync(_httpClient, HttpMethod.Get, new Uri(url), null, null, cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange.GetResponseUrlAsync(_httpClient, url, trustedOrigin, DownloadUrls.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(Options)).ConfigureAwait(false);
         return response.Bytes;
     }
 

@@ -49,7 +49,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : ProviderValues.ValidateBaseUrl(options.BaseUrl) ?? DefaultBaseUrl;
         options.ApiKeyEnvironmentVariable = "REPLICATE_API_TOKEN";
@@ -75,14 +75,8 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     /// </summary>
     internal Task<ProviderExchangeResult> GetResponseUrlAsync(string url, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
-        var sameOrigin = ProviderValues.IsSameOrigin(url, Options.BaseUrl);
-        if (!sameOrigin)
-        {
-            return ProviderExchange.DownloadAsync(Options, url, cancellationToken);
-        }
-
-        var outgoing = sameOrigin && headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
-        return ProviderExchange.SendAsync(_httpClient, HttpMethod.Get, new Uri(url), null, outgoing, cancellationToken);
+        var outgoing = headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
+        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken, ProviderExchange.DownloadClient(Options));
     }
 }
 

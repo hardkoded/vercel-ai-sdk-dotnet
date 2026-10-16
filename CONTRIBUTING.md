@@ -17,7 +17,7 @@ This is an independent reimplementation of the public Vercel AI SDK. Do not copy
 | `embed` / `embedMany` | `EmbedAsync` / `EmbedManyAsync` |
 | `AbortSignal` | `CancellationToken` |
 | `camelCase` options | PascalCase properties |
-| thrown errors | `AiSdkException` and the `ApiException` subclasses |
+| thrown errors | `AiSdkException` and the `ApiException` subclasses. A caller cancel is an `OperationCanceledException` (`ApiUserAbortException` derives from it) |
 | `tool()` | `Tool.Function` |
 | `stopWhen: isStepCount(1)` | `StopWhen.IsStepCount(1)` |
 | `wrapLanguageModel` | `WrapLanguageModel` |

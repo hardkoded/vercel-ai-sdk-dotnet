@@ -72,7 +72,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         var requestJson = body.ToJsonString();
         var sse = await _provider.PostSseAsync(ResponsesUri(), requestJson, _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
-            StreamAsync(sse, warnings, cancellationToken),
+            new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(sse, warnings, cancellationToken), sse),
             LanguageModelStreamRequest.FromJson(requestJson),
             new LanguageModelStreamResponse(sse.Headers));
     }

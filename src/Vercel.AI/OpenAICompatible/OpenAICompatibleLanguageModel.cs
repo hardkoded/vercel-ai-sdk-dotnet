@@ -181,16 +181,24 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
         var sse = await _provider.PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
-        var stream = StreamAsync(options, prepared, sse, cancellationToken);
-        if (prepared.JsonResponseToolName != null)
+        try
         {
-            stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
-        }
+            var stream = StreamAsync(options, prepared, sse, cancellationToken);
+            if (prepared.JsonResponseToolName != null)
+            {
+                stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
+            }
 
-        return new LanguageModelStreamResult(
-            stream,
-            LanguageModelStreamRequest.FromJson(prepared.Json),
-            new LanguageModelStreamResponse(sse.Headers));
+            return new LanguageModelStreamResult(
+                new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, sse),
+                LanguageModelStreamRequest.FromJson(prepared.Json),
+                new LanguageModelStreamResponse(sse.Headers));
+        }
+        catch
+        {
+            sse.Dispose();
+            throw;
+        }
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(

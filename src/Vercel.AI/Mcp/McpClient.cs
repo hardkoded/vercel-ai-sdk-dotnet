@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Mcp;
 
@@ -239,7 +240,7 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         {
             using (var document = JsonDocument.Parse(request.ToJsonString()))
             {
-                McpNdjson.Write(_input, document.RootElement);
+                await McpNdjson.WriteAsync(_input, document.RootElement, cancellationToken).ConfigureAwait(false);
             }
 
             await _input.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -357,8 +358,32 @@ public sealed class HttpMcpTransport : IMcpTransport
         };
         message.Headers.Accept.ParseAdd("application/json");
         message.Headers.Accept.ParseAdd("text/event-stream");
-        using var response = await _httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var response = await _httpClient.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        var isEventStream = response.IsSuccessStatusCode
+            && response.Content.Headers.ContentType?.MediaType?.IndexOf("event-stream", StringComparison.OrdinalIgnoreCase) >= 0;
+        if (isEventStream)
+        {
+            // Servers may keep the stream open and send notifications first, so read events until the response for this id.
+            using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+            {
+                using var sseEvent = JsonDocument.Parse(data);
+                var root = sseEvent.RootElement;
+                if (root.ValueKind == JsonValueKind.Object
+                    && root.TryGetProperty("id", out var responseId)
+                    && responseId.ValueKind == JsonValueKind.Number
+                    && responseId.TryGetInt32(out var responseNumber)
+                    && responseNumber == id
+                    && !root.TryGetProperty("method", out _))
+                {
+                    return StdioMcpTransport.Unwrap(root);
+                }
+            }
+
+            throw new MCPClientError("MCP HTTP stream ended without a response.", url: _endpoint.ToString());
+        }
+
+        var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw new MCPClientError(
@@ -368,25 +393,7 @@ public sealed class HttpMcpTransport : IMcpTransport
                 responseBody: body);
         }
 
-        var json = ExtractJson(body, response.Content.Headers.ContentType?.MediaType);
-        using var document = JsonDocument.Parse(json);
+        using var document = JsonDocument.Parse(body);
         return StdioMcpTransport.Unwrap(document.RootElement);
-    }
-
-    private static string ExtractJson(string body, string? mediaType)
-    {
-        if (mediaType != null && mediaType.ToUpperInvariant().Contains("EVENT-STREAM"))
-        {
-            foreach (var line in body.Split('\n'))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.Length >= 5 && string.CompareOrdinal(trimmed, 0, "data:", 0, 5) == 0)
-                {
-                    return trimmed.Substring(5).Trim();
-                }
-            }
-        }
-
-        return body;
     }
 }

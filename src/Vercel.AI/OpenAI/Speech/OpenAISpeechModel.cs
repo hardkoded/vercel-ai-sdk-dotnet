@@ -184,18 +184,16 @@ public sealed class OpenAISpeechModel : ISpeechModel
     public async Task<OpenAISpeechResult> GenerateAsync(OpenAISpeechCall call, CancellationToken cancellationToken)
     {
         var prepared = Prepare(ModelId, call);
-        using var request = new HttpRequestMessage(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "audio/speech"));
-        request.Content = new StringContent(prepared.Body.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
-        OpenAIJson.ApplyHeaders(request, _provider.CreateOpenAIHeaders(call.Headers));
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw ProviderHttp.MapStatus((int)response.StatusCode, System.Text.Encoding.UTF8.GetString(bytes));
-        }
+        var response = await _provider.Http.SendBinaryAsync(
+            HttpMethod.Post,
+            ApiKeys.Combine(_provider.Options.BaseUrl, "audio/speech"),
+            new StringContent(prepared.Body.ToJsonString(), System.Text.Encoding.UTF8, "application/json"),
+            _provider.CreateOpenAIHeaders(call.Headers),
+            cancellationToken).ConfigureAwait(false);
+        var bytes = response.Body;
 
         var format = prepared.Body["response_format"]?.GetValue<string>() ?? "mp3";
-        return new OpenAISpeechResult(bytes, MediaType(format), prepared.Warnings, ModelId, OpenAIClock.Now(_clock), OpenAIJson.CopyHeaders(response));
+        return new OpenAISpeechResult(bytes, MediaType(format), prepared.Warnings, ModelId, OpenAIClock.Now(_clock), response.Headers);
     }
 
     /// <summary>Clock used when a caller records a response timestamp.</summary>

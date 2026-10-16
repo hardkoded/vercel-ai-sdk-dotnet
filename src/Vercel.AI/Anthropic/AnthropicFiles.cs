@@ -41,13 +41,10 @@ public sealed class AnthropicFiles : IFileStore
     /// <summary>Uploads a file and returns the parsed Files API body.</summary>
     public async Task<AnthropicUploadedFile> UploadAsync(string fileName, byte[] data, string mediaType, bool? downloadable, CancellationToken cancellationToken)
     {
-        var form = new MultipartFormDataContent();
+        using var form = new MultipartFormDataContent();
         var content = new ByteArrayContent(data ?? Array.Empty<byte>());
         content.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType);
-        var name = string.IsNullOrEmpty(fileName) ? "blob" : fileName;
-        form.Add(content, "file", name);
-        content.Headers.Remove("Content-Disposition");
-        content.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=file; filename=\"" + name + "\"");
+        MultipartForm.AddFile(form, content, "file", string.IsNullOrEmpty(fileName) ? "blob" : fileName);
         if (downloadable != null)
         {
             form.Add(new StringContent(downloadable.Value ? "true" : "false"), "downloadable");

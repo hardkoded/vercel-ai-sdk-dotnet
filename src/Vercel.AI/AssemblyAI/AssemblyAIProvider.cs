@@ -213,7 +213,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "ASSEMBLYAI_API_KEY";
@@ -350,7 +350,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
         private async Task<ProviderExchangeResult> WaitForCompletionAsync(string transcriptId, IReadOnlyDictionary<string, string?> headers, AssemblyAIOptions? options, CancellationToken cancellationToken)
         {
-            var url = ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript/" + transcriptId);
+            var url = ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript/" + Uri.EscapeDataString(transcriptId));
             while (true)
             {
                 var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Get, url, null, headers, cancellationToken).ConfigureAwait(false);

@@ -25,31 +25,59 @@ public sealed class AbortSignal
 {
     private readonly List<Action> _handlers = new List<Action>();
 
+    internal int HandlerCount
+    {
+        get
+        {
+            lock (_handlers)
+            {
+                return _handlers.Count;
+            }
+        }
+    }
+
     /// <summary>Whether <see cref="Abort"/> has been called.</summary>
     public bool Aborted { get; private set; }
 
     /// <summary>Reason passed to the abort that won.</summary>
     public object? Reason { get; private set; }
 
-    /// <summary>Aborts unless this signal is already aborted.</summary>
+    /// <summary>
+    /// Aborts unless this signal is already aborted. Every handler runs, even when an earlier one throws.
+    /// The first handler exception is rethrown after the last handler ran.
+    /// </summary>
     public void Abort(object? reason)
     {
-        if (Aborted)
-        {
-            return;
-        }
-
-        Aborted = true;
-        Reason = reason;
         Action[] handlers;
         lock (_handlers)
         {
+            if (Aborted)
+            {
+                return;
+            }
+
+            Aborted = true;
+            Reason = reason;
             handlers = _handlers.ToArray();
+            _handlers.Clear();
         }
 
+        Exception? first = null;
         for (var i = 0; i < handlers.Length; i++)
         {
-            handlers[i]();
+            try
+            {
+                handlers[i]();
+            }
+            catch (Exception exception)
+            {
+                first ??= exception;
+            }
+        }
+
+        if (first != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(first).Throw();
         }
     }
 
@@ -171,6 +199,18 @@ public static class MergeAbortSignals
         }
 
         var controller = new AbortController();
+        var registrations = new List<KeyValuePair<AbortSignal, Action>>();
+
+        // Once the merged signal aborts, stop listening to the sources so a long-lived source does not keep one handler per merge.
+        void Detach()
+        {
+            for (var i = 0; i < registrations.Count; i++)
+            {
+                registrations[i].Key.RemoveAbortHandler(registrations[i].Value);
+            }
+        }
+
+        controller.Signal.AddAbortHandler(Detach);
         for (var i = 0; i < valid.Count; i++)
         {
             var signal = valid[i];
@@ -184,13 +224,15 @@ public static class MergeAbortSignals
                 return controller.Signal;
             }
 
-            signal.AddAbortHandler(delegate
+            Action handler = delegate
             {
                 if (!controller.Signal.Aborted)
                 {
                     controller.Abort(signal.Reason);
                 }
-            });
+            };
+            registrations.Add(new KeyValuePair<AbortSignal, Action>(signal, handler));
+            signal.AddAbortHandler(handler);
         }
 
         return controller.Signal;

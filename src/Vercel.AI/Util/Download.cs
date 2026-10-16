@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Util;
 
@@ -88,6 +89,9 @@ public sealed class DownloadRequest
 
     /// <summary><c>manual</c> or <c>follow</c>.</summary>
     public string Redirect { get; }
+
+    /// <summary>Largest body the fetch may read. The default fetch stops reading past it.</summary>
+    public long MaxBytes { get; set; } = Download.DefaultMaxBytes;
 }
 
 /// <summary>One HTTP response seen by <see cref="Download"/>.</summary>
@@ -265,10 +269,10 @@ public static class Download
             if (urlText.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
             {
                 ValidateDownloadUrl(urlText);
-                return DecodeDataUrl(urlText);
+                return DecodeDataUrl(urlText, maxBytes);
             }
 
-            var response = await FetchWithValidatedRedirectsAsync(urlText, abortSignal, fetch).ConfigureAwait(false);
+            var response = await FetchWithValidatedRedirectsAsync(urlText, maxBytes, abortSignal, fetch).ConfigureAwait(false);
             if (!response.Ok)
             {
                 response.Cancel();
@@ -289,7 +293,7 @@ public static class Download
         }
     }
 
-    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, CancellationToken abortSignal, DownloadFetch? fetch)
+    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, CancellationToken abortSignal, DownloadFetch? fetch)
     {
         var currentUrl = url;
         HeaderCollection headers = new HeaderCollection();
@@ -298,7 +302,7 @@ public static class Download
         {
             ValidateDownloadUrl(currentUrl);
             var currentFetch = fetch ?? Fetch ?? DefaultFetchAsync;
-            var response = await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "manual")).ConfigureAwait(false);
+            var response = await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "manual") { MaxBytes = maxBytes }).ConfigureAwait(false);
             if (string.Equals(response.Type, "opaqueredirect", StringComparison.Ordinal))
             {
                 if (!IsBrowser)
@@ -306,7 +310,7 @@ public static class Download
                     throw new DownloadError(url, "Redirect from " + currentUrl + " could not be validated and was blocked");
                 }
 
-                return await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "follow")).ConfigureAwait(false);
+                return await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "follow") { MaxBytes = maxBytes }).ConfigureAwait(false);
             }
 
             var location = response.Headers.Get("location");
@@ -357,7 +361,7 @@ public static class Download
         return body;
     }
 
-    private static DownloadResult DecodeDataUrl(string urlText)
+    private static DownloadResult DecodeDataUrl(string urlText, long maxBytes)
     {
         var comma = urlText.IndexOf(',');
         var header = comma < 0 ? urlText : urlText.Substring(0, comma);
@@ -371,6 +375,11 @@ public static class Download
         else
         {
             data = Encoding.UTF8.GetBytes(Uri.UnescapeDataString(payload));
+        }
+
+        if (data.LongLength > maxBytes)
+        {
+            throw new DownloadError(urlText, "Download of " + urlText + " exceeded maximum size of " + maxBytes + " bytes.");
         }
 
         return new DownloadResult(data, mediaType);
@@ -407,7 +416,7 @@ public static class Download
                 message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
             }
 
-            using (var response = await client.SendAsync(message, request.AbortSignal).ConfigureAwait(false))
+            using (var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, request.AbortSignal).ConfigureAwait(false))
             {
                 var headers = new HeaderCollection();
                 foreach (var header in response.Headers)
@@ -426,13 +435,16 @@ public static class Download
                     }
                 }
 
-                var body = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                // Only a successful body is read. It is read in chunks, so the size limit stops the transfer.
+                var body = response.IsSuccessStatusCode
+                    ? await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, request.MaxBytes, request.AbortSignal).ConfigureAwait(false)
+                    : null;
                 return new DownloadResponse((int)response.StatusCode, response.ReasonPhrase, headers, body);
             }
         }
     }
 
-    private static bool IsIPv4(string hostname)
+    internal static bool IsIPv4(string hostname)
     {
         var parts = hostname.Split('.');
         if (parts.Length != 4)
@@ -452,7 +464,7 @@ public static class Download
         return true;
     }
 
-    private static bool IsPrivateIPv4(string ip)
+    internal static bool IsPrivateIPv4(string ip)
     {
         var parts = ip.Split('.');
         var a = int.Parse(parts[0], CultureInfo.InvariantCulture);
@@ -506,7 +518,7 @@ public static class Download
         return a >= 224;
     }
 
-    private static bool IsPrivateIPv6(string ip)
+    internal static bool IsPrivateIPv6(string ip)
     {
         var groups = ParseIPv6(ip);
         if (groups == null)

@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
 namespace Vercel.AI;
@@ -104,7 +105,23 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
         _closing = tagName.Closing;
         _separator = separator;
         _startWithReasoning = startWithReasoning;
-        _reasoning = new Regex(Regex.Escape(_opening) + "(.*?)" + Regex.Escape(_closing), RegexOptions.Singleline);
+        _reasoning = new Regex(Regex.Escape(_opening) + "(.*?)" + Regex.Escape(_closing), RegexOptions.Singleline, SafeRegex.LargeInputTimeout);
+    }
+
+    // A match timeout counts as no reasoning block, so the text passes through unchanged.
+    private bool TryMatchReasoning(string text, out MatchCollection matches)
+    {
+        try
+        {
+            matches = _reasoning.Matches(text);
+            _ = matches.Count;
+            return true;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            matches = null!;
+            return false;
+        }
     }
 
     /// <inheritdoc />
@@ -124,8 +141,7 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
             }
 
             var text = _startWithReasoning ? _opening + generatedText.Text : generatedText.Text;
-            var matches = _reasoning.Matches(text);
-            if (matches.Count == 0)
+            if (!TryMatchReasoning(text, out var matches) || matches.Count == 0)
             {
                 content.Add(part);
                 continue;
@@ -345,7 +361,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
     internal static string StripFence(string text)
     {
         var trimmed = text.Trim();
-        if (!trimmed.StartsWith("```"))
+        if (!trimmed.StartsWith("```", StringComparison.Ordinal))
         {
             return trimmed;
         }
@@ -357,7 +373,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         }
 
         var body = trimmed.Substring(firstLine + 1);
-        if (body.EndsWith("```"))
+        if (body.EndsWith("```", StringComparison.Ordinal))
         {
             body = body.Substring(0, body.Length - 3);
         }

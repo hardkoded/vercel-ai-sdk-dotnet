@@ -333,8 +333,8 @@ public static class CallToolResults
 /// <summary>Reads <c>x-mcp-header</c> annotations and encodes <c>Mcp-Param-*</c> headers.</summary>
 public static class McpToolHeaders
 {
-    private static readonly Regex HttpToken = new Regex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Base64Sentinel = new Regex("^=\\?base64\\?.*\\?=$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex HttpToken = new Regex("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Base64Sentinel = new Regex("^=\\?base64\\?.*\\?=\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>One header bound to a tool argument path.</summary>
     public sealed class Binding
@@ -581,6 +581,18 @@ public static class McpNdjson
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(Serialize(message));
         output.Write(bytes, 0, bytes.Length);
+    }
+
+    /// <summary>Writes one newline-delimited message without blocking a thread when the pipe is full.</summary>
+    public static async Task WriteAsync(Stream? output, JsonElement message, CancellationToken cancellationToken = default)
+    {
+        if (output is null)
+        {
+            throw new MCPClientError("StdioClientTransport not connected");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(Serialize(message));
+        await output.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Buffer that reassembles newline-delimited messages split across chunks.</summary>

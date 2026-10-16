@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -101,7 +102,24 @@ internal static class Generation
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
 
+                var started = Stopwatch.StartNew();
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                started.Stop();
+                if (options.OnLanguageModelCallEnd != null)
+                {
+                    await options.OnLanguageModelCallEnd(
+                        new LanguageModelCallEndEvent(
+                            current.Provider,
+                            generated.ResponseModelId ?? current.ModelId,
+                            generated.FinishReason,
+                            generated.Usage,
+                            generated.Content,
+                            generated.ResponseId,
+                            generated.ProviderMetadata,
+                            started.Elapsed),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
                 steps.Add(step);
@@ -166,6 +184,7 @@ internal static class Generation
             abort.Registration = cancellationToken.Register(() => abort.Fire(new OperationCanceledException(cancellationToken), textSource, finishSource, usageSource, stepsSource));
         }
 
+        buffer.OnConsumerStop = abort.Stop;
         _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, textSource, finishSource, usageSource, stepsSource));
         return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task);
     }
@@ -383,6 +402,17 @@ internal static class Generation
         catch (Exception exception)
         {
             abort.TryFinish();
+            if (abort.Stopped)
+            {
+                // The consumer stopped reading. Nobody waits for the stream, so there is nothing to report.
+                textSource.TrySetCanceled();
+                finishSource.TrySetCanceled();
+                usageSource.TrySetCanceled();
+                stepsSource.TrySetCanceled();
+                buffer.Complete();
+                return;
+            }
+
             if (abort.Error is { } abortError)
             {
                 await FinishAbortAsync(options, buffer, steps, abortError).ConfigureAwait(false);
@@ -410,6 +440,7 @@ internal static class Generation
         {
             abort.Registration.Dispose();
             abort.SignalCleanup?.Invoke();
+            abort.Dispose();
         }
     }
 
@@ -821,7 +852,7 @@ internal static class Generation
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
             return new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
             return new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
@@ -907,6 +938,34 @@ internal sealed class StreamAbort
 
     public Exception? Error => _outcome as Exception;
 
+    public bool Stopped { get; private set; }
+
+    public void Dispose() => _cancellation.Dispose();
+
+    // The consumer stopped reading. Cancels the provider call and the tool loop, like upstream cancelling the source reader.
+    public void Stop()
+    {
+        if (Interlocked.CompareExchange(ref _outcome, new OperationCanceledException("The stream consumer stopped reading."), null) != null)
+        {
+            return;
+        }
+
+        Stopped = true;
+        try
+        {
+            _cancellation.Cancel();
+        }
+        catch (Exception)
+        {
+            // A token callback threw. The call is stopped either way.
+        }
+        finally
+        {
+            Volatile.Read(ref _disposal)?.Abandon();
+            _signal.TrySetResult(true);
+        }
+    }
+
     public bool TryFinish() => Interlocked.CompareExchange(ref _outcome, Done, null) == null;
 
     public EnumeratorDisposal Track(IAsyncDisposable enumerator)
@@ -937,9 +996,9 @@ internal sealed class StreamAbort
         {
             _cancellation.Cancel();
         }
-        catch (AggregateException)
+        catch (Exception exception) when (exception is AggregateException or ObjectDisposedException)
         {
-            // A token callback threw. The call is aborted either way.
+            // A token callback threw, or the call already ended. The call is aborted either way.
         }
         finally
         {
@@ -1003,6 +1062,10 @@ internal sealed class PartBuffer
     private readonly SemaphoreSlim _signal = new(0);
     private Exception? _error;
     private bool _completed;
+    private int _readers;
+
+    // Called when the last active reader stops before the stream ends.
+    public Action? OnConsumerStop { get; set; }
 
     public void Add(TextStreamPart part)
     {
@@ -1038,43 +1101,56 @@ internal sealed class PartBuffer
     public async IAsyncEnumerable<TextStreamPart> Read([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var index = 0;
-        while (true)
+        var finished = false;
+        Interlocked.Increment(ref _readers);
+        try
         {
-            TextStreamPart? part = null;
-            var ready = false;
-            Exception? error = null;
-            var done = false;
-            lock (_gate)
+            while (true)
             {
-                if (index < _parts.Count)
+                TextStreamPart? part = null;
+                var ready = false;
+                Exception? error = null;
+                var done = false;
+                lock (_gate)
                 {
-                    part = _parts[index++];
-                    ready = true;
-                }
-                else if (_completed)
-                {
-                    done = true;
-                    error = _error;
-                }
-            }
-
-            if (ready)
-            {
-                yield return part!;
-                continue;
-            }
-
-            if (done)
-            {
-                if (error != null)
-                {
-                    throw error;
+                    if (index < _parts.Count)
+                    {
+                        part = _parts[index++];
+                        ready = true;
+                    }
+                    else if (_completed)
+                    {
+                        done = true;
+                        error = _error;
+                    }
                 }
 
-                yield break;
-            }
+                if (ready)
+                {
+                    yield return part!;
+                    continue;
+                }
 
-            await _signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+                if (done)
+                {
+                    finished = true;
+                    if (error != null)
+                    {
+                        throw error;
+                    }
+
+                    yield break;
+                }
+
+                await _signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            if (Interlocked.Decrement(ref _readers) == 0 && !finished)
+            {
+                OnConsumerStop?.Invoke();
+            }
         }
     }
 }

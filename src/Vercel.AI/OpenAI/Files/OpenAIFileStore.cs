@@ -161,19 +161,13 @@ public sealed class OpenAIFileStore : IFileStore
     public async Task<(byte[] Data, string? MediaType)> DownloadAsync(OpenAIFileReference file, CancellationToken cancellationToken)
     {
         var id = RequireId(file);
-        using var request = new HttpRequestMessage(
+        var response = await _provider.Http.SendBinaryAsync(
             HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + OpenAIJson.EncodePathSegment(id) + "/content"));
-        OpenAIJson.ApplyHeaders(request, _provider.CreateOpenAIHeaders());
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var bytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw ProviderHttp.MapStatus((int)response.StatusCode, Encoding.UTF8.GetString(bytes));
-        }
-
-        var mediaType = response.Content.Headers.ContentType?.MediaType;
-        return (bytes, mediaType);
+            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + OpenAIJson.EncodePathSegment(id) + "/content"),
+            null,
+            _provider.CreateOpenAIHeaders(),
+            cancellationToken).ConfigureAwait(false);
+        return (response.Body, response.MediaType);
     }
 
     /// <summary>Deletes a file.</summary>

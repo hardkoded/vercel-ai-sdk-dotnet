@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.GenerateText;
 
@@ -94,87 +95,19 @@ public static class DownloadUrls
             throw new DownloadException(text, "URL with hostname " + hostname + " is not allowed");
         }
 
-        if (IsIPv4(hostname) && IsPrivateIPv4(hostname))
+        if (hostname.StartsWith("[", StringComparison.Ordinal) && hostname.EndsWith("]", StringComparison.Ordinal))
+        {
+            if (Download.IsPrivateIPv6(hostname.Substring(1, hostname.Length - 2)))
+            {
+                throw new DownloadException(text, "URL with IPv6 address " + hostname + " is not allowed");
+            }
+
+            return;
+        }
+
+        if (Download.IsIPv4(hostname) && Download.IsPrivateIPv4(hostname))
         {
             throw new DownloadException(text, "URL with IP address " + hostname + " is not allowed");
         }
-    }
-
-    private static bool IsIPv4(string hostname)
-    {
-        var parts = hostname.Split('.');
-        if (parts.Length != 4)
-        {
-            return false;
-        }
-
-        foreach (var part in parts)
-        {
-            if (part.Length == 0 || (part.Length > 1 && part[0] == '0'))
-            {
-                return false;
-            }
-
-            if (!int.TryParse(part, out var number) || number < 0 || number > 255)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static bool IsPrivateIPv4(string ip)
-    {
-        var parts = ip.Split('.');
-        var a = int.Parse(parts[0]);
-        var b = int.Parse(parts[1]);
-        var c = int.Parse(parts[2]);
-        if (a == 0 || a == 10 || a == 127)
-        {
-            return true;
-        }
-
-        if (a == 100 && b >= 64 && b <= 127)
-        {
-            return true;
-        }
-
-        if (a == 169 && b == 254)
-        {
-            return true;
-        }
-
-        if (a == 172 && b >= 16 && b <= 31)
-        {
-            return true;
-        }
-
-        if (a == 192 && b == 0 && (c == 0 || c == 2))
-        {
-            return true;
-        }
-
-        if (a == 192 && b == 168)
-        {
-            return true;
-        }
-
-        if (a == 198 && (b == 18 || b == 19))
-        {
-            return true;
-        }
-
-        if (a == 198 && b == 51 && c == 100)
-        {
-            return true;
-        }
-
-        if (a == 203 && b == 0 && c == 113)
-        {
-            return true;
-        }
-
-        return a >= 224;
     }
 }

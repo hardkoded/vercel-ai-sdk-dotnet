@@ -127,12 +127,12 @@ public sealed class AnthropicModelCapabilities
             return Known(32000, true, false, false, false, false, false, false, false);
         }
 
-        if (Regex.IsMatch(modelId, "claude-sonnet-4(?:-|@)", RegexOptions.CultureInvariant))
+        if (ClaudeSonnet4.IsMatch(modelId))
         {
             return Known(64000, false, false, false, false, false, false, false, false);
         }
 
-        if (Regex.IsMatch(modelId, "claude-opus-4(?:-|@)", RegexOptions.CultureInvariant))
+        if (ClaudeOpus4.IsMatch(modelId))
         {
             return Known(32000, false, false, false, false, false, false, false, false);
         }
@@ -142,7 +142,7 @@ public sealed class AnthropicModelCapabilities
             return Known(4096, false, false, false, false, false, false, false, false);
         }
 
-        if (Regex.IsMatch(modelId, "claude-(?:instant(?:-|$)|v?2(?=$|[-.:])|3(?=$|[-.]))", RegexOptions.CultureInvariant))
+        if (LegacyClaude.IsMatch(modelId))
         {
             return Unknown(4096, false, false, false, false, false, false, false, false);
         }
@@ -154,6 +154,11 @@ public sealed class AnthropicModelCapabilities
 
         return Unknown(4096, false, false, false, false, false, false, false, false);
     }
+
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
+    private static readonly Regex ClaudeSonnet4 = new Regex("claude-sonnet-4(?:-|@)", RegexOptions.CultureInvariant, RegexTimeout);
+    private static readonly Regex ClaudeOpus4 = new Regex("claude-opus-4(?:-|@)", RegexOptions.CultureInvariant, RegexTimeout);
+    private static readonly Regex LegacyClaude = new Regex("claude-(?:instant(?:-|\\z)|v?2(?=\\z|[-.:])|3(?=\\z|[-.]))", RegexOptions.CultureInvariant, RegexTimeout);
 
     private static AnthropicModelCapabilities Known(
         int max,
