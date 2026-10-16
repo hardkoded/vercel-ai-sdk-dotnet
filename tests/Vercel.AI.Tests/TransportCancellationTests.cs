@@ -9,6 +9,7 @@ using Vercel.AI.Gateway;
 using Vercel.AI.Mcp;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
@@ -100,6 +101,58 @@ public sealed class TransportCancellationTests
         source.CancelAfter(50);
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => call.WaitAsync(Limit));
+    }
+
+    [Fact]
+    public void ApiUserAbortException_is_an_OperationCanceledException_and_not_an_AiSdkException()
+    {
+        Exception error = new ApiUserAbortException();
+
+        Assert.IsAssignableFrom<OperationCanceledException>(error);
+        Assert.False(error is AiSdkException);
+    }
+
+    [Fact]
+    public async Task ProviderExchange_surfaces_a_caller_cancel_as_ApiUserAbortException()
+    {
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+
+        var error = await Record.ExceptionAsync(() => ProviderExchange.SendAsync(new HttpClient(handler), HttpMethod.Get, new Uri("https://example.test/x"), null, null, source.Token));
+
+        Assert.IsType<ApiUserAbortException>(error);
+    }
+
+    [Fact]
+    public async Task ProviderExchange_surfaces_a_cancel_during_the_body_read_as_ApiUserAbortException()
+    {
+        using var source = new CancellationTokenSource();
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream(string.Empty)) });
+        var call = ProviderExchange.SendAsync(new HttpClient(handler), HttpMethod.Get, new Uri("https://example.test/x"), null, null, source.Token);
+        source.CancelAfter(50);
+
+        var error = await Record.ExceptionAsync(() => call.WaitAsync(Limit));
+
+        Assert.IsType<ApiUserAbortException>(error);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ProviderHttp_surfaces_a_cancel_during_the_retry_delay_as_ApiUserAbortException(bool connectionFailure)
+    {
+        using var source = new CancellationTokenSource();
+        var handler = new DelegateHandler(_ => connectionFailure
+            ? throw new HttpRequestException("down")
+            : new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        var http = new ProviderHttp(new HttpClient(handler), new RetryPolicy { MaxRetries = 2, InitialDelay = TimeSpan.FromMinutes(1), MaxDelay = TimeSpan.FromMinutes(1), Jitter = 0 });
+        var call = http.SendJsonAsync(HttpMethod.Post, new Uri("https://example.test/x"), "{}", null, source.Token);
+        source.CancelAfter(100);
+
+        var error = await Record.ExceptionAsync(() => call.WaitAsync(Limit));
+
+        Assert.IsType<ApiUserAbortException>(error);
     }
 
     [Fact]

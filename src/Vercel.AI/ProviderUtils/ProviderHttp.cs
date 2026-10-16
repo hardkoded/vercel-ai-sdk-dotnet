@@ -292,11 +292,11 @@ public sealed class ProviderHttp
 
                 var retryAfter = ReadRetryAfter(response);
                 response.Dispose();
-                await Task.Delay(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, retryAfter), cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
             {
-                throw new ApiUserAbortException();
+                throw new ApiUserAbortException(exception, cancellationToken);
             }
             catch (OperationCanceledException exception)
             {
@@ -306,7 +306,7 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
             catch (HttpRequestException exception)
             {
@@ -316,8 +316,20 @@ public sealed class ProviderHttp
                     throw (Exception)last;
                 }
 
-                await Task.Delay(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
+                await DelayAsync(_retry.GetDelay(attempt, null), cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    private static async Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new ApiUserAbortException(exception, cancellationToken);
         }
     }
 
