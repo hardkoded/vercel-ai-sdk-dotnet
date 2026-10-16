@@ -32,6 +32,8 @@ public class OpenAICompatibleProvider : ProviderBase
     /// <summary>HTTP helper used by the models.</summary>
     public ProviderHttp Http { get; }
 
+    internal HttpClient SharedHttpClient => _httpClient;
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
@@ -811,10 +813,12 @@ public sealed class OpenAICompatibleImageModel : IImageModel
 
         var headers = _provider.CreateHeaders(options.Headers);
         ProviderTextResponse response;
+        Uri requestUri;
         if (options.Files != null && options.Files.Count > 0)
         {
+            requestUri = _provider.ImagesEditsUri();
             response = await _provider.PostMultipartAsync(
-                _provider.ImagesEditsUri(),
+                requestUri,
                 BuildEditForm(options),
                 headers,
                 cancellationToken).ConfigureAwait(false);
@@ -822,14 +826,15 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         else
         {
             var body = BuildGenerationBody(options, warnings);
+            requestUri = _provider.ImagesUri();
             response = await _provider.PostJsonAsync(
-                _provider.ImagesUri(),
+                requestUri,
                 body.ToJsonString(),
                 headers,
                 cancellationToken).ConfigureAwait(false);
         }
 
-        return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
+        return await ReadImagesAsync(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers), requestUri, headers, cancellationToken).ConfigureAwait(false);
     }
 
     private JsonObject BuildGenerationBody(ImageCallOptions options, List<CallWarning> warnings)
@@ -875,7 +880,13 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         return form;
     }
 
-    private static ImageGenerationResult ReadImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo responseInfo)
+    private async Task<ImageGenerationResult> ReadImagesAsync(
+        string? json,
+        IReadOnlyList<CallWarning> warnings,
+        ImageResponseInfo responseInfo,
+        Uri requestUri,
+        IReadOnlyDictionary<string, string?> headers,
+        CancellationToken cancellationToken)
     {
         using var document = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var root = document.RootElement;
@@ -888,12 +899,12 @@ public sealed class OpenAICompatibleImageModel : IImageModel
                 OpenAICompatibleImages.ReadInt(usage, "total_tokens"));
         }
 
-        var images = new List<GeneratedImage>();
+        var items = new List<(byte[]? Bytes, string? Url)>();
         if (root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in data.EnumerateArray())
             {
-                string? url = item.TryGetProperty("url", out var urlElement) && urlElement.ValueKind == JsonValueKind.String
+                var url = item.TryGetProperty("url", out var urlElement) && urlElement.ValueKind == JsonValueKind.String
                     ? urlElement.GetString()
                     : null;
                 byte[]? bytes = null;
@@ -902,9 +913,35 @@ public sealed class OpenAICompatibleImageModel : IImageModel
                     bytes = Convert.FromBase64String(b64.GetString() ?? string.Empty);
                 }
 
-                images.Add(new GeneratedImage(bytes != null ? "image/png" : "image/*", bytes, url));
+                if (bytes == null && url == null)
+                {
+                    throw new Vercel.AI.Operations.InvalidResponseDataException(item.GetRawText(), "Expected b64_json or url in the image response");
+                }
+
+                items.Add((bytes, url));
             }
         }
+
+        // Base64 wins over a URL. A URL-only image is downloaded, and the images keep their order.
+        var origin = requestUri.AbsoluteUri;
+        var images = await Task.WhenAll(items.Select(async item =>
+        {
+            if (item.Bytes != null)
+            {
+                return new GeneratedImage("image/png", item.Bytes, item.Url);
+            }
+
+            var download = await ProviderExchange.GetResponseUrlAsync(
+                _provider.SharedHttpClient,
+                item.Url!,
+                origin,
+                Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
+                headers,
+                cancellationToken,
+                ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+            var mediaType = MediaTypes.DetectMediaType(download.Bytes, "image") ?? "image/png";
+            return new GeneratedImage(mediaType, download.Bytes, item.Url);
+        })).ConfigureAwait(false);
 
         return new ImageGenerationResult(images, warnings, responseInfo, imageUsage);
     }
