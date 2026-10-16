@@ -242,6 +242,11 @@ public sealed class UIMessageStreamResult : IResult
                         ["toolCallId"] = inputStart.Id,
                         ["toolName"] = inputStart.ToolName,
                     };
+                    if (inputStart.InputEncoding is ToolInputEncoding inputEncoding)
+                    {
+                        inputStartChunk["inputEncoding"] = inputEncoding == ToolInputEncoding.Text ? "text" : "json";
+                    }
+
                     if (inputStart.ProviderExecuted is bool providerExecuted)
                     {
                         if (providerExecuted)
