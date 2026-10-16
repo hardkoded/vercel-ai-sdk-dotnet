@@ -793,7 +793,7 @@ public sealed class ToolCallPart : TextStreamPart
 public sealed class ToolInputStartPart : TextStreamPart
 {
     /// <summary>Creates a tool-input-start part.</summary>
-    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic)
+    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic, ToolInputEncoding? inputEncoding = null)
         : base("tool-input-start")
     {
         Id = id;
@@ -801,6 +801,7 @@ public sealed class ToolInputStartPart : TextStreamPart
         ProviderMetadata = providerMetadata;
         ProviderExecuted = providerExecuted;
         Dynamic = dynamic;
+        InputEncoding = inputEncoding;
     }
 
     /// <summary>Tool call id.</summary>
@@ -817,6 +818,9 @@ public sealed class ToolInputStartPart : TextStreamPart
 
     /// <summary>True for a tool the caller did not declare.</summary>
     public bool Dynamic { get; }
+
+    /// <summary>Encoding of the input deltas. Defaults to JSON when <see langword="null"/>.</summary>
+    public ToolInputEncoding? InputEncoding { get; }
 }
 
 /// <summary>A streamed tool-input fragment.</summary>

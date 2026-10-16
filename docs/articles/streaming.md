@@ -92,6 +92,8 @@ In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to th
 
 `ToUIMessageStreamResult` and `UIMessageStreamResult` mask error text by default, as upstream does. An `error` chunk and an application-executed tool error send `An error occurred.` to the client. Pass `onError` to choose the text. The function receives the error message. Errors of provider-executed tools are not masked.
 
+`ToolInputStartPart.InputEncoding` (from `ToolInputStartStreamPart.InputEncoding`) is `ToolInputEncoding.Json` or `ToolInputEncoding.Text`. It says how to read the `tool-input-delta` parts that follow. When it is `null` or `Json`, the deltas concatenate to partial JSON. With `Text`, they concatenate to the raw string input, such as code or HTML from a custom tool. The final tool call input stays JSON-encoded either way. `UIMessageStream` writes it as the `inputEncoding` field (`"json"` or `"text"`) of the `tool-input-start` chunk and leaves the field out when it is `null`.
+
 `UIMessageStream` writes the citations of a step on its `text-end` chunk (`citations`) and still writes retrieved URL sources as `source-url`. It does not write a `source-document` chunk, so document sources stay on `StepResult.Content` and the model stream only. Document sources are not in `Sources`, which holds URL sources.
 
 Providers that do not send citations leave `Citations` null. A null value does not mean `Sources` is a complete retrieval set.

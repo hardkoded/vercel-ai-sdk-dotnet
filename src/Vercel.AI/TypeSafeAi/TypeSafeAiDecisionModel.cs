@@ -508,9 +508,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
     private sealed class StateImage
     {
-        public StateImage(int index, string reference, string mediaType, string fileName, byte[] bytes)
+        public StateImage(int index, string reference, bool insertReference, string mediaType, string fileName, byte[] bytes)
         {
             Index = index;
+            InsertReference = insertReference;
             Reference = reference;
             MediaType = mediaType;
             FileName = fileName;
@@ -520,6 +521,8 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         public int Index { get; }
 
         public string Reference { get; }
+
+        public bool InsertReference { get; }
 
         public string MediaType { get; }
 
@@ -555,41 +558,89 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
     {
         images = new List<StateImage>();
         assets = new JsonObject();
-        var values = new List<object?>();
-        var lines = new List<string>();
-        var index = 0;
-        foreach (var item in (IEnumerable<object?>)state!)
+        var items = ((IEnumerable<object?>)state!).Select(item => (IDictionary<string, object?>)item!).ToList();
+        var stateStrings = new List<string>();
+        foreach (var part in items)
         {
-            var part = (IDictionary<string, object?>)item!;
+            switch ((string)part["type"]!)
+            {
+                case "text":
+                    stateStrings.Add((string)part["text"]!);
+                    break;
+                case "file":
+                    break;
+                default:
+                    JsonStrings(ToNode(part["value"]), stateStrings);
+                    break;
+            }
+        }
+
+        // Each entry is a text value (string) or a JSON value (JsonValue wrapper); null marks a skipped image.
+        var stateParts = new List<(bool IsText, object? Value)>();
+        var values = new List<object?>();
+        for (var index = 0; index < items.Count; index++)
+        {
+            var part = items[index];
             switch ((string)part["type"]!)
             {
                 case "file":
-                    var image = ImagePart(part, index, assets);
+                    var image = ImagePart(part, index, assets, stateStrings);
                     images.Add(image);
-                    lines.Add(image.Reference);
+                    if (image.InsertReference)
+                    {
+                        stateParts.Add((true, image.Reference));
+                    }
+
                     break;
                 case "text":
                     values.Add(part["text"]);
-                    lines.Add((string)part["text"]!);
+                    stateParts.Add((true, part["text"]));
                     break;
                 default:
                     values.Add(part["value"]);
-                    lines.Add(ToNode(part["value"])?.ToJsonString() ?? "null");
+                    stateParts.Add((false, part["value"]));
                     break;
             }
-
-            index++;
         }
 
         if (images.Count > 0)
         {
-            return string.Join("\n", lines);
+            if (stateParts.Count == 1 && !stateParts[0].IsText)
+            {
+                return ToNode(stateParts[0].Value);
+            }
+
+            return string.Join("\n", stateParts.Select(part => part.IsText ? (string)part.Value! : ToNode(part.Value)?.ToJsonString() ?? "null"));
         }
 
         return ToNode(values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values);
     }
 
-    private static StateImage ImagePart(IDictionary<string, object?> part, int index, JsonObject assets)
+    private static void JsonStrings(JsonNode? node, List<string> strings)
+    {
+        switch (node)
+        {
+            case JsonValue value when value.TryGetValue<string>(out var text):
+                strings.Add(text);
+                break;
+            case JsonArray array:
+                foreach (var item in array)
+                {
+                    JsonStrings(item, strings);
+                }
+
+                break;
+            case JsonObject obj:
+                foreach (var pair in obj)
+                {
+                    JsonStrings(pair.Value, strings);
+                }
+
+                break;
+        }
+    }
+
+    private static StateImage ImagePart(IDictionary<string, object?> part, int index, JsonObject assets, List<string> stateStrings)
     {
         var mediaType = (string)part["mediaType"]!;
         var data = part["data"] as IDictionary<string, object?>;
@@ -617,18 +668,41 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         string? reference = null;
+        bool? insertOption = null;
         if (part.TryGetValue("providerOptions", out var providerOptions)
             && ToNode(providerOptions) is JsonObject partOptions
-            && partOptions["typesafe"] is JsonObject typesafe
-            && typesafe.TryGetPropertyValue("reference", out var node))
+            && partOptions["typesafe"] is JsonObject typesafe)
         {
-            if (node is not JsonValue value || !value.TryGetValue<string>(out reference) || string.IsNullOrWhiteSpace(reference))
+            if (typesafe.TryGetPropertyValue("reference", out var node))
             {
-                throw new InvalidArgumentError("providerOptions.typesafe.reference", node?.ToJsonString(), "TypeSafe image reference must be a non-empty string.");
+                if (node is not JsonValue value || !value.TryGetValue<string>(out reference) || string.IsNullOrWhiteSpace(reference))
+                {
+                    throw new InvalidArgumentError("providerOptions.typesafe.reference", node?.ToJsonString(), "TypeSafe image reference must be a non-empty string.");
+                }
+            }
+
+            if (typesafe.TryGetPropertyValue("insertReference", out var insertNode) && insertNode is not null)
+            {
+                if (insertNode is not JsonValue insertValue || !insertValue.TryGetValue<bool>(out var insert))
+                {
+                    throw new InvalidArgumentError("providerOptions.typesafe.insertReference", insertNode.ToJsonString(), "TypeSafe image insertReference must be a boolean.");
+                }
+
+                insertOption = insert;
             }
         }
 
+        if (insertOption == false && reference == null)
+        {
+            throw new InvalidArgumentError(
+                "providerOptions.typesafe.reference",
+                null,
+                "TypeSafe images with insertReference: false need an explicit reference.");
+        }
+
+        // Default to random IDs to avoid accidental text matches.
         reference ??= JsonValues.GenerateId("image_");
+        var insertReference = insertOption ?? !stateStrings.Any(text => text.Contains(reference));
         if (assets.ContainsKey(reference))
         {
             throw new InvalidArgumentError("providerOptions.typesafe.reference", reference, "Duplicate TypeSafe image reference: " + reference);
@@ -642,7 +716,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         };
         var fileName = part.TryGetValue("filename", out var name) && name is string text && text.Length > 0 ? text : "image-" + index + "." + extension;
         assets[reference] = new JsonObject { ["type"] = "image", ["part"] = "image-" + index };
-        return new StateImage(index, reference, mediaType, fileName, bytes);
+        return new StateImage(index, reference, insertReference, mediaType, fileName, bytes);
     }
 
     private static JsonNode? ToNode(object? value)

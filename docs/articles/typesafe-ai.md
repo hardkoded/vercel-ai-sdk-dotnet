@@ -81,9 +81,33 @@ With at least one image the request is `multipart/form-data` and carries the `Ty
 - The `request` part is `application/json` (file name `request.json`) with `{ model, state, assets, questions }`.
 - Each image is a part named `image-<state index>`, with the media type as content type and `filename` (or `image-<index>.png` / `image-<index>.jpeg`) as file name.
 - `assets` maps each image reference to `{ type: "image", part: "image-<index>" }`.
-- `state` is one string: the parts joined with a newline, text as text, JSON as its JSON text, and each image as its reference.
+- `state` is the parts joined with a newline, text as text, JSON as its JSON text, and each image as its reference, unless the state already contains the reference (see below). When the only remaining part is a JSON part, `state` stays that JSON value.
 
 The reference is the asset id. Set it with `providerOptions.typesafe.reference` on the file part, and use it in question instructions and criteria (`Does [photo] show a cat?`). Without one, a new id is generated for every call. A reference that is empty, whitespace, or not a string throws `InvalidArgumentError`, and so does a duplicate (parameter `providerOptions.typesafe.reference`). Text-only requests stay `application/json`, with no `assets` and no image header.
+
+If the state already contains the reference (in a text part, or in a string value of a JSON part, not in an object key), the model sends the state as written, so JSON state stays an object. Otherwise it inserts the reference at the file's position in the state.
+
+TypeSafe sends another copy of the image for every occurrence of its reference in state, instructions, or criteria. To ask several questions about one image, put it in the state once and refer to it by path in backticks (`Does `photo` show a cat?`) rather than repeating the reference in each question.
+
+Set `providerOptions.typesafe.insertReference` to `false` to send an image only where you reference it in a question's instructions or criteria, for example a known picture to compare against. This requires an explicit `reference`, otherwise `InvalidArgumentError` is thrown (parameter `providerOptions.typesafe.reference`). Set it to `true` to insert the reference even when the state already contains it. Any other value throws `InvalidArgumentError` (parameter `providerOptions.typesafe.insertReference`).
+
+```csharp
+static Dictionary<string, object?> Image(string path, Dictionary<string, object?> typesafe) => new()
+{
+    ["type"] = "file",
+    ["mediaType"] = "image/jpeg",
+    ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = File.ReadAllBytes(path) },
+    ["providerOptions"] = new Dictionary<string, object?> { ["typesafe"] = typesafe },
+};
+
+var state = new List<object?>
+{
+    new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["photo"] = "[found-dog]" } },
+    Image("found-dog.jpg", new() { ["reference"] = "[found-dog]" }),
+    Image("lost-dog-poster.jpg", new() { ["reference"] = "[poster]", ["insertReference"] = false }),
+};
+// Question: "Is the dog in `photo` the same dog as in [poster]?"
+```
 
 ## Errors
 

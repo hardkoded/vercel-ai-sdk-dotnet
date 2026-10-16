@@ -316,7 +316,8 @@ internal static class Generation
                                     inputStart.ToolName,
                                     inputStart.ProviderMetadata,
                                     inputStart.ProviderExecuted,
-                                    inputStart.Dynamic ?? false));
+                                    inputStart.Dynamic ?? false,
+                                    inputStart.InputEncoding));
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
                                 buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));

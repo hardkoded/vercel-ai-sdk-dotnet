@@ -84,6 +84,152 @@ public sealed class ImageInputTests
         Assert.Empty(server.Calls);
     }
 
+    private static JsonObject Request(TypeSafeAiServer server)
+    {
+        return JsonNode.Parse(Assert.Single(server.Calls).Form.Single(part => part.Name == "request").Text)!.AsObject();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "keeps JSON state as an object when it already contains the reference", Coverage = UpstreamCoverage.Covered)]
+    public async Task Keeps_JSON_state_as_an_object_when_it_already_contains_the_reference()
+    {
+        var server = Server();
+        await Decide(
+            server,
+            new List<object?>
+            {
+                JsonPart(new Dictionary<string, object?> { ["photo"] = "[photo]", ["note"] = "Box arrived wet." }),
+                FilePart("image/png", "iVBORw==", reference: "[photo]", withReference: true),
+            });
+        var call = Assert.Single(server.Calls);
+        var request = Request(server);
+        Assert.Equal("[photo]", request["state"]!["photo"]!.GetValue<string>());
+        Assert.Equal("Box arrived wet.", request["state"]!["note"]!.GetValue<string>());
+        Assert.Equal(2, request["state"]!.AsObject().Count);
+        var assets = request["assets"]!.AsObject();
+        Assert.Single(assets);
+        Assert.Equal("image", assets["[photo]"]!["type"]!.GetValue<string>());
+        Assert.Equal("image-1", assets["[photo]"]!["part"]!.GetValue<string>());
+        Assert.Equal(new[] { "request", "image-1" }, call.Form.Select(part => part.Name).ToArray());
+        Assert.Equal("true", call.Headers["typesafe-danger-zone-images"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "leaves text state unchanged when it already contains the reference", Coverage = UpstreamCoverage.Covered)]
+    public async Task Leaves_text_state_unchanged_when_it_already_contains_the_reference()
+    {
+        var server = Server();
+        await Decide(
+            server,
+            new List<object?>
+            {
+                TextPart("Is [photo] damaged?"),
+                FilePart("image/jpeg", "/9j/4A==", reference: "[photo]", withReference: true),
+            });
+        var request = Request(server);
+        Assert.Equal("Is [photo] damaged?", request["state"]!.GetValue<string>());
+        Assert.Equal(new[] { "[photo]" }, request["assets"]!.AsObject().Select(pair => pair.Key).ToArray());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "finds references in nested JSON string values but not in object keys", Coverage = UpstreamCoverage.Covered)]
+    public async Task Finds_references_in_nested_JSON_string_values_but_not_in_object_keys()
+    {
+        var server = Server();
+        var value = new Dictionary<string, object?>
+        {
+            ["frames"] = new List<object?>
+            {
+                new Dictionary<string, object?> { ["seconds_ago"] = 0, ["frame"] = "Latest frame: [frame]" },
+            },
+            ["[label]"] = "A key is not a reference.",
+        };
+        await Decide(
+            server,
+            new List<object?>
+            {
+                JsonPart(value),
+                FilePart("image/png", "iVBORw==", reference: "[frame]", withReference: true),
+                FilePart("image/png", "iVBORw==", reference: "[label]", withReference: true),
+            });
+        var request = Request(server);
+        Assert.Equal(
+            "{\"frames\":[{\"seconds_ago\":0,\"frame\":\"Latest frame: [frame]\"}],\"[label]\":\"A key is not a reference.\"}\n[label]",
+            request["state"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "sends a question-only image without touching state when insertReference is false", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_a_question_only_image_without_touching_state_when_insertReference_is_false()
+    {
+        var server = Server();
+        var questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["same"] = new DecisionQuestion("boolean", "Is the dog in `photo` the dog in [poster]?"),
+        };
+        await Decide(
+            server,
+            new List<object?>
+            {
+                JsonPart(new Dictionary<string, object?> { ["photo"] = "[found]" }),
+                FilePart("image/jpeg", "/9j/4A==", reference: "[found]", withReference: true),
+                FilePart("image/jpeg", "/9j/4A==", reference: "[poster]", withReference: true, insertReference: false),
+            },
+            questions);
+        var request = Request(server);
+        Assert.Equal("[found]", request["state"]!["photo"]!.GetValue<string>());
+        Assert.Single(request["state"]!.AsObject());
+        Assert.Equal(new[] { "[found]", "[poster]" }, request["assets"]!.AsObject().Select(pair => pair.Key).ToArray());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "inserts a reference already in state when insertReference is true", Coverage = UpstreamCoverage.Covered)]
+    public async Task Inserts_a_reference_already_in_state_when_insertReference_is_true()
+    {
+        var server = Server();
+        await Decide(
+            server,
+            new List<object?>
+            {
+                TextPart("Before: [photo]"),
+                FilePart("image/png", "iVBORw==", reference: "[photo]", withReference: true, insertReference: true),
+            });
+        Assert.Equal("Before: [photo]\n[photo]", Request(server)["state"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "inserts only the references that are not already placed", Coverage = UpstreamCoverage.Covered)]
+    public async Task Inserts_only_the_references_that_are_not_already_placed()
+    {
+        var server = Server();
+        await Decide(
+            server,
+            new List<object?>
+            {
+                TextPart("Compare [before] with the new photo."),
+                FilePart("image/png", "iVBORw==", reference: "[before]", withReference: true, insertReference: false),
+                FilePart("image/png", "iVBORw==", reference: "[after]", withReference: true),
+            });
+        var request = Request(server);
+        Assert.Equal("Compare [before] with the new photo.\n[after]", request["state"]!.GetValue<string>());
+        var assets = request["assets"]!.AsObject();
+        Assert.Equal("image-1", assets["[before]"]!["part"]!.GetValue<string>());
+        Assert.Equal("image-2", assets["[after]"]!["part"]!.GetValue<string>());
+        Assert.Equal(2, assets.Count);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "rejects insertReference: false without an explicit reference before HTTP", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_insertReference_false_without_an_explicit_reference_before_HTTP()
+    {
+        var server = Server();
+        var error = await Assert.ThrowsAsync<InvalidArgumentError>(() => Decide(
+            server,
+            new List<object?> { FilePart("image/png", "iVBORw==", insertReference: false) }));
+        Assert.Equal("providerOptions.typesafe.reference", error.Parameter);
+        Assert.Empty(server.Calls);
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "rejects duplicate image references before HTTP", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_duplicate_image_references_before_HTTP()
