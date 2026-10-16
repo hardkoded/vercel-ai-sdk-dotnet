@@ -43,7 +43,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
         options.BaseUrl = options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : ProviderValues.ValidateBaseUrl(options.BaseUrl) ?? DefaultBaseUrl;
         options.ApiKeyEnvironmentVariable = "REPLICATE_API_TOKEN";

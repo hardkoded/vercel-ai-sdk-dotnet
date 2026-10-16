@@ -73,10 +73,10 @@ public class OpenAICompatibleOptions
     public string? AzureApiVersion { get; set; }
 
     /// <summary>Extra headers sent on every call. These override the API key header.</summary>
-    public Dictionary<string, string> Headers { get; } = new();
+    public Dictionary<string, string> Headers { get; private set; } = new();
 
     /// <summary>Query parameters appended to every request URL.</summary>
-    public Dictionary<string, string> QueryParameters { get; } = new();
+    public Dictionary<string, string> QueryParameters { get; private set; } = new();
 
     /// <summary>When true, streaming requests send <c>stream_options.include_usage</c>.</summary>
     public bool IncludeUsage { get; set; }
@@ -128,4 +128,16 @@ public class OpenAICompatibleOptions
 
     /// <summary>Origin for image calls when it differs from <see cref="BaseUrl"/>.</summary>
     public string? ImageBaseUrl { get; set; }
+
+    /// <summary>
+    /// Returns a copy. Providers change the copy, so the options the caller passed in are left as they were.
+    /// </summary>
+    public OpenAICompatibleOptions Copy()
+    {
+        var copy = (OpenAICompatibleOptions)MemberwiseClone();
+        copy.AdditionalApiKeyEnvironmentVariables = (string[])AdditionalApiKeyEnvironmentVariables.Clone();
+        copy.Headers = new Dictionary<string, string>(Headers);
+        copy.QueryParameters = new Dictionary<string, string>(QueryParameters);
+        return copy;
+    }
 }

@@ -34,7 +34,7 @@ public sealed class CerebrasProvider : OpenAICompatibleProvider
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options ??= new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new OpenAICompatibleOptions();
         if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
         {
             options.ProviderName = ProviderId;
