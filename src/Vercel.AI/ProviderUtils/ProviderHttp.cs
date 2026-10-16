@@ -144,6 +144,18 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
+        return (await OpenSseWithResourceAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false)).Events;
+    }
+
+    /// <summary>
+    /// Like <see cref="OpenSseAsync"/>, and also returns the response so a caller that never enumerates the events can release it.
+    /// </summary>
+    public async Task<(IAsyncEnumerable<string> Events, IDisposable Resource)> OpenSseWithResourceAsync(
+        Uri uri,
+        string jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
         var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -154,7 +166,7 @@ public sealed class ProviderHttp
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return ReadSseAsync(response, stream, cancellationToken);
+            return (ReadSseAsync(response, stream, cancellationToken), response);
         }
         catch
         {

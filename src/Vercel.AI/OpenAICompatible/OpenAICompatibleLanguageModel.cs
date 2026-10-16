@@ -192,7 +192,8 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             return new LanguageModelStreamResult(
                 new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, sse),
                 LanguageModelStreamRequest.FromJson(prepared.Json),
-                new LanguageModelStreamResponse(sse.Headers));
+                new LanguageModelStreamResponse(sse.Headers),
+                sse);
         }
         catch
         {

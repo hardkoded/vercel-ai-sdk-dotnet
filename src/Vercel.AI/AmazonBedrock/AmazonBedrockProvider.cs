@@ -198,7 +198,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             return new LanguageModelStreamResult(
                 new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(response, headers, chunks, options, warnings, usesJsonTool, usesJsonInstruction, cancellationToken), response),
                 LanguageModelStreamRequest.FromJson(requestBody),
-                new LanguageModelStreamResponse(headers));
+                new LanguageModelStreamResponse(headers),
+                response);
         }
         catch
         {

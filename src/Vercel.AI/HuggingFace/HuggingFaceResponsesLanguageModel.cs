@@ -74,7 +74,8 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         return new LanguageModelStreamResult(
             new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(sse, warnings, cancellationToken), sse),
             LanguageModelStreamRequest.FromJson(requestJson),
-            new LanguageModelStreamResponse(sse.Headers));
+            new LanguageModelStreamResponse(sse.Headers),
+            sse);
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(

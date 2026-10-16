@@ -172,7 +172,7 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
         CancellationToken cancellationToken)
     {
         var inner = await next(options, cancellationToken).ConfigureAwait(false);
-        return new LanguageModelStreamResult(Extract(inner.Stream, cancellationToken), inner.Request, inner.Response);
+        return new LanguageModelStreamResult(Extract(inner.Stream, cancellationToken), inner.Request, inner.Response, inner);
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> Extract(
