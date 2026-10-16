@@ -21,7 +21,7 @@ public sealed class LongContextTests
     [InlineData("true")]
     [InlineData("false")]
     [InlineData(null)]
-    [UpstreamTest(Prefix + "enables the header only when longContext is true", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "enables the header only when longContext is true: %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Enables_the_header_only_when_longContext_is_true(string? longContext)
     {
         var server = Server();
@@ -66,7 +66,7 @@ public sealed class LongContextTests
     [InlineData("\"true\"")]
     [InlineData("1")]
     [InlineData("null")]
-    [UpstreamTest(Prefix + "rejects invalid longContext values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects invalid longContext values: %j", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_invalid_longContext_values(string longContext)
     {
         var server = Server();

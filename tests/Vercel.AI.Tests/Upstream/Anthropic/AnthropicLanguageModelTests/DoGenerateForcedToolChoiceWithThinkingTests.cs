@@ -23,7 +23,7 @@ public sealed class DoGenerateForcedToolChoiceWithThinkingTests
     [InlineData("required", "reasoning")]
     [InlineData("tool", "providerOptions")]
     [InlineData("tool", "reasoning")]
-    [UpstreamTest(Prefix + "should fall back to auto for manual thinking set through $source", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should fall back to auto for manual thinking set through %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_fall_back_to_auto_for_manual_thinking_set_through_source(string type, string source)
     {
         var options = new LanguageModelCallOptions

@@ -25,7 +25,7 @@ public sealed class ImageInputTests
     [InlineData("__proto__")]
     [InlineData("constructor")]
     [InlineData("request")]
-    [UpstreamTest(Prefix + "uses an explicit reference in assets, state, instructions, and criteria", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "uses an explicit reference in assets, state, instructions, and criteria: %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Uses_an_explicit_reference_in_assets_state_instructions_and_criteria(string reference)
     {
         var server = Server();
@@ -66,7 +66,7 @@ public sealed class ImageInputTests
     [InlineData("123")]
     [InlineData("true")]
     [InlineData("null")]
-    [UpstreamTest(Prefix + "rejects invalid references before HTTP", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects invalid references before HTTP: %j", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_invalid_references_before_HTTP(string referenceJson)
     {
         var server = Server();
@@ -315,7 +315,7 @@ public sealed class ImageInputTests
     [InlineData("image/webp")]
     [InlineData("image/gif")]
     [InlineData("image")]
-    [UpstreamTest(Prefix + "rejects unsupported or unrecognized media before HTTP", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects unsupported or unrecognized media before HTTP: %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_unsupported_or_unrecognized_media_before_HTTP(string mediaType)
     {
         var server = Server();
@@ -343,7 +343,7 @@ public sealed class ImageInputTests
 
     [Theory]
     [MemberData(nameof(UnsupportedFileData))]
-    [UpstreamTest(Prefix + "rejects unsupported file data before HTTP", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects unsupported file data before HTTP: $type", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_unsupported_file_data_before_HTTP(Dictionary<string, object?> data, string dataType)
     {
         var server = Server();

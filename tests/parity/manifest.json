@@ -1,6 +1,6 @@
 {
   "upstreamRepo": "https://github.com/vercel/ai",
-  "upstreamCommit": "ba05943b69ad070558bb5bc912da99ec66d7d263",
+  "upstreamCommit": "fa98094401a7318eec5d4005d427579150f970aa",
   "excludedFiles": [
     {
       "file": "packages/ai/src/generate-text/stream-provider-error.integration.test.ts",
@@ -24,6 +24,10 @@
     },
     {
       "file": "packages/harness-deepagents/src/bridge/mcp-tool-errors.integration.test.ts",
+      "reason": "integration"
+    },
+    {
+      "file": "packages/harness-pi/src/pi-file-tool-path-policy.integration.test.ts",
       "reason": "integration"
     },
     {
