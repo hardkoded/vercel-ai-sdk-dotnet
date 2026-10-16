@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Anthropic;
+using Vercel.AI.Gateway;
 using Vercel.AI.HuggingFace;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -147,6 +148,153 @@ public sealed class ResourceCleanupTests
         await Assert.ThrowsAnyAsync<Exception>(() => model.DoEmbedAsync(new[] { "hi" }, null, CancellationToken.None));
 
         Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task OpenAICompatible_chat_stream_releases_the_response_when_the_result_is_disposed_unenumerated()
+    {
+        var content = new TrackingContent("data: [DONE]\n\n");
+        var provider = new OpenAICompatibleProvider(
+            new OpenAICompatibleOptions { ApiKey = "k", ProviderName = "p", BaseUrl = "https://example.test/v1" },
+            new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content })));
+
+        var result = await new OpenAICompatibleLanguageModel(provider, "m").DoStreamAsync(Call(), CancellationToken.None);
+        Assert.False(content.Disposed);
+        await result.DisposeAsync();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task OpenAICompatible_completion_stream_releases_the_response_when_the_result_is_disposed_unenumerated()
+    {
+        var content = new TrackingContent("data: [DONE]\n\n");
+        var provider = new OpenAICompatibleProvider(
+            new OpenAICompatibleOptions { ApiKey = "k", ProviderName = "p", BaseUrl = "https://example.test/v1" },
+            new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content })));
+
+        var result = await new OpenAICompatibleCompletionLanguageModel(provider, "m").DoStreamAsync(Call(), CancellationToken.None);
+        result.Dispose();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task HuggingFace_responses_stream_releases_the_response_when_the_result_is_disposed_unenumerated()
+    {
+        var content = new TrackingContent("data: [DONE]\n\n");
+        var provider = new HuggingFaceProvider(
+            new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content })),
+            new OpenAICompatibleOptions { ApiKey = "k" });
+
+        var result = await provider.ResponsesModel("m").DoStreamAsync(Call(), CancellationToken.None);
+        await result.DisposeAsync();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task Gateway_stream_releases_the_response_when_the_result_is_disposed_unenumerated()
+    {
+        var content = new TrackingContent("data: {}\n\n");
+        var handler = new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "key", BaseUrl = "https://api.test.com" }, handler);
+
+        var result = await provider.LanguageModel("m").DoStreamAsync(Call(), CancellationToken.None);
+        await result.DisposeAsync();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task Bedrock_converse_stream_releases_the_response_when_the_result_is_disposed_unenumerated()
+    {
+        var content = new TrackingContent(string.Empty);
+        var model = BedrockModel(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content }));
+
+        var result = await model.DoStreamAsync(Call(), CancellationToken.None);
+        await result.DisposeAsync();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task LanguageModelStreamResult_disposes_its_resource_once()
+    {
+        var resource = new CountingResource();
+        var result = new LanguageModelStreamResult(Parts(), resource: resource);
+
+        await result.DisposeAsync();
+        result.Dispose();
+
+        Assert.Equal(1, resource.Count);
+    }
+
+    [Fact]
+    public async Task LanguageModelStreamResult_dispose_after_full_enumeration_keeps_the_stream_complete()
+    {
+        var content = new TrackingContent("data: [DONE]\n\n");
+        var provider = new OpenAICompatibleProvider(
+            new OpenAICompatibleOptions { ApiKey = "k", ProviderName = "p", BaseUrl = "https://example.test/v1" },
+            new HttpClient(new DelegateHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = content })));
+        var result = await new OpenAICompatibleLanguageModel(provider, "m").DoStreamAsync(Call(), CancellationToken.None);
+
+        await foreach (var _ in result)
+        {
+        }
+
+        await result.DisposeAsync();
+        await result.DisposeAsync();
+
+        Assert.True(content.Disposed);
+    }
+
+    [Fact]
+    public async Task StreamText_disposes_the_stream_result_when_the_stream_ends()
+    {
+        var resource = new CountingResource();
+        var model = new ResourceModel(resource);
+
+        var result = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
+        await result.Text;
+
+        Assert.Equal(1, resource.Count);
+    }
+
+    private sealed class ResourceModel(CountingResource resource) : ILanguageModel
+    {
+        public string SpecificationVersion => "V4";
+
+        public string Provider => "test";
+
+        public string ModelId => "m";
+
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new LanguageModelStreamResult(Parts(), resource: resource));
+        }
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts()
+    {
+        await Task.CompletedTask;
+        yield return new TextDeltaStreamPart("t", "ok");
+        yield return new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop");
+    }
+
+    private sealed class CountingResource : IDisposable
+    {
+        public int Count { get; private set; }
+
+        public void Dispose()
+        {
+            Count++;
+        }
     }
 
     private static AmazonBedrockLanguageModel BedrockModel(HttpMessageHandler handler)

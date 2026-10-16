@@ -244,8 +244,18 @@ internal static class Generation
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
-                var enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
-                var disposal = abort.Track(enumerator);
+                IAsyncEnumerator<LanguageModelStreamPart> enumerator;
+                try
+                {
+                    enumerator = streamResult.Stream.GetAsyncEnumerator(cancellationToken);
+                }
+                catch
+                {
+                    await streamResult.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+
+                var disposal = abort.Track(new StreamResultDisposal(enumerator, streamResult));
                 try
                 {
                     while (true)
@@ -1019,6 +1029,31 @@ internal sealed class StreamAbort
         else
         {
             disposal.Abandon();
+        }
+    }
+}
+
+// Disposes the enumerator, then the stream result that owns the provider response. The result is released even when the enumerator throws.
+internal sealed class StreamResultDisposal : IAsyncDisposable
+{
+    private readonly IAsyncDisposable _enumerator;
+    private readonly IAsyncDisposable _result;
+
+    public StreamResultDisposal(IAsyncDisposable enumerator, IAsyncDisposable result)
+    {
+        _enumerator = enumerator;
+        _result = result;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await _enumerator.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            await _result.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

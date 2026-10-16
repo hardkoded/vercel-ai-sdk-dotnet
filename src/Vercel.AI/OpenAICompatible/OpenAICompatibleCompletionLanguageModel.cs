@@ -100,7 +100,8 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
         return new LanguageModelStreamResult(
             new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(options, prepared, sse, cancellationToken), sse),
             LanguageModelStreamRequest.FromJson(prepared.Json),
-            new LanguageModelStreamResponse(sse.Headers));
+            new LanguageModelStreamResponse(sse.Headers),
+            sse);
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(

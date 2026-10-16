@@ -1752,18 +1752,28 @@ public sealed class LanguageModelStreamResponse
 /// What <see cref="ILanguageModel.DoStreamAsync"/> returns: the stream plus the request and response info.
 /// Maps to the <c>{ stream, request, response }</c> object returned by <c>doStream</c>.
 /// Enumerating the result enumerates <see cref="Stream"/>.
+/// A provider opens the HTTP response in <c>DoStreamAsync</c>. Dispose the result to release that response when you stop without enumerating the stream, or while you enumerate it.
+/// Disposing is safe to repeat, and it does nothing after the stream has ended.
 /// </summary>
-public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelStreamPart>
+public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelStreamPart>, IAsyncDisposable, IDisposable
 {
+    private IDisposable? _resource;
+
     /// <summary>Creates a stream result.</summary>
+    /// <param name="stream">The stream parts.</param>
+    /// <param name="request">Request info.</param>
+    /// <param name="response">Response info.</param>
+    /// <param name="resource">A resource the provider opened for the stream, such as the HTTP response. The result disposes it once.</param>
     public LanguageModelStreamResult(
         IAsyncEnumerable<LanguageModelStreamPart> stream,
         LanguageModelStreamRequest? request = null,
-        LanguageModelStreamResponse? response = null)
+        LanguageModelStreamResponse? response = null,
+        IDisposable? resource = null)
     {
         Stream = stream ?? throw new ArgumentNullException(nameof(stream));
         Request = request;
         Response = response;
+        _resource = resource;
     }
 
     /// <summary>The stream parts.</summary>
@@ -1779,6 +1789,28 @@ public sealed class LanguageModelStreamResult : IAsyncEnumerable<LanguageModelSt
     public IAsyncEnumerator<LanguageModelStreamPart> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         return Stream.GetAsyncEnumerator(cancellationToken);
+    }
+
+    /// <summary>
+    /// Configures how awaits on the stream parts run. This instance method keeps <c>await foreach (var part in result.ConfigureAwait(false))</c>
+    /// unambiguous, because the result is both an async enumerable and an async disposable.
+    /// </summary>
+    public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<LanguageModelStreamPart> ConfigureAwait(bool continueOnCapturedContext)
+    {
+        return Stream.ConfigureAwait(continueOnCapturedContext);
+    }
+
+    /// <summary>Releases the resource the provider opened for this stream. Safe to call more than once.</summary>
+    public void Dispose()
+    {
+        Interlocked.Exchange(ref _resource, null)?.Dispose();
+    }
+
+    /// <summary>Releases the resource the provider opened for this stream. Safe to call more than once.</summary>
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return default;
     }
 }
 

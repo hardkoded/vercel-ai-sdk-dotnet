@@ -200,9 +200,10 @@ public sealed class GatewayLanguageModel : ILanguageModel
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
         IAsyncEnumerable<string> events;
+        IDisposable resource;
         try
         {
-            events = await _provider.Http.OpenSseAsync(
+            (events, resource) = await _provider.Http.OpenSseWithResourceAsync(
                 _provider.Route("language-model"),
                 V4Json.CallOptions(options),
                 _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
@@ -217,7 +218,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
             throw GatewayProvider.MapFailure(exception);
         }
 
-        return new LanguageModelStreamResult(StreamAsync(events, cancellationToken));
+        return new LanguageModelStreamResult(StreamAsync(events, cancellationToken), resource: resource);
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, [EnumeratorCancellation] CancellationToken cancellationToken)
