@@ -216,51 +216,50 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
     private static readonly string[] ImageMediaTypes = { "image/png", "image/jpeg", "image/webp", "image/gif" };
 
-    private static JsonArray BuildInput(object? state)
+    private static JsonArray BuildInput(IReadOnlyList<DecisionModelStatePart> state)
     {
         var content = new JsonArray();
-        foreach (var item in (IEnumerable<object?>)state!)
+        foreach (var part in state)
         {
-            var part = (IDictionary<string, object?>)item!;
-            var type = (string)part["type"]!;
-            if (type == "text")
+            if (part is DecisionModelTextPart text)
             {
-                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = (string)part["text"]! });
+                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = text.Text });
                 continue;
             }
 
-            if (type == "json")
+            if (part is DecisionModelJsonPart json)
             {
-                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = JsonSerializer.Serialize(part["value"], Text) });
+                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = JsonSerializer.Serialize(json.Value, Text) });
                 continue;
             }
 
-            var mediaType = (string)part["mediaType"]!;
-            var data = (IDictionary<string, object?>)part["data"]!;
-            var dataType = (string)data["type"]!;
+            var file = (DecisionModelFilePart)part;
+            var mediaType = file.MediaType;
+            var dataType = file.Data.DataType;
             if (dataType != "data")
             {
                 throw new UnsupportedFunctionalityException("OpenAI decision file input", "'OpenAI decision file input: " + mediaType + " (" + dataType + ")' functionality not supported.");
             }
 
-            var inline = data["data"]!;
+            var bytes = file.Data.Bytes;
+            var base64Text = file.Data.Base64 ?? string.Empty;
             // Direct DoDecideAsync calls can bypass the media type detection in DecisionState.
-            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : inline is byte[] inlineBytes ? MediaTypes.DetectMediaType(inlineBytes, "image") : MediaTypes.DetectMediaType((string)inline, "image");
+            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : bytes != null ? MediaTypes.DetectMediaType(bytes, "image") : MediaTypes.DetectMediaType(base64Text, "image");
             if (resolved == null || !ImageMediaTypes.Contains(resolved))
             {
                 throw new UnsupportedFunctionalityException("OpenAI decision image media type", "'OpenAI decision image media type: " + mediaType + "' functionality not supported.");
             }
 
-            var base64 = inline as string ?? Convert.ToBase64String((byte[])inline);
+            var base64 = bytes != null ? Convert.ToBase64String(bytes) : base64Text;
             content.Add(new JsonObject { ["type"] = "input_image", ["image_url"] = "data:" + resolved + ";base64," + base64 });
         }
 
         return new JsonArray(new JsonObject { ["role"] = "user", ["content"] = content });
     }
 
-    private static string ToText(object? value)
+    private static string ToText(DecisionInput input)
     {
-        return value as string ?? JsonSerializer.Serialize(value, Text);
+        return input.Value.ValueKind == JsonValueKind.String ? input.Value.GetString()! : JsonSerializer.Serialize(input.Value, Text);
     }
 
     private static JsonObject BuildQuestion(string name, DecisionQuestion question)
@@ -270,21 +269,21 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         {
             case "boolean":
                 var parts = new List<string> { instructions };
-                var criteria = question.Criteria as IDictionary<string, object?>;
-                if (criteria != null && criteria.TryGetValue("true", out var whenTrue) && whenTrue != null)
+                var criteria = question.Criteria as DecisionBooleanCriteria;
+                if (criteria?.True != null)
                 {
-                    parts.Add("Criteria for true:\n" + ToText(whenTrue));
+                    parts.Add("Criteria for true:\n" + ToText(criteria.True));
                 }
 
-                if (criteria != null && criteria.TryGetValue("false", out var whenFalse) && whenFalse != null)
+                if (criteria?.False != null)
                 {
-                    parts.Add("Criteria for false:\n" + ToText(whenFalse));
+                    parts.Add("Criteria for false:\n" + ToText(criteria.False));
                 }
 
                 return new JsonObject { ["type"] = "predicate", ["name"] = name, ["instructions"] = string.Join("\n\n", parts) };
             case "choice":
                 var choices = new JsonArray();
-                foreach (var option in (IDictionary<string, object?>)question.Criteria!)
+                foreach (var option in ((DecisionChoiceCriteria)question.Criteria!).Options)
                 {
                     var choice = new JsonObject { ["value"] = option.Key };
                     if (option.Value != null)
@@ -299,7 +298,7 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             default:
                 var levels = new JsonArray();
                 var index = 0;
-                foreach (var description in (IList<object?>)question.Criteria!)
+                foreach (var description in ((DecisionScoreCriteria)question.Criteria!).Levels)
                 {
                     // Score criteria have no separate labels; indices identify each level.
                     var level = new JsonObject { ["label"] = index.ToString(CultureInfo.InvariantCulture) };

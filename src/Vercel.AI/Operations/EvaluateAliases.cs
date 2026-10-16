@@ -7,35 +7,12 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
-/// <summary>Deprecated alias of <see cref="DecisionValues"/>.</summary>
-[Obsolete("Use DecisionValues instead.")]
-public static class EvaluationValues
-{
-    /// <summary>A function, which JSON cannot represent.</summary>
-    public static readonly object Function = DecisionValues.Function;
-
-    /// <summary>An omitted value, which JSON cannot represent.</summary>
-    public static readonly object Undefined = DecisionValues.Undefined;
-
-    /// <summary>Not a number.</summary>
-    public static readonly object NotANumber = DecisionValues.NotANumber;
-
-    /// <summary>A sparse array. Holes are not JSON.</summary>
-    public static readonly object SparseArray = DecisionValues.SparseArray;
-
-    /// <summary>A <see cref="DateTime"/>, rejected the way a JavaScript Date is rejected.</summary>
-    public static object Date()
-    {
-        return DecisionValues.Date();
-    }
-}
-
 /// <summary>Deprecated alias of <see cref="DecisionQuestion"/>.</summary>
 [Obsolete("Use DecisionQuestion instead.")]
 public sealed class EvaluationQuestion : DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
-    public EvaluationQuestion(string type, object? instructions, object? criteria = null)
+    public EvaluationQuestion(string type, DecisionInput instructions, DecisionCriteria? criteria = null)
         : base(type, instructions, criteria)
     {
     }
@@ -68,12 +45,12 @@ public sealed class EvaluationRounding : DecisionRounding
 public sealed class EvaluationModelCall : DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public EvaluationModelCall(object? state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
         : base(state, questions == null ? null! : EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken)
     {
     }
 
-    private EvaluationModelCall(object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    private EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
         : base(state, questions, providerOptions, headers, cancellationToken)
     {
     }
@@ -162,7 +139,7 @@ public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsuppo
 public sealed class EvaluateEvent : DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
         : base(callId, operationId, runtimeContext, provider, modelId, state, questions, maxRetries, headers, providerOptions, answers, usage, warnings, recordInputs, recordOutputs, functionId)
     {
     }
@@ -178,7 +155,7 @@ public sealed class EvaluateEvent : DecideEvent
 public sealed class EvaluateModelEvent : DecisionModelEvent
 {
     /// <summary>Creates a model event.</summary>
-    public EvaluateModelEvent(string callId, string operationId, string provider, string modelId, object? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public EvaluateModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
         : base(callId, operationId, provider, modelId, state, questions, answers, usage, recordInputs, recordOutputs, functionId)
     {
     }
@@ -219,7 +196,7 @@ public sealed class EvaluateRequest : OperationRequest
     public IEvaluationCaller? Model { get; set; }
 
     /// <summary>Shared state. See <see cref="DecideRequest.State"/>.</summary>
-    public object? State { get; set; }
+    public DecisionState? State { get; set; }
 
     /// <summary>Nonempty question map.</summary>
     public IReadOnlyDictionary<string, EvaluationQuestion>? Questions { get; set; }
@@ -271,7 +248,7 @@ public static class Evaluate
     }
 
     /// <summary>Deprecated alias of <see cref="Decide.ValidateInput"/>.</summary>
-    public static void ValidateInput(object? state, IReadOnlyDictionary<string, EvaluationQuestion>? questions)
+    public static void ValidateInput(DecisionState? state, IReadOnlyDictionary<string, EvaluationQuestion>? questions)
     {
         Decide.ValidateInput(state, questions == null ? null : EvaluateAliases.ToDecision(questions));
     }

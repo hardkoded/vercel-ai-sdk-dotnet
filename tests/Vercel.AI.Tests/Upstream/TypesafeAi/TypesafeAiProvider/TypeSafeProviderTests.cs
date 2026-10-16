@@ -7,6 +7,7 @@ using System.Text;
 using Vercel.AI.Operations;
 using Vercel.AI.TypeSafeAi;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiProvider;
 
@@ -124,7 +125,7 @@ public sealed class TypeSafeProviderTests
     {
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["configured"] = new DecisionQuestion("boolean", "Did the request use the configured endpoint?", null),
+            ["configured"] = Q("boolean", "Did the request use the configured endpoint?", null),
         };
         var state = new List<object?>
         {
@@ -132,7 +133,7 @@ public sealed class TypeSafeProviderTests
         };
         using var options = System.Text.Json.JsonDocument.Parse("{}");
         return provider.DecisionModel("jev-latest").DoDecideAsync(
-            new DecisionModelCall(state, questions, options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None),
+            new DecisionModelCall(P(state), questions, options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None),
             CancellationToken.None);
     }
 

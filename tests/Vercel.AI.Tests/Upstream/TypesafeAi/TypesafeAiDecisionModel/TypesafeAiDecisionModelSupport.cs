@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.TypeSafeAi;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 
@@ -127,7 +128,7 @@ internal static class TypesafeAiDecisionModelSupport
         {
             var question = pair.Value!.AsObject();
             var type = question["type"]!.GetValue<string>();
-            questions[pair.Key] = new DecisionQuestion(
+            questions[pair.Key] = Q(
                 type == "noul" ? "boolean" : type,
                 ToObject(question["instructions"]),
                 ToObject(question["criteria"]));
@@ -144,7 +145,7 @@ internal static class TypesafeAiDecisionModelSupport
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
-            state ?? JsonState(ToObject(NativeRequest["state"])),
+            P((IEnumerable<object?>)(state ?? JsonState(ToObject(NativeRequest["state"])))),
             questions ?? Questions(),
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),

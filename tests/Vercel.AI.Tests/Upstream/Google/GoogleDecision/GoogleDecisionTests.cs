@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Google.GoogleDecision.GoogleDecisionSupport;
 
 namespace Vercel.AI.Tests.Upstream.Google.GoogleDecision;
@@ -120,7 +121,7 @@ public sealed class GoogleDecisionTests
         body["candidates"]![0]!["content"]!["parts"] = new JsonArray(new JsonObject { ["text"] = "{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.02}" });
         var (model, capture) = Setup(body);
         var questions = Questions();
-        questions["flag"] = new DecisionQuestion("boolean", "Is a refund requested?");
+        questions["flag"] = Q("boolean", "Is a refund requested?");
         var result = await model.DoDecideAsync(Call(questions));
         Assert.Equal("billing", result.Answers["department"].Choice);
         Assert.Equal(1.25, result.Answers["severity"].Score);

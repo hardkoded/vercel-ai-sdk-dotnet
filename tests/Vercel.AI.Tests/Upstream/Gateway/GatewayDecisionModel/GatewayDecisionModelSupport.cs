@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel;
 
@@ -43,9 +44,9 @@ internal static class GatewayDecisionModelSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["correct"] = new DecisionQuestion("boolean", "Is the statement factually correct?"),
-            ["tone"] = new DecisionQuestion("choice", "What is the tone?", new Dictionary<string, object?> { ["neutral"] = "Plain and factual.", ["playful"] = null }),
-            ["quality"] = new DecisionQuestion("score", "Rate the quality.", new List<object?> { "Poor.", "Acceptable.", "Excellent." }),
+            ["correct"] = Q("boolean", "Is the statement factually correct?"),
+            ["tone"] = Q("choice", "What is the tone?", new Dictionary<string, object?> { ["neutral"] = "Plain and factual.", ["playful"] = null }),
+            ["quality"] = Q("score", "Rate the quality.", new List<object?> { "Poor.", "Acceptable.", "Excellent." }),
         };
     }
 
@@ -57,7 +58,7 @@ internal static class GatewayDecisionModelSupport
     internal static DecisionModelCall Call(string providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null, object? state = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(state ?? State(TestState), Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), CancellationToken.None);
+        return new DecisionModelCall(P((IEnumerable<object?>)(state ?? State(TestState))), Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), CancellationToken.None);
     }
 
     /// <summary>Builds a model whose requests are answered with <paramref name="body"/> (a decision-model response).</summary>

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision;
 
@@ -29,9 +30,9 @@ internal static class OpenAIDecisionSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new DecisionQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = new DecisionQuestion("boolean", "Is a refund requested?"),
+            ["department"] = Q("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
+            ["severity"] = Q("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = Q("boolean", "Is a refund requested?"),
         };
     }
 
@@ -44,7 +45,7 @@ internal static class OpenAIDecisionSupport
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
-            state ?? State(),
+            P((IEnumerable<object?>)(state ?? State())),
             questions ?? Questions(),
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),

@@ -59,17 +59,17 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             var question = new JsonObject
             {
                 ["type"] = pair.Value.Type,
-                ["instructions"] = ToNode(pair.Value.Instructions),
+                ["instructions"] = pair.Value.Instructions.ToNode(),
             };
             if (pair.Value.Criteria != null)
             {
-                question["criteria"] = ToNode(pair.Value.Criteria);
+                question["criteria"] = pair.Value.Criteria.ToNode();
             }
 
             questions[pair.Key] = question;
         }
 
-        var body = new JsonObject { ["state"] = ToNode(LegacyState(call.State)), ["questions"] = questions };
+        var body = new JsonObject { ["state"] = LegacyState(call.State), ["questions"] = questions };
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.EnumerateObject().Any())
         {
             body["providerOptions"] = JsonNode.Parse(call.ProviderOptions.GetRawText());
@@ -190,36 +190,31 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
     }
 
     /// <summary>Keeps the legacy Gateway state format: a string, a JSON object, or a JSON array.</summary>
-    private static object? LegacyState(object? state)
+    private static JsonNode? LegacyState(IReadOnlyList<DecisionModelStatePart> state)
     {
-        var values = new List<object?>();
-        foreach (var item in (IEnumerable<object?>)state!)
+        var values = new JsonArray();
+        foreach (var part in state)
         {
-            var part = (IDictionary<string, object?>)item!;
-            switch ((string)part["type"]!)
+            switch (part)
             {
-                case "file":
+                case DecisionModelFilePart:
                     throw new UnsupportedFunctionalityException("Gateway decision file input", "'Gateway decision file input' functionality not supported.");
-                case "text":
-                    values.Add(part["text"]);
+                case DecisionModelTextPart text:
+                    values.Add(JsonValue.Create(text.Text));
                     break;
-                default:
-                    values.Add(part["value"]);
+                case DecisionModelJsonPart json:
+                    values.Add(JsonNode.Parse(json.Value.GetRawText()));
                     break;
             }
         }
 
-        return values.Count == 1 && (values[0] is string || values[0] is IDictionary<string, object?> || values[0] is IList<object?>) ? values[0] : values;
-    }
-
-    private static JsonNode? ToNode(object? value)
-    {
-        if (value == null)
+        // A single string, object, or array is sent as it is. Anything else stays a list.
+        if (values.Count == 1 && (values[0] is JsonObject or JsonArray || (values[0] is JsonValue single && single.TryGetValue<string>(out _))))
         {
-            return null;
+            return values[0]!.DeepClone();
         }
 
-        return JsonNode.Parse(JsonSerializer.Serialize(value));
+        return values;
     }
 }
 

@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Google;
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.Google.GoogleDecision;
 
@@ -23,8 +24,8 @@ internal static class GoogleDecisionSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["department"] = new DecisionQuestion("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = new DecisionQuestion("score", "[\"Rate severity.\"]", new List<object?> { "Low", "Medium", "High" }),
+            ["department"] = Q("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
+            ["severity"] = Q("score", "[\"Rate severity.\"]", new List<object?> { "Low", "Medium", "High" }),
         };
     }
 
@@ -43,7 +44,7 @@ internal static class GoogleDecisionSupport
                 ["value"] = new Dictionary<string, object?> { ["message"] = "A billing issue with a workaround." },
             },
         };
-        return new DecisionModelCall(state, questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(P(state), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
     }
 
     internal static (DecisionLanguageModel Model, GoogleDecisionCapture Capture) Setup(JsonNode? body = null, bool withBaseUrl = true)

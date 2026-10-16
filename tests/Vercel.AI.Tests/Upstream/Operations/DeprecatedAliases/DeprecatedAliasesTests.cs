@@ -7,6 +7,7 @@
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using static Vercel.AI.Tests.DecisionFixtures;
 using DecideModel = Vercel.AI.Tests.Upstream.Operations.Decide.DecideModel;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -20,7 +21,7 @@ public sealed class DeprecatedAliasesTests
 
     private static readonly Dictionary<string, EvaluationQuestion> Questions = new Dictionary<string, EvaluationQuestion>
     {
-        ["route"] = new EvaluationQuestion("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = null }),
+        ["route"] = EQ("choice", "Team?", new Dictionary<string, object?> { ["billing"] = null, ["support"] = null }),
     };
 
     private static DecisionModelResult Result()
@@ -178,7 +179,7 @@ public sealed class DeprecatedAliasesTests
     private static EvaluationModelCall Call()
     {
         var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = "message" } };
-        return new EvaluationModelCall(state, Questions, default, new Dictionary<string, string>(), CancellationToken.None);
+        return new EvaluationModelCall(P(state), Questions, default, new Dictionary<string, string>(), CancellationToken.None);
     }
 
     private static Dictionary<string, DecisionQuestion> DecisionQuestions()

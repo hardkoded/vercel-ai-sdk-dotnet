@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using static Vercel.AI.Tests.DecisionFixtures;
 using DecisionModel = Vercel.AI.Operations.DecisionLanguageModel;
 
 namespace Vercel.AI.Tests.Upstream.ProviderUtils.DecisionLanguageModelSuite;
@@ -14,7 +15,7 @@ internal static class DecisionLanguageModelSupport
 {
     internal static DecisionQuestion Category(object? criteria = null)
     {
-        return new DecisionQuestion(
+        return Q(
             "choice",
             new Dictionary<string, object?> { ["task"] = new List<object?> { "Pick the exact label" } },
             criteria ?? new Dictionary<string, object?>
@@ -27,7 +28,7 @@ internal static class DecisionLanguageModelSupport
 
     internal static DecisionQuestion Severity(object? criteria = null)
     {
-        return new DecisionQuestion(
+        return Q(
             "score",
             new List<object?> { "Rate the impact" },
             criteria ?? new List<object?> { "low", new Dictionary<string, object?> { ["meaning"] = "medium" }, null });
@@ -56,7 +57,7 @@ internal static class DecisionLanguageModelSupport
         CancellationToken cancellationToken = default)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(state ?? State(), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(P(state ?? State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
     }
 
     internal static LanguageModelGenerateResult Result(

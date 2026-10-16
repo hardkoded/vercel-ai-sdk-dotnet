@@ -5,6 +5,7 @@
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -44,17 +45,15 @@ public sealed class DecideTests
             var result = await DecideOperation.DecideAsync(new DecideRequest
             {
                 Model = model,
-                State = state,
+                State = S(state),
                 Questions = questions,
                 CancellationToken = source.Token,
                 Headers = new Dictionary<string, string> { ["custom"] = "value" },
                 ProviderOptions = OperationJson.Parse("{\"test\":{\"option\":true}}"),
             });
             Assert.Single(model.Calls);
-            var prepared = Assert.IsAssignableFrom<IReadOnlyList<object?>>(model.Calls[0].State);
-            var part = Assert.IsAssignableFrom<IDictionary<string, object?>>(Assert.Single(prepared));
-            Assert.Equal("json", part["type"]);
-            Assert.Same(state, part["value"]);
+            var part = Assert.IsType<DecisionModelJsonPart>(Assert.Single(model.Calls[0].State));
+            Assert.Equal(J(state), part.Value.GetRawText());
             Assert.Equal("value", model.Calls[0].Headers["custom"]);
             Assert.Contains("ai/", model.Calls[0].Headers["user-agent"]);
             Assert.Equal((double?)0.92, result.Answers["refund"].Probability);
@@ -222,17 +221,6 @@ public sealed class DecideTests
         Assert.Single(model.Calls);
     }
 
-    public static IEnumerable<object[]> MalformedStates()
-    {
-        yield return new object[] { new List<object?> { "legacy JSON array" } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["arbitrary"] = "object" } } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "image", ["image"] = "iVBORw==" } } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = 42 } } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png" } } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "json" } } };
-        yield return new object[] { new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["bad"] = DecisionValues.NotANumber } } } };
-    }
-
     public static IEnumerable<object[]> PublicStates()
     {
         yield return new object[] { "Inspect this package.", new List<object?> { TextPart("Inspect this package.") } };
@@ -255,25 +243,25 @@ public sealed class DecideTests
         {
             Model = model,
             Questions = SampleQuestions(),
-            State = new List<object?>
+            State = S(new List<object?>
             {
                 TextPart(string.Empty),
                 JsonPart(new List<object?> { 1, null, new Dictionary<string, object?> { ["label"] = "package" } }),
                 new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = FilePartInput.FromArrayBuffer(bytes), ["filename"] = "package.png" },
                 new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("data:image/png;base64,iVBORw==") },
                 TextPart("Inspect both images."),
-            },
+            }),
         });
         Assert.Equal(
-            new List<object?>
+            J(new List<object?>
             {
                 TextPart(string.Empty),
                 JsonPart(new List<object?> { 1, null, new Dictionary<string, object?> { ["label"] = "package" } }),
                 FilePart("image/png", bytes, "package.png"),
                 FilePart("image/png", "iVBORw==", null),
                 TextPart("Inspect both images."),
-            },
-            model.Calls[0].State);
+            }),
+            J(Canon(model.Calls[0].State)));
     }
 
     [Fact]
@@ -281,17 +269,17 @@ public sealed class DecideTests
     public async Task Treats_an_empty_array_as_an_empty_list_of_state_parts()
     {
         var model = new DecideModel();
-        await DecideOperation.DecideAsync(new DecideRequest { Model = model, Questions = SampleQuestions(), State = new List<object?>() });
-        Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<object?>>(model.Calls[0].State));
+        await DecideOperation.DecideAsync(new DecideRequest { Model = model, Questions = SampleQuestions(), State = S(new List<object?>()) });
+        Assert.Empty(model.Calls[0].State);
     }
 
-    [Theory]
-    [MemberData(nameof(MalformedStates))]
-    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects malformed state parts before I/O: %j", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_malformed_state_parts_before_IO(object state)
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects malformed state parts before I/O: %j", Coverage = UpstreamCoverage.Partial, Note = "Typed parts cannot be malformed. Only a missing state and a null part can be built. The other upstream cases (a string, an untyped object, an unknown part type, text that is not a string, a file without data, a json part without a value, and a json part with NaN) do not compile or throw when the part is created.")]
+    public async Task Rejects_malformed_state_parts_before_IO()
     {
         var model = new DecideModel();
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, Questions = SampleQuestions(), State = state }));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, Questions = SampleQuestions(), State = null }));
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, Questions = SampleQuestions(), State = DecisionState.From(new DecisionStatePart[] { null! }) }));
         Assert.Empty(model.Calls);
     }
 
@@ -314,7 +302,7 @@ public sealed class DecideTests
             {
                 Model = model,
                 Questions = SampleQuestions(),
-                State = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("https://example.com/package.png") } },
+                State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("https://example.com/package.png") } }),
             });
         }
         finally
@@ -323,7 +311,7 @@ public sealed class DecideTests
         }
 
         Assert.Equal(1, fetches);
-        Assert.Equal(new List<object?> { FilePart("image/png", bytes, null) }, model.Calls[0].State);
+        Assert.Equal(J(new List<object?> { FilePart("image/png", bytes, null) }), J(Canon(model.Calls[0].State)));
     }
 
     [Fact]
@@ -339,7 +327,7 @@ public sealed class DecideTests
             {
                 Model = model,
                 Questions = SampleQuestions(),
-                State = new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/missing.png") } },
+                State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/missing.png") } }),
             }));
             Assert.Equal("AI_DownloadError", error.ErrorName);
         }
@@ -356,6 +344,7 @@ public sealed class DecideTests
     [UpstreamTest("packages/ai/src/decide/decide.test.ts::normalizes public state into provider parts: $state", Coverage = UpstreamCoverage.Covered)]
     public async Task Normalizes_public_state_into_provider_parts(object state, List<object?> expected)
     {
+        var publicState = S(state);
         var model = new DecideModel();
         var started = new List<DecideEvent>();
         var modelStarted = new List<DecisionModelEvent>();
@@ -363,13 +352,13 @@ public sealed class DecideTests
         {
             Model = model,
             Questions = SampleQuestions(),
-            State = state,
+            State = publicState,
             OnStart = item => { started.Add(item); return Task.CompletedTask; },
             Telemetry = new DecideTelemetry { OnDecisionModelCallStart = item => { modelStarted.Add(item); return Task.CompletedTask; } },
         });
-        Assert.Equal(expected, model.Calls[0].State);
-        Assert.Same(state, Assert.Single(started).State);
-        Assert.Equal(expected, Assert.Single(modelStarted).State);
+        Assert.Equal(J(expected), J(Canon(model.Calls[0].State)));
+        Assert.Same(publicState, Assert.Single(started).State);
+        Assert.Equal(J(expected), J(Canon(Assert.Single(modelStarted).State)));
     }
 
     [Fact]
@@ -412,14 +401,14 @@ public sealed class DecideTests
         foreach (var pair in original)
         {
             Assert.Equal(pair.Value.Type, publicQuestions[pair.Key].Type);
-            Assert.Equal(pair.Value.Instructions, publicQuestions[pair.Key].Instructions);
-            Assert.Equal(pair.Value.Criteria, publicQuestions[pair.Key].Criteria);
+            Assert.Equal(pair.Value.Instructions.ToString(), publicQuestions[pair.Key].Instructions.ToString());
+            Assert.Equal(pair.Value.Criteria?.ToNode().ToJsonString(), publicQuestions[pair.Key].Criteria?.ToNode().ToJsonString());
         }
     }
 
     private static Dictionary<string, DecisionQuestion> BoxQuestions()
     {
-        return new Dictionary<string, DecisionQuestion> { ["target"] = new DecisionQuestion("box", "The cat") };
+        return new Dictionary<string, DecisionQuestion> { ["target"] = Q("box", "The cat") };
     }
 
     private static DecisionBox ValidBox(double? top = null, double? bottom = null, double? left = null, double? right = null)

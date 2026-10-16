@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.OpenAI.OpenAIDecision.OpenAIDecisionSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -47,9 +48,9 @@ public sealed class OpenAIDecisionsTests
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["team"] = new DecisionQuestion("choice", "Route the ticket.", new Dictionary<string, object?> { ["billing"] = "Charges", ["technical"] = "Bugs", ["other"] = null }),
-            ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
-            ["refund"] = new DecisionQuestion("boolean", "Is a refund requested?"),
+            ["team"] = Q("choice", "Route the ticket.", new Dictionary<string, object?> { ["billing"] = "Charges", ["technical"] = "Bugs", ["other"] = null }),
+            ["severity"] = Q("score", "Rate severity.", new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = Q("boolean", "Is a refund requested?"),
         };
     }
 
@@ -79,7 +80,7 @@ public sealed class OpenAIDecisionsTests
     {
         var (model, capture) = Setup();
         var state = new Dictionary<string, object?> { ["ticket"] = "Charged twice." };
-        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = state, Questions = Questions() });
+        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = S(state), Questions = Questions() });
         Assert.Equal(1, capture.Calls);
         Assert.Equal("https://api.openai.com/v1/decisions", capture.Uri);
         Assert.Equal(3, result.Answers.Count);
@@ -121,7 +122,7 @@ public sealed class OpenAIDecisionsTests
             State = "A billing issue with a workaround.",
             Questions = new Dictionary<string, DecisionQuestion>
             {
-                ["severity"] = new DecisionQuestion("score", "Rate severity.", new List<object?> { "Low", "High" }),
+                ["severity"] = Q("score", "Rate severity.", new List<object?> { "Low", "High" }),
             },
         });
         AssertAnswer(result.Answers["severity"], "score", score: 0.5, probabilities: new[] { ("0", 0.51), ("1", 0.49) });

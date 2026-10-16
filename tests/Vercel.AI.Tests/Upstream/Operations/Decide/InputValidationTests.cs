@@ -2,9 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -15,47 +17,27 @@ namespace Vercel.AI.Tests.Upstream.Operations.Decide;
 public sealed class InputValidationTests
 {
     [Fact]
-    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects non-JSON state %s before I/O", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects non-JSON state %s before I/O", Coverage = UpstreamCoverage.Partial, Note = "JsonElement holds only JSON. A missing state, true, and 42 are rejected. A Date, undefined, NaN, a function, a cycle, and a sparse array cannot be built.")]
     public async Task Rejects_non_JSON_state_before_I_O()
     {
-        var cyclic = new Dictionary<string, object?>();
-        cyclic["self"] = cyclic;
-        object?[] states =
-        {
-            null,
-            true,
-            42,
-            DecisionValues.Date(),
-            new Dictionary<string, object?> { ["value"] = DecisionValues.Undefined },
-            new Dictionary<string, object?> { ["value"] = DecisionValues.NotANumber },
-            new Dictionary<string, object?> { ["fn"] = DecisionValues.Function },
-            cyclic,
-            new List<object?> { DecisionValues.Undefined },
-            DecisionValues.SparseArray,
-        };
-        foreach (var state in states)
-        {
-            var model = new DecideModel();
-            await Assert.ThrowsAsync<InvalidArgumentException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = state, Questions = SampleQuestions() }));
-            Assert.Empty(model.Calls);
-        }
+        var model = new DecideModel();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = null, Questions = SampleQuestions() }));
+        Assert.Throws<InvalidArgumentException>(() => DecisionState.FromJson(JsonSerializer.SerializeToElement(true)));
+        Assert.Throws<InvalidArgumentException>(() => DecisionState.FromJson(JsonSerializer.SerializeToElement(42)));
+        Assert.Empty(model.Calls);
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects invalid questions %s before I/O", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects invalid questions %s before I/O", Coverage = UpstreamCoverage.Partial, Note = "Typed criteria cannot hold a missing instruction, a non-string description, an undefined level, or boolean keys other than true and false.")]
     public async Task Rejects_invalid_questions_before_I_O()
     {
         var cases = new IReadOnlyDictionary<string, DecisionQuestion>?[]
         {
             new Dictionary<string, DecisionQuestion>(),
             null,
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("other", "test") },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("boolean", null) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("boolean", "test", new Dictionary<string, object?> { ["yes"] = "yes" }) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("choice", "test", new Dictionary<string, object?>()) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("choice", "test", new Dictionary<string, object?> { ["a"] = 42 }) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("score", "test", new List<object?> { "Only one" }) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = new DecisionQuestion("score", "test", new List<object?> { "Low", DecisionValues.Undefined }) },
+            new Dictionary<string, DecisionQuestion> { ["test"] = Q("other", "test") },
+            new Dictionary<string, DecisionQuestion> { ["test"] = Q("choice", "test", new Dictionary<string, object?>()) },
+            new Dictionary<string, DecisionQuestion> { ["test"] = Q("score", "test", new List<object?> { "Only one" }) },
         };
         foreach (var questions in cases)
         {
@@ -73,7 +55,7 @@ public sealed class InputValidationTests
         var result = await DecideOperation.DecideAsync(new DecideRequest
         {
             Model = new DecideModel(),
-            State = new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { shared, shared } } },
+            State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = new List<object?> { shared, shared } } }),
             Questions = SampleQuestions(),
         });
         Assert.Equal(3, result.Answers.Count);

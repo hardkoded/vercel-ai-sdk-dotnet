@@ -8,6 +8,7 @@ using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using static Vercel.AI.Tests.DecisionFixtures;
 
 namespace Vercel.AI.Tests.Upstream.Registry.DecisionModel;
 
@@ -161,7 +162,7 @@ internal static class DecisionModelSupport
     {
         return new Dictionary<string, DecisionQuestion>
         {
-            ["route"] = new DecisionQuestion("choice", "Team?", new Dictionary<string, object?> { ["billing"] = "Charges", ["support"] = "Other" }),
+            ["route"] = Q("choice", "Team?", new Dictionary<string, object?> { ["billing"] = "Charges", ["support"] = "Other" }),
         };
     }
 

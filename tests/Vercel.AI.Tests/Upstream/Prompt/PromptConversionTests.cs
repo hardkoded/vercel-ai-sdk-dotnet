@@ -10,13 +10,18 @@ namespace Vercel.AI.Tests.Upstream.Prompt;
 
 public sealed class StandardizePromptTests
 {
+    private static string UserText(ModelMessage message)
+    {
+        return Assert.IsType<TextContentPart>(Assert.Single(Assert.IsType<UserModelMessage>(message).Content)).Text;
+    }
+
     [Fact]
     [UpstreamTest("packages/ai/src/prompt/standardize-prompt.test.ts::standardizePrompt::should throw InvalidPromptError when messages contain a system message by default", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_system_messages_by_default()
     {
         var error = Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput
         {
-            Messages = new[] { new PromptMessage("system", "INSTRUCTIONS") },
+            Messages = new ModelMessage[] { new SystemModelMessage("INSTRUCTIONS") },
         }));
         Assert.Equal("AI_InvalidPromptError", error.Name);
         Assert.Contains("System messages are not allowed", error.Message, StringComparison.Ordinal);
@@ -28,7 +33,7 @@ public sealed class StandardizePromptTests
     {
         var error = Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput
         {
-            Prompt = new PromptMessage[] { new("system", "INSTRUCTIONS") },
+            Prompt = new ModelMessage[] { new SystemModelMessage("INSTRUCTIONS") },
         }));
         Assert.Equal("AI_InvalidPromptError", error.Name);
     }
@@ -40,18 +45,16 @@ public sealed class StandardizePromptTests
         var result = Prompts.StandardizePrompt(new StandardizePromptInput
         {
             AllowSystemInMessages = true,
-            Messages = new[]
+            Messages = new ModelMessage[]
             {
-                new PromptMessage("system", "INSTRUCTIONS"),
-                new PromptMessage("user", "Hello, world!"),
+                new SystemModelMessage("INSTRUCTIONS"),
+                new UserModelMessage("Hello, world!"),
             },
         });
         Assert.Null(result.Instructions);
         Assert.Equal(2, result.Messages.Count);
-        Assert.Equal("system", result.Messages[0].Role);
-        Assert.Equal("INSTRUCTIONS", result.Messages[0].Content);
-        Assert.Equal("user", result.Messages[1].Role);
-        Assert.Equal("Hello, world!", result.Messages[1].Content);
+        Assert.Equal("INSTRUCTIONS", Assert.IsType<SystemModelMessage>(result.Messages[0]).Content);
+        Assert.Equal("Hello, world!", UserText(result.Messages[1]));
     }
 
     [Fact]
@@ -61,29 +64,15 @@ public sealed class StandardizePromptTests
         var result = Prompts.StandardizePrompt(new StandardizePromptInput
         {
             AllowSystemInMessages = true,
-            Prompt = new PromptMessage[]
+            Prompt = new ModelMessage[]
             {
-                new("system", "INSTRUCTIONS"),
-                new("user", "Hello, world!"),
+                new SystemModelMessage("INSTRUCTIONS"),
+                new UserModelMessage("Hello, world!"),
             },
         });
         Assert.Null(result.Instructions);
-        Assert.Equal("system", result.Messages[0].Role);
-        Assert.Equal("INSTRUCTIONS", result.Messages[0].Content);
-        Assert.Equal("user", result.Messages[1].Role);
-        Assert.Equal("Hello, world!", result.Messages[1].Content);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/ai/src/prompt/standardize-prompt.test.ts::standardizePrompt::should throw InvalidPromptError when an allowed system message has parts", Coverage = UpstreamCoverage.Covered)]
-    public void Rejects_system_message_parts()
-    {
-        var error = Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput
-        {
-            AllowSystemInMessages = true,
-            Messages = new[] { new PromptMessage("system", new[] { new Dictionary<string, string> { ["type"] = "text", ["text"] = "test" } }) },
-        }));
-        Assert.Equal("The messages do not match the ModelMessage[] schema.", error.Message);
+        Assert.Equal("INSTRUCTIONS", Assert.IsType<SystemModelMessage>(result.Messages[0]).Content);
+        Assert.Equal("Hello, world!", UserText(result.Messages[1]));
     }
 
     [Fact]
@@ -92,7 +81,7 @@ public sealed class StandardizePromptTests
     {
         var error = Assert.Throws<InvalidPromptException>(() => Prompts.StandardizePrompt(new StandardizePromptInput
         {
-            Messages = Array.Empty<PromptMessage>(),
+            Messages = Array.Empty<ModelMessage>(),
         }));
         Assert.Equal("messages must not be empty", error.Message);
     }
@@ -101,40 +90,31 @@ public sealed class StandardizePromptTests
     [UpstreamTest("packages/ai/src/prompt/standardize-prompt.test.ts::standardizePrompt::should support SystemModelMessage instructions", Coverage = UpstreamCoverage.Covered)]
     public void Accepts_a_system_message_as_instructions()
     {
-        var instructions = new PromptMessage("system", "INSTRUCTIONS");
         var result = Prompts.StandardizePrompt(new StandardizePromptInput
         {
-            Instructions = instructions,
-            InstructionsSet = true,
+            Instructions = new SystemModelMessage("INSTRUCTIONS"),
             Prompt = "Hello, world!",
         });
-        var message = Assert.IsType<PromptMessage>(result.Instructions);
+        var message = Assert.Single(result.Instructions!.Messages!);
         Assert.Equal("system", message.Role);
         Assert.Equal("INSTRUCTIONS", message.Content);
-        Assert.Equal("user", result.Messages[0].Role);
-        Assert.Equal("Hello, world!", result.Messages[0].Content);
+        Assert.Equal("Hello, world!", UserText(result.Messages[0]));
     }
 
     [Fact]
     [UpstreamTest("packages/ai/src/prompt/standardize-prompt.test.ts::standardizePrompt::should support array of SystemModelMessage instructions", Coverage = UpstreamCoverage.Covered)]
     public void Accepts_a_list_of_system_instructions()
     {
-        var instructions = new PromptMessage[]
-        {
-            new("system", "INSTRUCTIONS"),
-            new("system", "INSTRUCTIONS 2"),
-        };
         var result = Prompts.StandardizePrompt(new StandardizePromptInput
         {
-            Instructions = instructions,
-            InstructionsSet = true,
+            Instructions = new[] { new SystemModelMessage("INSTRUCTIONS"), new SystemModelMessage("INSTRUCTIONS 2") },
             Prompt = "Hello, world!",
         });
-        var list = Assert.IsAssignableFrom<IReadOnlyList<PromptMessage>>(result.Instructions);
+        var list = result.Instructions!.Messages!;
         Assert.Equal(2, list.Count);
         Assert.Equal("INSTRUCTIONS", list[0].Content);
         Assert.Equal("INSTRUCTIONS 2", list[1].Content);
-        Assert.Equal("Hello, world!", result.Messages[0].Content);
+        Assert.Equal("Hello, world!", UserText(result.Messages[0]));
     }
 
     [Fact]
@@ -146,8 +126,8 @@ public sealed class StandardizePromptTests
             System = "SYSTEM",
             Prompt = "Hello, world!",
         });
-        Assert.Equal("SYSTEM", result.Instructions);
-        Assert.Equal("Hello, world!", result.Messages[0].Content);
+        Assert.Equal("SYSTEM", result.Instructions!.Text);
+        Assert.Equal("Hello, world!", UserText(result.Messages[0]));
     }
 
     [Fact]
@@ -157,11 +137,10 @@ public sealed class StandardizePromptTests
         var result = Prompts.StandardizePrompt(new StandardizePromptInput
         {
             Instructions = "INSTRUCTIONS",
-            InstructionsSet = true,
             System = "SYSTEM",
             Prompt = "Hello, world!",
         });
-        Assert.Equal("INSTRUCTIONS", result.Instructions);
+        Assert.Equal("INSTRUCTIONS", result.Instructions!.Text);
     }
 }
 

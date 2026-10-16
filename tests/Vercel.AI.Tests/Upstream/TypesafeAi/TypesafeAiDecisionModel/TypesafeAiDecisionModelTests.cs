@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.TypeSafeAi;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel.TypesafeAiDecisionModelSupport;
 
 namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
@@ -142,8 +143,8 @@ public sealed class TypesafeAiDecisionModelTests
             options[index.ToString()] = null;
         }
 
-        yield return new object[] { new DecisionQuestion("choice", "Pick", options) };
-        yield return new object[] { new DecisionQuestion("score", "Rate", Enumerable.Range(0, 11).Select(index => (object?)("Level " + index)).ToList()) };
+        yield return new object[] { Q("choice", "Pick", options) };
+        yield return new object[] { Q("score", "Rate", Enumerable.Range(0, 11).Select(index => (object?)("Level " + index)).ToList()) };
     }
 
     [Theory]
@@ -253,7 +254,7 @@ public sealed class TypesafeAiDecisionModelTests
         response["answers"]!["target"] = JsonNode.Parse("{\"type\":\"box\",\"box\":{\"top\":0.25,\"bottom\":0.82,\"left\":0.44,\"right\":0.84},\"confidence\":0.92}");
         server.ResponseBody = response.ToJsonString();
         var questions = Questions();
-        questions["target"] = new DecisionQuestion("box", "The mug");
+        questions["target"] = Q("box", "The mug");
         var model = CreateProvider(server).DecisionModel("jev-latest");
         var state = withImage
             ? new List<object?> { FilePart("image/png", "AQID") }

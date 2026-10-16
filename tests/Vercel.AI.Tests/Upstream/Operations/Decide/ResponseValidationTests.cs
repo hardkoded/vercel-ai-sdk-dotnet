@@ -5,6 +5,7 @@
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
 using DecideOperation = Vercel.AI.Operations.Decide;
 
@@ -121,7 +122,7 @@ public sealed class ResponseValidationTests
     public async Task Accepts_a_selected_choice_within_the_declared_probability_rounding()
     {
         var questions = SampleQuestions();
-        questions["topic"] = new DecisionQuestion("choice", questions["topic"].Instructions, new Dictionary<string, object?> { ["billing"] = null, ["support"] = null, ["other"] = null });
+        questions["topic"] = Q("choice", questions["topic"].Instructions, new Dictionary<string, object?> { ["billing"] = null, ["support"] = null, ["other"] = null });
         var roundedAnswers = SampleAnswers();
         roundedAnswers["topic"] = new DecisionAnswer("choice", choice: "support", probabilities: new Dictionary<string, double> { ["billing"] = 0.44, ["support"] = 0.43, ["other"] = 0.13 });
         var result = await DecideOperation.DecideAsync(new DecideRequest
@@ -159,7 +160,7 @@ public sealed class ResponseValidationTests
     {
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["__proto__"] = new DecisionQuestion("choice", "Which?", new Dictionary<string, object?> { ["__proto__"] = null, ["constructor"] = null }),
+            ["__proto__"] = Q("choice", "Which?", new Dictionary<string, object?> { ["__proto__"] = null, ["constructor"] = null }),
         };
         var answers = new Dictionary<string, DecisionAnswer>
         {
