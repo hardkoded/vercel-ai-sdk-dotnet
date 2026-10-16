@@ -85,7 +85,7 @@ internal static class KlingAIVideoModelSupport
     {
         var options = new KlingAIOptions { ApiKey = "test-jwt-token", BaseUrl = baseUrl };
         configure?.Invoke(options);
-        var provider = KlingAIProvider.Create(options, handler);
+        var provider = Vercel.AI.KlingAI.KlingAIProvider.Create(options, handler);
         return new KlingAIVideoModelType(provider, modelId, currentDate);
     }
 
