@@ -74,7 +74,7 @@ public sealed class FalTranscriptionModel : ITranscriptionModel, ITranscriptionC
                 : throw new InvalidResponseDataException(queued.Body, "Fal queue response has no request_id.");
         }
 
-        var response = await PollAsync(QueueUri("/requests/" + requestId), call.Headers, cancellationToken).ConfigureAwait(false);
+        var response = await PollAsync(QueueUri("/requests/" + Uri.EscapeDataString(requestId)), call.Headers, cancellationToken).ConfigureAwait(false);
         using var result = JsonDocument.Parse(response.Body);
         var root = result.RootElement;
         var segments = new List<TranscriptSegment>();
