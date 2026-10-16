@@ -223,6 +223,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return MessagesUri();
     }
 
+    /// <summary>Rewrites the Messages body just before it is sent. Defaults to <see cref="AnthropicOptions.TransformRequestBody"/>.</summary>
+    protected internal virtual JsonObject TransformRequestBody(JsonObject body, IReadOnlyList<string> betas)
+    {
+        return Options.TransformRequestBody == null ? body : Options.TransformRequestBody(body);
+    }
+
     /// <summary>False when the host does not accept the native output format. Structured output then uses the JSON tool.</summary>
     protected internal virtual bool SupportsNativeStructuredOutput => true;
 
@@ -508,13 +514,14 @@ public sealed class AnthropicLanguageModel : ILanguageModel
             Provider,
             _provider.SupportsNativeStructuredOutput,
             _provider.SupportsStrictTools);
-        if (_provider.Options.TransformRequestBody == null)
+        var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
+        if (ReferenceEquals(transformed, prepared.Body))
         {
             return prepared;
         }
 
         return new AnthropicPreparedRequest(
-            _provider.Options.TransformRequestBody(prepared.Body),
+            transformed,
             prepared.Warnings,
             prepared.Betas,
             prepared.UsesJsonResponseTool,
