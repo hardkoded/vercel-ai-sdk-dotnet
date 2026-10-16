@@ -29,7 +29,7 @@ var result = await Decide.DecideAsync(new DecideRequest
 
 ## Decision model
 
-`TypeSafeAiDecisionModel` posts the model id, the state, and every question to `{BaseUrl}/systemone` in one request. It supports `choice`, `score`, and `boolean` questions. A `boolean` question is sent as TypeSafe's `noul` type, and the `noul` answer comes back as a `boolean` answer with a `Probability`.
+`TypeSafeAiDecisionModel` posts the model id, the state, and every question to `{BaseUrl}/systemone` in one request. It supports `choice`, `score`, `boolean`, and `box` questions. A `boolean` question is sent as TypeSafe's `noul` type, and the `noul` answer comes back as a `boolean` answer with a `Probability`.
 
 - Scores and probabilities are returned unchanged. `Rounding` declares two decimals for both.
 - Per-answer `confidence` values are in `ProviderMetadata` under `typesafe.confidence`, keyed by question id.
@@ -38,6 +38,21 @@ var result = await Decide.DecideAsync(new DecideRequest
 - The state goes as a string, a JSON object, or a list, like the Gateway model. See [Images](#images) for file parts.
 - A `choice` question accepts at most 255 options and a `score` question at most 10 levels. A larger question throws `InvalidArgumentError` before any request.
 - `providerOptions.typesafe.longContext` is the only `typesafe` provider option that is sent. Every other one is reported as an `unsupported` warning (`providerOptions.typesafe.<name>`) and is not sent.
+
+## Box questions
+
+A `box` question locates one target in an image and takes no criteria:
+
+```csharp
+var questions = new Dictionary<string, DecisionQuestion>
+{
+    ["target"] = new DecisionQuestion("box", "The cat in the image"),
+};
+```
+
+Send an image in the state as described in [Images](#images). The answer has type `box` and a `DecisionBox` in `Box` with `Top`, `Bottom`, `Left`, and `Right`. Each edge is a fraction in [0, 1], measured from the top-left corner, with `Left < Right` and `Top < Bottom`. Any other box throws `InvalidResponseDataException`. The request enables the `TypeSafe-Danger-Zone-Images: true` header even when the state has no image. A box needs Jev 1.14 or later. The answer's confidence is in `ProviderMetadata` under `typesafe.confidence`, keyed by question id.
+
+This feature is experimental, and a box is returned even when the target is absent. Ask a `boolean` question alongside it to check visibility. See [TypeSafe's Box documentation](https://docs.typesafe.ai/primitives/box). The OpenAI, Google, and Gateway decision models do not support `box`, so `Decide.DecideAsync` throws `DecisionUnsupportedQuestionTypeException` for it before it downloads files or calls the provider.
 
 ## Model ids
 

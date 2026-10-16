@@ -55,13 +55,13 @@ public class DecisionQuestion
         Criteria = criteria;
     }
 
-    /// <summary><c>choice</c>, <c>score</c>, or <c>boolean</c>.</summary>
+    /// <summary><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</summary>
     public string Type { get; }
 
     /// <summary>Instructions. A JSON string, object, or array.</summary>
     public object? Instructions { get; }
 
-    /// <summary>Choice map, ordered score levels, or optional boolean descriptions.</summary>
+    /// <summary>Choice map, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
     public object? Criteria { get; }
 }
 
@@ -69,9 +69,10 @@ public class DecisionQuestion
 public class DecisionAnswer
 {
     /// <summary>Creates an answer.</summary>
-    public DecisionAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null)
+    public DecisionAnswer(string type, string? choice = null, double? score = null, double? probability = null, IReadOnlyDictionary<string, double>? probabilities = null, DecisionBox? box = null)
     {
         Type = type;
+        Box = box;
         Choice = choice;
         Score = score;
         Probability = probability;
@@ -92,6 +93,34 @@ public class DecisionAnswer
 
     /// <summary>Distribution. Keys are option ids or score indexes.</summary>
     public IReadOnlyDictionary<string, double>? Probabilities { get; }
+
+    /// <summary>Normalized box for a box question.</summary>
+    public DecisionBox? Box { get; }
+}
+
+/// <summary>Edges in [0, 1], measured from the image's top-left corner.</summary>
+public sealed class DecisionBox
+{
+    /// <summary>Creates a box.</summary>
+    public DecisionBox(double top, double bottom, double left, double right)
+    {
+        Top = top;
+        Bottom = bottom;
+        Left = left;
+        Right = right;
+    }
+
+    /// <summary>Top edge.</summary>
+    public double Top { get; }
+
+    /// <summary>Bottom edge.</summary>
+    public double Bottom { get; }
+
+    /// <summary>Left edge.</summary>
+    public double Left { get; }
+
+    /// <summary>Right edge.</summary>
+    public double Right { get; }
 }
 
 /// <summary>Declared rounding precision.</summary>
@@ -581,6 +610,11 @@ public static class Decide
                 throw new InvalidArgumentException(parameter, question, "instructions must be a JSON-compatible string, object, or array");
             }
 
+            if (question.Type == "box")
+            {
+                continue;
+            }
+
             var criteria = question.Criteria;
             switch (question.Type)
             {
@@ -611,7 +645,7 @@ public static class Decide
 
                     break;
                 default:
-                    throw new InvalidArgumentException(parameter, question, "question type must be choice, score, or boolean");
+                    throw new InvalidArgumentException(parameter, question, "question type must be choice, score, boolean, or box");
             }
 
             if (!IsJson(criteria, new HashSet<object>(ReferenceComparer.Instance)) || Values(criteria).Any(value => value != null && !IsInput(value, new HashSet<object>(ReferenceComparer.Instance))))
@@ -695,6 +729,16 @@ public static class Decide
                         {
                             throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" score must equal the probability-weighted mean within the declared rounding precision.");
                         }
+                    }
+
+                    break;
+                case "box":
+                    var box = answer.Box;
+                    if (box == null
+                        || !IsProbability(box.Left) || !IsProbability(box.Right) || !IsProbability(box.Top) || !IsProbability(box.Bottom)
+                        || !(box.Left < box.Right) || !(box.Top < box.Bottom))
+                    {
+                        throw new InvalidResponseDataException(answers, "Question \"" + pair.Key + "\" must return box edges in [0, 1] with left < right and top < bottom.");
                     }
 
                     break;

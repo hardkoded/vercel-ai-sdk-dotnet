@@ -416,4 +416,67 @@ public sealed class DecideTests
             Assert.Equal(pair.Value.Criteria, publicQuestions[pair.Key].Criteria);
         }
     }
+
+    private static Dictionary<string, DecisionQuestion> BoxQuestions()
+    {
+        return new Dictionary<string, DecisionQuestion> { ["target"] = new DecisionQuestion("box", "The cat") };
+    }
+
+    private static DecisionBox ValidBox(double? top = null, double? bottom = null, double? left = null, double? right = null)
+    {
+        return new DecisionBox(top ?? 0.25, bottom ?? 0.82, left ?? 0.44, right ?? 0.84);
+    }
+
+    private static DecideModel BoxModel(DecisionBox? box)
+    {
+        return new DecideModel
+        {
+            Supported = new[] { "box" },
+            Result = new DecisionModelResult(new Dictionary<string, DecisionAnswer> { ["target"] = new DecisionAnswer("box", box: box) }),
+        };
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::preserves normalized box coordinates", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_normalized_box_coordinates()
+    {
+        var result = await DecideOperation.DecideAsync(new DecideRequest
+        {
+            Model = BoxModel(ValidBox()),
+            State = string.Empty,
+            Questions = BoxQuestions(),
+        });
+        var answer = result.Answers["target"];
+        Assert.Equal("box", answer.Type);
+        Assert.Equal(0.25, answer.Box!.Top);
+        Assert.Equal(0.82, answer.Box.Bottom);
+        Assert.Equal(0.44, answer.Box.Left);
+        Assert.Equal(0.84, answer.Box.Right);
+    }
+
+    public static IEnumerable<object?[]> MalformedBoxes()
+    {
+        yield return new object?[] { null };
+        yield return new object?[] { ValidBox(top: -0.1) };
+        yield return new object?[] { ValidBox(bottom: 1.1) };
+        yield return new object?[] { ValidBox(left: double.NaN) };
+        yield return new object?[] { ValidBox(right: double.PositiveInfinity) };
+        yield return new object?[] { ValidBox(left: 0.9) };
+        yield return new object?[] { ValidBox(bottom: 0.2) };
+        yield return new object?[] { ValidBox(right: 0.44) };
+        yield return new object?[] { ValidBox(bottom: 0.25) };
+    }
+
+    [Theory]
+    [MemberData(nameof(MalformedBoxes))]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects malformed box coordinates: %j", Coverage = UpstreamCoverage.Partial, Note = "DecisionBox is typed, so the string coordinate, empty array, empty object, and extra-key cases cannot be built. A missing box stands in for undefined, null, [], and {}.")]
+    public async Task Rejects_malformed_box_coordinates(DecisionBox? box)
+    {
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() => DecideOperation.DecideAsync(new DecideRequest
+        {
+            Model = BoxModel(box),
+            State = string.Empty,
+            Questions = BoxQuestions(),
+        }));
+    }
 }
