@@ -503,7 +503,9 @@ var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelS
 
 `AmazonBedrockOptions.Headers` are sent with every embedding and reranking request. `AmazonBedrockEmbeddingModel.Headers` are sent with the next call and override provider headers with the same name. Both are signed with the request.
 
-`OpenAICompatibleEmbeddingModel.LastResponseBody` holds the raw body of the most recent call, next to `LastResponseHeaders`.
+`EmbeddingResult.Response` holds the raw headers and body of the call, and `EmbeddingResult.Warnings` its warnings. To send per-call headers, `dimensions`, or a `user` to an OpenAI-compatible embedding model, pass an `EmbeddingCallOptions` to `OpenAICompatibleEmbeddingModel.DoEmbedAsync`. The model keeps no per-call state, so concurrent calls do not see each other.
+
+`ImageCallOptions` carries `Seed`, `Files`, `Mask`, `ProviderOptions`, and `Headers` for each call. `ImageGenerationResult` returns `CallWarnings`, `Response` (timestamp, model id, headers), and `Usage`. Image models keep no per-call state, so concurrent calls on one model do not see each other.
 
 Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 

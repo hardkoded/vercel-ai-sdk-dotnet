@@ -27,8 +27,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
-        model.Seed = 4;
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { AspectRatio = "16:9", Count = 2 }, CancellationToken.None);
+        var seed = 4;
+        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { AspectRatio = "16:9", Count = 2, Seed = seed }, CancellationToken.None);
         var body = JsonNode.Parse(capture.Requests[0].Body)!;
         Assert.Equal("A cute baby sea otter", body["prompt"]!.GetValue<string>());
         Assert.Equal("16:9", body["aspect_ratio"]!.GetValue<string>());
@@ -72,8 +72,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
-        await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "512x512" }, CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Message == "This model does not support the `size` option. Use `aspectRatio` instead.");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "512x512" }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Message == "This model does not support the `size` option. Use `aspectRatio` instead.");
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Sized);
-        await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "1:1" }, CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Message == "This model does not support the `aspectRatio` option.");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "1:1" }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Message == "This model does not support the `aspectRatio` option.");
     }
 
     [Fact]
@@ -92,13 +92,13 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
-        model.Files = new[]
+        var files = new[]
         {
             new OpenAICompatibleImageFile("image/png", new byte[] { 1 }, null, "a.png"),
             new OpenAICompatibleImageFile("image/png", new byte[] { 2 }, null, "b.png"),
         };
-        await model.DoGenerateAsync(new ImageCallOptions("edit"), CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Message == "Fireworks only supports a single input image. Additional images are ignored.");
+        var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Message == "Fireworks only supports a single input image. Additional images are ignored.");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class FireworksUpstreamTests
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.JsonSchema = UpstreamChat.Json("{\"type\":\"object\"}");
-        options.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"responseFormat\":\"json\"}");
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"responseFormat\":\"json\"}");
         var model = (OpenAICompatibleLanguageModel)FireworksProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture).LanguageModel("m");
         await model.DoGenerateAsync(options, CancellationToken.None);
         Assert.True(model.SupportsStructuredOutputs);
@@ -256,8 +256,8 @@ public sealed class FireworksUpstreamTests
         var provider = FireworksProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture);
         provider.Options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var model = (FireworksImageModel)provider.ImageModel(Flux);
-        model.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
+        var requestHeaders = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Headers = requestHeaders }, CancellationToken.None);
         var headers = capture.Requests[0].Headers;
         Assert.StartsWith("application/json", headers["Content-Type"], StringComparison.Ordinal);
         Assert.Equal("provider-header-value", headers["Custom-Provider-Header"]);
@@ -283,8 +283,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
-        model.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"guidance_scale\":4.5,\"num_inference_steps\":8}");
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { AspectRatio = "1:1" }, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"guidance_scale\":4.5,\"num_inference_steps\":8}");
+        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { AspectRatio = "1:1", ProviderOptions = providerOptions }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"aspect_ratio\":\"1:1\",\"guidance_scale\":4.5,\"num_inference_steps\":8,\"prompt\":\"A cute baby sea otter\",\"samples\":1}");
     }
 
@@ -294,8 +294,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Sized);
-        model.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"cfg_scale\":10,\"steps\":30}");
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" }, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"cfg_scale\":10,\"steps\":30}");
+        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024", ProviderOptions = providerOptions }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"cfg_scale\":10,\"height\":\"1024\",\"prompt\":\"A cute baby sea otter\",\"samples\":1,\"steps\":30,\"width\":\"1024\"}");
     }
 
@@ -305,8 +305,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
-        model.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"output_format\":\"webp\"}");
-        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None));
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"output_format\":\"webp\"}");
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { ProviderOptions = providerOptions }, CancellationToken.None));
         Assert.Contains("invalid fireworks provider options", error.Message, StringComparison.Ordinal);
         Assert.Empty(capture.Requests);
     }
@@ -348,10 +348,10 @@ public sealed class FireworksUpstreamTests
         var date = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var model = Image(new UpstreamCapture { ResponseBody = "PNG" }, Flux);
         model.Clock = () => date;
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
-        Assert.Equal(date, model.LastTimestamp);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
+        Assert.Equal(date, result.Response!.Timestamp);
         Assert.Equal(Flux, model.ModelId);
-        Assert.NotEmpty(model.LastResponseHeaders);
+        Assert.NotEmpty(result.Response!.Headers);
     }
 
     [Fact]
@@ -361,10 +361,10 @@ public sealed class FireworksUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "test-binary-content", MediaType = "image/png" };
         capture.ResponseHeaders["x-request-id"] = "test-request-id";
         var model = Image(capture, Flux);
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
-        Assert.Equal("test-request-id", model.LastResponseHeaders["x-request-id"]);
-        Assert.StartsWith("image/png", model.LastResponseHeaders["Content-Type"], StringComparison.Ordinal);
-        Assert.Equal("19", model.LastResponseHeaders["Content-Length"]);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
+        Assert.Equal("test-request-id", result.Response!.Headers["x-request-id"]);
+        Assert.StartsWith("image/png", result.Response!.Headers["Content-Type"], StringComparison.Ordinal);
+        Assert.Equal("19", result.Response!.Headers["Content-Length"]);
     }
 
     [Fact]
@@ -383,8 +383,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
-        await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"data:image/png;base64,iVBORw==\",\"prompt\":\"Turn the cat into a dog\",\"samples\":1}");
     }
 
@@ -394,8 +394,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.Equal("https://api.fireworks.ai/inference/v1/workflows/" + Kontext, capture.Requests[0].Uri!.AbsoluteUri);
     }
 
@@ -405,8 +405,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", null, "https://example.com/input.png", null) };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", null, "https://example.com/input.png", null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"https://example.com/input.png\",\"prompt\":\"Edit this image\",\"samples\":1}");
     }
 
@@ -416,8 +416,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAE="), null, null) };
-        await model.DoGenerateAsync(new ImageCallOptions("Edit this image"), CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAE="), null, null) };
+        await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=\",\"prompt\":\"Edit this image\",\"samples\":1}");
     }
 
@@ -426,10 +426,10 @@ public sealed class FireworksUpstreamTests
     public async Task A_mask_warns()
     {
         var model = Image(KontextCapture(), Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
-        model.Mask = true;
-        await model.DoGenerateAsync(new ImageCallOptions("Edit with mask"), CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "unsupported" && warning.Message == "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit.");
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        var mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("Edit with mask") { Files = files, Mask = mask }, CancellationToken.None);
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit.");
     }
 
     [Fact]
@@ -438,10 +438,10 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
-        model.Seed = 42;
-        model.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"output_format\":\"jpeg\",\"safety_tolerance\":2}");
-        await model.DoGenerateAsync(new ImageCallOptions("Edit with options") { AspectRatio = "16:9" }, CancellationToken.None);
+        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        var seed = 42;
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"output_format\":\"jpeg\",\"safety_tolerance\":2}");
+        await model.DoGenerateAsync(new ImageCallOptions("Edit with options") { AspectRatio = "16:9", Seed = seed, Files = files, ProviderOptions = providerOptions }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"aspect_ratio\":\"16:9\",\"input_image\":\"data:image/png;base64,iVBORw==\",\"output_format\":\"jpeg\",\"prompt\":\"Edit with options\",\"safety_tolerance\":2,\"samples\":1,\"seed\":42}");
     }
 
@@ -467,8 +467,8 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        model.ProviderOptions = UpstreamChat.Bag("fireworks", "{\"safety_tolerance\":6,\"output_format\":\"jpeg\",\"prompt_upsampling\":true,\"webhook_url\":\"https://example.com/webhook\",\"webhook_secret\":\"secret\",\"input_image\":\"base64-image-data\"}");
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("fireworks", "{\"safety_tolerance\":6,\"output_format\":\"jpeg\",\"prompt_upsampling\":true,\"webhook_url\":\"https://example.com/webhook\",\"webhook_secret\":\"secret\",\"input_image\":\"base64-image-data\"}");
+        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { ProviderOptions = providerOptions }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"prompt\":\"A cute baby sea otter\",\"samples\":1,\"safety_tolerance\":6,\"output_format\":\"jpeg\",\"prompt_upsampling\":true,\"webhook_url\":\"https://example.com/webhook\",\"webhook_secret\":\"secret\",\"input_image\":\"base64-image-data\"}");
     }
 
@@ -479,10 +479,10 @@ public sealed class FireworksUpstreamTests
         var date = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var model = Image(KontextCapture(), Kontext);
         model.Clock = () => date;
-        await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
-        Assert.Equal(date, model.LastTimestamp);
+        var result = await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter"), CancellationToken.None);
+        Assert.Equal(date, result.Response!.Timestamp);
         Assert.Equal(Kontext, model.ModelId);
-        Assert.NotEmpty(model.LastResponseHeaders);
+        Assert.NotEmpty(result.Response!.Headers);
     }
 
     [Fact]

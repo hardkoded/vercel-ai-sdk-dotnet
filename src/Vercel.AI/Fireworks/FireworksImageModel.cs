@@ -33,38 +33,14 @@ public sealed class FireworksImageModel : IImageModel
     /// <summary>Fireworks returns one image per call.</summary>
     public int MaxImagesPerCall => 1;
 
-    /// <summary>Random seed sent as <c>seed</c>.</summary>
-    public int? Seed { get; set; }
-
-    /// <summary>Provider-specific fields merged into the body.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
-
-    /// <summary>Headers for this call.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Reference image. Only the first file is sent.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
-
-    /// <summary>When set, a warning is returned. Kontext models do not accept a mask.</summary>
-    public bool Mask { get; set; }
-
     /// <summary>Delay between async polls.</summary>
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromMilliseconds(500);
 
     /// <summary>How long async polling may run.</summary>
     public TimeSpan PollTimeout { get; set; } = TimeSpan.FromMilliseconds(120000);
 
-    /// <summary>Warnings from the most recent call.</summary>
-    public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
-
-    /// <summary>Clock used for <see cref="LastTimestamp"/>. Defaults to UTC now.</summary>
+    /// <summary>Clock used for the response timestamp. Defaults to UTC now.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
-
-    /// <summary>Time the most recent call started.</summary>
-    public DateTimeOffset? LastTimestamp { get; private set; }
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
 
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
@@ -82,12 +58,12 @@ public sealed class FireworksImageModel : IImageModel
             warnings.Add(new CallWarning("unsupported", "This model does not support the `aspectRatio` option."));
         }
 
-        if (Files != null && Files.Count > 1)
+        if (options.Files != null && options.Files.Count > 1)
         {
             warnings.Add(new CallWarning("other", "Fireworks only supports a single input image. Additional images are ignored."));
         }
 
-        if (Mask)
+        if (options.Mask != null)
         {
             warnings.Add(new CallWarning("unsupported", "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit."));
         }
@@ -102,9 +78,9 @@ public sealed class FireworksImageModel : IImageModel
             body["aspect_ratio"] = options.AspectRatio;
         }
 
-        if (Seed != null)
+        if (options.Seed != null)
         {
-            body["seed"] = Seed.Value;
+            body["seed"] = options.Seed.Value;
         }
 
         var size = SplitSize(options.Size);
@@ -114,32 +90,30 @@ public sealed class FireworksImageModel : IImageModel
             body["height"] = size.Value.Height;
         }
 
-        if (Files != null && Files.Count > 0)
+        if (options.Files != null && options.Files.Count > 0)
         {
-            body["input_image"] = DataUri(Files[0]);
+            body["input_image"] = DataUri(options.Files[0]);
         }
 
-        ValidateOptions();
-        OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
-        LastTimestamp = Clock != null ? Clock() : DateTimeOffset.UtcNow;
-        var headers = _provider.CreateHeaders(Headers);
-        LastWarnings = warnings;
+        ValidateOptions(options.ProviderOptions);
+        OpenAICompatibleImages.MergeOptions(body, Provider, options.ProviderOptions, warnings);
+        var timestamp = Clock != null ? Clock() : DateTimeOffset.UtcNow;
+        var headers = _provider.CreateHeaders(options.Headers);
         if (IsAsync(ModelId))
         {
-            return await GenerateAsync(body, headers, cancellationToken).ConfigureAwait(false);
+            return await GenerateAsync(body, headers, warnings, timestamp, cancellationToken).ConfigureAwait(false);
         }
 
         var binary = await _provider.PostBinaryAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
-        LastResponseHeaders = binary.Headers;
         if (binary.Body.Length == 0)
         {
             throw new ApiException("Response body is empty", binary.StatusCode, string.Empty);
         }
 
-        return new ImageGenerationResult(new[] { new GeneratedImage("image/png", binary.Body, null) });
+        return new ImageGenerationResult(new[] { new GeneratedImage("image/png", binary.Body, null) }, warnings, new ImageResponseInfo(timestamp, ModelId, binary.Headers));
     }
 
-    private async Task<ImageGenerationResult> GenerateAsync(JsonObject body, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    private async Task<ImageGenerationResult> GenerateAsync(JsonObject body, Dictionary<string, string?> headers, IReadOnlyList<CallWarning> warnings, DateTimeOffset timestamp, CancellationToken cancellationToken)
     {
         var submitted = await _provider.PostJsonAsync(RequestUri(), body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
         using var submit = JsonDocument.Parse(string.IsNullOrWhiteSpace(submitted.Body) ? "{}" : submitted.Body);
@@ -177,8 +151,7 @@ public sealed class FireworksImageModel : IImageModel
                 }
 
                 var image = await _provider.GetBinaryAsync(new Uri(sample!), sameOrigin ? headers : null, cancellationToken).ConfigureAwait(false);
-                LastResponseHeaders = image.Headers;
-                return new ImageGenerationResult(new[] { new GeneratedImage("image/png", image.Body, sample) });
+                return new ImageGenerationResult(new[] { new GeneratedImage("image/png", image.Body, sample) }, warnings, new ImageResponseInfo(timestamp, ModelId, image.Headers));
             }
 
             if (status == "Error" || status == "Failed")
@@ -190,9 +163,9 @@ public sealed class FireworksImageModel : IImageModel
         }
     }
 
-    private void ValidateOptions()
+    private static void ValidateOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (ProviderOptions == null || !ProviderOptions.TryGetValue("fireworks", out var options) || options.ValueKind != JsonValueKind.Object)
+        if (providerOptions == null || !providerOptions.TryGetValue("fireworks", out var options) || options.ValueKind != JsonValueKind.Object)
         {
             return;
         }

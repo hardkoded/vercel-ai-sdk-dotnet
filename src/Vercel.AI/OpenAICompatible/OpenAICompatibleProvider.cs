@@ -555,51 +555,36 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>Requested embedding width. Omitted from the body when unset.</summary>
-    public int? Dimensions { get; set; }
-
-    /// <summary>End-user identifier sent as <c>user</c>.</summary>
-    public string? User { get; set; }
-
     /// <summary>Maximum inputs accepted by one request.</summary>
     public int MaxEmbeddingsPerCall { get; set; }
 
     /// <summary>When set, the embedding call uses this URL instead of the provider embeddings route.</summary>
     public Uri? Endpoint { get; set; }
 
-    /// <summary>Provider options for the next call. <c>dimensions</c> and <c>user</c> are copied into the body.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
-
-    /// <summary>Headers for the next call. They override the provider headers.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Warnings from the most recent call.</summary>
-    public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
-    /// <summary>Raw HTTP response body from the most recent call.</summary>
-    public string? LastResponseBody { get; private set; }
-
     /// <inheritdoc />
     public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
-        return EmbedAsync(values, dimensions, null, providerOptions ?? ProviderOptions, cancellationToken);
+        return EmbedAsync(new EmbeddingCallOptions(values) { ProviderOptions = providerOptions, Dimensions = dimensions }, cancellationToken);
+    }
+
+    /// <summary>Embeds values with per-call options. Nothing is kept on the model, so concurrent calls do not see each other.</summary>
+    public Task<EmbeddingResult> DoEmbedAsync(EmbeddingCallOptions options, CancellationToken cancellationToken)
+    {
+        return EmbedAsync(options ?? throw new ArgumentNullException(nameof(options)), cancellationToken);
     }
 
     /// <summary>Embeds values, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set. A <c>dimensions</c> provider option wins over <paramref name="dimensions"/>.</summary>
     public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, CancellationToken cancellationToken)
     {
-        return EmbedAsync(values, dimensions, user, ProviderOptions, cancellationToken);
+        return EmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { Dimensions = dimensions, User = user }, cancellationToken);
     }
 
-    private async Task<EmbeddingResult> EmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken)
+    private async Task<EmbeddingResult> EmbedAsync(EmbeddingCallOptions call, CancellationToken cancellationToken)
     {
-        if (values == null)
-        {
-            values = Array.Empty<string>();
-        }
+        var values = call.Values ?? Array.Empty<string>();
+        var providerOptions = call.ProviderOptions;
+        var dimensions = call.Dimensions;
+        var user = call.User;
 
         var limit = MaxEmbeddingsPerCall > 0 ? MaxEmbeddingsPerCall : _provider.Options.MaxEmbeddingsPerCall;
         if (limit > 0 && values.Count > limit)
@@ -625,7 +610,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         if (_provider.Options.ProviderName == "mistral")
         {
             // Mistral names the width output_dimension and does not accept dimensions.
-            var outputDimension = MistralOutputDimension(providerOptions) ?? dimensions ?? Dimensions;
+            var outputDimension = MistralOutputDimension(providerOptions) ?? dimensions;
             if (outputDimension != null)
             {
                 body["output_dimension"] = outputDimension.Value;
@@ -633,14 +618,14 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         }
         else
         {
-            var width = fromOptions.Dimensions ?? dimensions ?? Dimensions;
+            var width = fromOptions.Dimensions ?? dimensions;
             if (width != null)
             {
                 body["dimensions"] = width.Value;
             }
         }
 
-        var endUser = user ?? fromOptions.User ?? User;
+        var endUser = user ?? fromOptions.User;
         if (!string.IsNullOrEmpty(endUser))
         {
             body["user"] = endUser;
@@ -649,11 +634,8 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         var response = await _provider.PostJsonAsync(
             Endpoint ?? _provider.EmbeddingsUri(ModelId),
             body.ToJsonString(),
-            _provider.CreateHeaders(Headers),
+            _provider.CreateHeaders(call.Headers),
             cancellationToken).ConfigureAwait(false);
-        LastWarnings = warnings;
-        LastResponseHeaders = response.Headers;
-        LastResponseBody = response.Body;
         using var parsed = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var vectors = new List<float[]>();
         if (parsed.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
@@ -685,7 +667,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             }
         }
 
-        return new EmbeddingResult(vectors, tokens);
+        return new EmbeddingResult(vectors, tokens, warnings, new EmbeddingResponseInfo(response.Headers, response.Body));
     }
 
     private static int? MistralOutputDimension(IReadOnlyDictionary<string, JsonElement>? providerOptions)
@@ -699,7 +681,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         return null;
     }
 
-    private EmbeddingCallOptions ReadEmbeddingOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, List<CallWarning> warnings)
+    private ProviderEmbeddingOptions ReadEmbeddingOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, List<CallWarning> warnings)
     {
         var rawName = OpenAICompatibleChat.BaseProviderName(Provider);
         if (OpenAICompatibleChat.HasOptions(providerOptions, "openai-compatible"))
@@ -721,7 +703,7 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             ApplyEmbeddingOptions(providerOptions, camel, ref width, ref endUser);
         }
 
-        return new EmbeddingCallOptions(width, endUser);
+        return new ProviderEmbeddingOptions(width, endUser);
     }
 
     private static void ApplyEmbeddingOptions(
@@ -752,9 +734,9 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         }
     }
 
-    private readonly struct EmbeddingCallOptions
+    private readonly struct ProviderEmbeddingOptions
     {
-        public EmbeddingCallOptions(int? dimensions, string? user)
+        public ProviderEmbeddingOptions(int? dimensions, string? user)
         {
             Dimensions = dimensions;
             User = user;
@@ -811,33 +793,6 @@ public sealed class OpenAICompatibleImageModel : IImageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    /// <summary>Seed. The shared images API does not accept it, so a set value becomes a warning.</summary>
-    public int? Seed { get; set; }
-
-    /// <summary>Provider-specific fields merged into the JSON body.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
-
-    /// <summary>Headers for this call. They override the provider headers.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Input images. When set, the call uses <c>/images/edits</c>.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
-
-    /// <summary>Optional edit mask.</summary>
-    public OpenAICompatibleImageFile? Mask { get; set; }
-
-    /// <summary>Warnings from the most recent call.</summary>
-    public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
-
-    /// <summary>Usage from the most recent call, when the response included it.</summary>
-    public LanguageModelUsage? LastUsage { get; private set; }
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
-    /// <summary>Time the most recent call started.</summary>
-    public DateTimeOffset? LastResponseTimestamp { get; private set; }
-
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
@@ -849,14 +804,14 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             warnings.Add(new CallWarning("unsupported", "This model does not support aspect ratio. Use `size` instead."));
         }
 
-        if (Seed != null)
+        if (options.Seed != null)
         {
             warnings.Add(new CallWarning("unsupported", "seed"));
         }
 
-        var headers = _provider.CreateHeaders(Headers);
+        var headers = _provider.CreateHeaders(options.Headers);
         ProviderTextResponse response;
-        if (Files != null && Files.Count > 0)
+        if (options.Files != null && options.Files.Count > 0)
         {
             response = await _provider.PostMultipartAsync(
                 _provider.ImagesEditsUri(),
@@ -874,10 +829,7 @@ public sealed class OpenAICompatibleImageModel : IImageModel
                 cancellationToken).ConfigureAwait(false);
         }
 
-        LastWarnings = warnings;
-        LastResponseHeaders = response.Headers;
-        LastResponseTimestamp = timestamp;
-        return ReadImages(response.Body);
+        return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
     }
 
     private JsonObject BuildGenerationBody(ImageCallOptions options, List<CallWarning> warnings)
@@ -893,7 +845,7 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             body["size"] = options.Size;
         }
 
-        OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
+        OpenAICompatibleImages.MergeOptions(body, Provider, options.ProviderOptions, warnings);
         return body;
     }
 
@@ -909,28 +861,28 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         }
 
         var index = 0;
-        foreach (var file in Files!)
+        foreach (var file in options.Files!)
         {
             form.Add(OpenAICompatibleImages.FileContent(file), "image", file.FileName ?? ("image-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".png"));
             index++;
         }
 
-        if (Mask != null)
+        if (options.Mask != null)
         {
-            form.Add(OpenAICompatibleImages.FileContent(Mask), "mask", Mask.FileName ?? "mask.png");
+            form.Add(OpenAICompatibleImages.FileContent(options.Mask), "mask", options.Mask.FileName ?? "mask.png");
         }
 
         return form;
     }
 
-    private ImageGenerationResult ReadImages(string? json)
+    private static ImageGenerationResult ReadImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo responseInfo)
     {
         using var document = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var root = document.RootElement;
-        LastUsage = null;
+        LanguageModelUsage? imageUsage = null;
         if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
         {
-            LastUsage = new LanguageModelUsage(
+            imageUsage = new LanguageModelUsage(
                 OpenAICompatibleImages.ReadInt(usage, "input_tokens"),
                 OpenAICompatibleImages.ReadInt(usage, "output_tokens"),
                 OpenAICompatibleImages.ReadInt(usage, "total_tokens"));
@@ -954,7 +906,7 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             }
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, warnings, responseInfo, imageUsage);
     }
 }
 

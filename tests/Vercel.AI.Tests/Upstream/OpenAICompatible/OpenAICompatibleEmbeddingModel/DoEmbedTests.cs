@@ -21,9 +21,9 @@ public sealed class DoEmbedTests
         var capture = new EmbeddingCapture("{\"data\":[{\"embedding\":[0.5]},{\"embedding\":[0.5]}],\"usage\":{\"prompt_tokens\":1}}");
         var provider = OpenAICompatibleProvider.Create(new OpenAICompatibleOptions { ProviderName = "openai-compatible", BaseUrl = "https://my.api.com/v1", ApiKey = "secret" }, capture);
         var model = provider.EmbeddingModel("text-embedding-3-large");
-        ((Vercel.AI.OpenAICompatible.OpenAICompatibleEmbeddingModel)model).ProviderOptions = EmbeddingDimensionCases.Options("openaiCompatible", "dimensions", providerDimensions);
+        var providerOptions = EmbeddingDimensionCases.Options("openaiCompatible", "dimensions", providerDimensions);
 
-        await model.DoEmbedAsync(Values, null, CancellationToken.None, dimensions);
+        await model.DoEmbedAsync(Values, providerOptions, CancellationToken.None, dimensions);
 
         EmbeddingDimensionCases.AssertDimension(capture.Body["dimensions"], expected);
     }

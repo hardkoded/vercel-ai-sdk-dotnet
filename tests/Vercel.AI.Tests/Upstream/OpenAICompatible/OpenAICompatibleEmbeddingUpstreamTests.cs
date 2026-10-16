@@ -29,8 +29,8 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"embedding\":[0.1]}],\"usage\":{\"prompt_tokens\":1}}" };
         capture.ResponseHeaders["test-header"] = "test-value";
         var model = Model(capture);
-        await model.DoEmbedAsync(new[] { "hi" }, null, CancellationToken.None);
-        Assert.Equal("test-value", model.LastResponseHeaders["test-header"]);
+        var result = await model.DoEmbedAsync(new[] { "hi" }, null, CancellationToken.None);
+        Assert.Equal("test-value", result.Response!.Headers["test-header"]);
     }
 
     [Fact]
@@ -61,8 +61,8 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Model(capture, "text-embedding-3-large", "test-provider");
-        model.ProviderOptions = UpstreamChat.Bag("openaiCompatible", "{\"dimensions\":64}");
-        await model.DoEmbedAsync(Values, null, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("openaiCompatible", "{\"dimensions\":64}");
+        await model.DoEmbedAsync(Values, providerOptions, CancellationToken.None);
         Assert.Equal(64, JsonNode.Parse(capture.Requests[0].Body)!["dimensions"]!.GetValue<int>());
     }
 
@@ -72,10 +72,10 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Model(capture, "text-embedding-3-large", "test-provider");
-        model.ProviderOptions = UpstreamChat.Bag("openai-compatible", "{\"dimensions\":64}");
-        await model.DoEmbedAsync(Values, null, CancellationToken.None);
+        var providerOptions = UpstreamChat.Bag("openai-compatible", "{\"dimensions\":64}");
+        var result = await model.DoEmbedAsync(Values, providerOptions, CancellationToken.None);
         Assert.Equal(64, JsonNode.Parse(capture.Requests[0].Body)!["dimensions"]!.GetValue<int>());
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "deprecated" && warning.Message.Contains("openaiCompatible"));
+        Assert.Contains(result.Warnings, warning => warning.Type == "deprecated" && warning.Message.Contains("openaiCompatible"));
     }
 
     [Fact]
@@ -84,9 +84,9 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Model(capture, "text-embedding-3-large", "test-provider");
-        model.ProviderOptions = UpstreamChat.Bag("test-provider", "{\"dimensions\":64}");
-        await model.DoEmbedAsync(Values, null, CancellationToken.None);
-        Assert.Contains(model.LastWarnings, warning => warning.Type == "deprecated" && warning.Message.Contains("testProvider"));
+        var providerOptions = UpstreamChat.Bag("test-provider", "{\"dimensions\":64}");
+        var result = await model.DoEmbedAsync(Values, providerOptions, CancellationToken.None);
+        Assert.Contains(result.Warnings, warning => warning.Type == "deprecated" && warning.Message.Contains("testProvider"));
     }
 
     [Fact]
@@ -95,9 +95,9 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Model(capture, "text-embedding-3-large", "test-provider");
-        model.ProviderOptions = UpstreamChat.Bag("testProvider", "{\"dimensions\":64}");
-        await model.DoEmbedAsync(Values, null, CancellationToken.None);
-        Assert.DoesNotContain(model.LastWarnings, warning => warning.Type == "deprecated");
+        var providerOptions = UpstreamChat.Bag("testProvider", "{\"dimensions\":64}");
+        var result = await model.DoEmbedAsync(Values, providerOptions, CancellationToken.None);
+        Assert.DoesNotContain(result.Warnings, warning => warning.Type == "deprecated");
         Assert.Equal(64, JsonNode.Parse(capture.Requests[0].Body)!["dimensions"]!.GetValue<int>());
     }
 
@@ -116,8 +116,8 @@ public sealed class OpenAICompatibleEmbeddingUpstreamTests
             capture);
         provider.Options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var model = (OpenAICompatibleEmbeddingModel)provider.EmbeddingModel("text-embedding-3-large");
-        model.Headers = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
-        await model.DoEmbedAsync(Values, null, CancellationToken.None);
+        var requestHeaders = new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" };
+        await model.DoEmbedAsync(new EmbeddingCallOptions(Values) { Headers = requestHeaders }, CancellationToken.None);
         Assert.Equal("Bearer test-api-key", capture.Requests[0].Headers["Authorization"]);
         Assert.Equal("provider-header-value", capture.Requests[0].Headers["Custom-Provider-Header"]);
         Assert.Equal("request-header-value", capture.Requests[0].Headers["Custom-Request-Header"]);

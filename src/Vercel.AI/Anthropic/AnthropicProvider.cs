@@ -36,7 +36,7 @@ public class AnthropicOptions
     public string? Name { get; set; }
 
     /// <summary>Headers merged into every request.</summary>
-    public Dictionary<string, string?> Headers { get; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string?> Headers { get; private set; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
     public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
@@ -64,6 +64,14 @@ public class AnthropicOptions
 
     /// <summary>Clock used when signing. Tests pin this.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
+
+    /// <summary>Copies the options, so a provider can set defaults without changing the caller's object.</summary>
+    internal AnthropicOptions Copy()
+    {
+        var copy = (AnthropicOptions)MemberwiseClone();
+        copy.Headers = new Dictionary<string, string?>(Headers, StringComparer.OrdinalIgnoreCase);
+        return copy;
+    }
 }
 
 /// <summary>Anthropic Messages provider.</summary>
@@ -546,11 +554,7 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
 {
     /// <summary>Creates an Anthropic on AWS provider.</summary>
     public AnthropicAwsProvider(HttpClient httpClient, AnthropicOptions? options = null)
-        : base(httpClient, options ?? new AnthropicOptions
-        {
-            BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws",
-            ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY",
-        })
+        : base(httpClient, PrepareAws(options))
     {
         Aws = true;
         if (options == null)
@@ -559,15 +563,30 @@ public sealed class AnthropicAwsProvider : AnthropicProvider
         }
         else
         {
-            if (Options.ApiKeyEnvironmentVariable == "ANTHROPIC_API_KEY")
-            {
-                Options.ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY";
-            }
-
             var trimmed = Options.BaseUrl.Trim().TrimEnd('/');
             ExplicitBaseUrl = !trimmed.Equals("https://api.anthropic.com", StringComparison.OrdinalIgnoreCase)
                 && !trimmed.Equals("https://api.anthropic.com/v1", StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    private static AnthropicOptions PrepareAws(AnthropicOptions? options)
+    {
+        if (options == null)
+        {
+            return new AnthropicOptions
+            {
+                BaseUrl = "https://aws-external-anthropic.us-east-1.api.aws",
+                ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY",
+            };
+        }
+
+        var copy = options.Copy();
+        if (copy.ApiKeyEnvironmentVariable == "ANTHROPIC_API_KEY")
+        {
+            copy.ApiKeyEnvironmentVariable = "ANTHROPIC_AWS_API_KEY";
+        }
+
+        return copy;
     }
 
     /// <summary>Creates a provider.</summary>

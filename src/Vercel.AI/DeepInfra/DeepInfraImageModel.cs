@@ -19,7 +19,7 @@ public sealed class DeepInfraImageModel : IImageModel
     private readonly DeepInfraProvider _provider;
     private readonly Func<DateTimeOffset>? _clock;
 
-    /// <summary>Creates an image model. <paramref name="clock"/> sets <see cref="LastResponseTimestamp"/> and defaults to UTC now.</summary>
+    /// <summary>Creates an image model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
     public DeepInfraImageModel(DeepInfraProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -36,43 +36,16 @@ public sealed class DeepInfraImageModel : IImageModel
     /// <summary>DeepInfra accepts one image per call.</summary>
     public int MaxImagesPerCall => 1;
 
-    /// <summary>Random seed sent as <c>seed</c>.</summary>
-    public int? Seed { get; set; }
-
-    /// <summary>Provider-specific fields merged into the body.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
-
-    /// <summary>Headers for this call.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
-    /// <summary>Input images. When set, the call edits them instead of generating.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
-
-    /// <summary>Optional edit mask.</summary>
-    public OpenAICompatibleImageFile? Mask { get; set; }
-
-    /// <summary>Warnings from the most recent call.</summary>
-    public IReadOnlyList<CallWarning> LastWarnings { get; private set; } = Array.Empty<CallWarning>();
-
-    /// <summary>HTTP response headers from the most recent call.</summary>
-    public IReadOnlyDictionary<string, string> LastResponseHeaders { get; private set; } = new Dictionary<string, string>();
-
-    /// <summary>Time the most recent call started.</summary>
-    public DateTimeOffset? LastResponseTimestamp { get; private set; }
-
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
-        if (Files != null && Files.Count > 0)
+        if (options.Files != null && options.Files.Count > 0)
         {
-            var edited = await _provider.PostMultipartAsync(EditUri(), BuildEditForm(options, warnings), _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
-            LastWarnings = warnings;
-            LastResponseHeaders = edited.Headers;
-            LastResponseTimestamp = timestamp;
-            return ReadEditedImages(edited.Body);
+            var edited = await _provider.PostMultipartAsync(EditUri(), BuildEditForm(options, warnings), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+            return ReadEditedImages(edited.Body, warnings, new ImageResponseInfo(timestamp, ModelId, edited.Headers));
         }
 
         var body = new JsonObject
@@ -92,20 +65,17 @@ public sealed class DeepInfraImageModel : IImageModel
             body["height"] = size.Value.Height;
         }
 
-        if (Seed != null)
+        if (options.Seed != null)
         {
-            body["seed"] = Seed.Value;
+            body["seed"] = options.Seed.Value;
         }
 
-        OpenAICompatibleImages.MergeOptions(body, Provider, ProviderOptions, warnings);
+        OpenAICompatibleImages.MergeOptions(body, Provider, options.ProviderOptions, warnings);
         var origin = string.IsNullOrEmpty(_provider.Options.ImageBaseUrl)
             ? "https://api.deepinfra.com/v1/inference"
             : _provider.Options.ImageBaseUrl!.TrimEnd('/');
-        var response = await _provider.PostJsonAsync(new Uri(origin + "/" + ModelId), body.ToJsonString(), _provider.CreateHeaders(Headers), cancellationToken).ConfigureAwait(false);
-        LastWarnings = warnings;
-        LastResponseHeaders = response.Headers;
-        LastResponseTimestamp = timestamp;
-        return ReadImages(response.Body);
+        var response = await _provider.PostJsonAsync(new Uri(origin + "/" + ModelId), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
+        return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
     }
 
     /// <summary>Reads <c>detail.error</c>, then the shared OpenAI-compatible error message.</summary>
@@ -143,15 +113,15 @@ public sealed class DeepInfraImageModel : IImageModel
         form.Add(new StringContent(ModelId), "model");
         form.Add(new StringContent(options.Prompt), "prompt");
         var index = 0;
-        foreach (var file in Files!)
+        foreach (var file in options.Files!)
         {
             form.Add(OpenAICompatibleImages.FileContent(file), "image", file.FileName ?? ("image-" + index.ToString(CultureInfo.InvariantCulture) + ".png"));
             index++;
         }
 
-        if (Mask != null)
+        if (options.Mask != null)
         {
-            form.Add(OpenAICompatibleImages.FileContent(Mask), "mask", Mask.FileName ?? "mask.png");
+            form.Add(OpenAICompatibleImages.FileContent(options.Mask), "mask", options.Mask.FileName ?? "mask.png");
         }
 
         form.Add(new StringContent(options.Count.ToString(CultureInfo.InvariantCulture)), "n");
@@ -161,7 +131,7 @@ public sealed class DeepInfraImageModel : IImageModel
         }
 
         var extra = new JsonObject();
-        OpenAICompatibleImages.MergeOptions(extra, Provider, ProviderOptions, warnings);
+        OpenAICompatibleImages.MergeOptions(extra, Provider, options.ProviderOptions, warnings);
         foreach (var pair in extra)
         {
             if (pair.Value != null)
@@ -173,7 +143,7 @@ public sealed class DeepInfraImageModel : IImageModel
         return form;
     }
 
-    private static ImageGenerationResult ReadEditedImages(string? json)
+    private static ImageGenerationResult ReadEditedImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo response)
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var images = new List<GeneratedImage>();
@@ -188,7 +158,7 @@ public sealed class DeepInfraImageModel : IImageModel
             }
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, warnings, response);
     }
 
     private static (string Width, string Height)? SplitSize(string? size)
@@ -207,13 +177,13 @@ public sealed class DeepInfraImageModel : IImageModel
         return (parts[0], parts[1]);
     }
 
-    private static ImageGenerationResult ReadImages(string? json)
+    private static ImageGenerationResult ReadImages(string? json, IReadOnlyList<CallWarning> warnings, ImageResponseInfo response)
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
         var images = new List<GeneratedImage>();
         if (!document.RootElement.TryGetProperty("images", out var items) || items.ValueKind != JsonValueKind.Array)
         {
-            return new ImageGenerationResult(images);
+            return new ImageGenerationResult(images, warnings, response);
         }
 
         foreach (var item in items.EnumerateArray())
@@ -233,6 +203,6 @@ public sealed class DeepInfraImageModel : IImageModel
             images.Add(new GeneratedImage("image/png", Convert.FromBase64String(value), null));
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, warnings, response);
     }
 }
