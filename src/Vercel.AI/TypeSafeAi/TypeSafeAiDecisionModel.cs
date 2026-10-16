@@ -258,7 +258,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         using (response)
         {
-            var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var text = await ProviderUtils.CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
             var responseHeaders = CopyHeaders(response);
             var status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)

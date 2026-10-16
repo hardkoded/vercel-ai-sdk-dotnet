@@ -55,7 +55,7 @@ public sealed class StitchableStream<T>
             }
         }
 
-        inner.CancelAsync();
+        ObserveCancel(inner.CancelAsync());
     }
 
     /// <summary>Lets current inner streams finish, then closes the outer stream.</summary>
@@ -102,10 +102,16 @@ public sealed class StitchableStream<T>
                 onCancel();
             }
 
-            inners[i].Reader.CancelAsync();
+            ObserveCancel(inners[i].Reader.CancelAsync());
         }
 
         _stream.Close();
+    }
+
+    // A cancel nobody awaits must not leave a faulted task unobserved. Upstream also drops the error.
+    private static void ObserveCancel(Task cancel)
+    {
+        _ = cancel.ContinueWith(static task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private async Task PullAsync(ReadableStreamController<T> controller)

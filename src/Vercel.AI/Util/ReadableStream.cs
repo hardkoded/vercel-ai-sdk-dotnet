@@ -442,13 +442,26 @@ public class ReadableStream<T>
             _pulling = true;
         }
 
-        pull(_controller).ContinueWith(delegate (Task task)
+        Task pulled;
+        try
         {
-            var exception = task.Exception;
-            if (task.IsFaulted && exception != null)
+            pulled = pull(_controller);
+        }
+        catch (Exception exception)
+        {
+            pulled = Task.FromException(exception);
+        }
+
+        pulled.ContinueWith(delegate (Task task)
+        {
+            if (task.IsFaulted && task.Exception != null)
             {
-                var error = exception.GetBaseException();
-                _controller.Error(error);
+                _controller.Error(task.Exception.GetBaseException());
+            }
+            else if (task.IsCanceled)
+            {
+                // A cancelled pull would be retried in a loop while readers wait, so it fails the stream.
+                _controller.Error(new OperationCanceledException());
             }
 
             lock (_gate)
@@ -577,7 +590,7 @@ public sealed class AsyncIterableStream<T> : IAsyncEnumerable<T>
     /// <inheritdoc />
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        return new Enumerator(GetIterator());
+        return new Enumerator(GetIterator(), cancellationToken);
     }
 
     /// <summary>Reads every value.</summary>
@@ -603,11 +616,19 @@ public sealed class AsyncIterableStream<T> : IAsyncEnumerable<T>
     private sealed class Enumerator : IAsyncEnumerator<T>
     {
         private readonly StreamIterator<T> _iterator;
+        private readonly CancellationToken _cancellationToken;
+        private readonly CancellationTokenRegistration _registration;
         private T _current = default!;
 
-        public Enumerator(StreamIterator<T> iterator)
+        public Enumerator(StreamIterator<T> iterator, CancellationToken cancellationToken)
         {
             _iterator = iterator;
+            _cancellationToken = cancellationToken;
+            if (cancellationToken.CanBeCanceled)
+            {
+                // Cancelling the stream completes a pending read, so the wait in MoveNextAsync ends.
+                _registration = cancellationToken.Register(static state => _ = ((StreamIterator<T>)state!).ReturnAsync(), iterator);
+            }
         }
 
         public T Current
@@ -617,9 +638,11 @@ public sealed class AsyncIterableStream<T> : IAsyncEnumerable<T>
 
         public async ValueTask<bool> MoveNextAsync()
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var next = await _iterator.NextAsync().ConfigureAwait(false);
             if (next.Done)
             {
+                _cancellationToken.ThrowIfCancellationRequested();
                 return false;
             }
 
@@ -629,6 +652,7 @@ public sealed class AsyncIterableStream<T> : IAsyncEnumerable<T>
 
         public async ValueTask DisposeAsync()
         {
+            _registration.Dispose();
             await _iterator.ReturnAsync().ConfigureAwait(false);
         }
     }
