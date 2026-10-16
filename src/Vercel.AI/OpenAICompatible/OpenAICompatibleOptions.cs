@@ -130,6 +130,12 @@ public class OpenAICompatibleOptions
     public string? ImageBaseUrl { get; set; }
 
     /// <summary>
+    /// Client for hops off the provider origin when a URL from a response body is downloaded (Fal, Replicate, Luma, Prodia).
+    /// It must not follow redirects: each hop is validated before it is requested. Null uses a shared client that does not follow them.
+    /// </summary>
+    public HttpClient? DownloadHttpClient { get; set; }
+
+    /// <summary>
     /// Returns a copy. Providers change the copy, so the options the caller passed in are left as they were.
     /// </summary>
     public OpenAICompatibleOptions Copy()

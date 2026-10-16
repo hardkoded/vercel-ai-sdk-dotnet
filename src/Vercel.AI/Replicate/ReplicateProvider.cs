@@ -38,6 +38,12 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     public static new ReplicateProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        options ??= new OpenAICompatibleOptions();
+        if (handler is not null)
+        {
+            options.DownloadHttpClient ??= client;
+        }
+
         return new ReplicateProvider(client, options);
     }
 
@@ -70,7 +76,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     internal Task<ProviderExchangeResult> GetResponseUrlAsync(string url, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
         var outgoing = headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
-        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken);
+        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken, ProviderExchange.DownloadClient(Options));
     }
 }
 

@@ -2,16 +2,30 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
-using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.KlingAI;
 
-/// <summary>KlingAI provider.</summary>
+/// <summary>KlingAI provider settings. Adds the legacy access key and secret key to <see cref="OpenAICompatibleOptions"/>.</summary>
+public sealed class KlingAIOptions : OpenAICompatibleOptions
+{
+    /// <summary>
+    /// Legacy access key. Defaults to the <c>KLINGAI_ACCESS_KEY</c> environment variable.
+    /// Used with <see cref="SecretKey"/> to sign a short-lived JWT. Prefer <see cref="OpenAICompatibleOptions.ApiKey"/>.
+    /// </summary>
+    public string? AccessKey { get; set; }
+
+    /// <summary>
+    /// Legacy secret key. Defaults to the <c>KLINGAI_SECRET_KEY</c> environment variable.
+    /// Used with <see cref="AccessKey"/> to sign a short-lived JWT. Prefer <see cref="OpenAICompatibleOptions.ApiKey"/>.
+    /// </summary>
+    public string? SecretKey { get; set; }
+}
+
+/// <summary>KlingAI provider. It supports video generation only.</summary>
 public sealed class KlingAIProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -20,9 +34,12 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api-singapore.klingai.com";
 
-    private readonly HttpClient _httpClient;
+    internal readonly HttpClient _httpClient;
 
-    /// <summary>Creates a provider.</summary>
+    /// <summary>
+    /// Creates a provider. Pass <see cref="KlingAIOptions"/> to use the legacy access key and secret key.
+    /// The credentials are read when a request is sent, so a missing key fails then and not here.
+    /// </summary>
     public KlingAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
     {
@@ -32,71 +49,74 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("KlingAI does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates a provider.</summary>
     public static new KlingAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
+        if (handler is not null)
+        {
+            options ??= new KlingAIOptions();
+            options.DownloadHttpClient ??= client;
+        }
+
         return new KlingAIProvider(client, options);
+    }
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId) => new KlingAIVideoModel(this, modelId);
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
+    public IVideoModel Video(string modelId) => VideoModel(modelId);
+
+    /// <summary>
+    /// Resolves the bearer token on every call. An API key is sent as is. A legacy access key and secret key sign a fresh JWT.
+    /// </summary>
+    protected override string? ResolveApiKey()
+    {
+        var kling = Options as KlingAIOptions;
+        return KlingAIAuth.ResolveAuthToken(Options.ApiKey, kling?.AccessKey, kling?.SecretKey);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
-        options = options?.Copy() ?? new OpenAICompatibleOptions();
+        options = options?.Copy() ?? new KlingAIOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
-        options.ApiKeyEnvironmentVariable = "KLINGAI_API_KEY";
+        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl.TrimEnd('/');
+        options.ApiKeyEnvironmentVariable = KlingAIAuth.ApiKeyEnvironmentVariable;
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
+        options.UserAgent = ProviderExchange.UserAgent("klingai");
         return options;
     }
-
-    /// <inheritdoc />
-    public override IVideoModel VideoModel(string modelId) => new Video(this, modelId);
-
-    /// <summary>Starts a text-to-video job. <paramref name="headers"/> override the provider headers.</summary>
-    public Task<VideoResult> GenerateVideoAsync(string modelId, VideoCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
-    {
-        return new Video(this, modelId).GenerateAsync(options, headers, cancellationToken);
-    }
-
-    private sealed class Video : IVideoModel
-    {
-        private readonly KlingAIProvider _provider;
-        public Video(KlingAIProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
-        public string Provider => "klingai";
-        public string ModelId { get; }
-        public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
-        {
-            return GenerateAsync(options, null, cancellationToken);
-        }
-
-        public async Task<VideoResult> GenerateAsync(VideoCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
-        {
-            var body = new JsonObject { ["model_name"] = ModelId, ["prompt"] = options.Prompt };
-            var merged = ProviderExchange.Merge(_provider.CreateHeaders(), headers);
-            var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/videos/text2video"), ProviderExchange.Json(body.ToJsonString()), merged, cancellationToken).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-            var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
-            return new VideoResult(url, null, "video/mp4");
-        }
-    }
-
 }
 
 /// <summary>Registers KlingAI.</summary>
 public static class KlingAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddKlingAI(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddKlingAI(this IServiceCollection services, Action<KlingAIOptions>? configure = null)
     {
         services.AddHttpClient(KlingAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
-            var options = new OpenAICompatibleOptions();
+            var options = new KlingAIOptions();
             configure?.Invoke(options);
             return new KlingAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(KlingAIProvider.ProviderId), options);
         });

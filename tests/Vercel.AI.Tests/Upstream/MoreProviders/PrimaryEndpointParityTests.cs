@@ -9,7 +9,6 @@ using Vercel.AI.AssemblyAI;
 using Vercel.AI.ByteDance;
 using Vercel.AI.Cartesia;
 using Vercel.AI.Deepgram;
-using Vercel.AI.KlingAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -142,24 +141,6 @@ public sealed class PrimaryEndpointParityTests
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
         Assert.Contains("ai-sdk/deepgram/" + AiSdkVersion.Version, call.Header("User-Agent") ?? string.Empty, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/klingai/src/klingai-video-model.test.ts::KlingAIVideoModel > doStart::should pass headers", Coverage = UpstreamCoverage.Covered)]
-    public async Task Kling_text_to_video_sends_bearer_and_custom_headers()
-    {
-        var handler = ImageHandler();
-        var options = new OpenAICompatibleOptions { BaseUrl = "https://api.example.com" };
-        options.Headers["Authorization"] = "Bearer custom-token";
-        options.Headers["X-Custom"] = "value";
-        await KlingAIProvider.Create(options, handler).GenerateVideoAsync("kling-v2.6-t2v", new VideoCallOptions("A cat"), new Dictionary<string, string> { ["X-Request-Header"] = "request-value" }, CancellationToken.None).ConfigureAwait(false);
-        var call = handler.Calls[0];
-        Assert.Equal("Bearer custom-token", call.Header("Authorization"));
-        Assert.Equal("value", call.Header("X-Custom"));
-        Assert.Equal("request-value", call.Header("X-Request-Header"));
-        Assert.Equal("https://api.example.com/v1/videos/text2video", call.Uri.AbsoluteUri);
-        using var body = JsonDocument.Parse(call.Text);
-        Assert.Equal("kling-v2.6-t2v", body.RootElement.GetProperty("model_name").GetString());
     }
 
     private static ParityHandler ImageHandler()
