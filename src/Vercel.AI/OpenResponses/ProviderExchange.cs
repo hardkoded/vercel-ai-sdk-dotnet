@@ -5,6 +5,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI;
@@ -46,12 +47,21 @@ internal static class ProviderExchange
         {
             Apply(request, headers);
             request.Content = content;
-            var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response;
+            try
+            {
+                response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new ApiUserAbortException(exception, cancellationToken);
+            }
+
             try
             {
                 var bytes = response.Content == null
                     ? Array.Empty<byte>()
-                    : await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                    : await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
                 var body = Encoding.UTF8.GetString(bytes);
                 if (!response.IsSuccessStatusCode)
                 {
