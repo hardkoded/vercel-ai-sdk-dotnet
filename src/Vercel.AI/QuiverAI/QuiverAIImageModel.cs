@@ -22,9 +22,9 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     private const int MaxAnimationSourceBase64Length = 1_066_668;
     private const int MaxEditSvgBytes = 200_000;
 
-    private static readonly Regex AnimationSvgStart = new Regex("^(?:(?:<\\?xml[\\s\\S]*?\\?>|<!--[\\s\\S]*?-->|<!DOCTYPE[\\s\\S]*?>)\\s*)*<svg(?:\\s|>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-    private static readonly Regex DecimalReference = new Regex("^#\\d+$", RegexOptions.CultureInvariant);
-    private static readonly Regex HexReference = new Regex("^#x[\\dA-Fa-f]+$", RegexOptions.CultureInvariant);
+    private static readonly Regex AnimationSvgStart = new Regex("^(?:(?:<\\?xml[\\s\\S]*?\\?>|<!--[\\s\\S]*?-->|<!DOCTYPE[\\s\\S]*?>)\\s*)*<svg(?:\\s|>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex DecimalReference = new Regex("^#[0-9]+\\z", RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
+    private static readonly Regex HexReference = new Regex("^#x[0-9A-Fa-f]+\\z", RegexOptions.CultureInvariant, SafeRegex.LargeInputTimeout);
     private static readonly string[] ReasoningEfforts = { "low", "medium", "high", "xhigh" };
 
     private readonly QuiverAIProvider _provider;
@@ -473,7 +473,7 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
 
         var bytes = file.Data!;
         var head = Encoding.UTF8.GetString(bytes, 0, Math.Min(bytes.Length, 4096)).TrimStart();
-        if (!AnimationSvgStart.IsMatch(head))
+        if (!SafeRegex.IsMatch(AnimationSvgStart, head))
         {
             throw new InvalidArgumentException("files", null, "QuiverAI animate requires the input file to contain SVG data.");
         }
@@ -795,7 +795,7 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
             }
 
             var reference = value.Substring(position + 1, end - position - 1);
-            if (!DecimalReference.IsMatch(reference) && !HexReference.IsMatch(reference) && !IsXmlName(reference))
+            if (!SafeRegex.IsMatch(DecimalReference, reference) && !SafeRegex.IsMatch(HexReference, reference) && !IsXmlName(reference))
             {
                 return false;
             }

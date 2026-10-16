@@ -36,7 +36,7 @@ public sealed class AnthropicBatchCounts
 /// <summary>Validation and status mapping for the Anthropic Message Batches API.</summary>
 public static class AnthropicBatch
 {
-    private static readonly Regex IdPattern = new Regex("^[A-Za-z0-9_-]{1,64}$", RegexOptions.CultureInvariant);
+    private static readonly Regex IdPattern = new Regex(@"^[A-Za-z0-9_-]{1,64}\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>Throws when <paramref name="id"/> is not 1–64 letters, digits, underscores, or hyphens.</summary>
     public static void ValidateRequestId(string id)

@@ -45,7 +45,7 @@ public static class UrlSupport
 
             foreach (var pattern in pair.Value)
             {
-                if (pattern.IsMatch(url))
+                if (SafeRegex.IsMatch(pattern, url))
                 {
                     return true;
                 }

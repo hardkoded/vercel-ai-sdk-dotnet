@@ -11,8 +11,8 @@ public static class GoogleFileUrls
 {
     private static readonly Regex[] YouTube =
     {
-        new(@"^https://(?:www\.)?youtube\.com/watch\?v=[\w-]+(?:&[\w=&.-]*)?$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
-        new(@"^https://youtu\.be/[\w-]+(?:\?[\w=&.-]*)?$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
+        new(@"^https://(?:www\.)?youtube\.com/watch\?v=[A-Za-z0-9_-]+(?:&[A-Za-z0-9_=&.-]*)?\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
+        new(@"^https://youtu\.be/[A-Za-z0-9_-]+(?:\?[A-Za-z0-9_=&.-]*)?\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)),
     };
 
     /// <summary>True for Generative Language file URLs and public YouTube watch URLs.</summary>

@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Vercel.AI.OpenAI;
@@ -91,22 +92,41 @@ public sealed class OpenAILanguageModelCapabilities
             supportsNonReasoning);
     }
 
+    private static readonly Regex OSeries = new Regex("^o([0-9]+)(?:-|\\z)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gpt = new Regex("^gpt-([0-9]+)(?:\\.([0-9]+))?(?:-(.+))?\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+
+    // A version number too large for int is not a known model, so it is treated as no match.
     private static int? GetOSeriesVersion(string modelId)
     {
-        var match = Regex.Match(modelId, "^o(\\d+)(?:-|$)");
-        return match.Success ? int.Parse(match.Groups[1].Value) : null;
+        var match = OSeries.Match(modelId);
+        return match.Success && TryParseInt(match.Groups[1].Value, out var version) ? version : null;
     }
 
     private static (int Major, int? Minor, string? Variant)? GetGptVersion(string modelId)
     {
-        var match = Regex.Match(modelId, "^gpt-(\\d+)(?:\\.(\\d+))?(?:-(.+))?$");
-        if (!match.Success)
+        var match = Gpt.Match(modelId);
+        if (!match.Success || !TryParseInt(match.Groups[1].Value, out var major))
         {
             return null;
         }
 
-        int? minor = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : null;
+        int? minor = null;
+        if (match.Groups[2].Success)
+        {
+            if (!TryParseInt(match.Groups[2].Value, out var parsedMinor))
+            {
+                return null;
+            }
+
+            minor = parsedMinor;
+        }
+
         var variant = match.Groups[3].Success ? match.Groups[3].Value : null;
-        return (int.Parse(match.Groups[1].Value), minor, variant);
+        return (major, minor, variant);
+    }
+
+    private static bool TryParseInt(string value, out int result)
+    {
+        return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
     }
 }

@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
@@ -10,9 +11,9 @@ namespace Vercel.AI.Google;
 /// <summary>Maps the shared reasoning option onto Gemini thinking configuration.</summary>
 public static class GoogleThinking
 {
-    private static readonly Regex ModelName = new(@"(?:^|[/.])(gemini-[^/]*)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gemini3Pro = new(@"^gemini-(\d+)(?:\.\d+)?-pro(?:$|-)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
-    private static readonly Regex Gemini3Flash = new(@"^gemini-(\d+)\.(\d+)-flash(?:$|-(?!lite(?:-|$)))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex ModelName = new(@"(?:^|[/.])(gemini-[^/]*)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini3Pro = new(@"^gemini-([0-9]+)(?:\.[0-9]+)?-pro(?:\z|-)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+    private static readonly Regex Gemini3Flash = new(@"^gemini-([0-9]+)\.([0-9]+)-flash(?:\z|-(?!lite(?:-|\z)))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>
     /// Returns a <c>thinkingConfig</c> object, or null when reasoning is unset or <c>provider-default</c>.
@@ -84,7 +85,7 @@ public static class GoogleThinking
         }
 
         var proMatch = Gemini3Pro.Match(name);
-        if (proMatch.Success && int.Parse(proMatch.Groups[1].Value) >= 3)
+        if (proMatch.Success && int.TryParse(proMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var proMajor) && proMajor >= 3)
         {
             return "low";
         }
@@ -95,8 +96,12 @@ public static class GoogleThinking
             return "minimal";
         }
 
-        var major = int.Parse(match.Groups[1].Value);
-        var minor = int.Parse(match.Groups[2].Value);
+        if (!int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var major)
+            || !int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minor))
+        {
+            return "minimal";
+        }
+
         return major > 3 || (major == 3 && minor >= 7) ? "low" : "minimal";
     }
 

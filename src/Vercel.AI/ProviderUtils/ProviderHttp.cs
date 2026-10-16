@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -361,7 +362,7 @@ public sealed class ProviderHttp
         if (response.Headers.TryGetValues("retry-after-ms", out var millisecondsValues))
         {
             var raw = millisecondsValues.FirstOrDefault();
-            if (int.TryParse(raw, out var milliseconds))
+            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var milliseconds))
             {
                 return TimeSpan.FromMilliseconds(milliseconds);
             }
