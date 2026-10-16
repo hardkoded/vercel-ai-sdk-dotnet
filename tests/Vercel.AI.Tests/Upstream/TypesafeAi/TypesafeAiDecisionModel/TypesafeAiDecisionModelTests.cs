@@ -35,7 +35,7 @@ public sealed class TypesafeAiDecisionModelTests
     [InlineData("jev-1.14.0")]
     [InlineData("jev-latest")]
     [InlineData("jev-preview")]
-    [UpstreamTest(Prefix + "sends the model ID or alias unchanged", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "sends the model ID or alias unchanged: %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_the_model_ID_or_alias_unchanged(string modelId)
     {
         var server = Server();
