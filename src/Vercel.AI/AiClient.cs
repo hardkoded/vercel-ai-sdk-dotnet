@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI;
@@ -450,6 +451,12 @@ public static class Ai
     public static Task<EmbeddingResult> EmbedManyAsync(EmbedOptions options, CancellationToken cancellationToken = default)
     {
         return DefaultClient.Value.EmbedManyAsync(options, cancellationToken);
+    }
+
+    /// <summary>Prunes reasoning, tool calls, results, errors, and approvals from messages. Maps to <c>pruneMessages</c>.</summary>
+    public static IReadOnlyList<ModelMessage> PruneMessages(PruneMessagesOptions options)
+    {
+        return MessagePruning.PruneMessages(options);
     }
 
     /// <summary>Cosine similarity of two vectors.</summary>
