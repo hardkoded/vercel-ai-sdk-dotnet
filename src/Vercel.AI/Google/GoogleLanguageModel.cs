@@ -328,10 +328,10 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 {
                                     block++;
                                     reasoningId = "reasoning-" + block;
-                                    yield return new ReasoningStartStreamPart(reasoningId);
+                                    yield return new ReasoningStartStreamPart(reasoningId, reasoning.ProviderMetadata);
                                 }
 
-                                yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
+                                yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text, reasoning.ProviderMetadata);
                             }
                             else if (generated is GeneratedText text)
                             {
@@ -345,10 +345,10 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 {
                                     block++;
                                     textId = "text-" + block;
-                                    yield return new TextStartStreamPart(textId);
+                                    yield return new TextStartStreamPart(textId, text.ProviderMetadata);
                                 }
 
-                                yield return new TextDeltaStreamPart(textId, text.Text);
+                                yield return new TextDeltaStreamPart(textId, text.Text, text.ProviderMetadata);
                             }
                             else if (generated is GoogleToolCall tool)
                             {
