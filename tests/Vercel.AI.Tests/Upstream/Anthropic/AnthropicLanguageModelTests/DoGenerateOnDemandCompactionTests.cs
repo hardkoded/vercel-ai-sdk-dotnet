@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream;
 
 namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 
@@ -82,5 +83,21 @@ public sealed class DoGenerateOnDemandCompactionTests
         Assert.Equal("user", messages[1]!["role"]!.GetValue<string>());
         Assert.Equal("Continue the conversation.", messages[1]!["content"]![0]!["text"]!.GetValue<string>());
         Assert.Contains("compact-2026-09-04", handler.Headers["anthropic-beta"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should preserve the signature on compaction responses", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_preserve_the_signature_on_compaction_responses()
+    {
+        var handler = AnthropicParity.Ok(
+            "{\"id\":\"msg_compaction\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"compaction\",\"content\":\"Summary of the conversation.\",\"signature\":\"compaction-signature\"}],\"model\":\"claude-opus-5\",\"stop_reason\":\"compaction\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":0,\"output_tokens\":0,\"iterations\":[{\"type\":\"compaction\",\"input_tokens\":120,\"output_tokens\":30}]}}");
+
+        var result = await AnthropicParity.Generate(AnthropicParity.Client(handler), "claude-opus-5");
+
+        var text = Assert.IsAssignableFrom<GeneratedText>(Assert.Single(result.Content));
+        Assert.Equal("Summary of the conversation.", text.Text);
+        JsonAssert.Equal(text.ProviderMetadata!.Value, "{\"anthropic\":{\"type\":\"compaction\",\"signature\":\"compaction-signature\"}}");
+        Assert.Equal(FinishReason.Other, result.FinishReason);
+        Assert.Equal("compaction", result.RawFinishReason);
     }
 }
