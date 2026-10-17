@@ -22,6 +22,9 @@ public sealed class GatewayOptions
 
     /// <summary>Explicit key. Falls back to <c>AI_GATEWAY_API_KEY</c>.</summary>
     public string? ApiKey { get; set; }
+
+    /// <summary>Observability headers. When unset, they come from the <c>VERCEL_*</c> environment variables.</summary>
+    internal IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
 }
 
 /// <summary>
@@ -41,6 +44,7 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         : base(ProviderId)
     {
         Options = options ?? new GatewayOptions();
+        O11yHeaders = Options.O11yHeaders ?? CreateO11yHeaders();
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
     }
 
@@ -55,6 +59,29 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
+
+    internal IReadOnlyDictionary<string, string> O11yHeaders { get; }
+
+    private static Dictionary<string, string> CreateO11yHeaders()
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, variable) in new[]
+        {
+            ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
+            ("ai-o11y-environment", "VERCEL_ENV"),
+            ("ai-o11y-region", "VERCEL_REGION"),
+            ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
+        })
+        {
+            var value = Environment.GetEnvironmentVariable(variable);
+            if (!string.IsNullOrEmpty(value))
+            {
+                headers[name] = value;
+            }
+        }
+
+        return headers;
+    }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static GatewayProvider Create(GatewayOptions? options = null, HttpMessageHandler? handler = null)
@@ -115,6 +142,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             {
                 headers[pair.Key] = pair.Value;
             }
+        }
+
+        foreach (var pair in O11yHeaders)
+        {
+            headers[pair.Key] = pair.Value;
         }
 
         return headers;
@@ -185,11 +217,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
                 cancellationToken).ConfigureAwait(false);
             return V4Json.ParseGenerate(document.RootElement);
         }
-        catch (ApiException exception)
-        {
-            throw GatewayProvider.MapFailure(exception);
-        }
-        catch (ApiTimeoutException exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayProvider.MapFailure(exception);
         }
@@ -209,19 +237,15 @@ public sealed class GatewayLanguageModel : ILanguageModel
                 _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
                 cancellationToken).ConfigureAwait(false);
         }
-        catch (ApiException exception)
-        {
-            throw GatewayProvider.MapFailure(exception);
-        }
-        catch (ApiTimeoutException exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayProvider.MapFailure(exception);
         }
 
-        return sse.ToStreamResult(StreamAsync(sse.Events, cancellationToken), json);
+        return sse.ToStreamResult(StreamAsync(sse.Events, options.IncludeRawChunks, cancellationToken), json);
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, bool includeRawChunks, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
@@ -258,7 +282,8 @@ public sealed class GatewayLanguageModel : ILanguageModel
                     throw new JsonParseException(enumerator.Current, exception);
                 }
 
-                if (part != null)
+                // Raw chunks are dropped unless the caller asked for them.
+                if (part != null && (includeRawChunks || part is not RawStreamPart))
                 {
                     yield return part;
                 }
