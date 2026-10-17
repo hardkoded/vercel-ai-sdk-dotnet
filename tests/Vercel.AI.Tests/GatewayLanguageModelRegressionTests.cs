@@ -8,6 +8,8 @@ using Vercel.AI.Tests.Upstream.Gateway.GatewayLanguageModel;
 
 namespace Vercel.AI.Tests;
 
+/// <summary>Shares the collection of the tests that change <c>AI_GATEWAY_API_KEY</c>, so none runs in parallel with another.</summary>
+[Collection("DecisionDefaultProvider")]
 public sealed class GatewayLanguageModelRegressionTests
 {
     private static readonly LanguageModelCallOptions Prompt = GatewayLanguageModelSupport.TestPrompt;
