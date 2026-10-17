@@ -51,7 +51,7 @@ Providers keep the error status:
 
 ## Provider-defined tools
 
-A provider-defined tool is run by the provider, such as a web search. Declare it with `Tool.ProviderDefined(id, name, args)`. The `id` is `<provider>.<tool>` and `args` is a JSON object. The tool has no `Execute`, and the SDK never runs it.
+A provider-defined tool is run by the provider, such as a web search. Declare it with `Tool.ProviderDefined(id, name, args)`. The `id` is `<provider>.<tool>` and `args` is a JSON object. The tool has no `Execute`, and the SDK never runs it. Pass a JSON Schema as the optional fourth argument, `inputSchema`, to parse the input of the tool's calls. The input of a provider-executed call keeps only the keys the schema lists under `properties`, so `{"type":"programmatic-tool-call","code":"game_loop()"}` becomes `{"code":"game_loop()"}` in the next prompt when the schema lists only `code`.
 
 ```csharp
 using var args = JsonDocument.Parse("{}");

@@ -47,7 +47,7 @@ internal static class Generation
     {
         return new LanguageModelCallOptions
         {
-            Prompt = prompt,
+            Prompt = prompt.ToArray(),
             MaxOutputTokens = options.MaxOutputTokens,
             Temperature = options.Temperature,
             TopP = options.TopP,
@@ -311,7 +311,9 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted };
+                                var call = ParseProviderToolInput(
+                                    new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted },
+                                    options);
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 buffer.Add(new ToolCallPart(call));
@@ -668,7 +670,8 @@ internal static class Generation
         {
             switch (part)
             {
-                case GeneratedToolCall call:
+                case GeneratedToolCall generatedCall:
+                    var call = ParseProviderToolInput(generatedCall, options);
                     toolCalls.Add(call);
                     assistantParts.Add(new AssistantToolCallPart(call));
                     break;
@@ -729,6 +732,65 @@ internal static class Generation
         }
 
         return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, generated.Content);
+    }
+
+    // A provider-executed call of a provider-defined tool with an input schema keeps only the keys the schema lists.
+    private static GeneratedToolCall ParseProviderToolInput(GeneratedToolCall call, GenerateTextOptions options)
+    {
+        var tool = call.ProviderExecuted ? FindTool(options, call.ToolName) : null;
+        if (tool is not { IsProviderDefined: true } || tool.InputSchema.ValueKind != JsonValueKind.Object)
+        {
+            return call;
+        }
+
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(call.ArgumentsJson);
+        }
+        catch (JsonException)
+        {
+            return call;
+        }
+
+        var stripped = StripToSchema(parsed, tool.InputSchema);
+        return new GeneratedToolCall(call.ToolCallId, call.ToolName, stripped?.ToJsonString() ?? call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = true };
+    }
+
+    // Like an object schema in Zod: keys outside "properties" are dropped, nested objects and arrays are walked.
+    private static JsonNode? StripToSchema(JsonNode? value, JsonElement schema)
+    {
+        if (schema.ValueKind != JsonValueKind.Object)
+        {
+            return value;
+        }
+
+        if (value is JsonObject obj && schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object)
+        {
+            var result = new JsonObject();
+            foreach (var property in obj)
+            {
+                if (properties.TryGetProperty(property.Key, out var child))
+                {
+                    result[property.Key] = StripToSchema(property.Value?.DeepClone(), child);
+                }
+            }
+
+            return result;
+        }
+
+        if (value is JsonArray array && schema.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Object)
+        {
+            var result = new JsonArray();
+            foreach (var item in array)
+            {
+                result.Add(StripToSchema(item?.DeepClone(), items));
+            }
+
+            return result;
+        }
+
+        return value;
     }
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)

@@ -48,11 +48,12 @@ public sealed class Tool
     /// </summary>
     public JsonElement? ProviderOptions { get; set; }
 
-    private Tool(string providerToolId, string name, JsonElement args)
+    private Tool(string providerToolId, string name, JsonElement args, JsonElement inputSchema)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         ProviderToolId = providerToolId ?? throw new ArgumentNullException(nameof(providerToolId));
         ProviderToolArgs = args;
+        InputSchema = inputSchema;
     }
 
     /// <summary>Provider-defined tool id (<c>&lt;provider&gt;.&lt;tool&gt;</c>), or null for a function tool.</summary>
@@ -67,10 +68,12 @@ public sealed class Tool
     /// <summary>
     /// Declares a provider-defined tool. The provider executes it, so it has no <see cref="Execute"/>.
     /// <paramref name="args"/> must be a JSON object. Maps to <see cref="LanguageModelTool.ProviderDefined"/>.
+    /// <paramref name="inputSchema"/> is the JSON Schema of the tool call input. When set, the input of a provider-executed
+    /// call is parsed with it, so keys the schema does not list are dropped. Maps to the tool's <c>inputSchema</c>.
     /// </summary>
-    public static Tool ProviderDefined(string id, string name, JsonElement args)
+    public static Tool ProviderDefined(string id, string name, JsonElement args, JsonElement? inputSchema = null)
     {
-        return new Tool(id, name, args.Clone());
+        return new Tool(id, name, args.Clone(), inputSchema?.Clone() ?? default);
     }
 
     /// <summary>Creates a tool from a JSON schema string.</summary>
