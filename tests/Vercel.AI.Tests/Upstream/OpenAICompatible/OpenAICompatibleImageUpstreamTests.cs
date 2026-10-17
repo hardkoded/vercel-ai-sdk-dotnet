@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Tests;
 
@@ -254,7 +255,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 137, 80, 78, 71 };
-        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "cat.png") };
+        var files = new[] { ImageModelFile.FromFile(bytes, "image/png", "cat.png") };
         await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Files = files }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
         Assert.Contains("cat.png", capture.Requests[0].Body);
@@ -268,8 +269,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 137, 80, 78, 71 };
-        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image.png") };
-        var mask = new OpenAICompatibleImageFile("image/png", bytes, null, "mask.png");
+        var files = new[] { ImageModelFile.FromFile(bytes, "image/png", "image.png") };
+        var mask = ImageModelFile.FromFile(bytes, "image/png", "mask.png");
         await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool") { Files = files, Mask = mask }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
         Assert.True(
@@ -285,7 +286,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         var model = Image(capture);
         var bytes = new byte[] { 104, 101, 108, 108, 111 };
-        var files = new[] { new OpenAICompatibleImageFile("image/png", bytes, null, "image-0.png") };
+        var files = new[] { ImageModelFile.FromFile(bytes, "image/png", "image-0.png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.Contains("hello", capture.Requests[0].Body);
     }
@@ -299,8 +300,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var bytes = new byte[] { 137, 80, 78, 71 };
         var files = new[]
         {
-            new OpenAICompatibleImageFile("image/png", bytes, null, "one.png"),
-            new OpenAICompatibleImageFile("image/png", bytes, null, "two.png"),
+            ImageModelFile.FromFile(bytes, "image/png", "one.png"),
+            ImageModelFile.FromFile(bytes, "image/png", "two.png"),
         };
         await model.DoGenerateAsync(new ImageCallOptions("combine") { Files = files }, CancellationToken.None);
         Assert.Contains("one.png", capture.Requests[0].Body);
@@ -315,7 +316,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var capture = EditCapture();
         capture.ResponseHeaders["x-request-id"] = "req-1";
         var model = Image(capture, clock: () => stamp);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, "image.png") };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png", "image.png") };
         var result = await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.EndsWith("/images/edits", capture.Requests[0].Uri!.AbsolutePath);
         Assert.Equal(stamp, result.Response!.Timestamp);
@@ -329,7 +330,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[{\"b64_json\":\"aGVsbG8=\"}],\"usage\":{\"input_tokens\":5,\"output_tokens\":2,\"total_tokens\":7}}" };
         var model = Image(capture);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1, 2, 3 }, null, "a.png") };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 1, 2, 3 }, "image/png", "a.png") };
         var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
         Assert.Equal(5, result.Usage!.InputTokens);
         Assert.Equal(2, result.Usage.OutputTokens);
@@ -341,7 +342,7 @@ public sealed class OpenAICompatibleImageUpstreamTests
     public async Task Omitted_edit_usage_stays_unset()
     {
         var model = Image(EditCapture());
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 1 }, null, "a.png") };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 1 }, "image/png", "a.png") };
         var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
         Assert.Null(result.Usage);
     }

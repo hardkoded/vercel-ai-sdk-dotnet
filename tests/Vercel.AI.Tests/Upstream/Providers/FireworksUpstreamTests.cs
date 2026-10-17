@@ -94,8 +94,8 @@ public sealed class FireworksUpstreamTests
         var model = Image(capture, Flux);
         var files = new[]
         {
-            new OpenAICompatibleImageFile("image/png", new byte[] { 1 }, null, "a.png"),
-            new OpenAICompatibleImageFile("image/png", new byte[] { 2 }, null, "b.png"),
+            ImageModelFile.FromFile(new byte[] { 1 }, "image/png", "a.png"),
+            ImageModelFile.FromFile(new byte[] { 2 }, "image/png", "b.png"),
         };
         var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
         Assert.Contains(result.CallWarnings, warning => warning.Message == "Fireworks only supports a single input image. Additional images are ignored.");
@@ -383,7 +383,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") };
         await model.DoGenerateAsync(new ImageCallOptions("Turn the cat into a dog") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"data:image/png;base64,iVBORw==\",\"prompt\":\"Turn the cat into a dog\",\"samples\":1}");
     }
@@ -394,7 +394,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         Assert.Equal("https://api.fireworks.ai/inference/v1/workflows/" + Kontext, capture.Requests[0].Uri!.AbsoluteUri);
     }
@@ -405,7 +405,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", null, "https://example.com/input.png", null) };
+        var files = new[] { ImageModelFile.FromUrl("https://example.com/input.png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"https://example.com/input.png\",\"prompt\":\"Edit this image\",\"samples\":1}");
     }
@@ -416,7 +416,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAE="), null, null) };
+        var files = new[] { ImageModelFile.FromFile(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAE="), "image/png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this image") { Files = files }, CancellationToken.None);
         JsonAssert.Equal(JsonNode.Parse(capture.Requests[0].Body), "{\"input_image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=\",\"prompt\":\"Edit this image\",\"samples\":1}");
     }
@@ -426,8 +426,8 @@ public sealed class FireworksUpstreamTests
     public async Task A_mask_warns()
     {
         var model = Image(KontextCapture(), Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
-        var mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") };
+        var mask = ImageModelFile.FromFile(new byte[] { 255, 255, 255, 0 }, "image/png");
         var result = await model.DoGenerateAsync(new ImageCallOptions("Edit with mask") { Files = files, Mask = mask }, CancellationToken.None);
         Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit.");
     }
@@ -438,7 +438,7 @@ public sealed class FireworksUpstreamTests
     {
         var capture = KontextCapture();
         var model = Image(capture, Kontext);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") };
         var seed = 42;
         var providerOptions = UpstreamChat.Bag("fireworks", "{\"output_format\":\"jpeg\",\"safety_tolerance\":2}");
         await model.DoGenerateAsync(new ImageCallOptions("Edit with options") { AspectRatio = "16:9", Seed = seed, Files = files, ProviderOptions = providerOptions }, CancellationToken.None);

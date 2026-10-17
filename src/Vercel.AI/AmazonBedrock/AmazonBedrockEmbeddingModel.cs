@@ -56,7 +56,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     private string Family => _modelFamily ?? (IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan");
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
     {
         values ??= Array.Empty<string>();
         if (values.Count > MaxEmbeddingsPerCall)
@@ -111,7 +111,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
-        _provider.AddHeaders(request, Headers);
+        _provider.AddHeaders(request, headers ?? Headers);
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");

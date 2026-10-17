@@ -205,7 +205,7 @@ public sealed class UrlImageResponsesTests
         };
         if (endpoint == "edits")
         {
-            call.Files = new[] { new OpenAICompatibleImageFile("image/png", ImageBytes, null, "image.png") };
+            call.Files = new[] { ImageModelFile.FromFile(ImageBytes, "image/png", "image.png") };
         }
 
         return (model, fetch, call);

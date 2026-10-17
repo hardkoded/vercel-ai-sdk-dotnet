@@ -29,9 +29,10 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
+    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
     {
-        return DoRerankAsync(query, documents, topN, null, cancellationToken);
+        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents.ToArray()), query, topN, null, ProviderExchange.ToRequestHeaders(headers), cancellationToken);
+        return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>
