@@ -80,6 +80,9 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
+    public string SpecificationVersion => "v4";
+
+    /// <inheritdoc />
     public string Provider => "bytedance.video";
 
     /// <inheritdoc />

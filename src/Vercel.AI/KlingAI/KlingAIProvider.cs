@@ -113,7 +113,8 @@ public static class KlingAIServiceCollectionExtensions
     /// <summary>Adds the provider.</summary>
     public static IServiceCollection AddKlingAI(this IServiceCollection services, Action<KlingAIOptions>? configure = null)
     {
-        services.AddHttpClient(KlingAIProvider.ProviderId);
+        // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        services.AddHttpClient(KlingAIProvider.ProviderId).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddSingleton(sp =>
         {
             var options = new KlingAIOptions();

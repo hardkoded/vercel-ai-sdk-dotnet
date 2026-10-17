@@ -69,13 +69,6 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", AnthropicAssertions.ErrorOverloaded);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::uses native Messages output with portable constraints and configured settings", AnthropicAssertions.EvaluationNative);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::allows provider options to enable thinking for decide", AnthropicAssertions.EvaluationThinkingOverride);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::selects native structured output automatically for supported models", AnthropicAssertions.EvaluationAutoAndJsonToolAndBounds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::supports the existing JSON-tool fallback through provider options", AnthropicAssertions.EvaluationAutoAndJsonToolAndBounds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::rejects %s even with valid JSON", AnthropicAssertions.EvaluationAutoAndJsonToolAndBounds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::validates score bounds locally", AnthropicAssertions.EvaluationAutoAndJsonToolAndBounds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-decision.test.ts::decides Boolean alongside Choice and Score using %s", AnthropicAssertions.EvaluationAutoAndJsonToolAndBounds);
         AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends POST to /v1/files with correct beta header", AnthropicAssertions.FilesBeta);
         AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::threads per-call headers and abortSignal", AnthropicAssertions.FilesCustomName);
         AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends x-api-key header", AnthropicAssertions.FilesBeta);

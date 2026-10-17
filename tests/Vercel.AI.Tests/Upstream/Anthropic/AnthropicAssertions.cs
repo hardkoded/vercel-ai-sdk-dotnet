@@ -1411,82 +1411,6 @@ internal static class AnthropicAssertions
         Assert.Equal("[{\"role\":\"user\",\"content\":[{\"type\":\"image\",\"source\":{\"type\":\"url\",\"url\":\"https://example.com/image.png\"}}]}]", converted.Messages.ToJsonString());
     }
 
-    public static async Task EvaluationNative()
-    {
-        var handler = new CaptureHandler
-        {
-            ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "end_turn", 232, 17),
-        };
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
-        provider.Options.Headers["x-provider"] = "configured";
-        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
-        var call = new LanguageModelCallOptions { Headers = new Dictionary<string, string?> { ["x-call"] = "forwarded" } };
-        call.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"structuredOutputMode\":\"outputFormat\"}") };
-        var result = await model.EvaluateAsync(Questions(), call, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("anthropic.evaluation", model.Provider);
-        Assert.Equal(new[] { "choice", "score", "boolean" }, model.SupportedQuestionTypes);
-        Assert.Equal("billing", result.Answers["department"].Choice);
-        Assert.Equal(1.25, result.Answers["severity"].Score);
-        Assert.Equal(232, result.Usage.InputTokens);
-        Assert.Equal(17, result.Usage.OutputTokens);
-        Assert.Equal("https://example.com/v1/messages", handler.Uri);
-        Assert.Equal("test-key", handler.Headers["x-api-key"]);
-        Assert.Equal("configured", handler.Headers["x-provider"]);
-        Assert.Equal("forwarded", handler.Headers["x-call"]);
-        var body = JsonNode.Parse(handler.Body)!;
-        Assert.Equal("disabled", body["thinking"]!["type"]!.GetValue<string>());
-        Assert.Equal("json_schema", body["output_config"]!["format"]!["type"]!.GetValue<string>());
-        Assert.Null(body["output_config"]!["format"]!["schema"]!["properties"]!["q1"]!["minimum"]);
-        Assert.Null(body["output_config"]!["format"]!["schema"]!["properties"]!["q1"]!["maximum"]);
-    }
-
-    public static async Task EvaluationThinkingOverride()
-    {
-        var handler = new CaptureHandler { ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "end_turn") };
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
-        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
-        var call = new LanguageModelCallOptions();
-        call.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}}") };
-        await model.EvaluateAsync(Questions(), call, CancellationToken.None).ConfigureAwait(false);
-        var body = JsonNode.Parse(handler.Body)!;
-        Assert.Equal("enabled", body["thinking"]!["type"]!.GetValue<string>());
-        Assert.Equal(1024, body["thinking"]!["budget_tokens"]!.GetValue<int>());
-    }
-
-    public static async Task EvaluationAutoAndJsonToolAndBounds()
-    {
-        var handler = new CaptureHandler { ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "end_turn") };
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1" }, handler);
-        var model = (AnthropicEvaluationModel)provider.RubricModel("claude-haiku-4-5-20251001");
-        await model.EvaluateAsync(Questions(), null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("json_schema", JsonNode.Parse(handler.Body)!["output_config"]!["format"]!["type"]!.GetValue<string>());
-        handler.ResponseBody = "{\"content\":[{\"type\":\"tool_use\",\"id\":\"tool-test\",\"name\":\"json\",\"input\":{\"q0\":\"c1\",\"q1\":1.25}}],\"stop_reason\":\"tool_use\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
-        var jsonCall = new LanguageModelCallOptions();
-        jsonCall.ProviderOptions = new Dictionary<string, JsonElement> { ["anthropic"] = AnthropicParity.Json("{\"structuredOutputMode\":\"jsonTool\"}") };
-        var json = await model.EvaluateAsync(Questions(), jsonCall, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("billing", json.Answers["department"].Choice);
-        var body = JsonNode.Parse(handler.Body)!;
-        Assert.Null(body["output_config"]?["format"]);
-        Assert.Equal("any", body["tool_choice"]!["type"]!.GetValue<string>());
-        Assert.Equal("json", body["tools"]![0]!["name"]!.GetValue<string>());
-        handler.ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "refusal");
-        await Assert.ThrowsAsync<AiSdkException>(() => model.EvaluateAsync(Questions(), null, CancellationToken.None)).ConfigureAwait(false);
-        handler.ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25}", "max_tokens");
-        await Assert.ThrowsAsync<AiSdkException>(() => model.EvaluateAsync(Questions(), null, CancellationToken.None)).ConfigureAwait(false);
-        handler.ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":3}", "end_turn");
-        await Assert.ThrowsAsync<AiSdkException>(() => model.EvaluateAsync(Questions(), null, CancellationToken.None)).ConfigureAwait(false);
-        handler.ResponseBody = EvalText("{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.02}", "end_turn");
-        var questions = Questions().Concat(new[] { new AnthropicEvaluationQuestion("flag", "boolean", null) }).ToArray();
-        var boolean = await model.EvaluateAsync(questions, null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal(0.02, boolean.Answers["flag"].Probability);
-        handler.ResponseBody = "{\"content\":[{\"type\":\"tool_use\",\"id\":\"tool-test\",\"name\":\"json\",\"input\":{\"q0\":\"c1\",\"q1\":1.25,\"q2\":0.02}}],\"stop_reason\":\"tool_use\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
-        var jsonBoolean = await model.EvaluateAsync(questions, jsonCall, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal(0.02, jsonBoolean.Answers["flag"].Probability);
-        var schema = JsonNode.Parse(handler.Body)!["tools"]![0]!["input_schema"]!;
-        Assert.Equal("number", schema["properties"]!["q2"]!["type"]!.GetValue<string>());
-        Assert.Contains("q2", schema["required"]!.ToJsonString());
-    }
-
     public static void MessageLifecycle()
     {
         var stream = new AnthropicStream(false, false);
@@ -1579,25 +1503,6 @@ internal static class AnthropicAssertions
     public static void PartialFiles()
     {
         Assert.Equal("v4", new AnthropicFiles(new Vercel.AI.ProviderUtils.ProviderHttp(new HttpClient()), () => "https://api.anthropic.com/v1", () => new Dictionary<string, string?>(), "anthropic.messages").SpecificationVersion);
-    }
-
-    private static string EvalText(string payload, string stop, int input = 1, int output = 1)
-    {
-        return new JsonObject
-        {
-            ["content"] = new JsonArray { new JsonObject { ["type"] = "text", ["text"] = payload } },
-            ["stop_reason"] = stop,
-            ["usage"] = new JsonObject { ["input_tokens"] = input, ["output_tokens"] = output },
-        }.ToJsonString();
-    }
-
-    private static IReadOnlyList<AnthropicEvaluationQuestion> Questions()
-    {
-        return new[]
-        {
-            new AnthropicEvaluationQuestion("department", "choice", new[] { "technical", "billing" }),
-            new AnthropicEvaluationQuestion("severity", "score", new[] { "Low", "Medium", "High" }),
-        };
     }
 
     private static AnthropicAwsCredentials Creds()

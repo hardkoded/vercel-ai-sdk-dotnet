@@ -147,6 +147,8 @@ internal sealed class CaptureHandler : HttpMessageHandler
 
     public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+    public Dictionary<string, string> ResponseHeaders { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
     public List<string> Uris { get; } = new List<string>();
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -182,10 +184,16 @@ internal sealed class CaptureHandler : HttpMessageHandler
             }
         }
 
-        return new HttpResponseMessage(Status)
+        var response = new HttpResponseMessage(Status)
         {
             Content = new StringContent(ResponseBody, Encoding.UTF8, ContentType),
         };
+        foreach (var header in ResponseHeaders)
+        {
+            response.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return response;
     }
 }
 

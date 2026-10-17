@@ -9,6 +9,7 @@ using Vercel.AI.GenerateText;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Fireworks;
 
@@ -247,7 +248,7 @@ public sealed class FireworksImageModel : IImageModel
         return (parts[0], parts[1]);
     }
 
-    private static string DataUri(OpenAICompatibleImageFile file)
+    private static string DataUri(ImageModelFile file)
     {
         if (!string.IsNullOrEmpty(file.Url) && (file.Data == null || file.Data.Length == 0))
         {

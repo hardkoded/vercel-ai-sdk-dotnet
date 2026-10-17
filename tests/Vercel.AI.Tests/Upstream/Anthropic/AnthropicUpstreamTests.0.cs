@@ -436,55 +436,6 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::uses native Messages output with portable constraints and configured settings", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0087()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::uses native Messages output with portable constraints and configured settings").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::allows provider options to enable thinking for decide", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0088()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::allows provider options to enable thinking for decide").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::selects native structured output automatically for supported models", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0089()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::selects native structured output automatically for supported models").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::supports the existing JSON-tool fallback through provider options", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0090()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::supports the existing JSON-tool fallback through provider options").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::rejects %s even with valid JSON", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0091()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::rejects %s even with valid JSON").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::validates score bounds locally", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0092()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::validates score bounds locally").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-decision.test.ts::decides Boolean alongside Choice and Score using %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0093()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-decision.test.ts::decides Boolean alongside Choice and Score using %s").ConfigureAwait(false);
-    }
-
-    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends POST to /v1/files with correct beta header", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0094()
     {

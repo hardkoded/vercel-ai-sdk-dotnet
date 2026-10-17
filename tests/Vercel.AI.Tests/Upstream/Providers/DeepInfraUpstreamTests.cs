@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Vercel.AI.DeepInfra;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Tests;
 
@@ -221,7 +222,7 @@ public sealed class DeepInfraUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = EditResponse };
         var model = EditModel(capture);
         var files = new[] { Png() };
-        var mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
+        var mask = ImageModelFile.FromFile(new byte[] { 255, 255, 255, 0 }, "image/png");
         var result = await model.DoGenerateAsync(new ImageCallOptions("Add a flamingo to the pool") { Files = files, Mask = mask }, CancellationToken.None);
         Assert.Equal(EditedImage, Assert.Single(result.Images).Data);
         Assert.Equal("https://edit.example.com/openai/images/edits", capture.Requests[0].Uri!.AbsoluteUri);
@@ -361,9 +362,9 @@ public sealed class DeepInfraUpstreamTests
         return (DeepInfraImageModel)DeepInfraProvider.Create(options, capture).ImageModel(EditModelId);
     }
 
-    private static OpenAICompatibleImageFile Png()
+    private static ImageModelFile Png()
     {
-        return new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null);
+        return ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png");
     }
 
     private static string ChatResponse(string model, string usage)
