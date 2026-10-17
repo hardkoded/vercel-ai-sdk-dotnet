@@ -307,10 +307,53 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Suite + "should map guardrail_intervened messageStop to a content-filter finish reason in streaming",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The prompt text part carries no guardContent provider option: user content parts have no provider options in this port.")]
+    [UpstreamTest(Suite + "should send text parts as guardContent blocks in streaming requests", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_text_parts_as_guardContent_blocks_in_streaming_requests()
+    {
+        var handler = Chunks();
+        await Stream(handler, new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage(new UserContentPart[]
+                {
+                    new TextContentPart("What is the capital of Japan?")
+                    {
+                        ProviderOptions = Options("""{"bedrock":{"guardContent":true,"guardContentQualifiers":["query"]}}"""),
+                    },
+                }),
+            },
+            ProviderOptions = Options("""{"bedrock":{"guardrailConfig":{"guardrailIdentifier":"-1","guardrailVersion":"1","trace":"enabled"}}}"""),
+        });
+
+        Assert.True(JsonMatches(
+            """{"messages":[{"role":"user","content":[{"guardContent":{"text":{"text":"What is the capital of Japan?","qualifiers":["query"]}}}]}],"guardrailConfig":{"guardrailIdentifier":"-1","guardrailVersion":"1","trace":"enabled"}}""",
+            handler.BodyJson));
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should handle system messages with cache points", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_handle_system_messages_with_cache_points()
+    {
+        var handler = Chunks(
+            """{"contentBlockDelta":{"contentBlockIndex":0,"delta":{"text":"Hello"}}}""",
+            """{"messageStop":{"stopReason":"stop_sequence"}}""");
+        await Stream(handler, new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new SystemModelMessage("System Prompt", Options("""{"bedrock":{"cachePoint":{"type":"default"}}}""")),
+                new UserModelMessage("Hello"),
+            },
+        });
+
+        Assert.True(JsonMatches(
+            """{"system":[{"text":"System Prompt"},{"cachePoint":{"type":"default"}}],"messages":[{"role":"user","content":[{"text":"Hello"}]}]}""",
+            handler.BodyJson));
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should map guardrail_intervened messageStop to a content-filter finish reason in streaming", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_guardrail_intervened_messageStop_to_a_content_filter_finish_reason_in_streaming()
     {
         var handler = Chunks(
@@ -319,7 +362,16 @@ public sealed class DoStreamTests
             """{"messageStop":{"stopReason":"guardrail_intervened"}}""");
         var parts = await Stream(handler, new LanguageModelCallOptions
         {
-            Prompt = new ModelMessage[] { new UserModelMessage("Tell me something restricted.") },
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage(new UserContentPart[]
+                {
+                    new TextContentPart("Tell me something restricted.")
+                    {
+                        ProviderOptions = Options("""{"bedrock":{"guardContent":true,"guardContentQualifiers":["query"]}}"""),
+                    },
+                }),
+            },
         });
 
         var finish = parts.OfType<FinishStreamPart>().Single();

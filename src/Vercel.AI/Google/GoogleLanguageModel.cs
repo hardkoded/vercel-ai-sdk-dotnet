@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -326,8 +327,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                                 if (reasoningId == null)
                                 {
-                                    block++;
-                                    reasoningId = "reasoning-" + block;
+                                    reasoningId = (block++).ToString(CultureInfo.InvariantCulture);
                                     yield return new ReasoningStartStreamPart(reasoningId, reasoning.ProviderMetadata);
                                 }
 
@@ -343,8 +343,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                                 if (textId == null)
                                 {
-                                    block++;
-                                    textId = "text-" + block;
+                                    textId = (block++).ToString(CultureInfo.InvariantCulture);
                                     yield return new TextStartStreamPart(textId, text.ProviderMetadata);
                                 }
 

@@ -575,6 +575,100 @@ public sealed class DoGenerateTests
     }
 
 
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should send text parts as guardContent blocks when providerOptions.bedrock.guardContent is set",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_text_parts_as_guardContent_blocks_when_providerOptions_bedrock_guardContent_is_set()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await GenerateCall(handler, new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage(new UserContentPart[]
+                {
+                    new TextContentPart("London is the capital of UK. Tokyo is the capital of Japan.")
+                    {
+                        ProviderOptions = BedrockStreamSupport.Options("""{"bedrock":{"guardContent":true,"guardContentQualifiers":["grounding_source"]}}"""),
+                    },
+                    new TextContentPart("Some additional background information."),
+                    new TextContentPart("What is the capital of Japan?")
+                    {
+                        ProviderOptions = BedrockStreamSupport.Options("""{"bedrock":{"guardContent":true,"guardContentQualifiers":["query"]}}"""),
+                    },
+                }),
+            },
+            ProviderOptions = BedrockStreamSupport.Options("""{"bedrock":{"guardrailConfig":{"guardrailIdentifier":"-1","guardrailVersion":"1","trace":"enabled"}}}"""),
+        });
+
+        using var request = JsonDocument.Parse(handler.Body);
+        AssertMatches(
+            """{"messages":[{"role":"user","content":[{"guardContent":{"text":{"text":"London is the capital of UK. Tokyo is the capital of Japan.","qualifiers":["grounding_source"]}}},{"text":"Some additional background information."},{"guardContent":{"text":{"text":"What is the capital of Japan?","qualifiers":["query"]}}}]}],"guardrailConfig":{"guardrailIdentifier":"-1","guardrailVersion":"1","trace":"enabled"}}""",
+            request.RootElement);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should send image parts as guardContent blocks when providerOptions.bedrock.guardContent is set",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_image_parts_as_guardContent_blocks_when_providerOptions_bedrock_guardContent_is_set()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await GenerateCall(handler, new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage(new UserContentPart[]
+                {
+                    new FileContentPart("image/png", null, new byte[] { 0, 1, 2, 3 }, null)
+                    {
+                        ProviderOptions = BedrockStreamSupport.Options("""{"bedrock":{"guardContent":true}}"""),
+                    },
+                    new TextContentPart("Describe this image."),
+                }),
+            },
+        });
+
+        using var request = JsonDocument.Parse(handler.Body);
+        AssertMatches(
+            """{"messages":[{"role":"user","content":[{"guardContent":{"image":{"format":"png","source":{"bytes":"AAECAw=="}}}},{"text":"Describe this image."}]}]}""",
+            request.RootElement);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should handle system messages with cache points",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_handle_system_messages_with_cache_points()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        await GenerateCall(handler, new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new SystemModelMessage("System Prompt", BedrockStreamSupport.Options("""{"bedrock":{"cachePoint":{"type":"default"}}}""")),
+                new UserModelMessage("Hello"),
+            },
+        });
+
+        using var request = JsonDocument.Parse(handler.Body);
+        AssertMatches(
+            """{"system":[{"text":"System Prompt"},{"cachePoint":{"type":"default"}}],"messages":[{"role":"user","content":[{"text":"Hello"}]}]}""",
+            request.RootElement);
+    }
+
+    private static async Task GenerateCall(UpstreamRecordingHandler handler, LanguageModelCallOptions options)
+    {
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(new AmazonBedrockOptions
+        {
+            AccessKeyId = "test-access-key",
+            SecretAccessKey = "test-secret",
+            UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        }, handler);
+        await provider.LanguageModel("anthropic.claude-3-haiku-20240307-v1:0").DoGenerateAsync(options, CancellationToken.None);
+    }
+
     private static void AssertJsonToolFallback(UpstreamRecordingHandler handler)
     {
         using var request = JsonDocument.Parse(handler.Body);

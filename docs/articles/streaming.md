@@ -98,7 +98,7 @@ In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to th
 
 `result.Stream()` yields these parts in order: one `StartPart` (`start`), then for each step a `StartStepPart` (`start-step`, with the step's `Warnings`), the step's text, reasoning, tool-input, tool-call, source and tool parts, and a `StepFinishPart` (`finish-step`), and finally a `FinishPart` (`finish`).
 
-A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails or is denied is a `ToolErrorPart` (`tool-error`), and its `Result.OutputJson` holds the error. This includes provider-executed tools, which are streamed in the order the provider sent them.
+A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails or is denied is a `ToolErrorPart` (`tool-error`), and its `Result.OutputJson` holds the error. This includes provider-executed tools, which are streamed in the order the provider sent them. Their `ExecutedTool` has `ProviderExecuted`, `ProviderMetadata`, and the call's `InputJson`.
 
 `StepFinishPart.Performance` is a `StepPerformance` for the step: `StepTimeMs`, `ResponseTimeMs`, `ToolExecutionMs` (by tool call id), `TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs` (`Min`, `Max`, `Avg`, `Median`, `P10`, `P90`), and the token rates `EffectiveOutputTokensPerSecond`, `EffectiveTotalTokensPerSecond`, `OutputTokensPerSecond` and `InputTokensPerSecond`. The first-output metrics are `null` when the step produced no output chunk.
 

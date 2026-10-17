@@ -25,7 +25,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream::should stream thought signatures with reasoning and text parts", Coverage = UpstreamCoverage.Partial, Note = "Block ids are reasoning-N and text-N in the port; upstream uses the numbers 0 and 1. The test checks that each block keeps one id. See #522.")]
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream::should stream thought signatures with reasoning and text parts", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_thought_signatures_with_reasoning_and_text_parts()
     {
         var safetyRatings = "[{\"category\":\"HARM_CATEGORY_SEXUALLY_EXPLICIT\",\"probability\":\"NEGLIGIBLE\"},{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"probability\":\"NEGLIGIBLE\"},{\"category\":\"HARM_CATEGORY_HARASSMENT\",\"probability\":\"NEGLIGIBLE\"},{\"category\":\"HARM_CATEGORY_DANGEROUS_CONTENT\",\"probability\":\"NEGLIGIBLE\"}]";
@@ -46,6 +46,7 @@ public sealed class DoStreamTests
         Assert.Empty(Assert.IsType<StreamStartStreamPart>(parts[0]).Warnings);
         var reasoningStart = Assert.IsType<ReasoningStartStreamPart>(parts[1]);
         var reasoningId = reasoningStart.Id;
+        Assert.Equal("0", reasoningId);
         GoogleUpstream.JsonEqual(reasoningStart.ProviderMetadata!.Value, "{\"google\":{\"thoughtSignature\":\"reasoning_sig1\"}}");
         var reasoningDelta = Assert.IsType<ReasoningDeltaStreamPart>(parts[2]);
         Assert.Equal(reasoningId, reasoningDelta.Id);
@@ -56,7 +57,7 @@ public sealed class DoStreamTests
         Assert.Null(reasoningEnd.ProviderMetadata);
         var textStart = Assert.IsType<TextStartStreamPart>(parts[4]);
         var textId = textStart.Id;
-        Assert.NotEqual(reasoningId, textId);
+        Assert.Equal("1", textId);
         GoogleUpstream.JsonEqual(textStart.ProviderMetadata!.Value, "{\"google\":{\"thoughtSignature\":\"text_sig1\"}}");
         var textDelta = Assert.IsType<TextDeltaStreamPart>(parts[5]);
         Assert.Equal(textId, textDelta.Id);

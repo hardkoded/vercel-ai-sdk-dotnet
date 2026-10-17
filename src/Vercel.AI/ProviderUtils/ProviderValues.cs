@@ -289,12 +289,13 @@ public static class ProviderValues
     /// <summary>
     /// Describes the runtime the way provider user-agent strings do.
     /// Window is checked first, then navigator, then Node, then the Edge runtime.
+    /// Returns an empty string when the runtime is unknown, so callers can omit it.
     /// </summary>
     public static string GetRuntimeEnvironmentUserAgent(RuntimeProbe? probe = null)
     {
         if (probe is null)
         {
-            return "runtime/unknown";
+            return string.Empty;
         }
 
         if (probe.Window)
@@ -317,7 +318,7 @@ public static class ProviderValues
             return "runtime/vercel-edge";
         }
 
-        return "runtime/unknown";
+        return string.Empty;
     }
 
     /// <summary>True when the probe reports a browser <c>window</c>. Maps to <c>isBrowserRuntime</c>.</summary>

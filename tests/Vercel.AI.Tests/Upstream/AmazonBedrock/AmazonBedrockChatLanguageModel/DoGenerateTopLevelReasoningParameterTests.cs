@@ -45,6 +45,16 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should map reasoning \"max\" directly for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_map_reasoning_max_directly_for_newer_Anthropic_models()
+    {
+        var (result, body) = await Generate(NewerAnthropicModelId, "max");
+
+        Assert.Equal("max", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should warn when reasoning \"minimal\" is mapped for newer Anthropic models", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_warn_when_reasoning_minimal_is_mapped_for_newer_Anthropic_models()
     {
@@ -76,7 +86,8 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
 
     [Theory]
     [InlineData("medium")]
-    [UpstreamTest(Prefix + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models", Coverage = UpstreamCoverage.Partial, Note = "Covers medium. The port has no portable max reasoning level.")]
+    [InlineData("max")]
+    [UpstreamTest(Prefix + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models(string reasoning)
     {
         var (result, body) = await Generate(OpenAiModelId, reasoning);
@@ -88,12 +99,12 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should map portable reasoning for Nova 2", Coverage = UpstreamCoverage.Partial, Note = "The port does not send type enabled in the Nova 2 reasoningConfig.")]
+    [UpstreamTest(Prefix + "should map portable reasoning for Nova 2", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_portable_reasoning_for_Nova_2()
     {
         var (_, body) = await Generate(NovaModelId, "high");
 
-        Assert.Equal("high", Field(body, "reasoningConfig")!.Value.GetProperty("maxReasoningEffort").GetString());
+        AssertEqual("{\"type\":\"enabled\",\"maxReasoningEffort\":\"high\"}", Field(body, "reasoningConfig")!.Value);
     }
 
     [Fact]
@@ -142,10 +153,10 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
     [Theory]
     [InlineData("amazonBedrock")]
     [InlineData("bedrock")]
-    [UpstreamTest(Prefix + "should ignore portable max without warnings when %s reasoning effort is explicit", Coverage = UpstreamCoverage.Partial, Note = "The port has no portable max reasoning level, so it still warns that max is unsupported.")]
+    [UpstreamTest(Prefix + "should ignore portable max without warnings when %s reasoning effort is explicit", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_ignore_portable_max_without_warnings_when_reasoning_effort_is_explicit(string providerKey)
     {
-        var (_, body) = await Run(NovaModelId, TextResponse, new LanguageModelCallOptions
+        var (result, body) = await Run(NovaModelId, TextResponse, new LanguageModelCallOptions
         {
             Prompt = TestPrompt,
             Reasoning = "max",
@@ -155,6 +166,7 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
 
         AssertEqual("{\"type\":\"enabled\",\"maxReasoningEffort\":\"low\"}", Field(body, "reasoningConfig")!.Value);
         Assert.Equal(1024, body.GetProperty("inferenceConfig").GetProperty("maxTokens").GetInt32());
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
