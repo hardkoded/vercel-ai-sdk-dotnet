@@ -208,6 +208,32 @@ public sealed class VertexOptions : GoogleOptions
     /// A caller-supplied Authorization header wins over the generated token.
     /// </summary>
     public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
+
+    /// <summary>Returns a copy. The provider changes the copy, so the options the caller passed in are left as they were.</summary>
+    public VertexOptions Copy()
+    {
+        var copy = new VertexOptions
+        {
+            BatchResultDownloads = BatchResultDownloads,
+            BaseUrl = BaseUrl,
+            ApiKey = ApiKey,
+            ApiKeyEnvironmentVariable = ApiKeyEnvironmentVariable,
+            UseBearerToken = UseBearerToken,
+            UserAgent = UserAgent,
+            GenerateId = GenerateId,
+            EmbeddingProviderOptions = EmbeddingProviderOptions,
+            Project = Project,
+            Region = Region,
+            UpstreamRoutes = UpstreamRoutes,
+            GenerateAuthToken = GenerateAuthToken,
+        };
+        foreach (var pair in Headers)
+        {
+            copy.Headers[pair.Key] = pair.Value;
+        }
+
+        return copy;
+    }
 }
 
 /// <summary>Google Vertex AI provider.</summary>
@@ -297,7 +323,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
     private static VertexOptions Prepare(VertexOptions? options)
     {
-        options ??= new VertexOptions();
+        options = options?.Copy() ?? new VertexOptions();
         options.UseBearerToken = true;
         if (string.IsNullOrEmpty(options.Project))
         {

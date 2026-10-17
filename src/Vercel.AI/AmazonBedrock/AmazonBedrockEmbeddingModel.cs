@@ -50,15 +50,25 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     /// <summary>Maximum values per call. Cohere models take 96. Titan and Nova take one.</summary>
     public int MaxEmbeddingsPerCall => Family == "cohere" ? 96 : 1;
 
-    /// <summary>Headers for the next call. They override the provider headers.</summary>
-    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
-
     private string Family => _modelFamily ?? (IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan");
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
     {
-        values ??= Array.Empty<string>();
+        return DoEmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { ProviderOptions = providerOptions, Dimensions = dimensions }, cancellationToken);
+    }
+
+    /// <summary>Embeds each value. Values, provider options, headers, and dimensions travel in <paramref name="call"/>, so concurrent calls do not share state.</summary>
+    public async Task<EmbeddingResult> DoEmbedAsync(EmbeddingCallOptions call, CancellationToken cancellationToken)
+    {
+        if (call == null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        var values = call.Values;
+        var providerOptions = call.ProviderOptions;
+        var dimensions = call.Dimensions;
         if (values.Count > MaxEmbeddingsPerCall)
         {
             throw new AiSdkException("Too many embedding values for one call. The limit is " + MaxEmbeddingsPerCall.ToString(CultureInfo.InvariantCulture) + ".");
@@ -111,7 +121,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
-        _provider.AddHeaders(request, Headers);
+        _provider.AddHeaders(request, call.Headers);
         var payload = Encoding.UTF8.GetBytes(json);
         var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
         var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");

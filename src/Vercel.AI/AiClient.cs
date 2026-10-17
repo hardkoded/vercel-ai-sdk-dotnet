@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Gateway;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI;
@@ -148,7 +149,17 @@ public sealed class AiClient : IAiClient
         }
 
         var model = options.Model ?? _gateway.ImageModel(Require(options.ModelId, "image"));
-        return model.DoGenerateAsync(new ImageCallOptions(options.Prompt) { Count = options.Count, Size = options.Size, AspectRatio = options.AspectRatio }, cancellationToken);
+        return model.DoGenerateAsync(new ImageCallOptions(options.Prompt)
+        {
+            Count = options.Count,
+            Size = options.Size,
+            AspectRatio = options.AspectRatio,
+            Seed = options.Seed,
+            Files = options.Files,
+            Mask = options.Mask,
+            ProviderOptions = options.ProviderOptions,
+            Headers = options.Headers,
+        }, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -348,6 +359,21 @@ public sealed class GenerateImageOptions
 
     /// <summary>Aspect ratio.</summary>
     public string? AspectRatio { get; set; }
+
+    /// <summary>Seed. Models that do not support it add a warning.</summary>
+    public int? Seed { get; set; }
+
+    /// <summary>Input images for an edit.</summary>
+    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
+
+    /// <summary>Edit mask.</summary>
+    public OpenAICompatibleImageFile? Mask { get; set; }
+
+    /// <summary>Provider options, keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Speech options.</summary>
