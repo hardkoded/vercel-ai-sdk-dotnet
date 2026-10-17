@@ -80,6 +80,10 @@ Providers keep the error status:
 - A `LanguageModelTool` with `OutputSchema` is sent to OpenAI Responses as `output_schema`. Its `text` and `execution-denied` results are then sent as JSON string literals, because OpenAI parses the result as JSON.
 - Google sends `error-text`, `error-json`, and `execution-denied` on `functionResponse.response.error`. Successful results stay on `response.content`.
 
+## Tool input validation
+
+Before the loop runs a tool, `ToolCallParser.ParseToolCall` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call whose input is not valid JSON or does not match the schema is not executed. It comes back with `Invalid` set and an `InvalidToolInputError` in `Error`, and the model receives the error message as an `error-text` tool result. The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
+
 ## Provider-defined tools
 
 A provider-defined tool is run by the provider, such as a web search. Declare it with `Tool.ProviderDefined(id, name, args)`. The `id` is `<provider>.<tool>` and `args` is a JSON object. The tool has no `Execute`, and the SDK never runs it.
