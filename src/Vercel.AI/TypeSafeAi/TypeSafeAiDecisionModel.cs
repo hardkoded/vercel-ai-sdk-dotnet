@@ -176,11 +176,12 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         var questions = new JsonObject();
         foreach (var pair in call.Questions)
         {
-            var question = new JsonObject
+            var question = new JsonObject { ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type };
+            if (pair.Value.Instructions != null)
             {
-                ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type,
-                ["instructions"] = pair.Value.Instructions.ToNode(),
-            };
+                question["instructions"] = pair.Value.Instructions.ToNode();
+            }
+
             if (pair.Value.Criteria != null && pair.Value.Type != "box")
             {
                 question["criteria"] = pair.Value.Criteria.ToNode();

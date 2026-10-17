@@ -14,12 +14,15 @@ public class DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
     /// <param name="type"><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</param>
-    /// <param name="instructions">Instructions as a string, JSON object, or JSON array.</param>
+    /// <param name="instructions">
+    /// Instructions as a string, JSON object, or JSON array. A box question requires them. The other types may leave them null
+    /// when the provider supports it and the criteria define the judgment.
+    /// </param>
     /// <param name="criteria">
     /// <see cref="DecisionChoiceCriteria"/> for a choice, <see cref="DecisionScoreCriteria"/> for a score, and an optional
     /// <see cref="DecisionBooleanCriteria"/> for a boolean. A box question has no criteria.
     /// </param>
-    public DecisionQuestion(string type, DecisionInput instructions, DecisionCriteria? criteria = null)
+    public DecisionQuestion(string type, DecisionInput? instructions, DecisionCriteria? criteria = null)
     {
         Type = type ?? string.Empty;
         Instructions = instructions;
@@ -29,8 +32,8 @@ public class DecisionQuestion
     /// <summary><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</summary>
     public string Type { get; }
 
-    /// <summary>Instructions. A string, JSON object, or JSON array.</summary>
-    public DecisionInput Instructions { get; }
+    /// <summary>Instructions. A string, JSON object, or JSON array. May be null for choice, score, and boolean questions.</summary>
+    public DecisionInput? Instructions { get; }
 
     /// <summary>Choice options, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
     public DecisionCriteria? Criteria { get; }
@@ -573,7 +576,7 @@ public static class Decide
         {
             var parameter = "questions." + pair.Key;
             var question = pair.Value;
-            if (question == null || question.Instructions == null)
+            if (question == null || (question.Type == "box" && question.Instructions == null))
             {
                 throw new InvalidArgumentException(parameter, question, "instructions must be a JSON-compatible string, object, or array");
             }
@@ -591,13 +594,18 @@ public static class Decide
 
                     break;
                 case "score":
-                    if (criteria is not DecisionScoreCriteria { Count: >= 2 })
+                    if (criteria is not DecisionScoreCriteria { Count: >= 1 })
                     {
-                        throw new InvalidArgumentException(parameter, question, "score criteria must contain at least two ordered levels");
+                        throw new InvalidArgumentException(parameter, question, "score criteria must contain at least one ordered level");
                     }
 
                     break;
                 case "boolean":
+                    if (question.Instructions == null && !(criteria is DecisionBooleanCriteria { True: not null } or DecisionBooleanCriteria { False: not null }))
+                    {
+                        throw new InvalidArgumentException(parameter, question, "boolean questions require instructions or at least one non-null criterion");
+                    }
+
                     if (criteria != null && criteria is not DecisionBooleanCriteria)
                     {
                         throw new InvalidArgumentException(parameter, question, "boolean criteria may only describe true and false");

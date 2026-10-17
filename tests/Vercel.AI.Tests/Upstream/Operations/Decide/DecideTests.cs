@@ -401,7 +401,7 @@ public sealed class DecideTests
         foreach (var pair in original)
         {
             Assert.Equal(pair.Value.Type, publicQuestions[pair.Key].Type);
-            Assert.Equal(pair.Value.Instructions.ToString(), publicQuestions[pair.Key].Instructions.ToString());
+            Assert.Equal(pair.Value.Instructions?.ToString(), publicQuestions[pair.Key].Instructions?.ToString());
             Assert.Equal(pair.Value.Criteria?.ToNode().ToJsonString(), publicQuestions[pair.Key].Criteria?.ToNode().ToJsonString());
         }
     }
@@ -466,6 +466,43 @@ public sealed class DecideTests
             Model = BoxModel(box),
             State = string.Empty,
             Questions = BoxQuestions(),
+        }));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::passes a single Score level to the provider and accepts its zero score", Coverage = UpstreamCoverage.Covered)]
+    public async Task Passes_a_single_Score_level_to_the_provider_and_accepts_its_zero_score()
+    {
+        var answers = new Dictionary<string, DecisionAnswer>
+        {
+            ["severity"] = new DecisionAnswer("score", score: 0, probabilities: new Dictionary<string, double> { ["0"] = 1 }),
+        };
+        var model = new DecideModel { Result = new DecisionModelResult(answers) };
+        var questions = new Dictionary<string, DecisionQuestion> { ["severity"] = Q("score", null, new List<object?> { "Product unusable" }) };
+        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "The product is broken.", Questions = questions });
+        Assert.Same(questions, model.Calls[0].Questions);
+        Assert.Equal(0, result.Answers["severity"].Score);
+        Assert.Equal(new Dictionary<string, double> { ["0"] = 1 }, result.Answers["severity"].Probabilities);
+    }
+
+    public static IEnumerable<object?[]> InvalidSingleLevelScoreAnswers()
+    {
+        yield return new object?[] { 1.0, new Dictionary<string, double> { ["0"] = 1 } };
+        yield return new object?[] { 0.0, new Dictionary<string, double> { ["0"] = 0.5 } };
+        yield return new object?[] { 0.0, new Dictionary<string, double> { ["0"] = 0.5, ["1"] = 0.5 } };
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidSingleLevelScoreAnswers))]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects invalid single-level Score answers: %j", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_invalid_single_level_Score_answers(double score, Dictionary<string, double> probabilities)
+    {
+        var answers = new Dictionary<string, DecisionAnswer> { ["severity"] = new DecisionAnswer("score", score: score, probabilities: probabilities) };
+        await Assert.ThrowsAsync<InvalidResponseDataException>(() => DecideOperation.DecideAsync(new DecideRequest
+        {
+            Model = new DecideModel { Result = new DecisionModelResult(answers) },
+            State = "The product is broken.",
+            Questions = new Dictionary<string, DecisionQuestion> { ["severity"] = Q("score", null, new List<object?> { "Product unusable" }) },
         }));
     }
 }

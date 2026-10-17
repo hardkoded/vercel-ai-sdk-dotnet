@@ -544,4 +544,47 @@ public sealed class OpenAIDecisionTests
             throw new TaskCanceledException("Cancelled");
         }
     }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"instructions\":null}")]
+    [UpstreamTest(Prefix + "sends criteria-only questions without locally rejecting missing instructions: %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
+    public async Task Sends_criteria_only_questions_without_locally_rejecting_missing_instructions(string instructionFields)
+    {
+        _ = instructionFields;
+        var (model, capture) = Setup();
+        await model.DoDecideAsync(Call(new Dictionary<string, DecisionQuestion>
+        {
+            ["department"] = Q("choice", null, new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
+            ["severity"] = Q("score", null, new List<object?> { "Low", "Medium", "High" }),
+            ["refund"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = "Requests money back", ["false"] = new List<object?> { "Status inquiry" } }),
+        }));
+        Assert.Equal(1, capture.Calls);
+        JsonAssert.Equal(RequestBody(capture)["questions"], """
+            [
+              {
+                "type": "choice",
+                "name": "department",
+                "choices": [
+                  { "value": "technical", "description": "Bugs" },
+                  { "value": "billing", "description": "Charges" }
+                ]
+              },
+              {
+                "type": "score",
+                "name": "severity",
+                "levels": [
+                  { "label": "0", "description": "Low" },
+                  { "label": "1", "description": "Medium" },
+                  { "label": "2", "description": "High" }
+                ]
+              },
+              {
+                "type": "predicate",
+                "name": "refund",
+                "instructions": "Criteria for true:\nRequests money back\n\nCriteria for false:\n[\"Status inquiry\"]"
+              }
+            ]
+            """);
+    }
 }

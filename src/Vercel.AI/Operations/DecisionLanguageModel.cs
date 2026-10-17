@@ -125,7 +125,14 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
                 }
 
                 properties[key] = new JsonObject { ["type"] = "string", ["enum"] = codes };
-                rubrics[key] = new JsonObject { ["id"] = id, ["type"] = "choice", ["instructions"] = question.Instructions.ToNode(), ["criteria"] = criteria };
+                var choiceRubric = new JsonObject { ["id"] = id, ["type"] = "choice" };
+                if (question.Instructions != null)
+                {
+                    choiceRubric["instructions"] = question.Instructions.ToNode();
+                }
+
+                choiceRubric["criteria"] = criteria;
+                rubrics[key] = choiceRubric;
             }
             else
             {
@@ -133,7 +140,12 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
                     ? "A finite fractional score from 0 to " + (question.Criteria!.Count - 1).ToString(CultureInfo.InvariantCulture) + ", inclusive. Ordered rubric levels are indexed from zero."
                     : "Estimated probability that the answer is true, from 0 to 1 inclusive. 0 means certainly false and 1 means certainly true.";
                 properties[key] = new JsonObject { ["type"] = "number", ["description"] = description };
-                var rubric = new JsonObject { ["id"] = id, ["type"] = question.Type, ["instructions"] = question.Instructions.ToNode() };
+                var rubric = new JsonObject { ["id"] = id, ["type"] = question.Type };
+                if (question.Instructions != null)
+                {
+                    rubric["instructions"] = question.Instructions.ToNode();
+                }
+
                 if (question.Criteria != null)
                 {
                     rubric["criteria"] = question.Criteria.ToNode();
