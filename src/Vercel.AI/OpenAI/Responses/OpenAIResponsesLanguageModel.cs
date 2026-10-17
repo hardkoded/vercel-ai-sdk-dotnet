@@ -749,7 +749,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers);
+        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
     }
 
     /// <inheritdoc />
@@ -762,7 +762,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         var prepared = Prepare(ModelId, options, true, _providerOptionsName);
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var state = new OpenAIResponsesStream();
+        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
         await foreach (var data in _http.SendSseAsync(
             _url(),
             prepared.Body.ToJsonString(),
@@ -808,8 +808,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         IReadOnlyList<OpenAICallWarning> warnings,
         string raw,
         IReadOnlyDictionary<string, string> headers,
-        Func<string>? generateId = null)
+        Func<string>? generateId = null,
+        IReadOnlyCollection<string>? functionToolNames = null)
     {
+        functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
         if (root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
         {
@@ -919,15 +921,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var arguments = item.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.String
                     ? args.GetString() ?? "{}"
                     : "{}";
-                var itemId = item.TryGetProperty("id", out var itemIdElement) && itemIdElement.ValueKind == JsonValueKind.String
-                    ? itemIdElement.GetString()
-                    : null;
-                JsonElement? metadata = null;
-                if (!string.IsNullOrEmpty(itemId))
+                var expanded = OpenAIParallelToolCall.Expand(id, name, arguments, functionToolNames, OpenAIJson.String(item, "id") ?? string.Empty);
+                if (expanded != null)
                 {
-                    metadata = OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = itemId });
+                    content.AddRange(expanded.Select(call => new GeneratedToolCall(call.ToolCallId, call.ToolName, call.Input, call.ProviderMetadata)));
+                    continue;
                 }
 
+                var metadata = OpenAIParallelToolCall.CallMetadata(item);
                 content.Add(new GeneratedToolCall(id, name, arguments, metadata));
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
