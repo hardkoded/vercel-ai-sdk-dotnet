@@ -212,42 +212,53 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    public void Extracts_the_first_nine_alphanumeric_characters()
+    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should hash incompatible IDs deterministically for Mistral models", Coverage = UpstreamCoverage.Covered)]
+    public void Hashes_incompatible_ids_deterministically_for_mistral_models()
     {
-        Assert.Equal("toolusebp", AmazonBedrockToolIds.Normalize("tooluse_bpe71yCfRu2b5i-nKGDr5g", true));
+        const string toolCallId = "tooluse_bpe71yCfRu2b5i-nKGDr5g";
+        Assert.Equal(
+            new[] { "8eHypBDcw", "8eHypBDcw" },
+            new[] { AmazonBedrockToolIds.Normalize(toolCallId, true), AmazonBedrockToolIds.Normalize(toolCallId, true) });
     }
 
     [Fact]
-    public void Handles_ids_with_special_characters()
+    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should produce 9 alphanumeric characters for incompatible IDs", Coverage = UpstreamCoverage.Covered)]
+    public void Produces_nine_alphanumeric_characters_for_incompatible_ids()
     {
-        Assert.Equal("tooluse12", AmazonBedrockToolIds.Normalize("tool-use_123ABC456", true));
-        Assert.Equal("abc123DEF", AmazonBedrockToolIds.Normalize("___abc123DEF___", true));
+        var normalizedIds = new[]
+        {
+            AmazonBedrockToolIds.Normalize("tool-use_123ABC456", true),
+            AmazonBedrockToolIds.Normalize("___abc123DEF___", true),
+            AmazonBedrockToolIds.Normalize("abc", true),
+            AmazonBedrockToolIds.Normalize("12345", true),
+            AmazonBedrockToolIds.Normalize("___---___", true),
+        };
+
+        Assert.Equal(new[] { "hvVDqPNyj", "TnzPqldGU", "GRuIyUwcV", "PceAgWDYe", "5C589HVqG" }, normalizedIds);
+        foreach (var normalizedId in normalizedIds)
+        {
+            Assert.Matches("^[a-zA-Z0-9]{9}$", normalizedId);
+        }
     }
 
     [Fact]
-    public void Handles_ids_that_are_already_alphanumeric()
+    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should preserve IDs that are already valid Mistral tool call IDs", Coverage = UpstreamCoverage.Covered)]
+    public void Preserves_ids_that_are_already_valid_mistral_tool_call_ids()
     {
         Assert.Equal("abcdefghi", AmazonBedrockToolIds.Normalize("abcdefghi", true));
         Assert.Equal("abc123XYZ", AmazonBedrockToolIds.Normalize("abc123XYZ", true));
     }
 
     [Fact]
-    public void Handles_short_ids()
+    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should keep distinct Bedrock IDs distinct when their prefixes match", Coverage = UpstreamCoverage.Covered)]
+    public void Keeps_distinct_bedrock_ids_distinct_when_their_prefixes_match()
     {
-        Assert.Equal("abc", AmazonBedrockToolIds.Normalize("abc", true));
-        Assert.Equal("12345", AmazonBedrockToolIds.Normalize("12345", true));
-    }
-
-    [Fact]
-    public void Handles_ids_with_only_special_characters()
-    {
-        Assert.Equal(string.Empty, AmazonBedrockToolIds.Normalize("___---___", true));
-    }
-
-    [Fact]
-    public void Produces_a_valid_mistral_tool_call_id()
-    {
-        var normalized = AmazonBedrockToolIds.Normalize("tooluse_bpe71yCfRu2b5i-nKGDr5g", true);
-        Assert.Matches("^[a-zA-Z0-9]{1,9}$", normalized);
+        Assert.Equal(
+            new[] { "7rDVWRig0", "bNZvZKNBZ" },
+            new[]
+            {
+                AmazonBedrockToolIds.Normalize("tooluse_Ac1Xq9ZklmNoPq", true),
+                AmazonBedrockToolIds.Normalize("tooluse_Ac2Yt7WrstUvWx", true),
+            });
     }
 }

@@ -789,6 +789,16 @@ public sealed class ValueHelperTests
 
     [Fact]
     [UpstreamTest(
+        "packages/provider-utils/src/get-runtime-environment-user-agent.test.ts::getRuntimeEnvironmentUserAgent::should omit the runtime when it is unknown",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Runtime_user_agent_is_empty_when_the_runtime_is_unknown()
+    {
+        Assert.Equal(string.Empty, ProviderValues.GetRuntimeEnvironmentUserAgent(new ProviderValues.RuntimeProbe()));
+        Assert.Equal(string.Empty, ProviderValues.GetRuntimeEnvironmentUserAgent());
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/provider-utils/src/is-abort-error.test.ts::isAbortError::returns true for recognized Error names",
         Coverage = UpstreamCoverage.Covered)]
     public void Abort_error_recognizes_named_failures()

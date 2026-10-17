@@ -126,6 +126,15 @@ public sealed class ExecutedTool
     /// <summary>Whether execution failed or was denied.</summary>
     public bool IsError { get; }
 
+    /// <summary>True when the provider ran the tool. Maps to the result's <c>providerExecuted</c>.</summary>
+    public bool ProviderExecuted { get; init; }
+
+    /// <summary>Provider-specific metadata of the result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
+
+    /// <summary>The JSON input of the tool call this result answers. Set for a provider-executed result. Maps to the result's <c>input</c>.</summary>
+    public string? InputJson { get; init; }
+
     /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
     internal string? ModelOutputType { get; init; }
 
@@ -752,6 +761,12 @@ public sealed class GenerateTextResult
 
     /// <summary>Files from every step.</summary>
     public IReadOnlyList<GeneratedFile> Files { get; }
+
+    /// <summary>
+    /// Messages this call added to the conversation: the assistant message of each step, with any tool approval request, and the
+    /// tool results the client ran. Pass them back with the caller's approval responses to continue the conversation.
+    /// </summary>
+    public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } = Array.Empty<ModelMessage>();
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>
@@ -830,6 +845,24 @@ public sealed class ToolCallPart : TextStreamPart
     }
 
     /// <summary>Tool call.</summary>
+    public GeneratedToolCall ToolCall { get; }
+}
+
+/// <summary>A provider-executed tool call needs approval before the provider runs it.</summary>
+public sealed class ToolApprovalRequestPart : TextStreamPart
+{
+    /// <summary>Creates a tool-approval-request part.</summary>
+    public ToolApprovalRequestPart(GeneratedToolApprovalRequest request)
+        : base("tool-approval-request")
+    {
+        ApprovalId = request.ApprovalId;
+        ToolCall = request.ToolCall ?? throw new ArgumentException("The request has no tool call.", nameof(request));
+    }
+
+    /// <summary>Approval id the response must carry.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>The tool call that needs approval.</summary>
     public GeneratedToolCall ToolCall { get; }
 }
 
