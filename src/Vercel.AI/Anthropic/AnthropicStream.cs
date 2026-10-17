@@ -184,6 +184,24 @@ public sealed class AnthropicStream
             _blocks[index] = new Block("text", id);
             yield return new TextStartStreamPart(id);
         }
+        else if (type == "compaction")
+        {
+            // A compaction block streams as text whose metadata marks it, so it can be replayed as a compaction block.
+            var metadata = new JsonObject { ["type"] = "compaction" };
+            var signature = Text(block["signature"]);
+            if (signature != null)
+            {
+                metadata["signature"] = signature;
+            }
+
+            _blocks[index] = new Block("text", id);
+            yield return new TextStartStreamPart(id, ParseElement(new JsonObject { ["anthropic"] = metadata }.ToJsonString()));
+            var summary = Text(block["content"]);
+            if (!string.IsNullOrEmpty(summary))
+            {
+                yield return new TextDeltaStreamPart(id, summary!);
+            }
+        }
         else if (type == "thinking" || type == "redacted_thinking")
         {
             _blocks[index] = new Block("reasoning", id);
@@ -222,6 +240,14 @@ public sealed class AnthropicStream
         if (deltaType == "text_delta" && block.Kind == "text")
         {
             yield return new TextDeltaStreamPart(block.Id, Text(delta["text"]) ?? string.Empty);
+        }
+        else if (deltaType == "compaction_delta" && block.Kind == "text")
+        {
+            var summary = Text(delta["content"]);
+            if (!string.IsNullOrEmpty(summary))
+            {
+                yield return new TextDeltaStreamPart(block.Id, summary!);
+            }
         }
         else if ((deltaType == "thinking_delta" || deltaType == "signature_delta") && block.Kind == "reasoning")
         {

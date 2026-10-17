@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Google;
@@ -208,9 +209,7 @@ public static class GoogleResponse
 
         if (part.TryGetProperty("inlineData", out var inline) && inline.ValueKind == JsonValueKind.Object)
         {
-            var bytes = inline.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.String
-                ? Decode(data.GetString())
-                : Array.Empty<byte>();
+            var bytes = Decode(inline);
             var media = GoogleJson.String(inline, "mimeType") ?? "application/octet-stream";
             var thought = part.TryGetProperty("thought", out var thoughtValue) && thoughtValue.ValueKind == JsonValueKind.True;
             content.Add(new GoogleGeneratedFile(bytes, media, thought, SignatureMetadata(part, context)));
@@ -345,20 +344,22 @@ public static class GoogleResponse
         return JsonSerializer.SerializeToElement(wrapped, GoogleJson.Metadata);
     }
 
-    private static byte[] Decode(string? data)
+    private static byte[] Decode(JsonElement inline)
     {
-        if (string.IsNullOrEmpty(data))
+        // Upstream requires inlineData.data to be a string and decodes it when the file is used.
+        if (!inline.TryGetProperty("data", out var value) || value.ValueKind != JsonValueKind.String)
         {
-            return Array.Empty<byte>();
+            throw new InvalidResponseDataException(inline.GetRawText(), "Invalid Google response: inlineData.data must be a string.");
         }
 
+        var data = value.GetString()!;
         try
         {
-            return Convert.FromBase64String(data!);
+            return Convert.FromBase64String(data);
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
-            return Array.Empty<byte>();
+            throw new InvalidResponseDataException(inline.GetRawText(), "Invalid Google response: inlineData.data is not valid base64. " + ex.Message);
         }
     }
 
