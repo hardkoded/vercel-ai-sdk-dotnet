@@ -137,6 +137,31 @@ public sealed class ToolApprovalSignatureTests
 
 public sealed class CollectToolApprovalsTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest("packages/ai/src/generate-text/collect-tool-approvals.test.ts::collectToolApprovals::should return approved calls in model order with split assistant messages: %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_return_approved_calls_in_model_order_with_split_assistant_messages(bool splitMessages)
+    {
+        // Numeric IDs must follow model order, not response order.
+        var ids = new[] { "10", "2", "1" };
+        var calls = ids.Select(id => (ApprovalHistoryPart)new ApprovalToolCallPart(id, "tool1", Json("{}"))).ToArray();
+        var requests = ids.Reverse().Select(id => (ApprovalHistoryPart)Request("approval-" + id, id)).ToArray();
+        var assistantMessages = splitMessages
+            ? new[]
+            {
+                Assistant(calls[0]),
+                Assistant(calls.Skip(1).Concat(requests).ToArray()),
+            }
+            : new[] { Assistant(calls.Concat(requests).ToArray()) };
+
+        var result = ToolApprovalCollection.CollectToolApprovals(assistantMessages
+            .Append(new ApprovalHistoryMessage("tool", parts: ids.Reverse().Select(id => (ApprovalHistoryPart)new ApprovalResponsePart("approval-" + id, true)).ToArray()))
+            .ToArray());
+
+        Assert.Equal(ids, result.ApprovedToolApprovals.Select(approval => approval.ToolCall.ToolCallId));
+    }
+
     [Fact]
     [UpstreamTest("packages/ai/src/generate-text/collect-tool-approvals.test.ts::collectToolApprovals::should not return any tool approvals when the last message is not a tool message", Coverage = UpstreamCoverage.Covered)]
     public void Ignores_a_user_ending()
