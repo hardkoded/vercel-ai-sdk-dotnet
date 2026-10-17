@@ -284,6 +284,14 @@ public sealed class UIMessageStreamResult : IResult
                     AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
                     yield return Frame(toolInput);
                     break;
+                case ToolApprovalRequestPart approvalRequest:
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "tool-approval-request",
+                        ["approvalId"] = approvalRequest.ApprovalId,
+                        ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
+                    });
+                    break;
                 case ToolErrorPart toolError:
                     yield return Frame(new JsonObject
                     {

@@ -752,6 +752,12 @@ public sealed class GenerateTextResult
 
     /// <summary>Files from every step.</summary>
     public IReadOnlyList<GeneratedFile> Files { get; }
+
+    /// <summary>
+    /// Messages this call added to the conversation: the assistant message of each step, with any tool approval request, and the
+    /// tool results the client ran. Pass them back with the caller's approval responses to continue the conversation.
+    /// </summary>
+    public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } = Array.Empty<ModelMessage>();
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>
@@ -830,6 +836,24 @@ public sealed class ToolCallPart : TextStreamPart
     }
 
     /// <summary>Tool call.</summary>
+    public GeneratedToolCall ToolCall { get; }
+}
+
+/// <summary>A provider-executed tool call needs approval before the provider runs it.</summary>
+public sealed class ToolApprovalRequestPart : TextStreamPart
+{
+    /// <summary>Creates a tool-approval-request part.</summary>
+    public ToolApprovalRequestPart(GeneratedToolApprovalRequest request)
+        : base("tool-approval-request")
+    {
+        ApprovalId = request.ApprovalId;
+        ToolCall = request.ToolCall ?? throw new ArgumentException("The request has no tool call.", nameof(request));
+    }
+
+    /// <summary>Approval id the response must carry.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>The tool call that needs approval.</summary>
     public GeneratedToolCall ToolCall { get; }
 }
 

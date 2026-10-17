@@ -47,7 +47,7 @@ internal static class Generation
     {
         return new LanguageModelCallOptions
         {
-            Prompt = prompt,
+            Prompt = PrepareProviderPrompt(prompt),
             MaxOutputTokens = options.MaxOutputTokens,
             Temperature = options.Temperature,
             TopP = options.TopP,
@@ -77,6 +77,7 @@ internal static class Generation
         {
             using var scope = telemetry?.Begin("generateText", model.ModelId);
             var messages = BuildPrompt(options);
+            var responseMessages = new List<ModelMessage>();
             var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
@@ -122,7 +123,7 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -135,7 +136,7 @@ internal static class Generation
                 }
             }
 
-            var result = ToResult(steps, options);
+            var result = ToResult(steps, responseMessages, options);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -207,6 +208,7 @@ internal static class Generation
         {
             using var scope = telemetry?.Begin("streamText", model.ModelId);
             var messages = BuildPrompt(options);
+            var responseMessages = new List<ModelMessage>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
@@ -332,6 +334,11 @@ internal static class Generation
                                 outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new ToolCallPart(call));
                                 break;
+                            case ToolApprovalRequestStreamPart approvalRequest:
+                                var resolvedRequest = ResolveApprovalRequest(new GeneratedToolApprovalRequest(approvalRequest.ApprovalId, approvalRequest.ToolCallId), toolContent);
+                                toolContent.Add(resolvedRequest);
+                                buffer.Add(new ToolApprovalRequestPart(resolvedRequest));
+                                break;
                             case ToolResultStreamPart streamedResult:
                                 var providerResult = new GeneratedToolResult(streamedResult.ToolCallId, streamedResult.ToolName, streamedResult.Result.GetRawText(), streamedResult.IsError) { ProviderMetadata = streamedResult.ProviderMetadata };
                                 toolContent.Add(providerResult);
@@ -402,7 +409,7 @@ internal static class Generation
                     providerMetadata: providerMetadata);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
-                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken, toolExecutionMs).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, toolExecutionMs).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -426,7 +433,7 @@ internal static class Generation
                 }
             }
 
-            var result = ToResult(steps, options);
+            var result = ToResult(steps, responseMessages, options);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -694,11 +701,13 @@ internal static class Generation
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         List<ModelMessage> messages,
+        List<ModelMessage> responseMessages,
         ILanguageModel model,
         CancellationToken cancellationToken,
         Dictionary<string, double>? toolExecutionMs = null)
     {
         var toolCalls = new List<GeneratedToolCall>();
+        var content = new List<GeneratedContent>();
         var sources = new List<GeneratedSource>();
         var files = new List<GeneratedFile>();
         var reasoningParts = new List<string>();
@@ -706,8 +715,13 @@ internal static class Generation
         var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
-            switch (part)
+            var resolved = part is GeneratedToolApprovalRequest request ? ResolveApprovalRequest(request, generated.Content) : part;
+            content.Add(resolved);
+            switch (resolved)
             {
+                case GeneratedToolApprovalRequest approvalRequest:
+                    assistantParts.Add(new AssistantToolApprovalRequestPart(approvalRequest.ApprovalId, approvalRequest.ToolCallId));
+                    break;
                 case GeneratedToolCall call:
                     toolCalls.Add(call);
                     assistantParts.Add(new AssistantToolCallPart(call));
@@ -747,7 +761,9 @@ internal static class Generation
             }
         }
 
-        messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts));
+        var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
+        messages.Add(assistantMessage);
+        responseMessages.Add(assistantMessage);
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
             foreach (var call in toolCalls)
@@ -770,11 +786,129 @@ internal static class Generation
                 }
 
                 toolResults.Add(executed);
-                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+                var toolMessage = new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType);
+                messages.Add(toolMessage);
+                responseMessages.Add(toolMessage);
             }
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, generated.Content);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content);
+    }
+
+    // A provider-executed tool asks for approval by tool call id; the step carries the call itself, as upstream does.
+    private static GeneratedToolApprovalRequest ResolveApprovalRequest(GeneratedToolApprovalRequest request, IReadOnlyList<GeneratedContent> content)
+    {
+        foreach (var part in content)
+        {
+            if (part is GeneratedToolCall call && string.Equals(call.ToolCallId, request.ToolCallId, StringComparison.Ordinal))
+            {
+                return new GeneratedToolApprovalRequest(request.ApprovalId, request.ToolCallId) { ToolCall = call };
+            }
+        }
+
+        throw new AiSdkException("Tool call \"" + request.ToolCallId + "\" not found for approval request \"" + request.ApprovalId + "\".");
+    }
+
+    // The model sees no approval requests, and only the approval responses of provider-executed calls.
+    // A denied one is followed by an execution-denied result that names the approval for the provider.
+    private static IReadOnlyList<ModelMessage> PrepareProviderPrompt(IReadOnlyList<ModelMessage> prompt)
+    {
+        var needsWork = false;
+        foreach (var message in prompt)
+        {
+            if (message is ToolApprovalResponseModelMessage || (message is AssistantModelMessage assistant && ContainsApprovalRequest(assistant)))
+            {
+                needsWork = true;
+                break;
+            }
+        }
+
+        if (!needsWork)
+        {
+            return prompt;
+        }
+
+        var toolNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var callIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var message in prompt)
+        {
+            if (message is not AssistantModelMessage assistant)
+            {
+                continue;
+            }
+
+            foreach (var part in assistant.Parts)
+            {
+                if (part is AssistantToolCallPart call)
+                {
+                    toolNames[call.ToolCall.ToolCallId] = call.ToolCall.ToolName;
+                }
+                else if (part is AssistantToolApprovalRequestPart request)
+                {
+                    callIds[request.ApprovalId] = request.ToolCallId;
+                }
+            }
+        }
+
+        var prepared = new List<ModelMessage>();
+        foreach (var message in prompt)
+        {
+            switch (message)
+            {
+                case AssistantModelMessage assistant when ContainsApprovalRequest(assistant):
+                    var parts = new List<AssistantContentPart>();
+                    foreach (var part in assistant.Parts)
+                    {
+                        if (part is not AssistantToolApprovalRequestPart)
+                        {
+                            parts.Add(part);
+                        }
+                    }
+
+                    prepared.Add(new AssistantModelMessage(assistant.Text, assistant.ToolCalls, assistant.Reasoning, assistant.ReasoningProviderOptions, parts));
+                    break;
+                case ToolApprovalResponseModelMessage response:
+                    if (!response.ProviderExecuted)
+                    {
+                        break;
+                    }
+
+                    if (response.Approved || !callIds.TryGetValue(response.ApprovalId, out var toolCallId))
+                    {
+                        prepared.Add(response);
+                        break;
+                    }
+
+                    using (var approvalOptions = JsonDocument.Parse(JsonSerializer.Serialize(new { openai = new { approvalId = response.ApprovalId } })))
+                    {
+                        var denied = new ToolModelMessage(toolCallId, toolNames.TryGetValue(toolCallId, out var toolName) ? toolName : string.Empty, response.Reason, false, "execution-denied")
+                        {
+                            OutputProviderOptions = approvalOptions.RootElement.Clone(),
+                        };
+                        prepared.Add(new ToolApprovalResponseModelMessage(response.ApprovalId, false, response.Reason, true) { DeniedToolResult = denied });
+                    }
+
+                    break;
+                default:
+                    prepared.Add(message);
+                    break;
+            }
+        }
+
+        return prepared;
+    }
+
+    private static bool ContainsApprovalRequest(AssistantModelMessage assistant)
+    {
+        foreach (var part in assistant.Parts)
+        {
+            if (part is AssistantToolApprovalRequestPart)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
@@ -952,7 +1086,7 @@ internal static class Generation
         return false;
     }
 
-    private static GenerateTextResult ToResult(List<StepResult> steps, GenerateTextOptions options)
+    private static GenerateTextResult ToResult(List<StepResult> steps, List<ModelMessage> responseMessages, GenerateTextOptions options)
     {
         var last = steps.Count == 0
             ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
@@ -972,7 +1106,7 @@ internal static class Generation
             output = document.RootElement.Clone();
         }
 
-        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata);
+        return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata) { ResponseMessages = responseMessages.ToArray() };
     }
 }
 
