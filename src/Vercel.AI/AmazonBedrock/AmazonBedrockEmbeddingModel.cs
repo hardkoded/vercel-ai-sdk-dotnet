@@ -53,9 +53,9 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
     private string Family => _modelFamily ?? (IsNova(ModelId) ? "nova" : ModelId.Contains("cohere.embed-", StringComparison.Ordinal) ? "cohere" : "titan");
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
     {
-        return DoEmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { ProviderOptions = providerOptions, Dimensions = dimensions }, cancellationToken);
+        return DoEmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { ProviderOptions = providerOptions, Dimensions = dimensions, Headers = headers }, cancellationToken);
     }
 
     /// <summary>Embeds each value. Values, provider options, headers, and dimensions travel in <paramref name="call"/>, so concurrent calls do not share state.</summary>

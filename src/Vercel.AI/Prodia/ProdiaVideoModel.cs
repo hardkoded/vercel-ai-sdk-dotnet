@@ -28,6 +28,9 @@ public sealed class ProdiaVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
+    public string SpecificationVersion => "v4";
+
+    /// <inheritdoc />
     public string Provider => "prodia.video";
 
     /// <inheritdoc />

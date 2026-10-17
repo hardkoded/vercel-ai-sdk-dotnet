@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.OpenAICompatible;
 
@@ -564,9 +565,9 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     public Uri? Endpoint { get; set; }
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
     {
-        return EmbedAsync(new EmbeddingCallOptions(values) { ProviderOptions = providerOptions, Dimensions = dimensions }, cancellationToken);
+        return EmbedAsync(new EmbeddingCallOptions(values) { ProviderOptions = providerOptions, Dimensions = dimensions, Headers = headers }, cancellationToken);
     }
 
     /// <summary>Embeds values with per-call options. Nothing is kept on the model, so concurrent calls do not see each other.</summary>
@@ -748,31 +749,6 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
 
         public string? User { get; }
     }
-}
-
-/// <summary>An image file sent to an edits request.</summary>
-public sealed class OpenAICompatibleImageFile
-{
-    /// <summary>Creates an image file.</summary>
-    public OpenAICompatibleImageFile(string mediaType, byte[]? data, string? url, string? fileName)
-    {
-        MediaType = mediaType ?? "application/octet-stream";
-        Data = data;
-        Url = url;
-        FileName = fileName;
-    }
-
-    /// <summary>IANA media type.</summary>
-    public string MediaType { get; }
-
-    /// <summary>Inline bytes.</summary>
-    public byte[]? Data { get; }
-
-    /// <summary>Remote URL.</summary>
-    public string? Url { get; }
-
-    /// <summary>File name used in multipart uploads.</summary>
-    public string? FileName { get; }
 }
 
 /// <summary>OpenAI-compatible image model.</summary>
@@ -968,7 +944,7 @@ public static class OpenAICompatibleImages
     }
 
     /// <summary>Multipart content for one image file.</summary>
-    public static ByteArrayContent FileContent(OpenAICompatibleImageFile file)
+    public static ByteArrayContent FileContent(ImageModelFile file)
     {
         var bytes = file.Data ?? Array.Empty<byte>();
         var content = new ByteArrayContent(bytes);

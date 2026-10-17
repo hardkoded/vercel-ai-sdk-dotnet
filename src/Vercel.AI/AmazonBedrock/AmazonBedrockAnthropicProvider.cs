@@ -251,9 +251,6 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderId = "bedrock.anthropic.messages";
 
-    /// <summary>Provider specification version.</summary>
-    public string SpecificationVersion => "v4";
-
     /// <summary>Creates a provider.</summary>
     public AmazonBedrockAnthropicProvider(HttpClient httpClient, AmazonBedrockAnthropicOptions? options = null)
         : base(ProviderId)

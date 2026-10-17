@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -75,6 +76,7 @@ internal static class Generation
     {
         try
         {
+            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
             var messages = BuildPrompt(options);
             var responseMessages = new List<ModelMessage>();
@@ -167,6 +169,7 @@ internal static class Generation
         IAiTelemetry? telemetry,
         CancellationToken cancellationToken)
     {
+        ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
         var textSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -328,7 +331,7 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted };
+                                var call = ParseProviderExecutedInput(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted });
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
@@ -734,7 +737,12 @@ internal static class Generation
         var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
-            var resolved = part is GeneratedToolApprovalRequest request ? ResolveApprovalRequest(request, generated.Content) : part;
+            var resolved = part switch
+            {
+                GeneratedToolApprovalRequest request => ResolveApprovalRequest(request, generated.Content),
+                GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
+                _ => part,
+            };
             content.Add(resolved);
             switch (resolved)
             {
@@ -791,23 +799,32 @@ internal static class Generation
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
             var toolMessages = new List<ToolModelMessage>();
+            var callsToExecute = new List<GeneratedToolCall>();
             foreach (var call in toolCalls)
             {
-                if (call.ProviderExecuted)
+                if (call.ProviderExecuted || IsAwaitingApproval(FindTool(options, call.ToolName), options))
                 {
                     continue;
                 }
 
-                if (IsAwaitingApproval(FindTool(options, call.ToolName), options))
-                {
-                    continue;
-                }
+                callsToExecute.Add(call);
+            }
 
-                var toolWatch = Stopwatch.StartNew();
-                var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+            var executions = await ToolCallConcurrencyScheduler.MapWithConcurrency(
+                callsToExecute,
+                ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
+                async (call, _) =>
+                {
+                    var toolWatch = Stopwatch.StartNew();
+                    var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+                    return (Executed: executed, ElapsedMs: toolWatch.Elapsed.TotalMilliseconds);
+                },
+                cancellationToken).ConfigureAwait(false);
+            foreach (var (executed, elapsedMs) in executions)
+            {
                 if (toolExecutionMs != null)
                 {
-                    toolExecutionMs[call.ToolCallId] = toolWatch.Elapsed.TotalMilliseconds;
+                    toolExecutionMs[executed.ToolCallId] = elapsedMs;
                 }
 
                 toolResults.Add(executed);
@@ -994,6 +1011,35 @@ internal static class Generation
         }
     }
 
+    // Upstream parses the input of a tool call with the tool's input schema. Only a provider-defined tool declared with a
+    // schema is parsed here, so the input of any other call is kept as the model sent it.
+    private static GeneratedToolCall ParseProviderExecutedInput(GenerateTextOptions options, GeneratedToolCall call)
+    {
+        if (!call.ProviderExecuted)
+        {
+            return call;
+        }
+
+        var tool = FindTool(options, call.ToolName);
+        if (tool is not { IsProviderDefined: true } || tool.InputSchema.ValueKind != JsonValueKind.Object)
+        {
+            return call;
+        }
+
+        JsonNode? input;
+        try
+        {
+            input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+        }
+        catch (JsonException)
+        {
+            return call;
+        }
+
+        var parsed = JsonSchemaProjection.Project(tool.InputSchema, input);
+        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true };
+    }
+
     private static Tool? FindTool(GenerateTextOptions options, string name)
     {
         if (options.Tools != null)
@@ -1057,6 +1103,13 @@ internal static class Generation
         if (tool?.Execute == null)
         {
             return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
+        }
+
+        var parsed = ToolCallParser.ParseToolCall(call, options.Tools);
+        if (parsed.Invalid)
+        {
+            var message = parsed.Error!.Message;
+            return new ExecutedTool(call.ToolCallId, call.ToolName, JsonSerializer.Serialize(new { error = message }), true) { ModelOutputType = "error-text", ModelOutput = message };
         }
 
         if (options.ApproveTool != null)

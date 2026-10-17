@@ -142,6 +142,13 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         return new OpenAIDecisionModel(this, modelId);
     }
 
+    /// <summary>Deprecated alias of <see cref="DecisionModel"/>. Maps to <c>evaluationModel</c>.</summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public OpenAIDecisionModel EvaluationModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {

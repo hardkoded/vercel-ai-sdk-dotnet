@@ -14,6 +14,14 @@ You need a project that targets `net10.0` or `netstandard2.0`. Run `dotnet add p
 
 Every provider ships in this one package.
 
+## Skill for Coding Agents
+
+If you use coding agents such as Claude Code or Cursor, we highly recommend adding the Vercel AI SDK for .NET skill to your repository:
+
+```shell
+npx skills add hardkoded/vercel-ai-sdk-dotnet
+```
+
 ## Unified Provider Architecture
 
 The SDK gives you one API to call model providers like OpenAI, Anthropic, Google, and [more](docs/articles/providers.md).

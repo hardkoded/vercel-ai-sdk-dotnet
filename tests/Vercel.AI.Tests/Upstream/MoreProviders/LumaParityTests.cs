@@ -220,7 +220,7 @@ public sealed class LumaParityTests
     [UpstreamTest(Model + "Image Editing::should throw error when base64 file data is provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Inline_file_data_throws()
     {
-        var request = new LumaImageRequest("Edit this image") { Files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71 }, null, null) } };
+        var request = new LumaImageRequest("Edit this image") { Files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") } };
         var error = await Assert.ThrowsAsync<AiSdkException>(() => Generate(Server(), request));
         Assert.StartsWith("Luma AI only supports URL-based images", error.Message, StringComparison.Ordinal);
     }
@@ -229,7 +229,7 @@ public sealed class LumaParityTests
     [UpstreamTest(Model + "Image Editing::should throw error when base64 mask data is provided", Coverage = UpstreamCoverage.Covered)]
     public async Task An_inline_mask_throws()
     {
-        var request = new LumaImageRequest("Edit with mask") { Files = Urls("https://example.com/input.jpg"), Mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null) };
+        var request = new LumaImageRequest("Edit with mask") { Files = Urls("https://example.com/input.jpg"), Mask = ImageModelFile.FromFile(new byte[] { 255, 255, 255, 0 }, "image/png") };
         var error = await Assert.ThrowsAsync<AiSdkException>(() => Generate(Server(), request));
         Assert.StartsWith("Luma AI does not support mask-based image editing", error.Message, StringComparison.Ordinal);
     }
@@ -367,8 +367,8 @@ public sealed class LumaParityTests
         return JsonDocument.Parse("{\"luma\":" + luma + "}").RootElement.Clone();
     }
 
-    private static OpenAICompatibleImageFile[] Urls(params string[] urls)
+    private static ImageModelFile[] Urls(params string[] urls)
     {
-        return urls.Select(url => new OpenAICompatibleImageFile("image/*", null, url, null)).ToArray();
+        return urls.Select(url => ImageModelFile.FromUrl(url)).ToArray();
     }
 }

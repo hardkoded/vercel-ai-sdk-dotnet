@@ -12,6 +12,23 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Operations;
 
+/// <summary>The wrapped model and provider id that cross a workflow boundary for <see cref="DecisionLanguageModel"/>.</summary>
+public sealed class DecisionLanguageModelOptions
+{
+    /// <summary>Creates the options.</summary>
+    public DecisionLanguageModelOptions(ILanguageModel model, string provider)
+    {
+        Model = model ?? throw new ArgumentNullException(nameof(model));
+        Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+    }
+
+    /// <summary>The wrapped language model.</summary>
+    public ILanguageModel Model { get; }
+
+    /// <summary>The decision provider id.</summary>
+    public string Provider { get; }
+}
+
 /// <summary>Adapts structured language-model output to Choice, Score, and Boolean decisions. Maps to <c>DecisionLanguageModel</c>.</summary>
 #pragma warning disable CS0618
 public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
@@ -46,6 +63,29 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
 
     /// <inheritdoc />
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+
+    /// <summary>Serializes the wrapped model and the provider id for a workflow boundary. Maps to <c>[WORKFLOW_SERIALIZE]</c>.</summary>
+    public static DecisionLanguageModelOptions Serialize(DecisionLanguageModel model)
+    {
+        if (model == null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        // The wrapped model is kept as is. A workflow runtime serializes it with its own hooks.
+        return new DecisionLanguageModelOptions(model._model, model.Provider);
+    }
+
+    /// <summary>Restores a model from <see cref="Serialize(DecisionLanguageModel)"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+    public static DecisionLanguageModel Deserialize(DecisionLanguageModelOptions options)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        return new DecisionLanguageModel(options.Model, options.Provider);
+    }
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]

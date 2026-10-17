@@ -5,8 +5,9 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Gateway;
-using Vercel.AI.OpenAICompatible;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI;
 
@@ -126,7 +127,7 @@ public sealed class AiClient : IAiClient
 
         Operations.Embed.ValidateEmbeddingDimensions(options.Dimensions);
         var model = options.Model ?? _gateway.EmbeddingModel(Require(options.ModelId, "embedding"));
-        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions);
+        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions, options.Headers);
     }
 
     /// <inheritdoc />
@@ -137,7 +138,7 @@ public sealed class AiClient : IAiClient
             throw new AiSdkException("Rerank requires a reranking model.");
         }
 
-        return options.Model.DoRerankAsync(options.Query, options.Documents, options.TopN, cancellationToken);
+        return options.Model.DoRerankAsync(options.Query, options.Documents, options.TopN, cancellationToken, options.Headers);
     }
 
     /// <inheritdoc />
@@ -321,6 +322,9 @@ public sealed class EmbedOptions
 
     /// <summary>Provider options keyed by provider id.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Rerank options.</summary>
@@ -337,6 +341,9 @@ public sealed class RerankOptions
 
     /// <summary>Maximum results.</summary>
     public int? TopN { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Image generation options.</summary>
@@ -364,10 +371,10 @@ public sealed class GenerateImageOptions
     public int? Seed { get; set; }
 
     /// <summary>Input images for an edit.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
+    public IReadOnlyList<ImageModelFile>? Files { get; set; }
 
     /// <summary>Edit mask.</summary>
-    public OpenAICompatibleImageFile? Mask { get; set; }
+    public ImageModelFile? Mask { get; set; }
 
     /// <summary>Provider options, keyed by provider id.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
@@ -476,6 +483,12 @@ public static class Ai
     public static Task<EmbeddingResult> EmbedManyAsync(EmbedOptions options, CancellationToken cancellationToken = default)
     {
         return DefaultClient.Value.EmbedManyAsync(options, cancellationToken);
+    }
+
+    /// <summary>Prunes reasoning, tool calls, results, errors, and approvals from messages. Maps to <c>pruneMessages</c>.</summary>
+    public static IReadOnlyList<ModelMessage> PruneMessages(PruneMessagesOptions options)
+    {
+        return MessagePruning.PruneMessages(options);
     }
 
     /// <summary>Cosine similarity of two vectors.</summary>
