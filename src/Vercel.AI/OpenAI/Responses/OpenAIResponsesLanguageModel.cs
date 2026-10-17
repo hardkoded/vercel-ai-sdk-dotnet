@@ -203,6 +203,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(capabilities, openai);
         var hasContinuation = OpenAIJson.String(openai, "conversation") != null || OpenAIJson.String(openai, "previousResponseId") != null;
         var outputSchemaToolNames = new HashSet<string>();
+        var customProviderToolNames = new HashSet<string>();
         var prepared = PrepareResponsesTools(
             options.Tools,
             options.ToolChoice,
@@ -210,6 +211,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             {
                 AllowedTools = ParseAllowedTools(openai),
                 ToolNameMapping = ToolNames.CreateToolNameMapping(MappedTools(options.Tools), ProviderToolNames),
+                CustomProviderToolNames = customProviderToolNames,
                 OutputSchemaToolNames = outputSchemaToolNames,
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
             });
@@ -221,6 +223,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             providerOptionsName,
             hasContinuation,
             OpenAIJson.Bool(openai, "store") ?? true,
+            customToolNames: customProviderToolNames.Count > 0 ? customProviderToolNames : null,
             outputSchemaToolNames: outputSchemaToolNames,
             isReasoningModel: reasoning,
             hasConversation: OpenAIJson.String(openai, "conversation") != null);
@@ -932,6 +935,49 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     foreach (var call in assistant.ToolCalls)
                     {
+                        if (customToolNames?.Contains(call.ToolName) == true)
+                        {
+                            var callOptions = ProviderOptionsFor(
+                                assistant.Parts.OfType<AssistantToolCallPart>().FirstOrDefault(part => part.ToolCall == call)?.ProviderOptions,
+                                providerOptionsName);
+                            var itemId = OpenAIJson.String(callOptions, "itemId");
+                            if (hasConversation && itemId != null)
+                            {
+                                continue;
+                            }
+
+                            // A stored custom tool call is sent as a reference. With a previous response id, the chain already holds it.
+                            if (store && itemId != null)
+                            {
+                                if (!hasContinuation)
+                                {
+                                    input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+                                }
+
+                                continue;
+                            }
+
+                            var customCall = new JsonObject
+                            {
+                                ["type"] = "custom_tool_call",
+                                ["call_id"] = call.ToolCallId,
+                                ["name"] = call.ToolName,
+                                ["input"] = CustomToolCallInput(call.ArgumentsJson),
+                            };
+                            if (OpenAIJson.Bool(callOptions, "async") is { } isAsync)
+                            {
+                                customCall["async"] = isAsync;
+                            }
+
+                            if (itemId != null)
+                            {
+                                customCall["id"] = itemId;
+                            }
+
+                            input.Add(customCall);
+                            continue;
+                        }
+
                         input.Add(new JsonObject
                         {
                             ["type"] = "function_call",
@@ -1056,6 +1102,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return JsonNode.Parse(definition.GetRawText())!;
+    }
+
+    // The input of a custom tool call is text. A string input is sent as is and any other input as JSON.
+    private static string CustomToolCallInput(string argumentsJson)
+    {
+        using var document = JsonDocument.Parse(argumentsJson);
+        return document.RootElement.ValueKind == JsonValueKind.String
+            ? document.RootElement.GetString()!
+            : JsonSerializer.Serialize(document.RootElement);
     }
 
     private static string? TextItemId(AssistantContentPart part, string providerOptionsName) =>
