@@ -524,6 +524,8 @@ var result = await model.DoGenerateAsync(
     CancellationToken.None);
 ```
 
+`XaiTools` builds the `Tool` for `GenerateText`, `StreamText`, and `Agent`, like `xai.tools` upstream: `XaiTools.WebSearch(new XaiWebSearchOptions { AllowedDomains = new[] { "arxiv.org" } })`, `XSearch`, `CodeExecution`, `ViewImage`, `ViewXVideo`, `ImageGeneration`, `FileSearch`, and `McpServer`. Each takes an optional tool name as its last argument. It defaults to the wire name, such as `web_search`.
+
 - `xai.web_search`: real-time web search and page browsing. **allowedDomains** _string[]_ (max 5) and **excludedDomains** _string[]_ (max 5) cannot be used together. **enableImageSearch** _bool_ lets the model run an image search when images help the answer. **enableImageUnderstanding** _bool_ lets the model view images it finds, and uses more tokens.
 - `xai.x_search`: search X posts. **allowedXHandles** _string[]_ (max 20) and **excludedXHandles** _string[]_ (max 20) cannot be used together. **fromDate** and **toDate** _string_ (`YYYY-MM-DD`). **enableImageUnderstanding** and **enableVideoUnderstanding** _bool_.
 - `xai.code_execution`: runs Python code. No parameters.
@@ -541,7 +543,7 @@ The result has a `GeneratedToolCall` with `ProviderExecuted` set for each server
 - file search: `{ queries, results }`, where each result has `fileId`, `filename`, `score`, and `text`. `results` is null when xAI sends none.
 - image generation: `{ result, prompt }`, where `result` is the base64 image. A call without an image gives an error result (`IsError`).
 
-Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool-call` once per server-side call, and a `tool-result` part when the call is done (`ToolResultStreamPart.IsError` marks a failed image generation). A prompt replays only the client-side tool calls: assistant tool calls with `ProviderExecuted` set and assistant tool results are not sent back. `GenerateText` and `StreamText` cannot declare provider-defined tools yet ([#403](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/403)), so use the model directly.
+Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool-call` once per server-side call, and a `tool-result` part when the call is done (`ToolResultStreamPart.IsError` marks a failed image generation). A prompt replays only the client-side tool calls: assistant tool calls with `ProviderExecuted` set and assistant tool results are not sent back.
 
 ### Not included
 

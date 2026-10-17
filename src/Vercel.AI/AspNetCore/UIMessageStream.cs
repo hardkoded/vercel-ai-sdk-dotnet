@@ -281,31 +281,46 @@ public sealed class UIMessageStreamResult : IResult
                         ["toolName"] = call.ToolCall.ToolName,
                         ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
                     };
+                    if (call.ToolCall.ProviderExecuted)
+                    {
+                        providerExecutedIds.Add(call.ToolCall.ToolCallId);
+                        toolInput["providerExecuted"] = true;
+                    }
+
                     AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
                     yield return Frame(toolInput);
                     break;
                 case ToolResultPart toolResult:
+                    var providerResult = providerExecutedIds.Contains(toolResult.Result.ToolCallId);
+                    JsonObject toolOutput;
                     if (toolResult.Result.IsError)
                     {
-                        yield return Frame(new JsonObject
+                        toolOutput = new JsonObject
                         {
                             ["type"] = "tool-output-error",
                             ["toolCallId"] = toolResult.Result.ToolCallId,
-                            ["errorText"] = providerExecutedIds.Contains(toolResult.Result.ToolCallId)
-                                ? toolResult.Result.OutputJson
+                            ["errorText"] = providerResult
+                                ? ProviderErrorText(toolResult.Result.OutputJson)
                                 : onError(toolResult.Result.ModelOutput ?? toolResult.Result.OutputJson),
-                        });
+                        };
                     }
                     else
                     {
-                        yield return Frame(new JsonObject
+                        toolOutput = new JsonObject
                         {
                             ["type"] = "tool-output-available",
                             ["toolCallId"] = toolResult.Result.ToolCallId,
                             ["output"] = ParseJson(toolResult.Result.OutputJson),
-                        });
+                        };
                     }
 
+                    if (providerResult)
+                    {
+                        toolOutput["providerExecuted"] = true;
+                        AddProviderMetadata(toolOutput, toolResult.Result.ProviderMetadata);
+                    }
+
+                    yield return Frame(toolOutput);
                     break;
                 case SourcePart source:
                     var sourceChunk = new JsonObject
@@ -523,6 +538,20 @@ public sealed class UIMessageStreamResult : IResult
         if (node != null)
         {
             payload["providerMetadata"] = node;
+        }
+    }
+
+    // A provider-executed error keeps its structure: a string stays text and any other value is its JSON.
+    private static string ProviderErrorText(string outputJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(outputJson);
+            return document.RootElement.ValueKind == JsonValueKind.String ? document.RootElement.GetString()! : outputJson;
+        }
+        catch (JsonException)
+        {
+            return outputJson;
         }
     }
 

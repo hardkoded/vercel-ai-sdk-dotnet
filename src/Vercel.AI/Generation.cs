@@ -319,6 +319,7 @@ internal static class Generation
                             case ToolResultStreamPart streamedResult:
                                 var providerResult = new GeneratedToolResult(streamedResult.ToolCallId, streamedResult.ToolName, streamedResult.Result.GetRawText(), streamedResult.IsError) { ProviderMetadata = streamedResult.ProviderMetadata };
                                 toolContent.Add(providerResult);
+                                buffer.Add(new ToolResultPart(ProviderExecutedResult(providerResult, toolCalls)));
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 buffer.Add(new ToolInputStartPart(
@@ -371,7 +372,11 @@ internal static class Generation
                 var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
-                    buffer.Add(new ToolResultPart(toolResult));
+                    // A provider-executed result was streamed in order when it arrived.
+                    if (!toolResult.ProviderExecuted)
+                    {
+                        buffer.Add(new ToolResultPart(toolResult));
+                    }
                 }
 
                 buffer.Add(new StepFinishPart(step));
@@ -635,6 +640,25 @@ internal static class Generation
         return JsonSerializer.SerializeToElement(merged);
     }
 
+    private static ExecutedTool ProviderExecutedResult(GeneratedToolResult result, IReadOnlyList<GeneratedToolCall> toolCalls)
+    {
+        string? input = null;
+        foreach (var call in toolCalls)
+        {
+            if (string.Equals(call.ToolCallId, result.ToolCallId, StringComparison.Ordinal))
+            {
+                input = call.ArgumentsJson;
+            }
+        }
+
+        return new ExecutedTool(result.ToolCallId, result.ToolName, result.ResultJson, result.IsError)
+        {
+            ProviderExecuted = true,
+            ProviderMetadata = result.ProviderMetadata,
+            InputJson = input,
+        };
+    }
+
     private static IReadOnlyDictionary<string, JsonElement>? ToProviderOptions(JsonElement? metadata)
     {
         if (metadata is not { ValueKind: JsonValueKind.Object } root)
@@ -675,6 +699,11 @@ internal static class Generation
                 case GeneratedText generatedText:
                     assistantParts.Add(new AssistantTextPart(generatedText.Text, ToProviderOptions(generatedText.ProviderMetadata)));
                     break;
+                case GeneratedToolResult providerResult:
+                    // The provider ran the tool, so the next step replays the result in the same assistant message.
+                    var output = new ToolModelMessage(providerResult.ToolCallId, providerResult.ToolName, providerResult.ResultJson, providerResult.IsError);
+                    assistantParts.Add(new AssistantToolResultPart(providerResult.ToolCallId, providerResult.ToolName, output, ToProviderOptions(providerResult.ProviderMetadata)));
+                    break;
                 case GeneratedSource source:
                     sources.Add(source);
                     break;
@@ -701,9 +730,9 @@ internal static class Generation
         var toolResults = new List<ExecutedTool>();
         foreach (var part in generated.Content)
         {
-            if (part is GeneratedToolResult providerResult && !providerResult.IsError)
+            if (part is GeneratedToolResult { IsError: false } providerResult)
             {
-                toolResults.Add(new ExecutedTool(providerResult.ToolCallId, providerResult.ToolName, providerResult.ResultJson, false));
+                toolResults.Add(ProviderExecutedResult(providerResult, toolCalls));
             }
         }
 
