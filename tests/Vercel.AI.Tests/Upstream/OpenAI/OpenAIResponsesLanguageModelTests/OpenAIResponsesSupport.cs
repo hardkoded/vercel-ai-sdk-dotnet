@@ -15,7 +15,7 @@ internal static class OpenAIResponsesSupport
     internal static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
     // Parses a Responses body with predictable source ids: id-0, id-1, and so on.
-    internal static LanguageModelGenerateResult Generate(JsonNode body)
+    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null)
     {
         var raw = body.ToJsonString();
         using var document = JsonDocument.Parse(raw);
@@ -25,7 +25,8 @@ internal static class OpenAIResponsesSupport
             Array.Empty<OpenAICallWarning>(),
             raw,
             new Dictionary<string, string>(),
-            () => "id-" + next++);
+            () => "id-" + next++,
+            OpenAIParallelToolCall.FunctionToolNames(tools));
     }
 
     internal static JsonNode FixtureBody(string name) => JsonNode.Parse(Fixture(name))!;
@@ -33,11 +34,31 @@ internal static class OpenAIResponsesSupport
     internal static string Sse(IEnumerable<JsonNode> events) =>
         string.Concat(events.Select(@event => "data: " + @event.ToJsonString() + "\n\n"));
 
-    internal static async Task<List<LanguageModelStreamPart>> Stream(string serverSentEvents)
+    // The TEST_TOOLS of the upstream test file.
+    internal static readonly IReadOnlyList<LanguageModelTool> TestTools = new[]
+    {
+        new LanguageModelTool(
+            "weather",
+            null,
+            OpenAIUpstream.Json("""{"type":"object","properties":{"location":{"type":"string"}},"required":["location"],"additionalProperties":false}""")),
+        new LanguageModelTool(
+            "cityAttractions",
+            null,
+            OpenAIUpstream.Json("""{"type":"object","properties":{"city":{"type":"string"}},"required":["city"],"additionalProperties":false}""")),
+    };
+
+    internal static async Task<List<LanguageModelStreamPart>> Stream(string serverSentEvents, IReadOnlyList<LanguageModelTool>? tools = null)
     {
         var capture = new OpenAICapture { ServerSentEvents = serverSentEvents };
         return await OpenAIUpstream.Read(
-            (await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-nano").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None))).ConfigureAwait(false);
+            (await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-nano").DoStreamAsync(WithTools(tools), CancellationToken.None))).ConfigureAwait(false);
+    }
+
+    private static LanguageModelCallOptions WithTools(IReadOnlyList<LanguageModelTool>? tools)
+    {
+        var options = OpenAIUpstream.Hello();
+        options.Tools = tools;
+        return options;
     }
 
     internal static JsonNode CitationsJson(IReadOnlyList<Citation>? citations) =>

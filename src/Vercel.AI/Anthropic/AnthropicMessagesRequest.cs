@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Anthropic;
@@ -321,6 +322,20 @@ public static class AnthropicMessagesRequest
         betas.AddRange(preparedTools.Betas);
         warnings.AddRange(validator.Warnings);
 
+        var hasCompaction = anthropic != null && anthropic.Value.TryGetProperty("compaction", out var compactionOption) && compactionOption.ValueKind == JsonValueKind.Object;
+        if (hasCompaction && anthropic!.Value.TryGetProperty("contextManagement", out var conflicting) && conflicting.ValueKind == JsonValueKind.Object)
+        {
+            throw new InvalidArgumentException(
+                "providerOptions",
+                null,
+                "Anthropic provider options `compaction` and `contextManagement` cannot be used together.");
+        }
+
+        if (hasCompaction)
+        {
+            betas.Add("compact-2026-09-04");
+        }
+
         AddContextBetas(anthropic, betas, warnings);
         AddContainerBetas(anthropic, tools, betas, warnings);
         if (anthropic != null && anthropic.Value.TryGetProperty("mcpServers", out var servers) && servers.ValueKind == JsonValueKind.Array && servers.GetArrayLength() > 0)
@@ -489,6 +504,18 @@ public static class AnthropicMessagesRequest
         if (anthropic != null && anthropic.Value.TryGetProperty("safeguards", out var safeguardValue) && safeguardValue.ValueKind == JsonValueKind.Array && safeguardValue.GetArrayLength() > 0)
         {
             body["safeguards"] = MapSafeguards(safeguardValue);
+        }
+
+        if (hasCompaction)
+        {
+            anthropic!.Value.TryGetProperty("compaction", out var compaction);
+            var compactionBody = new JsonObject { ["type"] = AnthropicJson.String(compaction, "type") };
+            if (AnthropicJson.Property(compaction, "instructions") is { } instructions)
+            {
+                compactionBody["instructions"] = AnthropicJson.Node(instructions);
+            }
+
+            body["compaction"] = compactionBody;
         }
 
         if (anthropic != null && anthropic.Value.TryGetProperty("contextManagement", out var context) && context.ValueKind == JsonValueKind.Object)

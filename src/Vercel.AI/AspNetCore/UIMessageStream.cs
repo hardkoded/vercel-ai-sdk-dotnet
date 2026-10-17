@@ -281,41 +281,55 @@ public sealed class UIMessageStreamResult : IResult
                         ["toolName"] = call.ToolCall.ToolName,
                         ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
                     };
+                    if (call.ToolCall.ProviderExecuted)
+                    {
+                        providerExecutedIds.Add(call.ToolCall.ToolCallId);
+                        toolInput["providerExecuted"] = true;
+                    }
+
                     AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
                     yield return Frame(toolInput);
                     break;
-                case ToolErrorPart toolError:
+                case ToolApprovalRequestPart approvalRequest:
                     yield return Frame(new JsonObject
+                    {
+                        ["type"] = "tool-approval-request",
+                        ["approvalId"] = approvalRequest.ApprovalId,
+                        ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
+                    });
+                    break;
+                case ToolErrorPart toolError:
+                    var providerError = providerExecutedIds.Contains(toolError.Result.ToolCallId);
+                    var errorOutput = new JsonObject
                     {
                         ["type"] = "tool-output-error",
                         ["toolCallId"] = toolError.Result.ToolCallId,
-                        ["errorText"] = providerExecutedIds.Contains(toolError.Result.ToolCallId)
-                            ? toolError.Result.OutputJson
+                        ["errorText"] = providerError
+                            ? ProviderErrorText(toolError.Result.OutputJson)
                             : onError(toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
-                    });
-                    break;
-                case ToolResultPart toolResult:
-                    if (toolResult.Result.IsError)
+                    };
+                    if (providerError)
                     {
-                        yield return Frame(new JsonObject
-                        {
-                            ["type"] = "tool-output-error",
-                            ["toolCallId"] = toolResult.Result.ToolCallId,
-                            ["errorText"] = providerExecutedIds.Contains(toolResult.Result.ToolCallId)
-                                ? toolResult.Result.OutputJson
-                                : onError(toolResult.Result.ModelOutput ?? toolResult.Result.OutputJson),
-                        });
-                    }
-                    else
-                    {
-                        yield return Frame(new JsonObject
-                        {
-                            ["type"] = "tool-output-available",
-                            ["toolCallId"] = toolResult.Result.ToolCallId,
-                            ["output"] = ParseJson(toolResult.Result.OutputJson),
-                        });
+                        errorOutput["providerExecuted"] = true;
+                        AddProviderMetadata(errorOutput, toolError.Result.ProviderMetadata);
                     }
 
+                    yield return Frame(errorOutput);
+                    break;
+                case ToolResultPart toolResult:
+                    var toolOutput = new JsonObject
+                    {
+                        ["type"] = "tool-output-available",
+                        ["toolCallId"] = toolResult.Result.ToolCallId,
+                        ["output"] = ParseJson(toolResult.Result.OutputJson),
+                    };
+                    if (providerExecutedIds.Contains(toolResult.Result.ToolCallId))
+                    {
+                        toolOutput["providerExecuted"] = true;
+                        AddProviderMetadata(toolOutput, toolResult.Result.ProviderMetadata);
+                    }
+
+                    yield return Frame(toolOutput);
                     break;
                 case SourcePart source:
                     var sourceChunk = new JsonObject
@@ -533,6 +547,20 @@ public sealed class UIMessageStreamResult : IResult
         if (node != null)
         {
             payload["providerMetadata"] = node;
+        }
+    }
+
+    // A provider-executed error keeps its structure: a string stays text and any other value is its JSON.
+    private static string ProviderErrorText(string outputJson)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(outputJson);
+            return document.RootElement.ValueKind == JsonValueKind.String ? document.RootElement.GetString()! : outputJson;
+        }
+        catch (JsonException)
+        {
+            return outputJson;
         }
     }
 

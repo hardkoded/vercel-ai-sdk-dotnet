@@ -81,6 +81,34 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>Provider id used for dependency injection.</summary>
     public const string ProviderName = "anthropic";
 
+    /// <summary>Provider tool ids, such as <c>anthropic.web_search_20250305</c>. Pass one as a provider tool id.</summary>
+    public static IReadOnlyList<string> Tools { get; } = new[]
+    {
+        "anthropic.advisor_20260301",
+        "anthropic.bash_20241022",
+        "anthropic.bash_20250124",
+        "anthropic.code_execution_20250522",
+        "anthropic.code_execution_20250825",
+        "anthropic.code_execution_20260120",
+        "anthropic.computer_20241022",
+        "anthropic.computer_20250124",
+        "anthropic.computer_20251124",
+        "anthropic.computer_toolset_20260801",
+        "anthropic.memory_20250818",
+        "anthropic.text_editor_20241022",
+        "anthropic.text_editor_20250124",
+        "anthropic.text_editor_20250429",
+        "anthropic.text_editor_20250728",
+        "anthropic.web_fetch_20250910",
+        "anthropic.web_fetch_20260209",
+        "anthropic.web_fetch_20260318",
+        "anthropic.web_search_20250305",
+        "anthropic.web_search_20260209",
+        "anthropic.web_search_20260318",
+        "anthropic.tool_search_regex_20251119",
+        "anthropic.tool_search_bm25_20251119",
+    };
+
     /// <summary>User agent for the Messages API.</summary>
     public static readonly string UserAgent = "ai-sdk/anthropic/" + Operations.AiSdkVersion.Version;
 

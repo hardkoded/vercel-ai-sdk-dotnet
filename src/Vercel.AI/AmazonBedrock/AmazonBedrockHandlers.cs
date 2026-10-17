@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -51,6 +52,7 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
     private readonly string? _secretAccessKey;
     private readonly string? _sessionToken;
     private readonly Func<DateTimeOffset>? _utcNow;
+    private readonly Func<CancellationToken, Task<AmazonBedrockCredentials>>? _credentialProvider;
 
     public AmazonBedrockSigningHandler(
         HttpMessageHandler inner,
@@ -60,9 +62,11 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         string? accessKeyId,
         string? secretAccessKey,
         string? sessionToken,
-        Func<DateTimeOffset>? utcNow)
+        Func<DateTimeOffset>? utcNow,
+        Func<CancellationToken, Task<AmazonBedrockCredentials>>? credentialProvider = null)
         : base(inner)
     {
+        _credentialProvider = credentialProvider;
         _region = region;
         _service = service;
         _apiKey = apiKey;
@@ -78,15 +82,36 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
             ? Array.Empty<byte>()
             : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
         request.Headers.Remove("Authorization");
+        var accessKeyId = _accessKeyId;
+        var secretAccessKey = _secretAccessKey;
+        var sessionToken = _sessionToken;
+        if (_credentialProvider != null && string.IsNullOrWhiteSpace(_apiKey))
+        {
+            // The region always comes from the options. The provider supplies only the keys.
+            AmazonBedrockCredentials credentials;
+            try
+            {
+                credentials = await _credentialProvider(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (!(exception is OperationCanceledException))
+            {
+                throw new AiSdkException("AWS credential provider failed: " + exception.Message + ". Please ensure your credential provider returns valid AWS credentials with accessKeyId and secretAccessKey properties.", exception);
+            }
+
+            accessKeyId = credentials.AccessKeyId;
+            secretAccessKey = credentials.SecretAccessKey;
+            sessionToken = credentials.SessionToken;
+        }
+
         AmazonBedrockSigner.Apply(
             request,
             payload,
             _region,
             _service,
             _apiKey,
-            _accessKeyId,
-            _secretAccessKey,
-            _sessionToken,
+            accessKeyId,
+            secretAccessKey,
+            sessionToken,
             _utcNow?.Invoke() ?? DateTimeOffset.UtcNow);
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }

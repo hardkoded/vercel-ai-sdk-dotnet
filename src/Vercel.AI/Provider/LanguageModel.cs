@@ -227,6 +227,30 @@ public class GeneratedToolCall : GeneratedContent
     public bool ProviderExecuted { get; init; }
 }
 
+/// <summary>
+/// A request to approve a tool call, such as one a provider-executed MCP tool needs. A model returns it with
+/// <see cref="ToolCallId"/> only; the generation loop fills in <see cref="ToolCall"/>.
+/// </summary>
+public sealed class GeneratedToolApprovalRequest : GeneratedContent
+{
+    /// <summary>Creates an approval request.</summary>
+    public GeneratedToolApprovalRequest(string approvalId, string toolCallId)
+        : base("tool-approval-request")
+    {
+        ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+    }
+
+    /// <summary>Approval id the response must carry.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>Id of the tool call that needs approval.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>The tool call that needs approval, once the generation loop resolved it.</summary>
+    public GeneratedToolCall? ToolCall { get; init; }
+}
+
 /// <summary>Reasoning text kept separate from the answer.</summary>
 public class GeneratedReasoning : GeneratedContent
 {
@@ -606,6 +630,9 @@ public sealed class TextContentPart : UserContentPart
 
     /// <summary>Text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider-specific options for this part, such as the Amazon Bedrock <c>guardContent</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 }
 
 /// <summary>A file or image in a user message.</summary>
@@ -760,6 +787,28 @@ public sealed class AssistantToolCallPart : AssistantContentPart
 
         return options;
     }
+}
+
+/// <summary>A request to approve a tool call, kept in an assistant message.</summary>
+public sealed class AssistantToolApprovalRequestPart : AssistantContentPart
+{
+    /// <summary>Creates a tool-approval-request part.</summary>
+    public AssistantToolApprovalRequestPart(string approvalId, string toolCallId, bool? isAutomatic = null)
+        : base("tool-approval-request", null)
+    {
+        ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+        IsAutomatic = isAutomatic;
+    }
+
+    /// <summary>Approval id.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>Id of the tool call that needs approval.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Whether the approval was decided automatically, when known.</summary>
+    public bool? IsAutomatic { get; }
 }
 
 /// <summary>An assistant message.</summary>
@@ -998,6 +1047,41 @@ public sealed class AssistantCustomPart : AssistantContentPart
 
     /// <summary>Provider-scoped kind.</summary>
     public string Kind { get; }
+}
+
+/// <summary>
+/// The caller's answer to a <see cref="GeneratedToolApprovalRequest"/>. Only a response with
+/// <see cref="ProviderExecuted"/> reaches the model; the generation loop drops the others from the prompt.
+/// </summary>
+public sealed class ToolApprovalResponseModelMessage : ModelMessage
+{
+    /// <summary>Creates an approval response.</summary>
+    public ToolApprovalResponseModelMessage(string approvalId, bool approved, string? reason = null, bool providerExecuted = false)
+        : base("tool")
+    {
+        ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
+        Approved = approved;
+        Reason = reason;
+        ProviderExecuted = providerExecuted;
+    }
+
+    /// <summary>Approval id of the request this answers.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>Whether the call was approved.</summary>
+    public bool Approved { get; }
+
+    /// <summary>Reason for the decision, when given.</summary>
+    public string? Reason { get; }
+
+    /// <summary>True when the provider runs the tool, so the model must see the response.</summary>
+    public bool ProviderExecuted { get; }
+
+    /// <summary>
+    /// For a denied provider-executed call, the <c>execution-denied</c> result sent in the same tool message, after the response.
+    /// The generation loop sets it while it prepares the prompt.
+    /// </summary>
+    public ToolModelMessage? DeniedToolResult { get; init; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
@@ -1375,6 +1459,24 @@ public sealed class ToolCallStreamPart : LanguageModelStreamPart
 
     /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
     public bool ProviderExecuted { get; init; }
+}
+
+/// <summary>A request to approve a tool call.</summary>
+public sealed class ToolApprovalRequestStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a tool-approval-request part.</summary>
+    public ToolApprovalRequestStreamPart(string approvalId, string toolCallId)
+        : base("tool-approval-request")
+    {
+        ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+    }
+
+    /// <summary>Approval id the response must carry.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>Id of the tool call that needs approval.</summary>
+    public string ToolCallId { get; }
 }
 
 /// <summary>Marks the start of streamed tool input.</summary>

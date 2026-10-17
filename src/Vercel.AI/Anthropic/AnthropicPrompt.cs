@@ -546,6 +546,12 @@ public static class AnthropicPrompt
                         }
 
                         var compaction = new JsonObject { ["type"] = "compaction", ["content"] = text };
+                        if (AnthropicJson.String(metadata!.Value, "signature") is { } compactionSignature)
+                        {
+                            AddBeta(betas, "compact-2026-09-04");
+                            compaction["signature"] = compactionSignature;
+                        }
+
                         AnthropicJson.Set(compaction, "cache_control", cache);
                         content.Add(compaction);
                     }

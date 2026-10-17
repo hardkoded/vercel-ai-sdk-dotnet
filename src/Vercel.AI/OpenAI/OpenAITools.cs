@@ -83,6 +83,162 @@ public sealed class OpenAIApproximateLocation
     public string? Timezone { get; set; }
 }
 
+/// <summary>A file search filter: a comparison (<see cref="Key"/>, <see cref="Type"/>, one value) or a compound (<c>and</c>/<c>or</c> over <see cref="Filters"/>).</summary>
+public sealed class OpenAIFileSearchFilter
+{
+    /// <summary>Operator: <c>eq</c>, <c>ne</c>, <c>gt</c>, <c>gte</c>, <c>lt</c>, <c>lte</c>, <c>in</c>, <c>nin</c>, <c>and</c>, or <c>or</c>.</summary>
+    public string Type { get; set; } = "";
+
+    /// <summary>Attribute key of a comparison filter.</summary>
+    public string? Key { get; set; }
+
+    /// <summary>String value of a comparison filter.</summary>
+    public string? StringValue { get; set; }
+
+    /// <summary>Number value of a comparison filter.</summary>
+    public double? NumberValue { get; set; }
+
+    /// <summary>Boolean value of a comparison filter.</summary>
+    public bool? BooleanValue { get; set; }
+
+    /// <summary>String values of an <c>in</c>/<c>nin</c> comparison filter.</summary>
+    public IReadOnlyList<string>? StringValues { get; set; }
+
+    /// <summary>Nested filters of a compound filter.</summary>
+    public IReadOnlyList<OpenAIFileSearchFilter>? Filters { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.FileSearch"/>.</summary>
+public sealed class OpenAIFileSearchToolOptions
+{
+    /// <summary>Ids of the vector stores to search.</summary>
+    public IReadOnlyList<string> VectorStoreIds { get; set; } = [];
+
+    /// <summary>Maximum number of results to return.</summary>
+    public int? MaxNumResults { get; set; }
+
+    /// <summary>Ranker used for the search.</summary>
+    public string? Ranker { get; set; }
+
+    /// <summary>Score threshold between 0 and 1.</summary>
+    public double? ScoreThreshold { get; set; }
+
+    /// <summary>A filter applied to the search.</summary>
+    public OpenAIFileSearchFilter? Filters { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.CodeInterpreter"/>. <see cref="ContainerId"/> and <see cref="FileIds"/> are alternatives; with neither the container is created automatically.</summary>
+public sealed class OpenAICodeInterpreterToolOptions
+{
+    /// <summary>Id of an existing container.</summary>
+    public string? ContainerId { get; set; }
+
+    /// <summary>File ids made available to an automatically created container.</summary>
+    public IReadOnlyList<string>? FileIds { get; set; }
+}
+
+/// <summary>A skill available in a local shell environment.</summary>
+public sealed class OpenAIShellLocalSkill
+{
+    /// <summary>Skill name.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Skill description.</summary>
+    public string Description { get; set; } = "";
+
+    /// <summary>Path of the skill directory.</summary>
+    public string Path { get; set; } = "";
+}
+
+/// <summary>A domain secret of an allowlist network policy.</summary>
+public sealed class OpenAIShellDomainSecret
+{
+    /// <summary>Domain the secret applies to.</summary>
+    public string Domain { get; set; } = "";
+
+    /// <summary>Secret name.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Secret value.</summary>
+    public string Value { get; set; } = "";
+}
+
+/// <summary>
+/// Environment of <see cref="OpenAITools.Shell"/>: <c>containerAuto</c>, <c>containerReference</c>, or <c>local</c>.
+/// </summary>
+public sealed class OpenAIShellEnvironment
+{
+    /// <summary><c>containerAuto</c>, <c>containerReference</c>, or <c>local</c>.</summary>
+    public string Type { get; set; } = "local";
+
+    /// <summary>Container id of a <c>containerReference</c> environment.</summary>
+    public string? ContainerId { get; set; }
+
+    /// <summary>File ids of a <c>containerAuto</c> environment.</summary>
+    public IReadOnlyList<string>? FileIds { get; set; }
+
+    /// <summary>Memory limit of a <c>containerAuto</c> environment: <c>1g</c>, <c>4g</c>, <c>16g</c>, or <c>64g</c>.</summary>
+    public string? MemoryLimit { get; set; }
+
+    /// <summary>Disable network access of a <c>containerAuto</c> environment.</summary>
+    public bool NetworkDisabled { get; set; }
+
+    /// <summary>Allowed domains of a <c>containerAuto</c> environment network allowlist.</summary>
+    public IReadOnlyList<string>? AllowedDomains { get; set; }
+
+    /// <summary>Domain secrets of a network allowlist.</summary>
+    public IReadOnlyList<OpenAIShellDomainSecret>? DomainSecrets { get; set; }
+
+    /// <summary>Skills of a <c>local</c> environment.</summary>
+    public IReadOnlyList<OpenAIShellLocalSkill>? Skills { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.Shell"/>.</summary>
+public sealed class OpenAIShellToolOptions
+{
+    /// <summary>The shell environment.</summary>
+    public OpenAIShellEnvironment? Environment { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.CustomTool"/>.</summary>
+public sealed class OpenAICustomToolOptions
+{
+    /// <summary>The tool name.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Description of the tool.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Grammar syntax of the input: <c>regex</c> or <c>lark</c>. Without it the input is unconstrained text.</summary>
+    public string? GrammarSyntax { get; set; }
+
+    /// <summary>Grammar definition, used with <see cref="GrammarSyntax"/>.</summary>
+    public string? GrammarDefinition { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.ToolSearch"/>.</summary>
+public sealed class OpenAIToolSearchToolOptions
+{
+    /// <summary>Where the search runs: <c>server</c> or <c>client</c>.</summary>
+    public string? Execution { get; set; }
+
+    /// <summary>Description of the tool.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>JSON schema of the search arguments.</summary>
+    public JsonObject? Parameters { get; set; }
+}
+
+/// <summary>Options of <see cref="OpenAITools.WebSearchPreview"/>.</summary>
+public sealed class OpenAIWebSearchPreviewToolOptions
+{
+    /// <summary>Search context size: <c>low</c>, <c>medium</c>, or <c>high</c>.</summary>
+    public string? SearchContextSize { get; set; }
+
+    /// <summary>Approximate user location.</summary>
+    public OpenAIApproximateLocation? UserLocation { get; set; }
+}
+
 /// <summary>Options of <see cref="OpenAITools.Mcp"/>. One of <see cref="ServerUrl"/> or <see cref="ConnectorId"/> must be set.</summary>
 public sealed class OpenAIMcpToolOptions
 {
@@ -256,6 +412,203 @@ public static class OpenAITools
 
     /// <summary>The computer tool (<c>openai.computer</c>).</summary>
     public static LanguageModelTool Computer() => Create("openai.computer", "computer", new JsonObject());
+
+    /// <summary>The file search tool (<c>openai.file_search</c>).</summary>
+    public static LanguageModelTool FileSearch(OpenAIFileSearchToolOptions options)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var args = new JsonObject();
+        SetList(args, "vectorStoreIds", options.VectorStoreIds);
+        if (options.MaxNumResults is { } max)
+        {
+            args["maxNumResults"] = max;
+        }
+
+        if (options.Ranker != null || options.ScoreThreshold != null)
+        {
+            var ranking = new JsonObject();
+            Set(ranking, "ranker", options.Ranker);
+            if (options.ScoreThreshold is { } threshold)
+            {
+                ranking["scoreThreshold"] = threshold;
+            }
+
+            args["ranking"] = ranking;
+        }
+
+        if (options.Filters != null)
+        {
+            args["filters"] = FilterToJson(options.Filters);
+        }
+
+        return Create("openai.file_search", "file_search", args);
+    }
+
+    /// <summary>The code interpreter tool (<c>openai.code_interpreter</c>).</summary>
+    public static LanguageModelTool CodeInterpreter(OpenAICodeInterpreterToolOptions? options = null)
+    {
+        var args = new JsonObject();
+        if (options?.ContainerId != null)
+        {
+            args["container"] = options.ContainerId;
+        }
+        else if (options?.FileIds != null)
+        {
+            var container = new JsonObject();
+            SetList(container, "fileIds", options.FileIds);
+            args["container"] = container;
+        }
+
+        return Create("openai.code_interpreter", "code_interpreter", args);
+    }
+
+    /// <summary>The shell tool (<c>openai.shell</c>).</summary>
+    public static LanguageModelTool Shell(OpenAIShellToolOptions? options = null)
+    {
+        var args = new JsonObject();
+        if (options?.Environment is { } environment)
+        {
+            var mapped = new JsonObject { ["type"] = environment.Type };
+            Set(mapped, "containerId", environment.ContainerId);
+            SetList(mapped, "fileIds", environment.FileIds);
+            Set(mapped, "memoryLimit", environment.MemoryLimit);
+            if (environment.NetworkDisabled)
+            {
+                mapped["networkPolicy"] = new JsonObject { ["type"] = "disabled" };
+            }
+            else if (environment.AllowedDomains != null)
+            {
+                var policy = new JsonObject { ["type"] = "allowlist" };
+                SetList(policy, "allowedDomains", environment.AllowedDomains);
+                if (environment.DomainSecrets != null)
+                {
+                    var secrets = new JsonArray();
+                    foreach (var secret in environment.DomainSecrets)
+                    {
+                        secrets.Add(new JsonObject { ["domain"] = secret.Domain, ["name"] = secret.Name, ["value"] = secret.Value });
+                    }
+
+                    policy["domainSecrets"] = secrets;
+                }
+
+                mapped["networkPolicy"] = policy;
+            }
+
+            if (environment.Skills != null)
+            {
+                var skills = new JsonArray();
+                foreach (var skill in environment.Skills)
+                {
+                    skills.Add(new JsonObject { ["name"] = skill.Name, ["description"] = skill.Description, ["path"] = skill.Path });
+                }
+
+                mapped["skills"] = skills;
+            }
+
+            args["environment"] = mapped;
+        }
+
+        return Create("openai.shell", "shell", args);
+    }
+
+    /// <summary>A custom tool (<c>openai.custom</c>) with the name given in <paramref name="options"/>.</summary>
+    public static LanguageModelTool CustomTool(OpenAICustomToolOptions options)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var args = new JsonObject();
+        Set(args, "description", options.Description);
+        if (options.GrammarSyntax != null)
+        {
+            args["format"] = new JsonObject
+            {
+                ["type"] = "grammar",
+                ["syntax"] = options.GrammarSyntax,
+                ["definition"] = options.GrammarDefinition,
+            };
+        }
+
+        return Create("openai.custom", options.Name, args);
+    }
+
+    /// <summary>The tool search tool (<c>openai.tool_search</c>).</summary>
+    public static LanguageModelTool ToolSearch(OpenAIToolSearchToolOptions? options = null)
+    {
+        var args = new JsonObject();
+        Set(args, "execution", options?.Execution);
+        Set(args, "description", options?.Description);
+        if (options?.Parameters != null)
+        {
+            args["parameters"] = options.Parameters.DeepClone();
+        }
+
+        return Create("openai.tool_search", "tool_search", args);
+    }
+
+    /// <summary>The web search preview tool (<c>openai.web_search_preview</c>).</summary>
+    public static LanguageModelTool WebSearchPreview(OpenAIWebSearchPreviewToolOptions? options = null)
+    {
+        var args = new JsonObject();
+        Set(args, "searchContextSize", options?.SearchContextSize);
+        if (options?.UserLocation is { } location)
+        {
+            var userLocation = new JsonObject { ["type"] = "approximate" };
+            Set(userLocation, "country", location.Country);
+            Set(userLocation, "city", location.City);
+            Set(userLocation, "region", location.Region);
+            Set(userLocation, "timezone", location.Timezone);
+            args["userLocation"] = userLocation;
+        }
+
+        return Create("openai.web_search_preview", "web_search_preview", args);
+    }
+
+    /// <summary>The programmatic tool calling tool (<c>openai.programmatic_tool_calling</c>).</summary>
+    public static LanguageModelTool ProgrammaticToolCalling() =>
+        Create("openai.programmatic_tool_calling", "programmatic_tool_calling", new JsonObject());
+
+    private static JsonObject FilterToJson(OpenAIFileSearchFilter filter)
+    {
+        var result = new JsonObject { ["type"] = filter.Type };
+        if (filter.Filters != null)
+        {
+            var nested = new JsonArray();
+            foreach (var child in filter.Filters)
+            {
+                nested.Add(FilterToJson(child));
+            }
+
+            result["filters"] = nested;
+            return result;
+        }
+
+        Set(result, "key", filter.Key);
+        if (filter.StringValues != null)
+        {
+            SetList(result, "value", filter.StringValues);
+        }
+        else if (filter.StringValue != null)
+        {
+            result["value"] = filter.StringValue;
+        }
+        else if (filter.NumberValue is { } number)
+        {
+            result["value"] = number;
+        }
+        else if (filter.BooleanValue is { } boolean)
+        {
+            result["value"] = boolean;
+        }
+
+        return result;
+    }
 
     private static LanguageModelTool Create(string id, string name, JsonObject args)
     {

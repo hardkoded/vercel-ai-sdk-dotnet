@@ -26,9 +26,12 @@ internal sealed class OpenAIResponsesStream
     private bool _hasFunctionCall;
     private LanguageModelUsage _usage = LanguageModelUsage.Empty;
     private string? _responseId;
+    private readonly IReadOnlyCollection<string> _functionToolNames;
+    private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
 
-    public OpenAIResponsesStream(Func<string>? generateId = null)
+    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null)
     {
+        _functionToolNames = functionToolNames ?? Array.Empty<string>();
         _generateId = generateId ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
     }
 
@@ -52,7 +55,21 @@ internal sealed class OpenAIResponsesStream
 
                 break;
             case "response.output_item.added":
-                if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
+                if (node["item"] is JsonObject functionCall
+                    && functionCall["type"]?.GetValue<string>() == "function_call"
+                    && node["output_index"] is JsonValue addedIndex
+                    && addedIndex.TryGetValue<int>(out var functionCallIndex))
+                {
+                    var functionCallName = functionCall["name"]?.GetValue<string>() ?? string.Empty;
+                    var functionCallId = functionCall["call_id"]?.GetValue<string>() ?? "call";
+                    var suppress = OpenAIParallelToolCall.IsUndeclared(functionCallName, _functionToolNames);
+                    _ongoingFunctionCalls[functionCallIndex] = new OngoingFunctionCall(functionCallName, functionCallId, suppress);
+                    if (!suppress)
+                    {
+                        parts.Add(new ToolInputStartStreamPart(functionCallId, functionCallName));
+                    }
+                }
+                else if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
                 {
                     _annotations.Clear();
                     OpenText(parts, added["id"]?.GetValue<string>() ?? "text");
@@ -87,8 +104,35 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case "response.function_call_arguments.delta":
+                if (node["output_index"] is JsonValue deltaIndex
+                    && deltaIndex.TryGetValue<int>(out var deltaFunctionCallIndex)
+                    && _ongoingFunctionCalls.TryGetValue(deltaFunctionCallIndex, out var ongoing)
+                    && node["delta"]?.GetValue<string>() is { } argumentsDelta)
+                {
+                    if (ongoing.SuppressInputStreaming)
+                    {
+                        ongoing.BufferedInputDeltas.Add(argumentsDelta);
+                    }
+                    else
+                    {
+                        parts.Add(new ToolInputDeltaStreamPart(ongoing.ToolCallId, argumentsDelta));
+                    }
+                }
+
+                break;
             case "response.output_item.done":
-                if (node["item"] is JsonObject done)
+                if (node["item"] is JsonObject functionCallDone
+                    && functionCallDone["type"]?.GetValue<string>() == "function_call")
+                {
+                    var doneIndex = node["output_index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out var parsedIndex)
+                        ? parsedIndex
+                        : -1;
+                    _ongoingFunctionCalls.TryGetValue(doneIndex, out var finished);
+                    _ongoingFunctionCalls.Remove(doneIndex);
+                    FunctionCallDone(parts, JsonSerializer.Deserialize<JsonElement>(functionCallDone.ToJsonString()), finished);
+                }
+                else if (node["item"] is JsonObject done)
                 {
                     ItemDone(parts, JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()));
                 }
@@ -168,6 +212,63 @@ internal sealed class OpenAIResponsesStream
 
         _openTextId = id;
         parts.Add(new TextStartStreamPart(id, OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id })));
+    }
+
+    private sealed class OngoingFunctionCall(string toolName, string toolCallId, bool suppressInputStreaming)
+    {
+        public string ToolName { get; } = toolName;
+
+        public string ToolCallId { get; } = toolCallId;
+
+        public bool SuppressInputStreaming { get; } = suppressInputStreaming;
+
+        public List<string> BufferedInputDeltas { get; } = new();
+    }
+
+    private void FunctionCallDone(List<LanguageModelStreamPart> parts, JsonElement item, OngoingFunctionCall? ongoing)
+    {
+        _hasFunctionCall = true;
+        var callId = OpenAIJson.String(item, "call_id") ?? ongoing?.ToolCallId ?? "call";
+        var name = OpenAIJson.String(item, "name") ?? ongoing?.ToolName ?? string.Empty;
+        var input = OpenAIJson.String(item, "arguments") ?? "{}";
+        var itemId = OpenAIJson.String(item, "id") ?? string.Empty;
+        var suppress = ongoing?.SuppressInputStreaming ?? OpenAIParallelToolCall.IsUndeclared(name, _functionToolNames);
+
+        if (suppress
+            && OpenAIParallelToolCall.Expand(callId, name, input, _functionToolNames, itemId) is { } expanded)
+        {
+            foreach (var call in expanded)
+            {
+                parts.Add(new ToolInputStartStreamPart(call.ToolCallId, call.ToolName));
+                parts.Add(new ToolInputDeltaStreamPart(call.ToolCallId, call.Input));
+                parts.Add(new ToolInputEndStreamPart(call.ToolCallId));
+                parts.Add(new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.Input, call.ProviderMetadata));
+            }
+
+            return;
+        }
+
+        if (suppress)
+        {
+            parts.Add(new ToolInputStartStreamPart(callId, name));
+            if (ongoing is { BufferedInputDeltas.Count: > 0 })
+            {
+                foreach (var delta in ongoing.BufferedInputDeltas)
+                {
+                    parts.Add(new ToolInputDeltaStreamPart(callId, delta));
+                }
+            }
+            else if (input.Length > 0)
+            {
+                parts.Add(new ToolInputDeltaStreamPart(callId, input));
+            }
+        }
+
+        JsonElement? endMetadata = OpenAIJson.String(item, "namespace") is { } ns
+            ? OpenAIJson.ProviderMetadata(new JsonObject { ["namespace"] = ns })
+            : null;
+        parts.Add(new ToolInputEndStreamPart(callId, endMetadata));
+        parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item)));
     }
 
     private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item)
