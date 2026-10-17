@@ -4,8 +4,8 @@
 
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.GenerateText;
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI;

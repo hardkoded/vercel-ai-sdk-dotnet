@@ -105,75 +105,75 @@ internal static class PruneMessagesSupport
             switch (message)
             {
                 case UserModelMessage user:
-                {
-                    var content = new JsonArray();
-                    foreach (var part in user.Content)
                     {
-                        content.Add(new JsonObject { ["text"] = ((TextContentPart)part).Text, ["type"] = "text" });
-                    }
+                        var content = new JsonArray();
+                        foreach (var part in user.Content)
+                        {
+                            content.Add(new JsonObject { ["text"] = ((TextContentPart)part).Text, ["type"] = "text" });
+                        }
 
-                    array.Add(new JsonObject { ["content"] = content, ["role"] = "user" });
-                    break;
-                }
+                        array.Add(new JsonObject { ["content"] = content, ["role"] = "user" });
+                        break;
+                    }
 
                 case AssistantModelMessage assistant:
-                {
-                    var content = new JsonArray();
-                    foreach (var part in assistant.Parts)
                     {
-                        content.Add(part switch
+                        var content = new JsonArray();
+                        foreach (var part in assistant.Parts)
                         {
-                            AssistantReasoningPart r => new JsonObject { ["text"] = r.Text, ["type"] = "reasoning" },
-                            AssistantTextPart t => new JsonObject { ["text"] = t.Text, ["type"] = "text" },
-                            AssistantToolCallPart c => new JsonObject
+                            content.Add(part switch
                             {
-                                ["input"] = JsonNode.Parse(c.ToolCall.ArgumentsJson),
-                                ["toolCallId"] = c.ToolCall.ToolCallId,
-                                ["toolName"] = c.ToolCall.ToolName,
-                                ["type"] = "tool-call",
-                            },
-                            AssistantToolApprovalRequestPart a => new JsonObject
-                            {
-                                ["approvalId"] = a.ApprovalId,
-                                ["toolCallId"] = a.ToolCallId,
-                                ["type"] = "tool-approval-request",
-                            },
-                            _ => throw new InvalidOperationException(part.Type),
-                        });
-                    }
-
-                    array.Add(new JsonObject { ["content"] = content, ["role"] = "assistant" });
-                    break;
-                }
-
-                default:
-                {
-                    if (toolContent is null)
-                    {
-                        toolContent = new JsonArray();
-                        array.Add(new JsonObject { ["content"] = toolContent, ["role"] = "tool" });
-                    }
-
-                    if (message is ToolApprovalResponseModelMessage response)
-                    {
-                        toolContent.Add(new JsonObject { ["approvalId"] = response.ApprovalId, ["approved"] = response.Approved, ["type"] = "tool-approval-response" });
-                    }
-                    else
-                    {
-                        foreach (var result in ((ToolModelMessage)message).Results)
-                        {
-                            toolContent.Add(new JsonObject
-                            {
-                                ["output"] = new JsonObject { ["type"] = result.OutputType, ["value"] = result.OutputJson },
-                                ["toolCallId"] = result.ToolCallId,
-                                ["toolName"] = result.ToolName,
-                                ["type"] = "tool-result",
+                                AssistantReasoningPart r => new JsonObject { ["text"] = r.Text, ["type"] = "reasoning" },
+                                AssistantTextPart t => new JsonObject { ["text"] = t.Text, ["type"] = "text" },
+                                AssistantToolCallPart c => new JsonObject
+                                {
+                                    ["input"] = JsonNode.Parse(c.ToolCall.ArgumentsJson),
+                                    ["toolCallId"] = c.ToolCall.ToolCallId,
+                                    ["toolName"] = c.ToolCall.ToolName,
+                                    ["type"] = "tool-call",
+                                },
+                                AssistantToolApprovalRequestPart a => new JsonObject
+                                {
+                                    ["approvalId"] = a.ApprovalId,
+                                    ["toolCallId"] = a.ToolCallId,
+                                    ["type"] = "tool-approval-request",
+                                },
+                                _ => throw new InvalidOperationException(part.Type),
                             });
                         }
+
+                        array.Add(new JsonObject { ["content"] = content, ["role"] = "assistant" });
+                        break;
                     }
 
-                    break;
-                }
+                default:
+                    {
+                        if (toolContent is null)
+                        {
+                            toolContent = new JsonArray();
+                            array.Add(new JsonObject { ["content"] = toolContent, ["role"] = "tool" });
+                        }
+
+                        if (message is ToolApprovalResponseModelMessage response)
+                        {
+                            toolContent.Add(new JsonObject { ["approvalId"] = response.ApprovalId, ["approved"] = response.Approved, ["type"] = "tool-approval-response" });
+                        }
+                        else
+                        {
+                            foreach (var result in ((ToolModelMessage)message).Results)
+                            {
+                                toolContent.Add(new JsonObject
+                                {
+                                    ["output"] = new JsonObject { ["type"] = result.OutputType, ["value"] = result.OutputJson },
+                                    ["toolCallId"] = result.ToolCallId,
+                                    ["toolName"] = result.ToolName,
+                                    ["type"] = "tool-result",
+                                });
+                            }
+                        }
+
+                        break;
+                    }
             }
         }
 
