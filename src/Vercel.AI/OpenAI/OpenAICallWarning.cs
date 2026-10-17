@@ -33,6 +33,8 @@ public sealed class OpenAICallWarning
     /// <summary>The warning text stored on language-model results.</summary>
     public CallWarning ToCallWarning()
     {
-        return new CallWarning(Type, Details ?? Message ?? Feature ?? Type);
+        return Feature == null
+            ? new CallWarning(Type, Details ?? Message ?? Type)
+            : new CallWarning(Type, Feature, Details ?? Message);
     }
 }

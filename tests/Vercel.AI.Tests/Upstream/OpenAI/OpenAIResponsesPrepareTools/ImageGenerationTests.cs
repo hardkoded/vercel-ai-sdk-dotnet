@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using static Vercel.AI.Tests.Upstream.OpenAI.OpenAIResponsesPrepareTools.OpenAIResponsesPrepareToolsSupport;
 
 namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIResponsesPrepareTools;
@@ -25,6 +26,13 @@ public sealed class ImageGenerationTests
         var result = Prepare(null, ProviderTool("openai.image_generation", "image_generation", "{\"action\":\"edit\",\"model\":\"gpt-image-2\",\"moderation\":\"low\",\"size\":\"1536x864\"}"));
 
         AssertTools(result, "[{\"type\":\"image_generation\",\"action\":\"edit\",\"model\":\"gpt-image-2\",\"moderation\":\"low\",\"size\":\"1536x864\"}]");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > image generation::should reject a size that is not WIDTHxHEIGHT", Coverage = UpstreamCoverage.Covered)]
+    public void Should_reject_a_size_that_is_not_WIDTHxHEIGHT()
+    {
+        Assert.Throws<TypeValidationException>(() => Prepare(null, ProviderTool("openai.image_generation", "image_generation", "{\"size\":\"large\"}")));
     }
 
     [Fact]
