@@ -232,6 +232,8 @@ public static class ToolApprovalCollection
 
         var last = messages[messages.Count - 1];
         var toolCalls = new Dictionary<string, ApprovalToolCallPart>(StringComparer.Ordinal);
+        var toolCallOrder = new Dictionary<string, int>(StringComparer.Ordinal);
+        var nextToolCallIndex = 0;
         var requests = new Dictionary<string, ApprovalRequestPart>(StringComparer.Ordinal);
         foreach (var message in messages)
         {
@@ -245,6 +247,7 @@ public static class ToolApprovalCollection
                 if (part is ApprovalToolCallPart call)
                 {
                     toolCalls[call.ToolCallId] = call;
+                    toolCallOrder[call.ToolCallId] = nextToolCallIndex++;
                 }
                 else if (part is ApprovalRequestPart request)
                 {
@@ -301,6 +304,8 @@ public static class ToolApprovalCollection
             }
         }
 
-        return new CollectedToolApprovalSet(approved, denied);
+        // Approval responses can arrive in a different order than the model's calls.
+        // Restore model order before either generation API schedules their execution.
+        return new CollectedToolApprovalSet(approved.OrderBy(approval => toolCallOrder[approval.ToolCall.ToolCallId]).ToList(), denied);
     }
 }

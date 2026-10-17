@@ -47,6 +47,7 @@ public sealed class Agent
             Messages = prepared.Messages,
             Tools = prepared.Tools,
             ActiveTools = prepared.ActiveTools,
+            ToolCallConcurrency = prepared.ToolCallConcurrency,
             ToolChoice = prepared.ToolChoice,
             StopWhen = prepared.StopWhen,
             Output = prepared.Output,
@@ -90,6 +91,7 @@ public sealed class Agent
             StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
+            ToolCallConcurrency = Options.ToolCallConcurrency,
         };
     }
 }
@@ -117,6 +119,12 @@ public sealed class AgentOptions
 
     /// <summary>Maximum output tokens.</summary>
     public int? MaxOutputTokens { get; set; }
+
+    /// <summary>
+    /// Maximum number of tool calls that may execute concurrently within a step. See <see cref="GenerateTextOptions.ToolCallConcurrency"/>.
+    /// <see cref="PrepareCall"/> can replace it.
+    /// </summary>
+    public int? ToolCallConcurrency { get; set; }
 
     /// <summary>
     /// Called before each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call with the options the agent would use,

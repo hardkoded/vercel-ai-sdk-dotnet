@@ -75,6 +75,7 @@ internal static class Generation
     {
         try
         {
+            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
             var messages = BuildPrompt(options);
             var responseMessages = new List<ModelMessage>();
@@ -167,6 +168,7 @@ internal static class Generation
         IAiTelemetry? telemetry,
         CancellationToken cancellationToken)
     {
+        ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
         var textSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -791,23 +793,32 @@ internal static class Generation
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
             var toolMessages = new List<ToolModelMessage>();
+            var callsToExecute = new List<GeneratedToolCall>();
             foreach (var call in toolCalls)
             {
-                if (call.ProviderExecuted)
+                if (call.ProviderExecuted || IsAwaitingApproval(FindTool(options, call.ToolName), options))
                 {
                     continue;
                 }
 
-                if (IsAwaitingApproval(FindTool(options, call.ToolName), options))
-                {
-                    continue;
-                }
+                callsToExecute.Add(call);
+            }
 
-                var toolWatch = Stopwatch.StartNew();
-                var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+            var executions = await ToolCallConcurrencyScheduler.MapWithConcurrency(
+                callsToExecute,
+                ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
+                async (call, _) =>
+                {
+                    var toolWatch = Stopwatch.StartNew();
+                    var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+                    return (Executed: executed, ElapsedMs: toolWatch.Elapsed.TotalMilliseconds);
+                },
+                cancellationToken).ConfigureAwait(false);
+            foreach (var (executed, elapsedMs) in executions)
+            {
                 if (toolExecutionMs != null)
                 {
-                    toolExecutionMs[call.ToolCallId] = toolWatch.Elapsed.TotalMilliseconds;
+                    toolExecutionMs[executed.ToolCallId] = elapsedMs;
                 }
 
                 toolResults.Add(executed);
