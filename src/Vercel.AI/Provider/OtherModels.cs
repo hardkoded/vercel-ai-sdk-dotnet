@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.OpenAICompatible;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Provider;
 
@@ -86,8 +87,8 @@ public interface IEmbeddingModel
     /// <summary>Model id.</summary>
     string ModelId { get; }
 
-    /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id. <paramref name="dimensions"/> is the requested vector width. A provider option for the same setting wins.</summary>
-    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null);
+    /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id. <paramref name="dimensions"/> is the requested vector width. A provider option for the same setting wins. <paramref name="headers"/> are sent with this call and override the provider headers.</summary>
+    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null);
 }
 
 /// <summary>One generated image.</summary>
@@ -195,10 +196,10 @@ public sealed class ImageCallOptions
     public int? Seed { get; set; }
 
     /// <summary>Input images for an edit. Maps to <c>files</c>.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
+    public IReadOnlyList<ImageModelFile>? Files { get; set; }
 
     /// <summary>Edit mask.</summary>
-    public OpenAICompatibleImageFile? Mask { get; set; }
+    public ImageModelFile? Mask { get; set; }
 
     /// <summary>Provider options, keyed by provider id.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
@@ -405,6 +406,9 @@ public sealed class VideoCallOptions
 /// <summary>Video model specification.</summary>
 public interface IVideoModel
 {
+    /// <summary>Specification version. Always <c>v4</c>.</summary>
+    string SpecificationVersion { get; }
+
     /// <summary>Provider id.</summary>
     string Provider { get; }
 
@@ -454,8 +458,8 @@ public interface IRerankingModel
     /// <summary>Model id.</summary>
     string ModelId { get; }
 
-    /// <summary>Reranks documents for a query.</summary>
-    Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken);
+    /// <summary>Reranks documents for a query. <paramref name="headers"/> are sent with this call and override the provider headers.</summary>
+    Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null);
 }
 
 /// <summary>Score of a candidate against a rubric. Returned by <see cref="IRubricModel"/>.</summary>
@@ -679,6 +683,9 @@ public abstract class ProviderBase
 
     /// <summary>Provider id.</summary>
     public string Name { get; }
+
+    /// <summary>Specification version. Always <c>v4</c>.</summary>
+    public virtual string SpecificationVersion => "v4";
 
     /// <summary>Returns a language model.</summary>
     public abstract ILanguageModel LanguageModel(string modelId);

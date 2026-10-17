@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
@@ -15,6 +16,9 @@ namespace Vercel.AI.OpenAI;
 /// </summary>
 internal sealed class OpenAIResponsesStream
 {
+    // JSON.stringify leaves characters such as '>' and non-ASCII text unescaped.
+    private static readonly JsonSerializerOptions TextInputOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
     private readonly Func<string> _generateId;
     private readonly List<JsonElement> _annotations = new();
     private readonly List<JsonElement> _fallbackAnnotations = new();
@@ -28,6 +32,7 @@ internal sealed class OpenAIResponsesStream
     private string? _responseId;
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
+    private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
 
     public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null)
     {
@@ -68,6 +73,18 @@ internal sealed class OpenAIResponsesStream
                     {
                         parts.Add(new ToolInputStartStreamPart(functionCallId, functionCallName));
                     }
+                }
+                else if (node["item"] is JsonObject customCall
+                    && customCall["type"]?.GetValue<string>() == "custom_tool_call"
+                    && node["output_index"] is JsonValue customIndexValue
+                    && customIndexValue.TryGetValue<int>(out var customIndex))
+                {
+                    var customCallId = customCall["call_id"]?.GetValue<string>() ?? "call";
+                    var customName = customCall["name"]?.GetValue<string>() ?? string.Empty;
+                    _ongoingCustomToolCalls[customIndex] = new OngoingCustomToolCall(
+                        customCallId,
+                        customCall["async"] is JsonValue asyncValue && asyncValue.TryGetValue<bool>(out var asyncMode) ? asyncMode : null);
+                    parts.Add(new ToolInputStartStreamPart(customCallId, customName, inputEncoding: ToolInputEncoding.Text));
                 }
                 else if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
                 {
@@ -121,6 +138,16 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case "response.custom_tool_call_input.delta":
+                if (node["output_index"] is JsonValue customDeltaIndex
+                    && customDeltaIndex.TryGetValue<int>(out var customDeltaKey)
+                    && _ongoingCustomToolCalls.TryGetValue(customDeltaKey, out var ongoingCustom)
+                    && node["delta"]?.GetValue<string>() is { } customDelta)
+                {
+                    parts.Add(new ToolInputDeltaStreamPart(ongoingCustom.ToolCallId, customDelta));
+                }
+
+                break;
             case "response.output_item.done":
                 if (node["item"] is JsonObject functionCallDone
                     && functionCallDone["type"]?.GetValue<string>() == "function_call")
@@ -131,6 +158,16 @@ internal sealed class OpenAIResponsesStream
                     _ongoingFunctionCalls.TryGetValue(doneIndex, out var finished);
                     _ongoingFunctionCalls.Remove(doneIndex);
                     FunctionCallDone(parts, JsonSerializer.Deserialize<JsonElement>(functionCallDone.ToJsonString()), finished);
+                }
+                else if (node["item"] is JsonObject customCallDone
+                    && customCallDone["type"]?.GetValue<string>() == "custom_tool_call")
+                {
+                    var customDoneIndex = node["output_index"] is JsonValue customDoneValue && customDoneValue.TryGetValue<int>(out var parsedCustomIndex)
+                        ? parsedCustomIndex
+                        : -1;
+                    _ongoingCustomToolCalls.TryGetValue(customDoneIndex, out var finishedCustom);
+                    _ongoingCustomToolCalls.Remove(customDoneIndex);
+                    CustomToolCallDone(parts, JsonSerializer.Deserialize<JsonElement>(customCallDone.ToJsonString()), finishedCustom);
                 }
                 else if (node["item"] is JsonObject done)
                 {
@@ -223,6 +260,41 @@ internal sealed class OpenAIResponsesStream
         public bool SuppressInputStreaming { get; } = suppressInputStreaming;
 
         public List<string> BufferedInputDeltas { get; } = new();
+    }
+
+    private sealed class OngoingCustomToolCall(string toolCallId, bool? async)
+    {
+        public string ToolCallId { get; } = toolCallId;
+
+        public bool? Async { get; } = async;
+    }
+
+    // The input deltas are raw text. The final tool call input is the JSON encoding of that text.
+    private void CustomToolCallDone(List<LanguageModelStreamPart> parts, JsonElement item, OngoingCustomToolCall? ongoing)
+    {
+        _hasFunctionCall = true;
+        var callId = OpenAIJson.String(item, "call_id") ?? ongoing?.ToolCallId ?? "call";
+        var metadata = new JsonObject();
+        if (OpenAIJson.String(item, "id") is { Length: > 0 } itemId)
+        {
+            metadata["itemId"] = itemId;
+        }
+
+        if (item.TryGetProperty("async", out var asyncMode) && asyncMode.ValueKind is JsonValueKind.True or JsonValueKind.False)
+        {
+            metadata["async"] = asyncMode.GetBoolean();
+        }
+        else if (ongoing?.Async is { } ongoingAsync)
+        {
+            metadata["async"] = ongoingAsync;
+        }
+
+        parts.Add(new ToolInputEndStreamPart(callId));
+        parts.Add(new ToolCallStreamPart(
+            callId,
+            OpenAIJson.String(item, "name") ?? string.Empty,
+            JsonSerializer.Serialize(OpenAIJson.String(item, "input"), TextInputOptions),
+            OpenAIJson.ProviderMetadata(metadata)));
     }
 
     private void FunctionCallDone(List<LanguageModelStreamPart> parts, JsonElement item, OngoingFunctionCall? ongoing)

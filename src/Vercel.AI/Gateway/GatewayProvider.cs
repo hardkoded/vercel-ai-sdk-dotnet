@@ -23,15 +23,21 @@ public sealed class GatewayOptions
     /// <summary>Explicit key. Falls back to <c>AI_GATEWAY_API_KEY</c>.</summary>
     public string? ApiKey { get; set; }
 
-    /// <summary>Observability headers. When unset, they come from the <c>VERCEL_*</c> environment variables.</summary>
-    internal IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
+    /// <summary>
+    /// Observability headers sent on every request. When null, they come from <c>VERCEL_DEPLOYMENT_ID</c>
+    /// (<c>ai-o11y-deployment-id</c>), <c>VERCEL_ENV</c> (<c>ai-o11y-environment</c>), <c>VERCEL_REGION</c>
+    /// (<c>ai-o11y-region</c>), and <c>VERCEL_PROJECT_ID</c> (<c>ai-o11y-project-id</c>).
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
 }
 
 /// <summary>
 /// Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes
 /// (<c>/language-model</c>, <c>/embedding-model</c>, <c>/image-model</c>).
 /// </summary>
-public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider
+#pragma warning disable CS0618
+public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, Operations.IDecisionProvider, Operations.IEvaluationProvider
+#pragma warning restore CS0618
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "gateway";
@@ -44,7 +50,6 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         : base(ProviderId)
     {
         Options = options ?? new GatewayOptions();
-        O11yHeaders = Options.O11yHeaders ?? CreateO11yHeaders();
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
     }
 
@@ -59,29 +64,6 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
-
-    internal IReadOnlyDictionary<string, string> O11yHeaders { get; }
-
-    private static Dictionary<string, string> CreateO11yHeaders()
-    {
-        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (name, variable) in new[]
-        {
-            ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
-            ("ai-o11y-environment", "VERCEL_ENV"),
-            ("ai-o11y-region", "VERCEL_REGION"),
-            ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
-        })
-        {
-            var value = Environment.GetEnvironmentVariable(variable);
-            if (!string.IsNullOrEmpty(value))
-            {
-                headers[name] = value;
-            }
-        }
-
-        return headers;
-    }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static GatewayProvider Create(GatewayOptions? options = null, HttpMessageHandler? handler = null)
@@ -120,6 +102,46 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return DecisionModel(modelId);
     }
 
+    /// <summary>Deprecated alias of <see cref="DecisionModel"/>. Maps to <c>evaluationModel</c>.</summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public GatewayDecisionModel EvaluationModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
+#pragma warning disable CS0618
+    Operations.IEvaluationCaller? Operations.IEvaluationProvider.EvaluationModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+#pragma warning restore CS0618
+
+    private IEnumerable<KeyValuePair<string, string>> O11yHeaders()
+    {
+        if (Options.O11yHeaders != null)
+        {
+            return Options.O11yHeaders;
+        }
+
+        var headers = new List<KeyValuePair<string, string>>();
+        foreach (var (name, variable) in new[]
+        {
+            ("ai-o11y-deployment-id", "VERCEL_DEPLOYMENT_ID"),
+            ("ai-o11y-environment", "VERCEL_ENV"),
+            ("ai-o11y-region", "VERCEL_REGION"),
+            ("ai-o11y-project-id", "VERCEL_PROJECT_ID"),
+        })
+        {
+            var value = Environment.GetEnvironmentVariable(variable);
+            if (!string.IsNullOrEmpty(value))
+            {
+                headers.Add(new KeyValuePair<string, string>(name, value!));
+            }
+        }
+
+        return headers;
+    }
+
     internal Dictionary<string, string?> Headers(string specificationHeader, string specificationValue, string modelHeader, string modelId, bool? streaming, IReadOnlyDictionary<string, string?>? extra = null)
     {
         var key = ApiKeys.Require(Options.ApiKey, ApiKeyEnvironmentVariable);
@@ -144,7 +166,7 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             }
         }
 
-        foreach (var pair in O11yHeaders)
+        foreach (var pair in O11yHeaders())
         {
             headers[pair.Key] = pair.Value;
         }
@@ -167,6 +189,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             {
                 headers[pair.Key] = pair.Value;
             }
+        }
+
+        foreach (var pair in O11yHeaders())
+        {
+            headers[pair.Key] = pair.Value;
         }
 
         return headers;
@@ -327,9 +354,9 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     }
 
     /// <inheritdoc />
-    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions)
+    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions, IReadOnlyDictionary<string, string?>? headers)
     {
-        return DoEmbedAsync(values, null, null, cancellationToken, dimensions);
+        return DoEmbedAsync(values, null, headers, cancellationToken, dimensions);
     }
 
     /// <summary>Embeds values and sends <paramref name="providerOptions"/> when it is a JSON object.</summary>

@@ -55,6 +55,9 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
+    public string SpecificationVersion => "v4";
+
+    /// <inheritdoc />
     public string Provider => "heygen.video";
 
     /// <inheritdoc />

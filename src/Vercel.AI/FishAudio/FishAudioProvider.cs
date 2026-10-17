@@ -45,9 +45,6 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
         },
     };
 
-    /// <summary>Specification version reported by the Fish Audio provider.</summary>
-    public string SpecificationVersion => "v4";
-
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {

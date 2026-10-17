@@ -25,7 +25,7 @@ public sealed class SharedModelStateTests
 {
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(10);
 
-    private static readonly OpenAICompatibleImageFile Png = new("image/png", new byte[] { 137, 80, 78, 71 }, null, "a.png");
+    private static readonly ImageModelFile Png = ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png", "a.png");
 
     [Fact]
     public async Task OpenAICompatible_image_calls_keep_their_own_inputs_and_results()

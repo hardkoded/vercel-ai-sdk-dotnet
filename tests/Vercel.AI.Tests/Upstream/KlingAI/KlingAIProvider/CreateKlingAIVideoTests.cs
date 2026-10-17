@@ -63,17 +63,17 @@ public sealed class CreateKlingAIVideoTests : IDisposable
     [UpstreamTest(Prefix + "should pass headers as async function", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_headers_as_async_function()
     {
-        // Headers are computed per request, not when the model is created.
+        // Headers are computed per request, not when the model is created: the key is set after the model exists.
         var server = new KlingAIVideoModelSupport.Server();
-        var provider = KlingAIProviderType.Create(new KlingAIOptions { AccessKey = "test-ak", SecretKey = "test-sk" }, server.Handler);
+        var provider = KlingAIProviderType.Create(new KlingAIOptions(), server.Handler);
         var model = (Vercel.AI.KlingAI.KlingAIVideoModel)provider.Video(ModelId);
 
+        _env.Stub("KLINGAI_API_KEY", "first-api-key");
         await model.DoStatusAsync(KlingAIVideoModelSupport.Status(), CancellationToken.None);
-        _env.Stub("KLINGAI_API_KEY", "late-api-key");
+        _env.Stub("KLINGAI_API_KEY", "second-api-key");
         await model.DoStatusAsync(KlingAIVideoModelSupport.Status(), CancellationToken.None);
 
-        Assert.StartsWith("Bearer ", server.Calls[0].Header("Authorization"));
-        Assert.Equal("test-ak", (string?)KlingAIJwt.Decode(server.Calls[0].Header("Authorization")!.Substring("Bearer ".Length), 1)["iss"]);
-        Assert.Equal("test-ak", (string?)KlingAIJwt.Decode(server.Calls[1].Header("Authorization")!.Substring("Bearer ".Length), 1)["iss"]);
+        Assert.Equal("Bearer first-api-key", server.Calls[0].Header("Authorization"));
+        Assert.Equal("Bearer second-api-key", server.Calls[1].Header("Authorization"));
     }
 }

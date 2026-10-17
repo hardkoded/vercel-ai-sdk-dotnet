@@ -107,7 +107,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+    public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
     {
         var embeddingType = EmbeddingType(providerOptions);
         var texts = new JsonArray();
@@ -137,7 +137,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             body["output_dimension"] = width;
         }
 
-        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(), cancellationToken).ConfigureAwait(false);
+        using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "embed"), body.ToJsonString(), _provider.Headers(headers), cancellationToken).ConfigureAwait(false);
         var root = document.RootElement;
         var embeddings = root.GetProperty("embeddings");
         var vectorsElement = embeddings;
@@ -214,9 +214,9 @@ public sealed class CohereRerankingModel : IRerankingModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
+    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
     {
-        var result = await RerankAsync(new CohereRerankRequest { Query = query, TextDocuments = documents, TopN = topN }, cancellationToken).ConfigureAwait(false);
+        var result = await RerankAsync(new CohereRerankRequest { Query = query, TextDocuments = documents, TopN = topN, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
         return new RerankResult(result.Ranking);
     }
 

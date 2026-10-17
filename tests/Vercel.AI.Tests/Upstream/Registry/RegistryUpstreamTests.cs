@@ -431,7 +431,7 @@ public sealed class RegistryUpstreamTests
 
         public string ModelId { get; }
 
-        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null) => throw new NotSupportedException();
+        public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null) => throw new NotSupportedException();
 
         public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
 
@@ -439,7 +439,7 @@ public sealed class RegistryUpstreamTests
 
         public Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null) => throw new NotSupportedException();
 
         public Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
     }

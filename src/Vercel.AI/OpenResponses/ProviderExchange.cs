@@ -172,6 +172,26 @@ internal static class ProviderExchange
         return content;
     }
 
+    /// <summary>Copies the headers of one call into a request header map. A header whose value is <c>null</c> is left out.</summary>
+    public static Dictionary<string, string>? ToRequestHeaders(IReadOnlyDictionary<string, string?>? headers)
+    {
+        if (headers == null)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in headers)
+        {
+            if (pair.Value != null)
+            {
+                result[pair.Key] = pair.Value;
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>Copies provider headers and lets the call override them.</summary>
     public static Dictionary<string, string?> Merge(
         IReadOnlyDictionary<string, string?>? providerHeaders,
