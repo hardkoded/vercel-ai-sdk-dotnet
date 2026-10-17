@@ -97,19 +97,22 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+        var prepared = Prepare(options, stream: true);
+        var json = prepared.Body.ToJsonString();
+        var sse = await _provider.Http.OpenSseResponseAsync(RequestUri(), json, _provider.CreateHeaders(options?.Headers), cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
-        LanguageModelCallOptions options,
+        LanguageModelCallOptions? options,
+        PreparedRequest prepared,
+        IAsyncEnumerable<string> events,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var prepared = Prepare(options, stream: true);
         var session = new XaiResponsesStream(_generateId, prepared.ToolNames);
-        var enumerator = _provider.Http.SendSseAsync(RequestUri(), prepared.Body.ToJsonString(), _provider.CreateHeaders(options?.Headers), cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
+        var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
             var more = await enumerator.MoveNextAsync().ConfigureAwait(false);

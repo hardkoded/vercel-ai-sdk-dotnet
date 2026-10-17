@@ -199,13 +199,13 @@ public sealed class GatewayLanguageModel : ILanguageModel
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
-        IAsyncEnumerable<string> events;
-        IDisposable resource;
+        var json = V4Json.CallOptions(options);
+        ProviderSseResponse sse;
         try
         {
-            (events, resource) = await _provider.Http.OpenSseWithResourceAsync(
+            sse = await _provider.Http.OpenSseResponseAsync(
                 _provider.Route("language-model"),
-                V4Json.CallOptions(options),
+                json,
                 _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
                 cancellationToken).ConfigureAwait(false);
         }
@@ -218,7 +218,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
             throw GatewayProvider.MapFailure(exception);
         }
 
-        return new LanguageModelStreamResult(StreamAsync(events, cancellationToken), resource: resource);
+        return sse.ToStreamResult(StreamAsync(sse.Events, cancellationToken), json);
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(IAsyncEnumerable<string> events, [EnumeratorCancellation] CancellationToken cancellationToken)

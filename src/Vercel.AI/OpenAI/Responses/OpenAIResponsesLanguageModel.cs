@@ -768,21 +768,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude);
+        var json = prepared.Body.ToJsonString();
+        var sse = await _http.OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        OpenAIResponsesPreparedRequest prepared,
+        IAsyncEnumerable<string> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
         var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
-        await foreach (var data in _http.SendSseAsync(
-            _url(),
-            prepared.Body.ToJsonString(),
-            _headers(options.Headers),
-            cancellationToken).ConfigureAwait(false))
+        await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;
             var invalidJson = false;

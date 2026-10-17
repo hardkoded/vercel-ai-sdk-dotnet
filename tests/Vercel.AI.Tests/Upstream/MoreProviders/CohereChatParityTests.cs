@@ -486,6 +486,21 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
+    [UpstreamTest(Chat + "doStream > request::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Stream_exposes_the_raw_response_headers()
+    {
+        var chunks = File.ReadAllLines(Fixture("cohere-text.chunks.txt"))
+            .Where(line => line.Trim().Length > 0)
+            .Select(line => "event: " + JsonNode.Parse(line)!["type"]!.GetValue<string>() + "\ndata: " + line + "\n\n");
+        var handler = new SseStreamHandler(chunks, new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var model = CohereProvider.Create(new CohereOptions { ApiKey = "test-api-key" }, handler).LanguageModel("command-r-plus");
+
+        var result = await model.DoStreamAsync(TestPrompt(), CancellationToken.None);
+
+        SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
+    }
+
+    [Fact]
     [UpstreamTest(Prompt + "file processing::should extract documents from file parts", Coverage = UpstreamCoverage.Covered)]
     public async Task Files_become_documents_and_text_stays_a_string()
     {

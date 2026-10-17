@@ -641,6 +641,26 @@ public sealed class OpenAIChatRequestUpstreamTests
         Assert.Equal("gpt-3.5-turbo", body["model"]!.GetValue<string>());
     }
 
+    [Fact]
+    [UpstreamTest(Stream + "should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExposesStreamResponseHeaders()
+    {
+        var handler = new SseStreamHandler(
+            new[]
+            {
+                "data: {\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"object\":\"chat.completion.chunk\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0613\",\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"\"},\"finish_reason\":null}]}\n\n",
+                "data: {\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"object\":\"chat.completion.chunk\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0613\",\"system_fingerprint\":null,\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\",\"logprobs\":null}]}\n\n",
+                "data: {\"id\":\"chatcmpl-96aZqmeDpA9IPD6tACY8djkMsJCMP\",\"object\":\"chat.completion.chunk\",\"created\":1702657020,\"model\":\"gpt-3.5-turbo-0613\",\"system_fingerprint\":\"fp_3bc1b5746c\",\"choices\":[],\"usage\":{\"prompt_tokens\":17,\"total_tokens\":244,\"completion_tokens\":227}}\n\n",
+                "data: [DONE]\n\n",
+            },
+            new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler);
+
+        var result = await provider.ChatModel("gpt-3.5-turbo").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+
+        SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
+    }
+
     private static void AssertSearchPreview(string modelId)
     {
         var prepared = OpenAIChatLanguageModel.Prepare(modelId, new LanguageModelCallOptions { Prompt = OpenAIUpstream.Hello().Prompt, Temperature = 0.5 });

@@ -156,6 +156,20 @@ public sealed class ProviderHttp
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
+        var opened = await OpenSseResponseAsync(uri, jsonBody, headers, cancellationToken).ConfigureAwait(false);
+        return (opened.Events, opened.Resource);
+    }
+
+    /// <summary>
+    /// Like <see cref="OpenSseWithResourceAsync"/>, and also returns the response headers.
+    /// A failed response throws here.
+    /// </summary>
+    internal async Task<ProviderSseResponse> OpenSseResponseAsync(
+        Uri uri,
+        string jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
         var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -166,7 +180,7 @@ public sealed class ProviderHttp
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return (ReadSseAsync(response, stream, cancellationToken), response);
+            return new ProviderSseResponse(ReadSseAsync(response, stream, cancellationToken), response, CopyHeaders(response));
         }
         catch
         {
@@ -482,6 +496,44 @@ public sealed class ProviderTextResponse
 
     /// <summary>Response headers.</summary>
     public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
+/// <summary>An open SSE response: the data payloads, the response headers, and the response to release.</summary>
+internal sealed class ProviderSseResponse
+{
+    public ProviderSseResponse(IAsyncEnumerable<string> events, IDisposable resource, IReadOnlyDictionary<string, string> headers)
+    {
+        Events = events;
+        Resource = resource;
+        Headers = headers;
+    }
+
+    public IAsyncEnumerable<string> Events { get; }
+
+    public IDisposable Resource { get; }
+
+    public IReadOnlyDictionary<string, string> Headers { get; }
+
+    /// <summary>
+    /// Wraps the parts read from this response into a stream result with the request body and the response headers.
+    /// The result releases the response when it is disposed or when the stream ends. The response is released here if building the result throws.
+    /// </summary>
+    public LanguageModelStreamResult ToStreamResult(IAsyncEnumerable<LanguageModelStreamPart> stream, string requestJson)
+    {
+        try
+        {
+            return new LanguageModelStreamResult(
+                new ReleasingAsyncEnumerable<LanguageModelStreamPart>(stream, Resource),
+                LanguageModelStreamRequest.FromJson(requestJson),
+                new LanguageModelStreamResponse(Headers),
+                Resource);
+        }
+        catch
+        {
+            Resource.Dispose();
+            throw;
+        }
+    }
 }
 
 /// <summary>Response body bytes, headers, and media type.</summary>

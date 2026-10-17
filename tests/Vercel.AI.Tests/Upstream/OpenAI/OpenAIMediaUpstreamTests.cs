@@ -1374,6 +1374,25 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task ExposesCompletionStreamResponseHeaders()
+    {
+        var handler = new SseStreamHandler(
+            new[]
+            {
+                "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"choices\":[{\"text\":\"\",\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\"}],\"model\":\"gpt-3.5-turbo-instruct\"}\n\n",
+                "data: {\"id\":\"cmpl-96c3yLQE1TtZCd6n6OILVmzev8M8H\",\"object\":\"text_completion\",\"created\":1711363310,\"model\":\"gpt-3.5-turbo-instruct\",\"usage\":{\"prompt_tokens\":10,\"total_tokens\":372,\"completion_tokens\":362},\"choices\":[]}\n\n",
+                "data: [DONE]\n\n",
+            },
+            new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler);
+
+        var result = await provider.CompletionModel("gpt-3.5-turbo-instruct").DoStreamAsync(OpenAIUpstream.Hello(), CancellationToken.None);
+
+        SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai/src/completion/openai-completion-language-model.test.ts::doStream::should pass the model and the prompt", Coverage = UpstreamCoverage.Covered)]
     public async Task PassesCompletionStreamPrompt()
     {
