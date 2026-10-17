@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 
@@ -42,7 +43,7 @@ public static class AmazonBedrockMessages
                 return;
             }
 
-            if (assistantContent.Count > 0)
+            if (HasContentBlock(assistantContent))
             {
                 built.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistantContent });
             }
@@ -61,6 +62,7 @@ public static class AmazonBedrockMessages
 
                 system ??= new JsonArray();
                 system.Add(new JsonObject { ["text"] = systemMessage.Content });
+                PushCachePoint(system, systemMessage.ProviderOptions);
                 continue;
             }
 
@@ -78,7 +80,11 @@ public static class AmazonBedrockMessages
                     {
                         userContent.Add(FileBlock(file, ref documentCount));
                     }
+
+                    PushCachePoint(userContent, part is TextContentPart t ? t.ProviderOptions : (part as FileContentPart)?.ProviderOptions);
                 }
+
+                PushCachePoint(userContent, user.ProviderOptions);
 
                 continue;
             }
@@ -102,29 +108,76 @@ public static class AmazonBedrockMessages
             {
                 FlushUser();
                 assistantContent ??= new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
+                foreach (var part in assistant.Parts)
                 {
-                    assistantContent.Add(new JsonObject { ["text"] = assistant.Text });
+                    if (part is AssistantTextPart text)
+                    {
+                        if (!string.IsNullOrEmpty(text.Text))
+                        {
+                            assistantContent.Add(new JsonObject { ["text"] = text.Text });
+                        }
+                    }
+                    else if (part is AssistantToolCallPart toolCall)
+                    {
+                        var call = toolCall.ToolCall;
+                        assistantContent.Add(new JsonObject
+                        {
+                            ["toolUse"] = new JsonObject
+                            {
+                                ["toolUseId"] = AmazonBedrockToolIds.Normalize(call.ToolCallId, isMistral),
+                                ["name"] = SanitizeToolName(call.ToolName),
+                                ["input"] = ToolInput(call.ArgumentsJson),
+                            },
+                        });
+                    }
+
+                    PushCachePoint(assistantContent, part.ProviderOptions);
                 }
 
-                foreach (var call in assistant.ToolCalls)
-                {
-                    assistantContent.Add(new JsonObject
-                    {
-                        ["toolUse"] = new JsonObject
-                        {
-                            ["toolUseId"] = AmazonBedrockToolIds.Normalize(call.ToolCallId, isMistral),
-                            ["name"] = SanitizeToolName(call.ToolName),
-                            ["input"] = ToolInput(call.ArgumentsJson),
-                        },
-                    });
-                }
+                PushCachePoint(assistantContent, assistant.ProviderOptions);
             }
         }
 
         FlushUser();
         FlushAssistant();
         messages = built;
+    }
+
+    private static bool HasContentBlock(JsonArray content)
+    {
+        foreach (var block in content)
+        {
+            if (block is JsonObject o && !o.ContainsKey("cachePoint"))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void PushCachePoint(JsonArray content, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        var cachePoint = GetCachePoint(providerOptions, "amazonBedrock") ?? GetCachePoint(providerOptions, "bedrock");
+        if (cachePoint is { } value)
+        {
+            content.Add(new JsonObject { ["cachePoint"] = JsonNode.Parse(value.GetRawText()) });
+        }
+    }
+
+    private static JsonElement? GetCachePoint(IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    {
+        if (providerOptions != null
+            && providerOptions.TryGetValue(key, out var options)
+            && options.ValueKind == JsonValueKind.Object
+            && options.TryGetProperty("cachePoint", out var cachePoint)
+            && cachePoint.ValueKind != JsonValueKind.Null
+            && cachePoint.ValueKind != JsonValueKind.Undefined)
+        {
+            return cachePoint;
+        }
+
+        return null;
     }
 
     private static JsonObject FileBlock(FileContentPart file, ref int documentCount)

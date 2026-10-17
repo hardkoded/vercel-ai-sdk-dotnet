@@ -606,6 +606,9 @@ public sealed class TextContentPart : UserContentPart
 
     /// <summary>Text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider-specific options for this part, such as an Amazon Bedrock <c>cachePoint</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 }
 
 /// <summary>A file or image in a user message.</summary>
@@ -685,6 +688,9 @@ public sealed class UserModelMessage : ModelMessage
 
     /// <summary>User content parts.</summary>
     public IReadOnlyList<UserContentPart> Content { get; }
+
+    /// <summary>Provider-specific options for this message, such as an Amazon Bedrock <c>cachePoint</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 }
 
 /// <summary>One part of an assistant message, kept in the order the model produced it.</summary>
@@ -870,6 +876,9 @@ public sealed class AssistantModelMessage : ModelMessage
 
         return options;
     }
+
+    /// <summary>Provider-specific options for this message, such as an Amazon Bedrock <c>cachePoint</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 
     /// <summary>Assistant text.</summary>
     public string? Text { get; }
