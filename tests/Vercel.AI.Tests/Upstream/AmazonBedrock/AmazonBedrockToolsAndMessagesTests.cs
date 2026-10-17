@@ -258,7 +258,7 @@ public sealed class AmazonBedrockMessageConversionTests
         AmazonBedrockMessages.Convert("mistral.mistral-large-2402-v1:0", new ModelMessage[] { tool }, out _, out var messages);
         var result = messages[0]!["content"]![0]!["toolResult"]!;
         Assert.Equal("user", messages[0]!["role"]!.GetValue<string>());
-        Assert.Equal("toolusebp", result["toolUseId"]!.GetValue<string>());
+        Assert.Equal("8eHypBDcw", result["toolUseId"]!.GetValue<string>());
         Assert.Equal("The result is 42", result["content"]![0]!["text"]!.GetValue<string>());
     }
 
@@ -273,7 +273,7 @@ public sealed class AmazonBedrockMessageConversionTests
         AmazonBedrockMessages.Convert("mistral.mistral-large-2402-v1:0", new ModelMessage[] { assistant }, out _, out var messages);
         var call = messages[0]!["content"]![0]!["toolUse"]!;
         Assert.Equal("assistant", messages[0]!["role"]!.GetValue<string>());
-        Assert.Equal("toolusexy", call["toolUseId"]!.GetValue<string>());
+        Assert.Equal("De61BW1Dz", call["toolUseId"]!.GetValue<string>());
         Assert.Equal("test-tool", call["name"]!.GetValue<string>());
         Assert.Equal("test", call["input"]!["query"]!.GetValue<string>());
     }
