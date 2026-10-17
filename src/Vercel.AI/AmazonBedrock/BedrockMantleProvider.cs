@@ -227,6 +227,8 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
         }
 
         var provider = new OpenAIProvider(new HttpClient(signing, disposeHandler: false), openAI);
-        return _responses ? provider.ResponsesModel(ModelId) : provider.ChatModel(ModelId);
+        return _responses
+            ? new OpenAIResponsesLanguageModel(provider, ModelId) { SupportsWebSearchSourcesInclude = false }
+            : provider.ChatModel(ModelId);
     }
 }

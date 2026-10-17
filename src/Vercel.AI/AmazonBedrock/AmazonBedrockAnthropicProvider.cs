@@ -278,25 +278,10 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
     /// <summary>The Anthropic provider tool ids. The same list as <see cref="Vercel.AI.Anthropic.AnthropicProvider.Tools"/>.</summary>
     public static IReadOnlyList<string> Tools => Vercel.AI.Anthropic.AnthropicProvider.Tools;
 
-    /// <summary>
-    /// Bedrock Runtime origin for these options. <see cref="AmazonBedrockAnthropicOptions.BaseUrl"/> wins,
-    /// then <c>AWS_ENDPOINT_URL_BEDROCK_RUNTIME</c>, then <c>AWS_ENDPOINT_URL</c>, then the regional host.
-    /// The region is read only when none of them is set.
-    /// </summary>
+    /// <summary>Bedrock Runtime origin for these options.</summary>
     public string ResolveBaseUrl()
     {
-        var endpoint = Options.BaseUrl;
-        if (string.IsNullOrEmpty(endpoint))
-        {
-            endpoint = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL_BEDROCK_RUNTIME");
-        }
-
-        if (string.IsNullOrEmpty(endpoint))
-        {
-            endpoint = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL");
-        }
-
-        return AmazonBedrockEndpoints.Resolve(endpoint, Options.Region, "bedrock-runtime");
+        return AmazonBedrockEndpoints.Resolve(Options.BaseUrl, Options.Region, "bedrock-runtime");
     }
 
     /// <inheritdoc />

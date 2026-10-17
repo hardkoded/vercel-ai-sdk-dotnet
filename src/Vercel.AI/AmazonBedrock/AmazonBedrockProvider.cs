@@ -22,8 +22,14 @@ public sealed class AmazonBedrockOptions
     public string Region { get; set; } = "us-east-1";
 
     /// <summary>
-    /// Agent Runtime origin for rerank. When empty, the host is
-    /// <c>https://bedrock-agent-runtime.{region}.{suffix}</c>.
+    /// Bedrock Runtime origin. Falls back to <c>AWS_ENDPOINT_URL_BEDROCK_RUNTIME</c>, then <c>AWS_ENDPOINT_URL</c>.
+    /// When none is set, the host is <c>https://bedrock-runtime.{region}.{suffix}</c>.
+    /// </summary>
+    public string? BaseUrl { get; set; }
+
+    /// <summary>
+    /// Agent Runtime origin for rerank. Falls back to <c>AWS_ENDPOINT_URL_BEDROCK_AGENT_RUNTIME</c>, then
+    /// <c>AWS_ENDPOINT_URL</c>. When none is set, the host is <c>https://bedrock-agent-runtime.{region}.{suffix}</c>.
     /// </summary>
     public string? AgentRuntimeBaseUrl { get; set; }
 
@@ -127,12 +133,7 @@ public sealed class AmazonBedrockProvider : ProviderBase
 
     internal Uri ConverseUri(string modelId, string operation = "converse")
     {
-        if (!HostnameParts.IsValidHostnamePart(Options.Region))
-        {
-            throw new ArgumentException("An AWS region must be a single DNS label.", nameof(AmazonBedrockOptions.Region));
-        }
-
-        return new Uri("https://bedrock-runtime." + Options.Region + ".amazonaws.com/model/" + Uri.EscapeDataString(modelId) + "/" + operation);
+        return new Uri(AmazonBedrockEndpoints.Resolve(Options.BaseUrl, Options.Region, "bedrock-runtime") + "/model/" + Uri.EscapeDataString(modelId) + "/" + operation);
     }
 }
 

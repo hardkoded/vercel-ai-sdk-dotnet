@@ -142,7 +142,14 @@ public static class AnthropicResponse
                 var compaction = AnthropicJson.String(part, "content");
                 if (!string.IsNullOrEmpty(compaction))
                 {
-                    content.Add(new AnthropicText(compaction!, ObjectElement(new JsonObject { ["anthropic"] = new JsonObject { ["type"] = "compaction" } })));
+                    var compactionMetadata = new JsonObject { ["type"] = "compaction" };
+                    var signature = AnthropicJson.String(part, "signature");
+                    if (signature != null)
+                    {
+                        compactionMetadata["signature"] = signature;
+                    }
+
+                    content.Add(new AnthropicText(compaction!, ObjectElement(new JsonObject { ["anthropic"] = compactionMetadata })));
                 }
 
                 break;
