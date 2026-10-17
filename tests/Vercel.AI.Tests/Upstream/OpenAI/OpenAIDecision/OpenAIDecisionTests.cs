@@ -387,6 +387,22 @@ public sealed class OpenAIDecisionTests
         Assert.Equal(expected, RequestBody(capture)["questions"]![2]!["instructions"]!.GetValue<string>());
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "keeps the deprecated evaluation factory and method backed by Decisions", Coverage = UpstreamCoverage.Covered)]
+    public async Task Keeps_the_deprecated_evaluation_factory_and_method_backed_by_Decisions()
+    {
+        var capture = new OpenAICapture { ResponseJson = Fixture().ToJsonString() };
+        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-key" }, capture);
+#pragma warning disable CS0618
+        var model = provider.EvaluationModel("gpt-6-luna");
+        var result = await model.DoEvaluateAsync(EvaluationModelCall.From(Call()), CancellationToken.None);
+#pragma warning restore CS0618
+        Assert.Equal("boolean", result.Answers["refund"].Type);
+        Assert.Equal(0.96, result.Answers["refund"].Probability);
+        Assert.Equal("openai.decision", model.Provider);
+        Assert.Equal("https://api.openai.com/v1/decisions", capture.Uri);
+    }
+
     [Theory]
     [MemberData(nameof(SafetyIdentifiers))]
     [UpstreamTest(Prefix + "sends safetyIdentifier and warns only about unsupported options", Coverage = UpstreamCoverage.Covered)]
