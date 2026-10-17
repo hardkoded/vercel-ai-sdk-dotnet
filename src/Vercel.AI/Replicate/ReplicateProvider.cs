@@ -38,9 +38,9 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     public static new ReplicateProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-        options ??= new OpenAICompatibleOptions();
         if (handler is not null)
         {
+            options = options?.Copy() ?? new OpenAICompatibleOptions();
             options.DownloadHttpClient ??= client;
         }
 
