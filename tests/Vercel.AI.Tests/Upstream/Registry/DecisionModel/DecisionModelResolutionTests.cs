@@ -25,8 +25,8 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
     {
         var cases = new (string Name, object State, string Sent)[]
         {
-            ("string", "The capital of France is Paris.", "\"The capital of France is Paris.\""),
-            ("JSON object", new Dictionary<string, object?> { ["statement"] = "The capital of France is Paris." }, """{"statement":"The capital of France is Paris."}"""),
+            ("string", "The capital of France is Paris.", """[{"type":"text","text":"The capital of France is Paris."}]"""),
+            ("JSON object", new Dictionary<string, object?> { ["statement"] = "The capital of France is Paris." }, """[{"type":"json","value":{"statement":"The capital of France is Paris."}}]"""),
             (
                 "mixed parts",
                 new List<object?>
@@ -34,7 +34,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
                     new Dictionary<string, object?> { ["type"] = "text", ["text"] = "Check this statement." },
                     new Dictionary<string, object?> { ["type"] = "json", ["value"] = new Dictionary<string, object?> { ["capital"] = "Paris", ["country"] = "France" } },
                 },
-                """["Check this statement.",{"capital":"Paris","country":"France"}]"""),
+                """[{"type":"text","text":"Check this statement."},{"type":"json","value":{"capital":"Paris","country":"France"}}]"""),
             ("empty parts", new List<object?>(), "[]"),
         };
         foreach (var resolution in new[] { "string", "alias" })
@@ -55,7 +55,7 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
 
     [Theory]
     [MemberData(nameof(GatewayCases))]
-    [UpstreamTest(Prefix + "decides through Gateway using a model $resolution with $name state when no default provider is configured", Coverage = UpstreamCoverage.Partial, Note = "The port's Gateway decision route sends the state under \"state\" and omits empty providerOptions, where upstream sends \"stateParts\" and \"providerOptions\": {}. The test checks the port's body.")]
+    [UpstreamTest(Prefix + "decides through Gateway using a model $resolution with $name state when no default provider is configured", Coverage = UpstreamCoverage.Covered)]
     public async Task Decides_through_Gateway_using_a_model_resolution_with_name_state_when_no_default_provider_is_configured(string resolution, string name, object state, string sent)
     {
         Assert.NotEmpty(name);
@@ -84,8 +84,8 @@ public sealed class DecisionModelResolutionTests : DecisionDefaultProviderFixtur
         Assert.Equal(modelId, capture.Headers["ai-model-id"]);
         Assert.Equal("4", capture.Headers["ai-decision-model-specification-version"]);
         var body = JsonNode.Parse(capture.Body)!;
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(sent), body["state"]), capture.Body);
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""{"correct":{"type":"boolean","instructions":"Is this correct?"}}"""), body["questions"]), capture.Body);
+        var expected = JsonNode.Parse("{\"stateParts\":" + sent + ",\"questions\":{\"correct\":{\"type\":\"boolean\",\"instructions\":\"Is this correct?\"}},\"providerOptions\":{}}");
+        Assert.True(JsonNode.DeepEquals(expected, body), capture.Body);
     }
 
     [Fact]

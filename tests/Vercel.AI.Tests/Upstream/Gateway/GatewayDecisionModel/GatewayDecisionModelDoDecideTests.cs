@@ -42,8 +42,8 @@ public sealed class GatewayDecisionModelDoDecideTests
     public async Task Should_send_state_and_questions_in_request_body()
     {
         var (model, capture) = Setup();
-        await model.DoDecideAsync(Call());
-        JsonAssert.Equal(RequestBody(capture), "{\"state\":\"" + TestState + "\",\"questions\":" + QuestionsJson + "}");
+        await model.DoDecideAsync(Call(null));
+        JsonAssert.Equal(RequestBody(capture), "{\"stateParts\":[{\"type\":\"text\",\"text\":\"" + TestState + "\"}],\"questions\":" + QuestionsJson + "}");
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class GatewayDecisionModelDoDecideTests
             }
             """;
         await model.DoDecideAsync(Call(providerOptions));
-        JsonAssert.Equal(RequestBody(capture), "{\"state\":\"" + TestState + "\",\"questions\":" + QuestionsJson + ",\"providerOptions\":" + providerOptions + "}");
+        JsonAssert.Equal(RequestBody(capture), "{\"stateParts\":[{\"type\":\"text\",\"text\":\"" + TestState + "\"}],\"questions\":" + QuestionsJson + ",\"providerOptions\":" + providerOptions + "}");
     }
 
     [Fact]
