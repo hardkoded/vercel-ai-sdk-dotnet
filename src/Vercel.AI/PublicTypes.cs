@@ -434,8 +434,22 @@ public sealed class PrepareStepContext
         Steps = steps;
     }
 
+    /// <summary>Creates context with the prompt and model the step is about to use.</summary>
+    public PrepareStepContext(int stepNumber, IReadOnlyList<StepResult> steps, IReadOnlyList<ModelMessage> messages, ILanguageModel model)
+        : this(stepNumber, steps)
+    {
+        Messages = messages;
+        Model = model;
+    }
+
     /// <summary>Zero-based step index about to run.</summary>
     public int StepNumber { get; }
+
+    /// <summary>The messages the step is about to send: the prompt plus the responses of the earlier steps. Empty when the caller built the context without them.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; } = Array.Empty<ModelMessage>();
+
+    /// <summary>The model the step is about to use, or null when the caller built the context without it.</summary>
+    public ILanguageModel? Model { get; }
 
     /// <summary>Steps already completed.</summary>
     public IReadOnlyList<StepResult> Steps { get; }

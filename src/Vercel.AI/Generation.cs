@@ -83,7 +83,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps));
+                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
                 if (update?.Messages != null)
                 {
                     messages = new List<ModelMessage>(update.Messages);
@@ -94,7 +94,8 @@ internal static class Generation
                     current = update.Model;
                 }
 
-                var callOptions = CallOptions(options, messages);
+                // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
+                var callOptions = CallOptions(options, messages.ToArray());
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -212,7 +213,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps));
+                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
                 if (update?.Messages != null)
                 {
                     messages = new List<ModelMessage>(update.Messages);
@@ -223,7 +224,8 @@ internal static class Generation
                     current = update.Model;
                 }
 
-                var callOptions = CallOptions(options, messages);
+                // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
+                var callOptions = CallOptions(options, messages.ToArray());
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
