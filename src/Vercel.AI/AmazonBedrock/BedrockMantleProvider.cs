@@ -98,9 +98,6 @@ public sealed class BedrockMantleProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderId = "bedrock-mantle.chat";
 
-    /// <summary>Provider specification version.</summary>
-    public string SpecificationVersion => "v4";
-
     /// <summary>Creates a provider.</summary>
     public BedrockMantleProvider(HttpClient httpClient, BedrockMantleOptions? options = null)
         : base(ProviderId)

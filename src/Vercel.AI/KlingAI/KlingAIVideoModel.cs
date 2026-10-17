@@ -47,6 +47,9 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
+    public string SpecificationVersion => "v4";
+
+    /// <inheritdoc />
     public string Provider => "klingai.video";
 
     /// <inheritdoc />
