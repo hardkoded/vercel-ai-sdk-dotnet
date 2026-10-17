@@ -36,6 +36,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private readonly Func<Uri> _url;
     private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
+    /// <summary>
+    /// Whether a request with a <c>web_search</c> or <c>web_search_preview</c> tool adds
+    /// <c>web_search_call.action.sources</c> to <c>include</c>. The default is true. The
+    /// <c>includeWebSearchSources</c> provider option set to false also turns it off.
+    /// </summary>
+    public bool SupportsWebSearchSourcesInclude { get; init; } = true;
+
     /// <summary>Creates a Responses model.</summary>
     public OpenAIResponsesLanguageModel(OpenAIProvider provider, string modelId)
     {
@@ -383,7 +390,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// Builds the Responses body. Options come from <paramref name="providerOptionsName"/> and fall back to
     /// <c>openai</c> when that key is absent.
     /// </summary>
-    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName)
+    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude = true)
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
@@ -651,6 +658,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             }
         }
 
+        if (supportsWebSearchSourcesInclude
+            && OpenAIJson.Bool(openai, "includeWebSearchSources") != false
+            && options.Tools?.Any(tool => tool.ProviderToolId == "openai.web_search" || tool.ProviderToolId == "openai.web_search_preview") == true
+            && !include.Contains("web_search_call.action.sources"))
+        {
+            include.Add("web_search_call.action.sources");
+        }
+
         if (include.Count > 0)
         {
             var includeArray = new JsonArray();
@@ -741,7 +756,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, false, _providerOptionsName);
+        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude);
         var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
             _url(),
@@ -760,7 +775,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, true, _providerOptionsName);
+        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude);
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
         var state = new OpenAIResponsesStream();
         await foreach (var data in _http.SendSseAsync(

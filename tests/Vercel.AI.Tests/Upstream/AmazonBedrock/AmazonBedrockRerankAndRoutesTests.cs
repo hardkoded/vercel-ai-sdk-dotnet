@@ -366,8 +366,7 @@ public sealed class BedrockMantleRouteTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should create a responses model via .responses()",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The responses model id is bedrock-mantle.responses. supportsWebSearchSourcesInclude is not a separate flag.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Creates_a_responses_model()
     {
         var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "test-key", SecretAccessKey = "test-secret" });

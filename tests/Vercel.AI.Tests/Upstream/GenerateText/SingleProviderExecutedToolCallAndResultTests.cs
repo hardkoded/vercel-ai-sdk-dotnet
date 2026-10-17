@@ -38,6 +38,53 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         Assert.Equal("error-1", result2.ProviderMetadata!.Value.GetProperty("provider").GetProperty("itemId").GetString());
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should include provider-executed tool call and result in the full stream",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The start-step part has no request, and finish-step has no response metadata. Performance values come from a real clock, so only their shape is asserted.")]
+    public async Task Should_include_provider_executed_tool_call_and_result_in_the_full_stream()
+    {
+        var result = Run();
+        var parts = new List<TextStreamPart>();
+        await foreach (var part in result.Stream())
+        {
+            parts.Add(part);
+        }
+
+        Assert.Equal(
+            new[] { "start", "start-step", "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "tool-result", "tool-call", "tool-error", "finish-step", "finish" },
+            parts.Select(part => part.Type).ToArray());
+        Assert.Empty(Assert.IsType<StartStepPart>(parts[1]).Warnings);
+        var inputStart = Assert.IsType<ToolInputStartPart>(parts[2]);
+        Assert.Equal("call-1", inputStart.Id);
+        Assert.Equal("web_search", inputStart.ToolName);
+        Assert.True(inputStart.ProviderExecuted);
+        Assert.False(inputStart.Dynamic);
+        Assert.Equal("{ \"value\": \"value\" }", Assert.IsType<ToolInputDeltaPart>(parts[3]).Delta);
+        Assert.Equal("call-1", Assert.IsType<ToolInputEndPart>(parts[4]).Id);
+        var call1 = Assert.IsType<ToolCallPart>(parts[5]).ToolCall;
+        Assert.Equal("call-1", call1.ToolCallId);
+        Assert.True(call1.ProviderExecuted);
+        var toolResult = Assert.IsType<ToolResultPart>(parts[6]).Result;
+        Assert.Equal("call-1", toolResult.ToolCallId);
+        Assert.Equal("{\"value\":\"result1\"}", toolResult.OutputJson);
+        Assert.Equal("call-2", Assert.IsType<ToolCallPart>(parts[7]).ToolCall.ToolCallId);
+        var toolError = Assert.IsType<ToolErrorPart>(parts[8]).Result;
+        Assert.Equal("call-2", toolError.ToolCallId);
+        Assert.Equal("\"ERROR\"", toolError.OutputJson);
+        var finishStep = Assert.IsType<StepFinishPart>(parts[9]);
+        Assert.Equal(FinishReason.Stop, finishStep.Step.FinishReason);
+        Assert.Equal(13, finishStep.Step.Usage.TotalTokens);
+        Assert.True(finishStep.Performance.StepTimeMs >= 0);
+        Assert.True(finishStep.Performance.ResponseTimeMs >= 0);
+        Assert.Empty(finishStep.Performance.ToolExecutionMs);
+        Assert.NotNull(finishStep.Performance.TimeToFirstOutputMs);
+        var finish = Assert.IsType<FinishPart>(parts[10]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal(13, finish.Usage.TotalTokens);
+    }
+
     private static StreamTextResult Run()
     {
         var args = JsonDocument.Parse("{}").RootElement;

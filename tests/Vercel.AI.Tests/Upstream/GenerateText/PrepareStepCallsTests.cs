@@ -12,11 +12,7 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 public sealed class PrepareStepCallsTests
 {
     [Fact]
-    [UpstreamTest(
-        "packages/ai/src/generate-text/generate-text.test.ts::generateText > programmatic tool calling > 5 steps: code_execution triggers client tool across multiple turns (dice game fixture) > prepareStep calls::should pass accumulated messages to prepareStep",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Uses two parallel client tool calls instead of the dice game fixture, which is not ported.")]
-    public async Task Should_pass_accumulated_messages_to_prepareStep()
+    public async Task PrepareStep_sees_the_results_of_one_step_as_a_single_tool_message()
     {
         var model = new TestLanguageModel();
         model.OnGenerate = _ => model.Calls.Count == 1
