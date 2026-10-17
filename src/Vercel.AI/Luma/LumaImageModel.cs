@@ -9,6 +9,7 @@ using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Luma;
 
@@ -34,10 +35,10 @@ public sealed class LumaImageRequest
     public int? Seed { get; set; }
 
     /// <summary>Reference images. Each one must be a URL.</summary>
-    public IReadOnlyList<OpenAICompatibleImageFile>? Files { get; set; }
+    public IReadOnlyList<ImageModelFile>? Files { get; set; }
 
     /// <summary>Edit mask. Luma does not accept one; setting it throws.</summary>
-    public OpenAICompatibleImageFile? Mask { get; set; }
+    public ImageModelFile? Mask { get; set; }
 
     /// <summary>
     /// Provider options. The <c>luma</c> object is read: <c>referenceType</c>, <c>images</c>,
@@ -213,7 +214,7 @@ public sealed class LumaImageModel : IImageModel
         throw new AiSdkException("Image generation timed out after " + maxPollAttempts + " attempts.");
     }
 
-    private static void AddReferences(JsonObject body, IReadOnlyList<OpenAICompatibleImageFile>? files, OpenAICompatibleImageFile? mask, JsonElement? luma)
+    private static void AddReferences(JsonObject body, IReadOnlyList<ImageModelFile>? files, ImageModelFile? mask, JsonElement? luma)
     {
         if (mask != null)
         {

@@ -125,7 +125,7 @@ public sealed class AiClient : IAiClient
 
         Operations.Embed.ValidateEmbeddingDimensions(options.Dimensions);
         var model = options.Model ?? _gateway.EmbeddingModel(Require(options.ModelId, "embedding"));
-        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions);
+        return model.DoEmbedAsync(options.Values, options.ProviderOptions, cancellationToken, options.Dimensions, options.Headers);
     }
 
     /// <inheritdoc />
@@ -136,7 +136,7 @@ public sealed class AiClient : IAiClient
             throw new AiSdkException("Rerank requires a reranking model.");
         }
 
-        return options.Model.DoRerankAsync(options.Query, options.Documents, options.TopN, cancellationToken);
+        return options.Model.DoRerankAsync(options.Query, options.Documents, options.TopN, cancellationToken, options.Headers);
     }
 
     /// <inheritdoc />
@@ -310,6 +310,9 @@ public sealed class EmbedOptions
 
     /// <summary>Provider options keyed by provider id.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Rerank options.</summary>
@@ -326,6 +329,9 @@ public sealed class RerankOptions
 
     /// <summary>Maximum results.</summary>
     public int? TopN { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Image generation options.</summary>

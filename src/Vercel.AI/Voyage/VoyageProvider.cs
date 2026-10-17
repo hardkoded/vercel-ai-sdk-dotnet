@@ -225,7 +225,7 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null)
+        public async Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
         {
             var outputDimension = providerOptions != null
                 && providerOptions.TryGetValue("voyage", out var options)
@@ -235,7 +235,7 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
                 && width.TryGetInt32(out var parsed)
                 ? parsed
                 : dimensions;
-            var result = await EmbedAsync(new VoyageEmbeddingRequest(values) { OutputDimension = outputDimension }, cancellationToken).ConfigureAwait(false);
+            var result = await EmbedAsync(new VoyageEmbeddingRequest(values) { OutputDimension = outputDimension, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
             return new EmbeddingResult(result.Embeddings, result.Tokens);
         }
 
@@ -359,9 +359,9 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
+        public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
         {
-            var result = await RerankAsync(new VoyageRerankRequest { Query = query, TextDocuments = documents, TopK = topN }, cancellationToken).ConfigureAwait(false);
+            var result = await RerankAsync(new VoyageRerankRequest { Query = query, TextDocuments = documents, TopK = topN, Headers = ProviderExchange.ToRequestHeaders(headers) }, cancellationToken).ConfigureAwait(false);
             return new RerankResult(result.Ranking);
         }
 

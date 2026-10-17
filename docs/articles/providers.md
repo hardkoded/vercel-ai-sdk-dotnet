@@ -731,7 +731,9 @@ var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelS
 
 Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 
-`IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. Custom models must add the parameter.
+`IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` and `IReadOnlyDictionary<string, string?>? headers = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. `IRerankingModel.DoRerankAsync` takes the same `headers` parameter. Call headers override the provider headers. `EmbedOptions.Headers` and `RerankOptions.Headers` pass them from `AiClient`. Custom models must add the parameters.
+
+`ImageCallOptions.Files` and `Mask` are `ImageModelFile` values, the same file-or-URL union as upstream's `ImageModelV4File`. Create one with `ImageModelFile.FromFile(bytes, mediaType)` or `ImageModelFile.FromUrl(url)`, and set `ProviderOptions` on it when a provider reads per-file options. `OpenAICompatibleImageFile` is gone. Use `ImageModelFile` instead.
 
 ### Decide and the deprecated Evaluate names
 

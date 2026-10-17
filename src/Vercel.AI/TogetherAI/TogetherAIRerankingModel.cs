@@ -27,9 +27,9 @@ public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRera
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken)
+    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
     {
-        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents ?? Array.Empty<string>()), query, topN, null, null, cancellationToken);
+        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents ?? Array.Empty<string>()), query, topN, null, ProviderExchange.ToRequestHeaders(headers), cancellationToken);
         var response = await DoRerankAsync(call, cancellationToken).ConfigureAwait(false);
         return new RerankResult(response.Ranking.Select(rank => new RerankItem(rank.Index, rank.RelevanceScore)).ToList());
     }

@@ -159,14 +159,15 @@ public sealed class CohereEmbeddingParityTests
     }
 
     [Fact]
-    [UpstreamTest(Embed + "should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Provider headers only. DoEmbedAsync takes no call headers, and no SDK user agent is sent.")]
+    [UpstreamTest(Embed + "should pass headers", Coverage = UpstreamCoverage.Partial, Note = "Provider and call headers are sent. No SDK user agent is sent.")]
     public async Task Provider_headers_are_sent()
     {
         var (model, handler) = FixtureModel(configure: options => options.Headers["Custom-Provider-Header"] = "provider-header-value");
-        await model.DoEmbedAsync(Values, null, CancellationToken.None).ConfigureAwait(false);
+        await model.DoEmbedAsync(Values, null, CancellationToken.None, headers: new Dictionary<string, string?> { ["Custom-Request-Header"] = "request-header-value" }).ConfigureAwait(false);
         Assert.Equal("Bearer test-api-key", handler.Calls[0].Header("Authorization"));
         Assert.StartsWith("application/json", handler.Calls[0].Header("Content-Type"), StringComparison.Ordinal);
         Assert.Equal("provider-header-value", handler.Calls[0].Header("Custom-Provider-Header"));
+        Assert.Equal("request-header-value", handler.Calls[0].Header("Custom-Request-Header"));
     }
 
     private static (IEmbeddingModel Model, ParityHandler Handler) FixtureModel(string modelId = "embed-english-v3.0", Action<CohereOptions>? configure = null)
