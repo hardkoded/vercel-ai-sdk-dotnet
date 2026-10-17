@@ -887,7 +887,7 @@ internal static class Generation
 
             tools.Add(tool.IsProviderDefined
                 ? LanguageModelTool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.ProviderToolArgs)
-                : new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict));
+                : new LanguageModelTool(tool.Name, tool.Description, tool.InputSchema, tool.Strict) { ProviderOptions = tool.ProviderOptions });
         }
 
         return tools;

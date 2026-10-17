@@ -536,6 +536,12 @@ public sealed class LanguageModelTool
     /// JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so text results of this tool are sent as JSON string literals.
     /// </summary>
     public JsonElement? OutputSchema { get; init; }
+
+    /// <summary>
+    /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
+    /// Maps to the tool's <c>providerOptions</c>.
+    /// </summary>
+    public JsonElement? ProviderOptions { get; init; }
 }
 
 /// <summary>A prompt message.</summary>

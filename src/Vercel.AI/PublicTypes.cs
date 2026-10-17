@@ -42,6 +42,12 @@ public sealed class Tool
     /// </summary>
     public bool NeedsApproval { get; set; }
 
+    /// <summary>
+    /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
+    /// Maps to the tool's <c>providerOptions</c>.
+    /// </summary>
+    public JsonElement? ProviderOptions { get; set; }
+
     private Tool(string providerToolId, string name, JsonElement args)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
