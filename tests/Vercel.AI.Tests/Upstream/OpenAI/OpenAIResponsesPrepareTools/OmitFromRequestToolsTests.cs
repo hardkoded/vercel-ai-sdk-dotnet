@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -52,5 +53,22 @@ public sealed class OmitFromRequestToolsTests
             OpenAIResponsesLanguageModel.PrepareResponsesTools(Tools(), ToolChoice.Tool("list_issues")));
 
         Assert.Contains("forcing tool \"list_issues\"", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > omitFromRequestTools::does not put history-loaded functions in allowed_tools", Coverage = UpstreamCoverage.Covered)]
+    public void Does_not_put_history_loaded_functions_in_allowed_tools()
+    {
+        var result = OpenAIResponsesLanguageModel.PrepareResponsesTools(
+            Tools(),
+            toolChoice: null,
+            new PrepareResponsesToolsOptions { AllowedTools = new OpenAIResponsesAllowedTools(new[] { "search", "list_issues" }) });
+
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("{\"type\":\"allowed_tools\",\"mode\":\"auto\",\"tools\":[{\"type\":\"function\",\"name\":\"search\"}]}"),
+            result.ToolChoice));
+        var warning = Assert.Single(result.ToolWarnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("allowedTools entry \"list_issues\"", warning.Feature);
     }
 }

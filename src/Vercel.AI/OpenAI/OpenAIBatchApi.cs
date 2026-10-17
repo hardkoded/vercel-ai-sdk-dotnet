@@ -20,6 +20,16 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     private const string Endpoint = "/v1/responses";
     private const int DefaultInputFileExpiresAfterSeconds = 48 * 60 * 60;
 
+    // Provider tools whose output the batch results conversion handles.
+    private static readonly HashSet<string> ConvertibleProviderToolIds = new()
+    {
+        "openai.code_interpreter",
+        "openai.custom",
+        "openai.file_search",
+        "openai.web_search",
+        "openai.web_search_preview",
+    };
+
     private readonly OpenAIProvider _provider;
 
     internal OpenAIBatchApi(OpenAIProvider provider)
@@ -71,7 +81,8 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         var file = new StringBuilder();
         foreach (var request in requests)
         {
-            var prepared = OpenAIResponsesLanguageModel.Prepare(request.ModelId, ToCallOptions(request.Options), stream: false);
+            var callOptions = ToCallOptions(request.Options);
+            var prepared = OpenAIResponsesLanguageModel.Prepare(request.ModelId, callOptions, stream: false);
             file.Append(new JsonObject
             {
                 ["custom_id"] = request.Id,
@@ -82,6 +93,19 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             foreach (var warning in prepared.Warnings)
             {
                 warnings.Add(new BatchRequestWarning(request.Id, new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)));
+            }
+
+            foreach (var tool in callOptions.Tools ?? Array.Empty<LanguageModelTool>())
+            {
+                if (tool.IsProviderDefined && !ConvertibleProviderToolIds.Contains(tool.ProviderToolId!))
+                {
+                    warnings.Add(new BatchRequestWarning(
+                        request.Id,
+                        new OperationWarning(
+                            "unsupported",
+                            feature: "batch result conversion for tool \"" + tool.Name + "\"",
+                            details: "OpenAI may return output for this tool that AI SDK text batches cannot currently convert.")));
+                }
             }
         }
 
@@ -343,10 +367,18 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             var converted = new List<LanguageModelTool>();
             foreach (var tool in tools.EnumerateArray())
             {
+                if (Str(tool, "type") == "provider")
+                {
+                    converted.Add(LanguageModelTool.ProviderDefined(
+                        Str(tool, "id") ?? string.Empty,
+                        Str(tool, "name") ?? string.Empty,
+                        tool.TryGetProperty("args", out var args) ? args.Clone() : OpenAIJson.Parse("{}")));
+                    continue;
+                }
+
                 if (Str(tool, "type") != "function")
                 {
-                    // The Responses request builder has no provider-defined tools yet (issue #398).
-                    throw new UnsupportedFunctionalityException("batch tool type: " + Str(tool, "type"), "OpenAI batches support only function tools.");
+                    throw new UnsupportedFunctionalityException("batch tool type: " + Str(tool, "type"), "OpenAI batches support only function and provider tools.");
                 }
 
                 converted.Add(new LanguageModelTool(Str(tool, "name") ?? string.Empty, Str(tool, "description"), tool.TryGetProperty("inputSchema", out var schema) ? schema.Clone() : OpenAIJson.Parse("{}")));

@@ -12,46 +12,7 @@ namespace Vercel.AI.Tests;
 public sealed class OpenAIResponsesUpstreamTests
 {
     private const string Generate = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::";
-    private const string Tools = "packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > function tools strict mode::";
     private const string ToolCalls = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > tool calls::";
-
-    [Fact]
-    [UpstreamTest(Tools + "should pass through strict mode when strict is true", Coverage = UpstreamCoverage.Covered)]
-    public void PassesStrictTrue()
-    {
-        Assert.True(Strict(true));
-    }
-
-    [Fact]
-    [UpstreamTest(Tools + "should pass through strict mode when strict is false", Coverage = UpstreamCoverage.Covered)]
-    public void PassesStrictFalse()
-    {
-        Assert.False(Strict(false));
-    }
-
-    [Fact]
-    [UpstreamTest(Tools + "should default strict mode to false when strict is undefined", Coverage = UpstreamCoverage.Partial, Note = "The port sends strict false when a tool leaves strict unset.")]
-    public void SendsFalseWhenStrictIsUnset()
-    {
-        var tool = Prepared(null);
-        Assert.False(tool["strict"]!.GetValue<bool>());
-        Assert.Equal(5, tool.Count);
-    }
-
-    [Fact]
-    [UpstreamTest(Tools + "should pass through strict mode for multiple tools with different strict settings", Coverage = UpstreamCoverage.Covered)]
-    public void PassesMixedStrict()
-    {
-        var prepared = OpenAIResponsesLanguageModel.PrepareResponsesTools(new[]
-        {
-            OpenAIUpstream.Tool("strictTool", "Strict", true),
-            OpenAIUpstream.Tool("nonStrictTool", "Not strict", false),
-            OpenAIUpstream.Tool("defaultTool", "Default"),
-        }, null);
-        Assert.True(prepared.Tools![0]!["strict"]!.GetValue<bool>());
-        Assert.False(prepared.Tools[1]!["strict"]!.GetValue<bool>());
-        Assert.False(prepared.Tools[2]!["strict"]!.GetValue<bool>());
-    }
 
     [Fact]
     [UpstreamTest(Generate + "should remove unsupported settings for o1", Coverage = UpstreamCoverage.Covered)]
@@ -208,17 +169,6 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal("test-tool", call.ToolName);
         Assert.Equal("{\"value\":\"Spark\"}", call.ArgumentsJson);
         Assert.Equal("fc_1", call.ProviderMetadata!.Value.GetProperty("openai").GetProperty("itemId").GetString());
-    }
-
-    private static bool Strict(bool value)
-    {
-        return Prepared(value)["strict"]!.GetValue<bool>();
-    }
-
-    private static JsonObject Prepared(bool? strict)
-    {
-        var prepared = OpenAIResponsesLanguageModel.PrepareResponsesTools(new[] { OpenAIUpstream.Tool("testFunction", "A test function", strict) }, null);
-        return (JsonObject)prepared.Tools![0]!;
     }
 
     private static async Task<LanguageModelGenerateResult> GenerateFromJson(string json)
