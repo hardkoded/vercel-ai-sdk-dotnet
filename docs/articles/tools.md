@@ -50,6 +50,25 @@ new ToolApprovalResponseModelMessage("mcp-approval-1", approved: false, reason: 
 
 The model never sees approval requests. A response without `ProviderExecuted` is dropped from the prompt. A denied response reaches the model with its `DeniedToolResult`, an `execution-denied` tool result whose output provider options are `{ "openai": { "approvalId": ... } }`.
 
+## Pruning messages
+
+`Ai.PruneMessages` removes reasoning, tool calls, tool results, and approvals from a message list, for example to shorten a long history before the next call. It returns a new list and leaves the input unchanged.
+
+```csharp
+var pruned = Ai.PruneMessages(new PruneMessagesOptions
+{
+    Messages = messages,
+    Reasoning = PruneReasoning.All,
+    ToolCalls = new[] { PruneToolCallsRule.BeforeLastMessages(2, new[] { "weather" }) },
+});
+```
+
+- `Reasoning`: `PruneReasoning.None` (default), `All`, or `BeforeLastMessage`, which keeps the reasoning of the last message.
+- `ToolCalls`: a list of rules. `PruneToolCallsRule.All()`, `BeforeLastMessage()`, and `BeforeLastMessages(n)` take an optional list of tool names. Without names a rule prunes every tool. Calls, results, and approvals in the kept trailing messages stay, and so does the originating tool call of a kept approval response. An approval response whose request is unknown is pruned when the rule names tools.
+- `EmptyMessages`: `PruneEmptyMessages.Remove` (default) drops messages that are empty after pruning, `Keep` keeps them.
+
+Consecutive tool messages (results and approval responses) count as one message, as upstream's tool message holds several parts. Reasoning files are not supported (([#575](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/575))).
+
 ## Tool errors
 
 A tool result carries an output type: `text`, `json`, `error-text`, `error-json`, or `execution-denied`. `ToolModelMessage.OutputType` holds it. When you do not set it, the type comes from `isError` and from whether the output is valid JSON.
