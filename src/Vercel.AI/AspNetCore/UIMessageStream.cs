@@ -209,7 +209,7 @@ public sealed class UIMessageStreamResult : IResult
 
         await foreach (var part in result.Stream(cancellationToken).ConfigureAwait(false))
         {
-            if (part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && part is not AbortPart && !stepOpen)
+            if (part is not StartPart && part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && part is not AbortPart && !stepOpen)
             {
                 yield return Frame(new JsonObject { ["type"] = "start-step" });
                 stepOpen = true;
@@ -290,6 +290,16 @@ public sealed class UIMessageStreamResult : IResult
                         ["type"] = "tool-approval-request",
                         ["approvalId"] = approvalRequest.ApprovalId,
                         ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
+                    });
+                    break;
+                case ToolErrorPart toolError:
+                    yield return Frame(new JsonObject
+                    {
+                        ["type"] = "tool-output-error",
+                        ["toolCallId"] = toolError.Result.ToolCallId,
+                        ["errorText"] = providerExecutedIds.Contains(toolError.Result.ToolCallId)
+                            ? toolError.Result.OutputJson
+                            : onError(toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
                     });
                     break;
                 case ToolResultPart toolResult:

@@ -481,7 +481,7 @@ public sealed class GenerateTextBehaviorTests
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.stream::should send tool call deltas",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The .NET full stream has no start or start-step parts, and it reports a tool without execute as a tool error result.")]
+        Note = "The .NET full stream reports a tool without execute as a tool-error part.")]
     public async Task Streams_tool_input_deltas()
     {
         const string id = "call_O17Uplv4lJvD6DVdIvFFeRMw";
@@ -495,11 +495,11 @@ public sealed class GenerateTextBehaviorTests
         var parts = await StreamToolInputAsync(streamParts);
 
         Assert.Equal(
-            new[] { "tool-input-start" }
+            new[] { "start", "start-step", "tool-input-start" }
                 .Concat(deltas.Select(_ => "tool-input-delta"))
                 .Concat(new[] { "tool-input-end", "tool-call" }),
-            parts.Take(10).Select(part => part.Type));
-        var start = Assert.IsType<ToolInputStartPart>(parts[0]);
+            parts.Take(12).Select(part => part.Type));
+        var start = Assert.IsType<ToolInputStartPart>(parts[2]);
         Assert.Equal(id, start.Id);
         Assert.Equal("test-tool", start.ToolName);
         Assert.False(start.Dynamic);
@@ -507,8 +507,8 @@ public sealed class GenerateTextBehaviorTests
         Assert.Null(start.ProviderMetadata);
         Assert.Equal(deltas, parts.OfType<ToolInputDeltaPart>().Select(delta => delta.Delta));
         Assert.All(parts.OfType<ToolInputDeltaPart>(), delta => Assert.Equal(id, delta.Id));
-        Assert.Equal(id, Assert.IsType<ToolInputEndPart>(parts[8]).Id);
-        var call = Assert.IsType<ToolCallPart>(parts[9]).ToolCall;
+        Assert.Equal(id, Assert.IsType<ToolInputEndPart>(parts[10]).Id);
+        var call = Assert.IsType<ToolCallPart>(parts[11]).ToolCall;
         Assert.Equal(id, call.ToolCallId);
         Assert.Equal("{\"value\":\"Sparkle Day\"}", call.ArgumentsJson);
         var finish = Assert.IsType<FinishPart>(parts[^1]);

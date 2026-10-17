@@ -15,7 +15,7 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
     private const string Suite = "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution approval > provider-executed tool (MCP) approval > when a provider-executed tool emits tool-approval-request::";
 
     [Fact]
-    [UpstreamTest(Suite + "should add provider-executed tool approval request to full stream", Coverage = UpstreamCoverage.Partial, Note = "The port's stream parts carry no start, start-step, or finish-step parts.")]
+    [UpstreamTest(Suite + "should add provider-executed tool approval request to full stream", Coverage = UpstreamCoverage.Partial, Note = "start-step has no request and finish-step has no response metadata.")]
     public async Task Should_add_provider_executed_tool_approval_request_to_full_stream()
     {
         var result = Run();
@@ -25,13 +25,13 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
             parts.Add(part);
         }
 
-        Assert.Equal(new[] { "tool-call", "tool-approval-request", "finish" }, parts.Where(part => part is not StepFinishPart).Select(part => part.Type).ToArray());
-        var call = Assert.IsType<ToolCallPart>(parts[0]).ToolCall;
+        Assert.Equal(new[] { "start", "start-step", "tool-call", "tool-approval-request", "finish" }, parts.Where(part => part is not StepFinishPart).Select(part => part.Type).ToArray());
+        var call = Assert.IsType<ToolCallPart>(parts[2]).ToolCall;
         Assert.True(call.ProviderExecuted);
         Assert.Equal("mcp-call-1", call.ToolCallId);
         Assert.Equal("mcp_tool", call.ToolName);
         Assert.Equal("{ \"query\": \"test\" }", call.ArgumentsJson);
-        var request = Assert.IsType<ToolApprovalRequestPart>(parts[1]);
+        var request = Assert.IsType<ToolApprovalRequestPart>(parts[3]);
         Assert.Equal("mcp-approval-1", request.ApprovalId);
         Assert.Same(call, request.ToolCall);
         var finish = Assert.IsType<FinishPart>(parts[parts.Count - 1]);
