@@ -451,7 +451,7 @@ public static class GoogleMessages
             return turns;
         }
 
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             if (message is SystemModelMessage system)
             {

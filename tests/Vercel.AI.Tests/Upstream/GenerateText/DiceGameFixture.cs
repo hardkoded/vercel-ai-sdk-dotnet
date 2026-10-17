@@ -102,33 +102,19 @@ internal static class DiceGameFixture
     }
 
     /// <summary>
-    /// Renders messages as one string each so a prompt can be compared in one assertion. Consecutive tool messages
-    /// are joined, because upstream sends the results of one step as a single tool message.
+    /// Renders messages as one string each so a prompt can be compared in one assertion. The results of a tool
+    /// message are joined, because upstream sends the results of one step as a single tool message.
     /// </summary>
     internal static string[] Render(IReadOnlyList<ModelMessage> messages)
     {
         var lines = new List<string>();
-        var results = new List<string>();
-        void FlushResults()
-        {
-            if (results.Count > 0)
-            {
-                lines.Add("tool|" + string.Join(";", results));
-                results.Clear();
-            }
-        }
-
         foreach (var message in messages)
         {
-            if (message is ToolModelMessage tool)
-            {
-                results.Add(Result(tool.ToolCallId, tool.ToolName, tool.OutputType, tool.OutputJson));
-                continue;
-            }
-
-            FlushResults();
             switch (message)
             {
+                case ToolModelMessage tool:
+                    lines.Add("tool|" + string.Join(";", tool.Results.Select(r => Result(r.ToolCallId, r.ToolName, r.OutputType, r.OutputJson))));
+                    break;
                 case UserModelMessage user:
                     lines.Add("user|" + string.Join(";", user.Content.Select(part => "text:" + Assert.IsType<TextContentPart>(part).Text)));
                     break;
@@ -140,7 +126,6 @@ internal static class DiceGameFixture
             }
         }
 
-        FlushResults();
         return lines.ToArray();
     }
 

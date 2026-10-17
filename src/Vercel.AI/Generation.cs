@@ -790,6 +790,7 @@ internal static class Generation
         responseMessages.Add(assistantMessage);
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
+            var toolMessages = new List<ToolModelMessage>();
             foreach (var call in toolCalls)
             {
                 if (call.ProviderExecuted)
@@ -810,7 +811,13 @@ internal static class Generation
                 }
 
                 toolResults.Add(executed);
-                var toolMessage = new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType);
+                toolMessages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+            }
+
+            // Upstream sends the results of one step as a single tool message.
+            if (toolMessages.Count > 0)
+            {
+                var toolMessage = toolMessages.Count == 1 ? toolMessages[0] : new ToolModelMessage(toolMessages);
                 messages.Add(toolMessage);
                 responseMessages.Add(toolMessage);
             }

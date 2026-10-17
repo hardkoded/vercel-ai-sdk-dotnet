@@ -1089,7 +1089,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

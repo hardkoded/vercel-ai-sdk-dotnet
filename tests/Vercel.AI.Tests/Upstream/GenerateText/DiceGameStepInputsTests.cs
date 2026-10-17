@@ -10,7 +10,7 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 public sealed class DiceGameStepInputsTests
 {
     private const string Prefix = "packages/ai/src/generate-text/generate-text.test.ts::generateText > programmatic tool calling > 5 steps: code_execution triggers client tool across multiple turns (dice game fixture) > step inputs::";
-    private const string PartialNote = "The port sends each tool result as its own tool message (the test joins them) and keeps the `type` key in the provider-executed code_execution input, which upstream strips by parsing it with the tool's input schema. See #520 and #521.";
+    private const string PartialNote = "The port keeps the `type` key in the provider-executed code_execution input, which upstream strips by parsing it with the tool's input schema. See #521.";
 
     private const string Intro = "I'll help you simulate this dice game between two players! Let me run the game where both players roll dice each round until one player wins 3 rounds.";
     private const string CodeInput = "{\"type\":\"programmatic-tool-call\",\"code\":\"game_loop()\"}";

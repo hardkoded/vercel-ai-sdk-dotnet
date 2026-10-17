@@ -169,7 +169,7 @@ public sealed class CohereLanguageModel : ILanguageModel
     private static JsonArray Messages(IReadOnlyList<ModelMessage> prompt, JsonArray documents)
     {
         var messages = new JsonArray();
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

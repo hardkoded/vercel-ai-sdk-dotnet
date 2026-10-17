@@ -38,7 +38,7 @@ public sealed class DiceGamePrepareStepCallsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass accumulated messages to prepareStep", Coverage = UpstreamCoverage.Partial, Note = "The port sends each tool result as its own tool message, so the test counts consecutive tool messages as one. See #520.")]
+    [UpstreamTest(Prefix + "should pass accumulated messages to prepareStep", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_accumulated_messages_to_prepareStep()
     {
         var run = await RunGenerateAsync();

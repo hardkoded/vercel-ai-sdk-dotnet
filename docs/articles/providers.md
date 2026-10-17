@@ -611,7 +611,7 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 `PrepareStepUpdate.ProviderOptions` is deep-merged onto the call's provider options for that step.
 
-`PrepareStepContext` also exposes `Messages`, the prompt plus the responses of the earlier steps, and `Model`, the model the step is about to use.
+`PrepareStepContext` also exposes `Messages`, the prompt plus the responses of the earlier steps, and `Model`, the model the step is about to use. Like upstream, the results of all tool calls in one step are a single `ToolModelMessage`; read them from `ToolModelMessage.Results` (a single-result message lists itself).
 
 ## Decision state
 

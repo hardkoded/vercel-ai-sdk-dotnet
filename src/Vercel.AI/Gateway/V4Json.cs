@@ -16,7 +16,7 @@ public static class V4Json
     public static string CallOptions(LanguageModelCallOptions options)
     {
         var prompt = new JsonArray();
-        foreach (var message in options.Prompt)
+        foreach (var message in ToolModelMessage.Flatten(options.Prompt))
         {
             prompt.Add(Message(message));
         }

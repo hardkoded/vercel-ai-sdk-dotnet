@@ -1122,6 +1122,74 @@ public sealed class ToolModelMessage : ModelMessage
         ProviderMetadata = providerMetadata;
     }
 
+    /// <summary>
+    /// Creates one tool message that carries several tool results, as upstream does for the calls of one step.
+    /// Its single-result members describe the first result.
+    /// </summary>
+    public ToolModelMessage(IReadOnlyList<ToolModelMessage> results)
+        : base("tool")
+    {
+        if (results is null || results.Count == 0)
+        {
+            throw new ArgumentException("A tool message needs at least one result.", nameof(results));
+        }
+
+        var flat = new List<ToolModelMessage>();
+        foreach (var result in results)
+        {
+            flat.AddRange(result.Results);
+        }
+
+        var first = flat[0];
+        ToolCallId = first.ToolCallId;
+        ToolName = first.ToolName;
+        OutputType = first.OutputType;
+        OutputJson = first.OutputJson;
+        IsError = first.IsError;
+        ProviderMetadata = first.ProviderMetadata;
+        OutputProviderOptions = first.OutputProviderOptions;
+        _results = flat;
+    }
+
+    private IReadOnlyList<ToolModelMessage>? _results;
+
+    /// <summary>The tool results this message carries, one per executed call. A single-result message lists itself.</summary>
+    public IReadOnlyList<ToolModelMessage> Results => _results ??= new[] { this };
+
+    /// <summary>Splits grouped tool messages into one message per result, in order. Other messages pass through.</summary>
+    public static IReadOnlyList<ModelMessage> Flatten(IReadOnlyList<ModelMessage> messages)
+    {
+        var grouped = false;
+        foreach (var message in messages)
+        {
+            if (message is ToolModelMessage { Results.Count: > 1 })
+            {
+                grouped = true;
+                break;
+            }
+        }
+
+        if (!grouped)
+        {
+            return messages;
+        }
+
+        var flat = new List<ModelMessage>(messages.Count);
+        foreach (var message in messages)
+        {
+            if (message is ToolModelMessage tool)
+            {
+                flat.AddRange(tool.Results);
+            }
+            else
+            {
+                flat.Add(message);
+            }
+        }
+
+        return flat;
+    }
+
     /// <summary>Matching tool call id.</summary>
     public string ToolCallId { get; }
 

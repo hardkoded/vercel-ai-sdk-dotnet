@@ -51,7 +51,7 @@ public static class AmazonBedrockMessages
             assistantContent = null;
         }
 
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             if (message is SystemModelMessage systemMessage)
             {

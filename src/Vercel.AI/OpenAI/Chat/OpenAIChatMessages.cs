@@ -110,7 +110,7 @@ public static class OpenAIChatMessages
     public static OpenAIChatMessageResult Convert(IReadOnlyList<ModelMessage> prompt, string systemMessageMode = "system")
     {
         var messages = new List<OpenAIChatPromptMessage>();
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {
