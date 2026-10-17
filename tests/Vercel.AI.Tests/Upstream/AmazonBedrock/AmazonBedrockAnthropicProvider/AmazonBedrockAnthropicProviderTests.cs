@@ -9,7 +9,8 @@ using BedrockProvider = Vercel.AI.AmazonBedrock.AmazonBedrockAnthropicProvider;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockAnthropicProvider;
 
-public sealed class AmazonBedrockAnthropicProviderTests
+[Collection("BedrockEndpointEnvironment")]
+public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnvironment
 {
     [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should build correct URL for non-streaming requests", Coverage = UpstreamCoverage.Covered)]
@@ -64,6 +65,30 @@ public sealed class AmazonBedrockAnthropicProviderTests
         Assert.Equal("tool", transformed["tool_choice"]!["type"]!.GetValue<string>());
         Assert.Equal("my_tool", transformed["tool_choice"]!["name"]!.GetValue<string>());
         Assert.Null(transformed["tool_choice"]!["disable_parallel_tool_use"]);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should pass custom baseURL without loading a region", Coverage = UpstreamCoverage.Covered)]
+    public void Passes_a_custom_base_url_without_loading_a_region()
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions
+        {
+            Region = "not a region",
+            ApiKey = "test-api-key",
+            BaseUrl = "https://custom-bedrock.amazonaws.com",
+        });
+        Assert.Equal("https://custom-bedrock.amazonaws.com", provider.ResolveBaseUrl());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::prefers the service-specific endpoint over the global endpoint without loading a region", Coverage = UpstreamCoverage.Covered)]
+    public void Prefers_the_service_specific_endpoint_over_the_global_endpoint()
+    {
+        Environment.SetEnvironmentVariable("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "https://runtime.example.com/");
+        Environment.SetEnvironmentVariable("AWS_ENDPOINT_URL", "https://global.example.com");
+
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "not a region", ApiKey = "test-api-key" });
+        Assert.Equal("https://runtime.example.com", provider.ResolveBaseUrl());
     }
 
     [Fact]

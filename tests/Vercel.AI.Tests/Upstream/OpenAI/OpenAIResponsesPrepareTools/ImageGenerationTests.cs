@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.OpenAI.OpenAIResponsesPrepareTools.OpenAIResponsesPrepareToolsSupport;
 
@@ -9,6 +10,19 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIResponsesPrepareTools;
 
 public sealed class ImageGenerationTests
 {
+    [Theory]
+    [InlineData("gpt-image-2.5-flare", "xhigh")]
+    [InlineData("gpt-image-2.5-flare", "max")]
+    [InlineData("gpt-image-2.5-sunburst", "xhigh")]
+    [InlineData("gpt-image-2.5-sunburst", "max")]
+    [UpstreamTest("packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > image generation > %s quality::should pass %s quality", Coverage = UpstreamCoverage.Covered)]
+    public void Should_pass_quality(string model, string quality)
+    {
+        var tool = OpenAITools.ImageGeneration(new OpenAIImageGenerationToolOptions { Model = model, Quality = quality });
+        var result = Prepare(null, LanguageModelTool.ProviderDefined("openai.image_generation", "image_generation", tool.Args));
+
+        AssertTools(result, "[{\"type\":\"image_generation\",\"model\":\"" + model + "\",\"quality\":\"" + quality + "\"}]");
+    }
     [Fact]
     [UpstreamTest("packages/openai/src/responses/openai-responses-prepare-tools.test.ts::prepareResponsesTools > image generation::should prepare image_generation tool with all options", Coverage = UpstreamCoverage.Covered)]
     public void Should_prepare_image_generation_tool_with_all_options()
