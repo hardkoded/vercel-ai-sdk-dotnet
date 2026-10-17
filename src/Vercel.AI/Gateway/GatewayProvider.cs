@@ -207,13 +207,15 @@ public sealed class GatewayLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
+        // Built outside the try so a missing key surfaces as it is.
+        var headers = _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false, options.Headers);
         try
         {
             using var document = await _provider.Http.SendJsonAsync(
                 HttpMethod.Post,
                 _provider.Route("language-model"),
                 V4Json.CallOptions(options),
-                _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, false, options.Headers),
+                headers,
                 cancellationToken).ConfigureAwait(false);
             return V4Json.ParseGenerate(document.RootElement);
         }
@@ -228,13 +230,14 @@ public sealed class GatewayLanguageModel : ILanguageModel
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
         var json = V4Json.CallOptions(options);
+        var headers = _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers);
         ProviderSseResponse sse;
         try
         {
             sse = await _provider.Http.OpenSseResponseAsync(
                 _provider.Route("language-model"),
                 json,
-                _provider.Headers("ai-language-model-specification-version", "4", "ai-language-model-id", ModelId, true, options.Headers),
+                headers,
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

@@ -207,7 +207,7 @@ public static class V4Json
 
     private static string? ReadString(JsonElement root, string name)
     {
-        return root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 
     private static IReadOnlyList<CallWarning> ReadWarnings(JsonElement root)
@@ -245,7 +245,7 @@ public static class V4Json
             error.Clone(),
             ReadString(error, "type"),
             null,
-            error.TryGetProperty("statusCode", out var status) && status.TryGetInt32(out var code) ? code : null,
+            error.TryGetProperty("statusCode", out var status) && status.ValueKind == JsonValueKind.Number && status.TryGetInt32(out var code) ? code : null,
             error.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False ? retryable.GetBoolean() : null));
     }
 
