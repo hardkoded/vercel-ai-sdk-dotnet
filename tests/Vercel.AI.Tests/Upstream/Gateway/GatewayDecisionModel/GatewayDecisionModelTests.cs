@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel.GatewayDecisionModelSupport;
@@ -18,6 +19,21 @@ public sealed class GatewayDecisionModelTests
     public void Should_report_all_question_types_as_supported()
     {
         Assert.Equal(new[] { "choice", "score", "boolean" }, Setup().Model.SupportedQuestionTypes);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "routes the deprecated factory and model method through the decision protocol", Coverage = UpstreamCoverage.Covered)]
+    public async Task Routes_the_deprecated_factory_and_model_method_through_the_decision_protocol()
+    {
+        var (_, capture) = Setup();
+        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" }, capture);
+#pragma warning disable CS0618
+        var model = provider.EvaluationModel("typesafe-ai/jev");
+        await model.DoEvaluateAsync(EvaluationModelCall.From(Call(null)), CancellationToken.None);
+#pragma warning restore CS0618
+        Assert.Equal("https://api.test.com/decision-model", capture.Uri);
+        Assert.Equal("4", capture.Headers["ai-decision-model-specification-version"]);
+        Assert.False(capture.Headers.ContainsKey("ai-evaluation-model-specification-version"));
     }
 
     public static TheoryData<string, List<object?>> StatePartsCases()

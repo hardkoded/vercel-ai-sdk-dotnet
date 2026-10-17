@@ -38,6 +38,24 @@ public sealed class GatewayDecisionModelDoDecideTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should include o11y headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_include_o11y_headers()
+    {
+        var o11yHeaders = new Dictionary<string, string>
+        {
+            ["ai-o11y-deployment-id"] = "deployment-1",
+            ["ai-o11y-environment"] = "production",
+            ["ai-o11y-region"] = "iad1",
+        };
+        var (model, capture) = Setup(o11yHeaders: o11yHeaders);
+        await model.DoDecideAsync(Call());
+        foreach (var pair in o11yHeaders)
+        {
+            Assert.Equal(pair.Value, capture.Headers[pair.Key]);
+        }
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should send state and questions in request body", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_state_and_questions_in_request_body()
     {

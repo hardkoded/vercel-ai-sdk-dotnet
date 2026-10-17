@@ -63,10 +63,10 @@ internal static class GatewayDecisionModelSupport
     }
 
     /// <summary>Builds a model whose requests are answered with <paramref name="body"/> (a decision-model response).</summary>
-    internal static (Vercel.AI.Gateway.GatewayDecisionModel Model, OpenAICapture Capture) Setup(string? body = null, HttpStatusCode status = HttpStatusCode.OK)
+    internal static (Vercel.AI.Gateway.GatewayDecisionModel Model, OpenAICapture Capture) Setup(string? body = null, HttpStatusCode status = HttpStatusCode.OK, IReadOnlyDictionary<string, string>? o11yHeaders = null)
     {
         var capture = new OpenAICapture { ResponseJson = body ?? "{\"answers\":" + DummyAnswers + "}", Status = status };
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" }, capture);
+        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com", O11yHeaders = o11yHeaders }, capture);
         return (provider.DecisionModel("typesafe-ai/jev"), capture);
     }
 
