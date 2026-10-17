@@ -363,6 +363,22 @@ public sealed class DecisionLanguageModelTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "restores the wrapped model and provider across workflow hooks", Coverage = UpstreamCoverage.Covered)]
+    public async Task Restores_the_wrapped_model_and_provider_across_workflow_hooks()
+    {
+        var (model, language, _) = Setup();
+
+        var serialized = DecisionLanguageModel.Serialize(model);
+        Assert.Same(language, serialized.Model);
+        var restored = DecisionLanguageModel.Deserialize(serialized);
+        await restored.DoDecideAsync(Call());
+
+        Assert.Equal("test.decision", restored.Provider);
+        Assert.Equal("test-model", restored.ModelId);
+        Assert.Single(language.Calls);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "sends images as files and preserves state part order in the prompt", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_images_as_files_and_preserves_state_part_order_in_the_prompt()
     {
