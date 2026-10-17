@@ -27,7 +27,7 @@ public sealed class Tool
     /// <summary>Tool description.</summary>
     public string? Description { get; }
 
-    /// <summary>JSON Schema for the arguments.</summary>
+    /// <summary>JSON Schema for the arguments. Undefined for a provider-defined tool declared without one.</summary>
     public JsonElement InputSchema { get; }
 
     /// <summary>Executes the tool and returns a JSON string. Null means the call is not executed locally.</summary>
@@ -48,11 +48,15 @@ public sealed class Tool
     /// </summary>
     public JsonElement? ProviderOptions { get; set; }
 
-    private Tool(string providerToolId, string name, JsonElement args)
+    private Tool(string providerToolId, string name, JsonElement args, JsonElement? inputSchema)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         ProviderToolId = providerToolId ?? throw new ArgumentNullException(nameof(providerToolId));
         ProviderToolArgs = args;
+        if (inputSchema is { } schema)
+        {
+            InputSchema = schema;
+        }
     }
 
     /// <summary>Provider-defined tool id (<c>&lt;provider&gt;.&lt;tool&gt;</c>), or null for a function tool.</summary>
@@ -70,7 +74,16 @@ public sealed class Tool
     /// </summary>
     public static Tool ProviderDefined(string id, string name, JsonElement args)
     {
-        return new Tool(id, name, args.Clone());
+        return new Tool(id, name, args.Clone(), null);
+    }
+
+    /// <summary>
+    /// Declares a provider-defined tool with an input schema. The input of a call the provider ran is parsed with the
+    /// schema, so a property the schema does not declare is dropped, as a Zod object does. Maps to a provider tool's <c>inputSchema</c>.
+    /// </summary>
+    public static Tool ProviderDefined(string id, string name, JsonElement args, JsonElement inputSchema)
+    {
+        return new Tool(id, name, args.Clone(), inputSchema.Clone());
     }
 
     /// <summary>Creates a tool from a JSON schema string.</summary>

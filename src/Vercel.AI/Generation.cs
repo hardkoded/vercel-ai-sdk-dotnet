@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -328,7 +329,7 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted };
+                                var call = ParseProviderExecutedInput(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted });
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
@@ -734,7 +735,12 @@ internal static class Generation
         var assistantParts = new List<AssistantContentPart>();
         foreach (var part in generated.Content)
         {
-            var resolved = part is GeneratedToolApprovalRequest request ? ResolveApprovalRequest(request, generated.Content) : part;
+            var resolved = part switch
+            {
+                GeneratedToolApprovalRequest request => ResolveApprovalRequest(request, generated.Content),
+                GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
+                _ => part,
+            };
             content.Add(resolved);
             switch (resolved)
             {
@@ -992,6 +998,35 @@ internal static class Generation
                 model.ModelId,
                 generated.Content);
         }
+    }
+
+    // Upstream parses the input of a tool call with the tool's input schema. Only a provider-defined tool declared with a
+    // schema is parsed here, so the input of any other call is kept as the model sent it.
+    private static GeneratedToolCall ParseProviderExecutedInput(GenerateTextOptions options, GeneratedToolCall call)
+    {
+        if (!call.ProviderExecuted)
+        {
+            return call;
+        }
+
+        var tool = FindTool(options, call.ToolName);
+        if (tool is not { IsProviderDefined: true } || tool.InputSchema.ValueKind != JsonValueKind.Object)
+        {
+            return call;
+        }
+
+        JsonNode? input;
+        try
+        {
+            input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+        }
+        catch (JsonException)
+        {
+            return call;
+        }
+
+        var parsed = JsonSchemaProjection.Project(tool.InputSchema, input);
+        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true };
     }
 
     private static Tool? FindTool(GenerateTextOptions options, string name)
