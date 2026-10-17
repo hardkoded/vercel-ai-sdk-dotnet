@@ -141,6 +141,8 @@ internal sealed class DecisionMockModel : IEvaluationDecisionCaller
 /// <summary>Maps to <c>MockVideoModelV4</c>.</summary>
 internal sealed class MockVideoModel : IVideoModel
 {
+    public string SpecificationVersion => "v4";
+
     public string Provider => "mock-provider";
 
     public string ModelId => "mock-model-id";
