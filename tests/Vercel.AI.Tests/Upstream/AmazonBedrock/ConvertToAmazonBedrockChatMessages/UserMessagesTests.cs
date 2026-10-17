@@ -2,82 +2,157 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Provider;
+using static Vercel.AI.Tests.Upstream.AmazonBedrock.BedrockStreamSupport;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.ConvertToAmazonBedrockChatMessages;
 
 public sealed class UserMessagesTests
 {
-    private const string ModelId = "meta.llama3-70b-instruct-v1:0";
+    private const string Suite = "packages/amazon-bedrock/src/convert-to-amazon-bedrock-chat-messages.test.ts::user messages::";
 
-    private static IReadOnlyDictionary<string, JsonElement> CachePoint(string cachePointJson)
+    [Fact]
+    [UpstreamTest(Suite + "should convert text part to guardContent when guardContent provider option is true", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_text_part_to_guardContent_when_guardContent_provider_option_is_true()
     {
-        using var document = JsonDocument.Parse("{\"cachePoint\":" + cachePointJson + "}");
-        return new Dictionary<string, JsonElement> { ["bedrock"] = document.RootElement.Clone() };
-    }
-
-    private static void AssertJson(string expected, JsonNode? actual)
-    {
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), actual), actual?.ToJsonString());
+        AssertText("Grounding text", """{"amazonBedrock":{"guardContent":true}}""", """{"guardContent":{"text":{"text":"Grounding text"}}}""");
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-to-amazon-bedrock-chat-messages.test.ts::user messages::should add cache point to user message content when specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Suite + "should convert text part to guardContent with qualifiers", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_text_part_to_guardContent_with_qualifiers()
+    {
+        AssertText(
+            "Grounding text",
+            """{"amazonBedrock":{"guardContent":true,"guardContentQualifiers":["grounding_source"]}}""",
+            """{"guardContent":{"text":{"text":"Grounding text","qualifiers":["grounding_source"]}}}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert text part to guardContent with multiple qualifiers", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_text_part_to_guardContent_with_multiple_qualifiers()
+    {
+        AssertText(
+            "Query text",
+            """{"amazonBedrock":{"guardContent":true,"guardContentQualifiers":["grounding_source","query"]}}""",
+            """{"guardContent":{"text":{"text":"Query text","qualifiers":["grounding_source","query"]}}}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert text part as normal text when guardContent is false", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_text_part_as_normal_text_when_guardContent_is_false()
+    {
+        AssertText("Normal text", """{"amazonBedrock":{"guardContent":false}}""", """{"text":"Normal text"}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert text part as normal text when no provider options", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_text_part_as_normal_text_when_no_provider_options()
+    {
+        AssertText("Normal text", null, """{"text":"Normal text"}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert image part to guardContent when guardContent provider option is true", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_image_part_to_guardContent_when_guardContent_provider_option_is_true()
+    {
+        AssertImage("""{"amazonBedrock":{"guardContent":true}}""", """{"guardContent":{"image":{"format":"png","source":{"bytes":"AAECAw=="}}}}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert image part as normal image when guardContent is false", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_image_part_as_normal_image_when_guardContent_is_false()
+    {
+        AssertImage("""{"amazonBedrock":{"guardContent":false}}""", """{"image":{"format":"png","source":{"bytes":"AAECAw=="}}}""");
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should convert image part as normal image when no provider options", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_image_part_as_normal_image_when_no_provider_options()
+    {
+        AssertImage(null, """{"image":{"format":"png","source":{"bytes":"AAECAw=="}}}""");
+    }
+
+
+    [Fact]
+    [UpstreamTest(Suite + "should add cache point to user message content when specified", Coverage = UpstreamCoverage.Covered)]
     public void Should_add_cache_point_to_user_message_content_when_specified()
     {
-        AmazonBedrockMessages.Convert(ModelId, new ModelMessage[]
-        {
-            new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = CachePoint("{\"type\":\"default\"}") },
-        }, out var system, out var messages);
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default"}}}""") } },
+            out _,
+            out var messages);
 
-        AssertJson("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default"}}]}]""", messages);
-        Assert.Null(system);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default"}}]}]"""), messages));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-to-amazon-bedrock-chat-messages.test.ts::user messages::should add cache point with 5m TTL to user message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Suite + "should add cache point with 5m TTL to user message", Coverage = UpstreamCoverage.Covered)]
     public void Should_add_cache_point_with_5m_TTL_to_user_message()
     {
-        AmazonBedrockMessages.Convert(ModelId, new ModelMessage[]
-        {
-            new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = CachePoint("{\"type\":\"default\",\"ttl\":\"5m\"}") },
-        }, out var system, out var messages);
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"5m"}}}""") } },
+            out _,
+            out var messages);
 
-        AssertJson("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"5m"}}]}]""", messages);
-        Assert.Null(system);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"5m"}}]}]"""), messages));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-to-amazon-bedrock-chat-messages.test.ts::user messages::should add cache point with 1h TTL to user message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Suite + "should add cache point with 1h TTL to user message", Coverage = UpstreamCoverage.Covered)]
     public void Should_add_cache_point_with_1h_TTL_to_user_message()
     {
-        AmazonBedrockMessages.Convert(ModelId, new ModelMessage[]
-        {
-            new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = CachePoint("{\"type\":\"default\",\"ttl\":\"1h\"}") },
-        }, out var system, out var messages);
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"1h"}}}""") } },
+            out _,
+            out var messages);
 
-        AssertJson("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"1h"}}]}]""", messages);
-        Assert.Null(system);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"1h"}}]}]"""), messages));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-to-amazon-bedrock-chat-messages.test.ts::user messages::should add cache point to user content part when specified", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Suite + "should add cache point to user content part when specified", Coverage = UpstreamCoverage.Covered)]
     public void Should_add_cache_point_to_user_content_part_when_specified()
     {
-        AmazonBedrockMessages.Convert(ModelId, new ModelMessage[]
-        {
-            new UserModelMessage(new UserContentPart[]
-            {
-                new TextContentPart("Hello"),
-                new TextContentPart("cached") { ProviderOptions = CachePoint("{\"type\":\"default\",\"ttl\":\"5m\"}") },
-                new TextContentPart("World"),
-            }),
-        }, out var system, out var messages);
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello"), new TextContentPart("cached") { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"5m"}}}""") }, new TextContentPart("World") }) },
+            out _,
+            out var messages);
 
-        AssertJson("""[{"role":"user","content":[{"text":"Hello"},{"text":"cached"},{"cachePoint":{"type":"default","ttl":"5m"}},{"text":"World"}]}]""", messages);
-        Assert.Null(system);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"text":"cached"},{"cachePoint":{"type":"default","ttl":"5m"}},{"text":"World"}]}]"""), messages));
+    }
+
+    private static void AssertText(string text, string? providerOptions, string expectedBlock)
+    {
+        var part = new TextContentPart(text) { ProviderOptions = providerOptions is null ? null : Options(providerOptions) };
+        AssertUserContent(part, expectedBlock);
+    }
+
+    private static void AssertImage(string? providerOptions, string expectedBlock)
+    {
+        var part = new FileContentPart("image/png", null, new byte[] { 0, 1, 2, 3 }, null)
+        {
+            ProviderOptions = providerOptions is null ? null : Options(providerOptions),
+        };
+        AssertUserContent(part, expectedBlock);
+    }
+
+    private static void AssertUserContent(UserContentPart part, string expectedBlock)
+    {
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new[] { part }) },
+            out _,
+            out var messages);
+
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("[{\"role\":\"user\",\"content\":[" + expectedBlock + "]}]"),
+            messages));
     }
 }

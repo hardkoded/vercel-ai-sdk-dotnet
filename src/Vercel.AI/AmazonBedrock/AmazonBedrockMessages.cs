@@ -62,7 +62,11 @@ public static class AmazonBedrockMessages
 
                 system ??= new JsonArray();
                 system.Add(new JsonObject { ["text"] = systemMessage.Content });
-                PushCachePoint(system, systemMessage.ProviderOptions);
+                if (CachePoint(systemMessage.ProviderOptions) is { } cachePoint)
+                {
+                    system.Add(cachePoint);
+                }
+
                 continue;
             }
 
@@ -74,17 +78,27 @@ public static class AmazonBedrockMessages
                 {
                     if (part is TextContentPart text)
                     {
-                        userContent.Add(new JsonObject { ["text"] = text.Text });
+                        userContent.Add(TextBlock(text));
                     }
                     else if (part is FileContentPart file)
                     {
-                        userContent.Add(FileBlock(file, ref documentCount));
+                        var block = FileBlock(file, ref documentCount);
+                        var guardImage = file.Data != null
+                            && block.ContainsKey("image")
+                            && GuardContent(file.ProviderOptions) is true;
+                        userContent.Add(guardImage ? new JsonObject { ["guardContent"] = block } : block);
                     }
 
-                    PushCachePoint(userContent, part is TextContentPart t ? t.ProviderOptions : (part as FileContentPart)?.ProviderOptions);
+                    if (CachePoint(part is TextContentPart t ? t.ProviderOptions : (part as FileContentPart)?.ProviderOptions) is { } partCachePoint)
+                    {
+                        userContent.Add(partCachePoint);
+                    }
                 }
 
-                PushCachePoint(userContent, user.ProviderOptions);
+                if (CachePoint(user.ProviderOptions) is { } userContentCachePoint)
+                {
+                    userContent.Add(userContentCachePoint);
+                }
 
                 continue;
             }
@@ -131,10 +145,16 @@ public static class AmazonBedrockMessages
                         });
                     }
 
-                    PushCachePoint(assistantContent, part.ProviderOptions);
+                    if (CachePoint(part.ProviderOptions) is { } partCachePoint)
+                    {
+                        assistantContent.Add(partCachePoint);
+                    }
                 }
 
-                PushCachePoint(assistantContent, assistant.ProviderOptions);
+                if (CachePoint(assistant.ProviderOptions) is { } assistantContentCachePoint)
+                {
+                    assistantContent.Add(assistantContentCachePoint);
+                }
             }
         }
 
@@ -156,25 +176,84 @@ public static class AmazonBedrockMessages
         return false;
     }
 
-    private static void PushCachePoint(JsonArray content, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static JsonObject TextBlock(TextContentPart part)
     {
-        var cachePoint = GetCachePoint(providerOptions, "amazonBedrock") ?? GetCachePoint(providerOptions, "bedrock");
-        if (cachePoint is { } value)
+        var options = BedrockOptions(part.ProviderOptions);
+        if (GuardContent(options) is not true)
         {
-            content.Add(new JsonObject { ["cachePoint"] = JsonNode.Parse(value.GetRawText()) });
+            return new JsonObject { ["text"] = part.Text };
         }
+
+        var text = new JsonObject { ["text"] = part.Text };
+        if (options!.Value.TryGetProperty("guardContentQualifiers", out var qualifiers) && qualifiers.ValueKind != JsonValueKind.Null)
+        {
+            if (qualifiers.ValueKind != JsonValueKind.Array)
+            {
+                throw new ArgumentException("Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content.");
+            }
+
+            var list = new JsonArray();
+            foreach (var qualifier in qualifiers.EnumerateArray())
+            {
+                var value = qualifier.ValueKind == JsonValueKind.String ? qualifier.GetString() : null;
+                if (value is not ("grounding_source" or "query" or "guard_content"))
+                {
+                    throw new ArgumentException("Bedrock guardContentQualifiers must be an array of grounding_source, query, or guard_content.");
+                }
+
+                list.Add(value);
+            }
+
+            text["qualifiers"] = list;
+        }
+
+        return new JsonObject { ["guardContent"] = new JsonObject { ["text"] = text } };
     }
 
-    private static JsonElement? GetCachePoint(IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    /// <summary>Reads the options bag from <c>amazonBedrock</c>, then <c>bedrock</c>.</summary>
+    private static JsonElement? BedrockOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        if (providerOptions != null
-            && providerOptions.TryGetValue(key, out var options)
-            && options.ValueKind == JsonValueKind.Object
-            && options.TryGetProperty("cachePoint", out var cachePoint)
-            && cachePoint.ValueKind != JsonValueKind.Null
-            && cachePoint.ValueKind != JsonValueKind.Undefined)
+        foreach (var key in new[] { "amazonBedrock", "bedrock" })
         {
-            return cachePoint;
+            if (providerOptions != null && providerOptions.TryGetValue(key, out var bag) && bag.ValueKind == JsonValueKind.Object)
+            {
+                return bag;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool? GuardContent(IReadOnlyDictionary<string, JsonElement>? providerOptions) => GuardContent(BedrockOptions(providerOptions));
+
+    private static bool? GuardContent(JsonElement? options)
+    {
+        if (options is not { } bag || !bag.TryGetProperty("guardContent", out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+        {
+            throw new ArgumentException("Bedrock guardContent must be a boolean.");
+        }
+
+        return value.GetBoolean();
+    }
+
+    /// <summary>Reads <c>cachePoint</c> from <c>amazonBedrock</c>, then <c>bedrock</c>, and wraps it as a content block.</summary>
+    private static JsonObject? CachePoint(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        foreach (var key in new[] { "amazonBedrock", "bedrock" })
+        {
+            if (providerOptions != null
+                && providerOptions.TryGetValue(key, out var bag)
+                && bag.ValueKind == JsonValueKind.Object
+                && bag.TryGetProperty("cachePoint", out var cachePoint)
+                && cachePoint.ValueKind == JsonValueKind.Object)
+            {
+                return new JsonObject { ["cachePoint"] = JsonNode.Parse(cachePoint.GetRawText()) };
+            }
         }
 
         return null;

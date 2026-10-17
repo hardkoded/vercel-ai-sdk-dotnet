@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -366,8 +367,7 @@ public sealed class BedrockMantleRouteTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should create a responses model via .responses()",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The responses model id is bedrock-mantle.responses. supportsWebSearchSourcesInclude is not a separate flag.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Creates_a_responses_model()
     {
         var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
@@ -383,28 +383,28 @@ public sealed class BedrockMantleRouteTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should throw NoSuchModelError for embeddingModel",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Embedding calls throw AiSdkException. There is no NoSuchModelError type.")]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should throw NoSuchModelError for embeddingModel", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_embedding_models()
     {
         var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "k", SecretAccessKey = "s" });
-        var exception = Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("invalid-model-id"));
-        Assert.Contains("embedding", exception.Message);
-        Assert.Contains("invalid-model-id", exception.Message);
+        Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("invalid-model-id"));
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should throw NoSuchModelError for imageModel",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Image calls throw AiSdkException. There is no NoSuchModelError type.")]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should throw NoSuchModelError for imageModel", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_image_models()
     {
         var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "k", SecretAccessKey = "s" });
-        var exception = Assert.Throws<AiSdkException>(() => provider.ImageModel("invalid-model-id"));
-        Assert.Contains("image", exception.Message);
+        Assert.Throws<NoSuchModelError>(() => provider.ImageModel("invalid-model-id"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/mantle/bedrock-mantle-provider.test.ts::bedrock-mantle-provider::should throw an error when using new keyword", Coverage = UpstreamCoverage.Covered)]
+    public void Throws_an_error_when_using_new_keyword()
+    {
+        var provider = BedrockMantleProvider.Create(new BedrockMantleOptions { AccessKeyId = "k", SecretAccessKey = "s" });
+        var exception = Assert.Throws<InvalidOperationException>(() => provider.New("test-model-id"));
+        Assert.Equal("The Bedrock Mantle model function cannot be called with the new keyword.", exception.Message);
     }
 
     private const string ChatResponse = "{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}";

@@ -4,12 +4,15 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
+using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 using BedrockProvider = Vercel.AI.AmazonBedrock.AmazonBedrockAnthropicProvider;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockAnthropicProvider;
 
-public sealed class AmazonBedrockAnthropicProviderTests
+[Collection("BedrockEndpointEnvironment")]
+public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnvironment
 {
     [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should build correct URL for non-streaming requests", Coverage = UpstreamCoverage.Covered)]
@@ -67,6 +70,30 @@ public sealed class AmazonBedrockAnthropicProviderTests
     }
 
     [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should pass custom baseURL without loading a region", Coverage = UpstreamCoverage.Covered)]
+    public void Passes_a_custom_base_url_without_loading_a_region()
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions
+        {
+            Region = "not a region",
+            ApiKey = "test-api-key",
+            BaseUrl = "https://custom-bedrock.amazonaws.com",
+        });
+        Assert.Equal("https://custom-bedrock.amazonaws.com", provider.ResolveBaseUrl());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::prefers the service-specific endpoint over the global endpoint without loading a region", Coverage = UpstreamCoverage.Covered)]
+    public void Prefers_the_service_specific_endpoint_over_the_global_endpoint()
+    {
+        Environment.SetEnvironmentVariable("AWS_ENDPOINT_URL_BEDROCK_RUNTIME", "https://runtime.example.com/");
+        Environment.SetEnvironmentVariable("AWS_ENDPOINT_URL", "https://global.example.com");
+
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "not a region", ApiKey = "test-api-key" });
+        Assert.Equal("https://runtime.example.com", provider.ResolveBaseUrl());
+    }
+
+    [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::resolves the Bedrock Runtime endpoint for an AWS ISO region", Coverage = UpstreamCoverage.Covered)]
     public void Resolves_the_iso_runtime_endpoint()
     {
@@ -108,16 +135,56 @@ public sealed class AmazonBedrockAnthropicProviderTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should throw NoSuchModelError for embeddingModel",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Embedding calls throw. The exception type is AiSdkException rather than NoSuchModelError.")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should throw NoSuchModelError for embeddingModel", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_embedding_models()
     {
-        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { AccessKeyId = "k", SecretAccessKey = "s" });
-        var exception = Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("invalid-model-id"));
-        Assert.Contains("invalid-model-id", exception.Message);
-        Assert.Contains("embedding", exception.Message);
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("invalid-model-id"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should throw NoSuchModelError for imageModel", Coverage = UpstreamCoverage.Covered)]
+    public void Rejects_image_models()
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        Assert.Throws<NoSuchModelError>(() => provider.ImageModel("invalid-model-id"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should include anthropicTools", Coverage = UpstreamCoverage.Covered)]
+    public void Includes_the_anthropic_tools()
+    {
+        Assert.Same(AnthropicProvider.Tools, BedrockProvider.Tools);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should throw an error when using new keyword", Coverage = UpstreamCoverage.Covered)]
+    public void Throws_an_error_when_using_new_keyword()
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        var exception = Assert.Throws<InvalidOperationException>(() => provider.New("test-model-id"));
+        Assert.Equal("The Bedrock Anthropic model function cannot be called with the new keyword.", exception.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should create a language model with default settings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Creates_a_language_model_with_default_settings()
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        const string modelId = "anthropic.claude-3-5-sonnet-20241022-v2:0";
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(provider.LanguageModel(modelId));
+        Assert.Equal(modelId, model.ModelId);
+
+        var inner = model.CreateInnerProvider();
+        Assert.Contains("bedrock-runtime", inner.Options.BaseUrl);
+        Assert.Equal("bedrock.anthropic.messages", inner.Options.Name);
+        Assert.Empty(inner.SupportedUrls);
+        Assert.True(inner.SupportsNativeStructuredOutput);
+        Assert.True(inner.SupportsStrictTools);
+        Assert.EndsWith("/model/anthropic.claude-3-5-sonnet-20241022-v2%3A0/invoke-with-response-stream", inner.RequestUri(modelId, true).AbsoluteUri);
+        Assert.Equal("bedrock-2023-05-31", inner.TransformRequestBody(new JsonObject(), new List<string>())["anthropic_version"]!.GetValue<string>());
+        var headers = await inner.CreateHeadersAsync(new List<string>(), null, null, CancellationToken.None);
+        Assert.Contains("ai-sdk-amazon-bedrock/", headers["user-agent"]);
     }
 
     [Fact]

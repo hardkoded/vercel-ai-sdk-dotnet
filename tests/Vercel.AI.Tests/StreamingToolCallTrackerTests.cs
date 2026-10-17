@@ -48,22 +48,17 @@ public sealed class StreamingToolCallTrackerTests
         AssertCall(call, "call_1", "valid_tool", "{\"value\":1}");
     }
 
-    [Fact]
-    public void ShouldRetainContinuationArgumentsForABlankNameWithAMatchingId()
+    [Theory]
+    [InlineData(null, "call_1", "")]
+    [InlineData(0, null, "   ")]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should retain continuation arguments for a $description",
+        Coverage = UpstreamCoverage.Covered)]
+    public void ShouldRetainContinuationArgumentsForABlankName(int? continuationIndex, string? continuationId, string name)
     {
         var tracker = new StreamingToolCallTracker();
         tracker.ProcessDelta(Delta(0, "call_1", "read_file", "{\"pa"));
-        tracker.ProcessDelta(Delta(null, "call_1", "", "th\":\"a\"}"));
-        var call = Assert.Single(tracker.Flush());
-        AssertCall(call, "call_1", "read_file", "{\"path\":\"a\"}");
-    }
-
-    [Fact]
-    public void ShouldRetainContinuationArgumentsForAWhitespaceOnlyNameWithAMatchingIndex()
-    {
-        var tracker = new StreamingToolCallTracker();
-        tracker.ProcessDelta(Delta(0, "call_1", "read_file", "{\"pa"));
-        tracker.ProcessDelta(Delta(0, null, "   ", "th\":\"a\"}"));
+        tracker.ProcessDelta(Delta(continuationIndex, continuationId, name, "th\":\"a\"}"));
         var call = Assert.Single(tracker.Flush());
         AssertCall(call, "call_1", "read_file", "{\"path\":\"a\"}");
     }
@@ -82,28 +77,26 @@ public sealed class StreamingToolCallTrackerTests
         AssertCall(calls[2], "generated-3", "read_file", "{\"path\":\"p2\"}");
     }
 
-    [Fact]
-    public void ShouldKeepCompleteSameNameCallsDistinctWithMissingIdsAndAReusedIndex()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("dup")]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep complete same-name calls distinct with $description and a reused index",
+        Coverage = UpstreamCoverage.Covered)]
+    public void ShouldKeepCompleteSameNameCallsDistinctWithAReusedIndex(string? id)
     {
-        AssertSameNameCallsStayDistinct(null, "{\"value\":2}");
+        AssertSameNameCallsStayDistinct(id, "{\"value\":2}");
     }
 
-    [Fact]
-    public void ShouldKeepCompleteSameNameCallsDistinctWithARepeatedIdAndAReusedIndex()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("dup")]
+    [UpstreamTest(
+        "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep a partial same-name call distinct with $description and a reused index",
+        Coverage = UpstreamCoverage.Covered)]
+    public void ShouldKeepAPartialSameNameCallDistinctWithAReusedIndex(string? id)
     {
-        AssertSameNameCallsStayDistinct("dup", "{\"value\":2}");
-    }
-
-    [Fact]
-    public void ShouldKeepAPartialSameNameCallDistinctWithMissingIdsAndAReusedIndex()
-    {
-        AssertSameNameCallsStayDistinct(null, "{\"value\":");
-    }
-
-    [Fact]
-    public void ShouldKeepAPartialSameNameCallDistinctWithARepeatedIdAndAReusedIndex()
-    {
-        AssertSameNameCallsStayDistinct("dup", "{\"value\":");
+        AssertSameNameCallsStayDistinct(id, "{\"value\":");
     }
 
     [Fact]
@@ -308,31 +301,19 @@ public sealed class StreamingToolCallTrackerTests
         Assert.Equal(new[] { "first", "second" }, Names(tracker.Flush()));
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("call_1", "call_2")]
+    [InlineData(null, null)]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should keep same-name calls with empty opening arguments distinct when continuations $description",
         Coverage = UpstreamCoverage.Covered)]
-    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_their_ids()
+    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_repeat_or_omit_their_ids(string? firstContinuationId, string? secondContinuationId)
     {
         var tracker = new StreamingToolCallTracker();
         tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
-        tracker.ProcessDelta(Delta(0, "call_1", null, "{\"city\":\"Berlin\"}"));
+        tracker.ProcessDelta(Delta(0, firstContinuationId, null, "{\"city\":\"Berlin\"}"));
         tracker.ProcessDelta(Delta(0, "call_2", "get_weather", ""));
-        tracker.ProcessDelta(Delta(0, "call_2", null, "{\"city\":\"Paris\"}"));
-        var calls = tracker.Flush();
-        Assert.Equal(2, calls.Count);
-        AssertCall(calls[0], "call_1", "get_weather", "{\"city\":\"Berlin\"}");
-        AssertCall(calls[1], "call_2", "get_weather", "{\"city\":\"Paris\"}");
-    }
-
-    [Fact]
-    public void Should_keep_same_name_calls_with_empty_opening_arguments_distinct_when_continuations_omit_their_ids()
-    {
-        var tracker = new StreamingToolCallTracker();
-        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", ""));
-        tracker.ProcessDelta(Delta(0, null, null, "{\"city\":\"Berlin\"}"));
-        tracker.ProcessDelta(Delta(0, "call_2", "get_weather", ""));
-        tracker.ProcessDelta(Delta(0, null, null, "{\"city\":\"Paris\"}"));
+        tracker.ProcessDelta(Delta(0, secondContinuationId, null, "{\"city\":\"Paris\"}"));
         var calls = tracker.Flush();
         Assert.Equal(2, calls.Count);
         AssertCall(calls[0], "call_1", "get_weather", "{\"city\":\"Berlin\"}");

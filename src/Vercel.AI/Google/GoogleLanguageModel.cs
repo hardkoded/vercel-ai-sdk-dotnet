@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -329,12 +330,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                                 if (reasoningId == null)
                                 {
-                                    block++;
-                                    reasoningId = "reasoning-" + block;
-                                    yield return new ReasoningStartStreamPart(reasoningId);
+                                    reasoningId = (block++).ToString(CultureInfo.InvariantCulture);
+                                    yield return new ReasoningStartStreamPart(reasoningId, reasoning.ProviderMetadata);
                                 }
 
-                                yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
+                                yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text, reasoning.ProviderMetadata);
                             }
                             else if (generated is GeneratedText text)
                             {
@@ -346,12 +346,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                                 if (textId == null)
                                 {
-                                    block++;
-                                    textId = "text-" + block;
-                                    yield return new TextStartStreamPart(textId);
+                                    textId = (block++).ToString(CultureInfo.InvariantCulture);
+                                    yield return new TextStartStreamPart(textId, text.ProviderMetadata);
                                 }
 
-                                yield return new TextDeltaStreamPart(textId, text.Text);
+                                yield return new TextDeltaStreamPart(textId, text.Text, text.ProviderMetadata);
                             }
                             else if (generated is GoogleToolCall tool)
                             {

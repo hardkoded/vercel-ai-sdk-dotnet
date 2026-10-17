@@ -86,4 +86,85 @@ public sealed class DoStreamTests
         var annotations = end.ProviderMetadata!.Value.GetProperty("openai").GetProperty("annotations");
         JsonAssert.Equal(annotations, Annotations().ToJsonString());
     }
+
+    private static string FunctionCallStream(string model, string itemId, string callId, string? @namespace)
+    {
+        var response = new JsonObject { ["id"] = "resp_ns", ["created_at"] = 1741362087, ["model"] = model };
+        var done = new JsonObject
+        {
+            ["type"] = "function_call",
+            ["id"] = itemId,
+            ["call_id"] = callId,
+            ["name"] = "get_weather",
+            ["arguments"] = "{\"location\":\"NYC\"}",
+            ["status"] = "completed",
+        };
+        if (@namespace != null)
+        {
+            done["namespace"] = @namespace;
+        }
+
+        return OpenAIResponsesSupport.Sse(new JsonNode[]
+        {
+            new JsonObject { ["type"] = "response.created", ["response"] = response.DeepClone() },
+            new JsonObject
+            {
+                ["type"] = "response.output_item.added",
+                ["output_index"] = 0,
+                ["item"] = new JsonObject
+                {
+                    ["type"] = "function_call",
+                    ["id"] = itemId,
+                    ["call_id"] = callId,
+                    ["name"] = "get_weather",
+                    ["arguments"] = "",
+                    ["status"] = "in_progress",
+                },
+            },
+            new JsonObject
+            {
+                ["type"] = "response.function_call_arguments.delta",
+                ["item_id"] = itemId,
+                ["output_index"] = 0,
+                ["delta"] = "{\"location\":\"NYC\"}",
+            },
+            new JsonObject
+            {
+                ["type"] = "response.function_call_arguments.done",
+                ["item_id"] = itemId,
+                ["output_index"] = 0,
+                ["arguments"] = "{\"location\":\"NYC\"}",
+            },
+            new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 0, ["item"] = done },
+            new JsonObject
+            {
+                ["type"] = "response.completed",
+                ["response"] = new JsonObject
+                {
+                    ["id"] = "resp_ns",
+                    ["status"] = "completed",
+                    ["usage"] = new JsonObject { ["input_tokens"] = 0, ["output_tokens"] = 0 },
+                },
+            },
+        });
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should preserve namespace on streaming function_call output",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_preserve_namespace_on_streaming_function_call_output()
+    {
+        var events = await OpenAIResponsesSupport.Stream(
+            FunctionCallStream("gpt-5.4", "fc_ns_1", "call_ns_1", "weather_ns"),
+            OpenAIResponsesSupport.TestTools);
+
+        var toolCall = Assert.Single(events.OfType<ToolCallStreamPart>());
+        var openai = toolCall.ProviderMetadata!.Value.GetProperty("openai");
+        Assert.Equal("fc_ns_1", openai.GetProperty("itemId").GetString());
+        Assert.Equal("weather_ns", openai.GetProperty("namespace").GetString());
+
+        var toolInputEnd = Assert.Single(events.OfType<ToolInputEndStreamPart>());
+        Assert.Equal("weather_ns", toolInputEnd.ProviderMetadata!.Value.GetProperty("openai").GetProperty("namespace").GetString());
+    }
 }
