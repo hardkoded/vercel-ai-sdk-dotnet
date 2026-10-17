@@ -43,7 +43,7 @@ public static class AmazonBedrockMessages
                 return;
             }
 
-            if (assistantContent.Count > 0)
+            if (HasContentBlock(assistantContent))
             {
                 built.Add(new JsonObject { ["role"] = "assistant", ["content"] = assistantContent });
             }
@@ -88,6 +88,16 @@ public static class AmazonBedrockMessages
                             && GuardContent(file.ProviderOptions) is true;
                         userContent.Add(guardImage ? new JsonObject { ["guardContent"] = block } : block);
                     }
+
+                    if (CachePoint(part is TextContentPart t ? t.ProviderOptions : (part as FileContentPart)?.ProviderOptions) is { } partCachePoint)
+                    {
+                        userContent.Add(partCachePoint);
+                    }
+                }
+
+                if (CachePoint(user.ProviderOptions) is { } userContentCachePoint)
+                {
+                    userContent.Add(userContentCachePoint);
                 }
 
                 continue;
@@ -112,22 +122,38 @@ public static class AmazonBedrockMessages
             {
                 FlushUser();
                 assistantContent ??= new JsonArray();
-                if (!string.IsNullOrEmpty(assistant.Text))
+                foreach (var part in assistant.Parts)
                 {
-                    assistantContent.Add(new JsonObject { ["text"] = assistant.Text });
+                    if (part is AssistantTextPart text)
+                    {
+                        if (!string.IsNullOrEmpty(text.Text))
+                        {
+                            assistantContent.Add(new JsonObject { ["text"] = text.Text });
+                        }
+                    }
+                    else if (part is AssistantToolCallPart toolCall)
+                    {
+                        var call = toolCall.ToolCall;
+                        assistantContent.Add(new JsonObject
+                        {
+                            ["toolUse"] = new JsonObject
+                            {
+                                ["toolUseId"] = AmazonBedrockToolIds.Normalize(call.ToolCallId, isMistral),
+                                ["name"] = SanitizeToolName(call.ToolName),
+                                ["input"] = ToolInput(call.ArgumentsJson),
+                            },
+                        });
+                    }
+
+                    if (CachePoint(part.ProviderOptions) is { } partCachePoint)
+                    {
+                        assistantContent.Add(partCachePoint);
+                    }
                 }
 
-                foreach (var call in assistant.ToolCalls)
+                if (CachePoint(assistant.ProviderOptions) is { } assistantContentCachePoint)
                 {
-                    assistantContent.Add(new JsonObject
-                    {
-                        ["toolUse"] = new JsonObject
-                        {
-                            ["toolUseId"] = AmazonBedrockToolIds.Normalize(call.ToolCallId, isMistral),
-                            ["name"] = SanitizeToolName(call.ToolName),
-                            ["input"] = ToolInput(call.ArgumentsJson),
-                        },
-                    });
+                    assistantContent.Add(assistantContentCachePoint);
                 }
             }
         }
@@ -135,6 +161,19 @@ public static class AmazonBedrockMessages
         FlushUser();
         FlushAssistant();
         messages = built;
+    }
+
+    private static bool HasContentBlock(JsonArray content)
+    {
+        foreach (var block in content)
+        {
+            if (block is JsonObject o && !o.ContainsKey("cachePoint"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static JsonObject TextBlock(TextContentPart part)

@@ -75,6 +75,59 @@ public sealed class UserMessagesTests
         AssertImage(null, """{"image":{"format":"png","source":{"bytes":"AAECAw=="}}}""");
     }
 
+
+    [Fact]
+    [UpstreamTest(Suite + "should add cache point to user message content when specified", Coverage = UpstreamCoverage.Covered)]
+    public void Should_add_cache_point_to_user_message_content_when_specified()
+    {
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default"}}}""") } },
+            out _,
+            out var messages);
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default"}}]}]"""), messages));
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should add cache point with 5m TTL to user message", Coverage = UpstreamCoverage.Covered)]
+    public void Should_add_cache_point_with_5m_TTL_to_user_message()
+    {
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"5m"}}}""") } },
+            out _,
+            out var messages);
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"5m"}}]}]"""), messages));
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should add cache point with 1h TTL to user message", Coverage = UpstreamCoverage.Covered)]
+    public void Should_add_cache_point_with_1h_TTL_to_user_message()
+    {
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello") }) { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"1h"}}}""") } },
+            out _,
+            out var messages);
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"cachePoint":{"type":"default","ttl":"1h"}}]}]"""), messages));
+    }
+
+    [Fact]
+    [UpstreamTest(Suite + "should add cache point to user content part when specified", Coverage = UpstreamCoverage.Covered)]
+    public void Should_add_cache_point_to_user_content_part_when_specified()
+    {
+        AmazonBedrockMessages.Convert(
+            ModelId,
+            new ModelMessage[] { new UserModelMessage(new UserContentPart[] { new TextContentPart("Hello"), new TextContentPart("cached") { ProviderOptions = Options("""{"bedrock":{"cachePoint":{"type":"default","ttl":"5m"}}}""") }, new TextContentPart("World") }) },
+            out _,
+            out var messages);
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"role":"user","content":[{"text":"Hello"},{"text":"cached"},{"cachePoint":{"type":"default","ttl":"5m"}},{"text":"World"}]}]"""), messages));
+    }
+
     private static void AssertText(string text, string? providerOptions, string expectedBlock)
     {
         var part = new TextContentPart(text) { ProviderOptions = providerOptions is null ? null : Options(providerOptions) };
