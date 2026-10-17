@@ -630,6 +630,9 @@ public sealed class TextContentPart : UserContentPart
 
     /// <summary>Text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider-specific options for this part, such as the Amazon Bedrock <c>guardContent</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 }
 
 /// <summary>A file or image in a user message.</summary>
