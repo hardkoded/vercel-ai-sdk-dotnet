@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.OpenAICompatible;
 

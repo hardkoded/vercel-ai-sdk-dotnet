@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 using Vercel.AI.OpenAICompatible;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI.Provider;
 
