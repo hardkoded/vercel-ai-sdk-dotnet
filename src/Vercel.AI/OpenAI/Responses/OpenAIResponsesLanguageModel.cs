@@ -108,6 +108,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 continue;
             }
 
+            if (OpenAIJson.Bool(tool.ProviderOptions is { } toolOptions && toolOptions.ValueKind == JsonValueKind.Object && toolOptions.TryGetProperty("openai", out var openaiToolOptions) ? openaiToolOptions : null, "omitFromRequestTools") == true)
+            {
+                if (toolChoice is ToolChoice.NamedChoice forced && forced.ToolName == tool.Name)
+                {
+                    throw new UnsupportedFunctionalityException(
+                        "forcing tool \"" + tool.Name + "\" omitted from the request tools array",
+                        "functionality not supported: forcing tool \"" + tool.Name + "\" omitted from the request tools array; use automatic tool choice for history-loaded tools");
+                }
+
+                continue;
+            }
+
             var normalized = OpenAIJsonSchema.Normalize(tool.InputSchema);
             foreach (var warning in normalized.Warnings)
             {
@@ -1159,6 +1171,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         ["call_id"] = tool.ToolCallId,
                         ["output"] = toolOutput,
                     });
+
+                    var additionalTools = AdditionalTools(tool.ProviderMetadata, providerOptionsName);
+                    if (additionalTools != null)
+                    {
+                        input.Add(new JsonObject
+                        {
+                            ["type"] = "additional_tools",
+                            ["role"] = "developer",
+                            ["tools"] = additionalTools,
+                        });
+                    }
+
                     break;
                 default:
                     throw new AiSdkException("Unsupported role: " + message.Role);
@@ -1166,6 +1190,77 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return new ResponsesInput(input, warnings);
+    }
+
+    // Function definitions loaded immediately after an ordinary tool result. A malformed list is an error.
+    private static JsonArray? AdditionalTools(JsonElement? toolResultOptions, string providerOptionsName)
+    {
+        if (toolResultOptions is not { ValueKind: JsonValueKind.Object } root)
+        {
+            return null;
+        }
+
+        JsonElement options;
+        if (!root.TryGetProperty(providerOptionsName, out options) && !(providerOptionsName != "openai" && root.TryGetProperty("openai", out options)))
+        {
+            return null;
+        }
+
+        if (options.ValueKind != JsonValueKind.Object || !options.TryGetProperty("additionalTools", out var list))
+        {
+            return null;
+        }
+
+        if (list.ValueKind != JsonValueKind.Array)
+        {
+            throw new AiSdkException("Invalid additionalTools: expected an array of function definitions.");
+        }
+
+        var tools = new JsonArray();
+        foreach (var definition in list.EnumerateArray())
+        {
+            tools.Add(ValidateAdditionalTool(definition));
+        }
+
+        return tools.Count == 0 ? null : tools;
+    }
+
+    private static JsonNode ValidateAdditionalTool(JsonElement definition)
+    {
+        if (definition.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiSdkException("Invalid additionalTools: each definition must be an object.");
+        }
+
+        var hasName = false;
+        var hasParameters = false;
+        foreach (var property in definition.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type" when property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() == "function":
+                    break;
+                case "name" when property.Value.ValueKind == JsonValueKind.String && property.Value.GetString()!.Length > 0:
+                    hasName = true;
+                    break;
+                case "description" when property.Value.ValueKind == JsonValueKind.String:
+                    break;
+                case "parameters" when property.Value.ValueKind == JsonValueKind.Object:
+                    hasParameters = true;
+                    break;
+                case "strict" when property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False:
+                    break;
+                default:
+                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+            }
+        }
+
+        if (!hasName || !hasParameters || !definition.TryGetProperty("type", out _))
+        {
+            throw new AiSdkException("Invalid additionalTools: a function definition needs type, name and parameters.");
+        }
+
+        return JsonNode.Parse(definition.GetRawText())!;
     }
 
     private static string? TextItemId(AssistantContentPart part, string providerOptionsName) =>
