@@ -59,6 +59,8 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
             return;
         }
 
+        // A stream that ended without CloseAsync must not make the next endpoint event look stale.
+        _endpoint = null;
         var cts = new CancellationTokenSource();
         _cts = cts;
         var ready = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -326,6 +328,8 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
         }
         catch (Exception error)
         {
+            _connected = false;
+            _endpoint = null;
             OnError?.Invoke(error);
             ready.TrySetException(error);
             FailPending(error);
