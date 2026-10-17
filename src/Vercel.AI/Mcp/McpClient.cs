@@ -128,6 +128,15 @@ public sealed class StdioMcpOptions
 
     /// <summary>True pipes stderr to <see cref="StdioMcpTransport.StandardError"/>. False lets the child inherit it.</summary>
     public bool RedirectStandardError { get; set; }
+
+    /// <summary>
+    /// True runs the command through a shell (<c>/bin/sh -c</c>, or <c>cmd.exe /d /s /c</c> on Windows), so command shims
+    /// such as the Windows <c>npx</c> work. Arguments are joined with spaces and are not quoted. Mirrors the upstream <c>shell</c> option.
+    /// </summary>
+    public bool Shell { get; set; }
+
+    /// <summary>The shell executable to use. Setting it implies <see cref="Shell"/>. Mirrors the upstream <c>shell</c> string.</summary>
+    public string? ShellPath { get; set; }
 }
 
 /// <summary>MCP over a child process using newline-delimited JSON-RPC messages.</summary>
@@ -195,6 +204,7 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
 
         var windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         StdioEnvironment.ValidateCommand(options.Command, options.Arguments, windows);
+        var useShell = options.Shell || !string.IsNullOrEmpty(options.ShellPath);
         var start = new ProcessStartInfo
         {
             FileName = options.Command,
@@ -204,7 +214,28 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
             UseShellExecute = false,
             WorkingDirectory = options.WorkingDirectory ?? string.Empty,
         };
-        if (options.Arguments is { Count: > 0 } arguments)
+        if (useShell)
+        {
+            var commandLine = options.Command;
+            if (options.Arguments is { Count: > 0 } shellArguments)
+            {
+                commandLine += " " + string.Join(" ", shellArguments);
+            }
+
+            if (windows)
+            {
+                start.FileName = string.IsNullOrEmpty(options.ShellPath)
+                    ? System.Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe"
+                    : options.ShellPath!;
+                start.Arguments = "/d /s /c \"" + commandLine + "\"";
+            }
+            else
+            {
+                start.FileName = string.IsNullOrEmpty(options.ShellPath) ? "/bin/sh" : options.ShellPath!;
+                start.Arguments = "-c \"" + commandLine.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+            }
+        }
+        else if (options.Arguments is { Count: > 0 } arguments)
         {
             var quoted = new string[arguments.Count];
             for (var index = 0; index < arguments.Count; index++)

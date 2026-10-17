@@ -549,6 +549,19 @@ public sealed class McpProtocolTests
         Assert.Null(inherited.StandardError);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should spawn a child process with custom shell option",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Stdio_spawns_a_child_with_custom_shell_option()
+    {
+        var options = new StdioMcpOptions(HostPath()) { Shell = true };
+        var start = StdioMcpTransport.CreateStartInfo(options);
+        Assert.NotEqual(HostPath(), start.FileName);
+        using var transport = StdioMcpTransport.Start(options);
+        Assert.True(transport.ProcessId > 0);
+    }
+
     private static string HostPath()
     {
         return System.Environment.ProcessPath!;
