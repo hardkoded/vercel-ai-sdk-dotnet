@@ -428,11 +428,15 @@ public abstract class OutputSpec
 public sealed class PrepareStepContext
 {
     /// <summary>Creates context.</summary>
-    public PrepareStepContext(int stepNumber, IReadOnlyList<StepResult> steps)
+    public PrepareStepContext(int stepNumber, IReadOnlyList<StepResult> steps, IReadOnlyList<ModelMessage>? messages = null)
     {
         StepNumber = stepNumber;
         Steps = steps;
+        Messages = messages ?? Array.Empty<ModelMessage>();
     }
+
+    /// <summary>The messages accumulated so far. The tool results of one step are a single tool message.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; }
 
     /// <summary>Zero-based step index about to run.</summary>
     public int StepNumber { get; }

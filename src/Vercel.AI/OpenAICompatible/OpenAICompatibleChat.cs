@@ -241,7 +241,7 @@ public static class OpenAICompatibleChat
             return messages;
         }
 
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

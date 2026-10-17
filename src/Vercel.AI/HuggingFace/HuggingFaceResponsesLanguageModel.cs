@@ -225,7 +225,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             return input;
         }
 
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

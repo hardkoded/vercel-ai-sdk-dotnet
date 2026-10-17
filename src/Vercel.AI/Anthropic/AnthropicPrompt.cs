@@ -845,7 +845,7 @@ public static class AnthropicPrompt
     private static JsonElement ToJson(IReadOnlyList<ModelMessage> prompt)
     {
         var messages = new JsonArray();
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             if (message is SystemModelMessage system)
             {

@@ -19,7 +19,7 @@ internal static class XaiResponsesInput
     public static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, List<CallWarning> warnings)
     {
         var input = new JsonArray();
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

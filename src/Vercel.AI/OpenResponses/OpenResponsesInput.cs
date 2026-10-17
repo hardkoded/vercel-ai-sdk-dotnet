@@ -45,7 +45,7 @@ internal static class OpenResponsesInput
         var systemMessages = new List<string>();
         var replayedExtensionItems = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (var message in prompt)
+        foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
             {

@@ -43,7 +43,7 @@ public static class GoogleInteractionsInput
         var input = new JsonArray();
         if (prompt != null)
         {
-            foreach (var message in prompt)
+            foreach (var message in ToolModelMessage.Flatten(prompt))
             {
                 if (message is SystemModelMessage systemMessage)
                 {

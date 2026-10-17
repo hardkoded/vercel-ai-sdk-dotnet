@@ -83,7 +83,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps));
+                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray()));
                 if (update?.Messages != null)
                 {
                     messages = new List<ModelMessage>(update.Messages);
@@ -211,7 +211,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps));
+                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray()));
                 if (update?.Messages != null)
                 {
                     messages = new List<ModelMessage>(update.Messages);
@@ -710,6 +710,7 @@ internal static class Generation
         messages.Add(new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts));
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
+            var toolMessages = new List<ToolModelMessage>();
             foreach (var call in toolCalls)
             {
                 if (call.ProviderExecuted)
@@ -724,7 +725,17 @@ internal static class Generation
 
                 var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
                 toolResults.Add(executed);
-                messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+                toolMessages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+            }
+
+            // Upstream sends the results of one step as a single tool message.
+            if (toolMessages.Count == 1)
+            {
+                messages.Add(toolMessages[0]);
+            }
+            else if (toolMessages.Count > 1)
+            {
+                messages.Add(new ToolModelMessage(toolMessages));
             }
         }
 
