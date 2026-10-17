@@ -35,8 +35,7 @@ public sealed class GatewayLanguageModelDoStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "should stream text deltas",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the text deltas and the stop finish part. The port maps usage to its own usage type and does not keep the raw prompt_tokens and completion_tokens keys. See #466.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas()
     {
         var handler = PrepareStreamResponse(new[] { "Hello", ", ", "World!" });
@@ -53,7 +52,13 @@ public sealed class GatewayLanguageModelDoStreamTests
             part => Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta),
             part => Assert.Equal(", ", Assert.IsType<TextDeltaStreamPart>(part).Delta),
             part => Assert.Equal("World!", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason));
+            part =>
+            {
+                Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
+                var usage = part.RawValue!.Value.GetProperty("usage");
+                Assert.Equal(10, usage.GetProperty("prompt_tokens").GetInt32());
+                Assert.Equal(20, usage.GetProperty("completion_tokens").GetInt32());
+            });
     }
 
     [Fact]

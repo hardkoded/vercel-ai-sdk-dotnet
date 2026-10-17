@@ -1392,6 +1392,9 @@ public abstract class LanguageModelStreamPart
 
     /// <summary>Part type.</summary>
     public string Type { get; }
+
+    /// <summary>The part as the provider sent it, including fields this type does not model. Set by providers that pass chunks through unchanged, such as the Gateway.</summary>
+    public JsonElement? RawValue { get; internal set; }
 }
 
 /// <summary>A text delta.</summary>

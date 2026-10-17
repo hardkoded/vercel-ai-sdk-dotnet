@@ -157,6 +157,17 @@ public static class V4Json
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
+        var part = ParseStreamPart(root);
+        if (part != null)
+        {
+            part.RawValue = root.Clone();
+        }
+
+        return part;
+    }
+
+    private static LanguageModelStreamPart? ParseStreamPart(JsonElement root)
+    {
         var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
         switch (type)
         {
@@ -183,6 +194,19 @@ public static class V4Json
             case "finish-step":
                 var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
+            case "response-metadata":
+                DateTimeOffset? timestamp = null;
+                if (root.TryGetProperty("timestamp", out var stamp)
+                    && stamp.ValueKind == JsonValueKind.String
+                    && DateTimeOffset.TryParse(stamp.GetString(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var parsedStamp))
+                {
+                    timestamp = parsedStamp;
+                }
+
+                return new ResponseMetadataStreamPart(
+                    root.TryGetProperty("id", out var metadataId) && metadataId.ValueKind == JsonValueKind.String ? metadataId.GetString() : null,
+                    root.TryGetProperty("modelId", out var metadataModel) && metadataModel.ValueKind == JsonValueKind.String ? metadataModel.GetString() : null,
+                    timestamp);
             case "error":
                 var message = root.TryGetProperty("error", out var error) ? error.ToString() : "Provider stream error.";
                 return new ErrorStreamPart(message ?? "Provider stream error.");
