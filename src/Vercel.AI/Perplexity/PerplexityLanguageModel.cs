@@ -94,17 +94,22 @@ public sealed class PerplexityLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var built = Build(options, stream: true);
+        var json = built.Body.ToJsonString();
+        var sse = await _provider.Http.OpenSseResponseAsync(_provider.AgentUri(), json, Headers(options), cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, built, sse.Events, cancellationToken), json);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        PreparedRequest built,
+        IAsyncEnumerable<string> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var session = new StreamSession();
-        var enumerator = _provider.Http.SendSseAsync(_provider.AgentUri(), built.Body.ToJsonString(), Headers(options), cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
+        var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
             var more = await enumerator.MoveNextAsync().ConfigureAwait(false);

@@ -169,18 +169,23 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var (body, warnings) = Prepare(options);
         body["stream"] = true;
+        var json = body.ToJsonString();
+        var sse = await _provider.Http.OpenSseResponseAsync(RequestUri(), json, Headers(options), cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, warnings, sse.Events, cancellationToken), json);
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        List<CallWarning> warnings,
+        IAsyncEnumerable<string> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var session = new OpenResponsesStream(_provider.Name, Registry, _provider.Options.GetResponseErrorMetadata);
-        var enumerator = _provider.Http.SendSseAsync(RequestUri(), body.ToJsonString(), Headers(options), cancellationToken)
-            .GetAsyncEnumerator(cancellationToken);
+        var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
             var more = await enumerator.MoveNextAsync().ConfigureAwait(false);

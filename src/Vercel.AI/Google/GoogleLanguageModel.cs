@@ -132,30 +132,27 @@ public sealed class GoogleLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         options ??= new LanguageModelCallOptions();
         var prepared = Prepare(options, true);
-        var stream = StreamAsync(options, prepared, cancellationToken);
+        var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
+        var json = GoogleJson.Write(prepared.Body);
+        var sse = await _provider.Http.OpenSseResponseAsync(Url(":streamGenerateContent?alt=sse"), json, headers, cancellationToken).ConfigureAwait(false);
+        var stream = StreamAsync(options, prepared, headers, sse.Events, cancellationToken);
         if (prepared.JsonResponseToolName != null)
         {
             stream = JsonResponseTools.ConvertJsonResponseToolStream(stream, prepared.JsonResponseToolName, cancellationToken);
         }
 
-        await foreach (var part in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
-        {
-            yield return part;
-        }
+        return sse.ToStreamResult(stream, json);
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         GooglePreparedRequest prepared,
+        Dictionary<string, string?> headers,
+        IAsyncEnumerable<string> firstEvents,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
@@ -180,7 +177,6 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var callContext = StreamContext(prepared);
         var activeCalls = new List<StreamingCall>();
 
-        var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
         var hop = 0;
         while (true)
         {
@@ -194,7 +190,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
             }
 
             Exception? failure = null;
-            var enumerator = _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(requestBody), headers, cancellationToken)
+            // The first request is already open. A continuation sends a new request.
+            var enumerator = (hop == 0 ? firstEvents : _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(requestBody), headers, cancellationToken))
                 .GetAsyncEnumerator(cancellationToken);
             try
             {

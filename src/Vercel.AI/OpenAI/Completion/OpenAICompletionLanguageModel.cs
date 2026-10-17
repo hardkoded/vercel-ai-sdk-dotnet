@@ -261,19 +261,25 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var prepared = Prepare(ModelId, options, true);
-        var enumerator = _provider.Http.SendSseAsync(
+        var json = prepared.Body.ToJsonString();
+        var sse = await _provider.Http.OpenSseResponseAsync(
             ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
-            prepared.Body.ToJsonString(),
+            json,
             _provider.CreateOpenAIHeaders(options.Headers),
-            cancellationToken).GetAsyncEnumerator(cancellationToken);
+            cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        OpenAICompletionPreparedRequest prepared,
+        IAsyncEnumerable<string> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var enumerator = events.GetAsyncEnumerator(cancellationToken);
         try
         {
             var checkedStream = await OpenAIStreamError.ThrowIfErrorBeforeOutputAsync(

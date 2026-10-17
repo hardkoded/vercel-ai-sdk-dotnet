@@ -60,6 +60,20 @@ public sealed class GoogleStreamUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream > text::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Exposes_the_raw_response_headers()
+    {
+        var handler = new SseStreamHandler(
+            SseStreamHandler.FixtureChunks("google-text", done: false),
+            new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key" }, handler);
+
+        var result = await provider.LanguageModel("gemini-pro").DoStreamAsync(GoogleUpstream.Hello(), CancellationToken.None);
+
+        SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
+    }
+
+    [Fact]
     [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream > tool-call::should stream tool call", Coverage = UpstreamCoverage.Covered)]
     public async Task Streams_a_function_call_and_finishes_with_tool_calls()
     {

@@ -92,20 +92,25 @@ public sealed class CohereLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var warnings = new List<CallWarning>();
         var body = Build(options, warnings);
         body["stream"] = true;
-        var events = _provider.Http.SendSseAsync(ChatUri, body.ToJsonString(), _provider.Headers(options.Headers), cancellationToken).GetAsyncEnumerator(cancellationToken);
+        var json = body.ToJsonString();
+        var sse = await _provider.Http.OpenSseResponseAsync(ChatUri, json, _provider.Headers(options.Headers), cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, warnings, sse.Events, cancellationToken), json);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        List<CallWarning> warnings,
+        IAsyncEnumerable<string> source,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var events = source.GetAsyncEnumerator(cancellationToken);
         try
         {
-            // The first read sends the request, so HTTP errors surface before stream-start.
             var hasEvent = await events.MoveNextAsync().ConfigureAwait(false);
             yield return new StreamStartStreamPart(warnings);
             var state = new StreamState(options.IncludeRawChunks);

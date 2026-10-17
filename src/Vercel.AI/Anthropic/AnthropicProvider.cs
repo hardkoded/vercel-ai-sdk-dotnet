@@ -485,19 +485,24 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
-    }
-
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var prepared = Prepare(options, true);
         var body = prepared.Body.ToJsonString();
         var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
+        var sse = await _provider.Http.OpenSseResponseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false);
+        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), body);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+        LanguageModelCallOptions options,
+        AnthropicPreparedRequest prepared,
+        IAsyncEnumerable<string> events,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         yield return new StreamStartStreamPart(Warnings(prepared));
         var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool);
-        await foreach (var data in _provider.Http.SendSseAsync(_provider.RequestUri(ModelId, true), body, headers, cancellationToken).ConfigureAwait(false))
+        await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))
             {

@@ -142,6 +142,20 @@ public sealed class AzureOpenAIParityTests
         return handler.Uri;
     }
 
+    [Fact]
+    [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::responses > doStream::should extract response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Responses_stream_extracts_response_headers()
+    {
+        var handler = new SseStreamHandler(
+            SseStreamHandler.FixtureChunks("azure-text.1", done: true),
+            new Dictionary<string, string> { ["test-header"] = "test-value" });
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, handler);
+
+        var result = await provider.ResponsesModel("test-deployment").DoStreamAsync(Prompt(), CancellationToken.None);
+
+        SseStreamHandler.AssertDefaultHeaders(result.Response!.Headers);
+    }
+
     private static LanguageModelCallOptions Prompt()
     {
         return new LanguageModelCallOptions
