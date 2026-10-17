@@ -172,6 +172,18 @@ public sealed class FalImageParityTests
     }
 
     [Fact]
+    [UpstreamTest(
+        ImagePrefix + "Image Editing::should send edit request with base64 string data",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "ImageModelFile holds bytes, so the base64 text is decoded first. The data URI must carry the same base64.")]
+    public async Task Base64_data_is_sent_as_a_data_uri()
+    {
+        var handler = Server();
+        await Generate(handler, Call("Edit this image", files: new[] { ImageModelFile.FromFile(Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAE="), "image/png") }));
+        JsonAssert.Equal(JsonNode.Parse(handler.Calls[0].Text), "{\"image_url\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAE=\",\"num_images\":1,\"prompt\":\"Edit this image\"}");
+    }
+
+    [Fact]
     [UpstreamTest(ImagePrefix + "Image Editing::should warn when multiple files are provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Extra_files_warn_without_use_multiple_images()
     {
@@ -182,11 +194,15 @@ public sealed class FalImageParityTests
     }
 
     [Fact]
+    [UpstreamTest(ImagePrefix + "Image Editing::should send files as image_urls for fal-ai/flux-2/edit", Coverage = UpstreamCoverage.Covered)]
     public async Task Use_multiple_images_sends_every_file()
     {
-        var handler = Server();
-        await Generate(handler, Call("Edit these images", files: new[] { ImageModelFile.FromFile(PngBytes, "image/png"), ImageModelFile.FromFile(PngBytes, "image/png") }, fal: "{\"useMultipleImages\":true}"));
-        JsonAssert.Equal(JsonNode.Parse(handler.Calls[0].Text), "{\"image_urls\":[\"data:image/png;base64,iVBORw==\",\"data:image/png;base64,iVBORw==\"],\"num_images\":1,\"prompt\":\"Edit these images\"}");
+        var handler = new ParityHandler(_ => ParityHandler.Json(DefaultResponse));
+        await Generate(handler, Call("Edit these images", files: new[] { ImageModelFile.FromFile(PngBytes, "image/png"), ImageModelFile.FromFile(PngBytes, "image/png") }, fal: "{\"useMultipleImages\":true}"), modelId: "fal-ai/flux-2/edit");
+        Assert.Equal("https://api.example.com/fal-ai/flux-2/edit", handler.Calls[0].Uri.AbsoluteUri);
+        var body = JsonNode.Parse(handler.Calls[0].Text)!.AsObject();
+        JsonAssert.Equal(body, "{\"image_urls\":[\"data:image/png;base64,iVBORw==\",\"data:image/png;base64,iVBORw==\"],\"num_images\":1,\"prompt\":\"Edit these images\"}");
+        Assert.False(body.ContainsKey("image_url"));
     }
 
     [Fact]
@@ -307,10 +323,10 @@ public sealed class FalImageParityTests
         return new ParityHandler(call => call.Uri.AbsoluteUri == imageUrl ? ParityHandler.Bytes(ImageBytes, "image/png") : ParityHandler.Json(response));
     }
 
-    private static Task<ImageModelResult> Generate(ParityHandler handler, ImageModelCall call, Func<DateTime>? clock = null)
+    private static Task<ImageModelResult> Generate(ParityHandler handler, ImageModelCall call, Func<DateTime>? clock = null, string modelId = "fal-ai/qwen-image")
     {
         var provider = FalProvider.Create(new OpenAICompatibleOptions { BaseUrl = "https://api.example.com", ApiKey = "test-key" }, handler);
-        return new FalImageModel(provider, "fal-ai/qwen-image", clock).DoGenerateAsync(call, CancellationToken.None);
+        return new FalImageModel(provider, modelId, clock).DoGenerateAsync(call, CancellationToken.None);
     }
 
     private static ImageModelCall Call(string prompt = Prompt, int n = 1, string? size = null, string? aspectRatio = null, int? seed = null, string? fal = null, IReadOnlyList<ImageModelFile>? files = null, ImageModelFile? mask = null, IReadOnlyDictionary<string, string>? headers = null)
