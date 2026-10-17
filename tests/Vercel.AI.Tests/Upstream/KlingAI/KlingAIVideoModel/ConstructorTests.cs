@@ -22,6 +22,7 @@ public sealed class ConstructorTests
 
         Assert.Equal("klingai.video", model.Provider);
         Assert.Equal("kling-v2.6-motion-control", model.ModelId);
+        Assert.Equal("v4", model.SpecificationVersion);
         Assert.Equal(1, model.MaxVideosPerCall);
     }
 

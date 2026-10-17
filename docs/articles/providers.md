@@ -116,7 +116,7 @@ OpenAI-compatible providers (Alibaba, Groq, DeepSeek, Mistral, Together, and the
 
 An OpenAI-compatible image model (`ImageModel(id)`) reads image generation and editing responses that hold base64 data (`b64_json`), image URLs (`url`), or a mix of both, and keeps the images in order. A `url` image is downloaded, so `GeneratedImage.Data` and `GeneratedImage.Base64` are filled. When an image has both fields, base64 wins and nothing is downloaded. A data item with neither field throws `InvalidResponseDataException`. The download request carries the provider headers only when the URL is on the provider origin. Any other host is checked first (private addresses and non-http(s) schemes throw `DownloadException`), redirects are checked hop by hop, and no provider header is sent. Set `OpenAICompatibleOptions.DownloadHttpClient` to control the client used for those hosts.
 
-Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`.
+Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`. Every provider (`ProviderBase.SpecificationVersion`) and every video model (`IVideoModel.SpecificationVersion`) reports `v4`.
 
 ## HeyGen
 

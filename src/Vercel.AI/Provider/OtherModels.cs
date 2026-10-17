@@ -405,6 +405,9 @@ public sealed class VideoCallOptions
 /// <summary>Video model specification.</summary>
 public interface IVideoModel
 {
+    /// <summary>Specification version. Always <c>v4</c>.</summary>
+    string SpecificationVersion { get; }
+
     /// <summary>Provider id.</summary>
     string Provider { get; }
 
@@ -679,6 +682,9 @@ public abstract class ProviderBase
 
     /// <summary>Provider id.</summary>
     public string Name { get; }
+
+    /// <summary>Specification version. Always <c>v4</c>.</summary>
+    public virtual string SpecificationVersion => "v4";
 
     /// <summary>Returns a language model.</summary>
     public abstract ILanguageModel LanguageModel(string modelId);
