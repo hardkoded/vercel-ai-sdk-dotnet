@@ -106,7 +106,7 @@ public sealed class AmazonBedrockEmbeddingModel : IEmbeddingModel
         }
 
         var json = body.ToJsonString();
-        var uri = new Uri(AmazonBedrockEndpoints.Resolve(null, _provider.Options.Region, "bedrock-runtime") + "/model/" + Uri.EscapeDataString(ModelId) + "/invoke");
+        var uri = new Uri(AmazonBedrockEndpoints.Resolve(_provider.Options.BaseUrl, _provider.Options.Region, "bedrock-runtime") + "/model/" + Uri.EscapeDataString(ModelId) + "/invoke");
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
