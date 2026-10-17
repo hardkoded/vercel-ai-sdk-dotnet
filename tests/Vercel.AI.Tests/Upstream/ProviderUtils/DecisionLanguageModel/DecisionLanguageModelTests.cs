@@ -417,6 +417,39 @@ public sealed class DecisionLanguageModelTests
         Assert.Empty(language.Calls);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"instructions\":null}")]
+    [UpstreamTest(Prefix + "includes criteria-only questions in the model prompt with %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
+    public async Task Includes_criteria_only_questions_in_the_model_prompt(string instructionFields)
+    {
+        _ = instructionFields;
+        var (model, language, _) = Setup(Text("{\"q0\":\"c0\",\"q1\":0.75,\"q2\":0.8}"));
+        var questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["category"] = Q("choice", null, new Dictionary<string, object?> { ["billing"] = new List<object?> { "Charges" }, ["other"] = null }),
+            ["severity"] = Q("score", null, new List<object?> { "Low", "High" }),
+            ["refund"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = new Dictionary<string, object?> { ["intent"] = "Refund" } }),
+        };
+
+        var result = await model.DoDecideAsync(Call(questions));
+
+        AssertChoice("billing", result.Answers["category"]);
+        AssertScore(0.75, result.Answers["severity"]);
+        Assert.Equal("boolean", result.Answers["refund"].Type);
+        Assert.Equal(0.8, result.Answers["refund"].Probability);
+        Assert.Single(language.Calls);
+        var message = Assert.IsType<UserModelMessage>(language.Calls[0].Prompt[1]);
+        AssertJson(
+            "{\"questions\":{"
+            + "\"q0\":{\"id\":\"category\",\"type\":\"choice\",\"criteria\":{"
+            + "\"c0\":{\"label\":\"billing\",\"description\":[\"Charges\"]},"
+            + "\"c1\":{\"label\":\"other\",\"description\":null}}},"
+            + "\"q1\":{\"id\":\"severity\",\"type\":\"score\",\"criteria\":[\"Low\",\"High\"]},"
+            + "\"q2\":{\"id\":\"refund\",\"type\":\"boolean\",\"criteria\":{\"true\":{\"intent\":\"Refund\"}}}}}",
+            JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text));
+    }
+
     private static GeneratedContent[] Text(string text)
     {
         return new GeneratedContent[] { new GeneratedText(text) };

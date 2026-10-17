@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Operations;
+using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel.GatewayDecisionModelSupport;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayDecisionModel;
@@ -68,5 +69,30 @@ public sealed class GatewayDecisionModelTests
     private static Dictionary<string, object?> Json(object? value)
     {
         return new Dictionary<string, object?> { ["type"] = "json", ["value"] = value };
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"instructions\":null}")]
+    [UpstreamTest(Prefix + "forwards criteria-only questions with %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
+    public async Task Forwards_criteria_only_questions(string instructionFields)
+    {
+        _ = instructionFields;
+        var (model, capture) = Setup(Response("{}"));
+        var questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["correct"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = "Factually correct" }),
+            ["tone"] = Q("choice", null, new Dictionary<string, object?> { ["neutral"] = "Plain and factual.", ["playful"] = null }),
+            ["quality"] = Q("score", null, new List<object?> { "Poor.", "Acceptable.", "Excellent." }),
+        };
+        using var options = System.Text.Json.JsonDocument.Parse("{}");
+        await model.DoDecideAsync(new DecisionModelCall(P((IEnumerable<object?>)State(TestState)), questions, options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None));
+        JsonAssert.Equal(RequestBody(capture)!["questions"], """
+            {
+              "correct": { "type": "boolean", "criteria": { "true": "Factually correct" } },
+              "tone": { "type": "choice", "criteria": { "neutral": "Plain and factual.", "playful": null } },
+              "quality": { "type": "score", "criteria": ["Poor.", "Acceptable.", "Excellent."] }
+            }
+            """);
     }
 }

@@ -12,7 +12,7 @@ namespace Vercel.AI.Operations;
 public sealed class EvaluationQuestion : DecisionQuestion
 {
     /// <summary>Creates a question.</summary>
-    public EvaluationQuestion(string type, DecisionInput instructions, DecisionCriteria? criteria = null)
+    public EvaluationQuestion(string type, DecisionInput? instructions, DecisionCriteria? criteria = null)
         : base(type, instructions, criteria)
     {
     }

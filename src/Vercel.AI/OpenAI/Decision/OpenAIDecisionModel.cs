@@ -262,13 +262,30 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         return input.Value.ValueKind == JsonValueKind.String ? input.Value.GetString()! : JsonSerializer.Serialize(input.Value, Text);
     }
 
+    // Instructions are left out when absent, so the wire order stays type, name, instructions, then the options.
+    private static JsonObject WithInstructions(JsonObject question, string? instructions, string optionsName, JsonArray options)
+    {
+        if (instructions != null)
+        {
+            question["instructions"] = instructions;
+        }
+
+        question[optionsName] = options;
+        return question;
+    }
+
     private static JsonObject BuildQuestion(string name, DecisionQuestion question)
     {
-        var instructions = ToText(question.Instructions);
+        var instructions = question.Instructions == null ? null : ToText(question.Instructions);
         switch (question.Type)
         {
             case "boolean":
-                var parts = new List<string> { instructions };
+                var parts = new List<string>();
+                if (instructions != null)
+                {
+                    parts.Add(instructions);
+                }
+
                 var criteria = question.Criteria as DecisionBooleanCriteria;
                 if (criteria?.True != null)
                 {
@@ -294,7 +311,7 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     choices.Add(choice);
                 }
 
-                return new JsonObject { ["type"] = "choice", ["name"] = name, ["instructions"] = instructions, ["choices"] = choices };
+                return WithInstructions(new JsonObject { ["type"] = "choice", ["name"] = name }, instructions, "choices", choices);
             default:
                 var levels = new JsonArray();
                 var index = 0;
@@ -311,7 +328,7 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     index++;
                 }
 
-                return new JsonObject { ["type"] = "score", ["name"] = name, ["instructions"] = instructions, ["levels"] = levels };
+                return WithInstructions(new JsonObject { ["type"] = "score", ["name"] = name }, instructions, "levels", levels);
         }
     }
 

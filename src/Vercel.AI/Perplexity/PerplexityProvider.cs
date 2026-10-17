@@ -16,7 +16,7 @@ namespace Vercel.AI.Perplexity;
 /// Legacy Sonar model ids are not aliased and Sonar provider options are not translated.
 /// Sonar PDF input, video input, and image or video results have no Agent API equivalent.
 /// </summary>
-public sealed class PerplexityProvider : OpenAICompatibleProvider
+public sealed class PerplexityProvider : OpenAICompatibleProvider, Operations.IDecisionProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "perplexity";
@@ -59,6 +59,17 @@ public sealed class PerplexityProvider : OpenAICompatibleProvider
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
         return new PerplexityEmbeddingModel(this, modelId);
+    }
+
+    /// <summary>Decision model. Uses the Decisions API at <c>{base}/v1/decisions</c>. The provider id is <c>perplexity.decision</c>.</summary>
+    public PerplexityDecisionModel DecisionModel(string modelId)
+    {
+        return new PerplexityDecisionModel(this, modelId);
+    }
+
+    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
+    {
+        return DecisionModel(modelId);
     }
 
     /// <summary>Agent API URL. A custom base URL is prefixed to <c>v1/agent</c>.</summary>

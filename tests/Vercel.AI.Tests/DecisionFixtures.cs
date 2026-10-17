@@ -47,13 +47,13 @@ internal static class DecisionFixtures
 
     public static DecisionQuestion Q(string type, object? instructions, object? criteria = null)
     {
-        return new DecisionQuestion(type, In(instructions), Criteria(type, criteria));
+        return new DecisionQuestion(type, Optional(instructions), Criteria(type, criteria));
     }
 
 #pragma warning disable CS0618
     public static EvaluationQuestion EQ(string type, object? instructions, object? criteria = null)
     {
-        return new EvaluationQuestion(type, In(instructions), Criteria(type, criteria));
+        return new EvaluationQuestion(type, Optional(instructions), Criteria(type, criteria));
     }
 #pragma warning restore CS0618
 
