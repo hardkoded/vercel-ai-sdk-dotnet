@@ -73,7 +73,7 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     }
 
     /// <summary>Provider tool ids that Vertex accepts. A subset of the Anthropic tools.</summary>
-    public static IReadOnlyList<string> Tools { get; } = new[]
+    public static new IReadOnlyList<string> Tools { get; } = new[]
     {
         "anthropic.bash_20241022",
         "anthropic.bash_20250124",
