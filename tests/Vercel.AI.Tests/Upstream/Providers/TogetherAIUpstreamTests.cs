@@ -96,7 +96,7 @@ public sealed class TogetherAIUpstreamTests
     public async Task A_mask_is_rejected()
     {
         var model = Image(new UpstreamCapture(), "black-forest-labs/FLUX.1-dev");
-        var mask = new OpenAICompatibleImageFile("image/png", new byte[] { 255, 255, 255, 0 }, null, null);
+        var mask = ImageModelFile.FromFile(new byte[] { 255, 255, 255, 0 }, "image/png");
         var error = await Assert.ThrowsAsync<AiSdkException>(() => model.DoGenerateAsync(new ImageCallOptions("edit") { Mask = mask }, CancellationToken.None));
         Assert.Equal(
             "Together AI does not support mask-based image editing. Use FLUX Kontext models (e.g., black-forest-labs/FLUX.1-kontext-pro) with a reference image and descriptive prompt instead.",
@@ -111,8 +111,8 @@ public sealed class TogetherAIUpstreamTests
         var model = Image(capture, "black-forest-labs/FLUX.1-dev");
         var files = new[]
         {
-            new OpenAICompatibleImageFile("image/png", null, "https://example.test/a.png", "a.png"),
-            new OpenAICompatibleImageFile("image/png", null, "https://example.test/b.png", "b.png"),
+            ImageModelFile.FromUrl("https://example.test/a.png"),
+            ImageModelFile.FromUrl("https://example.test/b.png"),
         };
         var result = await model.DoGenerateAsync(new ImageCallOptions("edit") { Files = files }, CancellationToken.None);
         Assert.Contains(result.CallWarnings, warning => warning.Message == "Together AI only supports a single input image. Additional images are ignored.");
@@ -419,7 +419,7 @@ public sealed class TogetherAIUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = ImageResponse };
         var model = Image(capture, DiffusionModel);
-        var files = new[] { new OpenAICompatibleImageFile("image/jpeg", null, "https://example.com/input.jpg", null) };
+        var files = new[] { ImageModelFile.FromUrl("https://example.com/input.jpg") };
         await model.DoGenerateAsync(new ImageCallOptions("Make the shirt yellow") { Files = files }, CancellationToken.None);
         Assert.Equal(
             "{\"model\":\"stabilityai/stable-diffusion-xl\",\"prompt\":\"Make the shirt yellow\",\"response_format\":\"base64\",\"image_url\":\"https://example.com/input.jpg\"}",
@@ -432,7 +432,7 @@ public sealed class TogetherAIUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = ImageResponse };
         var model = Image(capture, DiffusionModel);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, null, null) };
+        var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, "image/png") };
         await model.DoGenerateAsync(new ImageCallOptions("Transform this image") { Files = files }, CancellationToken.None);
         var body = JsonNode.Parse(capture.Requests[0].Body)!;
         Assert.StartsWith("data:image/png;base64,", body["image_url"]!.GetValue<string>(), StringComparison.Ordinal);
@@ -446,7 +446,7 @@ public sealed class TogetherAIUpstreamTests
         const string Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
         var capture = new UpstreamCapture { ResponseBody = ImageResponse };
         var model = Image(capture, DiffusionModel);
-        var files = new[] { new OpenAICompatibleImageFile("image/png", Convert.FromBase64String(Png), null, null) };
+        var files = new[] { ImageModelFile.FromFile(Convert.FromBase64String(Png), "image/png") };
         await model.DoGenerateAsync(new ImageCallOptions("Edit this") { Files = files }, CancellationToken.None);
         Assert.Equal("data:image/png;base64," + Png, JsonNode.Parse(capture.Requests[0].Body)!["image_url"]!.GetValue<string>());
     }
@@ -457,7 +457,7 @@ public sealed class TogetherAIUpstreamTests
     {
         var capture = new UpstreamCapture { ResponseBody = ImageResponse };
         var model = Image(capture, DiffusionModel);
-        var files = new[] { new OpenAICompatibleImageFile("image/jpeg", null, "https://example.com/input.jpg", null) };
+        var files = new[] { ImageModelFile.FromUrl("https://example.com/input.jpg") };
         var providerOptions = Options("{\"steps\":28,\"guidance\":3.5}");
         await model.DoGenerateAsync(new ImageCallOptions("Transform the style") { Files = files, ProviderOptions = providerOptions }, CancellationToken.None);
         Assert.Equal(

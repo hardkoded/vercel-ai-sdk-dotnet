@@ -299,9 +299,9 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
     }
 
     /// <inheritdoc />
-    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions)
+    Task<EmbeddingResult> IEmbeddingModel.DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions, IReadOnlyDictionary<string, string?>? headers)
     {
-        return DoEmbedAsync(values, null, null, cancellationToken, dimensions);
+        return DoEmbedAsync(values, null, headers, cancellationToken, dimensions);
     }
 
     /// <summary>Embeds values and sends <paramref name="providerOptions"/> when it is a JSON object.</summary>

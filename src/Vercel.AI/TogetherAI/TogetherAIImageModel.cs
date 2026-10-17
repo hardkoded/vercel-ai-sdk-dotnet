@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 
@@ -107,7 +108,7 @@ public sealed class TogetherAIImageModel : IImageModel
         return ReadImages(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers));
     }
 
-    private static string ImageUrl(OpenAICompatibleImageFile file)
+    private static string ImageUrl(ImageModelFile file)
     {
         if (!string.IsNullOrEmpty(file.Url) && (file.Data == null || file.Data.Length == 0))
         {

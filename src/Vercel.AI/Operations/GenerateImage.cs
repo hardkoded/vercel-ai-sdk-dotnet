@@ -20,9 +20,9 @@ public sealed class ImageModelFile
     }
 
     /// <summary>Creates a binary image.</summary>
-    public static ImageModelFile FromFile(byte[] data, string mediaType)
+    public static ImageModelFile FromFile(byte[] data, string mediaType, string? fileName = null)
     {
-        return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType);
+        return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType) { FileName = fileName };
     }
 
     private ImageModelFile(string type, string? url, byte[]? data, string? mediaType)
@@ -44,6 +44,12 @@ public sealed class ImageModelFile
 
     /// <summary>Media type of a file image.</summary>
     public string? MediaType { get; }
+
+    /// <summary>File name used when a provider uploads the file as multipart form data.</summary>
+    public string? FileName { get; set; }
+
+    /// <summary>Provider options for this file, keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
 /// <summary>Arguments for one image model call.</summary>
