@@ -126,6 +126,15 @@ public sealed class ExecutedTool
     /// <summary>Whether execution failed or was denied.</summary>
     public bool IsError { get; }
 
+    /// <summary>True when the provider ran the tool. Maps to the result's <c>providerExecuted</c>.</summary>
+    public bool ProviderExecuted { get; init; }
+
+    /// <summary>Provider-specific metadata of the result, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; init; }
+
+    /// <summary>The JSON input of the tool call this result answers. Set for a provider-executed result. Maps to the result's <c>input</c>.</summary>
+    public string? InputJson { get; init; }
+
     /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
     internal string? ModelOutputType { get; init; }
 
