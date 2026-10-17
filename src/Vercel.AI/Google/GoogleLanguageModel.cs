@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -241,6 +242,14 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     using (document)
                     {
                         var root = document.RootElement;
+                        if (root.TryGetProperty("error", out var streamError) && streamError.ValueKind == JsonValueKind.Object)
+                        {
+                            finish = FinishReason.Error;
+                            rawFinish = null;
+                            yield return new ErrorStreamPart(CreateStreamError(streamError));
+                            continue;
+                        }
+
                         if (!emittedMetadata && root.TryGetProperty("responseId", out var id) && id.ValueKind == JsonValueKind.String)
                         {
                             responseId = id.GetString();
@@ -408,6 +417,21 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var exposeToken = lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
         metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null);
         yield return new FinishStreamPart(finish, usage, rawFinish, metadata);
+    }
+
+    private static ProviderStreamError CreateStreamError(JsonElement error)
+    {
+        int? code = error.TryGetProperty("code", out var codeElement) && codeElement.ValueKind == JsonValueKind.Number && codeElement.TryGetInt32(out var number)
+            ? number
+            : null;
+        var retryable = code is 408 or 409 or 429 or >= 500;
+        return new ProviderStreamError(
+            GoogleJson.String(error, "message") ?? string.Empty,
+            error.Clone(),
+            GoogleJson.String(error, "status"),
+            code,
+            code,
+            retryable);
     }
 
     private Uri Url(string method)
