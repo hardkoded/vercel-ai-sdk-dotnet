@@ -131,6 +131,30 @@ public sealed class OpenAIBatchServiceTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "warns when a provider tool can return unsupported batch output", Coverage = UpstreamCoverage.Covered)]
+    public async Task Warns_when_a_provider_tool_can_return_unsupported_batch_output()
+    {
+        var handler = new RecordingHandler().Add(FilesUrl, UploadResponse()).Add(BatchesUrl, BatchResponse());
+
+        var result = await Batch(handler).DoStartAsync(
+            Call(requests: new[]
+            {
+                TextRequest("image", "Generate an image.", options => options["tools"] = new JsonArray(new JsonObject
+                {
+                    ["type"] = "provider",
+                    ["id"] = "openai.image_generation",
+                    ["name"] = "image",
+                    ["args"] = new JsonObject(),
+                })),
+            }),
+            CancellationToken.None);
+
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("image", warning.RequestId);
+        Assert.Equal(("unsupported", "batch result conversion for tool \"image\"", "OpenAI may return output for this tool that AI SDK text batches cannot currently convert."), (warning.Warning.Type, warning.Warning.Feature, warning.Warning.Details));
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "appends an explicit compaction trigger to batch request input", Coverage = UpstreamCoverage.Covered)]
     public async Task Appends_an_explicit_compaction_trigger_to_batch_request_input()
     {
