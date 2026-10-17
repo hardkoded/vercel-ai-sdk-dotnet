@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -28,8 +29,18 @@ public sealed class AmazonBedrockAnthropicOptions
     /// <summary>Session token. Falls back to <c>AWS_SESSION_TOKEN</c>.</summary>
     public string? SessionToken { get; set; }
 
-    /// <summary>Runtime origin. When empty, the regional Bedrock Runtime host is used.</summary>
+    /// <summary>
+    /// Runtime origin. When empty, <c>AWS_ENDPOINT_URL_BEDROCK_RUNTIME</c>, then <c>AWS_ENDPOINT_URL</c>,
+    /// then the regional Bedrock Runtime host is used.
+    /// </summary>
     public string? BaseUrl { get; set; }
+
+    /// <summary>
+    /// Supplies SigV4 credentials for each request. When set, its keys are used instead of
+    /// <see cref="AccessKeyId"/>, <see cref="SecretAccessKey"/>, and <see cref="SessionToken"/>.
+    /// The region always comes from <see cref="Region"/>.
+    /// </summary>
+    public Func<CancellationToken, Task<AmazonBedrockCredentials>>? CredentialProvider { get; set; }
 
     /// <summary>Clock used for signing.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
@@ -264,16 +275,52 @@ public sealed class AmazonBedrockAnthropicProvider : ProviderBase
         return new AmazonBedrockAnthropicProvider(client, options);
     }
 
-    /// <summary>Regional Bedrock Runtime origin for these options.</summary>
+    /// <summary>The Anthropic provider tool ids. The same list as <see cref="Vercel.AI.Anthropic.AnthropicProvider.Tools"/>.</summary>
+    public static IReadOnlyList<string> Tools => Vercel.AI.Anthropic.AnthropicProvider.Tools;
+
+    /// <summary>
+    /// Bedrock Runtime origin for these options. <see cref="AmazonBedrockAnthropicOptions.BaseUrl"/> wins,
+    /// then <c>AWS_ENDPOINT_URL_BEDROCK_RUNTIME</c>, then <c>AWS_ENDPOINT_URL</c>, then the regional host.
+    /// The region is read only when none of them is set.
+    /// </summary>
     public string ResolveBaseUrl()
     {
-        return AmazonBedrockEndpoints.Resolve(Options.BaseUrl, Options.Region, "bedrock-runtime");
+        var endpoint = Options.BaseUrl;
+        if (string.IsNullOrEmpty(endpoint))
+        {
+            endpoint = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL_BEDROCK_RUNTIME");
+        }
+
+        if (string.IsNullOrEmpty(endpoint))
+        {
+            endpoint = Environment.GetEnvironmentVariable("AWS_ENDPOINT_URL");
+        }
+
+        return AmazonBedrockEndpoints.Resolve(endpoint, Options.Region, "bedrock-runtime");
     }
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
         return new AmazonBedrockAnthropicLanguageModel(this, modelId);
+    }
+
+    /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
+    public ILanguageModel New(string modelId)
+    {
+        throw new InvalidOperationException("The Bedrock Anthropic model function cannot be called with the new keyword.");
+    }
+
+    /// <summary>Bedrock Anthropic has no embedding models.</summary>
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <summary>Bedrock Anthropic has no image models.</summary>
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 }
 
@@ -312,6 +359,12 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
 
     private ILanguageModel Inner()
     {
+        return new Vercel.AI.Anthropic.AnthropicLanguageModel(CreateInnerProvider(), ModelId);
+    }
+
+    /// <summary>The Anthropic provider this model delegates to.</summary>
+    internal AmazonBedrockAnthropicInnerProvider CreateInnerProvider()
+    {
         var baseUrl = _provider.ResolveBaseUrl();
         var options = _provider.Options;
         var apiKey = options.ApiKey ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
@@ -323,10 +376,10 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
             options.AccessKeyId,
             options.SecretAccessKey,
             options.SessionToken,
-            options.UtcNow);
+            options.UtcNow,
+            options.CredentialProvider);
         var client = new HttpClient(AmazonBedrockAnthropicFetch.Create(signing), disposeHandler: false);
-        var provider = new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers);
-        return new Vercel.AI.Anthropic.AnthropicLanguageModel(provider, ModelId);
+        return new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers);
     }
 }
 

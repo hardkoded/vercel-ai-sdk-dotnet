@@ -6,6 +6,7 @@ using Vercel.AI.OpenAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -29,6 +30,13 @@ public sealed class BedrockMantleOptions
 
     /// <summary>Origin including the version path. When empty, the regional Mantle host is used.</summary>
     public string? BaseUrl { get; set; }
+
+    /// <summary>
+    /// Supplies SigV4 credentials for each request. When set, its keys are used instead of
+    /// <see cref="AccessKeyId"/>, <see cref="SecretAccessKey"/>, and <see cref="SessionToken"/>.
+    /// The region always comes from <see cref="Region"/>.
+    /// </summary>
+    public Func<CancellationToken, Task<AmazonBedrockCredentials>>? CredentialProvider { get; set; }
 
     /// <summary>Clock used for signing.</summary>
     public Func<DateTimeOffset>? UtcNow { get; set; }
@@ -126,6 +134,24 @@ public sealed class BedrockMantleProvider : ProviderBase
         return LanguageModel(modelId);
     }
 
+    /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
+    public ILanguageModel New(string modelId)
+    {
+        throw new InvalidOperationException("The Bedrock Mantle model function cannot be called with the new keyword.");
+    }
+
+    /// <summary>Mantle has no embedding models.</summary>
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <summary>Mantle has no image models.</summary>
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
+    }
+
     /// <summary>Responses API model. The path is <c>/responses</c> on the same Mantle origin.</summary>
     public ILanguageModel Responses(string modelId)
     {
@@ -184,7 +210,8 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             options.AccessKeyId,
             options.SecretAccessKey,
             options.SessionToken,
-            options.UtcNow);
+            options.UtcNow,
+            options.CredentialProvider);
         var openAI = new OpenAIOptions
         {
             ProviderName = "bedrock-mantle",
