@@ -19,45 +19,104 @@ public sealed class GatewayDecisionModelTests
         Assert.Equal(new[] { "choice", "score", "boolean" }, Setup().Model.SupportedQuestionTypes);
     }
 
-    public static TheoryData<string, object?, object?> LegacyStates()
+    public static TheoryData<string, List<object?>> StatePartsCases()
     {
-        return new TheoryData<string, object?, object?>
+        return new TheoryData<string, List<object?>>
         {
-            { "text", new List<object?> { Text("Inspect.") }, "Inspect." },
-            { "object", new List<object?> { Json(new Dictionary<string, object?> { ["product"] = "vase", ["history"] = new List<object?> { "new" } }) }, new Dictionary<string, object?> { ["product"] = "vase", ["history"] = new List<object?> { "new" } } },
-            { "JSON array", new List<object?> { Json(new List<object?> { "vase", null }) }, new List<object?> { "vase", null } },
-            { "empty parts", new List<object?>(), new List<object?>() },
-            { "mixed parts", new List<object?> { Text("Inspect."), Json(new Dictionary<string, object?> { ["product"] = "vase" }), Json(new List<object?> { 1, null }) }, new List<object?> { "Inspect.", new Dictionary<string, object?> { ["product"] = "vase" }, new List<object?> { 1, null } } },
-            { "JSON number", new List<object?> { Json(1) }, new List<object?> { 1 } },
-            { "JSON null", new List<object?> { Json(null) }, new List<object?> { null } },
+            { "a text part", new List<object?> { Text("Inspect.") } },
+            { "a JSON object part", new List<object?> { Json(new Dictionary<string, object?> { ["product"] = "vase", ["history"] = new List<object?> { "new" } }) } },
+            { "a JSON array part", new List<object?> { Json(new List<object?> { "vase", null }) } },
+            { "empty parts", new List<object?>() },
+            { "mixed parts", new List<object?> { Text("Inspect."), Json(new Dictionary<string, object?> { ["product"] = "vase" }), Json(new List<object?> { 1, null }) } },
+            { "a JSON number", new List<object?> { Json(1) } },
+            { "JSON null", new List<object?> { Json(null) } },
         };
     }
 
     [Theory]
-    [MemberData(nameof(LegacyStates))]
-    public async Task Sends_name_using_the_legacy_Gateway_state_format(string name, object? state, object? expected)
+    [MemberData(nameof(StatePartsCases))]
+    [UpstreamTest(Prefix + "sends $name as ordered state parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_name_as_ordered_state_parts(string name, List<object?> state)
     {
+        Assert.NotEmpty(name);
         var (model, capture) = Setup();
-        await model.DoDecideAsync(Call(state: state));
-        var body = RequestBody(capture)!;
-        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(expected), body["state"]?.ToJsonString() ?? "null");
-        Assert.Equal(2, body.AsObject().Count);
-        Assert.NotNull(name);
+        await model.DoDecideAsync(Call(null, state: state));
+        JsonAssert.Equal(RequestBody(capture), "{\"stateParts\":" + System.Text.Json.JsonSerializer.Serialize(state) + ",\"questions\":" + QuestionsJson + "}");
     }
 
-    [Theory]
-    [InlineData("image/png")]
-    [InlineData("application/pdf")]
-    public async Task Rejects_before_sending_a_Gateway_request(string mediaType)
+    [Fact]
+    [UpstreamTest(Prefix + "sends file bytes as base64 in ordered state parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_file_bytes_as_base64_in_ordered_state_parts()
     {
         var (model, capture) = Setup();
         var state = new List<object?>
         {
-            new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = mediaType, ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = new byte[] { 1, 2, 3 } } },
+            Text("Inspect this package."),
+            File("image/png", new byte[] { 1, 2, 3 }, "box.png"),
+            Json(new Dictionary<string, object?> { ["product"] = "vase" }),
         };
-        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => model.DoDecideAsync(Call(state: state)));
-        Assert.Equal("Gateway decision file input", error.Functionality);
-        Assert.Empty(capture.Body);
+        await model.DoDecideAsync(Call(null, state: state));
+        JsonAssert.Equal(
+            RequestBody(capture),
+            """
+            {
+              "stateParts": [
+                { "type": "text", "text": "Inspect this package." },
+                { "type": "file", "mediaType": "image/png", "filename": "box.png", "data": { "type": "data", "data": "AQID" } },
+                { "type": "json", "value": { "product": "vase" } }
+              ],
+              "questions":
+            """ + QuestionsJson + "}");
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "sends base64 file strings unchanged", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_base64_file_strings_unchanged()
+    {
+        var (model, capture) = Setup();
+        await model.DoDecideAsync(Call(null, state: new List<object?> { File("image/jpeg", "AQID", null) }));
+        JsonAssert.Equal(
+            RequestBody(capture),
+            """
+            {
+              "stateParts": [{ "type": "file", "mediaType": "image/jpeg", "data": { "type": "data", "data": "AQID" } }],
+              "questions":
+            """ + QuestionsJson + "}");
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "rejects URL file data before sending a Gateway request", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_URL_file_data_before_sending_a_Gateway_request()
+    {
+        var (model, capture) = Setup();
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?>
+            {
+                ["type"] = "file",
+                ["mediaType"] = "image/png",
+                ["data"] = new Dictionary<string, object?> { ["type"] = "url", ["url"] = "https://example.com/a.png" },
+            },
+        };
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => model.DoDecideAsync(Call(null, state: state)));
+        Assert.Equal("Gateway decision file input: url data", error.Functionality);
+        Assert.Equal(0, capture.Calls);
+    }
+
+    private static Dictionary<string, object?> File(string mediaType, object data, string? filename)
+    {
+        var part = new Dictionary<string, object?>
+        {
+            ["type"] = "file",
+            ["mediaType"] = mediaType,
+            ["data"] = new Dictionary<string, object?> { ["type"] = "data", ["data"] = data },
+        };
+        if (filename != null)
+        {
+            part["filename"] = filename;
+        }
+
+        return part;
     }
 
     private static Dictionary<string, object?> Text(string text)

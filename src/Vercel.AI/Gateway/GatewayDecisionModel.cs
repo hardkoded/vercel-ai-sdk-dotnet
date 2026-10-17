@@ -69,8 +69,8 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             questions[pair.Key] = question;
         }
 
-        var body = new JsonObject { ["state"] = LegacyState(call.State), ["questions"] = questions };
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.EnumerateObject().Any())
+        var body = new JsonObject { ["stateParts"] = StateParts(call.State), ["questions"] = questions };
+        if (call.ProviderOptions.ValueKind == JsonValueKind.Object)
         {
             body["providerOptions"] = JsonNode.Parse(call.ProviderOptions.GetRawText());
         }
@@ -189,32 +189,57 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 
-    /// <summary>Keeps the legacy Gateway state format: a string, a JSON object, or a JSON array.</summary>
-    private static JsonNode? LegacyState(IReadOnlyList<DecisionModelStatePart> state)
+    /// <summary>Serializes the ordered state parts. File data goes out as base64. Maps to <c>toGatewayDecisionState</c>.</summary>
+    private static JsonArray StateParts(IReadOnlyList<DecisionModelStatePart> state)
     {
-        var values = new JsonArray();
+        var parts = new JsonArray();
         foreach (var part in state)
         {
             switch (part)
             {
-                case DecisionModelFilePart:
-                    throw new UnsupportedFunctionalityException("Gateway decision file input", "'Gateway decision file input' functionality not supported.");
                 case DecisionModelTextPart text:
-                    values.Add(JsonValue.Create(text.Text));
+                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
                     break;
                 case DecisionModelJsonPart json:
-                    values.Add(JsonNode.Parse(json.Value.GetRawText()));
+                    parts.Add(new JsonObject { ["type"] = "json", ["value"] = JsonNode.Parse(json.Value.GetRawText()) });
+                    break;
+                case DecisionModelFilePart file:
+                    parts.Add(FilePart(file));
                     break;
             }
         }
 
-        // A single string, object, or array is sent as it is. Anything else stays a list.
-        if (values.Count == 1 && (values[0] is JsonObject or JsonArray || (values[0] is JsonValue single && single.TryGetValue<string>(out _))))
+        return parts;
+    }
+
+    private static JsonObject FilePart(DecisionModelFilePart file)
+    {
+        if (file.Data.DataType != "data")
         {
-            return values[0]!.DeepClone();
+            var functionality = "Gateway decision file input: " + file.Data.DataType + " data";
+            throw new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
         }
 
-        return values;
+        var data = file.Data.Base64 ?? ByteEncoding.ToBase64(file.Data.Bytes ?? Array.Empty<byte>());
+        var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType };
+        if (file.FileName != null)
+        {
+            node["filename"] = file.FileName;
+        }
+
+        node["data"] = new JsonObject { ["type"] = "data", ["data"] = data };
+        if (file.ProviderOptions != null)
+        {
+            var options = new JsonObject();
+            foreach (var pair in file.ProviderOptions)
+            {
+                options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+            }
+
+            node["providerOptions"] = options;
+        }
+
+        return node;
     }
 }
 
