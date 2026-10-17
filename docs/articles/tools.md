@@ -38,6 +38,26 @@ A call to a tool that has no `Execute` ends the loop at that step. The stop cond
 
 Set `ApproveTool` to veto a call before it runs. A denied call is stored as an error tool result.
 
+## Tool call execution concurrency
+
+By default, when a model generates several tool calls in one step, `GenerateTextAsync`, `StreamTextAsync`, and `Agent` start all of them at once. Set `ToolCallConcurrency` to a positive integer to limit how many tool calls run at the same time. The property is on `GenerateTextOptions`, `StreamTextOptions` (which inherits it), and `AgentOptions`. `Agent` copies it onto the options it builds, so `PrepareCall` can replace it.
+
+Use `ToolCallConcurrency = 1` when later calls need to see the side effects of earlier calls. The SDK then runs the calls one at a time, in the order the model generated them. Results always stay in model order, whatever the limit.
+
+```csharp
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    ModelId = "openai/gpt-6-astra",
+    Prompt = "Update the file, then read it.",
+    Tools = tools,
+    ToolCallConcurrency = 1,
+});
+```
+
+A value below 1 throws `InvalidArgumentError` (`Parameter` is `toolCallConcurrency`) before the model is called. `StreamTextAsync` throws before it returns.
+
+The option controls the tool calls that the SDK runs itself. It does not limit how many tool calls the model generates, and it does not schedule provider-executed tools. Provider options such as `parallelToolCalls` control model generation instead. When the call is canceled, tool calls that are still queued do not start.
+
 ## Provider-executed tool approval
 
 A provider-executed tool, such as an MCP tool, can ask for approval before the provider runs it. The model returns a `GeneratedToolApprovalRequest` (`tool-approval-request`) next to the tool call. The step keeps it in `Content` with its `ToolCall` filled in, and `StreamText` emits a `ToolApprovalRequestPart`. The step ends there, because there is no client tool call to run, and the finish reason stays `tool-calls`.

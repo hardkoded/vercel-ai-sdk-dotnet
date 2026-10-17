@@ -522,6 +522,12 @@ public class GenerateTextOptions
     /// <summary>Tool names allowed on this call. Null allows every tool.</summary>
     public IReadOnlyList<string>? ActiveTools { get; set; }
 
+    /// <summary>
+    /// Maximum number of tool calls that may execute concurrently within a step. Set to 1 to execute them one at a time in model order.
+    /// Null runs every tool call at once. Values below 1 throw <see cref="InvalidArgumentError"/>. Maps to <c>toolCallConcurrency</c>.
+    /// </summary>
+    public int? ToolCallConcurrency { get; set; }
+
     /// <summary>Tool selection mode.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
