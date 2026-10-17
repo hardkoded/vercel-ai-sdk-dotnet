@@ -208,6 +208,7 @@ internal static class Generation
             var messages = BuildPrompt(options);
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
+            buffer.Add(new StartPart());
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -230,6 +231,10 @@ internal static class Generation
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
 
+                var stepWatch = Stopwatch.StartNew();
+                var stepStarted = false;
+                var outputChunkTimes = new List<double>();
+                var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
                 var reasoning = new StringBuilder();
@@ -276,6 +281,12 @@ internal static class Generation
                         }
 
                         var part = enumerator.Current;
+                        if (!stepStarted && part is not StreamStartStreamPart)
+                        {
+                            stepStarted = true;
+                            buffer.Add(new StartStepPart());
+                        }
+
                         switch (part)
                         {
                             case TextStartStreamPart textStart:
@@ -284,6 +295,7 @@ internal static class Generation
                             case TextDeltaStreamPart delta:
                                 text.Append(delta.Delta);
                                 TextBlock.Find(textBlocks, delta.Id).Text.Append(delta.Delta);
+                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new TextDeltaPart(delta.Delta));
                                 break;
                             case TextEndStreamPart textEnd:
@@ -308,19 +320,25 @@ internal static class Generation
                             case ReasoningDeltaStreamPart reasoningDelta:
                                 reasoning.Append(reasoningDelta.Delta);
                                 reasoningMetadata.Add(reasoningDelta.ProviderMetadata);
+                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
                                 var call = new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted };
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
+                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new ToolCallPart(call));
                                 break;
                             case ToolResultStreamPart streamedResult:
                                 var providerResult = new GeneratedToolResult(streamedResult.ToolCallId, streamedResult.ToolName, streamedResult.Result.GetRawText(), streamedResult.IsError) { ProviderMetadata = streamedResult.ProviderMetadata };
                                 toolContent.Add(providerResult);
+                                var providerExecuted = new ExecutedTool(providerResult.ToolCallId, providerResult.ToolName, providerResult.ResultJson, providerResult.IsError);
+                                emittedResultIds.Add(providerResult.ToolCallId);
+                                buffer.Add(providerResult.IsError ? new ToolErrorPart(providerExecuted) : new ToolResultPart(providerExecuted));
                                 break;
                             case ToolInputStartStreamPart inputStart:
+                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new ToolInputStartPart(
                                     inputStart.Id,
                                     inputStart.ToolName,
@@ -330,6 +348,7 @@ internal static class Generation
                                     inputStart.InputEncoding));
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
+                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
                                 buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
                                 break;
                             case ToolInputEndStreamPart inputEnd:
@@ -351,6 +370,12 @@ internal static class Generation
                                 throw new AiSdkException(error.Message);
                             case StreamStartStreamPart start:
                                 warnings = start.Warnings;
+                                if (!stepStarted)
+                                {
+                                    stepStarted = true;
+                                    buffer.Add(new StartStepPart(start.Warnings));
+                                }
+
                                 break;
                         }
                     }
@@ -358,6 +383,12 @@ internal static class Generation
                 finally
                 {
                     await abort.DisposeAsync(disposal).ConfigureAwait(false);
+                }
+
+                var responseTimeMs = stepWatch.Elapsed.TotalMilliseconds;
+                if (!stepStarted)
+                {
+                    buffer.Add(new StartStepPart());
                 }
 
                 var generated = new LanguageModelGenerateResult(
@@ -368,13 +399,19 @@ internal static class Generation
                     warnings,
                     providerMetadata: providerMetadata);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken).ConfigureAwait(false);
+                var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
+                var step = await FinishStepAsync(generated, options, messages, current, cancellationToken, toolExecutionMs).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
-                    buffer.Add(new ToolResultPart(toolResult));
+                    if (emittedResultIds.Contains(toolResult.ToolCallId))
+                    {
+                        continue;
+                    }
+
+                    buffer.Add(toolResult.IsError ? new ToolErrorPart(toolResult) : new ToolResultPart(toolResult));
                 }
 
-                buffer.Add(new StepFinishPart(step));
+                buffer.Add(new StepFinishPart(step, StepPerformanceCalculator.Create(stepWatch.Elapsed.TotalMilliseconds, responseTimeMs, outputChunkTimes, toolExecutionMs, step.Usage)));
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -656,7 +693,8 @@ internal static class Generation
         GenerateTextOptions options,
         List<ModelMessage> messages,
         ILanguageModel model,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Dictionary<string, double>? toolExecutionMs = null)
     {
         var toolCalls = new List<GeneratedToolCall>();
         var sources = new List<GeneratedSource>();
@@ -722,7 +760,13 @@ internal static class Generation
                     continue;
                 }
 
+                var toolWatch = Stopwatch.StartNew();
                 var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+                if (toolExecutionMs != null)
+                {
+                    toolExecutionMs[call.ToolCallId] = toolWatch.Elapsed.TotalMilliseconds;
+                }
+
                 toolResults.Add(executed);
                 messages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
             }

@@ -753,6 +753,30 @@ public abstract class TextStreamPart
     public string Type { get; }
 }
 
+/// <summary>The full stream started. It is the first part of the stream.</summary>
+public sealed class StartPart : TextStreamPart
+{
+    /// <summary>Creates a start part.</summary>
+    public StartPart()
+        : base("start")
+    {
+    }
+}
+
+/// <summary>A step started. It comes before the parts of that step.</summary>
+public sealed class StartStepPart : TextStreamPart
+{
+    /// <summary>Creates a start-step part.</summary>
+    public StartStepPart(IReadOnlyList<CallWarning>? warnings = null)
+        : base("start-step")
+    {
+        Warnings = warnings ?? Array.Empty<CallWarning>();
+    }
+
+    /// <summary>Warnings from the model call of this step.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
+}
+
 /// <summary>Text delta.</summary>
 public sealed class TextDeltaPart : TextStreamPart
 {
@@ -883,6 +907,20 @@ public sealed class ToolResultPart : TextStreamPart
     public ExecutedTool Result { get; }
 }
 
+/// <summary>A tool call failed or was denied. A successful call is a <see cref="ToolResultPart"/>.</summary>
+public sealed class ToolErrorPart : TextStreamPart
+{
+    /// <summary>Creates a tool-error part.</summary>
+    public ToolErrorPart(ExecutedTool result)
+        : base("tool-error")
+    {
+        Result = result;
+    }
+
+    /// <summary>The failed tool result. <see cref="ExecutedTool.OutputJson"/> holds the error.</summary>
+    public ExecutedTool Result { get; }
+}
+
 /// <summary>A cited source.</summary>
 public sealed class SourcePart : TextStreamPart
 {
@@ -901,14 +939,85 @@ public sealed class SourcePart : TextStreamPart
 public sealed class StepFinishPart : TextStreamPart
 {
     /// <summary>Creates a step-finish part.</summary>
-    public StepFinishPart(StepResult step)
+    public StepFinishPart(StepResult step, StepPerformance? performance = null)
         : base("finish-step")
     {
         Step = step;
+        Performance = performance ?? StepPerformance.Empty;
     }
 
     /// <summary>Completed step.</summary>
     public StepResult Step { get; }
+
+    /// <summary>Performance metrics of the step. Maps to <c>performance</c>.</summary>
+    public StepPerformance Performance { get; }
+}
+
+/// <summary>Timing statistics for the gaps between generated output chunks, in milliseconds.</summary>
+public sealed class OutputChunkTimingStats
+{
+    /// <summary>Creates the statistics.</summary>
+    public OutputChunkTimingStats(double min, double max, double avg, double median, double p10, double p90)
+    {
+        Min = min;
+        Max = max;
+        Avg = avg;
+        Median = median;
+        P10 = p10;
+        P90 = p90;
+    }
+
+    /// <summary>Smallest gap.</summary>
+    public double Min { get; }
+
+    /// <summary>Largest gap.</summary>
+    public double Max { get; }
+
+    /// <summary>Average gap.</summary>
+    public double Avg { get; }
+
+    /// <summary>Median gap.</summary>
+    public double Median { get; }
+
+    /// <summary>10th percentile gap.</summary>
+    public double P10 { get; }
+
+    /// <summary>90th percentile gap.</summary>
+    public double P90 { get; }
+}
+
+/// <summary>Performance metrics for one step. Maps to <c>StepResultPerformance</c>.</summary>
+public sealed class StepPerformance
+{
+    /// <summary>A step with every metric at zero.</summary>
+    public static StepPerformance Empty { get; } = new();
+
+    /// <summary>Effective output tokens per second over the full model response.</summary>
+    public double EffectiveOutputTokensPerSecond { get; init; }
+
+    /// <summary>Output tokens per second after the first output chunk. Only set for streaming steps.</summary>
+    public double? OutputTokensPerSecond { get; init; }
+
+    /// <summary>Input tokens per second before the first output chunk. Only set for streaming steps.</summary>
+    public double? InputTokensPerSecond { get; init; }
+
+    /// <summary>Effective input and output tokens per second over the full model response.</summary>
+    public double EffectiveTotalTokensPerSecond { get; init; }
+
+    /// <summary>Total time spent on the step in milliseconds.</summary>
+    public double StepTimeMs { get; init; }
+
+    /// <summary>Time spent waiting for the model response in milliseconds.</summary>
+    public double ResponseTimeMs { get; init; }
+
+    /// <summary>Time spent executing each client-side tool call in milliseconds, keyed by tool call id.</summary>
+    public IReadOnlyDictionary<string, double> ToolExecutionMs { get; init; } = new Dictionary<string, double>();
+
+    /// <summary>Time until the first generated output chunk in milliseconds. Only set for streaming steps.</summary>
+    public double? TimeToFirstOutputMs { get; init; }
+
+    /// <summary>Gaps between output chunks. Only set for streaming steps with at least two output chunks.</summary>
+    public OutputChunkTimingStats? TimeBetweenOutputChunksMs { get; init; }
 }
 
 /// <summary>The stream failed.</summary>
