@@ -111,6 +111,13 @@ internal static class OpenAIParallelToolCall
             values["namespace"] = ns;
         }
 
+        if (item.TryGetProperty("caller", out var caller) && caller.ValueKind == JsonValueKind.Object)
+        {
+            values["caller"] = OpenAIJson.String(caller, "type") == "program"
+                ? new JsonObject { ["type"] = "program", ["callerId"] = OpenAIJson.String(caller, "caller_id") }
+                : JsonNode.Parse(caller.GetRawText());
+        }
+
         return values.Count > 0 ? OpenAIJson.ProviderMetadata(values) : null;
     }
 }

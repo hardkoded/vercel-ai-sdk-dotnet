@@ -34,8 +34,14 @@ internal sealed class OpenAIResponsesStream
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
 
-    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null)
+    private readonly string _programmaticToolName;
+
+    public OpenAIResponsesStream(
+        Func<string>? generateId = null,
+        IReadOnlyCollection<string>? functionToolNames = null,
+        string programmaticToolName = "programmatic_tool_calling")
     {
+        _programmaticToolName = programmaticToolName;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
         _generateId = generateId ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
     }
@@ -355,6 +361,27 @@ internal sealed class OpenAIResponsesStream
                 OpenAIResponsesOutput.Citations(_annotations),
                 OpenAIResponsesOutput.TextMetadata(id, _annotations)));
             _annotations.Clear();
+        }
+        else if (itemType == "program")
+        {
+            parts.Add(new ToolCallStreamPart(
+                OpenAIJson.String(item, "call_id") ?? string.Empty,
+                _programmaticToolName,
+                OpenAIResponsesOutput.ProgramInput(item),
+                OpenAIResponsesOutput.ItemMetadata(item))
+            {
+                ProviderExecuted = true,
+            });
+        }
+        else if (itemType == "program_output")
+        {
+            parts.Add(new ToolResultStreamPart(
+                OpenAIJson.String(item, "call_id") ?? string.Empty,
+                _programmaticToolName,
+                JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.ProgramOutputResult(item)))
+            {
+                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+            });
         }
         else if (itemType == "web_search_call")
         {

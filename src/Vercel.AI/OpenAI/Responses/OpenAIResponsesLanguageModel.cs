@@ -119,6 +119,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ["openai.programmatic_tool_calling"] = "programmatic_tool_calling",
     };
 
+    // The name the caller gave the programmatic tool calling provider tool.
+    internal static string ProgrammaticToolName(IReadOnlyList<LanguageModelTool>? tools) =>
+        tools?.FirstOrDefault(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.programmatic_tool_calling")?.Name
+        ?? "programmatic_tool_calling";
+
     private static IReadOnlyList<MappedTool>? MappedTools(IReadOnlyList<LanguageModelTool>? tools)
     {
         return tools?.Select(tool => tool.IsProviderDefined
@@ -544,7 +549,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
+        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), ProgrammaticToolName(options.Tools));
     }
 
     /// <inheritdoc />
@@ -563,7 +568,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
+        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), ProgrammaticToolName(options.Tools));
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;
@@ -606,7 +611,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         string raw,
         IReadOnlyDictionary<string, string> headers,
         Func<string>? generateId = null,
-        IReadOnlyCollection<string>? functionToolNames = null)
+        IReadOnlyCollection<string>? functionToolNames = null,
+        string programmaticToolName = "programmatic_tool_calling")
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -727,6 +733,27 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                 var metadata = OpenAIParallelToolCall.CallMetadata(item);
                 content.Add(new GeneratedToolCall(id, name, arguments, metadata));
+            }
+            else if (type == "program")
+            {
+                content.Add(new GeneratedToolCall(
+                    OpenAIJson.String(item, "call_id") ?? string.Empty,
+                    programmaticToolName,
+                    OpenAIResponsesOutput.ProgramInput(item),
+                    OpenAIResponsesOutput.ItemMetadata(item))
+                {
+                    ProviderExecuted = true,
+                });
+            }
+            else if (type == "program_output")
+            {
+                content.Add(new GeneratedToolResult(
+                    OpenAIJson.String(item, "call_id") ?? string.Empty,
+                    programmaticToolName,
+                    OpenAIResponsesOutput.ProgramOutputResult(item))
+                {
+                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+                });
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {

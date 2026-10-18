@@ -28,6 +28,26 @@ public sealed class OpenAIText : GeneratedText
 /// </summary>
 internal static class OpenAIResponsesOutput
 {
+    /// <summary>The input of a <c>program</c> item: its code and fingerprint.</summary>
+    internal static string ProgramInput(JsonElement item) => new JsonObject
+    {
+        ["code"] = OpenAIJson.String(item, "code"),
+        ["fingerprint"] = OpenAIJson.String(item, "fingerprint"),
+    }.ToJsonString();
+
+    /// <summary>The result of a <c>program_output</c> item: its result and status.</summary>
+    internal static string ProgramOutputResult(JsonElement item) => new JsonObject
+    {
+        ["result"] = OpenAIJson.String(item, "result"),
+        ["status"] = OpenAIJson.String(item, "status"),
+    }.ToJsonString();
+
+    /// <summary>Provider metadata that carries the item id.</summary>
+    internal static JsonElement? ItemMetadata(JsonElement item) =>
+        OpenAIJson.String(item, "id") is { Length: > 0 } id
+            ? OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id })
+            : null;
+
     /// <summary>The source an annotation points at: a URL source for <c>url_citation</c>, else a document source.</summary>
     public static GeneratedContent AnnotationSource(JsonElement annotation, string id)
     {
