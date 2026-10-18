@@ -1091,7 +1091,7 @@ public sealed class StepFinishPart : TextStreamPart
     /// <summary>Response metadata of the step: id, model id, timestamp, and headers. Maps to <c>response</c>.</summary>
     public LanguageModelResponseMetadata Response { get; }
 
-    /// <summary>The finish reason the provider reported, when it differs from <see cref="StepResult.FinishReason"/>. Maps to <c>rawFinishReason</c>.</summary>
+    /// <summary>The finish reason exactly as the provider reported it, or <see langword="null"/> when the provider reported none. Maps to <c>rawFinishReason</c>.</summary>
     public string? RawFinishReason { get; }
 
     /// <summary>Provider metadata of the step. Maps to <c>providerMetadata</c>.</summary>
