@@ -210,6 +210,15 @@ public sealed class PerplexityDecisionModelTests
         await restored.DoDecideAsync(Call());
         Assert.Equal("https://example.com/v1/decisions", capture.Uri);
         Assert.Equal("Bearer test-key", capture.Headers["Authorization"]);
+
+        // A workflow runtime rehydrates the config from JSON, so values arrive as JsonElement.
+        var rehydrated = new Vercel.AI.ProviderUtils.SerializedModelOptions(
+            serialized.ModelId,
+            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(JsonSerializer.Serialize(serialized.Config))!.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+        var (_, secondCapture) = Setup();
+        await Vercel.AI.Perplexity.PerplexityDecisionModel.Deserialize(rehydrated, new HttpClient(secondCapture)).DoDecideAsync(Call());
+        Assert.Equal("https://example.com/v1/decisions", secondCapture.Uri);
+        Assert.Equal("Bearer test-key", secondCapture.Headers["Authorization"]);
     }
 
     private static JsonObject Answers(int index)

@@ -79,19 +79,35 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         }
 
         var providerOptions = new OpenAICompatibleOptions();
-        if (options.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
+        if (options.Config.TryGetValue("baseURL", out var baseUrl) && AsString(baseUrl) is { } url)
         {
             providerOptions.BaseUrl = url;
         }
 
-        if (options.Config.TryGetValue("headers", out var headers) && headers is IDictionary<string, object?> values)
+        if (options.Config.TryGetValue("headers", out var headers))
         {
-            foreach (var pair in values)
+            switch (headers)
             {
-                if (pair.Value is string value)
-                {
-                    providerOptions.Headers[pair.Key] = value;
-                }
+                case JsonElement { ValueKind: JsonValueKind.Object } element:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        if (property.Value.ValueKind == JsonValueKind.String)
+                        {
+                            providerOptions.Headers[property.Name] = property.Value.GetString()!;
+                        }
+                    }
+
+                    break;
+                case IDictionary<string, object?> values:
+                    foreach (var pair in values)
+                    {
+                        if (AsString(pair.Value) is { } value)
+                        {
+                            providerOptions.Headers[pair.Key] = value;
+                        }
+                    }
+
+                    break;
             }
         }
 
@@ -197,6 +213,16 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
         // Perplexity returns full-precision probabilities, so no rounding is declared.
         return new DecisionModelResult(answers, warnings, usage, null, metadata, new ProviderResponse(response.Headers, root, id: requestId, modelId: modelId ?? ModelId));
+    }
+
+    private static string? AsString(object? value)
+    {
+        return value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
     }
 
     private JsonObject BuildQuestion(string name, DecisionQuestion question)

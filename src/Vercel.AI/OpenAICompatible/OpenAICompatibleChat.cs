@@ -201,7 +201,7 @@ public static class OpenAICompatibleChat
     /// <summary>Copies an API exception onto the same status type with a new message.</summary>
     public static ApiException WithMessage(ApiException exception, string message)
     {
-        return ProviderHttp.MapStatus(exception.StatusCode, message, exception.ResponseBody, exception.ResponseHeaders);
+        return ProviderHttp.MapStatusWithHeaders(exception.StatusCode, message, exception.ResponseBody, exception.ResponseHeaders);
     }
 
     /// <summary>Top-level reasoning values other than <c>provider-default</c> are sent as <c>reasoning_effort</c>.</summary>

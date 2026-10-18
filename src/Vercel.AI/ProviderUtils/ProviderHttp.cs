@@ -37,7 +37,7 @@ public sealed class ProviderHttp
         var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatus((int)response.StatusCode, body, CopyHeaders(response));
+            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
         }
 
         if (string.IsNullOrWhiteSpace(body))
@@ -62,7 +62,7 @@ public sealed class ProviderHttp
             var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                throw MapStatus((int)response.StatusCode, body, CopyHeaders(response));
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             return new ProviderTextResponse(body ?? string.Empty, CopyHeaders(response));
@@ -114,7 +114,8 @@ public sealed class ProviderHttp
         var bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatus((int)response.StatusCode, Encoding.UTF8.GetString(bytes), CopyHeaders(response));
+            var text = Encoding.UTF8.GetString(bytes);
+            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(text, (int)response.StatusCode), text, CopyHeaders(response));
         }
 
         return new ProviderBinaryResponse(bytes, CopyHeaders(response), response.Content.Headers.ContentType?.MediaType);
@@ -176,7 +177,7 @@ public sealed class ProviderHttp
             if (!response.IsSuccessStatusCode)
             {
                 var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatus((int)response.StatusCode, body, CopyHeaders(response));
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -248,7 +249,7 @@ public sealed class ProviderHttp
             if (!response.IsSuccessStatusCode)
             {
                 var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatus((int)response.StatusCode, body, CopyHeaders(response));
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -279,16 +280,19 @@ public sealed class ProviderHttp
     }
 
     /// <summary>Maps an HTTP status onto the SDK exception hierarchy.</summary>
-    public static ApiException MapStatus(int statusCode, string? body, IReadOnlyDictionary<string, string>? responseHeaders = null)
+    public static ApiException MapStatus(int statusCode, string? body)
     {
-        return MapStatus(statusCode, JsonValues.ExtractErrorMessage(body, statusCode), body, responseHeaders);
+        return MapStatus(statusCode, JsonValues.ExtractErrorMessage(body, statusCode), body);
     }
 
-    /// <summary>
-    /// Maps an HTTP status onto the SDK exception hierarchy with a provider-specific <paramref name="message"/>.
-    /// <paramref name="responseHeaders"/> are kept on the exception.
-    /// </summary>
-    public static ApiException MapStatus(int statusCode, string message, string? body, IReadOnlyDictionary<string, string>? responseHeaders = null)
+    /// <summary>Maps an HTTP status onto the SDK exception hierarchy with a provider-specific <paramref name="message"/>.</summary>
+    public static ApiException MapStatus(int statusCode, string message, string? body)
+    {
+        return MapStatusWithHeaders(statusCode, message, body, null);
+    }
+
+    /// <summary>Like the public overloads, and keeps <paramref name="responseHeaders"/> on the exception.</summary>
+    internal static ApiException MapStatusWithHeaders(int statusCode, string message, string? body, IReadOnlyDictionary<string, string>? responseHeaders)
     {
         return statusCode switch
         {
