@@ -100,7 +100,7 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
 
     /// <summary>Creates an OpenAI provider.</summary>
     public OpenAIProvider(HttpClient httpClient, OpenAIOptions? options = null)
-        : base(options ?? new OpenAIOptions(), httpClient)
+        : base(options?.Copy() ?? new OpenAIOptions(), httpClient)
     {
         _openAI = (OpenAIOptions)Options;
         HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
