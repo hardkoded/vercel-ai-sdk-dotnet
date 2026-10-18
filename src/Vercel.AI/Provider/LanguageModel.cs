@@ -1217,6 +1217,12 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>Provider options set on the tool output itself rather than on the tool result, such as an OpenAI <c>promptCacheBreakpoint</c>.</summary>
     public JsonElement? OutputProviderOptions { get; init; }
 
+    /// <summary>Provider options of this tool result, such as an Amazon Bedrock <c>cachePoint</c> added right after it.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
+    /// <summary>Provider options of the whole tool message, such as an Amazon Bedrock <c>cachePoint</c> added after all its results.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }
+
     private static bool IsJson(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
