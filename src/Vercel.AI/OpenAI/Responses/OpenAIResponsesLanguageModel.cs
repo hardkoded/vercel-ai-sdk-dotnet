@@ -207,13 +207,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var hasContinuation = OpenAIJson.String(openai, "conversation") != null || OpenAIJson.String(openai, "previousResponseId") != null;
         var outputSchemaToolNames = new HashSet<string>();
         var customProviderToolNames = new HashSet<string>();
+        var toolNameMapping = CreateToolNameMapping(options.Tools);
         var prepared = PrepareResponsesTools(
             options.Tools,
             options.ToolChoice,
             new PrepareResponsesToolsOptions
             {
                 AllowedTools = ParseAllowedTools(openai),
-                ToolNameMapping = CreateToolNameMapping(options.Tools),
+                ToolNameMapping = toolNameMapping,
                 CustomProviderToolNames = customProviderToolNames,
                 OutputSchemaToolNames = outputSchemaToolNames,
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
@@ -229,7 +230,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             customToolNames: customProviderToolNames.Count > 0 ? customProviderToolNames : null,
             outputSchemaToolNames: outputSchemaToolNames,
             isReasoningModel: reasoning,
-            hasConversation: OpenAIJson.String(openai, "conversation") != null);
+            hasConversation: OpenAIJson.String(openai, "conversation") != null,
+            toolNameMapping: toolNameMapping);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -895,7 +897,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ISet<string>? customToolNames = null,
         ISet<string>? outputSchemaToolNames = null,
         bool isReasoningModel = false,
-        bool hasConversation = false)
+        bool hasConversation = false,
+        ToolNameMapping? toolNameMapping = null)
     {
         var input = new JsonArray();
         var warnings = new List<OpenAICallWarning>();
@@ -963,6 +966,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     foreach (var call in assistant.ToolCalls)
                     {
+                        if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
+                        {
+                            AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
+                            continue;
+                        }
+
                         if (customToolNames?.Contains(call.ToolName) == true)
                         {
                             var callOptions = ProviderOptionsFor(
@@ -1006,13 +1015,27 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             continue;
                         }
 
-                        input.Add(new JsonObject
+                        var functionCall = new JsonObject
                         {
                             ["type"] = "function_call",
                             ["call_id"] = call.ToolCallId,
                             ["name"] = call.ToolName,
                             ["arguments"] = string.IsNullOrEmpty(call.ArgumentsJson) ? "{}" : call.ArgumentsJson,
-                        });
+                        };
+                        if (ToolCaller(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName)) is { } functionCaller)
+                        {
+                            functionCall["caller"] = functionCaller;
+                        }
+
+                        input.Add(functionCall);
+                    }
+
+                    foreach (var resultPart in assistant.Parts.OfType<AssistantToolResultPart>())
+                    {
+                        if (IsProgrammaticToolName(resultPart.ToolName, toolNameMapping))
+                        {
+                            AddProgramOutput(input, resultPart, providerOptionsName, store);
+                        }
                     }
 
                     break;
@@ -1034,12 +1057,18 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         });
                     }
 
-                    input.Add(new JsonObject
+                    var toolResultItem = new JsonObject
                     {
                         ["type"] = toolIsCustom ? "custom_tool_call_output" : "function_call_output",
                         ["call_id"] = tool.ToolCallId,
                         ["output"] = toolOutput,
-                    });
+                    };
+                    if (!toolIsCustom && ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName)) is { } resultCaller)
+                    {
+                        toolResultItem["caller"] = resultCaller;
+                    }
+
+                    input.Add(toolResultItem);
 
                     var additionalTools = AdditionalTools(tool.ProviderMetadata, providerOptionsName);
                     if (additionalTools != null)
@@ -1059,6 +1088,110 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return new ResponsesInput(input, warnings);
+    }
+
+    private static bool IsProgrammaticToolName(string toolName, ToolNameMapping? toolNameMapping) =>
+        toolNameMapping?.ToProviderToolName(toolName) == "programmatic_tool_calling";
+
+    private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(AssistantModelMessage assistant, GeneratedToolCall call) =>
+        assistant.Parts.OfType<AssistantToolCallPart>().FirstOrDefault(part => part.ToolCall == call)?.ProviderOptions;
+
+    private static IReadOnlyDictionary<string, JsonElement>? ToOptions(JsonElement? providerMetadata) =>
+        providerMetadata is { ValueKind: JsonValueKind.Object } metadata
+            ? metadata.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone())
+            : null;
+
+    // The Responses caller of a tool call: a program caller uses caller_id, others pass through.
+    private static JsonNode? ToolCaller(JsonElement? options) =>
+        OpenAIJson.Child(options, "caller") is { ValueKind: JsonValueKind.Object } caller
+            ? OpenAIJson.String(caller, "type") == "program"
+                ? new JsonObject { ["type"] = "program", ["caller_id"] = OpenAIJson.String(caller, "callerId") }
+                : JsonNode.Parse(caller.GetRawText())
+            : null;
+
+    // A provider-executed program call replays as an item reference when stored, else as a program item.
+    private static void AddProgramCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasConversation)
+    {
+        var itemId = OpenAIJson.String(options, "itemId");
+        if (hasConversation && itemId != null)
+        {
+            return;
+        }
+
+        if (store && itemId != null)
+        {
+            input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            return;
+        }
+
+        JsonObject? programInput;
+        try
+        {
+            programInput = JsonNode.Parse(call.ArgumentsJson) as JsonObject;
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The programmatic tool call input is not valid JSON.", exception);
+        }
+
+        if (programInput?["code"] is not JsonValue code || code.GetValueKind() != JsonValueKind.String
+            || programInput["fingerprint"] is not JsonValue fingerprint || fingerprint.GetValueKind() != JsonValueKind.String)
+        {
+            throw new AiSdkException("The programmatic tool call input needs a string code and fingerprint.");
+        }
+
+        input.Add(new JsonObject
+        {
+            ["type"] = "program",
+            ["id"] = itemId ?? call.ToolCallId,
+            ["call_id"] = call.ToolCallId,
+            ["code"] = code.GetValue<string>(),
+            ["fingerprint"] = fingerprint.GetValue<string>(),
+        });
+    }
+
+    // A program result replays as an item reference when stored, else as a program_output item.
+    private static void AddProgramOutput(JsonArray input, AssistantToolResultPart part, string providerOptionsName, bool store)
+    {
+        var itemId = OpenAIJson.String(ProviderOptionsFor(part.ProviderOptions, providerOptionsName), "itemId")
+            ?? OpenAIJson.String(ProviderOptionsFor(ToOptions(part.Output.ProviderMetadata), providerOptionsName), "itemId")
+            ?? part.ToolCallId;
+        if (store)
+        {
+            input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            return;
+        }
+
+        if (part.Output.OutputType != "json")
+        {
+            return;
+        }
+
+        JsonObject? output;
+        try
+        {
+            output = JsonNode.Parse(part.Output.OutputJson) as JsonObject;
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The programmatic tool result is not valid JSON.", exception);
+        }
+
+        if (output?["result"] is not JsonValue result || result.GetValueKind() != JsonValueKind.String
+            || output["status"] is not JsonValue status || status.GetValueKind() != JsonValueKind.String
+            || (status.GetValue<string>() != "completed" && status.GetValue<string>() != "incomplete"))
+        {
+            throw new AiSdkException("The programmatic tool result needs a string result and a completed or incomplete status.");
+        }
+
+        input.Add(new JsonObject
+        {
+            ["type"] = "program_output",
+            ["id"] = itemId,
+            ["call_id"] = part.ToolCallId,
+            ["result"] = result.GetValue<string>(),
+            ["status"] = status.GetValue<string>(),
+        });
     }
 
     // Function definitions loaded immediately after an ordinary tool result. A malformed list is an error.

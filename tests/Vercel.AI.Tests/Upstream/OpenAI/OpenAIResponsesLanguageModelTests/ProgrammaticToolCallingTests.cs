@@ -102,6 +102,8 @@ public sealed class ProgrammaticToolCallingTests
         var program = Assert.Single(parts.OfType<ToolCallStreamPart>(), call => call.ToolCallId == "call_voPdoCqf8APY4DMpam3bdmxq");
         Assert.Equal("program", program.ToolName);
         Assert.True(program.ProviderExecuted);
+        JsonAssert.Equal(program.ProviderMetadata!.Value, """{"openai":{"itemId":"cm_0bac52ec5f239d30016a61460092b08192afc4b546af158c46"}}""");
+        Assert.Equal(new[] { "code", "fingerprint" }, JsonNode.Parse(program.ArgumentsJson)!.AsObject().Select(property => property.Key));
 
         var inventory = Assert.Single(parts.OfType<ToolCallStreamPart>(), call => call.ToolCallId == "call_VgDSZztLociNcutQZWkC2fmL");
         Assert.Equal("getInventory", inventory.ToolName);
@@ -117,6 +119,7 @@ public sealed class ProgrammaticToolCallingTests
 
         var output = Assert.Single(parts.OfType<ToolResultStreamPart>(), result => result.ToolCallId == "call_voPdoCqf8APY4DMpam3bdmxq");
         Assert.Equal("program", output.ToolName);
+        JsonAssert.Equal(output.ProviderMetadata!.Value, """{"openai":{"itemId":"cmo_0bac52ec5f239d30016a614605889881929f4b52f614383886"}}""");
         JsonAssert.Equal(
             output.Result,
             """{"result":"{\"inventory\":{\"availableUnits\":42,\"sku\":\"sku_123\"},\"demand\":{\"requestedUnits\":31,\"sku\":\"sku_123\"}}","status":"completed"}""");
