@@ -92,8 +92,8 @@ internal static class OpenAIParallelToolCall
         return expanded;
     }
 
-    /// <summary>Provider metadata of a plain function call: item id, plus async mode and namespace when present.</summary>
-    public static JsonElement? CallMetadata(JsonElement item)
+    /// <summary>Provider metadata of a plain function call: item id, plus async mode, namespace and caller when present. The async mode falls back to the one seen when the item was added.</summary>
+    public static JsonElement? CallMetadata(JsonElement item, bool? ongoingAsync = null)
     {
         var values = new JsonObject();
         if (OpenAIJson.String(item, "id") is { Length: > 0 } itemId)
@@ -105,10 +105,21 @@ internal static class OpenAIParallelToolCall
         {
             values["async"] = asyncMode.GetBoolean();
         }
+        else if (ongoingAsync is { } fallbackAsync)
+        {
+            values["async"] = fallbackAsync;
+        }
 
         if (OpenAIJson.String(item, "namespace") is { } ns)
         {
             values["namespace"] = ns;
+        }
+
+        if (item.TryGetProperty("caller", out var caller) && caller.ValueKind == JsonValueKind.Object)
+        {
+            values["caller"] = OpenAIJson.String(caller, "type") == "program"
+                ? new JsonObject { ["type"] = "program", ["callerId"] = OpenAIJson.String(caller, "caller_id") }
+                : JsonNode.Parse(caller.GetRawText());
         }
 
         return values.Count > 0 ? OpenAIJson.ProviderMetadata(values) : null;

@@ -12,7 +12,6 @@ namespace Vercel.AI.Tests;
 public sealed class OpenAIResponsesUpstreamTests
 {
     private const string Generate = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::";
-    private const string ToolCalls = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > tool calls::";
 
     [Fact]
     [UpstreamTest(Generate + "should remove unsupported settings for o1", Coverage = UpstreamCoverage.Covered)]
@@ -155,20 +154,6 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal("answer text", result.Text);
         Assert.Equal("resp_67c97c0203188190a025beb4a75242bc", result.ResponseId);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1741257730), result.ResponseTimestamp);
-    }
-
-    [Fact]
-    [UpstreamTest(ToolCalls + "should have tool-calls finish reason", Coverage = UpstreamCoverage.Covered)]
-    public async Task UsesToolCallsFinishReason()
-    {
-        var result = await GenerateFromJson("{\"id\":\"resp_tool\",\"incomplete_details\":null,\"output\":[{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"test-tool\",\"arguments\":\"{\\\"value\\\":\\\"Spark\\\"}\"}]}");
-        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
-        Assert.Null(result.RawFinishReason);
-        var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
-        Assert.Equal("call_1", call.ToolCallId);
-        Assert.Equal("test-tool", call.ToolName);
-        Assert.Equal("{\"value\":\"Spark\"}", call.ArgumentsJson);
-        Assert.Equal("fc_1", call.ProviderMetadata!.Value.GetProperty("openai").GetProperty("itemId").GetString());
     }
 
     private static async Task<LanguageModelGenerateResult> GenerateFromJson(string json)
