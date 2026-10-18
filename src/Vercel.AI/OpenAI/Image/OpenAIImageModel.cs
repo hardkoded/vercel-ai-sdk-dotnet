@@ -180,9 +180,29 @@ public sealed class OpenAIImageModel : IImageModel
                 Count = options.Count,
                 Size = options.Size,
                 AspectRatio = options.AspectRatio,
+                Seed = options.Seed,
+                ProviderOptions = OpenAIProviderOptions(options.ProviderOptions),
+                Files = options.Files?.Select(ToOpenAIFile).ToList(),
+                Mask = options.Mask == null ? null : ToOpenAIFile(options.Mask),
+                Headers = options.Headers,
             },
             cancellationToken).ConfigureAwait(false);
         return new ImageGenerationResult(result.Images);
+    }
+
+    private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        return providerOptions != null && providerOptions.TryGetValue("openai", out var openai) ? openai : null;
+    }
+
+    private static OpenAIImageFile ToOpenAIFile(Operations.ImageModelFile file)
+    {
+        if (file.Data == null)
+        {
+            throw new AiSdkException("OpenAI image edits need image data. URL images are not supported.");
+        }
+
+        return new OpenAIImageFile(file.Data, file.MediaType ?? "image/png", file.FileName);
     }
 
     /// <summary>Generates or edits images.</summary>

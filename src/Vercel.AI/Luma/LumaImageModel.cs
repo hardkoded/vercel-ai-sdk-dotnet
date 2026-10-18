@@ -105,7 +105,16 @@ public sealed class LumaImageModel : IImageModel
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        return await GenerateAsync(new LumaImageRequest(options.Prompt) { Size = options.Size, AspectRatio = options.AspectRatio }, cancellationToken).ConfigureAwait(false);
+        return await GenerateAsync(new LumaImageRequest(options.Prompt)
+        {
+            Size = options.Size,
+            AspectRatio = options.AspectRatio,
+            Seed = options.Seed,
+            Files = options.Files,
+            Mask = options.Mask,
+            ProviderOptions = options.ProviderOptionsElement,
+            Headers = options.Headers == null ? null : options.NonNullHeaders,
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Generates one image.</summary>

@@ -14,6 +14,7 @@ using Vercel.AI.DeepInfra;
 using Vercel.AI.Fireworks;
 using Vercel.AI.Gateway;
 using Vercel.AI.Google;
+using Vercel.AI.OpenAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -298,6 +299,58 @@ public sealed class SharedModelStateTests
         Assert.Same(Png, call.Mask);
         Assert.Same(providerOptions, call.ProviderOptions);
         Assert.Equal("a", call.Headers!["X-Call"]);
+    }
+
+    [Fact]
+    public async Task OpenAI_image_model_sends_an_edit_request_with_the_forwarded_options()
+    {
+        using var handler = new Rendezvous(1, "{\"data\":[]}");
+        var model = new OpenAIImageModel(OpenAIProvider.Create(new OpenAIOptions { ApiKey = "k" }, handler), "gpt-image-1");
+        var providerOptions = new Dictionary<string, JsonElement> { ["openai"] = JsonDocument.Parse("{\"quality\":\"high\"}").RootElement.Clone() };
+
+        await model.DoGenerateAsync(new ImageCallOptions("p") { Files = new[] { Png }, Mask = Png, Headers = Caller("a") }, CancellationToken.None);
+
+        Assert.EndsWith("/images/edits", handler.Requests["a"].Uri.AbsolutePath);
+        Assert.Contains("name=mask", handler.Requests["a"].Body, StringComparison.Ordinal);
+
+        using var generate = new Rendezvous(1, "{\"data\":[]}");
+        var plain = new OpenAIImageModel(OpenAIProvider.Create(new OpenAIOptions { ApiKey = "k" }, generate), "gpt-image-1");
+        await plain.DoGenerateAsync(new ImageCallOptions("p") { ProviderOptions = providerOptions, Headers = Caller("b") }, CancellationToken.None);
+        Assert.EndsWith("/images/generations", generate.Requests["b"].Uri.AbsolutePath);
+        Assert.Equal("high", JsonNode.Parse(generate.Requests["b"].Body)!["quality"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("fal", "fal-ai/flux/dev")]
+    [InlineData("bytedance", "seedream-4-0-250828")]
+    [InlineData("quiverai", "arrow-1")]
+    [InlineData("prodia", "inference.flux.schnell.txt2img.v2")]
+    [InlineData("replicate", "black-forest-labs/flux-schnell")]
+    [InlineData("luma", "photon-1")]
+    public async Task Image_models_send_the_headers_of_the_call(string provider, string modelId)
+    {
+        using var handler = new Rendezvous(1, "{}");
+        var options = new OpenAICompatibleOptions { ApiKey = "k" };
+        IImageModel model = provider switch
+        {
+            "fal" => Fal.FalProvider.Create(options, handler).ImageModel(modelId),
+            "bytedance" => ByteDance.ByteDanceProvider.Create(options, handler).ImageModel(modelId),
+            "quiverai" => QuiverAI.QuiverAIProvider.Create(options, handler).ImageModel(modelId),
+            "prodia" => Prodia.ProdiaProvider.Create(options, handler).ImageModel(modelId),
+            "replicate" => Replicate.ReplicateProvider.Create(options, handler).ImageModel(modelId),
+            _ => Luma.LumaProvider.Create(options, handler).ImageModel(modelId),
+        };
+
+        try
+        {
+            await model.DoGenerateAsync(new ImageCallOptions("p") { Seed = 4, Headers = Caller("a") }, CancellationToken.None);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // The scripted response is not a valid image reply. Only the request matters here.
+        }
+
+        Assert.True(handler.Requests.ContainsKey("a"), provider + " did not send the call headers.");
     }
 
     private sealed class CapturingImageModel : IImageModel

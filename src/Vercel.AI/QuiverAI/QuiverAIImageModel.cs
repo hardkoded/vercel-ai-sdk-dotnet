@@ -57,7 +57,7 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new ImageModelCall(options.Prompt, null, null, options.Count, options.Size, options.AspectRatio, null, null, new Dictionary<string, string>(), cancellationToken);
+        var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new ImageGenerationResult(result.Images.Select(image => new ProviderGeneratedImage("image/svg+xml", (byte[])image!, null)).ToArray());
     }

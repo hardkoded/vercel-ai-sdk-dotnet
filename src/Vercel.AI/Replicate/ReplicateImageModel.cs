@@ -60,7 +60,7 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
             throw new ArgumentNullException(nameof(options));
         }
 
-        var call = new ImageModelCall(options.Prompt, null, null, options.Count, options.Size, options.AspectRatio, null, null, new Dictionary<string, string>(), cancellationToken);
+        var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var images = new List<ProviderImage>();
         foreach (var image in result.Images)
