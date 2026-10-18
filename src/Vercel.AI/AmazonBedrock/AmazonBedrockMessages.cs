@@ -23,6 +23,7 @@ public static class AmazonBedrockMessages
         var built = new JsonArray();
         JsonArray? userContent = null;
         JsonArray? assistantContent = null;
+        JsonArray? toolResultContent = null;
         var documentCount = 0;
 
         void FlushUser()
@@ -32,8 +33,19 @@ public static class AmazonBedrockMessages
                 return;
             }
 
-            built.Add(new JsonObject { ["role"] = "user", ["content"] = userContent });
+            AppendToUserMessage(built, userContent);
             userContent = null;
+        }
+
+        void FlushToolResult()
+        {
+            if (toolResultContent == null)
+            {
+                return;
+            }
+
+            AppendToUserMessage(built, toolResultContent);
+            toolResultContent = null;
         }
 
         void FlushAssistant()
@@ -51,11 +63,12 @@ public static class AmazonBedrockMessages
             assistantContent = null;
         }
 
-        foreach (var message in ToolModelMessage.Flatten(prompt))
+        for (var messageIndex = 0; messageIndex < prompt.Count; messageIndex++)
         {
+            var message = prompt[messageIndex];
             if (message is SystemModelMessage systemMessage)
             {
-                if (built.Count > 0 || userContent != null || assistantContent != null)
+                if (built.Count > 0 || userContent != null || assistantContent != null || toolResultContent != null)
                 {
                     throw new AiSdkException("Multiple system messages that are separated by user/assistant messages are not supported.");
                 }
@@ -72,6 +85,7 @@ public static class AmazonBedrockMessages
 
             if (message is UserModelMessage user)
             {
+                FlushToolResult();
                 FlushAssistant();
                 userContent ??= new JsonArray();
                 foreach (var part in user.Content)
@@ -105,17 +119,19 @@ public static class AmazonBedrockMessages
 
             if (message is ToolModelMessage tool)
             {
+                FlushToolResult();
                 FlushAssistant();
                 userContent ??= new JsonArray();
-                userContent.Add(new JsonObject
+                foreach (var result in tool.Results)
                 {
-                    ["toolResult"] = new JsonObject
+                    userContent.Add(ToolResultBlock(result, isMistral));
+                    if (CachePoint(result.ProviderOptions) is { } resultCachePoint)
                     {
-                        ["toolUseId"] = AmazonBedrockToolIds.Normalize(tool.ToolCallId, isMistral),
-                        ["content"] = new JsonArray { new JsonObject { ["text"] = tool.OutputJson } },
-                    },
-                });
-                if (CachePoint(tool.ProviderOptions) is { } toolCachePoint)
+                        userContent.Add(resultCachePoint);
+                    }
+                }
+
+                if (CachePoint(tool.MessageProviderOptions) is { } toolCachePoint)
                 {
                     userContent.Add(toolCachePoint);
                 }
@@ -126,25 +142,35 @@ public static class AmazonBedrockMessages
             if (message is AssistantModelMessage assistant)
             {
                 FlushUser();
-                assistantContent ??= new JsonArray();
+                var isLastMessage = messageIndex == prompt.Count - 1;
                 var hasReasoningBlocks = assistant.Parts.Any(p => p is AssistantReasoningPart);
-                foreach (var part in assistant.Parts)
+                for (var partIndex = 0; partIndex < assistant.Parts.Count; partIndex++)
                 {
+                    var part = assistant.Parts[partIndex];
+                    var isLastPart = partIndex == assistant.Parts.Count - 1;
+                    if (part is not AssistantToolResultPart)
+                    {
+                        FlushToolResult();
+                    }
+
                     if (part is AssistantTextPart text)
                     {
                         // Skip empty text blocks unless reasoning blocks are present.
                         if (!string.IsNullOrWhiteSpace(text.Text) || hasReasoningBlocks)
                         {
-                            assistantContent.Add(new JsonObject { ["text"] = text.Text });
+                            // Bedrock does not allow trailing whitespace in a pre-filled assistant response.
+                            assistantContent ??= new JsonArray();
+                            assistantContent.Add(new JsonObject { ["text"] = isLastMessage && isLastPart ? text.Text.Trim() : text.Text });
                         }
                     }
                     else if (part is AssistantReasoningPart reasoning && ReasoningBlock(reasoning) is { } reasoningBlock)
                     {
-                        assistantContent.Add(reasoningBlock);
+                        (assistantContent ??= new JsonArray()).Add(reasoningBlock);
                     }
                     else if (part is AssistantToolCallPart toolCall)
                     {
                         var call = toolCall.ToolCall;
+                        assistantContent ??= new JsonArray();
                         assistantContent.Add(new JsonObject
                         {
                             ["toolUse"] = new JsonObject
@@ -155,23 +181,95 @@ public static class AmazonBedrockMessages
                             },
                         });
                     }
-
-                    if (CachePoint(part.ProviderOptions) is { } partCachePoint)
+                    else if (part is AssistantToolResultPart toolResult)
                     {
-                        assistantContent.Add(partCachePoint);
+                        FlushAssistant();
+                        toolResultContent ??= new JsonArray();
+                        toolResultContent.Add(ToolResultBlock(toolResult.Output, isMistral, toolResult.ToolCallId));
+                    }
+
+                    var partOptions = part is AssistantToolResultPart { Output.ProviderOptions: { } outputOptions } && CachePoint(part.ProviderOptions) is null
+                        ? outputOptions
+                        : part.ProviderOptions;
+                    if (CachePoint(partOptions) is { } partCachePoint)
+                    {
+                        if (part is AssistantToolResultPart)
+                        {
+                            (toolResultContent ??= new JsonArray()).Add(partCachePoint);
+                        }
+                        else
+                        {
+                            (assistantContent ??= new JsonArray()).Add(partCachePoint);
+                        }
                     }
                 }
 
                 if (CachePoint(assistant.ProviderOptions) is { } assistantContentCachePoint)
                 {
-                    assistantContent.Add(assistantContentCachePoint);
+                    if (assistant.Parts.Count > 0 && assistant.Parts[assistant.Parts.Count - 1] is AssistantToolResultPart)
+                    {
+                        (toolResultContent ??= new JsonArray()).Add(assistantContentCachePoint);
+                    }
+                    else
+                    {
+                        (assistantContent ??= new JsonArray()).Add(assistantContentCachePoint);
+                    }
                 }
             }
         }
 
         FlushUser();
+        FlushToolResult();
         FlushAssistant();
         messages = built;
+    }
+
+    private static JsonObject ToolResultBlock(ToolModelMessage result, bool isMistral, string? toolCallId = null)
+    {
+        var text = result.OutputType == "execution-denied" && result.OutputJson.Length == 0
+            ? "Tool call execution denied."
+            : result.OutputJson;
+        return new JsonObject
+        {
+            ["toolResult"] = new JsonObject
+            {
+                ["toolUseId"] = AmazonBedrockToolIds.Normalize(toolCallId ?? result.ToolCallId, isMistral),
+                ["content"] = new JsonArray { new JsonObject { ["text"] = text } },
+            },
+        };
+    }
+
+    /// <summary>A trailing assistant tool result and the following user content share one user message so roles keep alternating.</summary>
+    private static void AppendToUserMessage(JsonArray messages, JsonArray content)
+    {
+        if (messages.Count > 0
+            && messages[messages.Count - 1] is JsonObject { } last
+            && last["role"]?.GetValue<string>() == "user"
+            && last["content"] is JsonArray lastContent)
+        {
+            var hasToolResult = false;
+            foreach (var block in lastContent)
+            {
+                if (block is JsonObject o && o.ContainsKey("toolResult"))
+                {
+                    hasToolResult = true;
+                    break;
+                }
+            }
+
+            if (hasToolResult)
+            {
+                foreach (var block in content.ToArray())
+                {
+                    content.Remove(block);
+                    lastContent.Add(block);
+                }
+
+                return;
+            }
+        }
+
+        messages.Add(new JsonObject { ["role"] = "user", ["content"] = content });
     }
 
     /// <summary>
