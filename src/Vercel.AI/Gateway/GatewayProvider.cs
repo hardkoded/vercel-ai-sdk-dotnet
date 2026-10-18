@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -452,6 +453,13 @@ public sealed class GatewayImageModel : IImageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    private static JsonObject ImageFile(ImageModelFile file)
+    {
+        return file.Url != null
+            ? new JsonObject { ["type"] = "url", ["url"] = file.Url }
+            : new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()) };
+    }
+
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
@@ -470,6 +478,32 @@ public sealed class GatewayImageModel : IImageModel
             body["aspectRatio"] = options.AspectRatio;
         }
 
+        if (options.Seed is { } seed)
+        {
+            body["seed"] = seed;
+        }
+
+        if (options.Files is { Count: > 0 } files)
+        {
+            var array = new JsonArray();
+            foreach (var file in files)
+            {
+                array.Add(ImageFile(file));
+            }
+
+            body["files"] = array;
+        }
+
+        if (options.Mask != null)
+        {
+            body["mask"] = ImageFile(options.Mask);
+        }
+
+        if (options.ProviderOptions != null)
+        {
+            body["providerOptions"] = JsonSerializer.SerializeToNode(options.ProviderOptions);
+        }
+
         JsonDocument document;
         try
         {
@@ -477,7 +511,7 @@ public sealed class GatewayImageModel : IImageModel
                 HttpMethod.Post,
                 _provider.Route("image-model"),
                 body.ToJsonString(),
-                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null),
+                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null, options.Headers),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception)

@@ -53,6 +53,11 @@ public sealed class GoogleImageModel : IImageModel
             warnings.Add(GoogleWarning.Unsupported("size", "Gemini image models use aspectRatio instead of size."));
         }
 
+        if (options.Mask != null)
+        {
+            warnings.Add(GoogleWarning.Unsupported("mask", "Gemini image models do not support masks."));
+        }
+
         var modalities = new JsonArray();
         modalities.Add(JsonValue.Create("TEXT"));
         modalities.Add(JsonValue.Create("IMAGE"));
@@ -62,6 +67,32 @@ public sealed class GoogleImageModel : IImageModel
             config["imageConfig"] = new JsonObject { ["aspectRatio"] = options.AspectRatio };
         }
 
+        if (options.Seed is { } seed)
+        {
+            config["seed"] = seed;
+        }
+
+        if (options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("google", out var google)
+            && google.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            foreach (var property in google.EnumerateObject())
+            {
+                config[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+            }
+        }
+
+        var parts = new JsonArray { new JsonObject { ["text"] = options.Prompt } };
+        if (options.Files != null)
+        {
+            foreach (var file in options.Files)
+            {
+                parts.Add(file.Url != null
+                    ? new JsonObject { ["fileData"] = new JsonObject { ["mimeType"] = file.MediaType ?? "image/png", ["fileUri"] = file.Url } }
+                    : new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = file.MediaType, ["data"] = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()) } });
+            }
+        }
+
         var body = new JsonObject
         {
             ["contents"] = new JsonArray
@@ -69,28 +100,37 @@ public sealed class GoogleImageModel : IImageModel
                 new JsonObject
                 {
                     ["role"] = "user",
-                    ["parts"] = new JsonArray { new JsonObject { ["text"] = options.Prompt } },
+                    ["parts"] = parts,
                 },
             },
             ["generationConfig"] = config,
         };
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        if (options.Headers != null)
+        {
+            foreach (var pair in options.Headers)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
         using var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
             GoogleJson.Write(body),
-            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
+            headers,
             cancellationToken).ConfigureAwait(false);
         var images = new List<GeneratedImage>();
         if (document.RootElement.TryGetProperty("candidates", out var candidates))
         {
             foreach (var candidate in candidates.EnumerateArray())
             {
-                if (!candidate.TryGetProperty("content", out var content) || !content.TryGetProperty("parts", out var parts))
+                if (!candidate.TryGetProperty("content", out var content) || !content.TryGetProperty("parts", out var parts2))
                 {
                     continue;
                 }
 
-                foreach (var part in parts.EnumerateArray())
+                foreach (var part in parts2.EnumerateArray())
                 {
                     if (!part.TryGetProperty("inlineData", out var inline))
                     {

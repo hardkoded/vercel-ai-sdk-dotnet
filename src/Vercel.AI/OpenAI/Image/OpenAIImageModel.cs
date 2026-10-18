@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -180,9 +181,28 @@ public sealed class OpenAIImageModel : IImageModel
                 Count = options.Count,
                 Size = options.Size,
                 AspectRatio = options.AspectRatio,
+                Seed = options.Seed,
+                ProviderOptions = options.ProviderOptions is { } providerOptions ? System.Text.Json.JsonSerializer.SerializeToElement(providerOptions) : null,
+                Files = options.Files?.Select(ToImageFile).ToList(),
+                Mask = options.Mask is { } mask ? ToImageFile(mask) : null,
+                Headers = options.Headers,
             },
             cancellationToken).ConfigureAwait(false);
-        return new ImageGenerationResult(result.Images);
+        var warnings = result.Warnings.Select(warning => new CallWarning(warning.Type, warning.Feature ?? string.Empty, warning.Details ?? warning.Message)).ToList();
+        var usage = result.InputTokens == null && result.OutputTokens == null && result.TotalTokens == null
+            ? null
+            : new LanguageModelUsage(result.InputTokens, result.OutputTokens, result.TotalTokens);
+        return new ImageGenerationResult(result.Images, warnings, new ImageResponseInfo(result.Timestamp, result.ModelId, result.Headers), usage);
+    }
+
+    private static OpenAIImageFile ToImageFile(ImageModelFile file)
+    {
+        if (file.Url != null)
+        {
+            throw new AiSdkException("OpenAI image edits do not accept URL images. Pass the image bytes with ImageModelFile.FromFile.");
+        }
+
+        return new OpenAIImageFile(file.Data ?? Array.Empty<byte>(), file.MediaType ?? "image/png", file.FileName);
     }
 
     /// <summary>Generates or edits images.</summary>

@@ -64,7 +64,35 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
         {
             var path = "/" + ModelId;
             var body = new JsonObject { ["prompt"] = options.Prompt };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
+            if (options.Seed is { } seed)
+            {
+                body["seed"] = seed;
+            }
+
+            if (options.Files is { Count: > 0 } files)
+            {
+                for (var index = 0; index < files.Count; index++)
+                {
+                    body[index == 0 ? "input_image" : "input_image_" + (index + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)] = FileDataConversions.ConvertImageModelFileToDataUri(files[index]);
+                }
+            }
+
+            if (options.Mask != null)
+            {
+                body["mask"] = FileDataConversions.ConvertImageModelFileToDataUri(options.Mask);
+            }
+
+            if (options.ProviderOptions != null
+                && options.ProviderOptions.TryGetValue(ProviderId, out var bfl)
+                && bfl.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var property in bfl.EnumerateObject())
+                {
+                    body[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+            }
+
+            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
             return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
         }
