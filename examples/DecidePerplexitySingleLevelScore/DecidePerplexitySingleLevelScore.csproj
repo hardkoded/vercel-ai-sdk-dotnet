@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Asks a Perplexity score question that has a single level.</Description>
+  </PropertyGroup>
+</Project>

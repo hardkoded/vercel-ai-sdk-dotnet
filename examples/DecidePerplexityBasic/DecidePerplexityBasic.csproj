@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Answers a boolean, a choice, and a score question with a Perplexity decision model.</Description>
+  </PropertyGroup>
+</Project>
