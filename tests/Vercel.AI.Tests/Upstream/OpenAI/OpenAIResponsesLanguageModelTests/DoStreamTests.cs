@@ -167,4 +167,70 @@ public sealed class DoStreamTests
         var toolInputEnd = Assert.Single(events.OfType<ToolInputEndStreamPart>());
         Assert.Equal("weather_ns", toolInputEnd.ProviderMetadata!.Value.GetProperty("openai").GetProperty("namespace").GetString());
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should not set namespace on streaming function_call when absent",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_set_namespace_on_streaming_function_call_when_absent()
+    {
+        var events = await OpenAIResponsesSupport.Stream(
+            FunctionCallStream("gpt-4o", "fc_plain", "call_plain", null),
+            OpenAIResponsesSupport.TestTools);
+
+        var toolCall = Assert.Single(events.OfType<ToolCallStreamPart>());
+        Assert.False(toolCall.ProviderMetadata!.Value.GetProperty("openai").TryGetProperty("namespace", out _));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should preserve async mode on streamed function calls",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_preserve_async_mode_on_streamed_function_calls()
+    {
+        JsonObject FunctionCall(string arguments, string status) => new()
+        {
+            ["id"] = "fc_async",
+            ["type"] = "function_call",
+            ["name"] = "weather",
+            ["call_id"] = "call_async",
+            ["arguments"] = arguments,
+            ["status"] = status,
+            ["async"] = true,
+        };
+
+        var events = await OpenAIResponsesSupport.Stream(
+            OpenAIResponsesSupport.Sse(new JsonNode[]
+            {
+                new JsonObject
+                {
+                    ["type"] = "response.created",
+                    ["response"] = new JsonObject { ["id"] = "response_async", ["created_at"] = 1, ["model"] = "gpt-6-astra" },
+                },
+                new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 0, ["item"] = FunctionCall("", "in_progress") },
+                new JsonObject
+                {
+                    ["type"] = "response.output_item.done",
+                    ["output_index"] = 0,
+                    ["item"] = FunctionCall("""{"location":"Berlin"}""", "completed"),
+                },
+                new JsonObject
+                {
+                    ["type"] = "response.completed",
+                    ["response"] = new JsonObject
+                    {
+                        ["incomplete_details"] = null,
+                        ["output"] = new JsonArray(FunctionCall("""{"location":"Berlin"}""", "completed")),
+                        ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 2 },
+                    },
+                },
+            }),
+            OpenAIResponsesSupport.TestTools);
+
+        var toolCall = events.OfType<ToolCallStreamPart>().First();
+        Assert.Equal("call_async", toolCall.ToolCallId);
+        Assert.Equal("weather", toolCall.ToolName);
+        Assert.Equal("""{"location":"Berlin"}""", toolCall.ArgumentsJson);
+        JsonAssert.Equal(toolCall.ProviderMetadata!.Value, """{"openai":{"itemId":"fc_async","async":true}}""");
+    }
 }

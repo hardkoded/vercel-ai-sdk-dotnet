@@ -68,7 +68,11 @@ internal sealed class OpenAIResponsesStream
                     var functionCallName = functionCall["name"]?.GetValue<string>() ?? string.Empty;
                     var functionCallId = functionCall["call_id"]?.GetValue<string>() ?? "call";
                     var suppress = OpenAIParallelToolCall.IsUndeclared(functionCallName, _functionToolNames);
-                    _ongoingFunctionCalls[functionCallIndex] = new OngoingFunctionCall(functionCallName, functionCallId, suppress);
+                    _ongoingFunctionCalls[functionCallIndex] = new OngoingFunctionCall(
+                        functionCallName,
+                        functionCallId,
+                        suppress,
+                        functionCall["async"] is JsonValue functionAsync && functionAsync.TryGetValue<bool>(out var functionAsyncMode) ? functionAsyncMode : null);
                     if (!suppress)
                     {
                         parts.Add(new ToolInputStartStreamPart(functionCallId, functionCallName));
@@ -251,8 +255,10 @@ internal sealed class OpenAIResponsesStream
         parts.Add(new TextStartStreamPart(id, OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id })));
     }
 
-    private sealed class OngoingFunctionCall(string toolName, string toolCallId, bool suppressInputStreaming)
+    private sealed class OngoingFunctionCall(string toolName, string toolCallId, bool suppressInputStreaming, bool? async)
     {
+        public bool? Async { get; } = async;
+
         public string ToolName { get; } = toolName;
 
         public string ToolCallId { get; } = toolCallId;
@@ -340,7 +346,7 @@ internal sealed class OpenAIResponsesStream
             ? OpenAIJson.ProviderMetadata(new JsonObject { ["namespace"] = ns })
             : null;
         parts.Add(new ToolInputEndStreamPart(callId, endMetadata));
-        parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item)));
+        parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async)));
     }
 
     private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item)

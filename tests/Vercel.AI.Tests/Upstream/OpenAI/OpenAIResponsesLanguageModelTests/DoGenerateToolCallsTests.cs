@@ -111,6 +111,18 @@ public sealed class DoGenerateToolCallsTests
 
     [Fact]
     [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > tool calls::should have tool-calls finish reason",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_have_tool_calls_finish_reason()
+    {
+        var result = OpenAIResponsesSupport.Generate(DefaultBody("gpt-4o"), OpenAIResponsesSupport.TestTools);
+
+        Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
+        Assert.Null(result.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > tool calls::should preserve async mode and namespace on function_call output",
         Coverage = UpstreamCoverage.Covered)]
     public void Should_preserve_async_mode_and_namespace_on_function_call_output()
