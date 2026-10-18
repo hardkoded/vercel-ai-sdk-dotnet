@@ -115,6 +115,11 @@ public static class AmazonBedrockMessages
                         ["content"] = new JsonArray { new JsonObject { ["text"] = tool.OutputJson } },
                     },
                 });
+                if (CachePoint(tool.ProviderOptions) is { } toolCachePoint)
+                {
+                    userContent.Add(toolCachePoint);
+                }
+
                 continue;
             }
 
@@ -122,14 +127,20 @@ public static class AmazonBedrockMessages
             {
                 FlushUser();
                 assistantContent ??= new JsonArray();
+                var hasReasoningBlocks = assistant.Parts.Any(p => p is AssistantReasoningPart);
                 foreach (var part in assistant.Parts)
                 {
                     if (part is AssistantTextPart text)
                     {
-                        if (!string.IsNullOrEmpty(text.Text))
+                        // Skip empty text blocks unless reasoning blocks are present.
+                        if (!string.IsNullOrWhiteSpace(text.Text) || hasReasoningBlocks)
                         {
                             assistantContent.Add(new JsonObject { ["text"] = text.Text });
                         }
+                    }
+                    else if (part is AssistantReasoningPart reasoning && ReasoningBlock(reasoning) is { } reasoningBlock)
+                    {
+                        assistantContent.Add(reasoningBlock);
                     }
                     else if (part is AssistantToolCallPart toolCall)
                     {
@@ -161,6 +172,54 @@ public static class AmazonBedrockMessages
         FlushUser();
         FlushAssistant();
         messages = built;
+    }
+
+    /// <summary>
+    /// Replays signed or redacted reasoning. Unsigned reasoning is not replayed: some Bedrock models (for example OpenAI gpt-oss)
+    /// return reasoning without a signature, and sending it back in multi-turn tool use can leak raw reasoning into the visible response.
+    /// The reasoning text is not trimmed, because the signature validates the original bytes.
+    /// </summary>
+    private static JsonObject? ReasoningBlock(AssistantReasoningPart part)
+    {
+        var options = BedrockOptions(part.ProviderOptions);
+        var signature = ReasoningString(options, "signature");
+        if (signature != null)
+        {
+            return new JsonObject
+            {
+                ["reasoningContent"] = new JsonObject
+                {
+                    ["reasoningText"] = new JsonObject { ["text"] = part.Text, ["signature"] = signature },
+                },
+            };
+        }
+
+        if (ReasoningString(options, "redactedContent") is { } redactedContent)
+        {
+            return new JsonObject { ["reasoningContent"] = new JsonObject { ["redactedContent"] = redactedContent } };
+        }
+
+        if (ReasoningString(options, "redactedData") is { } redactedData)
+        {
+            return new JsonObject
+            {
+                ["reasoningContent"] = new JsonObject { ["redactedReasoning"] = new JsonObject { ["data"] = redactedData } },
+            };
+        }
+
+        return null;
+    }
+
+    private static string? ReasoningString(JsonElement? options, string name)
+    {
+        if (options is not { } bag || !bag.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        return value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : throw new ArgumentException("Bedrock reasoning " + name + " must be a string.");
     }
 
     private static bool HasContentBlock(JsonArray content)

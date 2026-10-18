@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
@@ -30,6 +31,8 @@ public sealed class OpenAIResponsesPreparedRequest
 /// <summary>OpenAI Responses API language model.</summary>
 public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 {
+    private static readonly JsonSerializerOptions CustomToolInputOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
     private readonly ProviderHttp _http;
     private readonly string _providerName;
     private readonly string _providerOptionsName;
@@ -754,6 +757,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 {
                     ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
                 });
+            }
+            else if (type == "custom_tool_call")
+            {
+                hasFunctionCall = true;
+                var id = OpenAIJson.String(item, "call_id") ?? "call";
+                var name = OpenAIJson.String(item, "name") ?? string.Empty;
+                var input = OpenAIJson.String(item, "input") ?? string.Empty;
+                content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item)));
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {
