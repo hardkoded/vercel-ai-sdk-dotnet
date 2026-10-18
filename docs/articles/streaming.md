@@ -96,11 +96,17 @@ In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to th
 
 ## Full stream parts
 
-`result.Stream()` yields these parts in order: one `StartPart` (`start`), then for each step a `StartStepPart` (`start-step`, with the step's `Warnings`), the step's text, reasoning, tool-input, tool-call, source and tool parts, and a `StepFinishPart` (`finish-step`), and finally a `FinishPart` (`finish`).
+`result.Stream()` yields these parts in order: one `StartPart` (`start`), then for each step a `StartStepPart` (`start-step`, with the step's `Warnings` and `Request`), the step's text, reasoning, tool-input, tool-call, source and tool parts, and a `StepFinishPart` (`finish-step`), and finally a `FinishPart` (`finish`).
 
 A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails or is denied is a `ToolErrorPart` (`tool-error`), and its `Result.OutputJson` holds the error. This includes provider-executed tools, which are streamed in the order the provider sent them. Their `ExecutedTool` has `ProviderExecuted`, `ProviderMetadata`, and the call's `InputJson`.
 
-`StepFinishPart.Performance` is a `StepPerformance` for the step: `StepTimeMs`, `ResponseTimeMs`, `ToolExecutionMs` (by tool call id), `TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs` (`Min`, `Max`, `Avg`, `Median`, `P10`, `P90`), and the token rates `EffectiveOutputTokensPerSecond`, `EffectiveTotalTokensPerSecond`, `OutputTokensPerSecond` and `InputTokensPerSecond`. The first-output metrics are `null` when the step produced no output chunk.
+`StartStepPart.Request` is a `LanguageModelRequestMetadata` with `Body` (the HTTP body sent to the provider) and `Messages` (the messages sent for the step). Both are `null` unless you set `StreamTextOptions.Include` to a `StreamTextInclude` with `RequestBody` or `RequestMessages`, because they can be large when the prompt has images or files.
+
+`StepFinishPart.Response` is a `LanguageModelResponseMetadata` with the response `Id`, `ModelId`, `Timestamp`, and HTTP `Headers` (`null` for a provider that does not use HTTP). A provider's `ResponseMetadataStreamPart` sets them. Without one, `Id` is generated, `Timestamp` is the step start, and `ModelId` is the requested model. `RawFinishReason` is the provider's own finish reason, and `ProviderMetadata` is the step's provider metadata.
+
+A tool that has no `Execute` is for the caller to run. Its call is streamed as a `ToolCallPart`, and the step has no result for it.
+
+`StepResult.Performance` is a `StepPerformance` for the step (`StepFinishPart.Performance` is the same value). `GenerateTextAsync` fills it too, without the streaming-only metrics (`TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs`, `OutputTokensPerSecond`, `InputTokensPerSecond`). It has: `StepTimeMs`, `ResponseTimeMs`, `ToolExecutionMs` (by tool call id), `TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs` (`Min`, `Max`, `Avg`, `Median`, `P10`, `P90`), and the token rates `EffectiveOutputTokensPerSecond`, `EffectiveTotalTokensPerSecond`, `OutputTokensPerSecond` and `InputTokensPerSecond`. The first-output metrics are `null` when the step produced no output chunk.
 
 
 `UIMessageStream` writes the citations of a step on its `text-end` chunk (`citations`) and still writes retrieved URL sources as `source-url`. It does not write a `source-document` chunk, so document sources stay on `StepResult.Content` and the model stream only. Document sources are not in `Sources`, which holds URL sources.

@@ -172,10 +172,12 @@ public sealed class StepResult
         IReadOnlyList<GeneratedFile>? files = null,
         string? provider = null,
         string? modelId = null,
-        IReadOnlyList<GeneratedContent>? content = null)
+        IReadOnlyList<GeneratedContent>? content = null,
+        StepPerformance? performance = null)
     {
         Provider = provider;
         ModelId = modelId;
+        Performance = performance ?? StepPerformance.Empty;
         Text = text ?? string.Empty;
         ReasoningText = reasoningText;
         Content = content ?? Array.Empty<GeneratedContent>();
@@ -230,6 +232,9 @@ public sealed class StepResult
 
     /// <summary>Model id of the model that produced this step, when known.</summary>
     public string? ModelId { get; }
+
+    /// <summary>Performance metrics of this step. Streaming-only metrics are <see langword="null"/> for <c>generateText</c>.</summary>
+    public StepPerformance Performance { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -498,6 +503,9 @@ public sealed class PrepareStepUpdate
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
 public class GenerateTextOptions
 {
+    /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
+    internal Func<double>? NowMs { get; set; }
+
     /// <summary>Gateway model id such as <c>openai/gpt-4.1-mini</c>.</summary>
     public string? ModelId { get; set; }
 
@@ -653,6 +661,9 @@ public sealed class LanguageModelCallEndEvent
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>
 public sealed class StreamTextOptions : GenerateTextOptions
 {
+    /// <summary>What to retain of the request in the <see cref="StartStepPart"/>. Maps to <c>include</c>.</summary>
+    public StreamTextInclude? Include { get; set; }
+
     /// <summary>
     /// Aborts the call and carries the reason. Use it instead of the <see cref="CancellationToken"/> when the reason matters.
     /// A reason that is an <see cref="Exception"/> faults the results as is. Maps to <c>abortSignal</c>.
@@ -811,15 +822,76 @@ public sealed class StartPart : TextStreamPart
     }
 }
 
+/// <summary>Metadata for a language model request. Maps to <c>LanguageModelRequestMetadata</c>.</summary>
+public sealed class LanguageModelRequestMetadata
+{
+    /// <summary>Request metadata with no messages and no body.</summary>
+    public static LanguageModelRequestMetadata Empty { get; } = new();
+
+    /// <summary>The input messages that were sent to the model for this step.</summary>
+    public IReadOnlyList<ModelMessage>? Messages { get; init; }
+
+    /// <summary>Request HTTP body that was sent to the provider API.</summary>
+    public JsonElement? Body { get; init; }
+}
+
+/// <summary>
+/// Metadata for a language model response, as the <c>finish-step</c> part carries it.
+/// Maps to <c>Omit&lt;LanguageModelResponseMetadata, 'messages' | 'body'&gt;</c>.
+/// </summary>
+public sealed class LanguageModelResponseMetadata
+{
+    /// <summary>Creates response metadata.</summary>
+    public LanguageModelResponseMetadata(string id, DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string>? headers = null)
+    {
+        Id = id;
+        Timestamp = timestamp;
+        ModelId = modelId;
+        Headers = headers;
+    }
+
+    /// <summary>ID for the generated response.</summary>
+    public string Id { get; }
+
+    /// <summary>Timestamp for the start of the generated response.</summary>
+    public DateTimeOffset Timestamp { get; }
+
+    /// <summary>The ID of the response model that was used to generate the response.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Response headers. <see langword="null"/> for providers that do not use HTTP.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; }
+}
+
+/// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
+public sealed class StreamTextInclude
+{
+    /// <summary>
+    /// Whether to retain the request body in the <c>start-step</c> part. The request body can be large when sending images or files.
+    /// Maps to <c>requestBody</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestBody { get; init; }
+
+    /// <summary>
+    /// Whether to retain the request messages in the <c>start-step</c> part. The request messages can be large when sending images or files.
+    /// Maps to <c>requestMessages</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestMessages { get; init; }
+}
+
 /// <summary>A step started. It comes before the parts of that step.</summary>
 public sealed class StartStepPart : TextStreamPart
 {
     /// <summary>Creates a start-step part.</summary>
-    public StartStepPart(IReadOnlyList<CallWarning>? warnings = null)
+    public StartStepPart(IReadOnlyList<CallWarning>? warnings = null, LanguageModelRequestMetadata? request = null)
         : base("start-step")
     {
         Warnings = warnings ?? Array.Empty<CallWarning>();
+        Request = request ?? LanguageModelRequestMetadata.Empty;
     }
+
+    /// <summary>Request metadata of this step. Body and messages are set only when <see cref="StreamTextOptions.Include"/> asks for them.</summary>
+    public LanguageModelRequestMetadata Request { get; }
 
     /// <summary>Warnings from the model call of this step.</summary>
     public IReadOnlyList<CallWarning> Warnings { get; }
@@ -1005,18 +1077,28 @@ public sealed class SourcePart : TextStreamPart
 public sealed class StepFinishPart : TextStreamPart
 {
     /// <summary>Creates a step-finish part.</summary>
-    public StepFinishPart(StepResult step, StepPerformance? performance = null)
+    public StepFinishPart(StepResult step, LanguageModelResponseMetadata response, string? rawFinishReason = null)
         : base("finish-step")
     {
         Step = step;
-        Performance = performance ?? StepPerformance.Empty;
+        Response = response;
+        RawFinishReason = rawFinishReason;
     }
 
     /// <summary>Completed step.</summary>
     public StepResult Step { get; }
 
+    /// <summary>Response metadata of the step: id, model id, timestamp, and headers. Maps to <c>response</c>.</summary>
+    public LanguageModelResponseMetadata Response { get; }
+
+    /// <summary>The finish reason the provider reported, when it differs from <see cref="StepResult.FinishReason"/>. Maps to <c>rawFinishReason</c>.</summary>
+    public string? RawFinishReason { get; }
+
+    /// <summary>Provider metadata of the step. Maps to <c>providerMetadata</c>.</summary>
+    public JsonElement? ProviderMetadata => Step.ProviderMetadata;
+
     /// <summary>Performance metrics of the step. Maps to <c>performance</c>.</summary>
-    public StepPerformance Performance { get; }
+    public StepPerformance Performance => Step.Performance;
 }
 
 /// <summary>Timing statistics for the gaps between generated output chunks, in milliseconds.</summary>

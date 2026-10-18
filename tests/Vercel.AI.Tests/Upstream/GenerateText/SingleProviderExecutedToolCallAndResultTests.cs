@@ -44,8 +44,7 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > provider-executed tools > single provider-executed tool call and result::should include provider-executed tool call and result in the full stream",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The start-step part has no request, and finish-step has no response metadata. Performance values come from a real clock, so only their shape is asserted.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_include_provider_executed_tool_call_and_result_in_the_full_stream()
     {
         var result = Run();
@@ -58,7 +57,10 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         Assert.Equal(
             new[] { "start", "start-step", "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "tool-result", "tool-call", "tool-error", "finish-step", "finish" },
             parts.Select(part => part.Type).ToArray());
-        Assert.Empty(Assert.IsType<StartStepPart>(parts[1]).Warnings);
+        var startStep = Assert.IsType<StartStepPart>(parts[1]);
+        Assert.Null(startStep.Request.Body);
+        Assert.Null(startStep.Request.Messages);
+        Assert.Empty(startStep.Warnings);
         var inputStart = Assert.IsType<ToolInputStartPart>(parts[2]);
         Assert.Equal("call-1", inputStart.Id);
         Assert.Equal("web_search", inputStart.ToolName);
@@ -85,10 +87,33 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         var finishStep = Assert.IsType<StepFinishPart>(parts[9]);
         Assert.Equal(FinishReason.Stop, finishStep.Step.FinishReason);
         Assert.Equal(13, finishStep.Step.Usage.TotalTokens);
-        Assert.True(finishStep.Performance.StepTimeMs >= 0);
-        Assert.True(finishStep.Performance.ResponseTimeMs >= 0);
-        Assert.Empty(finishStep.Performance.ToolExecutionMs);
-        Assert.NotNull(finishStep.Performance.TimeToFirstOutputMs);
+        Assert.Equal("stop", finishStep.RawFinishReason);
+        Assert.Null(finishStep.ProviderMetadata);
+        Assert.Null(finishStep.Response.Headers);
+        Assert.Equal("id-0", finishStep.Response.Id);
+        Assert.Equal("mock-model-id", finishStep.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0), finishStep.Response.Timestamp);
+        var usage = finishStep.Step.Usage;
+        Assert.Equal(3, usage.InputTokens);
+        Assert.Equal(10, usage.OutputTokens);
+        Assert.Equal(13, usage.TotalTokens);
+        Assert.Equal(3, usage.NoCacheInputTokens);
+        Assert.Equal(10, usage.TextTokens);
+        Assert.Null(usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Null(usage.Raw);
+        var performance = finishStep.Performance;
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Equal(0, performance.InputTokensPerSecond);
+        Assert.Equal(0, performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        var gaps = performance.TimeBetweenOutputChunksMs!;
+        Assert.Equal(new double[] { 0, 0, 0, 0, 0, 0 }, new[] { gaps.Avg, gaps.Max, gaps.Median, gaps.Min, gaps.P10, gaps.P90 });
+        Assert.Equal(0, performance.TimeToFirstOutputMs);
+        Assert.Empty(performance.ToolExecutionMs);
         var finish = Assert.IsType<FinishPart>(parts[10]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal(13, finish.Usage.TotalTokens);
@@ -158,6 +183,7 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         {
             StreamParts = new LanguageModelStreamPart[]
             {
+                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
                 new ToolInputStartStreamPart("call-1", "web_search", providerExecuted: true),
                 new ToolInputDeltaStreamPart("call-1", "{ \"value\": \"value\" }"),
                 new ToolInputEndStreamPart("call-1"),
@@ -165,7 +191,7 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
                 new ToolResultStreamPart("call-1", "web_search", JsonSerializer.SerializeToElement("{ \"value\": \"result1\" }")) { ProviderMetadata = JsonDocument.Parse("{\"provider\":{\"itemId\":\"result-1\"}}").RootElement.Clone() },
                 new ToolCallStreamPart("call-2", "web_search", "{ \"value\": \"value\" }") { ProviderExecuted = true },
                 new ToolResultStreamPart("call-2", "web_search", JsonDocument.Parse("\"ERROR\"").RootElement.Clone()) { IsError = true, ProviderMetadata = JsonDocument.Parse("{\"provider\":{\"itemId\":\"error-1\"}}").RootElement.Clone() },
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13), "stop"),
+                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), "stop"),
             },
         };
         return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
@@ -174,6 +200,7 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
             Prompt = "test-input",
             Tools = new[] { Tool.ProviderDefined("test.web_search", "web_search", args) },
             StopWhen = StopWhen.IsStepCount(4),
+            NowMs = () => 0,
         });
     }
 }
