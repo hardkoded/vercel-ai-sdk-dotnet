@@ -901,6 +901,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ToolNameMapping? toolNameMapping = null)
     {
         var input = new JsonArray();
+        var programmaticToolCallIds = new HashSet<string>();
         var warnings = new List<OpenAICallWarning>();
         foreach (var message in ToolModelMessage.Flatten(prompt))
         {
@@ -966,6 +967,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     foreach (var call in assistant.ToolCalls)
                     {
+                        if (ToolCaller(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName)) is JsonObject { } callCaller
+                            && callCaller["type"]?.GetValue<string>() == "program")
+                        {
+                            programmaticToolCallIds.Add(call.ToolCallId);
+                        }
+
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
                             AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
@@ -1057,13 +1064,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         });
                     }
 
+                    var resultCaller = ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName));
+                    if (tool.OutputType == "execution-denied"
+                        && (programmaticToolCallIds.Contains(tool.ToolCallId)
+                            || (resultCaller is JsonObject { } denied && denied["type"]?.GetValue<string>() == "program")))
+                    {
+                        throw new UnsupportedFunctionalityException(
+                            "execution-denied results for programmatic tool calls",
+                            "functionality not supported: execution-denied results for programmatic tool calls");
+                    }
+
                     var toolResultItem = new JsonObject
                     {
                         ["type"] = toolIsCustom ? "custom_tool_call_output" : "function_call_output",
                         ["call_id"] = tool.ToolCallId,
                         ["output"] = toolOutput,
                     };
-                    if (!toolIsCustom && ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName)) is { } resultCaller)
+                    if (!toolIsCustom && resultCaller != null)
                     {
                         toolResultItem["caller"] = resultCaller;
                     }
