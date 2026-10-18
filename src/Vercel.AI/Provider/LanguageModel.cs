@@ -1154,6 +1154,7 @@ public sealed class ToolModelMessage : ModelMessage
         IsError = first.IsError;
         ProviderMetadata = first.ProviderMetadata;
         OutputProviderOptions = first.OutputProviderOptions;
+        ProviderOptions = first.ProviderOptions;
         _results = flat;
     }
 
@@ -1214,11 +1215,11 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>Provider metadata carried on this tool result, such as a thought signature.</summary>
     public JsonElement? ProviderMetadata { get; }
 
+    /// <summary>Provider options set on this tool result, such as an Amazon Bedrock <c>cachePoint</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
     /// <summary>Provider options set on the tool output itself rather than on the tool result, such as an OpenAI <c>promptCacheBreakpoint</c>.</summary>
     public JsonElement? OutputProviderOptions { get; init; }
-
-    /// <summary>Provider options of this tool result, such as an Amazon Bedrock <c>cachePoint</c> added right after it.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
 
     /// <summary>Provider options of the whole tool message, such as an Amazon Bedrock <c>cachePoint</c> added after all its results.</summary>
     public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }

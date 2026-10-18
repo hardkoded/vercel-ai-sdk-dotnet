@@ -42,7 +42,7 @@ public sealed class PerplexityDecisionModelTests
 
     public static TheoryData<int> Statuses => new() { 404, 405, 413, 429, 500, 502, 503, 504 };
 
-    public static TheoryData<string> InstructionFields => new() { "{}", "{\"instructions\":null}" };
+    public static TheoryData<string> InstructionFields => new() { "{}", "{\"instructions\":undefined}", "{\"instructions\":null}" };
 
     [Fact]
     [UpstreamTest(Prefix + "sends one native request with all question types and configured headers", Coverage = UpstreamCoverage.Covered)]
@@ -196,6 +196,31 @@ public sealed class PerplexityDecisionModelTests
         Assert.Equal("Bearer environment-key", capture.Headers["Authorization"]);
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "restores the endpoint and authentication across workflow serialization", Coverage = UpstreamCoverage.Covered)]
+    public async Task Restores_the_endpoint_and_authentication_across_workflow_serialization()
+    {
+        var (model, capture) = Setup();
+        var serialized = model.Serialize();
+        Assert.False(serialized.Config.ContainsKey("fetch"));
+        Assert.False(serialized.Config.ContainsKey("httpClient"));
+        var headers = Assert.IsAssignableFrom<IDictionary<string, object?>>(serialized.Config["headers"]);
+        Assert.Equal("Bearer test-key", Assert.Single(headers, pair => pair.Key.Equals("authorization", StringComparison.OrdinalIgnoreCase)).Value);
+        var restored = Vercel.AI.Perplexity.PerplexityDecisionModel.Deserialize(serialized, new HttpClient(capture));
+        await restored.DoDecideAsync(Call());
+        Assert.Equal("https://example.com/v1/decisions", capture.Uri);
+        Assert.Equal("Bearer test-key", capture.Headers["Authorization"]);
+
+        // A workflow runtime rehydrates the config from JSON, so values arrive as JsonElement.
+        var rehydrated = new Vercel.AI.ProviderUtils.SerializedModelOptions(
+            serialized.ModelId,
+            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(JsonSerializer.Serialize(serialized.Config))!.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+        var (_, secondCapture) = Setup();
+        await Vercel.AI.Perplexity.PerplexityDecisionModel.Deserialize(rehydrated, new HttpClient(secondCapture)).DoDecideAsync(Call());
+        Assert.Equal("https://example.com/v1/decisions", secondCapture.Uri);
+        Assert.Equal("Bearer test-key", secondCapture.Headers["Authorization"]);
+    }
+
     private static JsonObject Answers(int index)
     {
         var answers = (JsonObject)Fixture()["answers"]!.DeepClone();
@@ -308,12 +333,13 @@ public sealed class PerplexityDecisionModelTests
 
     [Theory]
     [MemberData(nameof(Statuses))]
-    [UpstreamTest(Prefix + "preserves HTTP status %s and retry headers even with non-JSON errors", Coverage = UpstreamCoverage.Partial, Note = "The shared HTTP layer does not copy response headers onto the thrown ApiException, so the retry-after assertion is not ported.")]
+    [UpstreamTest(Prefix + "preserves HTTP status %s and retry headers even with non-JSON errors", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_HTTP_status_and_retry_headers_even_with_non_JSON_errors(int status)
     {
         var exception = await Assert.ThrowsAnyAsync<ApiException>(() => Setup(status: (HttpStatusCode)status, rawBody: status == 504 ? "<html>Gateway Timeout</html>" : string.Empty).Model.DoDecideAsync(Call()));
         Assert.Equal(status, exception.StatusCode);
         Assert.Equal(status == 429 || status >= 500, exception.IsRetryable);
+        Assert.Equal("2", exception.ResponseHeaders!["retry-after"]);
     }
 
     [Fact]
@@ -329,25 +355,33 @@ public sealed class PerplexityDecisionModelTests
 
     [Theory]
     [MemberData(nameof(InstructionFields))]
-    [UpstreamTest(Prefix + "preserves criteria-only questions on the wire with %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so no instructions field is sent. Upstream sends null for the null case.")]
+    [UpstreamTest(Prefix + "preserves criteria-only questions on the wire with %j", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_criteria_only_questions_on_the_wire(string instructionFields)
     {
-        _ = instructionFields;
+        // An absent and an undefined instructions field are omitted from the request. A null one is sent as null.
+        var sendsNull = instructionFields.EndsWith("null}", StringComparison.Ordinal);
         var (model, capture) = Setup();
+        DecisionQuestion Question(string type, object? criteria)
+        {
+            var question = Q(type, null, criteria);
+            return sendsNull ? new DecisionQuestion(question.Type, null, question.Criteria) { HasInstructions = true } : question;
+        }
+
         var questions = new Dictionary<string, DecisionQuestion>
         {
-            ["defect"] = Q("boolean", null, new Dictionary<string, object?> { ["true"] = new List<object?> { "Broken" }, ["false"] = null }),
-            ["sentiment"] = Q("choice", null, new Dictionary<string, object?> { ["positive"] = "Satisfied", ["mixed"] = "Praise and complaints", ["negative"] = "Dissatisfied" }),
-            ["severity"] = Q("score", null, new List<object?> { "Cosmetic", "Inconvenient", "Product unusable" }),
+            ["defect"] = Question("boolean", new Dictionary<string, object?> { ["true"] = new List<object?> { "Broken" }, ["false"] = null }),
+            ["sentiment"] = Question("choice", new Dictionary<string, object?> { ["positive"] = "Satisfied", ["mixed"] = "Praise and complaints", ["negative"] = "Dissatisfied" }),
+            ["severity"] = Question("score", new List<object?> { "Cosmetic", "Inconvenient", "Product unusable" }),
         };
         await model.DoDecideAsync(Call(questions));
+        var instructions = sendsNull ? "\"instructions\": null, " : string.Empty;
         JsonAssert.Equal(RequestBody(capture)["questions"], """
             {
-              "defect": { "type": "noul", "criteria": { "true": ["Broken"], "false": null } },
-              "sentiment": { "type": "choice", "criteria": { "positive": "Satisfied", "mixed": "Praise and complaints", "negative": "Dissatisfied" } },
-              "severity": { "type": "score", "criteria": ["Cosmetic", "Inconvenient", "Product unusable"] }
+              "defect": { "type": "noul", __I__"criteria": { "true": ["Broken"], "false": null } },
+              "sentiment": { "type": "choice", __I__"criteria": { "positive": "Satisfied", "mixed": "Praise and complaints", "negative": "Dissatisfied" } },
+              "severity": { "type": "score", __I__"criteria": ["Cosmetic", "Inconvenient", "Product unusable"] }
             }
-            """);
+            """.Replace("__I__", instructions));
     }
 
     [Fact]

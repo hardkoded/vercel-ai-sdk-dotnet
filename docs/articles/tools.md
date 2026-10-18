@@ -139,3 +139,18 @@ var writeSql = OpenAITools.CustomTool(new OpenAICustomToolOptions
 When you send a custom tool call back in the next request, OpenAI Responses sends it as a `custom_tool_call` item. A string input is sent as is, and any other input as JSON. A call with an `itemId` in its OpenAI provider options is sent as an `item_reference` when the response is stored. An `async` option is kept. The result of the call is sent as `custom_tool_call_output`.
 
 OpenAI Responses does not yet read `custom_tool_call` items in a response ([#571](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/571)), nor stream them ([#495](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/495)). Until then, a response that calls a custom tool does not return the call.
+
+## MCP transports
+
+`McpClient.ConnectAsync(transport)` lists the tools of an MCP server over an `IMcpTransport`. The port ships `StdioMcpTransport`, `HttpMcpTransport` (Streamable HTTP), and `SseMcpTransport` (the legacy HTTP+SSE transport, `SseMCPTransport` upstream).
+
+```csharp
+using var transport = new SseMcpTransport(httpClient, new Uri("https://example.com/sse"), headers);
+var tools = await McpClient.ConnectAsync(transport);
+```
+
+`SseMcpTransport` mirrors upstream's `start`, `send`, `close`, `onmessage`, `onerror`, `onclose`, and `protocolVersion` as `StartAsync`, `SendAsync`, `CloseAsync`, `OnMessage`, `OnError`, `OnClose`, and `ProtocolVersion`. `CallAsync` starts the transport when needed. The `fetch` option is the `HttpClient` you pass in.
+
+A non-2xx response to the event stream throws an `MCPClientError` with `StatusCode`, `Url`, and `ResponseBody`. Its message is `MCP SSE Transport Error: {status} {reason}: {body}`, plus a hint to use the `http` transport on a 405. A non-2xx response to a `SendAsync` post throws the same error, with the message `MCP SSE Transport Error: POSTing to endpoint (HTTP {status}): {body}`. The `endpoint` event must stay on the origin of the event stream.
+
+The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
