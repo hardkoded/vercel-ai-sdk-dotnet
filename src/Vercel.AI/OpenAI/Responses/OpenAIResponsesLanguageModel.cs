@@ -1052,7 +1052,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     {
                         if (IsProgrammaticToolName(resultPart.ToolName, toolNameMapping))
                         {
-                            AddProgramOutput(input, resultPart, providerOptionsName, store);
+                            AddProgramOutput(input, resultPart, providerOptionsName, store, hasConversation);
                         }
                     }
 
@@ -1179,8 +1179,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     }
 
     // A program result replays as an item reference when stored, else as a program_output item.
-    private static void AddProgramOutput(JsonArray input, AssistantToolResultPart part, string providerOptionsName, bool store)
+    private static void AddProgramOutput(JsonArray input, AssistantToolResultPart part, string providerOptionsName, bool store, bool hasConversation)
     {
+        // The conversation already holds provider-executed results.
+        if (hasConversation)
+        {
+            return;
+        }
+
         var itemId = OpenAIJson.String(ProviderOptionsFor(part.ProviderOptions, providerOptionsName), "itemId")
             ?? OpenAIJson.String(ProviderOptionsFor(ToOptions(part.Output.ProviderMetadata), providerOptionsName), "itemId")
             ?? part.ToolCallId;
