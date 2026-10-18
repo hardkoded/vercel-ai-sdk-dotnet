@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -41,6 +42,61 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
     /// <inheritdoc />
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+
+    /// <summary>
+    /// Serializes the model id, the endpoint, and the resolved request headers (including authentication) for a workflow boundary.
+    /// Maps to <c>[WORKFLOW_SERIALIZE]</c>. The HTTP client is not serialized.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        var headers = new Dictionary<string, string>();
+        foreach (var pair in _provider.CreateHeaders())
+        {
+            if (pair.Value != null)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        var config = new Dictionary<string, object?>
+        {
+            ["provider"] = Provider,
+            ["baseURL"] = _provider.Options.BaseUrl,
+            ["headers"] = headers,
+        };
+        return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+    }
+
+    /// <summary>
+    /// Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>. Pass <paramref name="httpClient"/> to
+    /// send the requests through a custom handler.
+    /// </summary>
+    public static PerplexityDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var providerOptions = new OpenAICompatibleOptions();
+        if (options.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
+        {
+            providerOptions.BaseUrl = url;
+        }
+
+        if (options.Config.TryGetValue("headers", out var headers) && headers is IDictionary<string, object?> values)
+        {
+            foreach (var pair in values)
+            {
+                if (pair.Value is string value)
+                {
+                    providerOptions.Headers[pair.Key] = value;
+                }
+            }
+        }
+
+        return new PerplexityProvider(httpClient ?? new HttpClient(), providerOptions).DecisionModel(options.ModelId);
+    }
 
     /// <summary>Sends every question in one Decisions request.</summary>
     public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
@@ -178,9 +234,9 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
     private static JsonObject Native(string type, DecisionQuestion question)
     {
         var native = new JsonObject { ["type"] = type };
-        if (question.Instructions != null)
+        if (question.HasInstructions)
         {
-            native["instructions"] = question.Instructions.ToNode();
+            native["instructions"] = question.Instructions?.ToNode();
         }
 
         if (question.Criteria != null)
