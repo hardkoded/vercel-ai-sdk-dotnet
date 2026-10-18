@@ -17,33 +17,52 @@ public sealed class BedrockToolResultCachePointTests
         return new Dictionary<string, JsonElement> { ["bedrock"] = document.RootElement.Clone() };
     }
 
-    private static string Convert(AssistantToolResultPart result)
+    private static async Task<JsonNode> SendAsync(AssistantToolResultPart result)
     {
-        AmazonBedrockMessages.Convert("meta.llama3-70b-instruct-v1:0", new ModelMessage[]
+        var handler = new ScriptedHandler();
+        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
         {
-            new UserModelMessage("Add"),
-            new AssistantModelMessage(new AssistantContentPart[] { result }),
-            new UserModelMessage("Next"),
-        }, out _, out var messages);
-        return messages!.ToJsonString();
+            AccessKeyId = "AKIA",
+            SecretAccessKey = "secret",
+            UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        }, handler);
+        var model = provider.LanguageModel("anthropic.claude-3-haiku");
+        await model.DoGenerateAsync(new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage("Add"),
+                new AssistantModelMessage(new AssistantContentPart[] { result }),
+                new UserModelMessage("Next"),
+            },
+        }, CancellationToken.None);
+        Assert.Contains("/converse", handler.Uri);
+        return JsonNode.Parse(handler.Body)!["messages"]!;
     }
 
     [Fact]
-    public void ShouldEmitTheOutputCachePointAfterAProviderExecutedToolResult()
+    public async Task ShouldEmitTheOutputCachePointAfterAProviderExecutedToolResult()
     {
         var output = new ToolModelMessage("call-1", "add", "{\"sum\":4}", false, "json") { ProviderOptions = CachePoint("{\"type\":\"default\"}") };
-        var json = Convert(new AssistantToolResultPart("call-1", "add", output));
+        var messages = await SendAsync(new AssistantToolResultPart("call-1", "add", output));
 
-        Assert.Contains("{\"toolResult\":{\"toolUseId\":\"call-1\",\"content\":[{\"text\":\"{\\u0022sum\\u0022:4}\"}]}},{\"cachePoint\":{\"type\":\"default\"}},{\"text\":\"Next\"}", json);
+        var content = messages.AsArray()[1]!["content"]!.AsArray();
+        Assert.Equal(3, content.Count);
+        Assert.NotNull(content[0]!["toolResult"]);
+        Assert.Equal("default", content[1]!["cachePoint"]!["type"]!.GetValue<string>());
+        Assert.Equal("Next", content[2]!["text"]!.GetValue<string>());
     }
 
     [Fact]
-    public void ShouldPreferThePartCachePointOverTheOutputCachePoint()
+    public async Task ShouldPreferThePartCachePointOverTheOutputCachePoint()
     {
         var output = new ToolModelMessage("call-1", "add", "{\"sum\":4}", false, "json") { ProviderOptions = CachePoint("{\"type\":\"default\"}") };
-        var json = Convert(new AssistantToolResultPart("call-1", "add", output, CachePoint("{\"type\":\"default\",\"ttl\":\"1h\"}")));
+        var messages = await SendAsync(new AssistantToolResultPart("call-1", "add", output, CachePoint("{\"type\":\"default\",\"ttl\":\"1h\"}")));
 
-        Assert.Contains("{\"cachePoint\":{\"type\":\"default\",\"ttl\":\"1h\"}}", json);
-        Assert.Single(JsonNode.Parse(json)!.AsArray()[1]!["content"]!.AsArray(), b => b!.AsObject().ContainsKey("cachePoint"));
+        var content = messages.AsArray()[1]!["content"]!.AsArray();
+        Assert.Equal(3, content.Count);
+        Assert.NotNull(content[0]!["toolResult"]);
+        Assert.Equal("1h", content[1]!["cachePoint"]!["ttl"]!.GetValue<string>());
+        Assert.Equal("Next", content[2]!["text"]!.GetValue<string>());
     }
 }
