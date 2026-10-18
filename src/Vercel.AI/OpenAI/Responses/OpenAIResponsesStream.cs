@@ -6,6 +6,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAI;
 
@@ -34,8 +35,11 @@ internal sealed class OpenAIResponsesStream
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
 
-    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null)
+    private readonly ToolNameMapping? _toolNameMapping;
+
+    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null, ToolNameMapping? toolNameMapping = null)
     {
+        _toolNameMapping = toolNameMapping;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
         _generateId = generateId ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
     }
@@ -361,6 +365,27 @@ internal sealed class OpenAIResponsesStream
                 OpenAIResponsesOutput.Citations(_annotations),
                 OpenAIResponsesOutput.TextMetadata(id, _annotations)));
             _annotations.Clear();
+        }
+        else if (itemType == "program")
+        {
+            parts.Add(new ToolCallStreamPart(
+                OpenAIJson.String(item, "call_id") ?? "call",
+                OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
+                OpenAIResponsesOutput.ProgramInput(item),
+                OpenAIResponsesOutput.ItemMetadata(item))
+            {
+                ProviderExecuted = true,
+            });
+        }
+        else if (itemType == "program_output")
+        {
+            parts.Add(new ToolResultStreamPart(
+                OpenAIJson.String(item, "call_id") ?? "call",
+                OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
+                JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.ProgramOutputResult(item)))
+            {
+                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+            });
         }
         else if (itemType == "web_search_call")
         {

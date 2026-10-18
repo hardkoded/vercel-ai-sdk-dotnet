@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.ConvertToOpenAIResponsesInput;
@@ -96,6 +97,28 @@ public sealed class ToolMessagesTests
                 }),
             });
         Assert.True(JsonNode.DeepEquals(expected, result.Input), result.Input.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > tool messages::should reject execution-denied programmatic tool results",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_reject_execution_denied_programmatic_tool_results()
+    {
+        var call = new GeneratedToolCall("call_denied_123", "search", """{"query":"test"}""");
+        var assistant = new AssistantModelMessage(new AssistantContentPart[]
+        {
+            new AssistantToolCallPart(
+                call,
+                new Dictionary<string, JsonElement>
+                {
+                    ["openai"] = JsonDocument.Parse("""{"caller":{"type":"program","callerId":"program_call_123"}}""").RootElement,
+                }),
+        });
+        var denied = new ToolModelMessage("call_denied_123", "search", "User denied the tool execution", false, "execution-denied");
+
+        Assert.Throws<UnsupportedFunctionalityException>(() => OpenAIResponsesLanguageModel.ConvertInput(
+            new ModelMessage[] { assistant, denied }, "system", false, null, "openai", false, true));
     }
 }
 
