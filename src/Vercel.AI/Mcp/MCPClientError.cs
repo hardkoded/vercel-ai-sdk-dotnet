@@ -11,8 +11,8 @@ namespace Vercel.AI.Mcp;
 public class MCPClientError : AiSdkException
 {
     /// <summary>Creates the error with optional MCP error metadata.</summary>
-    public MCPClientError(string message, int? code = null, int? statusCode = null, string? url = null, string? responseBody = null, JsonElement? data = null)
-        : base(message)
+    public MCPClientError(string message, int? code = null, int? statusCode = null, string? url = null, string? responseBody = null, JsonElement? data = null, Exception? cause = null)
+        : base(message, cause!)
     {
         Code = code;
         StatusCode = statusCode;
