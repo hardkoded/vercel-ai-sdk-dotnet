@@ -1143,7 +1143,7 @@ internal static class Generation
             return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
         }
 
-        var parsed = ToolCallParser.ParseToolCall(call, options.Tools);
+        var parsed = await ToolCallParser.ParseToolCallAsync(new ParseToolCallOptions(call) { Tools = options.Tools }, cancellationToken).ConfigureAwait(false);
         if (parsed.Invalid)
         {
             var message = parsed.Error!.Message;

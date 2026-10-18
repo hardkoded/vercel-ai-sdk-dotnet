@@ -27,6 +27,15 @@ public sealed class Tool
     /// <summary>Tool description.</summary>
     public string? Description { get; }
 
+    /// <summary>Display title of the tool. Parsed calls of the tool carry it.</summary>
+    public string? Title { get; set; }
+
+    /// <summary>Metadata of the tool, such as the name of the client that created it. Parsed calls of the tool carry it as tool metadata, apart from provider metadata.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? Metadata { get; set; }
+
+    /// <summary>True for a tool whose input type is not known at compile time, such as an MCP tool. Parsed calls of the tool are dynamic. Maps to <c>dynamicTool</c>.</summary>
+    public bool IsDynamic { get; set; }
+
     /// <summary>JSON Schema for the arguments. Undefined for a provider-defined tool declared without one.</summary>
     public JsonElement InputSchema { get; }
 
@@ -84,6 +93,14 @@ public sealed class Tool
     public static Tool ProviderDefined(string id, string name, JsonElement args, JsonElement inputSchema)
     {
         return new Tool(id, name, args.Clone(), inputSchema.Clone());
+    }
+
+    /// <summary>Creates a dynamic tool from a JSON schema string. Maps to <c>dynamicTool</c>.</summary>
+    public static Tool DynamicTool(string name, string? description, string jsonSchema, Func<JsonElement, CancellationToken, Task<string>>? execute)
+    {
+        var tool = Function(name, description, jsonSchema, execute);
+        tool.IsDynamic = true;
+        return tool;
     }
 
     /// <summary>Creates a tool from a JSON schema string.</summary>

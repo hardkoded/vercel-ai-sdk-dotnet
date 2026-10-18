@@ -225,6 +225,9 @@ public class GeneratedToolCall : GeneratedContent
 
     /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
     public bool ProviderExecuted { get; init; }
+
+    /// <summary>True when the tool is not known up front, such as a provider-executed MCP tool. Maps to the call's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
 }
 
 /// <summary>
