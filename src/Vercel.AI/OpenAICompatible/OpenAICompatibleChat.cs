@@ -201,29 +201,7 @@ public static class OpenAICompatibleChat
     /// <summary>Copies an API exception onto the same status type with a new message.</summary>
     public static ApiException WithMessage(ApiException exception, string message)
     {
-        var body = exception.ResponseBody;
-        switch (exception.StatusCode)
-        {
-            case 400:
-                return new BadRequestException(message, body);
-            case 401:
-                return new AuthenticationException(message, body);
-            case 403:
-                return new PermissionDeniedException(message, body);
-            case 404:
-                return new NotFoundException(message, body);
-            case 422:
-                return new UnprocessableEntityException(message, body);
-            case 429:
-                return new RateLimitException(message, body);
-            default:
-                if (exception.StatusCode >= 500 && exception.StatusCode <= 599)
-                {
-                    return new InternalServerException(message, exception.StatusCode, body);
-                }
-
-                return new ApiException(message, exception.StatusCode, body);
-        }
+        return ProviderHttp.MapStatusWithHeaders(exception.StatusCode, message, exception.ResponseBody, exception.ResponseHeaders);
     }
 
     /// <summary>Top-level reasoning values other than <c>provider-default</c> are sent as <c>reasoning_effort</c>.</summary>

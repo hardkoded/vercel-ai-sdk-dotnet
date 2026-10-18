@@ -57,9 +57,9 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         foreach (var pair in call.Questions)
         {
             var question = new JsonObject { ["type"] = pair.Value.Type };
-            if (pair.Value.Instructions != null)
+            if (pair.Value.HasInstructions)
             {
-                question["instructions"] = pair.Value.Instructions.ToNode();
+                question["instructions"] = pair.Value.Instructions?.ToNode();
             }
 
             if (pair.Value.Criteria != null)

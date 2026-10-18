@@ -106,9 +106,10 @@ internal static class Generation
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
 
-                var started = Stopwatch.StartNew();
+                var now = options.NowMs ?? DefaultNowMs;
+                var stepStartMs = now();
                 var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
-                started.Stop();
+                var responseTimeMs = now() - stepStartMs;
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await options.OnLanguageModelCallEnd(
@@ -120,12 +121,12 @@ internal static class Generation
                             generated.Content,
                             generated.ResponseId,
                             generated.ProviderMetadata,
-                            started.Elapsed),
+                            TimeSpan.FromMilliseconds(responseTimeMs)),
                         cancellationToken).ConfigureAwait(false);
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>())).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -230,7 +231,8 @@ internal static class Generation
                 }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
-                var callOptions = CallOptions(options, messages.ToArray());
+                var stepMessages = messages.ToArray();
+                var callOptions = CallOptions(options, stepMessages);
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -238,8 +240,13 @@ internal static class Generation
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
 
-                var stepWatch = Stopwatch.StartNew();
+                var now = options.NowMs ?? DefaultNowMs;
+                var stepStartMs = now();
+                double ElapsedMs() => now() - stepStartMs;
                 var stepStarted = false;
+                var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+                var stepResponseTimestamp = DateTimeOffset.UtcNow;
+                var stepResponseModelId = current.ModelId;
                 var outputChunkTimes = new List<double>();
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
@@ -256,6 +263,11 @@ internal static class Generation
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                var stepRequest = new LanguageModelRequestMetadata
+                {
+                    Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
+                    Messages = options.Include?.RequestMessages == true ? stepMessages : null,
+                };
                 IAsyncEnumerator<LanguageModelStreamPart> enumerator;
                 try
                 {
@@ -291,7 +303,7 @@ internal static class Generation
                         if (!stepStarted && part is not StreamStartStreamPart)
                         {
                             stepStarted = true;
-                            buffer.Add(new StartStepPart());
+                            buffer.Add(new StartStepPart(null, stepRequest));
                         }
 
                         switch (part)
@@ -302,7 +314,7 @@ internal static class Generation
                             case TextDeltaStreamPart delta:
                                 text.Append(delta.Delta);
                                 TextBlock.Find(textBlocks, delta.Id).Text.Append(delta.Delta);
-                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
+                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new TextDeltaPart(delta.Delta));
                                 break;
                             case TextEndStreamPart textEnd:
@@ -327,14 +339,14 @@ internal static class Generation
                             case ReasoningDeltaStreamPart reasoningDelta:
                                 reasoning.Append(reasoningDelta.Delta);
                                 reasoningMetadata.Add(reasoningDelta.ProviderMetadata);
-                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
+                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
                                 var call = ParseProviderExecutedInput(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted });
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
-                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
+                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolCallPart(call));
                                 break;
                             case ToolApprovalRequestStreamPart approvalRequest:
@@ -350,7 +362,7 @@ internal static class Generation
                                 buffer.Add(providerResult.IsError ? new ToolErrorPart(providerExecuted) : new ToolResultPart(providerExecuted));
                                 break;
                             case ToolInputStartStreamPart inputStart:
-                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
+                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolInputStartPart(
                                     inputStart.Id,
                                     inputStart.ToolName,
@@ -360,7 +372,7 @@ internal static class Generation
                                     inputStart.InputEncoding));
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
-                                outputChunkTimes.Add(stepWatch.Elapsed.TotalMilliseconds);
+                                outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolInputDeltaPart(inputDelta.Id, inputDelta.Delta, inputDelta.ProviderMetadata));
                                 break;
                             case ToolInputEndStreamPart inputEnd:
@@ -380,12 +392,17 @@ internal static class Generation
                             case ErrorStreamPart error:
                                 buffer.Add(new ErrorPart(error.Message));
                                 throw new AiSdkException(error.Message);
+                            case ResponseMetadataStreamPart responseMetadata:
+                                stepResponseId = responseMetadata.Id ?? stepResponseId;
+                                stepResponseTimestamp = responseMetadata.Timestamp ?? stepResponseTimestamp;
+                                stepResponseModelId = responseMetadata.ModelId ?? stepResponseModelId;
+                                break;
                             case StreamStartStreamPart start:
                                 warnings = start.Warnings;
                                 if (!stepStarted)
                                 {
                                     stepStarted = true;
-                                    buffer.Add(new StartStepPart(start.Warnings));
+                                    buffer.Add(new StartStepPart(start.Warnings, stepRequest));
                                 }
 
                                 break;
@@ -397,10 +414,10 @@ internal static class Generation
                     await abort.DisposeAsync(disposal).ConfigureAwait(false);
                 }
 
-                var responseTimeMs = stepWatch.Elapsed.TotalMilliseconds;
+                var responseTimeMs = ElapsedMs();
                 if (!stepStarted)
                 {
-                    buffer.Add(new StartStepPart());
+                    buffer.Add(new StartStepPart(null, stepRequest));
                 }
 
                 var generated = new LanguageModelGenerateResult(
@@ -411,8 +428,7 @@ internal static class Generation
                     warnings,
                     providerMetadata: providerMetadata);
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, toolExecutionMs).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes)).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -423,7 +439,10 @@ internal static class Generation
                     buffer.Add(toolResult.IsError ? new ToolErrorPart(toolResult) : new ToolResultPart(toolResult));
                 }
 
-                buffer.Add(new StepFinishPart(step, StepPerformanceCalculator.Create(stepWatch.Elapsed.TotalMilliseconds, responseTimeMs, outputChunkTimes, toolExecutionMs, step.Usage)));
+                buffer.Add(new StepFinishPart(
+                    step,
+                    new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers),
+                    rawFinish));
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -726,8 +745,9 @@ internal static class Generation
         List<ModelMessage> responseMessages,
         ILanguageModel model,
         CancellationToken cancellationToken,
-        Dictionary<string, double>? toolExecutionMs = null)
+        StepTiming timing)
     {
+        var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
         var toolCalls = new List<GeneratedToolCall>();
         var content = new List<GeneratedContent>();
         var sources = new List<GeneratedSource>();
@@ -802,7 +822,10 @@ internal static class Generation
             var callsToExecute = new List<GeneratedToolCall>();
             foreach (var call in toolCalls)
             {
-                if (call.ProviderExecuted || IsAwaitingApproval(FindTool(options, call.ToolName), options))
+                var tool = FindTool(options, call.ToolName);
+
+                // A tool without execute is for the caller to run: the step has the call and no result.
+                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && tool.Execute == null))
                 {
                     continue;
                 }
@@ -815,17 +838,14 @@ internal static class Generation
                 ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
                 async (call, _) =>
                 {
-                    var toolWatch = Stopwatch.StartNew();
+                    var toolStartMs = timing.Now();
                     var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
-                    return (Executed: executed, ElapsedMs: toolWatch.Elapsed.TotalMilliseconds);
+                    return (Executed: executed, ElapsedMs: timing.Now() - toolStartMs);
                 },
                 cancellationToken).ConfigureAwait(false);
             foreach (var (executed, elapsedMs) in executions)
             {
-                if (toolExecutionMs != null)
-                {
-                    toolExecutionMs[executed.ToolCallId] = elapsedMs;
-                }
+                toolExecutionMs[executed.ToolCallId] = elapsedMs;
 
                 toolResults.Add(executed);
                 toolMessages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
@@ -840,7 +860,25 @@ internal static class Generation
             }
         }
 
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content);
+        var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance);
+    }
+
+    private static double DefaultNowMs()
+    {
+        return Stopwatch.GetTimestamp() * 1000.0 / Stopwatch.Frequency;
+    }
+
+    // What FinishStepAsync needs to compute the performance of one step.
+    private sealed class StepTiming(Func<double> now, double startMs, double responseTimeMs, IReadOnlyList<double> outputChunkTimesMs)
+    {
+        public Func<double> Now { get; } = now;
+
+        public double StartMs { get; } = startMs;
+
+        public double ResponseTimeMs { get; } = responseTimeMs;
+
+        public IReadOnlyList<double> OutputChunkTimesMs { get; } = outputChunkTimesMs;
     }
 
     // A provider-executed tool asks for approval by tool call id; the step carries the call itself, as upstream does.

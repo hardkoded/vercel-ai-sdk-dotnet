@@ -26,6 +26,7 @@ public class DecisionQuestion
     {
         Type = type ?? string.Empty;
         Instructions = instructions;
+        HasInstructions = instructions != null;
         Criteria = criteria;
     }
 
@@ -34,6 +35,13 @@ public class DecisionQuestion
 
     /// <summary>Instructions. A string, JSON object, or JSON array. May be null for choice, score, and boolean questions.</summary>
     public DecisionInput? Instructions { get; }
+
+    /// <summary>
+    /// True when <c>instructions</c> is present. It is true whenever <see cref="Instructions"/> is set. Set it to true with null
+    /// instructions to send an explicit <c>null</c>, as upstream does for <c>instructions: null</c>. A question that leaves it false omits
+    /// the field, as upstream does for an absent or <c>undefined</c> value.
+    /// </summary>
+    public bool HasInstructions { get; init; }
 
     /// <summary>Choice options, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
     public DecisionCriteria? Criteria { get; }
