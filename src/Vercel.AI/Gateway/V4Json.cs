@@ -2,9 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Gateway;
@@ -184,11 +186,74 @@ public static class V4Json
                 var raw = root.TryGetProperty("finishReason", out var finish) ? ReadFinishReason(finish) ?? "stop" : "stop";
                 return new FinishStreamPart(FinishReasons.Parse(raw), ReadUsage(root), raw);
             case "error":
-                var message = root.TryGetProperty("error", out var error) ? error.ToString() : "Provider stream error.";
-                return new ErrorStreamPart(message ?? "Provider stream error.");
+                return ParseError(root);
+            case "stream-start":
+                return new StreamStartStreamPart(ReadWarnings(root));
+            case "raw":
+                return new RawStreamPart(root.TryGetProperty("rawValue", out var rawValue) ? rawValue.GetRawText() : "null");
+            case "response-metadata":
+                return new ResponseMetadataStreamPart(
+                    ReadString(root, "id"),
+                    ReadString(root, "modelId"),
+                    root.TryGetProperty("timestamp", out var timestamp)
+                        && timestamp.ValueKind == JsonValueKind.String
+                        && DateTimeOffset.TryParse(timestamp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
+                        ? parsed
+                        : null);
             default:
                 return null;
         }
+    }
+
+    private static string? ReadString(JsonElement root, string name)
+    {
+        return root.ValueKind == JsonValueKind.Object && root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    }
+
+    private static IReadOnlyList<CallWarning> ReadWarnings(JsonElement root)
+    {
+        var warnings = new List<CallWarning>();
+        if (root.TryGetProperty("warnings", out var items) && items.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in items.EnumerateArray())
+            {
+                var type = ReadString(item, "type") ?? "other";
+                var feature = ReadString(item, "feature");
+                warnings.Add(feature is null
+                    ? new CallWarning(type, ReadString(item, "message") ?? string.Empty)
+                    : new CallWarning(type, feature, ReadString(item, "details")));
+            }
+        }
+
+        return warnings;
+    }
+
+    private static ErrorStreamPart ParseError(JsonElement root)
+    {
+        if (!root.TryGetProperty("error", out var error))
+        {
+            return new ErrorStreamPart("Provider stream error.");
+        }
+
+        if (error.ValueKind != JsonValueKind.Object)
+        {
+            return new ErrorStreamPart(error.ToString() ?? "Provider stream error.");
+        }
+
+        return new ErrorStreamPart(new ProviderStreamError(
+            ReadString(error, "message") ?? error.GetRawText(),
+            error.Clone(),
+            ReadString(error, "type"),
+            null,
+            error.TryGetProperty("statusCode", out var status) && status.ValueKind == JsonValueKind.Number && status.TryGetInt32(out var code) ? code : null,
+            error.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False ? retryable.GetBoolean() : null));
+    }
+
+    private static JsonObject FileData(FileContentPart file)
+    {
+        return file.Url is { } url
+            ? new JsonObject { ["type"] = "url", ["url"] = url }
+            : new JsonObject { ["type"] = "data", ["data"] = file.Data is null ? null : Convert.ToBase64String(file.Data) };
     }
 
     private static JsonObject Message(ModelMessage message)
@@ -211,7 +276,7 @@ public static class V4Json
                         {
                             ["type"] = "file",
                             ["mediaType"] = file.MediaType,
-                            ["data"] = file.Url ?? (file.Data is null ? null : Convert.ToBase64String(file.Data)),
+                            ["data"] = FileData(file),
                         });
                     }
                 }
