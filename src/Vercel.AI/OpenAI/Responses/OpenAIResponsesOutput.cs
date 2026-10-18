@@ -28,6 +28,9 @@ public sealed class OpenAIText : GeneratedText
 /// </summary>
 internal static class OpenAIResponsesOutput
 {
+    // JSON.stringify leaves characters such as '>' and non-ASCII text unescaped.
+    private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
     /// <summary>The source an annotation points at: a URL source for <c>url_citation</c>, else a document source.</summary>
     public static GeneratedContent AnnotationSource(JsonElement annotation, string id)
     {
@@ -82,6 +85,18 @@ internal static class OpenAIResponsesOutput
 
         return citations.Count == 0 ? null : citations;
     }
+
+    /// <summary>The input of a <c>program</c> item: its code and replay fingerprint.</summary>
+    public static string ProgramInput(JsonElement item) =>
+        new JsonObject { ["code"] = OpenAIJson.String(item, "code"), ["fingerprint"] = OpenAIJson.String(item, "fingerprint") }.ToJsonString(JsonOptions);
+
+    /// <summary>The result of a <c>program_output</c> item.</summary>
+    public static string ProgramOutputResult(JsonElement item) =>
+        new JsonObject { ["result"] = OpenAIJson.String(item, "result"), ["status"] = OpenAIJson.String(item, "status") }.ToJsonString(JsonOptions);
+
+    /// <summary>Provider metadata that carries only the output item id.</summary>
+    public static JsonElement ItemMetadata(JsonElement item) =>
+        OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") });
 
     /// <summary>Provider metadata for a text block.</summary>
     public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations)

@@ -119,6 +119,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ["openai.programmatic_tool_calling"] = "programmatic_tool_calling",
     };
 
+    private static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools) =>
+        ToolNames.CreateToolNameMapping(MappedTools(tools), ProviderToolNames);
+
     private static IReadOnlyList<MappedTool>? MappedTools(IReadOnlyList<LanguageModelTool>? tools)
     {
         return tools?.Select(tool => tool.IsProviderDefined
@@ -210,7 +213,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             new PrepareResponsesToolsOptions
             {
                 AllowedTools = ParseAllowedTools(openai),
-                ToolNameMapping = ToolNames.CreateToolNameMapping(MappedTools(options.Tools), ProviderToolNames),
+                ToolNameMapping = CreateToolNameMapping(options.Tools),
                 CustomProviderToolNames = customProviderToolNames,
                 OutputSchemaToolNames = outputSchemaToolNames,
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
@@ -544,7 +547,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
+        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools));
     }
 
     /// <inheritdoc />
@@ -563,7 +566,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools));
+        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools));
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;
@@ -606,7 +609,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         string raw,
         IReadOnlyDictionary<string, string> headers,
         Func<string>? generateId = null,
-        IReadOnlyCollection<string>? functionToolNames = null)
+        IReadOnlyCollection<string>? functionToolNames = null,
+        ToolNameMapping? toolNameMapping = null)
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -728,6 +732,27 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var metadata = OpenAIParallelToolCall.CallMetadata(item);
                 content.Add(new GeneratedToolCall(id, name, arguments, metadata));
             }
+            else if (type == "program")
+            {
+                content.Add(new GeneratedToolCall(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    ProgrammaticToolName(toolNameMapping),
+                    OpenAIResponsesOutput.ProgramInput(item),
+                    OpenAIResponsesOutput.ItemMetadata(item))
+                {
+                    ProviderExecuted = true,
+                });
+            }
+            else if (type == "program_output")
+            {
+                content.Add(new GeneratedToolResult(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    ProgrammaticToolName(toolNameMapping),
+                    OpenAIResponsesOutput.ProgramOutputResult(item))
+                {
+                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+                });
+            }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {
                 var reasoningItemId = item.TryGetProperty("id", out var reasoningIdElement) && reasoningIdElement.ValueKind == JsonValueKind.String
@@ -786,6 +811,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),
             headers);
     }
+
+    internal static string ProgrammaticToolName(ToolNameMapping? toolNameMapping) =>
+        toolNameMapping?.ToCustomToolName("programmatic_tool_calling") ?? "programmatic_tool_calling";
 
     internal static FinishReason MapFinishReason(string? incompleteReason, bool hasFunctionCall)
     {
