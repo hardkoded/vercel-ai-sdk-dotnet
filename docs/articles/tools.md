@@ -102,7 +102,14 @@ Providers keep the error status:
 
 ## Tool input validation
 
-Before the loop runs a tool, `ToolCallParser.ParseToolCall` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call whose input is not valid JSON or does not match the schema is not executed. It comes back with `Invalid` set and an `InvalidToolInputError` in `Error`, and the model receives the error message as an `error-text` tool result. The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
+Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call that fails is not executed. It comes back with `Invalid` and `Dynamic` set and the failure in `Error`: a `NoSuchToolError` when the tool is unknown (`AvailableTools` is null when no tools were set), or an `InvalidToolInputError` when the input is not valid JSON or does not match the schema. The model receives the error message as an `error-text` tool result. The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
+
+`ParseToolCallOptions` also takes:
+
+- `RepairToolCall`: called once for a `NoSuchToolError` or `InvalidToolInputError`. It gets a `ToolCallRepairContext` (the call, the tools, `InputSchema(toolName)`, the error, `Messages`, `Instructions` and a `CancellationToken`) and returns a repaired `GeneratedToolCall`, or null to keep the error. If it throws, the result carries a `ToolCallRepairError`. Cancelling the token stops the wait and cancels `ParseToolCallAsync`.
+- `RefineToolInput`: a map from tool name to a function that returns a refined input for a valid call.
+
+A `Tool` can carry a `Title` and `Metadata`. A parsed call copies both as `Title` and `ToolMetadata`; `ToolMetadata` stays apart from the model's `ProviderMetadata`. `Tool.DynamicTool(...)` declares a dynamic tool, and its parsed calls have `Dynamic` set. A provider-executed `GeneratedToolCall` with `Dynamic` set parses even when no tool matches. The generation loop does not use repair or refinement yet (#603).
 
 ## Provider-defined tools
 
