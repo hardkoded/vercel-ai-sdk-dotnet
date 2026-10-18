@@ -37,7 +37,7 @@ public sealed class ProviderHttp
         var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatus((int)response.StatusCode, body);
+            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
         }
 
         if (string.IsNullOrWhiteSpace(body))
@@ -62,7 +62,7 @@ public sealed class ProviderHttp
             var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                throw MapStatus((int)response.StatusCode, body);
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             return new ProviderTextResponse(body ?? string.Empty, CopyHeaders(response));
@@ -114,7 +114,8 @@ public sealed class ProviderHttp
         var bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatus((int)response.StatusCode, Encoding.UTF8.GetString(bytes));
+            var text = Encoding.UTF8.GetString(bytes);
+            throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(text, (int)response.StatusCode), text, CopyHeaders(response));
         }
 
         return new ProviderBinaryResponse(bytes, CopyHeaders(response), response.Content.Headers.ContentType?.MediaType);
@@ -176,7 +177,7 @@ public sealed class ProviderHttp
             if (!response.IsSuccessStatusCode)
             {
                 var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatus((int)response.StatusCode, body);
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -248,7 +249,7 @@ public sealed class ProviderHttp
             if (!response.IsSuccessStatusCode)
             {
                 var body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
-                throw MapStatus((int)response.StatusCode, body);
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(body, (int)response.StatusCode), body, CopyHeaders(response));
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
@@ -287,16 +288,22 @@ public sealed class ProviderHttp
     /// <summary>Maps an HTTP status onto the SDK exception hierarchy with a provider-specific <paramref name="message"/>.</summary>
     public static ApiException MapStatus(int statusCode, string message, string? body)
     {
+        return MapStatusWithHeaders(statusCode, message, body, null);
+    }
+
+    /// <summary>Like the public overloads, and keeps <paramref name="responseHeaders"/> on the exception.</summary>
+    internal static ApiException MapStatusWithHeaders(int statusCode, string message, string? body, IReadOnlyDictionary<string, string>? responseHeaders)
+    {
         return statusCode switch
         {
-            400 => new BadRequestException(message, body),
-            401 => new AuthenticationException(message, body),
-            403 => new PermissionDeniedException(message, body),
-            404 => new NotFoundException(message, body),
-            422 => new UnprocessableEntityException(message, body),
-            429 => new RateLimitException(message, body),
-            >= 500 and <= 599 => new InternalServerException(message, statusCode, body),
-            _ => new ApiException(message, statusCode, body),
+            400 => new BadRequestException(message, body) { ResponseHeaders = responseHeaders },
+            401 => new AuthenticationException(message, body) { ResponseHeaders = responseHeaders },
+            403 => new PermissionDeniedException(message, body) { ResponseHeaders = responseHeaders },
+            404 => new NotFoundException(message, body) { ResponseHeaders = responseHeaders },
+            422 => new UnprocessableEntityException(message, body) { ResponseHeaders = responseHeaders },
+            429 => new RateLimitException(message, body) { ResponseHeaders = responseHeaders },
+            >= 500 and <= 599 => new InternalServerException(message, statusCode, body) { ResponseHeaders = responseHeaders },
+            _ => new ApiException(message, statusCode, body) { ResponseHeaders = responseHeaders },
         };
     }
 

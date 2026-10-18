@@ -1,6 +1,9 @@
 <Solution>
   <Folder Name="/examples/">
     <Project Path="examples/Agent/Agent.csproj" />
+    <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
+    <Project Path="examples/DecidePerplexityCriteriaOnly/DecidePerplexityCriteriaOnly.csproj" />
+    <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/Providers/Providers.csproj" />

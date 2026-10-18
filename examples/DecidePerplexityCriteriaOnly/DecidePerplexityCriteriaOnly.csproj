@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Asks Perplexity decision questions that have criteria and no instructions.</Description>
+  </PropertyGroup>
+</Project>
