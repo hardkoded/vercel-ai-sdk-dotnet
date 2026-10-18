@@ -8,10 +8,13 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.AmazonBedrock;
 using Vercel.AI.Anthropic;
 using Vercel.AI.DeepInfra;
 using Vercel.AI.Fireworks;
+using Vercel.AI.Gateway;
 using Vercel.AI.Google;
+using Vercel.AI.OpenAI;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -196,6 +199,140 @@ public sealed class SharedModelStateTests
         Assert.True(xai.ClientCreated);
         Assert.Single(maasModels.Select(InnerProvider).Distinct());
         Assert.Single(xaiModels.Select(InnerProvider).Distinct());
+    }
+
+    [Fact]
+    public async Task AmazonBedrock_embedding_calls_keep_their_own_headers()
+    {
+        using var handler = new Rendezvous(2, "{\"embedding\":[0.5],\"inputTextTokenCount\":1}");
+        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions { AccessKeyId = "AKIA", SecretAccessKey = "secret" }, handler);
+        var model = (AmazonBedrockEmbeddingModel)provider.EmbeddingModel("amazon.titan-embed-text-v2:0");
+
+        await Both(
+            model.DoEmbedAsync(new EmbeddingCallOptions(new[] { "x" }) { Headers = Caller("a") }, CancellationToken.None),
+            model.DoEmbedAsync(new EmbeddingCallOptions(new[] { "y" }) { Headers = Caller("b") }, CancellationToken.None));
+
+        Assert.Contains("\"x\"", handler.Requests["a"].Body);
+        Assert.Contains("\"y\"", handler.Requests["b"].Body);
+    }
+
+    [Fact]
+    public void VertexProvider_does_not_change_the_options_it_was_given()
+    {
+        var options = new VertexOptions { Project = "p" };
+        options.Headers["X-Custom"] = "1";
+
+        var provider = new GoogleVertexProvider(new HttpClient(), options);
+        provider.Options.Headers["X-Other"] = "2";
+
+        Assert.Equal(string.Empty, options.BaseUrl);
+        Assert.Equal("us-central1", options.Region);
+        Assert.Equal(new[] { "X-Custom" }, options.Headers.Keys);
+        Assert.Contains("p", provider.Options.BaseUrl, StringComparison.Ordinal);
+        Assert.Equal("1", provider.Options.Headers["X-Custom"]);
+    }
+
+    [Fact]
+    public void OpenAICompatible_providers_do_not_change_the_options_they_were_given()
+    {
+        var creates = typeof(OpenAICompatibleProvider).Assembly.GetTypes()
+            .Where(type => typeof(OpenAICompatibleProvider).IsAssignableFrom(type) && !type.IsAbstract)
+            .Select(type => type.GetMethod("Create", BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly, null, new[] { typeof(OpenAICompatibleOptions), typeof(HttpMessageHandler) }, null))
+            .Where(method => method != null)
+            .ToList();
+        Assert.True(creates.Count > 30);
+
+        var failures = new List<string>();
+        foreach (var create in creates)
+        {
+            var options = new OpenAICompatibleOptions();
+            options.Headers["X-Custom"] = "1";
+            var before = Snapshot(options);
+
+            try
+            {
+                create!.Invoke(null, new object?[] { options, new Rendezvous(1, "{}") });
+            }
+            catch (TargetInvocationException)
+            {
+                // A provider may reject the bare options. It must still leave them as they were.
+            }
+
+            if (Snapshot(options) != before)
+            {
+                failures.Add(create!.DeclaringType!.Name);
+            }
+        }
+
+        Assert.Empty(failures);
+    }
+
+    private static string Snapshot(OpenAICompatibleOptions options)
+    {
+        return string.Join("|", options.ProviderName, options.BaseUrl, options.ApiKey, options.ApiKeyEnvironmentVariable, options.ApiKeyStyle, options.ApiKeyHeaderName,
+            options.SupportsEmbeddings, options.SupportsImages, options.DownloadHttpClient != null,
+            string.Join(",", options.AdditionalApiKeyEnvironmentVariables), string.Join(",", options.Headers.Select(pair => pair.Key + "=" + pair.Value)),
+            string.Join(",", options.QueryParameters.Select(pair => pair.Key + "=" + pair.Value)));
+    }
+
+    [Fact]
+    public async Task GenerateImageAsync_forwards_every_image_option_to_the_model()
+    {
+        var model = new CapturingImageModel();
+        var client = new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "k" }));
+        var providerOptions = new Dictionary<string, JsonElement> { ["p"] = JsonDocument.Parse("{}").RootElement.Clone() };
+
+        await client.GenerateImageAsync(new GenerateImageOptions
+        {
+            Model = model,
+            Prompt = "x",
+            Seed = 3,
+            Files = new[] { Png },
+            Mask = Png,
+            ProviderOptions = providerOptions,
+            Headers = Caller("a"),
+        });
+
+        var call = model.Call!;
+        Assert.Equal(3, call.Seed);
+        Assert.Same(Png, call.Files!.Single());
+        Assert.Same(Png, call.Mask);
+        Assert.Same(providerOptions, call.ProviderOptions);
+        Assert.Equal("a", call.Headers!["X-Call"]);
+    }
+
+    [Fact]
+    public async Task OpenAI_image_model_sends_an_edit_request_with_the_forwarded_options()
+    {
+        using var handler = new Rendezvous(1, "{\"data\":[]}");
+        var model = new OpenAIImageModel(OpenAIProvider.Create(new OpenAIOptions { ApiKey = "k" }, handler), "gpt-image-1");
+        var providerOptions = new Dictionary<string, JsonElement> { ["openai"] = JsonDocument.Parse("{\"quality\":\"high\"}").RootElement.Clone() };
+
+        await model.DoGenerateAsync(new ImageCallOptions("p") { Files = new[] { Png }, Mask = Png, Headers = Caller("a") }, CancellationToken.None);
+
+        Assert.EndsWith("/images/edits", handler.Requests["a"].Uri.AbsolutePath);
+        Assert.Contains("name=mask", handler.Requests["a"].Body, StringComparison.Ordinal);
+
+        using var generate = new Rendezvous(1, "{\"data\":[]}");
+        var plain = new OpenAIImageModel(OpenAIProvider.Create(new OpenAIOptions { ApiKey = "k" }, generate), "gpt-image-1");
+        await plain.DoGenerateAsync(new ImageCallOptions("p") { ProviderOptions = providerOptions, Headers = Caller("b") }, CancellationToken.None);
+        Assert.EndsWith("/images/generations", generate.Requests["b"].Uri.AbsolutePath);
+        Assert.Equal("high", JsonNode.Parse(generate.Requests["b"].Body)!["quality"]!.GetValue<string>());
+    }
+
+    private sealed class CapturingImageModel : IImageModel
+    {
+        public ImageCallOptions? Call { get; private set; }
+
+        public string Provider => "test";
+
+        public string ModelId => "m";
+
+        public Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+        {
+            Call = options;
+            return Task.FromResult(new ImageGenerationResult(Array.Empty<Vercel.AI.Provider.GeneratedImage>()));
+        }
     }
 
     private static OpenAICompatibleProvider InnerProvider(ILanguageModel model)

@@ -36,6 +36,11 @@ public sealed class OperationWarning
         Setting = setting;
     }
 
+    internal CallWarning ToCallWarning()
+    {
+        return Feature != null ? new CallWarning(Type, Feature, Details ?? Message) : new CallWarning(Type, Message ?? Details ?? Type);
+    }
+
     /// <summary>Warning type: <c>unsupported</c>, <c>compatibility</c>, <c>deprecated</c>, or <c>other</c>.</summary>
     public string Type { get; }
 

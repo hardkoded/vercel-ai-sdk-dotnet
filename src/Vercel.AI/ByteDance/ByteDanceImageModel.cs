@@ -131,16 +131,27 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
         return new ImageModelResult(images, warnings, usage, response: new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId));
     }
 
+    private static Dictionary<string, string> MergedHeaders(ImageCallOptions options, IDictionary<string, string>? headers)
+    {
+        var merged = options.NonNullHeaders;
+        foreach (var pair in headers ?? new Dictionary<string, string>())
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return merged;
+    }
+
     internal async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new ImageModelCall(options.Prompt, null, null, options.Count, options.Size, options.AspectRatio, null, null, new Dictionary<string, string>(headers ?? new Dictionary<string, string>()), cancellationToken);
+        var call = new ImageModelCall(options.Prompt, options.Files, options.Mask, options.Count, options.Size, options.AspectRatio, options.Seed, options.ProviderOptionsElement, MergedHeaders(options, headers), cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new ImageGenerationResult(result.Images.Select(image =>
         {
             var data = Convert.FromBase64String((string)image!);
             return new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/jpeg", data, null);
-        }).ToList());
+        }).ToList(), result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     private static void Copy(JsonElement options, string name, JsonObject body, string field)

@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
+using Vercel.AI.Provider;
 using BedrockEmbeddingModel = Vercel.AI.AmazonBedrock.AmazonBedrockEmbeddingModel;
 using BedrockProvider = Vercel.AI.AmazonBedrock.AmazonBedrockProvider;
 
@@ -170,13 +171,13 @@ public sealed class DoEmbedTests
         provider.Options.Headers["model-header"] = "model-value";
         provider.Options.Headers["shared-header"] = "model-shared";
         var model = Model(provider, "amazon.titan-embed-text-v2:0");
-        model.Headers = new Dictionary<string, string?>
+        var headers = new Dictionary<string, string?>
         {
             ["options-header"] = "options-value",
             ["shared-header"] = "options-shared",
         };
 
-        await model.DoEmbedAsync(new[] { TestValues[0] }, null, CancellationToken.None);
+        await model.DoEmbedAsync(new EmbeddingCallOptions(new[] { TestValues[0] }) { Headers = headers }, CancellationToken.None);
 
         Assert.Equal("options-value", handler.Headers["options-header"]);
         Assert.Equal("model-value", handler.Headers["model-header"]);

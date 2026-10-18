@@ -51,10 +51,10 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var call = new ImageModelCall(options.Prompt, null, null, options.Count, options.Size, options.AspectRatio, null, null, new Dictionary<string, string>(), cancellationToken);
+        var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var data = (byte[])result.Images[0]!;
-        return new ImageGenerationResult(new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) });
+        return new ImageGenerationResult(new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) }, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     /// <inheritdoc />

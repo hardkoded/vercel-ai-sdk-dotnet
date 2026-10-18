@@ -116,6 +116,17 @@ public sealed class FalImageModel : IImageModel, IImageCaller
         return new ImageModelResult(images, warnings, providerMetadata: providerMetadata, response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId));
     }
 
+    private static Dictionary<string, string> MergedHeaders(ImageCallOptions options, IDictionary<string, string>? headers)
+    {
+        var merged = options.NonNullHeaders;
+        foreach (var pair in headers ?? new Dictionary<string, string>())
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return merged;
+    }
+
     internal async Task<ImageGenerationResult> GenerateAsync(ImageCallOptions options, IDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
         if (options is null)
@@ -123,7 +134,7 @@ public sealed class FalImageModel : IImageModel, IImageCaller
             throw new ArgumentNullException(nameof(options));
         }
 
-        var call = new ImageModelCall(options.Prompt, null, null, options.Count, options.Size, options.AspectRatio, null, null, new Dictionary<string, string>(headers ?? new Dictionary<string, string>()), cancellationToken);
+        var call = new ImageModelCall(options.Prompt, options.Files, options.Mask, options.Count, options.Size, options.AspectRatio, options.Seed, options.ProviderOptionsElement, MergedHeaders(options, headers), cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var images = new List<ProviderImage>();
         foreach (var image in result.Images)
@@ -132,7 +143,7 @@ public sealed class FalImageModel : IImageModel, IImageCaller
             images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     private static JsonObject CreateBody(ImageModelCall call, List<OperationWarning> warnings)

@@ -206,6 +206,17 @@ public sealed class ImageCallOptions
 
     /// <summary>Headers for this call. They override the provider headers.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+
+    internal JsonElement? ProviderOptionsElement => ProviderOptions == null ? null : JsonSerializer.SerializeToElement(ProviderOptions);
+
+    internal Dictionary<string, string> NonNullHeaders => Headers == null
+        ? new Dictionary<string, string>()
+        : Headers.Where(pair => pair.Value != null).ToDictionary(pair => pair.Key, pair => pair.Value!);
+
+    internal Operations.ImageModelCall ToModelCall(CancellationToken cancellationToken)
+    {
+        return new Operations.ImageModelCall(Prompt, Files, Mask, Count, Size, AspectRatio, Seed, ProviderOptionsElement, NonNullHeaders, cancellationToken);
+    }
 }
 
 /// <summary>

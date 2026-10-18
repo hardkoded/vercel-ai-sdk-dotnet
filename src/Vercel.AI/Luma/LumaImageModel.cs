@@ -54,12 +54,24 @@ public sealed class LumaImageRequest
 public sealed class LumaImageGeneration : ImageGenerationResult
 {
     internal LumaImageGeneration(IReadOnlyList<GeneratedImage> images, IReadOnlyList<ModelWarning> warnings, DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers)
-        : base(images)
+        : base(images, warnings.Select(ToCallWarning).ToList())
     {
         Warnings = warnings;
         Timestamp = timestamp;
         ModelId = modelId;
         Headers = headers;
+    }
+
+    private static CallWarning ToCallWarning(ModelWarning warning)
+    {
+        return warning switch
+        {
+            UnsupportedWarning unsupported => new CallWarning(unsupported.Type, unsupported.Feature, unsupported.Details),
+            CompatibilityWarning compatibility => new CallWarning(compatibility.Type, compatibility.Feature, compatibility.Details),
+            DeprecatedWarning deprecated => new CallWarning(deprecated.Type, deprecated.Message),
+            OtherWarning other => new CallWarning(other.Type, other.Message),
+            _ => new CallWarning(warning.Type, warning.Type),
+        };
     }
 
     /// <summary>Warnings for settings Luma does not support.</summary>
@@ -105,7 +117,16 @@ public sealed class LumaImageModel : IImageModel
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        return await GenerateAsync(new LumaImageRequest(options.Prompt) { Size = options.Size, AspectRatio = options.AspectRatio }, cancellationToken).ConfigureAwait(false);
+        return await GenerateAsync(new LumaImageRequest(options.Prompt)
+        {
+            Size = options.Size,
+            AspectRatio = options.AspectRatio,
+            Seed = options.Seed,
+            Files = options.Files,
+            Mask = options.Mask,
+            ProviderOptions = options.ProviderOptionsElement,
+            Headers = options.Headers == null ? null : options.NonNullHeaders,
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Generates one image.</summary>
