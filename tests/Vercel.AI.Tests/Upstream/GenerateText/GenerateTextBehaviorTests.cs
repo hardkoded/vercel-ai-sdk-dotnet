@@ -480,25 +480,32 @@ public sealed class GenerateTextBehaviorTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.stream::should send tool call deltas",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The .NET full stream reports a tool without execute as a tool-error part.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Streams_tool_input_deltas()
     {
         const string id = "call_O17Uplv4lJvD6DVdIvFFeRMw";
         var deltas = new[] { "{\"", "value", "\":\"", "Spark", "le", " Day", "\"}" };
-        var streamParts = new List<LanguageModelStreamPart> { new ToolInputStartStreamPart(id, "test-tool") };
+        var streamParts = new List<LanguageModelStreamPart>
+        {
+            new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
+            new ToolInputStartStreamPart(id, "test-tool"),
+        };
         streamParts.AddRange(deltas.Select(delta => new ToolInputDeltaStreamPart(id, delta)));
         streamParts.Add(new ToolInputEndStreamPart(id));
         streamParts.Add(new ToolCallStreamPart(id, "test-tool", "{\"value\":\"Sparkle Day\"}"));
-        streamParts.Add(new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13)));
+        streamParts.Add(new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13, cacheReadTokens: 0, cacheWriteTokens: 0, reasoningTokens: 10, noCacheInputTokens: 3, textTokens: 10)));
 
         var parts = await StreamToolInputAsync(streamParts);
 
         Assert.Equal(
             new[] { "start", "start-step", "tool-input-start" }
                 .Concat(deltas.Select(_ => "tool-input-delta"))
-                .Concat(new[] { "tool-input-end", "tool-call" }),
-            parts.Take(12).Select(part => part.Type));
+                .Concat(new[] { "tool-input-end", "tool-call", "finish-step", "finish" }),
+            parts.Select(part => part.Type));
+        var startStep = Assert.IsType<StartStepPart>(parts[1]);
+        Assert.Null(startStep.Request.Body);
+        Assert.Null(startStep.Request.Messages);
+        Assert.Empty(startStep.Warnings);
         var start = Assert.IsType<ToolInputStartPart>(parts[2]);
         Assert.Equal(id, start.Id);
         Assert.Equal("test-tool", start.ToolName);
@@ -511,9 +518,39 @@ public sealed class GenerateTextBehaviorTests
         var call = Assert.IsType<ToolCallPart>(parts[11]).ToolCall;
         Assert.Equal(id, call.ToolCallId);
         Assert.Equal("{\"value\":\"Sparkle Day\"}", call.ArgumentsJson);
-        var finish = Assert.IsType<FinishPart>(parts[^1]);
+        var finishStep = Assert.IsType<StepFinishPart>(parts[12]);
+        Assert.Equal(FinishReason.ToolCalls, finishStep.Step.FinishReason);
+        Assert.Null(finishStep.RawFinishReason);
+        Assert.Null(finishStep.ProviderMetadata);
+        Assert.Null(finishStep.Response.Headers);
+        Assert.Equal("id-0", finishStep.Response.Id);
+        Assert.Equal("mock-model-id", finishStep.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0), finishStep.Response.Timestamp);
+        var performance = finishStep.Performance;
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Equal(0, performance.InputTokensPerSecond);
+        Assert.Equal(0, performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        var gaps = performance.TimeBetweenOutputChunksMs!;
+        Assert.Equal(new double[] { 0, 0, 0, 0, 0, 0 }, new[] { gaps.Avg, gaps.Max, gaps.Median, gaps.Min, gaps.P10, gaps.P90 });
+        Assert.Equal(0, performance.TimeToFirstOutputMs);
+        Assert.Empty(performance.ToolExecutionMs);
+        foreach (var usage in new[] { finishStep.Step.Usage, Assert.IsType<FinishPart>(parts[13]).Usage })
+        {
+            Assert.Equal(3, usage.InputTokens);
+            Assert.Equal(10, usage.OutputTokens);
+            Assert.Equal(13, usage.TotalTokens);
+            Assert.Equal(0, usage.CacheReadTokens);
+            Assert.Equal(0, usage.CacheWriteTokens);
+            Assert.Equal(3, usage.NoCacheInputTokens);
+            Assert.Equal(10, usage.ReasoningTokens);
+            Assert.Equal(10, usage.TextTokens);
+        }
+
+        var finish = Assert.IsType<FinishPart>(parts[13]);
         Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
-        Assert.Equal(13, finish.Usage.TotalTokens);
     }
 
     [Fact]
@@ -544,6 +581,7 @@ public sealed class GenerateTextBehaviorTests
             Prompt = "test-input",
             Tools = new[] { Tool.Function("test-tool", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}", null) },
             ToolChoice = ToolChoice.Required,
+            NowMs = () => 0,
         });
         var parts = new List<TextStreamPart>();
         await foreach (var part in stream.Stream())

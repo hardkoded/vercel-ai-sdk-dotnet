@@ -15,7 +15,7 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
     private const string Suite = "packages/ai/src/generate-text/stream-text.test.ts::streamText > tool execution approval > provider-executed tool (MCP) approval > when a provider-executed tool emits tool-approval-request::";
 
     [Fact]
-    [UpstreamTest(Suite + "should add provider-executed tool approval request to full stream", Coverage = UpstreamCoverage.Partial, Note = "start-step has no request and finish-step has no response metadata.")]
+    [UpstreamTest(Suite + "should add provider-executed tool approval request to full stream", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_add_provider_executed_tool_approval_request_to_full_stream()
     {
         var result = Run();
@@ -25,7 +25,11 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
             parts.Add(part);
         }
 
-        Assert.Equal(new[] { "start", "start-step", "tool-call", "tool-approval-request", "finish" }, parts.Where(part => part is not StepFinishPart).Select(part => part.Type).ToArray());
+        Assert.Equal(new[] { "start", "start-step", "tool-call", "tool-approval-request", "finish-step", "finish" }, parts.Select(part => part.Type).ToArray());
+        var startStep = Assert.IsType<StartStepPart>(parts[1]);
+        Assert.Null(startStep.Request.Body);
+        Assert.Null(startStep.Request.Messages);
+        Assert.Empty(startStep.Warnings);
         var call = Assert.IsType<ToolCallPart>(parts[2]).ToolCall;
         Assert.True(call.ProviderExecuted);
         Assert.Equal("mcp-call-1", call.ToolCallId);
@@ -34,9 +38,37 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
         var request = Assert.IsType<ToolApprovalRequestPart>(parts[3]);
         Assert.Equal("mcp-approval-1", request.ApprovalId);
         Assert.Same(call, request.ToolCall);
-        var finish = Assert.IsType<FinishPart>(parts[parts.Count - 1]);
+        var finishStep = Assert.IsType<StepFinishPart>(parts[4]);
+        Assert.Equal(FinishReason.ToolCalls, finishStep.Step.FinishReason);
+        Assert.Null(finishStep.RawFinishReason);
+        Assert.Null(finishStep.ProviderMetadata);
+        Assert.Null(finishStep.Response.Headers);
+        Assert.Equal("id-0", finishStep.Response.Id);
+        Assert.Equal("mock-model-id", finishStep.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0), finishStep.Response.Timestamp);
+        var performance = finishStep.Performance;
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Equal(0, performance.InputTokensPerSecond);
+        Assert.Equal(0, performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        Assert.Null(performance.TimeBetweenOutputChunksMs);
+        Assert.Equal(0, performance.TimeToFirstOutputMs);
+        Assert.Empty(performance.ToolExecutionMs);
+        var finish = Assert.IsType<FinishPart>(parts[5]);
         Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
-        Assert.Equal(13, finish.Usage.TotalTokens);
+        foreach (var usage in new[] { finishStep.Step.Usage, finish.Usage })
+        {
+            Assert.Equal(3, usage.InputTokens);
+            Assert.Equal(10, usage.OutputTokens);
+            Assert.Equal(13, usage.TotalTokens);
+            Assert.Equal(3, usage.NoCacheInputTokens);
+            Assert.Equal(10, usage.TextTokens);
+            Assert.Null(usage.CacheReadTokens);
+            Assert.Null(usage.CacheWriteTokens);
+            Assert.Null(usage.ReasoningTokens);
+        }
     }
 
     [Fact]
@@ -66,9 +98,10 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
             StreamParts = new LanguageModelStreamPart[]
             {
                 new StreamStartStreamPart(Array.Empty<CallWarning>()),
+                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
                 new ToolCallStreamPart("mcp-call-1", "mcp_tool", "{ \"query\": \"test\" }") { ProviderExecuted = true },
                 new ToolApprovalRequestStreamPart("mcp-approval-1", "mcp-call-1"),
-                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13), null),
+                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), null),
             },
         };
         return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
@@ -76,6 +109,7 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
             Model = model,
             Prompt = "test-input",
             Tools = new[] { ProviderExecutedToolApprovalSupport.McpTool() },
+            NowMs = () => 0,
         });
     }
 }
