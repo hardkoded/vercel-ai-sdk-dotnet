@@ -182,7 +182,10 @@ public static class AmazonBedrockMessages
                         toolResultContent.Add(ToolResultBlock(toolResult.Output, isMistral, toolResult.ToolCallId));
                     }
 
-                    if (CachePoint(part.ProviderOptions) is { } partCachePoint)
+                    var partOptions = part is AssistantToolResultPart { Output.ProviderOptions: { } outputOptions } && CachePoint(part.ProviderOptions) is null
+                        ? outputOptions
+                        : part.ProviderOptions;
+                    if (CachePoint(partOptions) is { } partCachePoint)
                     {
                         if (part is AssistantToolResultPart)
                         {
