@@ -59,7 +59,7 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
         options = options ?? throw new ArgumentNullException(nameof(options));
         var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
-        return new ImageGenerationResult(result.Images.Select(image => new ProviderGeneratedImage("image/svg+xml", (byte[])image!, null)).ToArray());
+        return new ImageGenerationResult(result.Images.Select(image => new ProviderGeneratedImage("image/svg+xml", (byte[])image!, null)).ToArray(), result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     /// <inheritdoc />

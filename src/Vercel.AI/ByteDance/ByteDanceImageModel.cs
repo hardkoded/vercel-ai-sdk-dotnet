@@ -151,7 +151,7 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
         {
             var data = Convert.FromBase64String((string)image!);
             return new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/jpeg", data, null);
-        }).ToList());
+        }).ToList(), result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     private static void Copy(JsonElement options, string name, JsonObject body, string field)

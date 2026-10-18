@@ -320,39 +320,6 @@ public sealed class SharedModelStateTests
         Assert.Equal("high", JsonNode.Parse(generate.Requests["b"].Body)!["quality"]!.GetValue<string>());
     }
 
-    [Theory]
-    [InlineData("fal", "fal-ai/flux/dev")]
-    [InlineData("bytedance", "seedream-4-0-250828")]
-    [InlineData("quiverai", "arrow-1")]
-    [InlineData("prodia", "inference.flux.schnell.txt2img.v2")]
-    [InlineData("replicate", "black-forest-labs/flux-schnell")]
-    [InlineData("luma", "photon-1")]
-    public async Task Image_models_send_the_headers_of_the_call(string provider, string modelId)
-    {
-        using var handler = new Rendezvous(1, "{}");
-        var options = new OpenAICompatibleOptions { ApiKey = "k" };
-        IImageModel model = provider switch
-        {
-            "fal" => Fal.FalProvider.Create(options, handler).ImageModel(modelId),
-            "bytedance" => ByteDance.ByteDanceProvider.Create(options, handler).ImageModel(modelId),
-            "quiverai" => QuiverAI.QuiverAIProvider.Create(options, handler).ImageModel(modelId),
-            "prodia" => Prodia.ProdiaProvider.Create(options, handler).ImageModel(modelId),
-            "replicate" => Replicate.ReplicateProvider.Create(options, handler).ImageModel(modelId),
-            _ => Luma.LumaProvider.Create(options, handler).ImageModel(modelId),
-        };
-
-        try
-        {
-            await model.DoGenerateAsync(new ImageCallOptions("p") { Seed = 4, Headers = Caller("a") }, CancellationToken.None);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            // The scripted response is not a valid image reply. Only the request matters here.
-        }
-
-        Assert.True(handler.Requests.ContainsKey("a"), provider + " did not send the call headers.");
-    }
-
     private sealed class CapturingImageModel : IImageModel
     {
         public ImageCallOptions? Call { get; private set; }

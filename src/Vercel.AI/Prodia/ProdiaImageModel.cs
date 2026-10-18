@@ -54,7 +54,7 @@ public sealed class ProdiaImageModel : IImageModel, IImageCaller
         var call = options.ToModelCall(cancellationToken);
         var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         var data = (byte[])result.Images[0]!;
-        return new ImageGenerationResult(new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) });
+        return new ImageGenerationResult(new[] { new ProviderGeneratedImage(MediaTypes.DetectMediaType(data, "image") ?? "image/png", data, null) }, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     /// <inheritdoc />

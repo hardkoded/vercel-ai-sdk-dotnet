@@ -69,7 +69,7 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
             images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
         }
 
-        return new ImageGenerationResult(images);
+        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
     }
 
     /// <inheritdoc />
