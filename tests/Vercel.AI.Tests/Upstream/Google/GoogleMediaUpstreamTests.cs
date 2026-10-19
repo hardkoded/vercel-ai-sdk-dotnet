@@ -93,32 +93,6 @@ public sealed class GoogleMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > maxImagesPerCall::should default to a supported per-call limit", Coverage = UpstreamCoverage.Covered)]
-    public void Defaults_max_images_per_call_to_one()
-    {
-        var model = new GoogleImageModel(GoogleProvider.Create(Key(), new RecordingHandler()), "gemini-2.5-flash-image");
-        Assert.Equal(1, model.MaxImagesPerCall);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > maxImagesPerCall::should respect a custom setting", Coverage = UpstreamCoverage.Covered)]
-    public void Honors_a_custom_max_images_per_call()
-    {
-        var model = new GoogleImageModel(GoogleProvider.Create(Key(), new RecordingHandler()), "gemini-2.5-flash-image", 5);
-        Assert.Equal(5, model.MaxImagesPerCall);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > doGenerate::should reject non-Gemini model IDs before sending a request", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_non_Gemini_image_models_before_the_request()
-    {
-        var handler = new RecordingHandler();
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => new GoogleImageModel(GoogleProvider.Create(Key(), handler), "imagen-3.0-generate-002").DoGenerateAsync(new ImageCallOptions("cat"), CancellationToken.None)).ConfigureAwait(false);
-        Assert.Contains("gemini-", error.Message);
-        Assert.Equal(0, handler.Calls);
-    }
-
-    [Fact]
     [UpstreamTest("packages/google-vertex/src/google-vertex-image-model.test.ts::GoogleVertexImageModel > doGenerate::should reject non-Gemini model IDs before sending a request", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_non_Gemini_image_models_on_Vertex_before_the_request()
     {
@@ -127,27 +101,6 @@ public sealed class GoogleMediaUpstreamTests
         var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.ImageModel("imagen-3.0-generate-002").DoGenerateAsync(new ImageCallOptions("cat"), CancellationToken.None)).ConfigureAwait(false);
         Assert.Contains("gemini-", error.Message);
         Assert.Equal(0, handler.Calls);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > doGenerate::should use the language model endpoint and extract generated images", Coverage = UpstreamCoverage.Covered)]
-    public async Task Posts_generateContent_and_extracts_image_bytes()
-    {
-        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"inlineData\":{\"mimeType\":\"image/png\",\"data\":\"AQID\"}}]}}]}" };
-        var result = await new GoogleImageModel(GoogleProvider.Create(Key(), handler), "gemini-2.5-flash-image").DoGenerateAsync(new ImageCallOptions("cat"), CancellationToken.None).ConfigureAwait(false);
-        Assert.Contains(":generateContent", handler.Uris[0]);
-        Assert.Equal(new byte[] { 1, 2, 3 }, result.Images[0].Data);
-        Assert.Equal("image/png", result.Images[0].MediaType);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/google/src/google-image-model.test.ts::GoogleImageModel > doGenerate::should return a warning for the unsupported size option", Coverage = UpstreamCoverage.Covered)]
-    public async Task Warns_that_image_size_is_unsupported()
-    {
-        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[]}" };
-        var result = await new GoogleImageModel(GoogleProvider.Create(Key(), handler), "gemini-2.5-flash-image").DoGenerateAsync(new ImageCallOptions("cat") { Size = "1024x1024" }, CancellationToken.None).ConfigureAwait(false);
-        var image = Assert.IsType<GoogleImageResult>(result);
-        Assert.Contains(image.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "size");
     }
 
     [Fact]

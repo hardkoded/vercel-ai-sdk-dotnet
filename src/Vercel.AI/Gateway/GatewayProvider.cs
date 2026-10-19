@@ -448,6 +448,25 @@ public sealed class GatewayImageModel : IImageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    private static JsonObject EncodeImageFile(Operations.ImageModelFile file)
+    {
+        var json = file.Type == "url"
+            ? new JsonObject { ["type"] = "url", ["url"] = file.Url }
+            : new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()) };
+        if (file.ProviderOptions != null)
+        {
+            var providerOptions = new JsonObject();
+            foreach (var pair in file.ProviderOptions)
+            {
+                providerOptions[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+            }
+
+            json["providerOptions"] = providerOptions;
+        }
+
+        return json;
+    }
+
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
@@ -466,6 +485,38 @@ public sealed class GatewayImageModel : IImageModel
             body["aspectRatio"] = options.AspectRatio;
         }
 
+        if (options.Seed != null)
+        {
+            body["seed"] = options.Seed;
+        }
+
+        if (options.ProviderOptions != null)
+        {
+            var providerOptions = new JsonObject();
+            foreach (var pair in options.ProviderOptions)
+            {
+                providerOptions[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+            }
+
+            body["providerOptions"] = providerOptions;
+        }
+
+        if (options.Files != null)
+        {
+            var files = new JsonArray();
+            foreach (var file in options.Files)
+            {
+                files.Add(EncodeImageFile(file));
+            }
+
+            body["files"] = files;
+        }
+
+        if (options.Mask != null)
+        {
+            body["mask"] = EncodeImageFile(options.Mask);
+        }
+
         JsonDocument document;
         try
         {
@@ -473,7 +524,7 @@ public sealed class GatewayImageModel : IImageModel
                 HttpMethod.Post,
                 _provider.Route("image-model"),
                 body.ToJsonString(),
-                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null),
+                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null, options.Headers),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception)

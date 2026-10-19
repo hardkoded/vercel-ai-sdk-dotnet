@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
@@ -60,11 +61,64 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
         public Image(BlackForestLabsProvider provider, string modelId) { _provider = provider; ModelId = modelId; }
         public string Provider => "black-forest-labs";
         public string ModelId { get; }
+        private static readonly (string Option, string Field)[] ProviderOptionFields =
+        {
+            ("width", "width"),
+            ("height", "height"),
+            ("steps", "steps"),
+            ("guidance", "guidance"),
+            ("imagePromptStrength", "image_prompt_strength"),
+            ("imagePrompt", "image_prompt"),
+            ("outputFormat", "output_format"),
+            ("promptUpsampling", "prompt_upsampling"),
+            ("raw", "raw"),
+            ("safetyTolerance", "safety_tolerance"),
+            ("webhookSecret", "webhook_secret"),
+            ("webhookUrl", "webhook_url"),
+        };
+
+        private static string? ImageValue(Operations.ImageModelFile file)
+        {
+            return file.Type == "url" ? file.Url : Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        }
+
         public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
         {
             var path = "/" + ModelId;
             var body = new JsonObject { ["prompt"] = options.Prompt };
-            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(), cancellationToken).ConfigureAwait(false);
+            if (options.Seed != null)
+            {
+                body["seed"] = options.Seed;
+            }
+
+            if (!string.IsNullOrEmpty(options.AspectRatio))
+            {
+                body["aspect_ratio"] = options.AspectRatio;
+            }
+
+            var inputImageField = ModelId == "flux-pro-1.0-fill" ? "image" : "input_image";
+            for (var index = 0; options.Files != null && index < options.Files.Count; index++)
+            {
+                body[inputImageField + (index == 0 ? string.Empty : "_" + (index + 1))] = ImageValue(options.Files[index]);
+            }
+
+            if (options.Mask != null)
+            {
+                body["mask"] = ImageValue(options.Mask);
+            }
+
+            if (options.ProviderOptions != null && options.ProviderOptions.TryGetValue("blackForestLabs", out var bfl) && bfl.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var (option, field) in ProviderOptionFields)
+                {
+                    if (bfl.TryGetProperty(option, out var optionValue) && optionValue.ValueKind != JsonValueKind.Null)
+                    {
+                        body[field] = JsonNode.Parse(optionValue.GetRawText());
+                    }
+                }
+            }
+
+            using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, path), body.ToJsonString(), _provider.CreateHeaders(options.Headers), cancellationToken).ConfigureAwait(false);
             var url = document.RootElement.TryGetProperty("url", out var value) ? value.GetString() : null;
             return new ImageGenerationResult(new[] { new GeneratedImage("image/png", null, url) });
         }
