@@ -89,6 +89,22 @@ var pruned = Ai.PruneMessages(new PruneMessagesOptions
 
 Consecutive tool messages (results and approval responses) count as one message, as upstream's tool message holds several parts. Reasoning files are not supported (([#575](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/575))).
 
+## Converting UI messages
+
+`Ai.ConvertToModelMessages` converts the `UIMessage` list of a chat UI into model messages for `Ai.GenerateText` and friends. A `UIMessage` holds parts: `TextUIPart`, `ReasoningUIPart`, `FileUIPart`, `ToolUIPart`, `DataUIPart`, `StepStartUIPart`, and others. A `ToolUIPart` covers both `tool-{name}` and `dynamic-tool` parts.
+
+```csharp
+var messages = Ai.ConvertToModelMessages(
+    uiMessages,
+    new ConvertToModelMessagesOptions { IgnoreIncompleteToolCalls = true });
+```
+
+- `Tools`: the tools by name. A `dynamic-tool` part with `Dynamic = false` whose tool is missing gets the output `Tool output omitted because the tool is no longer available.`
+- `IgnoreIncompleteToolCalls`: drops tool parts that have no final result.
+- `ConvertDataPart`: turns a `DataUIPart` into a text or file part. Return `null` to ignore the part.
+
+A step-start part ends a block. Each block becomes an assistant message, followed by the approval responses and tool results of its tools, each as its own tool message. Assistant `FileUIPart` and `ReasoningFileUIPart` parts are dropped, and the approval request keeps only its id, tool call id, and `IsAutomatic` ([#575](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/575)).
+
 ## Tool errors
 
 A tool result carries an output type: `text`, `json`, `error-text`, `error-json`, or `execution-denied`. `ToolModelMessage.OutputType` holds it. When you do not set it, the type comes from `isError` and from whether the output is valid JSON.

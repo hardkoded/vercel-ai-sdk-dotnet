@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.GenerateText;
+using System.Text.Json;
 using Vercel.AI.Provider;
+using Vercel.AI.Ui;
 using static Vercel.AI.Tests.PruneMessages.PruneMessagesSupport;
 
 namespace Vercel.AI.Tests.PruneMessages;
@@ -11,8 +13,103 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; selective tool pruning with approvals (regression)</c>.</summary>
 public sealed class ToolCallsSelectiveToolPruningWithApprovalsRegressionTests
 {
-    // Not ported: 'should prune the approval response together with its request and tool-call' builds its
-    // messages with convertToModelMessages, which the port does not have.
+    private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
+
+    [UpstreamTest(Prefix + "pruneMessages > toolCalls > selective tool pruning with approvals (regression)::should prune the approval response together with its request and tool-call", Coverage = UpstreamCoverage.Covered)]
+    [Fact]
+    public void Should_prune_the_approval_response_together_with_its_request_and_tool_call()
+    {
+        var messages = Ai.ConvertToModelMessages(new[]
+        {
+            new UIMessage(UIMessageRole.User, new UIMessagePart[] { new TextUIPart("Weather in Tokyo and Busan?") }),
+            new UIMessage(UIMessageRole.Assistant, new UIMessagePart[]
+            {
+                new StepStartUIPart(),
+                new ToolUIPart("get-weather-tool-1", "call-1", ToolUIPartState.OutputAvailable)
+                {
+                    Input = Json("{\"city\":\"Tokyo\"}"),
+                    Output = Json("\"sunny\""),
+                },
+                new ToolUIPart("get-weather-tool-2", "call-2", ToolUIPartState.OutputAvailable)
+                {
+                    Input = Json("{\"city\":\"Busan\"}"),
+                    Output = Json("\"rainy\""),
+                    Approval = new ToolUIApproval("approval-1") { Approved = true },
+                },
+            }),
+        });
+
+        var result = Prune(messages, PruneReasoning.None, PruneToolCallsRule.All(new[] { "get-weather-tool-2" }));
+
+        AssertSnapshot(
+            """
+            [
+              {
+                "content": [
+                  {
+                    "text": "Weather in Tokyo and Busan?",
+                    "type": "text"
+                  }
+                ],
+                "role": "user"
+              },
+              {
+                "content": [
+                  {
+                    "input": {
+                      "city": "Tokyo"
+                    },
+                    "toolCallId": "call-1",
+                    "toolName": "get-weather-tool-1",
+                    "type": "tool-call"
+                  }
+                ],
+                "role": "assistant"
+              },
+              {
+                "content": [
+                  {
+                    "output": {
+                      "type": "text",
+                      "value": "sunny"
+                    },
+                    "toolCallId": "call-1",
+                    "toolName": "get-weather-tool-1",
+                    "type": "tool-result"
+                  }
+                ],
+                "role": "tool"
+              }
+            ]
+            """,
+            result);
+
+        // No orphaned approval responses remain in the pruned output.
+        var approvalIds = new HashSet<string>();
+        var responseIds = new HashSet<string>();
+        foreach (var message in result)
+        {
+            if (message is AssistantModelMessage assistant)
+            {
+                foreach (var part in assistant.Parts)
+                {
+                    if (part is AssistantToolApprovalRequestPart request)
+                    {
+                        approvalIds.Add(request.ApprovalId);
+                    }
+                }
+            }
+            else if (message is ToolApprovalResponseModelMessage response)
+            {
+                responseIds.Add(response.ApprovalId);
+            }
+        }
+
+        foreach (var id in responseIds)
+        {
+            Assert.Contains(id, approvalIds);
+        }
+    }
 
     [UpstreamTest(Prefix + "pruneMessages > toolCalls > selective tool pruning with approvals (regression)::should drop unresolved approval responses during selective pruning", Coverage = UpstreamCoverage.Covered)]
     [Fact]
