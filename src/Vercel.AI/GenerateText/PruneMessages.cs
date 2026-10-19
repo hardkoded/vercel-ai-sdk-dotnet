@@ -143,7 +143,7 @@ public static class MessagePruning
                     && groups[index][0] is AssistantModelMessage assistant
                     && !(options.Reasoning == PruneReasoning.BeforeLastMessage && index == groups.Count - 1))
                 {
-                    groups[index] = new List<ModelMessage> { Filter(assistant, part => part.Type != "reasoning") };
+                    groups[index] = new List<ModelMessage> { Filter(assistant, part => part is not (AssistantReasoningPart or AssistantReasoningFilePart)) };
                 }
             }
         }

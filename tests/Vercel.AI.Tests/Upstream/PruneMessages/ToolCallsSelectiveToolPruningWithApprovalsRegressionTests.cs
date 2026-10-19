@@ -12,7 +12,7 @@ namespace Vercel.AI.Tests.PruneMessages;
 public sealed class ToolCallsSelectiveToolPruningWithApprovalsRegressionTests
 {
     // Not ported: 'should prune the approval response together with its request and tool-call' builds its
-    // messages with convertToModelMessages, which the port does not have.
+    // messages with convertToModelMessages, which the port does not have (#619).
 
     [UpstreamTest(Prefix + "pruneMessages > toolCalls > selective tool pruning with approvals (regression)::should drop unresolved approval responses during selective pruning", Coverage = UpstreamCoverage.Covered)]
     [Fact]

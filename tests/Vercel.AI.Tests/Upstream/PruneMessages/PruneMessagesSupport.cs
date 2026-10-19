@@ -77,6 +77,8 @@ internal static class PruneMessagesSupport
         new UserModelMessage("thank you"),
     };
 
+    internal static byte[] Utf8(string text) => System.Text.Encoding.UTF8.GetBytes(text);
+
     internal static AssistantToolCallPart Call(string toolCallId, string toolName, string inputJson)
     {
         return new AssistantToolCallPart(new GeneratedToolCall(toolCallId, toolName, inputJson));
@@ -124,6 +126,12 @@ internal static class PruneMessagesSupport
                             content.Add(part switch
                             {
                                 AssistantReasoningPart r => new JsonObject { ["text"] = r.Text, ["type"] = "reasoning" },
+                                AssistantFilePart f => new JsonObject
+                                {
+                                    ["data"] = System.Text.Encoding.UTF8.GetString(f.Data!),
+                                    ["mediaType"] = f.MediaType,
+                                    ["type"] = f.Type,
+                                },
                                 AssistantTextPart t => new JsonObject { ["text"] = t.Text, ["type"] = "text" },
                                 AssistantToolCallPart c => new JsonObject
                                 {

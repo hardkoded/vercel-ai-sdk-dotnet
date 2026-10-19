@@ -11,10 +11,6 @@ namespace Vercel.AI.Tests.PruneMessages;
 /// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; reasoning &gt; all</c>.</summary>
 public sealed class ReasoningAllTests
 {
-    // Not ported: 'should prune reasoning files while preserving regular files and text' and
-    // 'should remove messages containing only reasoning text and files' need reasoning-file and file parts
-    // in assistant messages, which the port does not have.
-
     [UpstreamTest(Prefix + "pruneMessages > reasoning > all::should prune all reasoning parts", Coverage = UpstreamCoverage.Covered)]
     [Fact]
     public void Should_prune_all_reasoning_parts()
@@ -99,5 +95,57 @@ public sealed class ReasoningAllTests
             ]
             """,
             result);
+    }
+
+    [UpstreamTest(Prefix + "pruneMessages > reasoning > all::should prune reasoning files while preserving regular files and text", Coverage = UpstreamCoverage.Covered)]
+    [Fact]
+    public void Should_prune_reasoning_files_while_preserving_regular_files_and_text()
+    {
+        var messages = new ModelMessage[]
+        {
+            new AssistantModelMessage(new AssistantContentPart[]
+            {
+                new AssistantReasoningPart("Intermediate reasoning."),
+                new AssistantReasoningFilePart("image/png", null, Utf8("reasoning-image")),
+                new AssistantFilePart("image/png", null, Utf8("output-image")),
+                new AssistantTextPart("Final answer."),
+            }),
+        };
+        var originalCount = ((AssistantModelMessage)messages[0]).Parts.Count;
+
+        var result = Prune(messages, PruneReasoning.All);
+
+        AssertSnapshot(
+            """
+            [
+              {
+                "role": "assistant",
+                "content": [
+                  { "type": "file", "mediaType": "image/png", "data": "output-image" },
+                  { "type": "text", "text": "Final answer." }
+                ]
+              }
+            ]
+            """,
+            result);
+        Assert.Equal(originalCount, ((AssistantModelMessage)messages[0]).Parts.Count);
+    }
+
+    [UpstreamTest(Prefix + "pruneMessages > reasoning > all::should remove messages containing only reasoning text and files", Coverage = UpstreamCoverage.Covered)]
+    [Fact]
+    public void Should_remove_messages_containing_only_reasoning_text_and_files()
+    {
+        var result = Prune(
+            new ModelMessage[]
+            {
+                new AssistantModelMessage(new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart("Intermediate reasoning."),
+                    new AssistantReasoningFilePart("image/png", null, Utf8("reasoning-image")),
+                }),
+            },
+            PruneReasoning.All);
+
+        Assert.Empty(result);
     }
 }
