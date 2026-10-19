@@ -730,7 +730,7 @@ public abstract class AssistantContentPart
         ProviderOptions = providerOptions;
     }
 
-    /// <summary>Part type: <c>text</c>, <c>reasoning</c>, <c>tool-call</c>, <c>tool-result</c>, or <c>custom</c>.</summary>
+    /// <summary>Part type: <c>text</c>, <c>file</c>, <c>reasoning</c>, <c>reasoning-file</c>, <c>tool-call</c>, <c>tool-result</c>, or <c>custom</c>.</summary>
     public string Type { get; }
 
     /// <summary>Provider-specific options for this part, such as an <c>itemId</c>.</summary>
@@ -763,6 +763,71 @@ public sealed class AssistantReasoningPart : AssistantContentPart
 
     /// <summary>Reasoning text.</summary>
     public string Text { get; }
+}
+
+/// <summary>A file in an assistant message. Maps to the assistant <c>file</c> part.</summary>
+public class AssistantFilePart : AssistantContentPart
+{
+    /// <summary>Creates a file part.</summary>
+    /// <param name="mediaType">IANA media type.</param>
+    /// <param name="url">Remote URL, when the file is not inlined.</param>
+    /// <param name="data">Inline bytes.</param>
+    /// <param name="fileName">Optional file name.</param>
+    /// <param name="providerOptions">Provider-specific options for this part.</param>
+    public AssistantFilePart(
+        string mediaType,
+        string? url,
+        byte[]? data,
+        string? fileName = null,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : this("file", mediaType, url, data, fileName, providerOptions)
+    {
+    }
+
+    private protected AssistantFilePart(
+        string type,
+        string mediaType,
+        string? url,
+        byte[]? data,
+        string? fileName,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        : base(type, providerOptions)
+    {
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        Url = url;
+        Data = data;
+        FileName = fileName;
+    }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Remote URL, when the file is not inlined.</summary>
+    public string? Url { get; }
+
+    /// <summary>Inline bytes.</summary>
+    public byte[]? Data { get; }
+
+    /// <summary>Optional file name.</summary>
+    public string? FileName { get; }
+}
+
+/// <summary>A file the model produced as part of its reasoning. Maps to the assistant <c>reasoning-file</c> part.</summary>
+public sealed class AssistantReasoningFilePart : AssistantFilePart
+{
+    /// <summary>Creates a reasoning-file part.</summary>
+    /// <param name="mediaType">IANA media type.</param>
+    /// <param name="url">Remote URL, when the file is not inlined.</param>
+    /// <param name="data">Inline bytes.</param>
+    /// <param name="providerOptions">Provider-specific options for this part.</param>
+    public AssistantReasoningFilePart(
+        string mediaType,
+        string? url,
+        byte[]? data,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+        : base("reasoning-file", mediaType, url, data, null, providerOptions)
+    {
+    }
 }
 
 /// <summary>A tool call in an assistant message.</summary>
