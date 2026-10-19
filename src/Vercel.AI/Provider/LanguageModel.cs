@@ -228,6 +228,12 @@ public class GeneratedToolCall : GeneratedContent
 
     /// <summary>True when the tool is not known up front, such as a provider-executed MCP tool. Maps to the call's <c>dynamic</c>.</summary>
     public bool Dynamic { get; init; }
+
+    /// <summary>True when the input did not match the tool's input schema. Such a call is dynamic. Maps to the call's <c>invalid</c>.</summary>
+    public bool Invalid { get; init; }
+
+    /// <summary>Why the call is invalid, such as an <see cref="Util.InvalidToolInputError"/>. Maps to the call's <c>error</c>.</summary>
+    public Exception? Error { get; init; }
 }
 
 /// <summary>

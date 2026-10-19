@@ -343,7 +343,7 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = ParseProviderExecutedInput(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted });
+                                var call = await ParseProviderExecutedInputAsync(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted }, cancellationToken).ConfigureAwait(false);
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 outputChunkTimes.Add(ElapsedMs());
@@ -760,7 +760,7 @@ internal static class Generation
             var resolved = part switch
             {
                 GeneratedToolApprovalRequest request => ResolveApprovalRequest(request, generated.Content),
-                GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
+                GeneratedToolCall toolCall => await ParseProviderExecutedInputAsync(options, toolCall, cancellationToken).ConfigureAwait(false),
                 _ => part,
             };
             content.Add(resolved);
@@ -1051,7 +1051,7 @@ internal static class Generation
 
     // Upstream parses the input of a tool call with the tool's input schema. Only a provider-defined tool declared with a
     // schema is parsed here, so the input of any other call is kept as the model sent it.
-    private static GeneratedToolCall ParseProviderExecutedInput(GenerateTextOptions options, GeneratedToolCall call)
+    private static async Task<GeneratedToolCall> ParseProviderExecutedInputAsync(GenerateTextOptions options, GeneratedToolCall call, CancellationToken cancellationToken)
     {
         if (!call.ProviderExecuted)
         {
@@ -1064,18 +1064,20 @@ internal static class Generation
             return call;
         }
 
-        JsonNode? input;
-        try
+        // An invalid call is kept, flagged and dynamic. The provider already ran it, so the loop synthesizes no client tool error.
+        var checkedCall = await ToolCallParser.ParseToolCallAsync(new ParseToolCallOptions(call) { Tools = options.Tools }, cancellationToken).ConfigureAwait(false);
+        if (checkedCall.Invalid)
         {
-            input = JsonNode.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
-        }
-        catch (JsonException)
-        {
-            return call;
+            return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata)
+            {
+                ProviderExecuted = true,
+                Dynamic = true,
+                Invalid = true,
+                Error = checkedCall.Error,
+            };
         }
 
-        var parsed = JsonSchemaProjection.Project(tool.InputSchema, input);
-        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true };
+        return new GeneratedToolCall(call.ToolCallId, call.ToolName, checkedCall.Input.GetRawText(), call.ProviderMetadata) { ProviderExecuted = true };
     }
 
     private static Tool? FindTool(GenerateTextOptions options, string name)

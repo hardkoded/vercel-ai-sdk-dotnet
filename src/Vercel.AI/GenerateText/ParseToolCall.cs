@@ -343,7 +343,13 @@ public static class ToolCallParser
             throw new InvalidToolInputError(toolCall.ToolName, text, exception);
         }
 
-        if (!tool.IsProviderDefined)
+        // a provider tool's schema is a Zod object upstream, which drops the properties it does not declare before it validates
+        if (tool.IsProviderDefined && tool.InputSchema.ValueKind == JsonValueKind.Object)
+        {
+            input = ParseJson(JsonSchemaProjection.Project(tool.InputSchema, System.Text.Json.Nodes.JsonNode.Parse(input.GetRawText()))?.ToJsonString() ?? "null");
+        }
+
+        if (!tool.IsProviderDefined || tool.InputSchema.ValueKind == JsonValueKind.Object)
         {
             var errors = ToolInputSchemaValidator.Validate(tool.InputSchema, input);
             if (errors.Count > 0)
