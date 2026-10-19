@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -47,6 +48,11 @@ public sealed class GoogleImageModel : IImageModel
         }
 
         options ??= new ImageCallOptions(string.Empty);
+        if (options.Mask != null)
+        {
+            throw new AiSdkException("Gemini image models do not support mask-based image editing.");
+        }
+
         var warnings = new List<GoogleWarning>();
         if (!string.IsNullOrEmpty(options.Size))
         {
@@ -54,12 +60,52 @@ public sealed class GoogleImageModel : IImageModel
         }
 
         var modalities = new JsonArray();
-        modalities.Add(JsonValue.Create("TEXT"));
         modalities.Add(JsonValue.Create("IMAGE"));
         var config = new JsonObject { ["responseModalities"] = modalities };
+        if (options.Seed != null)
+        {
+            config["seed"] = options.Seed;
+        }
+
+        var google = options.ProviderOptions != null && options.ProviderOptions.TryGetValue("google", out var googleOptions) && googleOptions.ValueKind == JsonValueKind.Object
+            ? googleOptions
+            : (JsonElement?)null;
+        JsonObject? imageConfig = null;
+        if (google is { } googleElement && googleElement.TryGetProperty("imageConfig", out var userImageConfig) && userImageConfig.ValueKind == JsonValueKind.Object)
+        {
+            imageConfig = JsonNode.Parse(userImageConfig.GetRawText())!.AsObject();
+        }
+
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
-            config["imageConfig"] = new JsonObject { ["aspectRatio"] = options.AspectRatio };
+            imageConfig ??= new JsonObject();
+            imageConfig["aspectRatio"] = options.AspectRatio;
+        }
+
+        if (imageConfig != null)
+        {
+            config["imageConfig"] = imageConfig;
+        }
+
+        var userParts = new JsonArray { new JsonObject { ["text"] = options.Prompt } };
+        if (options.Files != null)
+        {
+            foreach (var file in options.Files)
+            {
+                if (file.Type == "url")
+                {
+                    throw new AiSdkException("File of media type \"image/*\" must specify subtype since it is not passed as inline bytes.");
+                }
+
+                userParts.Add(new JsonObject
+                {
+                    ["inlineData"] = new JsonObject
+                    {
+                        ["mimeType"] = file.MediaType,
+                        ["data"] = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()),
+                    },
+                });
+            }
         }
 
         var body = new JsonObject
@@ -69,7 +115,7 @@ public sealed class GoogleImageModel : IImageModel
                 new JsonObject
                 {
                     ["role"] = "user",
-                    ["parts"] = new JsonArray { new JsonObject { ["text"] = options.Prompt } },
+                    ["parts"] = userParts,
                 },
             },
             ["generationConfig"] = config,
@@ -78,7 +124,7 @@ public sealed class GoogleImageModel : IImageModel
             HttpMethod.Post,
             ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + ":generateContent"),
             GoogleJson.Write(body),
-            await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false),
+            await HeadersAsync(options, cancellationToken).ConfigureAwait(false),
             cancellationToken).ConfigureAwait(false);
         var images = new List<GeneratedImage>();
         if (document.RootElement.TryGetProperty("candidates", out var candidates))
@@ -105,6 +151,20 @@ public sealed class GoogleImageModel : IImageModel
         }
 
         return new GoogleImageResult(images, warnings);
+    }
+
+    private async Task<Dictionary<string, string?>> HeadersAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    {
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        if (options.Headers != null)
+        {
+            foreach (var pair in options.Headers)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return headers;
     }
 }
 

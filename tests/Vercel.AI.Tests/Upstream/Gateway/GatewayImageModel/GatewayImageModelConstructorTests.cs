@@ -35,4 +35,15 @@ public sealed class GatewayImageModelConstructorTests
 
         Assert.Equal(int.MaxValue, model.MaxImagesPerCall);
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should accept custom provider name", Coverage = UpstreamCoverage.Covered)]
+    public void Should_accept_custom_provider_name()
+    {
+        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" });
+        var model = new Vercel.AI.Gateway.GatewayImageModel(provider, "openai/dall-e-3", "custom-gateway");
+
+        Assert.Equal("custom-gateway", model.Provider);
+        Assert.Equal("openai/dall-e-3", model.ModelId);
+    }
 }
