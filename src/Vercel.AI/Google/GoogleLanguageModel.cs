@@ -18,6 +18,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <summary>The most requests that follow a CONTINUATION response. A model that never stops continuing would loop forever.</summary>
     internal const int MaxContinuationHops = 64;
 
+    private static readonly string ContinuationLimitMessage = "The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.";
+
     private readonly GoogleProvider _provider;
 
     /// <summary>Creates a model.</summary>
@@ -88,7 +90,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
             if (hops == MaxContinuationHops)
             {
-                throw new AiSdkException("The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.");
+                throw new AiSdkException(ContinuationLimitMessage);
             }
 
             hops++;
@@ -401,7 +403,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
             if (hop == MaxContinuationHops)
             {
                 // Same shape as a failed continuation: an error part, then the finish part with the last token so the caller can resume.
-                yield return new ErrorStreamPart("The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.");
+                finish = FinishReason.Error;
+                yield return new ErrorStreamPart(ContinuationLimitMessage);
                 break;
             }
 

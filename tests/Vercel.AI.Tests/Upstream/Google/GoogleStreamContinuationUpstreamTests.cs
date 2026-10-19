@@ -125,6 +125,7 @@ public sealed class GoogleStreamContinuationUpstreamTests
         Assert.Contains(events.OfType<ErrorStreamPart>(), part => part.Message.Contains("CONTINUATION"));
         Assert.Equal(GoogleLanguageModel.MaxContinuationHops + 1, handler.Bodies.Count);
         var finish = events.OfType<FinishStreamPart>().First();
+        Assert.Equal(FinishReason.Error, finish.FinishReason);
         Assert.Equal("CONTINUATION", finish.RawFinishReason);
         Assert.Equal("token-1", finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("continuationToken").GetString());
     }
