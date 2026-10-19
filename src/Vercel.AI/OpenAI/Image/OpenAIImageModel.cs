@@ -187,7 +187,14 @@ public sealed class OpenAIImageModel : IImageModel
                 Headers = options.Headers,
             },
             cancellationToken).ConfigureAwait(false);
-        return new ImageGenerationResult(result.Images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList());
+        var usage = result.InputTokens == null && result.OutputTokens == null && result.TotalTokens == null
+            ? null
+            : new LanguageModelUsage(result.InputTokens, result.OutputTokens, result.TotalTokens);
+        return new ImageGenerationResult(
+            result.Images,
+            result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
+            new ImageResponseInfo(result.Timestamp, result.ModelId, result.Headers),
+            usage);
     }
 
     private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
