@@ -6,8 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using ProviderImage = Vercel.AI.Provider.GeneratedImage;
 
 namespace Vercel.AI.Gateway;
 
@@ -431,7 +433,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
 }
 
 /// <summary>Gateway image model.</summary>
-public sealed class GatewayImageModel : IImageModel
+public sealed class GatewayImageModel : IImageModel, IImageCaller
 {
     private readonly GatewayProvider _provider;
 
@@ -452,84 +454,105 @@ public sealed class GatewayImageModel : IImageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
-    private static JsonObject EncodeImageFile(Operations.ImageModelFile file)
+    /// <summary>Specification version.</summary>
+    public string SpecificationVersion => "v4";
+
+    /// <summary>Large so that requests are never split client-side.</summary>
+    public int? MaxImagesPerCall => int.MaxValue;
+
+    /// <inheritdoc />
+    public Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken)
     {
-        var json = file.Type == "url"
-            ? new JsonObject { ["type"] = "url", ["url"] = file.Url }
-            : new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType, ["data"] = Convert.ToBase64String(file.Data ?? Array.Empty<byte>()) };
-        if (file.ProviderOptions != null)
-        {
-            var providerOptions = new JsonObject();
-            foreach (var pair in file.ProviderOptions)
-            {
-                providerOptions[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
-            }
-
-            json["providerOptions"] = providerOptions;
-        }
-
-        return json;
+        return Task.FromResult(MaxImagesPerCall);
     }
 
     /// <inheritdoc />
     public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
     {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken).ConfigureAwait(false);
+        var images = new List<ProviderImage>();
+        foreach (var image in result.Images)
+        {
+            var bytes = image is string text ? Convert.FromBase64String(text) : (byte[])image!;
+            images.Add(new ProviderImage(MediaTypes.DetectMediaType(bytes, "image") ?? "image/png", bytes, null));
+        }
+
+        var response = new ImageResponseInfo(
+            result.Response.Timestamp ?? DateTime.UtcNow,
+            result.Response.ModelId,
+            result.Response.Headers);
+        var usage = result.Usage is null ? null : new LanguageModelUsage(result.Usage.InputTokens, result.Usage.OutputTokens, result.Usage.TotalTokens);
+        return new ImageGenerationResult(images, result.Warnings.Select(warning => warning.ToCallWarning()).ToList(), response, usage);
+    }
+
+    /// <inheritdoc />
+    public async Task<ImageModelResult> DoGenerateAsync(ImageModelCall call, CancellationToken cancellationToken)
+    {
+        if (call is null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
         var body = new JsonObject
         {
-            ["prompt"] = options.Prompt,
-            ["n"] = options.Count,
+            ["prompt"] = call.Prompt,
+            ["n"] = call.N,
         };
-        if (options.Size != null)
+        if (!string.IsNullOrEmpty(call.Size))
         {
-            body["size"] = options.Size;
+            body["size"] = call.Size;
         }
 
-        if (options.AspectRatio != null)
+        if (!string.IsNullOrEmpty(call.AspectRatio))
         {
-            body["aspectRatio"] = options.AspectRatio;
+            body["aspectRatio"] = call.AspectRatio;
         }
 
-        // Mirrors upstream (`seed &&`): a seed of 0 is not sent.
-        if (options.Seed is > 0 or < 0)
+        if (call.Seed is { } seed && seed != 0)
         {
-            body["seed"] = options.Seed;
+            body["seed"] = seed;
         }
 
-        if (options.ProviderOptions != null)
+        if (call.ProviderOptions is { } providerOptions)
         {
-            var providerOptions = new JsonObject();
-            foreach (var pair in options.ProviderOptions)
-            {
-                providerOptions[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
-            }
-
-            body["providerOptions"] = providerOptions;
+            body["providerOptions"] = JsonNode.Parse(providerOptions.GetRawText());
         }
 
-        if (options.Files != null)
+        if (call.Files != null)
         {
             var files = new JsonArray();
-            foreach (var file in options.Files)
+            foreach (var file in call.Files)
             {
-                files.Add(EncodeImageFile(file));
+                files.Add(EncodeFile(file));
             }
 
             body["files"] = files;
         }
 
-        if (options.Mask != null)
+        if (call.Mask != null)
         {
-            body["mask"] = EncodeImageFile(options.Mask);
+            body["mask"] = EncodeFile(call.Mask);
         }
 
-        JsonDocument document;
+        var headers = new Dictionary<string, string?>();
+        foreach (var pair in call.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        ProviderTextResponse response;
         try
         {
-            document = await _provider.Http.SendJsonAsync(
+            response = await _provider.Http.SendJsonStringAsync(
                 HttpMethod.Post,
                 _provider.Route("image-model"),
                 body.ToJsonString(),
-                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null, options.Headers),
+                _provider.Headers("ai-image-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception)
@@ -541,33 +564,93 @@ public sealed class GatewayImageModel : IImageModel
             throw GatewayProvider.MapFailure(exception);
         }
 
-        using (document)
+        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var root = document.RootElement;
+        var images = new List<object?>();
+        if (root.TryGetProperty("images", out var array) && array.ValueKind == JsonValueKind.Array)
         {
-            var images = new List<GeneratedImage>();
-            if (document.RootElement.TryGetProperty("images", out var array))
+            foreach (var item in array.EnumerateArray())
             {
-                foreach (var item in array.EnumerateArray())
+                if (item.ValueKind == JsonValueKind.String)
                 {
-                    if (item.ValueKind == JsonValueKind.String)
-                    {
-                        images.Add(new GeneratedImage("image/png", Convert.FromBase64String(item.GetString() ?? string.Empty), null));
-                        continue;
-                    }
-
-                    string? url = item.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
-                    byte[]? data = null;
-                    if (item.TryGetProperty("b64", out var b64) || item.TryGetProperty("base64", out b64))
-                    {
-                        data = Convert.FromBase64String(b64.GetString() ?? string.Empty);
-                    }
-
-                    var mediaType = item.TryGetProperty("mediaType", out var media) ? media.GetString() ?? "image/png" : "image/png";
-                    images.Add(new GeneratedImage(mediaType, data, url));
+                    images.Add(item.GetString());
+                }
+                else if (item.ValueKind == JsonValueKind.Object && (item.TryGetProperty("b64", out var b64) || item.TryGetProperty("base64", out b64)) && b64.ValueKind == JsonValueKind.String)
+                {
+                    images.Add(b64.GetString());
                 }
             }
-
-            return new ImageGenerationResult(images);
         }
+
+        var warnings = new List<OperationWarning>();
+        if (root.TryGetProperty("warnings", out var warningArray) && warningArray.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var warning in warningArray.EnumerateArray())
+            {
+                warnings.Add(ReadWarning(warning));
+            }
+        }
+
+        OperationUsage? usage = null;
+        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        {
+            usage = new OperationUsage(ReadCount(usageElement, "inputTokens"), ReadCount(usageElement, "outputTokens"), ReadCount(usageElement, "totalTokens"));
+        }
+
+        JsonElement? providerMetadata = root.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object
+            ? metadata.Clone()
+            : null;
+        bool? isRetryable = root.TryGetProperty("isRetryable", out var retryable) && retryable.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? retryable.GetBoolean()
+            : null;
+        return new ImageModelResult(
+            images,
+            warnings,
+            usage,
+            providerMetadata,
+            new ProviderResponse(response.Headers, timestamp: DateTime.UtcNow, modelId: ModelId),
+            isRetryable);
+    }
+
+    private static JsonNode EncodeFile(ImageModelFile file)
+    {
+        var node = new JsonObject { ["type"] = file.Type };
+        if (file.Type == "url")
+        {
+            node["url"] = file.Url;
+            return AddProviderOptions(node, file);
+        }
+
+        node["mediaType"] = file.MediaType;
+        node["data"] = file.Base64 ?? ByteEncoding.ToBase64(file.Data ?? Array.Empty<byte>());
+        return AddProviderOptions(node, file);
+    }
+
+    private static JsonObject AddProviderOptions(JsonObject node, ImageModelFile file)
+    {
+        if (file.ProviderOptions != null)
+        {
+            node["providerOptions"] = JsonSerializer.SerializeToNode(file.ProviderOptions);
+        }
+
+        return node;
+    }
+
+    private static OperationWarning ReadWarning(JsonElement warning)
+    {
+        string? Text(string name) => warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        var type = Text("type") ?? "other";
+        return type switch
+        {
+            "deprecated" => new OperationWarning(type, message: Text("message"), setting: Text("setting")),
+            "unsupported" or "compatibility" => new OperationWarning(type, feature: Text("feature"), details: Text("details")),
+            _ => new OperationWarning(type, message: Text("message")),
+        };
+    }
+
+    private static int? ReadCount(JsonElement usage, string name)
+    {
+        return usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? (int)value.GetDouble() : null;
     }
 }
 

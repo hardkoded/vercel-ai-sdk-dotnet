@@ -733,9 +733,11 @@ var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelS
 
 Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its own object. It does not merge them.
 
+The Gateway image model sends `seed`, `files`, `mask`, `providerOptions`, and call headers to `/image-model`. Byte files are encoded as base64, base64 files pass unchanged, and URL files stay URLs. Its `ImageModelResult` carries the response `Images` as the base64 strings the server returned, `Warnings` (`unsupported`, `compatibility`, `deprecated`, and `other`), `ProviderMetadata`, `IsRetryable`, `Response` (model id, timestamp, headers), and `Usage` (`InputTokens`, `OutputTokens`, `TotalTokens`, each null when the server omitted it). `MaxImagesPerCall` is `int.MaxValue`, so requests are never split client-side.
+
 `IEmbeddingModel.DoEmbedAsync` takes `int? dimensions = null` and `IReadOnlyDictionary<string, string?>? headers = null` after the cancellation token, and `EmbeddingModelCall` carries `Dimensions`. `IRerankingModel.DoRerankAsync` takes the same `headers` parameter. Call headers override the provider headers. `EmbedOptions.Headers` and `RerankOptions.Headers` pass them from `AiClient`. Custom models must add the parameters.
 
-`ImageCallOptions.Files` and `Mask` are `ImageModelFile` values, the same file-or-URL union as upstream's `ImageModelV4File`. Create one with `ImageModelFile.FromFile(bytes, mediaType)` or `ImageModelFile.FromUrl(url)`, and set `ProviderOptions` on it when a provider reads per-file options. `OpenAICompatibleImageFile` is gone. Use `ImageModelFile` instead.
+`ImageCallOptions.Files` and `Mask` are `ImageModelFile` values, the same file-or-URL union as upstream's `ImageModelV4File`. Create one with `ImageModelFile.FromFile(bytes, mediaType)`, `ImageModelFile.FromBase64(base64, mediaType)` (base64 text that the Gateway passes unchanged), or `ImageModelFile.FromUrl(url)`, and set `ProviderOptions` on it when a provider reads per-file options. `OpenAICompatibleImageFile` is gone. Use `ImageModelFile` instead.
 
 ### Decide and the deprecated Evaluate names
 
