@@ -47,6 +47,51 @@ public sealed class GenerateTextBehaviorTests
     }
 
     [Fact]
+    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText::should not synthesize a client tool error for an invalid provider-executed tool call", Coverage = UpstreamCoverage.Partial, Note = "The port keeps the provider's error as a GeneratedToolResult with IsError, not as a tool-error part, so the dynamic, error and input fields of that part, and the title and providerMetadata of the call, are not asserted.")]
+    public async Task Should_not_synthesize_a_client_tool_error_for_an_invalid_provider_executed_tool_call()
+    {
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ => new LanguageModelGenerateResult(
+                new GeneratedContent[]
+                {
+                    new GeneratedToolCall("call-1", "web_search", "{}") { ProviderExecuted = true },
+                    new GeneratedToolResult("call-1", "web_search", "{\"type\":\"web_search_tool_result_error\",\"errorCode\":\"invalid_tool_input\"}", isError: true),
+                },
+                FinishReason.ToolCalls,
+                new LanguageModelUsage(3, 10, 13),
+                "tool_use"),
+        };
+        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = model,
+            Prompt = "Search the web.",
+            Tools = new[]
+            {
+                Tool.ProviderDefined(
+                    "test.web_search",
+                    "web_search",
+                    JsonDocument.Parse("{}").RootElement,
+                    JsonDocument.Parse("{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}},\"required\":[\"query\"]}").RootElement),
+            },
+        });
+
+        Assert.Equal(new[] { "tool-call", "tool-result" }, result.Content.Select(part => part.Type).ToArray());
+        var call = Assert.IsType<GeneratedToolCall>(result.Content[0]);
+        Assert.True(call.Dynamic);
+        Assert.True(call.Invalid);
+        Assert.True(call.ProviderExecuted);
+        Assert.Equal("{}", call.ArgumentsJson);
+        Assert.IsType<Vercel.AI.Util.InvalidToolInputError>(call.Error);
+        Assert.Contains("Invalid input for tool web_search", call.Error!.Message);
+        var toolResult = Assert.IsType<GeneratedToolResult>(result.Content[1]);
+        Assert.True(toolResult.IsError);
+        Assert.Contains("invalid_tool_input", toolResult.ResultJson);
+        Assert.Single(result.ResponseMessages);
+        Assert.DoesNotContain(result.ToolResults, r => !r.ProviderExecuted);
+    }
+
+    [Fact]
     [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > result.reasoningText::should contain reasoning string from model response", Coverage = UpstreamCoverage.Covered)]
     public async Task Reasoning_text_concatenates_reasoning_parts()
     {

@@ -149,6 +149,8 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 The model returns the call with `GeneratedToolCall.ProviderExecuted` set, followed by a `GeneratedToolResult` that has `IsError` when the tool failed. Both stay in the step `Content`, in order. Successful results also appear in the step `ToolResults`. Calls the provider ran do not start another step. When a step also has a client tool call, the next step replays the provider's call and result in the assistant message (`AssistantToolCallPart` and `AssistantToolResultPart`, with their provider metadata).
 
+A provider tool declared with an input schema (the four-argument `Tool.ProviderDefined`) validates the input of its provider-executed calls, after it drops the properties the schema does not declare (it keeps them when `additionalProperties` is `true` or a schema). A call that does not match comes back in `Content` with `Invalid`, `Dynamic` and `Error` (an `InvalidToolInputError`) set. The provider already ran it, so the loop adds no client tool error and keeps the provider's own result.
+
 In the UI message stream, provider-executed chunks are marked `providerExecuted`, and an error chunk keeps the provider's error text or JSON instead of the `onError` text. A provider-executed tool approval request (MCP) is not supported ([#542](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/542)).
 
 ## Custom tools
