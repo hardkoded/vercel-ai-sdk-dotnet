@@ -113,6 +113,23 @@ public sealed class GoogleStreamContinuationUpstreamTests
         Assert.Equal("token-1", finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("continuationToken").GetString());
     }
 
+    [Fact]
+    public async Task Should_stop_with_an_error_when_the_model_keeps_answering_with_CONTINUATION()
+    {
+        // The handler repeats its last response, so the model never stops continuing.
+        var handler = new SequencedHandler()
+            .Sse(Sse("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}],\"role\":\"model\"},\"finishReason\":\"CONTINUATION\",\"index\":0,\"continuationToken\":\"token-1\"}]}"));
+
+        var events = await Stream(handler, GoogleUpstream.Hello());
+
+        Assert.Contains(events.OfType<ErrorStreamPart>(), part => part.Message.Contains("CONTINUATION"));
+        Assert.Equal(GoogleLanguageModel.MaxContinuationHops + 1, handler.Bodies.Count);
+        var finish = events.OfType<FinishStreamPart>().First();
+        Assert.Equal(FinishReason.Error, finish.FinishReason);
+        Assert.Equal("CONTINUATION", finish.RawFinishReason);
+        Assert.Equal("token-1", finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("continuationToken").GetString());
+    }
+
     private static string Sse(string json)
     {
         return "data: " + json + "\n\n";

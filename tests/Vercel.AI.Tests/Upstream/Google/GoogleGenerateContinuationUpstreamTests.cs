@@ -123,6 +123,35 @@ public sealed class GoogleGenerateContinuationUpstreamTests
         Assert.Equal("token-2", result.ProviderMetadata!.Value.GetProperty("google").GetProperty("continuationToken").GetString());
     }
 
+    [Fact]
+    public async Task Should_throw_when_the_model_keeps_answering_with_CONTINUATION()
+    {
+        // The handler repeats its last response, so the model never stops continuing.
+        var handler = new SequencedHandler().Json(ContinuationResponse);
+
+        var error = await Assert.ThrowsAsync<AiSdkException>(() => Model(handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None));
+
+        Assert.Contains("CONTINUATION", error.Message);
+        Assert.Equal(GoogleLanguageModel.MaxContinuationHops + 1, handler.Bodies.Count);
+    }
+
+    [Fact]
+    public async Task Should_succeed_when_the_last_allowed_continuation_finishes()
+    {
+        var handler = new SequencedHandler();
+        for (var i = 0; i < GoogleLanguageModel.MaxContinuationHops; i++)
+        {
+            handler.Json(ContinuationResponse);
+        }
+
+        handler.Json(StopResponse);
+
+        var result = await Model(handler).DoGenerateAsync(GoogleUpstream.Hello(), CancellationToken.None);
+
+        Assert.Equal(FinishReason.Stop, result.FinishReason);
+        Assert.Equal(GoogleLanguageModel.MaxContinuationHops + 1, handler.Bodies.Count);
+    }
+
     private static ILanguageModel Model(SequencedHandler handler)
     {
         var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key" }, handler);
