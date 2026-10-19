@@ -244,7 +244,7 @@ public sealed class GoogleVertexUpstreamTests
     [UpstreamTest("packages/google-vertex/src/google-vertex-provider-base.test.ts::google-vertex-provider-base::should create an image model with default settings", Coverage = UpstreamCoverage.Covered)]
     public void Creates_a_Vertex_image_model()
     {
-        var model = Assert.IsType<GoogleImageModel>(Upstream("test-project", "test-location").ImageModel("gemini-2.5-flash-image"));
+        var model = Assert.IsType<Vercel.AI.Google.GoogleImageModel>(Upstream("test-project", "test-location").ImageModel("gemini-2.5-flash-image"));
         Assert.Equal("google.vertex.image", model.Provider);
     }
 
