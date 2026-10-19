@@ -480,6 +480,22 @@ Motion control: `kling-v3.0-motion-control`, `kling-v2.6-motion-control`.
 
 Any other model id with one of the three suffixes is also accepted.
 
+## Black Forest Labs
+
+The Black Forest Labs provider (`Vercel.AI.BlackForestLabs`) generates images with `ImageModel(id)` (provider id `black-forest-labs.image`). It reads `BFL_API_KEY` and sends it as `x-key`. `LanguageModel` throws `AiSdkException`.
+
+The model submits the request, polls `polling_url` (with `?id=` added when missing) until the task is `Ready`, then downloads the sample. `BlackForestLabsProvider.Create(options, handler, pollIntervalMillis, pollTimeoutMillis)` sets the poll interval (default 500 ms) and the overall poll timeout (default 60 s) for every image model. The `pollIntervalMillis` and `pollTimeoutMillis` provider options override them for one call. A timeout throws `AiSdkException` ("Black Forest Labs generation timed out."). A task that ends as `Error` or `Failed`, or is `Request Moderated`, `Content Moderated`, or `Task not found`, throws `AiSdkException`. An HTTP error throws `ApiException` with the `detail` (or `message`) of the body; an HTTP 503 whose body carries a terminal `status` or `state` is not retryable.
+
+Credentials go to the polling URL only when it is on the provider origin or an https host under `bfl.ai` (for example `api.us1.bfl.ai`). The download sends no credentials, except that a custom base URL outside `bfl.ai` receives the provider and call headers when the sample is on the same origin. Other hosts are checked first (private addresses and non-http(s) schemes throw `DownloadException`).
+
+`BlackForestLabsImageModel.SupportsFileInputs` and `SupportsMaskInputs` report what the model id accepts (`null` when unknown). The model id picks the API: ids such as `flux-pro-1.1`, `flux-kontext-pro`, `flux-pro-1.0-fill`, `flux-1.*`, and `flux-2-*` use the legacy API. `flux-3-image` uses the FLUX 3 API. Any other id (for example `flux-3-image-klein`) uses the latest API.
+
+- Legacy: `AspectRatio` wins over `Size`. A `Size` adds an `unsupported` `size` warning, and its width and height are sent unless the `width` and `height` provider options are set. Files are sent as `input_image`, `input_image_2`, and so on (`image` for `flux-pro-1.0-fill`), and the mask as `mask`.
+- FLUX 3 and latest: files are sent in `images` (URLs as is, bytes as base64), at most 10 (more throws `AiSdkException`). A mask throws `UnsupportedFunctionalityException`. The aspect ratio comes from `AspectRatio` or from `Size`; `7:3` and `3:7` are sent as `21:9` and `9:21`, and a ratio the endpoint does not take is left out with an `unsupported` `aspectRatio` warning. FLUX 3 adds an `unsupported` `seed` warning for a `Seed`. The latest API sends `Seed`, and its `Size` becomes `width` and `height` (the `width` and `height` provider options win); with dimensions set, no aspect ratio or resolution is sent.
+- Provider options are read from `blackForestLabs` and validated before the request (`InvalidArgumentException`). An option the model does not support is dropped with an `unsupported` `blackForestLabs.<name>` warning. Ranges: `safetyTolerance` 0 to 6 (legacy) or 0 to 7, `width` and `height` 256 to 1920 (legacy) or 64 to 6256 together with at most 16,822,272 pixels (latest), `steps` 1 to 16 (latest), and `resolution` one of `768sq`, `1k`, `1.5k`, `2k`, `4k`.
+
+`GenerateImage` returns `providerMetadata.blackForestLabs.images[0]` with `seed`, `start_time`, `end_time`, `duration`, `cost`, `inputMegapixels`, and `outputMegapixels` when the API sent them, and the response `Timestamp`, `ModelId`, and `Headers` of the download.
+
 ## xAI Responses
 
 `XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.
