@@ -485,7 +485,8 @@ public sealed class GatewayImageModel : IImageModel
             body["aspectRatio"] = options.AspectRatio;
         }
 
-        if (options.Seed != null)
+        // Mirrors upstream (`seed &&`): a seed of 0 is not sent.
+        if (options.Seed is > 0 or < 0)
         {
             body["seed"] = options.Seed;
         }
