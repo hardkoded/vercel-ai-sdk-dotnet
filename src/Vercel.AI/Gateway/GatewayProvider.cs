@@ -436,14 +436,18 @@ public sealed class GatewayImageModel : IImageModel
     private readonly GatewayProvider _provider;
 
     /// <summary>Creates a Gateway image model.</summary>
-    public GatewayImageModel(GatewayProvider provider, string modelId)
+    /// <param name="provider">Gateway provider that sends the requests.</param>
+    /// <param name="modelId">Model id.</param>
+    /// <param name="providerName">Value of <see cref="Provider"/> (upstream <c>GatewayConfig.provider</c>). Defaults to <c>gateway</c>.</param>
+    public GatewayImageModel(GatewayProvider provider, string modelId, string? providerName = null)
     {
         _provider = provider;
         ModelId = modelId;
+        Provider = providerName ?? GatewayProvider.ProviderId;
     }
 
     /// <inheritdoc />
-    public string Provider => GatewayProvider.ProviderId;
+    public string Provider { get; }
 
     /// <inheritdoc />
     public string ModelId { get; }
