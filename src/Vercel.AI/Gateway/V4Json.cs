@@ -159,6 +159,18 @@ public static class V4Json
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
+        var part = ParseStreamPart(root);
+        if (part != null)
+        {
+            // Upstream passes each chunk through unchanged, so keep the fields the typed part does not model.
+            part.Chunk = root.Clone();
+        }
+
+        return part;
+    }
+
+    private static LanguageModelStreamPart? ParseStreamPart(JsonElement root)
+    {
         var type = root.TryGetProperty("type", out var typeElement) ? typeElement.GetString() : null;
         switch (type)
         {

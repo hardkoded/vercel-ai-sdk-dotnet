@@ -13,10 +13,8 @@ public sealed class GatewayLanguageModelRawChunksFilteringTests
 {
     private const string Prefix = "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > raw chunks filtering::";
 
-    private const string Note = "Checks the part order and the finish reason. The port maps usage to its own usage type and does not keep the raw prompt_tokens and completion_tokens keys. See #581.";
-
     [Fact]
-    [UpstreamTest(Prefix + "should filter raw chunks based on includeRawChunks option", Coverage = UpstreamCoverage.Partial, Note = Note)]
+    [UpstreamTest(Prefix + "should filter raw chunks based on includeRawChunks option", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_filter_raw_chunks_based_on_includeRawChunks_option()
     {
         var server = StreamChunks(
@@ -36,11 +34,15 @@ public sealed class GatewayLanguageModelRawChunksFilteringTests
             part => Assert.Empty(Assert.IsType<StreamStartStreamPart>(part).Warnings),
             part => Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta),
             part => Assert.Equal(" world", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason));
+            part =>
+            {
+                Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
+                JsonAssert.Equal(part.Chunk!.Value, "{\"finishReason\":\"stop\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":5,\"prompt_tokens\":10}}");
+            });
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include raw chunks when includeRawChunks is true", Coverage = UpstreamCoverage.Partial, Note = Note)]
+    [UpstreamTest(Prefix + "should include raw chunks when includeRawChunks is true", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_include_raw_chunks_when_includeRawChunks_is_true()
     {
         var server = StreamChunks(
@@ -60,6 +62,10 @@ public sealed class GatewayLanguageModelRawChunksFilteringTests
                 JsonNode.Parse(Assert.IsType<RawStreamPart>(part).RawJson),
                 "{\"id\":\"test-chunk\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}"),
             part => Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason));
+            part =>
+            {
+                Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
+                JsonAssert.Equal(part.Chunk!.Value, "{\"finishReason\":\"stop\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":5,\"prompt_tokens\":10}}");
+            });
     }
 }

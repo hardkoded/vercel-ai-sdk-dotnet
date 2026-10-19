@@ -18,8 +18,7 @@ public sealed class GatewayLanguageModelDoStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "should stream text deltas",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the text deltas and the stop finish part. The port maps usage to its own usage type and does not keep the raw prompt_tokens and completion_tokens keys. See #581.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_text_deltas()
     {
         var server = PrepareStreamResponse("Hello", ", ", "World!");
@@ -29,10 +28,14 @@ public sealed class GatewayLanguageModelDoStreamTests
 
         Assert.Collection(
             parts,
-            part => Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(", ", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal("World!", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason));
+            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\"Hello\",\"type\":\"text-delta\"}"),
+            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\", \",\"type\":\"text-delta\"}"),
+            part => JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\"World!\",\"type\":\"text-delta\"}"),
+            part =>
+            {
+                Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
+                JsonAssert.Equal(part.Chunk!.Value, "{\"finishReason\":\"stop\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":20,\"prompt_tokens\":10}}");
+            });
     }
 
     [Fact]
