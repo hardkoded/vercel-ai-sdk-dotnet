@@ -84,7 +84,7 @@ public static class GoogleResponse
         return new LanguageModelGenerateResult(
             content,
             blocked ? FinishReason.ContentFilter : GoogleFinishReason.Map(raw, clientTool),
-            usage?.ToLanguageModelUsage() ?? LanguageModelUsage.Empty,
+            usage?.ToLanguageModelUsage() ?? LanguageModelUsage.Null,
             raw,
             CallWarnings(context.Warnings),
             root.TryGetProperty("responseId", out var id) ? id.GetString() : null,

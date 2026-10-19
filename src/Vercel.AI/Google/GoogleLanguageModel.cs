@@ -427,7 +427,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         }
 
         var totalUsage = GoogleUsage.Add(continuedUsage, usageRaw);
-        var usage = GoogleUsage.Convert(totalUsage)?.ToLanguageModelUsage() ?? LanguageModelUsage.Empty;
+        var usage = GoogleUsage.Convert(totalUsage)?.ToLanguageModelUsage() ?? LanguageModelUsage.Null;
         // Only surface the token when the response stopped early (budget used up, or continuing failed), not for the
         // checkpoint tokens of a stream that finished normally.
         var exposeToken = lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
