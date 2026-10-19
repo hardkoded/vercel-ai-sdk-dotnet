@@ -99,8 +99,7 @@ public sealed class GatewayLanguageModelTimestampConversionTests
     [Fact]
     [UpstreamTest(
         Prefix + "should only convert timestamps for response-metadata chunks, not other chunk types",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the part types and the text delta. The port drops the timestamp key of parts other than response-metadata instead of keeping the string. See #581.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_only_convert_timestamps_for_response_metadata_chunks_not_other_chunk_types()
     {
         var server = StreamChunks(
@@ -114,7 +113,15 @@ public sealed class GatewayLanguageModelTimestampConversionTests
         Assert.Collection(
             chunks,
             part => Assert.Empty(Assert.IsType<StreamStartStreamPart>(part).Warnings),
-            part => Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta),
-            part => Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason));
+            part =>
+            {
+                Assert.Equal("Hello", Assert.IsType<TextDeltaStreamPart>(part).Delta);
+                JsonAssert.Equal(part.Chunk!.Value, "{\"textDelta\":\"Hello\",\"timestamp\":\"2023-12-07T10:30:00.000Z\",\"type\":\"text-delta\"}");
+            },
+            part =>
+            {
+                Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(part).FinishReason);
+                JsonAssert.Equal(part.Chunk!.Value, "{\"finishReason\":\"stop\",\"timestamp\":\"2023-12-07T10:30:00.000Z\",\"type\":\"finish\",\"usage\":{\"completion_tokens\":5,\"prompt_tokens\":10}}");
+            });
     }
 }
