@@ -8,7 +8,6 @@ using Vercel.AI.Anthropic;
 using Vercel.AI.AssemblyAI;
 using Vercel.AI.Azure;
 using Vercel.AI.Baseten;
-using Vercel.AI.BlackForestLabs;
 using Vercel.AI.ByteDance;
 using Vercel.AI.Cartesia;
 using Vercel.AI.Cerebras;
@@ -199,7 +198,6 @@ public sealed class ProviderRequestTests
         yield return Row("/rerank", "Authorization", "Bearer secret", h => CohereProvider.Create(new CohereOptions { ApiKey = "secret" }, h), "rerank");
         yield return Row("/responses", "Authorization", "Bearer secret", h => OpenResponsesProvider.Create(new OpenResponsesOptions { ApiKey = "secret" }, h), "chat");
         yield return Media("/v2/transcript", "Authorization", "secret", h => AssemblyAIProvider.Create(Key(), h), "transcription");
-        yield return Media("/v1/m", "x-key", "secret", h => BlackForestLabsProvider.Create(Key(), h), "image");
         yield return Media("/images/generations", "Authorization", "Bearer secret", h => ByteDanceProvider.Create(Key(), h), "image");
         yield return Media("/tts/bytes", "Authorization", "Bearer secret", h => CartesiaProvider.Create(Key(), h), "speech");
         yield return Media("/v1/listen", "Authorization", "Token secret", h => DeepgramProvider.Create(Key(), h), "transcription");
