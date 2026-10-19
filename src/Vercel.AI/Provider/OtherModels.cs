@@ -137,12 +137,14 @@ public sealed class ImageResponseInfo
 public class ImageGenerationResult
 {
     /// <summary>Creates an image result.</summary>
-    public ImageGenerationResult(IReadOnlyList<GeneratedImage> images, IReadOnlyList<CallWarning>? warnings = null, ImageResponseInfo? response = null, LanguageModelUsage? usage = null)
+    public ImageGenerationResult(IReadOnlyList<GeneratedImage> images, IReadOnlyList<CallWarning>? warnings = null, ImageResponseInfo? response = null, LanguageModelUsage? usage = null, JsonElement? providerMetadata = null, bool? isRetryable = null)
     {
         Images = images ?? Array.Empty<GeneratedImage>();
         CallWarnings = warnings ?? Array.Empty<CallWarning>();
         Response = response;
         Usage = usage;
+        ProviderMetadata = providerMetadata;
+        IsRetryable = isRetryable;
     }
 
     /// <summary>Generated images.</summary>
@@ -156,6 +158,12 @@ public class ImageGenerationResult
 
     /// <summary>Token usage, when the response included it.</summary>
     public LanguageModelUsage? Usage { get; }
+
+    /// <summary>Provider metadata of this call, keyed by provider name. Maps to <c>providerMetadata</c>.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary><see langword="false"/> when an empty result must not be retried. Maps to <c>isRetryable</c>.</summary>
+    public bool? IsRetryable { get; }
 }
 
 /// <summary>Image model specification.</summary>

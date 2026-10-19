@@ -737,6 +737,18 @@ Gateway sends `dimensions` next to `values` and keeps `providerOptions` as its o
 
 `ImageCallOptions.Files` and `Mask` are `ImageModelFile` values, the same file-or-URL union as upstream's `ImageModelV4File`. Create one with `ImageModelFile.FromFile(bytes, mediaType)` or `ImageModelFile.FromUrl(url)`, and set `ProviderOptions` on it when a provider reads per-file options. `OpenAICompatibleImageFile` is gone. Use `ImageModelFile` instead.
 
+`ImageGenerationResult` also carries `ProviderMetadata` and `IsRetryable` (`false` when the provider filtered the content, so an empty result is not retried).
+
+### Google image models
+
+`GoogleImageModel` runs Gemini image generation (`gemini-*` ids only) through the Gemini language model with the `IMAGE` response modality. The `google` entry of `ImageCallOptions.ProviderOptions` passes to that call, so safety settings, thinking, and the other [Google language model options](https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai) apply. `Seed`, `AspectRatio` (merged into `imageConfig`), and call `Headers` are sent too. `Size` adds an `unsupported` warning. Use `AspectRatio` instead.
+
+Pass `{ "google": { "googleSearch": { } } }` to ground the image with Google Search. The value is the args of the `google.google_search` tool, for example `{ "searchTypes": { "imageSearch": {} } }`.
+
+`Files` are sent as inline images for editing. A URL file throws because its media type `image/*` is not passed as inline bytes. A `Mask` throws `AiSdkException`. `SupportsFileInputs` is `true` and `SupportsMaskInputs` is `false` for the Gemini image models that take input images, and both are `null` otherwise.
+
+The result carries `Usage`, `Response` (timestamp, model id, headers), and `ProviderMetadata` under `google`: the language model metadata (`promptFeedback`, `groundingMetadata`, `usageMetadata`, and so on) plus `finishReason` (the raw candidate finish reason) and `images` (one object per image). A blocked prompt returns no images with `promptFeedback` in the metadata, and `IsRetryable` is `false` when the finish reason is a content filter. `GoogleImageResult` is gone. Use `ImageGenerationResult.CallWarnings`.
+
 ### Decide and the deprecated Evaluate names
 
 `Decide.DecideAsync(DecideRequest)` is `experimental_decide`. It answers typed questions against one shared state. A decision model implements `IDecisionCaller.DoDecideAsync(DecisionModelCall)` and returns a `DecisionModelResult`. Operation ids are `ai.decide` and `ai.decide.doDecide`. Telemetry callbacks on `DecideTelemetry` are `OnDecideStart`, `OnDecideEnd`, `OnDecisionModelCallStart`, and `OnDecisionModelCallEnd`. Lifecycle events are `DecideEvent` and `DecisionModelEvent`. The refused-question and unsupported-type errors are `DecisionRefusalError`, `DecisionUnsupportedQuestionTypeError` (marker `vercel.ai.error.AI_DecisionUnsupportedQuestionTypeError`), and `DecisionUnsupportedQuestionTypeException`.
