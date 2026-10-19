@@ -74,6 +74,9 @@ public sealed class DoStreamTests
         Assert.Null(finish.Usage.TotalTokens);
         Assert.Null(finish.Usage.ReasoningTokens);
         Assert.Null(finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.CacheWriteTokens);
+        Assert.Null(finish.Usage.NoCacheInputTokens);
+        Assert.Null(finish.Usage.TextTokens);
         Assert.Null(finish.Usage.Raw);
         GoogleUpstream.JsonEqual(
             finish.ProviderMetadata!.Value,
