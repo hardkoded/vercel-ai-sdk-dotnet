@@ -1407,7 +1407,7 @@ public abstract class LanguageModelStreamPart
     /// The provider chunk this part was parsed from, with every field the typed part does not model.
     /// It is set only by providers that pass chunks through unchanged, such as the Gateway.
     /// </summary>
-    public JsonElement? Chunk { get; internal set; }
+    internal JsonElement? Chunk { get; set; }
 }
 
 /// <summary>A text delta.</summary>
