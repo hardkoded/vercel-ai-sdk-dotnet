@@ -427,6 +427,21 @@ internal static class Generation
                     rawFinish,
                     warnings,
                     providerMetadata: providerMetadata);
+                if (options.OnLanguageModelCallEnd != null)
+                {
+                    await options.OnLanguageModelCallEnd(
+                        new LanguageModelCallEndEvent(
+                            current.Provider,
+                            stepResponseModelId,
+                            generated.FinishReason,
+                            generated.Usage,
+                            generated.Content,
+                            stepResponseId,
+                            generated.ProviderMetadata,
+                            TimeSpan.FromMilliseconds(responseTimeMs)),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes)).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -813,6 +828,7 @@ internal static class Generation
             }
         }
 
+        var stepInputMessages = messages.ToArray();
         var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
@@ -839,7 +855,7 @@ internal static class Generation
                 async (call, _) =>
                 {
                     var toolStartMs = timing.Now();
-                    var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
+                    var executed = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken).ConfigureAwait(false);
                     return (Executed: executed, ElapsedMs: timing.Now() - toolStartMs);
                 },
                 cancellationToken).ConfigureAwait(false);
@@ -1134,7 +1150,7 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
+    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken)
     {
         var tool = FindTool(options, call.ToolName);
 
@@ -1159,16 +1175,43 @@ internal static class Generation
             }
         }
 
+        if (options.OnToolExecutionStart != null)
+        {
+            await NotifyAsync(() => options.OnToolExecutionStart(new ToolExecutionStartEvent(call, stepMessages), cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+
+        var startMs = now();
+        ExecutedTool executed;
         try
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
-            return new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false);
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false);
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
+        }
+
+        if (options.OnToolExecutionEnd != null)
+        {
+            var elapsed = TimeSpan.FromMilliseconds(now() - startMs);
+            await NotifyAsync(() => options.OnToolExecutionEnd(new ToolExecutionEndEvent(call, stepMessages, executed, elapsed), cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+
+        return executed;
+    }
+
+    // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
+    private static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await callback().ConfigureAwait(false);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
         }
     }
 

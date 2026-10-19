@@ -609,9 +609,21 @@ public class GenerateTextOptions
 
     /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
-    /// <see cref="StreamTextOptions"/> does not call it yet. Maps to <c>onLanguageModelCallEnd</c>.
+    /// Maps to <c>onLanguageModelCallEnd</c>.
     /// </summary>
     public Func<LanguageModelCallEndEvent, CancellationToken, Task>? OnLanguageModelCallEnd { get; set; }
+
+    /// <summary>
+    /// Called before a tool's <c>Execute</c> runs. It is not called for a tool without <c>Execute</c>, a provider-executed call,
+    /// or a call that is invalid or not approved. An exception it throws is ignored. Maps to <c>onToolExecutionStart</c>.
+    /// </summary>
+    public Func<ToolExecutionStartEvent, CancellationToken, Task>? OnToolExecutionStart { get; set; }
+
+    /// <summary>
+    /// Called after a tool's <c>Execute</c> returns or throws, before <see cref="OnStepEnd"/>. An exception it throws is ignored.
+    /// Maps to <c>onToolExecutionEnd</c>.
+    /// </summary>
+    public Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd { get; set; }
 
     /// <summary>Called after each step. Maps to <c>onStepEnd</c>.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
@@ -673,6 +685,41 @@ public sealed class LanguageModelCallEndEvent
 
     /// <summary>Time the model call took. Maps to <c>performance.responseTimeMs</c>.</summary>
     public TimeSpan ResponseTime { get; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionStart"/> before a tool runs.</summary>
+public class ToolExecutionStartEvent
+{
+    /// <summary>Creates an event.</summary>
+    public ToolExecutionStartEvent(GeneratedToolCall toolCall, IReadOnlyList<ModelMessage> messages)
+    {
+        ToolCall = toolCall;
+        Messages = messages;
+    }
+
+    /// <summary>The call about to run.</summary>
+    public GeneratedToolCall ToolCall { get; }
+
+    /// <summary>The messages the model received in the step that made the call.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; }
+}
+
+/// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionEnd"/> after a tool ran.</summary>
+public sealed class ToolExecutionEndEvent : ToolExecutionStartEvent
+{
+    /// <summary>Creates an event.</summary>
+    public ToolExecutionEndEvent(GeneratedToolCall toolCall, IReadOnlyList<ModelMessage> messages, ExecutedTool toolOutput, TimeSpan toolExecutionTime)
+        : base(toolCall, messages)
+    {
+        ToolOutput = toolOutput;
+        ToolExecutionTime = toolExecutionTime;
+    }
+
+    /// <summary>The result of the call. <see cref="ExecutedTool.IsError"/> is set when the tool threw.</summary>
+    public ExecutedTool ToolOutput { get; }
+
+    /// <summary>Time the tool took. Maps to <c>toolExecutionMs</c>.</summary>
+    public TimeSpan ToolExecutionTime { get; }
 }
 
 /// <summary>Options for <see cref="IAiClient.StreamTextAsync"/>.</summary>
