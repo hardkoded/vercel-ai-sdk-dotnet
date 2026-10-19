@@ -113,16 +113,18 @@ internal static class Generation
                 var generated = await ParseToolCallsAsync(modelResponse, options, messages, cancellationToken).ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
-                    await options.OnLanguageModelCallEnd(
-                        new LanguageModelCallEndEvent(
-                            current.Provider,
-                            generated.ResponseModelId ?? current.ModelId,
-                            generated.FinishReason,
-                            generated.Usage,
-                            generated.Content,
-                            generated.ResponseId,
-                            generated.ProviderMetadata,
-                            TimeSpan.FromMilliseconds(responseTimeMs)),
+                    await NotifyAsync(
+                        () => options.OnLanguageModelCallEnd(
+                            new LanguageModelCallEndEvent(
+                                current.Provider,
+                                generated.ResponseModelId ?? current.ModelId,
+                                generated.FinishReason,
+                                generated.Usage,
+                                generated.Content,
+                                generated.ResponseId,
+                                generated.ProviderMetadata,
+                                TimeSpan.FromMilliseconds(responseTimeMs)),
+                            cancellationToken),
                         cancellationToken).ConfigureAwait(false);
                 }
 
@@ -440,6 +442,23 @@ internal static class Generation
                     rawFinish,
                     warnings,
                     providerMetadata: providerMetadata);
+                if (options.OnLanguageModelCallEnd != null)
+                {
+                    await NotifyAsync(
+                        () => options.OnLanguageModelCallEnd(
+                            new LanguageModelCallEndEvent(
+                                current.Provider,
+                                stepResponseModelId,
+                                generated.FinishReason,
+                                generated.Usage,
+                                generated.Content,
+                                stepResponseId,
+                                generated.ProviderMetadata,
+                                TimeSpan.FromMilliseconds(responseTimeMs)),
+                            cancellationToken),
+                        cancellationToken).ConfigureAwait(false);
+                }
+
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes)).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -826,6 +845,7 @@ internal static class Generation
             }
         }
 
+        var stepInputMessages = messages.ToArray();
         var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
@@ -864,9 +884,8 @@ internal static class Generation
                 ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
                 async (call, _) =>
                 {
-                    var toolStartMs = timing.Now();
-                    var executed = await ExecuteToolAsync(call, options, cancellationToken).ConfigureAwait(false);
-                    return (Executed: executed, ElapsedMs: timing.Now() - toolStartMs);
+                    var (executed, executionMs) = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken).ConfigureAwait(false);
+                    return (Executed: executed, ElapsedMs: executionMs);
                 },
                 cancellationToken).ConfigureAwait(false);
             foreach (var (executed, elapsedMs) in executions)
@@ -1295,13 +1314,13 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, CancellationToken cancellationToken)
+    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken)
     {
         var tool = FindTool(options, call.ToolName);
 
         if (tool?.Execute == null)
         {
-            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
+            return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
         }
 
         if (options.ApproveTool != null)
@@ -1309,20 +1328,48 @@ internal static class Generation
             var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
             if (!approved)
             {
-                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." };
+                return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." }, 0);
             }
         }
 
+        if (options.OnToolExecutionStart != null)
+        {
+            await NotifyAsync(() => options.OnToolExecutionStart(new ToolExecutionStartEvent(call, stepMessages), cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+
+        var startMs = now();
+        ExecutedTool executed;
         try
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
-            return new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson };
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            return new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = exception.Message };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = exception.Message };
+        }
+
+        var elapsedMs = now() - startMs;
+        if (options.OnToolExecutionEnd != null)
+        {
+            var elapsed = TimeSpan.FromMilliseconds(elapsedMs);
+            await NotifyAsync(() => options.OnToolExecutionEnd(new ToolExecutionEndEvent(call, stepMessages, executed, elapsed), cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+
+        return (executed, elapsedMs);
+    }
+
+    // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
+    private static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await callback().ConfigureAwait(false);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
         }
     }
 
