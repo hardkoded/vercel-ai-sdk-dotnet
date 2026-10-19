@@ -36,6 +36,19 @@ public static class ErrorMessage
 
         return JsonSerializer.Serialize(error);
     }
+
+    // What JavaScript's Error.prototype.toString gives: "Name: message", or "Name" for an empty message. It never carries a
+    // stack trace, so it is safe to send to a model. A JsError already formats itself this way.
+    internal static string ToErrorString(Exception error)
+    {
+        if (error is JsError)
+        {
+            return error.ToString();
+        }
+
+        var name = error is AiSdkError sdkError ? sdkError.ErrorName : error.GetType().Name;
+        return string.IsNullOrEmpty(error.Message) ? name : name + ": " + error.Message;
+    }
 }
 
 /// <summary>JavaScript <c>Error</c> analog whose <see cref="ToString"/> omits the stack.</summary>

@@ -47,7 +47,7 @@ public sealed class GenerateTextBehaviorTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText::should not synthesize a client tool error for an invalid provider-executed tool call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText::should not synthesize a client tool error for an invalid provider-executed tool call", Coverage = UpstreamCoverage.Partial, Note = "The port keeps the provider's error as a GeneratedToolResult with IsError, not as a tool-error part, so the dynamic, error and input fields of that part, and the title and providerMetadata of the call, are not asserted.")]
     public async Task Should_not_synthesize_a_client_tool_error_for_an_invalid_provider_executed_tool_call()
     {
         var model = new TestLanguageModel

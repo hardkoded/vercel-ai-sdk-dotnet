@@ -229,11 +229,20 @@ public class GeneratedToolCall : GeneratedContent
     /// <summary>True when the tool is not known up front, such as a provider-executed MCP tool. Maps to the call's <c>dynamic</c>.</summary>
     public bool Dynamic { get; init; }
 
-    /// <summary>True when the input did not match the tool's input schema. Such a call is dynamic. Maps to the call's <c>invalid</c>.</summary>
+    /// <summary>
+    /// True when the call failed to parse: its tool is unknown, its input did not parse, or the input did not match the tool's
+    /// input schema. Such a call is <see cref="Dynamic"/> and is never executed. Maps to <c>invalid</c>.
+    /// </summary>
     public bool Invalid { get; init; }
 
-    /// <summary>Why the call is invalid, such as an <see cref="Util.InvalidToolInputError"/>. Maps to the call's <c>error</c>.</summary>
+    /// <summary>Why the call is <see cref="Invalid"/>. Maps to <c>error</c>.</summary>
     public Exception? Error { get; init; }
+
+    /// <summary>Display title of the tool, when the tool has one. Maps to <c>title</c>.</summary>
+    public string? Title { get; init; }
+
+    /// <summary>Metadata of the tool, kept apart from <see cref="ProviderMetadata"/>. Maps to <c>toolMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
 }
 
 /// <summary>
@@ -379,7 +388,7 @@ public sealed class Citation
     public string? CitedText { get; }
 }
 
-/// <summary>A tool result the provider produced itself, such as a web or file search.</summary>
+/// <summary>A tool result: one the provider produced itself, such as a web or file search, or one the generation loop produced by running a client tool.</summary>
 public sealed class GeneratedToolResult : GeneratedContent
 {
     /// <summary>Creates a provider-executed tool result.</summary>
@@ -1413,6 +1422,22 @@ public sealed class LanguageModelGenerateResult
     /// <summary>Generated content parts.</summary>
     public IReadOnlyList<GeneratedContent> Content { get; }
 
+    internal LanguageModelGenerateResult WithContent(IReadOnlyList<GeneratedContent> content)
+    {
+        return new LanguageModelGenerateResult(
+            content,
+            FinishReason,
+            Usage,
+            RawFinishReason,
+            Warnings,
+            ResponseId,
+            ProviderMetadata,
+            RawResponse,
+            ResponseModelId,
+            ResponseTimestamp,
+            ResponseHeaders);
+    }
+
     /// <summary>Normalized finish reason.</summary>
     public FinishReason FinishReason { get; }
 
@@ -1552,6 +1577,9 @@ public sealed class ToolCallStreamPart : LanguageModelStreamPart
 
     /// <summary>True when the provider executed the tool, so the caller has nothing to run.</summary>
     public bool ProviderExecuted { get; init; }
+
+    /// <summary>True when the tool is not known up front, such as a provider-executed MCP tool. Maps to the call's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
 }
 
 /// <summary>A request to approve a tool call.</summary>
