@@ -15,6 +15,9 @@ namespace Vercel.AI.Google;
 /// <summary>Gemini language model. Posts to <c>models/{id}:generateContent</c>.</summary>
 public sealed class GoogleLanguageModel : ILanguageModel
 {
+    /// <summary>The most requests that follow a CONTINUATION response. A model that never stops continuing would loop forever.</summary>
+    internal const int MaxContinuationHops = 64;
+
     private readonly GoogleProvider _provider;
 
     /// <summary>Creates a model.</summary>
@@ -60,6 +63,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         JsonElement? usage = null;
         int? firstPromptTokenCount = null;
         var isContinued = false;
+        var hops = 0;
         string? candidateToken;
         JsonNode? last;
         while (true)
@@ -82,6 +86,12 @@ public sealed class GoogleLanguageModel : ILanguageModel
                 break;
             }
 
+            if (hops == MaxContinuationHops)
+            {
+                throw new AiSdkException("The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.");
+            }
+
+            hops++;
             content.AddRange(GoogleResponse.Parse(root, context).Content);
             isContinued = true;
             var body = (JsonObject)prepared.Body.DeepClone();
@@ -385,6 +395,13 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
             if (pendingToken == null)
             {
+                break;
+            }
+
+            if (hop == MaxContinuationHops)
+            {
+                // Same shape as a failed continuation: an error part, then the finish part with the last token so the caller can resume.
+                yield return new ErrorStreamPart("The Gemini model kept answering with CONTINUATION after " + MaxContinuationHops + " continuation requests. Giving up.");
                 break;
             }
 
