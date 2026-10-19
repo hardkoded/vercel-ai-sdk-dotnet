@@ -535,7 +535,7 @@ public static class GoogleMessages
 
                 return new JsonObject
                 {
-                    ["fileData"] = new JsonObject { ["mimeType"] = ResolveMediaType(file.MediaType, file.Data), ["fileUri"] = uri },
+                    ["fileData"] = new JsonObject { ["mimeType"] = MediaTypes.ResolveFullMediaType(file.MediaType, null), ["fileUri"] = uri },
                 };
             case "reference":
                 if (vertexLike)
