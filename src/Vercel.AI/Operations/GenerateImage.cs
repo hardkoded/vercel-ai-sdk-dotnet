@@ -25,13 +25,21 @@ public sealed class ImageModelFile
         return new ImageModelFile("file", null, data ?? Array.Empty<byte>(), mediaType) { FileName = fileName };
     }
 
+    /// <summary>Creates an image from base64 text. Providers that send base64 pass the text unchanged.</summary>
+    public static ImageModelFile FromBase64(string data, string mediaType, string? fileName = null)
+    {
+        return new ImageModelFile("file", null, null, mediaType) { Base64 = data ?? string.Empty, FileName = fileName };
+    }
+
     private ImageModelFile(string type, string? url, byte[]? data, string? mediaType)
     {
         Type = type;
         Url = url;
-        Data = data;
+        _data = data;
         MediaType = mediaType;
     }
+
+    private byte[]? _data;
 
     /// <summary><c>url</c> or <c>file</c>.</summary>
     public string Type { get; }
@@ -39,8 +47,11 @@ public sealed class ImageModelFile
     /// <summary>URL when <see cref="Type"/> is <c>url</c>.</summary>
     public string? Url { get; }
 
-    /// <summary>Bytes when <see cref="Type"/> is <c>file</c>.</summary>
-    public byte[]? Data { get; }
+    /// <summary>Bytes when <see cref="Type"/> is <c>file</c>. Decoded from <see cref="Base64"/> when the file was created from base64 text.</summary>
+    public byte[]? Data => _data ??= Base64 is null ? null : Convert.FromBase64String(Base64);
+
+    /// <summary>Base64 text when the file was created with <see cref="FromBase64"/>; otherwise null.</summary>
+    public string? Base64 { get; private set; }
 
     /// <summary>Media type of a file image.</summary>
     public string? MediaType { get; }
