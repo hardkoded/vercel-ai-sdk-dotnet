@@ -2,8 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.GenerateText;
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.Ui;
 using static Vercel.AI.Tests.PruneMessages.PruneMessagesSupport;
