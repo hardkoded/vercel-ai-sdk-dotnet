@@ -17,7 +17,7 @@ public sealed class ToolCallRepairError : AiSdkError
     /// <paramref name="originalError"/> the <see cref="NoSuchToolError"/> or <see cref="InvalidToolInputError"/> that started the repair.
     /// </summary>
     public ToolCallRepairError(Exception cause, AiSdkError originalError, string? message = null)
-        : base("AI_ToolCallRepairError", message ?? "Error repairing tool call: " + ErrorMessage.GetErrorMessage(cause), cause)
+        : base("AI_ToolCallRepairError", message ?? "Error repairing tool call: " + ErrorMessage.ToErrorString(cause), cause)
     {
         OriginalError = originalError;
         SetMarker(ErrorMarker, true);
