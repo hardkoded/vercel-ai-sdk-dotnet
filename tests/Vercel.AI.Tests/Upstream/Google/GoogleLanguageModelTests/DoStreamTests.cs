@@ -69,6 +69,12 @@ public sealed class DoStreamTests
         var finish = Assert.IsType<FinishStreamPart>(parts[7]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal("STOP", finish.RawFinishReason);
+        Assert.Null(finish.Usage.InputTokens);
+        Assert.Null(finish.Usage.OutputTokens);
+        Assert.Null(finish.Usage.TotalTokens);
+        Assert.Null(finish.Usage.ReasoningTokens);
+        Assert.Null(finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.Raw);
         GoogleUpstream.JsonEqual(
             finish.ProviderMetadata!.Value,
             "{\"google\":{\"promptFeedback\":null,\"groundingMetadata\":null,\"urlContextMetadata\":null,\"safetyRatings\":" + safetyRatings + ",\"usageMetadata\":null,\"finishMessage\":null,\"serviceTier\":null}}");
