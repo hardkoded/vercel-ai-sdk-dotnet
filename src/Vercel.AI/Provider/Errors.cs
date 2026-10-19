@@ -178,3 +178,17 @@ public sealed class ApiUserAbortException : OperationCanceledException
     {
     }
 }
+
+/// <summary>A UI message could not be converted to a model message. Maps to <c>MessageConversionError</c>.</summary>
+public sealed class MessageConversionException : AiSdkException
+{
+    /// <summary>Creates the exception.</summary>
+    public MessageConversionException(Vercel.AI.Ui.UIMessage originalMessage, string message)
+        : base(message)
+    {
+        OriginalMessage = originalMessage;
+    }
+
+    /// <summary>The message that could not be converted.</summary>
+    public Vercel.AI.Ui.UIMessage OriginalMessage { get; }
+}

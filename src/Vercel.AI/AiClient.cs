@@ -491,6 +491,12 @@ public static class Ai
         return MessagePruning.PruneMessages(options);
     }
 
+    /// <summary>Converts UI messages from a chat UI into model messages. Maps to <c>convertToModelMessages</c>.</summary>
+    public static IReadOnlyList<ModelMessage> ConvertToModelMessages(IReadOnlyList<Ui.UIMessage> messages, Ui.ConvertToModelMessagesOptions? options = null)
+    {
+        return Ui.UIMessageConversion.ConvertToModelMessages(messages, options);
+    }
+
     /// <summary>Cosine similarity of two vectors.</summary>
     public static double CosineSimilarity(IReadOnlyList<float> left, IReadOnlyList<float> right)
     {
