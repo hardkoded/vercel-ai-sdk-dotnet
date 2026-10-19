@@ -118,14 +118,20 @@ Providers keep the error status:
 
 ## Tool input validation
 
-Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call that fails is not executed. It comes back with `Invalid` and `Dynamic` set and the failure in `Error`: a `NoSuchToolError` when the tool is unknown (`AvailableTools` is null when no tools were set), or an `InvalidToolInputError` when the input is not valid JSON or does not match the schema. The model receives the error message as an `error-text` tool result. The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
+Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call that fails is not executed. It comes back with `Invalid` and `Dynamic` set and the failure in `Error`: a `NoSuchToolError` when the tool is unknown (`AvailableTools` is null when no tools were set), or an `InvalidToolInputError` when the input is not valid JSON or does not match the schema. `GenerateTextAsync`, `StreamTextAsync`, and `Agent` run this parse on every tool call of a model response, with the tools the model was offered (`ActiveTools` narrows them). The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
 
 `ParseToolCallOptions` also takes:
 
 - `RepairToolCall`: called once for a `NoSuchToolError` or `InvalidToolInputError`. It gets a `ToolCallRepairContext` (the call, the tools, `InputSchema(toolName)`, the error, `Messages`, `Instructions` and a `CancellationToken`) and returns a repaired `GeneratedToolCall`, or null to keep the error. If it throws, the result carries a `ToolCallRepairError`. Cancelling the token stops the wait and cancels `ParseToolCallAsync`.
 - `RefineToolInput`: a map from tool name to a function that returns a refined input for a valid call.
 
-A `Tool` can carry a `Title` and `Metadata`. A parsed call copies both as `Title` and `ToolMetadata`; `ToolMetadata` stays apart from the model's `ProviderMetadata`. `Tool.DynamicTool(...)` declares a dynamic tool, and its parsed calls have `Dynamic` set. A provider-executed `GeneratedToolCall` with `Dynamic` set parses even when no tool matches. The generation loop does not use repair or refinement yet (#603).
+A `Tool` can carry a `Title` and `Metadata`. A parsed call copies both as `Title` and `ToolMetadata`; `ToolMetadata` stays apart from the model's `ProviderMetadata`. `Tool.DynamicTool(...)` declares a dynamic tool, and its parsed calls have `Dynamic` set. A provider-executed `GeneratedToolCall` with `Dynamic` set parses even when no tool matches.
+
+The generation loop passes both options on from `GenerateTextOptions` and `StreamTextOptions` (`RepairToolCall` and `RefineToolInput`), and from `AgentOptions`. The repair function gets the messages of the step and the instructions. A repaired or refined call replaces the model's call everywhere: in `StepResult.ToolCalls` and `Content`, in the `OnLanguageModelCallEnd` event, in the stream parts, in the executed tool's `InputJson`, and in the assistant message of `ResponseMessages`.
+
+A call that stays invalid is kept in the step as a `GeneratedToolCall` with `Invalid` set. It is never executed and never asks for approval. The loop answers it with an error tool result (`ExecutedTool.IsError`, also a `GeneratedToolResult` in `Content`, and a `ToolErrorPart` in the stream). The model reads the error as `error-text` in the form `Name: message`, for example `AI_NoSuchToolError: Model tried to call unavailable tool 'x'. No tools are available.`, without a stack trace. A failing repair function gives a `ToolCallRepairError` whose message names the failure the same way. The loop then goes on to the next step, because every call has an answer.
+
+In the UI message stream an invalid call is a `tool-input-error` chunk, followed by a `tool-output-error` chunk. Other tool calls carry `title`, `toolMetadata`, and `dynamic` when they have them. An invalid call is marked `dynamic` only when its tool is unknown, because the UI writer has no tool list.
 
 ## Provider-defined tools
 

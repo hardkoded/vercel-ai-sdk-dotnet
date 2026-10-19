@@ -108,20 +108,23 @@ internal static class Generation
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
-                var generated = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                var modelResponse = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var responseTimeMs = now() - stepStartMs;
+                var generated = await ParseToolCallsAsync(modelResponse, options, messages, cancellationToken).ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
-                    await options.OnLanguageModelCallEnd(
-                        new LanguageModelCallEndEvent(
-                            current.Provider,
-                            generated.ResponseModelId ?? current.ModelId,
-                            generated.FinishReason,
-                            generated.Usage,
-                            generated.Content,
-                            generated.ResponseId,
-                            generated.ProviderMetadata,
-                            TimeSpan.FromMilliseconds(responseTimeMs)),
+                    await NotifyAsync(
+                        () => options.OnLanguageModelCallEnd(
+                            new LanguageModelCallEndEvent(
+                                current.Provider,
+                                generated.ResponseModelId ?? current.ModelId,
+                                generated.FinishReason,
+                                generated.Usage,
+                                generated.Content,
+                                generated.ResponseId,
+                                generated.ProviderMetadata,
+                                TimeSpan.FromMilliseconds(responseTimeMs)),
+                            cancellationToken),
                         cancellationToken).ConfigureAwait(false);
                 }
 
@@ -343,11 +346,23 @@ internal static class Generation
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
                             case ToolCallStreamPart toolCall:
-                                var call = ParseProviderExecutedInput(options, new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted });
+                                var call = ParseProviderExecutedInput(
+                                    options,
+                                    await ParseToolCallAsync(
+                                        new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted, Dynamic = toolCall.Dynamic },
+                                        options,
+                                        stepMessages,
+                                        cancellationToken).ConfigureAwait(false));
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
                                 outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolCallPart(call));
+                                if (call.Invalid && !call.ProviderExecuted)
+                                {
+                                    emittedResultIds.Add(call.ToolCallId);
+                                    buffer.Add(new ToolErrorPart(InvalidToolResult(call)));
+                                }
+
                                 break;
                             case ToolApprovalRequestStreamPart approvalRequest:
                                 var resolvedRequest = ResolveApprovalRequest(new GeneratedToolApprovalRequest(approvalRequest.ApprovalId, approvalRequest.ToolCallId), toolContent);
@@ -429,16 +444,18 @@ internal static class Generation
                     providerMetadata: providerMetadata);
                 if (options.OnLanguageModelCallEnd != null)
                 {
-                    await options.OnLanguageModelCallEnd(
-                        new LanguageModelCallEndEvent(
-                            current.Provider,
-                            stepResponseModelId,
-                            generated.FinishReason,
-                            generated.Usage,
-                            generated.Content,
-                            stepResponseId,
-                            generated.ProviderMetadata,
-                            TimeSpan.FromMilliseconds(responseTimeMs)),
+                    await NotifyAsync(
+                        () => options.OnLanguageModelCallEnd(
+                            new LanguageModelCallEndEvent(
+                                current.Provider,
+                                stepResponseModelId,
+                                generated.FinishReason,
+                                generated.Usage,
+                                generated.Content,
+                                stepResponseId,
+                                generated.ProviderMetadata,
+                                TimeSpan.FromMilliseconds(responseTimeMs)),
+                            cancellationToken),
                         cancellationToken).ConfigureAwait(false);
                 }
 
@@ -838,6 +855,19 @@ internal static class Generation
             var callsToExecute = new List<GeneratedToolCall>();
             foreach (var call in toolCalls)
             {
+                // A call that failed to parse is answered with its error, and nothing runs. A provider reports its own error.
+                if (call.Invalid)
+                {
+                    if (!call.ProviderExecuted)
+                    {
+                        var invalidResult = InvalidToolResult(call);
+                        toolResults.Add(invalidResult);
+                        toolMessages.Add(new ToolModelMessage(invalidResult.ToolCallId, invalidResult.ToolName, invalidResult.ModelOutput ?? invalidResult.OutputJson, invalidResult.IsError, invalidResult.ModelOutputType));
+                    }
+
+                    continue;
+                }
+
                 var tool = FindTool(options, call.ToolName);
 
                 // A tool without execute is for the caller to run: the step has the call and no result.
@@ -854,9 +884,8 @@ internal static class Generation
                 ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
                 async (call, _) =>
                 {
-                    var toolStartMs = timing.Now();
-                    var executed = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken).ConfigureAwait(false);
-                    return (Executed: executed, ElapsedMs: timing.Now() - toolStartMs);
+                    var (executed, executionMs) = await ExecuteToolAsync(call, options, stepInputMessages, timing.Now, cancellationToken).ConfigureAwait(false);
+                    return (Executed: executed, ElapsedMs: executionMs);
                 },
                 cancellationToken).ConfigureAwait(false);
             foreach (var (executed, elapsedMs) in executions)
@@ -876,8 +905,143 @@ internal static class Generation
             }
         }
 
+        // The results of the tools this loop ran follow the model's own content, as upstream lists them.
+        foreach (var executed in toolResults)
+        {
+            if (!executed.ProviderExecuted)
+            {
+                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError));
+            }
+        }
+
         var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
         return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance);
+    }
+
+    // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
+    // cannot be parsed stays in the content, flagged invalid, so the model can see its error.
+    private static async Task<LanguageModelGenerateResult> ParseToolCallsAsync(
+        LanguageModelGenerateResult generated,
+        GenerateTextOptions options,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken)
+    {
+        var parses = new List<Task<GeneratedToolCall>>();
+        foreach (var part in generated.Content)
+        {
+            if (part is GeneratedToolCall call)
+            {
+                parses.Add(ParseToolCallAsync(call, options, messages, cancellationToken));
+            }
+        }
+
+        if (parses.Count == 0)
+        {
+            return generated;
+        }
+
+        var parsed = await Task.WhenAll(parses).ConfigureAwait(false);
+        var content = new List<GeneratedContent>(generated.Content.Count);
+        var next = 0;
+        foreach (var part in generated.Content)
+        {
+            content.Add(part is GeneratedToolCall ? parsed[next++] : part);
+        }
+
+        return generated.WithContent(content);
+    }
+
+    private static async Task<GeneratedToolCall> ParseToolCallAsync(
+        GeneratedToolCall call,
+        GenerateTextOptions options,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken)
+    {
+        // The instructions travel as the leading system message. The repair function gets them apart from the messages.
+        var instructions = options.Instructions ?? options.System;
+        var history = messages;
+        if (!string.IsNullOrEmpty(instructions) && messages.Count > 0 && messages[0] is SystemModelMessage)
+        {
+            history = messages.Skip(1).ToArray();
+        }
+
+        var tools = ActiveTools(options);
+
+        // Upstream providers mark a provider-executed call to a tool the caller did not declare as dynamic, or the call is invalid.
+        // The providers of this port do not set it yet, so such a call is parsed as dynamic here, and keeps the flag it came with.
+        var sentCall = call;
+        if (call.ProviderExecuted && !call.Dynamic && !Contains(tools, call.ToolName))
+        {
+            sentCall = new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = true, Dynamic = true };
+        }
+
+        var parsed = await ToolCallParser.ParseToolCallAsync(
+            new ParseToolCallOptions(sentCall)
+            {
+                Tools = tools,
+                RepairToolCall = options.RepairToolCall,
+                RefineToolInput = options.RefineToolInput,
+                Messages = history.ToArray(),
+                Instructions = instructions,
+            },
+            cancellationToken).ConfigureAwait(false);
+        return new GeneratedToolCall(parsed.ToolCallId, parsed.ToolName, parsed.Input.GetRawText(), parsed.ProviderMetadata)
+        {
+            ProviderExecuted = parsed.ProviderExecuted,
+            Dynamic = parsed.Invalid || ReferenceEquals(sentCall, call) ? parsed.Dynamic : call.Dynamic,
+            Invalid = parsed.Invalid,
+            Error = parsed.Error,
+            Title = parsed.Title,
+            ToolMetadata = parsed.ToolMetadata,
+        };
+    }
+
+    private static bool Contains(IReadOnlyList<Tool>? tools, string name)
+    {
+        if (tools != null)
+        {
+            foreach (var tool in tools)
+            {
+                if (string.Equals(tool.Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // The tools the model was offered: the call's tools narrowed to its active tools.
+    private static IReadOnlyList<Tool>? ActiveTools(GenerateTextOptions options)
+    {
+        if (options.Tools == null || options.ActiveTools == null)
+        {
+            return options.Tools;
+        }
+
+        var tools = new List<Tool>();
+        foreach (var tool in options.Tools)
+        {
+            if (Contains(options.ActiveTools, tool.Name))
+            {
+                tools.Add(tool);
+            }
+        }
+
+        return tools;
+    }
+
+    // The tool result of a call that failed to parse. The model reads the error the way upstream sends it: "Name: message".
+    private static ExecutedTool InvalidToolResult(GeneratedToolCall call)
+    {
+        var message = ErrorMessage.ToErrorString(call.Error!);
+        return new ExecutedTool(call.ToolCallId, call.ToolName, JsonSerializer.Serialize(new { error = message }), true)
+        {
+            InputJson = call.ArgumentsJson,
+            ModelOutputType = "error-text",
+            ModelOutput = message,
+        };
     }
 
     private static double DefaultNowMs()
@@ -1069,7 +1233,7 @@ internal static class Generation
     // schema is parsed here, so the input of any other call is kept as the model sent it.
     private static GeneratedToolCall ParseProviderExecutedInput(GenerateTextOptions options, GeneratedToolCall call)
     {
-        if (!call.ProviderExecuted)
+        if (!call.ProviderExecuted || call.Invalid)
         {
             return call;
         }
@@ -1091,7 +1255,7 @@ internal static class Generation
         }
 
         var parsed = JsonSchemaProjection.Project(tool.InputSchema, input);
-        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true };
+        return new GeneratedToolCall(call.ToolCallId, call.ToolName, parsed?.ToJsonString() ?? "null", call.ProviderMetadata) { ProviderExecuted = true, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
     }
 
     private static Tool? FindTool(GenerateTextOptions options, string name)
@@ -1135,7 +1299,7 @@ internal static class Generation
     {
         foreach (var call in step.ToolCalls)
         {
-            if (call.ProviderExecuted)
+            if (call.ProviderExecuted || call.Invalid)
             {
                 continue;
             }
@@ -1150,20 +1314,13 @@ internal static class Generation
         return false;
     }
 
-    private static async Task<ExecutedTool> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken)
+    private static async Task<(ExecutedTool Executed, double ElapsedMs)> ExecuteToolAsync(GeneratedToolCall call, GenerateTextOptions options, IReadOnlyList<ModelMessage> stepMessages, Func<double> now, CancellationToken cancellationToken)
     {
         var tool = FindTool(options, call.ToolName);
 
         if (tool?.Execute == null)
         {
-            return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." };
-        }
-
-        var parsed = await ToolCallParser.ParseToolCallAsync(new ParseToolCallOptions(call) { Tools = options.Tools }, cancellationToken).ConfigureAwait(false);
-        if (parsed.Invalid)
-        {
-            var message = parsed.Error!.Message;
-            return new ExecutedTool(call.ToolCallId, call.ToolName, JsonSerializer.Serialize(new { error = message }), true) { ModelOutputType = "error-text", ModelOutput = message };
+            return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
         }
 
         if (options.ApproveTool != null)
@@ -1171,7 +1328,7 @@ internal static class Generation
             var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
             if (!approved)
             {
-                return new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." };
+                return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." }, 0);
             }
         }
 
@@ -1186,21 +1343,22 @@ internal static class Generation
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false);
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson };
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { ModelOutputType = "error-text", ModelOutput = exception.Message };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = exception.Message };
         }
 
+        var elapsedMs = now() - startMs;
         if (options.OnToolExecutionEnd != null)
         {
-            var elapsed = TimeSpan.FromMilliseconds(now() - startMs);
+            var elapsed = TimeSpan.FromMilliseconds(elapsedMs);
             await NotifyAsync(() => options.OnToolExecutionEnd(new ToolExecutionEndEvent(call, stepMessages, executed, elapsed), cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
-        return executed;
+        return (executed, elapsedMs);
     }
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.

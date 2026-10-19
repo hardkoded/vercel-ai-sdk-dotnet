@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -162,7 +163,7 @@ public sealed class ExecutedTool
     /// <summary>Provider-specific metadata of the result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
 
-    /// <summary>The JSON input of the tool call this result answers. Set for a provider-executed result. Maps to the result's <c>input</c>.</summary>
+    /// <summary>The JSON input of the tool call this result answers, after any repair and refinement. Maps to the result's <c>input</c>.</summary>
     public string? InputJson { get; init; }
 
     /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
@@ -212,8 +213,9 @@ public sealed class StepResult
     public string Text { get; }
 
     /// <summary>
-    /// Content the model generated in this step, in order. A <see cref="GeneratedText"/> carries its
-    /// <see cref="GeneratedText.Citations"/>, separate from the retrieved <see cref="Sources"/>.
+    /// Content the model generated in this step, in order, followed by the results of the client tools the loop ran. A call that failed to
+    /// parse stays here as an <see cref="GeneratedToolCall.Invalid"/> call, followed by its error result.
+    /// A <see cref="GeneratedText"/> carries its <see cref="GeneratedText.Citations"/>, separate from the retrieved <see cref="Sources"/>.
     /// </summary>
     public IReadOnlyList<GeneratedContent> Content { get; }
 
@@ -636,6 +638,18 @@ public class GenerateTextOptions
 
     /// <summary>Approves a tool call before it runs. A false result records an error tool result.</summary>
     public Func<ToolApprovalRequest, CancellationToken, Task<bool>>? ApproveTool { get; set; }
+
+    /// <summary>
+    /// Repairs a tool call whose tool is unknown or whose input is invalid, before the call is reported or executed.
+    /// Return the repaired call, or null to keep the error. Maps to <c>repairToolCall</c>.
+    /// </summary>
+    public ToolCallRepairFunction? RepairToolCall { get; set; }
+
+    /// <summary>
+    /// Refines the parsed input of a tool call, keyed by tool name, before the tool runs and before outputs and callbacks see it.
+    /// A tool without an entry keeps its parsed input. Maps to <c>experimental_refineToolInput</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>

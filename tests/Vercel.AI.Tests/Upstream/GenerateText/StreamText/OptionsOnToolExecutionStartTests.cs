@@ -55,7 +55,7 @@ public sealed class OptionsOnToolExecutionStartTests
             Tools = new[] { Tool1() },
             OnToolExecutionStart = (e, _) =>
             {
-                lock (events) {{ events.Add(e); }}
+                lock (events) { { events.Add(e); } }
                 return Task.CompletedTask;
             },
         }));
