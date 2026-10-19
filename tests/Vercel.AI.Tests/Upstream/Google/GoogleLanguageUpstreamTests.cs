@@ -669,6 +669,10 @@ public sealed class GoogleLanguageUpstreamTests
     {
         var result = GoogleUpstream.Parse("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"ok\"}]},\"finishReason\":\"STOP\"}]}");
         Assert.Equal(JsonValueKind.Null, result.ProviderMetadata!.Value.GetProperty("google").GetProperty("finishMessage").ValueKind);
+        Assert.Null(result.Usage.InputTokens);
+        Assert.Null(result.Usage.OutputTokens);
+        Assert.Null(result.Usage.TotalTokens);
+        Assert.Null(result.Usage.Raw);
     }
 
     [Fact]
