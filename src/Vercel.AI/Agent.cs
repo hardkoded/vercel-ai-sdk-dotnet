@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -69,6 +71,8 @@ public sealed class Agent
             OnFinish = prepared.OnFinish,
             OnError = prepared.OnError,
             ApproveTool = prepared.ApproveTool,
+            RepairToolCall = prepared.RepairToolCall,
+            RefineToolInput = prepared.RefineToolInput,
             AbortSignal = abortSignal,
             OnAbort = Options.OnAbort,
         }, cancellationToken);
@@ -92,6 +96,8 @@ public sealed class Agent
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
             ToolCallConcurrency = Options.ToolCallConcurrency,
+            RepairToolCall = Options.RepairToolCall,
+            RefineToolInput = Options.RefineToolInput,
         };
     }
 }
@@ -125,6 +131,12 @@ public sealed class AgentOptions
     /// <see cref="PrepareCall"/> can replace it.
     /// </summary>
     public int? ToolCallConcurrency { get; set; }
+
+    /// <summary>Repairs a tool call that failed to parse. See <see cref="GenerateTextOptions.RepairToolCall"/>. <see cref="PrepareCall"/> can replace it.</summary>
+    public ToolCallRepairFunction? RepairToolCall { get; set; }
+
+    /// <summary>Refines the parsed input of tool calls. See <see cref="GenerateTextOptions.RefineToolInput"/>. <see cref="PrepareCall"/> can replace it.</summary>
+    public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
 
     /// <summary>
     /// Called before each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call with the options the agent would use,

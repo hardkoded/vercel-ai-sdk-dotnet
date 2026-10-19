@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Vercel.AI.OpenTelemetry;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.AspNetCore;
 
@@ -276,7 +277,7 @@ public sealed class UIMessageStreamResult : IResult
                 case ToolCallPart call:
                     var toolInput = new JsonObject
                     {
-                        ["type"] = "tool-input-available",
+                        ["type"] = call.ToolCall.Invalid ? "tool-input-error" : "tool-input-available",
                         ["toolCallId"] = call.ToolCall.ToolCallId,
                         ["toolName"] = call.ToolCall.ToolName,
                         ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
@@ -288,6 +289,28 @@ public sealed class UIMessageStreamResult : IResult
                     }
 
                     AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
+                    if (call.ToolCall.ToolMetadata is { } toolMetadata)
+                    {
+                        toolInput["toolMetadata"] = JsonSerializer.SerializeToNode(toolMetadata);
+                    }
+
+                    // Every invalid call is dynamic, but upstream marks it only when its tool is unknown. This writer has no tool list,
+                    // so a call whose tool exists but whose input is invalid is not marked.
+                    if (call.ToolCall.Dynamic && (!call.ToolCall.Invalid || call.ToolCall.Error is NoSuchToolError))
+                    {
+                        toolInput["dynamic"] = true;
+                    }
+
+                    if (call.ToolCall.Invalid)
+                    {
+                        toolInput["errorText"] = onError(ErrorMessage.ToErrorString(call.ToolCall.Error!));
+                    }
+
+                    if (call.ToolCall.Title != null)
+                    {
+                        toolInput["title"] = call.ToolCall.Title;
+                    }
+
                     yield return Frame(toolInput);
                     break;
                 case ToolApprovalRequestPart approvalRequest:
