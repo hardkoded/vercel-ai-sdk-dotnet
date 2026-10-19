@@ -150,7 +150,7 @@ internal sealed class OpenAIResponsesStream
                 if (node["output_index"] is JsonValue customDeltaIndex
                     && customDeltaIndex.TryGetValue<int>(out var customDeltaKey)
                     && _ongoingCustomToolCalls.TryGetValue(customDeltaKey, out var ongoingCustom)
-                    && node["delta"]?.GetValue<string>() is { } customDelta)
+                    && ReadDelta(node["delta"]) is { } customDelta)
                 {
                     parts.Add(new ToolInputDeltaStreamPart(ongoingCustom.ToolCallId, customDelta));
                 }
@@ -213,6 +213,43 @@ internal sealed class OpenAIResponsesStream
     }
 
     /// <summary>Ends the stream: sources that only citations supplied, then the finish part.</summary>
+    // A custom tool input delta can end in half of a surrogate pair. System.Text.Json refuses to decode a lone
+    // surrogate escape, so decode the raw text by hand in that case.
+    private static string? ReadDelta(JsonNode? node)
+    {
+        try
+        {
+            return node?.GetValue<string>();
+        }
+        catch (InvalidOperationException) when (node is JsonValue value && value.TryGetValue<JsonElement>(out var element))
+        {
+            var raw = element.GetRawText();
+            var text = new System.Text.StringBuilder(raw.Length);
+            for (var i = 1; i < raw.Length - 1; i++)
+            {
+                var c = raw[i];
+                if (c != '\\')
+                {
+                    text.Append(c);
+                    continue;
+                }
+
+                c = raw[++i];
+                if (c == 'u')
+                {
+                    text.Append((char)int.Parse(raw.Substring(i + 1, 4), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture));
+                    i += 4;
+                }
+                else
+                {
+                    text.Append(c switch { 'b' => '\b', 'f' => '\f', 'n' => '\n', 'r' => '\r', 't' => '\t', _ => c });
+                }
+            }
+
+            return text.ToString();
+        }
+    }
+
     public IEnumerable<LanguageModelStreamPart> Complete()
     {
         var parts = new List<LanguageModelStreamPart>();

@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream;
@@ -18,6 +20,7 @@ public sealed class DoStreamCustomToolTests
         { new[] { "text(", "\"probe\"", ");\n" } },
         { new[] { "path\\", "\t\r\n", "\u0000" } },
         { new[] { "\"", "quoted", "\"" } },
+        { new[] { "\ud83d", "\ude00" } },
         { Array.Empty<string>() },
     };
 
@@ -25,8 +28,7 @@ public sealed class DoStreamCustomToolTests
     [MemberData(nameof(RawDeltas))]
     [UpstreamTest(
         Prefix + "should preserve raw custom tool input deltas: %j",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Covers the text, escape, quote and empty cases. The lone surrogate case (a UTF-16 pair split across two deltas) cannot be written: .NET strings reject a lone surrogate when parsing JSON. See #569.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_preserve_raw_custom_tool_input_deltas(string[] deltas)
     {
         JsonObject Item(string input) => new()
@@ -39,20 +41,19 @@ public sealed class DoStreamCustomToolTests
             ["input"] = input,
         };
 
-        var events = new List<JsonNode>
-        {
-            new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 0, ["item"] = Item(string.Empty) },
-        };
-        events.AddRange(deltas.Select(delta => (JsonNode)new JsonObject
-        {
-            ["type"] = "response.custom_tool_call_input.delta",
-            ["item_id"] = "ct_probe",
-            ["output_index"] = 0,
-            ["delta"] = delta,
-        }));
-        events.Add(new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 0, ["item"] = Item(string.Concat(deltas)) });
+        // JsonNode cannot write a lone surrogate, so each delta is written as \uXXXX escapes.
+        static string Data(JsonNode node) => "data: " + node.ToJsonString() + "\n\n";
+        static string Escape(string text) => string.Concat(text.Select(c => "\\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture)));
 
-        var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(events));
+        var body = new StringBuilder(Data(new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 0, ["item"] = Item(string.Empty) }));
+        foreach (var delta in deltas)
+        {
+            body.Append("data: {\"type\":\"response.custom_tool_call_input.delta\",\"item_id\":\"ct_probe\",\"output_index\":0,\"delta\":\"" + Escape(delta) + "\"}\n\n");
+        }
+
+        body.Append(Data(new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 0, ["item"] = Item(string.Concat(deltas)) }));
+
+        var parts = await OpenAIResponsesSupport.Stream(body.ToString());
 
         Assert.Empty(parts.OfType<ErrorStreamPart>());
         var start = Assert.Single(parts.OfType<ToolInputStartStreamPart>());

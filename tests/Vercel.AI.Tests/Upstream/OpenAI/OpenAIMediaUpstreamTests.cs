@@ -288,6 +288,12 @@ public sealed class OpenAIMediaUpstreamTests
         var image = result.ProviderMetadata.GetProperty("openai").GetProperty("images")[0];
         Assert.Equal(7, image.GetProperty("imageTokens").GetInt32());
         Assert.Equal(5, image.GetProperty("textTokens").GetInt32());
+
+        var generated = await new OpenAIImageModel(OpenAIUpstream.Provider(new OpenAICapture { ResponseJson = "{\"created\":1733837122,\"data\":[{\"b64_json\":\"AQID\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":0,\"total_tokens\":12}}" }), "gpt-image-1")
+            .DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" }, CancellationToken.None);
+        Assert.Equal(12, generated.Usage!.InputTokens);
+        Assert.Equal(0, generated.Usage.OutputTokens);
+        Assert.Equal(12, generated.Usage.TotalTokens);
     }
 
     [Fact]
@@ -1131,6 +1137,12 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Contains("application/json", result.Headers["content-type"], StringComparison.Ordinal);
         Assert.Equal("test-request-id", result.Headers["x-request-id"]);
         Assert.Equal("123", result.Headers["x-ratelimit-remaining"]);
+
+        var generated = await model.DoGenerateAsync(new ImageCallOptions("A cute baby sea otter") { Size = "1024x1024" }, CancellationToken.None);
+        Assert.Equal(stamp, generated.Response!.Timestamp);
+        Assert.Equal("dall-e-3", generated.Response.ModelId);
+        Assert.Equal("test-request-id", generated.Response.Headers["x-request-id"]);
+        Assert.Equal("123", generated.Response.Headers["x-ratelimit-remaining"]);
     }
 
     [Fact]

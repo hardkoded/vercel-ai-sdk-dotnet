@@ -44,7 +44,8 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     /// <summary>Creates a provider.</summary>
     public static BlackForestLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null, int? pollIntervalMillis = null, int? pollTimeoutMillis = null)
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        // Redirects are followed by hand so a status poll cannot send the API key to another host.
+        var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -78,7 +79,7 @@ public static class BlackForestLabsServiceCollectionExtensions
     /// <summary>Adds the provider.</summary>
     public static IServiceCollection AddBlackForestLabs(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
     {
-        services.AddHttpClient(BlackForestLabsProvider.ProviderId);
+        services.AddHttpClient(BlackForestLabsProvider.ProviderId).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
