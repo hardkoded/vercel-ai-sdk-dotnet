@@ -34,6 +34,16 @@ public sealed class AzureOpenAIOptions
     public Dictionary<string, string> Headers { get; } = new();
 }
 
+/// <summary>Settings for an Azure OpenAI language model.</summary>
+public sealed class AzureOpenAILanguageModelSettings
+{
+    /// <summary>
+    /// Underlying model ID used for reported identity and capability detection.
+    /// Defaults to the deployment ID. Requests always use the deployment ID.
+    /// </summary>
+    public string? ModelId { get; set; }
+}
+
 /// <summary>Azure OpenAI provider. Chat calls use the deployments route and the <c>api-key</c> header.</summary>
 public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 {
@@ -72,6 +82,41 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     public OpenAI.OpenAIResponsesLanguageModel ResponsesModel(string modelId)
     {
         return new OpenAI.OpenAIResponsesLanguageModel(this, modelId);
+    }
+
+    /// <summary>
+    /// Responses API model for a deployment. The optional model ID is used for reported identity and
+    /// capability detection; requests always use the deployment ID.
+    /// </summary>
+    public OpenAI.OpenAIResponsesLanguageModel ResponsesModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    {
+        return new OpenAI.OpenAIResponsesLanguageModel(this, deploymentId, settings);
+    }
+
+    /// <summary>
+    /// Chat model for a deployment. The optional model ID is used for reported identity and capability
+    /// detection; requests always use the deployment ID.
+    /// </summary>
+    public OpenAICompatibleLanguageModel ChatModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    {
+        return new OpenAICompatibleLanguageModel(
+            this,
+            settings?.ModelId ?? deploymentId,
+            null,
+            deploymentId);
+    }
+
+    /// <summary>
+    /// Completion model for a deployment. The optional model ID is used for reported identity;
+    /// requests always use the deployment ID.
+    /// </summary>
+    public OpenAICompatibleCompletionLanguageModel CompletionModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    {
+        return new OpenAICompatibleCompletionLanguageModel(
+            this,
+            settings?.ModelId ?? deploymentId,
+            null,
+            deploymentId);
     }
 
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options)

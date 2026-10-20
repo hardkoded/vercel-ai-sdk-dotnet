@@ -18,6 +18,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
     private readonly OpenAICompatibleProvider _provider;
     private readonly string _providerId;
+    private readonly string? _requestModelId;
 
     /// <summary>Creates a completion model.</summary>
     public OpenAICompatibleCompletionLanguageModel(OpenAICompatibleProvider provider, string modelId)
@@ -27,7 +28,17 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
     /// <summary>Creates a completion model with an explicit provider id.</summary>
     public OpenAICompatibleCompletionLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId)
+        : this(provider, modelId, providerId, null)
     {
+    }
+
+    /// <summary>
+    /// Creates a completion model whose reported <see cref="ModelId"/> differs from the model sent to the API.
+    /// <paramref name="requestModelId"/>, when set, is used for the request <c>model</c> and the deployment route.
+    /// </summary>
+    public OpenAICompatibleCompletionLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId, string? requestModelId)
+    {
+        _requestModelId = requestModelId;
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _providerId = providerId ?? OpenAICompatibleChat.Qualify(provider.Options.ProviderName, "completion");
@@ -50,7 +61,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: false);
-        var response = await _provider.PostJsonAsync(_provider.CompletionsUri(ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
+        var response = await _provider.PostJsonAsync(_provider.CompletionsUri(_requestModelId ?? ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         var root = document.RootElement;
         if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
@@ -96,7 +107,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
-        var sse = await _provider.PostSseAsync(_provider.CompletionsUri(ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
+        var sse = await _provider.PostSseAsync(_provider.CompletionsUri(_requestModelId ?? ModelId), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             new ReleasingAsyncEnumerable<LanguageModelStreamPart>(StreamAsync(options, prepared, sse, cancellationToken), sse),
             LanguageModelStreamRequest.FromJson(prepared.Json),
@@ -235,7 +246,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
         var settings = ReadSettings(options.ProviderOptions, rawName, camel);
         var converted = ConvertPrompt(options.Prompt);
-        var body = new JsonObject { ["model"] = ModelId };
+        var body = new JsonObject { ["model"] = _requestModelId ?? ModelId };
         if (settings.Echo != null)
         {
             body["echo"] = settings.Echo.Value;
