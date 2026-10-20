@@ -31,6 +31,10 @@ Provider tests should mock `HttpMessageHandler` and assert the request URL and a
 
 When the upstream commit in `COMPATIBILITY.md` moves, update that file and the provider notes in the same change.
 
+## Porting an upstream commit
+
+Link every ported test with `[UpstreamTest]` (see `tests/parity/README.md`). Before you open the pull request, run `python3 build/check-commit-ports.py <upstream-sha>` on your branch. It lists the tests the commit adds or changes and marks each one COVERED, PARTIAL, ACKNOWLEDGED, or MISSING. Port every MISSING test, or list it under a `Not ported` heading in the PR body with the reason. Write each entry as the exact test title, the describe name, or `describe chain::title`. Then run it again with `--pr <number>` so it reads that heading. The script needs a `vercel/ai` clone that has the commit (default `/Users/dario/Code/vercel/ai`, or pass `--upstream-repo`).
+
 ## Examples
 
 Every code block in `README.md` comes from a runnable project in `examples/`. Do not type code into the README by hand. Use the same way for new code in `docs/articles`. Moving its older hand-written blocks is tracked in #250. [MarkdownSnippets.MsBuild](https://github.com/SimonCropp/MarkdownSnippets) rewrites the markdown when `examples/GenerateText` builds, so the code cannot drift from the API. CI fails when the committed markdown does not match the build output.
