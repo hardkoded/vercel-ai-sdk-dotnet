@@ -985,16 +985,8 @@ internal static class Generation
 
         var tools = ActiveTools(options);
 
-        // Upstream providers mark a provider-executed call to a tool the caller did not declare as dynamic, or the call is invalid.
-        // The providers of this port do not set it yet, so such a call is parsed as dynamic here, and keeps the flag it came with.
-        var sentCall = call;
-        if (call.ProviderExecuted && !call.Dynamic && !Contains(tools, call.ToolName))
-        {
-            sentCall = new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = true, Dynamic = true };
-        }
-
         var parsed = await ToolCallParser.ParseToolCallAsync(
-            new ParseToolCallOptions(sentCall)
+            new ParseToolCallOptions(call)
             {
                 Tools = tools,
                 RepairToolCall = options.RepairToolCall,
@@ -1006,7 +998,7 @@ internal static class Generation
         return new GeneratedToolCall(parsed.ToolCallId, parsed.ToolName, parsed.Input.GetRawText(), parsed.ProviderMetadata)
         {
             ProviderExecuted = parsed.ProviderExecuted,
-            Dynamic = parsed.Invalid || ReferenceEquals(sentCall, call) ? parsed.Dynamic : call.Dynamic,
+            Dynamic = parsed.Dynamic,
             Invalid = parsed.Invalid,
             Error = parsed.Error,
             Title = parsed.Title,
