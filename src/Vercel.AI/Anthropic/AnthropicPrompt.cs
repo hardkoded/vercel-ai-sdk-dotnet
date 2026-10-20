@@ -5,6 +5,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Anthropic;
@@ -43,14 +44,15 @@ public static class AnthropicPrompt
         bool sendReasoning = true,
         AnthropicCacheControlValidator? cacheControl = null,
         IReadOnlyDictionary<string, string>? providerToolNames = null,
-        IReadOnlyDictionary<string, string>? toolsetNames = null)
+        IReadOnlyDictionary<string, string>? toolsetNames = null,
+        AnthropicMediaPartConverter? convertMediaPart = null)
     {
         if (prompt == null)
         {
             throw new ArgumentNullException(nameof(prompt));
         }
 
-        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames);
+        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames, convertMediaPart);
     }
 
     /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
@@ -59,7 +61,8 @@ public static class AnthropicPrompt
         bool sendReasoning = true,
         AnthropicCacheControlValidator? cacheControl = null,
         IReadOnlyDictionary<string, string>? providerToolNames = null,
-        IReadOnlyDictionary<string, string>? toolsetNames = null)
+        IReadOnlyDictionary<string, string>? toolsetNames = null,
+        AnthropicMediaPartConverter? convertMediaPart = null)
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -81,7 +84,7 @@ public static class AnthropicPrompt
             }
             else if (block.Role == "user")
             {
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = ConvertUser(block, warnings, betas, validator) });
+                messages.Add(new JsonObject { ["role"] = "user", ["content"] = ConvertUser(block, warnings, betas, validator, convertMediaPart) });
             }
             else
             {
@@ -247,7 +250,7 @@ public static class AnthropicPrompt
         return system == null && toolChanges == 0 && !inlineOptions;
     }
 
-    private static JsonArray ConvertUser(PromptBlock block, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator)
+    private static JsonArray ConvertUser(PromptBlock block, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, AnthropicMediaPartConverter? convertMediaPart)
     {
         var content = new JsonArray();
         foreach (var message in block.Messages)
@@ -281,6 +284,14 @@ public static class AnthropicPrompt
                 }
                 else if (type == "file")
                 {
+                    var convertedPart = convertMediaPart?.Invoke(part);
+                    if (convertedPart != null)
+                    {
+                        AnthropicJson.Set(convertedPart, "cache_control", cache);
+                        content.Add(convertedPart);
+                        continue;
+                    }
+
                     content.Add(ConvertFile(part, cache, betas));
                 }
             }
@@ -483,7 +494,7 @@ public static class AnthropicPrompt
             return Document(source, title ?? filename, context, citations, cache);
         }
 
-        throw new AiSdkException("Unsupported functionality: media type: " + mediaType);
+        throw new UnsupportedFunctionalityException("media type: " + mediaType, "Unsupported functionality: media type: " + mediaType);
     }
 
     private static JsonObject Document(JsonObject source, string? title, string? context, bool citations, JsonObject? cache)
@@ -866,7 +877,9 @@ public static class AnthropicPrompt
                 {
                     if (part is TextContentPart text)
                     {
-                        parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+                        var textNode = new JsonObject { ["type"] = "text", ["text"] = text.Text };
+                        AnthropicJson.Set(textNode, "providerOptions", Options(text.ProviderOptions));
+                        parts.Add(textNode);
                     }
                     else if (part is FileContentPart file)
                     {
@@ -874,7 +887,9 @@ public static class AnthropicPrompt
                     }
                 }
 
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = parts });
+                var userNode = new JsonObject { ["role"] = "user", ["content"] = parts };
+                AnthropicJson.Set(userNode, "providerOptions", Options(user.ProviderOptions));
+                messages.Add(userNode);
             }
             else if (message is AssistantModelMessage assistant)
             {

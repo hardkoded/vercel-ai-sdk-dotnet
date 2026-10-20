@@ -174,7 +174,7 @@ public sealed class ProviderRequestTests
         yield return Chat("fireworks", "api.fireworks.ai", h => FireworksProvider.Create(Key(), h));
         yield return Chat("groq", "api.groq.com", h => GroqProvider.Create(Key(), h));
         yield return Chat("huggingface", "router.huggingface.co", h => HuggingFaceProvider.Create(Key(), h));
-        yield return Chat("minimax", "api.minimax.io", h => MiniMaxProvider.Create(Key(), h));
+        yield return Row("api.minimax.io/anthropic/v1/messages", "x-api-key", "secret", h => global::Vercel.AI.MiniMax.MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = "secret" }, h), "chat");
         yield return Chat("moonshot", "api.moonshot.ai", h => MoonshotProvider.Create(Key(), h));
         yield return Chat("perplexity", "api.perplexity.ai", h => PerplexityProvider.Create(Key(), h));
         yield return Chat("together", "api.together.xyz", h => TogetherAIProvider.Create(Key(), h));

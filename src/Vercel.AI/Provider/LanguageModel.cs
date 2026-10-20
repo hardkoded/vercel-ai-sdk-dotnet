@@ -1387,6 +1387,12 @@ public sealed class LanguageModelCallOptions
 
     /// <summary>When true, the stream includes one raw provider chunk for each event.</summary>
     public bool IncludeRawChunks { get; set; }
+
+    /// <summary>Copies the options, so a provider can adjust them without changing the caller's object.</summary>
+    internal LanguageModelCallOptions Copy()
+    {
+        return (LanguageModelCallOptions)MemberwiseClone();
+    }
 }
 
 /// <summary>Result of <see cref="ILanguageModel.DoGenerateAsync"/>.</summary>
