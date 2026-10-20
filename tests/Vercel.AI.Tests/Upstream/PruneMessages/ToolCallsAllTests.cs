@@ -32,15 +32,6 @@ public sealed class ToolCallsAllTests
               {
                 "content": [
                   {
-                    "text": "I need to get the weather in Tokyo and Busan.",
-                    "type": "reasoning"
-                  }
-                ],
-                "role": "assistant"
-              },
-              {
-                "content": [
-                  {
                     "text": "I have got the weather in Tokyo and Busan.",
                     "type": "reasoning"
                   },

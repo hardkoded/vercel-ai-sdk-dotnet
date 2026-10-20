@@ -287,12 +287,21 @@ public static class MessagePruning
     {
         if (group.Count == 1 && group[0] is AssistantModelMessage assistant)
         {
-            var kept = new List<AssistantContentPart>();
-            foreach (var entry in EntriesOf(group))
+            var entries = EntriesOf(group);
+            var keepParts = new bool[entries.Count];
+            for (var index = 0; index < entries.Count; index++)
             {
-                if (keep(entry))
+                keepParts[index] = keep(entries[index]);
+            }
+
+            PruneOrphanedReasoning(entries, keepParts);
+
+            var kept = new List<AssistantContentPart>();
+            for (var index = 0; index < entries.Count; index++)
+            {
+                if (keepParts[index])
                 {
-                    kept.Add((AssistantContentPart)entry.Source);
+                    kept.Add((AssistantContentPart)entries[index].Source);
                 }
             }
 
@@ -316,6 +325,48 @@ public static class MessagePruning
 
         return group;
     }
+
+    // Consecutive reasoning parts can belong to the same provider item.
+    // Remove the whole group when its following content was pruned.
+    private static void PruneOrphanedReasoning(List<Entry> entries, bool[] keepParts)
+    {
+        for (var reasoningIndex = 0; reasoningIndex < entries.Count; reasoningIndex++)
+        {
+            if (!IsReasoning(entries[reasoningIndex]))
+            {
+                continue;
+            }
+
+            var reasoningEndIndex = reasoningIndex + 1;
+            while (reasoningEndIndex < entries.Count && IsReasoning(entries[reasoningEndIndex]))
+            {
+                reasoningEndIndex++;
+            }
+
+            var followingPartIndex = reasoningEndIndex;
+            var hasFollowingPart = false;
+            var hasKeptFollowingPart = false;
+
+            while (followingPartIndex < entries.Count && !IsReasoning(entries[followingPartIndex]))
+            {
+                hasFollowingPart = true;
+                hasKeptFollowingPart |= keepParts[followingPartIndex];
+                followingPartIndex++;
+            }
+
+            if (hasFollowingPart && !hasKeptFollowingPart)
+            {
+                for (var index = reasoningIndex; index < reasoningEndIndex; index++)
+                {
+                    keepParts[index] = false;
+                }
+            }
+
+            reasoningIndex = followingPartIndex - 1;
+        }
+    }
+
+    private static bool IsReasoning(Entry entry) => entry.Source is AssistantReasoningPart or AssistantReasoningFilePart;
 
     private static AssistantModelMessage Filter(AssistantModelMessage message, Func<AssistantContentPart, bool> keep)
     {

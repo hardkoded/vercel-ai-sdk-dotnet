@@ -85,6 +85,7 @@ var pruned = Ai.PruneMessages(new PruneMessagesOptions
 
 - `Reasoning`: `PruneReasoning.None` (default), `All`, or `BeforeLastMessage`, which keeps the reasoning of the last message. Reasoning means `AssistantReasoningPart` and `AssistantReasoningFilePart`. Regular `AssistantFilePart` parts stay.
 - `ToolCalls`: a list of rules. `PruneToolCallsRule.All()`, `BeforeLastMessage()`, and `BeforeLastMessages(n)` take an optional list of tool names. Without names a rule prunes every tool. Calls, results, and approvals in the kept trailing messages stay, and so does the originating tool call of a kept approval response. An approval response whose request is unknown is pruned when the rule names tools.
+  Reasoning (`AssistantReasoningPart` and `AssistantReasoningFilePart`) that only precedes pruned content is pruned too. A run of consecutive reasoning parts is one group: it goes when everything after it, up to the next reasoning part, was pruned, and stays when any of that content stays or when nothing follows it.
 - `EmptyMessages`: `PruneEmptyMessages.Remove` (default) drops messages that are empty after pruning, `Keep` keeps them.
 
 Consecutive tool messages (results and approval responses) count as one message, as upstream's tool message holds several parts.
