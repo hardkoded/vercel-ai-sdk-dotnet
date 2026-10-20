@@ -167,12 +167,13 @@ internal static class OpenAIResponsesSchema
             ("id", String),
             ("call_id", String),
             ("status", Enum("in_progress", "completed", "incomplete")),
-            ("action", Object(("commands", StringArray))))),
+            ("action", Object(("commands", StringArray), ("timeout_ms", Nullish(Number)), ("max_output_length", Nullish(Number)))))),
         ("compaction", Object(("id", String), ("encrypted_content", String))),
         ("shell_call_output", Object(
             ("id", String),
             ("call_id", String),
             ("status", Enum("in_progress", "completed", "incomplete")),
+            ("max_output_length", Nullish(Number)),
             ("output", Array(Object(
                 ("stdout", String),
                 ("stderr", String),

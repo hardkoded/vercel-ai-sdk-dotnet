@@ -1223,7 +1223,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     private static bool IsKind(JsonNode? node, JsonValueKind kind) => node is JsonValue value && value.GetValueKind() == kind;
 
-    // The shell output schema: { output: { stdout, stderr, outcome: { type: "timeout" } | { type: "exit", exitCode } }[] }.
+    // The shell output schema: { maxOutputLength?: number, output: { stdout, stderr, outcome: { type: "timeout" } | { type: "exit", exitCode } }[] }.
     private static JsonObject ShellCallOutput(string callId, string outputJson)
     {
         JsonNode? parsed;
@@ -1236,7 +1236,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The shell tool result is not valid JSON.", exception);
         }
 
-        if ((parsed as JsonObject)?["output"] is not JsonArray items)
+        if (parsed is not JsonObject parsedObject || parsedObject["output"] is not JsonArray items)
         {
             throw new AiSdkException("The shell tool result needs an output array.");
         }
@@ -1269,7 +1269,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             });
         }
 
-        return new JsonObject { ["type"] = "shell_call_output", ["call_id"] = callId, ["output"] = output };
+        var shellCallOutput = new JsonObject { ["type"] = "shell_call_output", ["call_id"] = callId };
+        if (IsKind(parsedObject["maxOutputLength"], JsonValueKind.Number))
+        {
+            shellCallOutput["max_output_length"] = parsedObject["maxOutputLength"]!.DeepClone();
+        }
+
+        shellCallOutput["output"] = output;
+        return shellCallOutput;
     }
 
     private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(AssistantModelMessage assistant, GeneratedToolCall call) =>
