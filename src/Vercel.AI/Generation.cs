@@ -129,7 +129,7 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>())).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>(), LanguageModelRequestMetadata.Empty, new LanguageModelResponseMetadata(generated.ResponseId ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-"), generated.ResponseTimestamp ?? DateTimeOffset.UtcNow, generated.ResponseModelId ?? current.ModelId, generated.ResponseHeaders))).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -242,6 +242,7 @@ internal static class Generation
                 }
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
+                callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
@@ -398,6 +399,13 @@ internal static class Generation
                                 sources.Add(generatedSource);
                                 buffer.Add(new SourcePart(generatedSource));
                                 break;
+                            case RawStreamPart raw:
+                                if (options.Include?.RawChunks == true)
+                                {
+                                    buffer.Add(new RawPart(raw.RawJson));
+                                }
+
+                                break;
                             case FinishStreamPart done:
                                 finish = done.FinishReason;
                                 rawFinish = done.RawFinishReason;
@@ -460,7 +468,8 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes)).ConfigureAwait(false);
+                var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes, stepRequest, stepResponse)).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -471,10 +480,7 @@ internal static class Generation
                     buffer.Add(toolResult.IsError ? new ToolErrorPart(toolResult) : new ToolResultPart(toolResult));
                 }
 
-                buffer.Add(new StepFinishPart(
-                    step,
-                    new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers),
-                    rawFinish));
+                buffer.Add(new StepFinishPart(step, stepResponse, rawFinish));
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -915,7 +921,7 @@ internal static class Generation
         }
 
         var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, timing.Request, new StepResponse(timing.Response.Id, timing.Response.Timestamp, timing.Response.ModelId, timing.Response.Headers, responseMessages.ToArray()), generated.RawFinishReason);
     }
 
     // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
@@ -1050,8 +1056,12 @@ internal static class Generation
     }
 
     // What FinishStepAsync needs to compute the performance of one step.
-    private sealed class StepTiming(Func<double> now, double startMs, double responseTimeMs, IReadOnlyList<double> outputChunkTimesMs)
+    private sealed class StepTiming(Func<double> now, double startMs, double responseTimeMs, IReadOnlyList<double> outputChunkTimesMs, LanguageModelRequestMetadata request, LanguageModelResponseMetadata response)
     {
+        public LanguageModelRequestMetadata Request { get; } = request;
+
+        public LanguageModelResponseMetadata Response { get; } = response;
+
         public Func<double> Now { get; } = now;
 
         public double StartMs { get; } = startMs;
@@ -1711,6 +1721,18 @@ public sealed class StreamTextResult
         FinishReason = finishReason;
         Usage = usage;
         Steps = steps;
+        Request = FromLastStep(steps, step => step.Request, LanguageModelRequestMetadata.Empty);
+        Response = FromLastStep(steps, step => step.Response, StepResponse.Empty);
+
+        // Steps carries the failure. These tasks fail with it, so a caller that never awaits them does not leave an unobserved exception.
+        _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    private static async Task<T> FromLastStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select, T whenEmpty)
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return completed.Count == 0 ? whenEmpty : select(completed[completed.Count - 1]);
     }
 
     /// <summary>Text deltas only.</summary>
@@ -1742,4 +1764,10 @@ public sealed class StreamTextResult
 
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
+
+    /// <summary>Request metadata of the last step. Body and messages are set only when <see cref="StreamTextOptions.Include"/> asks for them. Completes when the stream finishes.</summary>
+    public Task<LanguageModelRequestMetadata> Request { get; }
+
+    /// <summary>Response metadata of the last step, with the messages of every step. Completes when the stream finishes.</summary>
+    public Task<StepResponse> Response { get; }
 }
