@@ -18,6 +18,12 @@ public static class AmazonBedrockEndpoints
     /// <summary>Environment variable that overrides every AWS service endpoint.</summary>
     public const string GlobalEndpointEnvironmentVariable = "AWS_ENDPOINT_URL";
 
+    /// <summary>Environment variable that supplies the AWS region.</summary>
+    public const string RegionEnvironmentVariable = "AWS_REGION";
+
+    internal static string DefaultRegion() =>
+        FirstSet(Environment.GetEnvironmentVariable(RegionEnvironmentVariable)) ?? "us-east-1";
+
     /// <summary>
     /// Returns <paramref name="baseUrl"/> when it is set, then the service endpoint environment variable, then
     /// <c>AWS_ENDPOINT_URL</c>. Otherwise returns <c>https://{service}.{region}.{suffix}</c>.

@@ -13,8 +13,14 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Settings for the OpenAI-compatible Bedrock Mantle endpoint.</summary>
 public sealed class BedrockMantleOptions
 {
-    /// <summary>AWS region. Defaults to <c>us-east-1</c>.</summary>
-    public string Region { get; set; } = "us-east-1";
+    /// <summary>AWS region. Falls back to <c>AWS_REGION</c>, then <c>us-east-1</c>.</summary>
+    public string Region
+    {
+        get => _region ?? AmazonBedrockEndpoints.DefaultRegion();
+        set => _region = value;
+    }
+
+    private string? _region;
 
     /// <summary>Bearer token. When set, SigV4 is not used. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>.</summary>
     public string? ApiKey { get; set; }
@@ -43,6 +49,11 @@ public sealed class BedrockMantleOptions
 
     /// <summary>Extra headers sent on every call. The SDK user-agent suffix is appended.</summary>
     public Dictionary<string, string> Headers { get; } = new();
+
+    /// <summary>
+    /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
+    /// </summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
 }
 
 /// <summary>Mantle URL rules. Some model ids are served under <c>/openai/v1</c>.</summary>
@@ -183,18 +194,18 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Inner().DoGenerateAsync(options, cancellationToken);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Inner().DoStreamAsync(options, cancellationToken);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoStreamAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
-    private ILanguageModel Inner()
+    private async Task<ILanguageModel> InnerAsync(CancellationToken cancellationToken)
     {
         var options = _provider.Options;
         var baseUrl = BedrockMantleRoutes.Url(options.Region, options.BaseUrl, ModelId, string.Empty);
@@ -217,7 +228,24 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             // The signing handler replaces the Authorization header, so any non-empty key does.
             ApiKey = "bedrock-mantle",
         };
-        var headers = options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
+
+        // Precedence: static Headers, then HeadersProvider, then per-call headers (applied by the OpenAI model).
+        var headers = options.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value, StringComparer.OrdinalIgnoreCase);
+        if (options.HeadersProvider != null)
+        {
+            foreach (var pair in await options.HeadersProvider(cancellationToken).ConfigureAwait(false))
+            {
+                if (pair.Value == null)
+                {
+                    headers.Remove(pair.Key);
+                }
+                else
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+        }
+
         foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
         {
             openAI.Headers[header.Key] = header.Value;
