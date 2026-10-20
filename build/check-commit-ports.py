@@ -203,11 +203,19 @@ def tree_links() -> list[dict[str, str]]:
     return [{"upstreamId": link["upstreamId"], "coverage": link["coverage"]} for link in report.load_links()]
 
 
-def find_link(test_id: str, links: list[dict[str, str]]) -> dict[str, str] | None:
+def find_link(test_id: str, links: list[dict[str, str]], ids: list[str]) -> tuple[dict[str, str] | None, bool]:
+    """The link for a test id, and whether the match is ambiguous. A suffix
+    link counts only when exactly one test of the commit ends with it."""
     for link in links:
-        if link.get("upstreamId") == test_id or (link.get("suffix") and test_id.endswith(link["suffix"])):
-            return link
-    return None
+        if link.get("upstreamId") == test_id:
+            return link, False
+    for link in links:
+        suffix = link.get("suffix")
+        if suffix and test_id.endswith(suffix):
+            if sum(1 for other in ids if other.endswith(suffix)) > 1:
+                return None, True
+            return link, False
+    return None, False
 
 
 def normalize(name: str) -> str:
@@ -229,25 +237,29 @@ def not_ported_entries(body: str) -> set[str]:
             continue
         text = re.sub(r"^\s*(?:[-*+]|\d+\.)\s*", "", line)
         candidates = re.findall(r"`([^`]+)`", text) + [text, re.split(r":\s", text)[0]]
-        for candidate in candidates:
-            entries.add(normalize(candidate))
-            if "::" not in candidate:
-                entries.add(normalize(candidate.split(" > ")[-1]))
+        entries.update(normalize(candidate) for candidate in candidates)
     return entries
 
 
 def acknowledged(test: dict[str, object], entries: set[str]) -> bool:
-    """A test is acknowledged when an entry is exactly its title, or exactly
-    its describe name (the full chain or its last part) for a suite-wide gap."""
-    names = [str(test["title"])]
-    if test["suite"]:
-        names += [str(test["suite"]), str(test["suite"]).split(" > ")[-1]]
-    if any(normalize(name) in entries for name in names):
-        return True
-    # "describe chain::title", as the report prints ids. The chain may be a tail
-    # of the full chain, so `doGenerate > shell tool::title` names one test.
-    key = normalize(f"{test['suite']}::{test['title']}")
-    return any("::" in entry and (key == entry or key.endswith(" > " + entry)) for entry in entries)
+    """An entry is kept as written. A bare entry names a test title or a
+    describe name (suite-wide). A qualified entry (`chain > title`,
+    `chain::title`, or `outer > inner`) must be a tail of the test's own chain,
+    so it never reaches the same title in another suite."""
+    title = normalize(str(test["title"]))
+    suite = normalize(str(test["suite"]))
+    bare = {title}
+    qualified = []
+    if suite:
+        bare.update({suite, suite.split(" > ")[-1]})
+        qualified = [f"{suite} > {title}", f"{suite}::{title}", suite]
+    for entry in entries:
+        if " > " in entry or "::" in entry:
+            if any(name == entry or name.endswith(" > " + entry) for name in qualified):
+                return True
+        elif entry in bare:
+            return True
+    return False
 
 
 def self_test() -> None:
@@ -278,6 +290,18 @@ def self_test() -> None:
     assert not acknowledged({"title": "should do it", "suite": "Root > doStream > shell tool"}, entries)
     assert acknowledged({"title": "should stream", "suite": "Root > doStream > shell tool"}, entries)
     assert not acknowledged({"title": "should stream", "suite": "Root > doStream > other shell tool"}, entries)
+    entries = not_ported_entries("## Not ported\n- `suite A > should x`\n")
+    assert acknowledged({"title": "should x", "suite": "suite A"}, entries)
+    assert not acknowledged({"title": "should x", "suite": "suite B"}, entries)
+    assert not acknowledged({"title": "should x", "suite": ""}, entries)
+    entries = not_ported_entries("## Not ported\n- `shell tool`\n- `should y`\n")
+    assert acknowledged({"title": "z", "suite": "Root > shell tool"}, entries)
+    assert acknowledged({"title": "should y", "suite": "Other"}, entries)
+    one = [{"suffix": "::dup title", "coverage": "Covered"}]
+    ids = ["a.test.ts::dup title", "b.test.ts::dup title", "c.test.ts::solo"]
+    assert find_link(ids[0], one, ids) == (None, True)
+    assert find_link(ids[0], one, ids[:1] + ids[2:])[0] == one[0]
+    assert find_link(ids[1], [{"upstreamId": ids[1], "coverage": "Covered"}], ids)[0] is not None
     print("self-test passed")
 
 
@@ -320,13 +344,17 @@ def main() -> None:
 
     rows = []
     skipped = []
-    for test in commit_tests(repo, args.sha):
+    found = commit_tests(repo, args.sha)
+    ids = [str(test["id"]) for test in found]
+    for test in found:
         scope = scope_of(str(test["file"]))
         if scope != "in-scope":
             skipped.append((test, scope))
             continue
-        link = find_link(str(test["id"]), links)
-        if link:
+        link, ambiguous = find_link(str(test["id"]), links, ids)
+        if ambiguous:
+            status = "AMBIGUOUS"
+        elif link:
             status = "COVERED" if link["coverage"] == "Covered" else "PARTIAL"
         elif ack and acknowledged(test, ack):
             status = "ACKNOWLEDGED"
@@ -341,10 +369,10 @@ def main() -> None:
         print("\nOut of scope:")
         for test, scope in skipped:
             print(f"  ({scope}) {test['id']}")
-    names = ("COVERED", "PARTIAL", "ACKNOWLEDGED", "MISSING")
+    names = ("COVERED", "PARTIAL", "ACKNOWLEDGED", "AMBIGUOUS", "MISSING")
     counts = {name: sum(1 for status, _ in rows if status == name) for name in names}
     print("\n" + ", ".join(f"{count} {name}" for name, count in counts.items()))
-    sys.exit(1 if counts["MISSING"] else 0)
+    sys.exit(1 if counts["MISSING"] or counts["AMBIGUOUS"] else 0)
 
 
 if __name__ == "__main__":
