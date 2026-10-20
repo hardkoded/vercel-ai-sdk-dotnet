@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Google;
 using Vercel.AI.Provider;
 
@@ -81,5 +82,35 @@ public sealed class DoStreamTests
         GoogleUpstream.JsonEqual(
             finish.ProviderMetadata!.Value,
             "{\"google\":{\"promptFeedback\":null,\"groundingMetadata\":null,\"urlContextMetadata\":null,\"safetyRatings\":" + safetyRatings + ",\"usageMetadata\":null,\"finishMessage\":null,\"serviceTier\":null}}");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream::preserves grounding per streamed request (terminal grounding: %s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_grounding_per_streamed_request(bool terminalGrounding)
+    {
+        var (first, last) = DoGenerateLongDecodeContinuationTests.ReadContinuationGroundingResponses();
+        if (terminalGrounding)
+        {
+            last["candidates"]![0]!["groundingMetadata"] = first["candidates"]![0]!["groundingMetadata"]!.DeepClone();
+        }
+
+        var handler = new SequencedHandler()
+            .Sse("data: " + first.ToJsonString() + "\n\n")
+            .Sse("data: " + last.ToJsonString() + "\n\n");
+        var options = GoogleUpstream.Hello();
+        options.MaxOutputTokens = 33_280;
+        var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key" }, handler);
+
+        var events = await GoogleUpstream.Collect(await provider.LanguageModel("gemini-pro").DoStreamAsync(options, CancellationToken.None));
+        var finish = events.OfType<FinishStreamPart>().First();
+
+        Assert.Equal(2, handler.Bodies.Count);
+        var lastGrounding = last["candidates"]![0]!["groundingMetadata"];
+        var expected = new JsonArray(first["candidates"]![0]!["groundingMetadata"]!.DeepClone(), lastGrounding?.DeepClone());
+        GoogleUpstream.JsonEqual(finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("groundingMetadataPerRequest"), expected.ToJsonString());
+        Assert.Equal(33_246, finish.Usage.InputTokens);
+        Assert.Equal(33_306, finish.Usage.OutputTokens);
     }
 }

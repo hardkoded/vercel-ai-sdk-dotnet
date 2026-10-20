@@ -64,6 +64,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var content = new List<GeneratedContent>();
         JsonElement? usage = null;
         int? firstPromptTokenCount = null;
+        // Grounding metadata of each request, in order. A request without grounding contributes null.
+        var groundingPerRequest = new JsonArray();
         var isContinued = false;
         var hops = 0;
         string? candidateToken;
@@ -75,6 +77,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
             var root = document.RootElement;
             var candidate = FirstCandidate(root);
             candidateToken = candidate is { } found ? GoogleJson.String(found, "continuationToken") : null;
+            groundingPerRequest.Add(candidate is { } grounded && grounded.TryGetProperty("groundingMetadata", out var requestGrounding) && requestGrounding.ValueKind == JsonValueKind.Object
+                ? JsonNode.Parse(requestGrounding.GetRawText())
+                : null);
             var hopUsage = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("usageMetadata", out var usageValue) ? usageValue.Clone() : (JsonElement?)null;
             if (!isContinued && hopUsage is { ValueKind: JsonValueKind.Object } first && first.TryGetProperty("promptTokenCount", out var promptCount) && promptCount.TryGetInt32(out var promptTokens))
             {
@@ -109,7 +114,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         using var lastDocument = JsonDocument.Parse(last?.ToJsonString() ?? "{}");
         var result = GoogleResponse.Parse(lastDocument.RootElement, context);
         content.AddRange(result.Content);
-        var metadata = GoogleResponse.WithLongDecode(result.ProviderMetadata, candidateToken, isContinued ? firstPromptTokenCount : null, null);
+        var metadata = GoogleResponse.WithLongDecode(result.ProviderMetadata, candidateToken, isContinued ? firstPromptTokenCount : null, null, isContinued ? groundingPerRequest : null);
         return new LanguageModelGenerateResult(
             content,
             result.FinishReason,
@@ -183,6 +188,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
         int? initialPromptTokenCount = null;
         string? pendingToken = null;
         string? lastToken = null;
+        // Grounding metadata of the completed requests of an automatically continued response, and of the open request.
+        var groundingPerRequest = new JsonArray();
+        JsonNode? requestGrounding = null;
         JsonElement? metadata = null;
         var clientTool = false;
         string? confirmedBlock = null;
@@ -200,6 +208,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
                 requestBody = (JsonObject)prepared.Body.DeepClone();
                 requestBody["continuationToken"] = pendingToken;
                 pendingToken = null;
+                groundingPerRequest.Add(requestGrounding);
+                requestGrounding = null;
             }
 
             Exception? failure = null;
@@ -318,6 +328,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                         if (candidates[0].TryGetProperty("groundingMetadata", out var grounding))
                         {
+                            if (grounding.ValueKind == JsonValueKind.Object)
+                            {
+                                requestGrounding = JsonNode.Parse(grounding.GetRawText());
+                            }
+
                             foreach (var source in GoogleResponse.Sources(grounding, StreamContext(prepared)))
                             {
                                 if (seenSources.Add(source.Url))
@@ -431,7 +446,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         // Only surface the token when the response stopped early (budget used up, or continuing failed), not for the
         // checkpoint tokens of a stream that finished normally.
         var exposeToken = lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
-        metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null);
+        metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null, groundingPerRequest.Count > 0 ? new JsonArray([.. groundingPerRequest.Select(item => item?.DeepClone()), requestGrounding?.DeepClone()]) : null);
         yield return new FinishStreamPart(finish, usage, rawFinish, metadata);
     }
 

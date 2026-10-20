@@ -274,9 +274,9 @@ public static class GoogleResponse
     /// Adds the long decode fields to provider metadata built by <see cref="Parse"/>, and replaces <c>usageMetadata</c> when
     /// <paramref name="usage"/> is set. Absent values are not written.
     /// </summary>
-    internal static JsonElement? WithLongDecode(JsonElement? metadata, string? continuationToken, int? initialPromptTokenCount, JsonElement? usage)
+    internal static JsonElement? WithLongDecode(JsonElement? metadata, string? continuationToken, int? initialPromptTokenCount, JsonElement? usage, JsonArray? groundingMetadataPerRequest = null)
     {
-        if (metadata is not { ValueKind: JsonValueKind.Object } element || (continuationToken == null && initialPromptTokenCount == null && usage == null))
+        if (metadata is not { ValueKind: JsonValueKind.Object } element || (continuationToken == null && initialPromptTokenCount == null && usage == null && groundingMetadataPerRequest == null))
         {
             return metadata;
         }
@@ -298,6 +298,11 @@ public static class GoogleResponse
             if (initialPromptTokenCount is { } initial)
             {
                 payload["initialPromptTokenCount"] = initial;
+            }
+
+            if (groundingMetadataPerRequest != null)
+            {
+                payload["groundingMetadataPerRequest"] = groundingMetadataPerRequest.DeepClone();
             }
 
             root[property.Name] = payload;
