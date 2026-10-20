@@ -132,7 +132,7 @@ The generation loop passes both options on from `GenerateTextOptions` and `Strea
 
 A call that stays invalid is kept in the step as a `GeneratedToolCall` with `Invalid` set. It is never executed and never asks for approval. The loop answers it with an error tool result (`ExecutedTool.IsError`, also a `GeneratedToolResult` in `Content`, and a `ToolErrorPart` in the stream). The model reads the error as `error-text` in the form `Name: message`, for example `AI_NoSuchToolError: Model tried to call unavailable tool 'x'. No tools are available.`, without a stack trace. A failing repair function gives a `ToolCallRepairError` whose message names the failure the same way. The loop then goes on to the next step, because every call has an answer.
 
-In the UI message stream an invalid call is a `tool-input-error` chunk, followed by a `tool-output-error` chunk. Other tool calls carry `title`, `toolMetadata`, and `dynamic` when they have them. An invalid call is marked `dynamic` only when its tool is unknown, because the UI writer has no tool list.
+In the UI message stream an invalid call is a `tool-input-error` chunk, followed by a `tool-output-error` chunk. Other tool calls carry `title`, `toolMetadata`, and `dynamic` when they have them, and so do `tool-input-start` (`title`, `toolMetadata`, `dynamic`) and the tool output chunks (`toolMetadata`, `dynamic`). An invalid call is marked `dynamic` only when its tool is unknown, because the UI writer has no tool list.
 
 ## Provider-defined tools
 
@@ -186,3 +186,7 @@ var tools = await McpClient.ConnectAsync(transport);
 A non-2xx response to the event stream throws an `MCPClientError` with `StatusCode`, `Url`, and `ResponseBody`. Its message is `MCP SSE Transport Error: {status} {reason}: {body}`, plus a hint to use the `http` transport on a 405. A non-2xx response to a `SendAsync` post throws the same error, with the message `MCP SSE Transport Error: POSTing to endpoint (HTTP {status}): {body}`. The `endpoint` event must stay on the origin of the event stream.
 
 The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
+
+## Tool result title, metadata and dynamic flag
+
+`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`.

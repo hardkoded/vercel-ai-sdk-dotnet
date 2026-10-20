@@ -204,6 +204,7 @@ public sealed class UIMessageStreamResult : IResult
         string? textId = null;
         string? reasoningId = null;
         var providerExecutedIds = new HashSet<string>(StringComparer.Ordinal);
+        var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
         onError ??= _ => "An error occurred.";
 
         yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
@@ -259,9 +260,19 @@ public sealed class UIMessageStreamResult : IResult
                     }
 
                     AddProviderMetadata(inputStartChunk, inputStart.ProviderMetadata);
+                    if (inputStart.ToolMetadata is { } inputStartMetadata)
+                    {
+                        inputStartChunk["toolMetadata"] = JsonSerializer.SerializeToNode(inputStartMetadata);
+                    }
+
                     if (inputStart.Dynamic)
                     {
                         inputStartChunk["dynamic"] = true;
+                    }
+
+                    if (inputStart.Title != null)
+                    {
+                        inputStartChunk["title"] = inputStart.Title;
                     }
 
                     yield return Frame(inputStartChunk);
@@ -301,6 +312,11 @@ public sealed class UIMessageStreamResult : IResult
                         toolInput["dynamic"] = true;
                     }
 
+                    if (call.ToolCall.Invalid && call.ToolCall.Error is not NoSuchToolError)
+                    {
+                        knownToolInvalidIds.Add(call.ToolCall.ToolCallId);
+                    }
+
                     if (call.ToolCall.Invalid)
                     {
                         toolInput["errorText"] = onError(ErrorMessage.ToErrorString(call.ToolCall.Error!));
@@ -337,6 +353,12 @@ public sealed class UIMessageStreamResult : IResult
                         AddProviderMetadata(errorOutput, toolError.Result.ProviderMetadata);
                     }
 
+                    AddToolMetadata(errorOutput, toolError.Result.ToolMetadata);
+                    if (toolError.Result.Dynamic && !knownToolInvalidIds.Contains(toolError.Result.ToolCallId))
+                    {
+                        errorOutput["dynamic"] = true;
+                    }
+
                     yield return Frame(errorOutput);
                     break;
                 case ToolResultPart toolResult:
@@ -350,6 +372,12 @@ public sealed class UIMessageStreamResult : IResult
                     {
                         toolOutput["providerExecuted"] = true;
                         AddProviderMetadata(toolOutput, toolResult.Result.ProviderMetadata);
+                    }
+
+                    AddToolMetadata(toolOutput, toolResult.Result.ToolMetadata);
+                    if (toolResult.Result.Dynamic)
+                    {
+                        toolOutput["dynamic"] = true;
                     }
 
                     yield return Frame(toolOutput);
@@ -557,6 +585,14 @@ public sealed class UIMessageStreamResult : IResult
     private static string Frame(JsonObject payload)
     {
         return "data: " + payload.ToJsonString() + "\n\n";
+    }
+
+    private static void AddToolMetadata(JsonObject payload, IReadOnlyDictionary<string, JsonElement>? metadata)
+    {
+        if (metadata != null)
+        {
+            payload["toolMetadata"] = JsonSerializer.SerializeToNode(metadata);
+        }
     }
 
     private static void AddProviderMetadata(JsonObject payload, JsonElement? metadata)
