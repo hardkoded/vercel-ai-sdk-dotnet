@@ -193,7 +193,8 @@ public static class GoogleResponse
             serverId = GoogleJson.String(server, "id") ?? context.NextId();
             var toolType = GoogleJson.String(server, "toolType") ?? string.Empty;
             var args = server.TryGetProperty("args", out var serverArgs) ? serverArgs.GetRawText() : "{}";
-            content.Add(new GoogleToolCall(serverId, "server:" + toolType, args, ServerMetadata(part, context, serverId, toolType), true));
+            // Gemini runs a server tool without it being declared, so the call is dynamic.
+            content.Add(new GoogleToolCall(serverId, "server:" + toolType, args, ServerMetadata(part, context, serverId, toolType), true) { Dynamic = true });
             return;
         }
 
@@ -458,9 +459,6 @@ public sealed class GoogleToolCall : GeneratedToolCall
     {
         ProviderExecuted = providerExecuted;
     }
-
-    /// <summary>True when Gemini executed the tool itself.</summary>
-    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A provider-executed tool result.</summary>
