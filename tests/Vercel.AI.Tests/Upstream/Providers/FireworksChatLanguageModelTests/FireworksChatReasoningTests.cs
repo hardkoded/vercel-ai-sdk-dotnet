@@ -30,6 +30,7 @@ public sealed class FireworksChatReasoningTests
         Assert.Equal(effort, UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
         Assert.Equal("reasoning \"" + reasoning + "\" is not directly supported by this model. mapped to effort \"" + effort + "\".", warning.Message);
     }
 
@@ -57,11 +58,13 @@ public sealed class FireworksChatReasoningTests
             warning =>
             {
                 Assert.Equal("unsupported", warning.Type);
+                Assert.Equal("topK", warning.Feature);
                 Assert.Equal("topK", warning.Message);
             },
             warning =>
             {
                 Assert.Equal("compatibility", warning.Type);
+                Assert.Equal("reasoning", warning.Feature);
                 Assert.Equal("reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".", warning.Message);
             });
     }

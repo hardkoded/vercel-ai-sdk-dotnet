@@ -1045,6 +1045,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             {
                 warnings.Add(new CallWarning(
                     "unsupported",
+                    "reasoning",
                     "Portable reasoning is not supported for this model and will be ignored. If the model supports a provider-specific reasoning configuration, use providerOptions.amazonBedrock.reasoningConfig."));
             }
         }

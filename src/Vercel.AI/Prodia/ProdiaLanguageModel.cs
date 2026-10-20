@@ -157,7 +157,9 @@ public sealed class ProdiaLanguageModel : ILanguageModel
             ("responseFormat", options.JsonSchema != null),
             ("reasoning", ReasoningMap.IsCustomReasoning(options.Reasoning)),
         };
-        return unsupported.Where(item => item.Present).Select(item => new CallWarning("unsupported", item.Feature)).ToList();
+        return unsupported.Where(item => item.Present)
+            .Select(item => new CallWarning("unsupported", item.Feature, item.Feature == "reasoning" ? "This provider does not support reasoning configuration." : null))
+            .ToList();
     }
 
     /// <summary>The last user message's text, after the system message when there is one.</summary>

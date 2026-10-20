@@ -146,17 +146,17 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
         if (options.FrequencyPenalty.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "frequencyPenalty"));
+            warnings.Add(new CallWarning("unsupported", "frequencyPenalty", null));
         }
 
         if (options.PresencePenalty.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "presencePenalty"));
+            warnings.Add(new CallWarning("unsupported", "presencePenalty", null));
         }
 
         if (options.StopSequences != null)
         {
-            warnings.Add(new CallWarning("unsupported", "stopSequences"));
+            warnings.Add(new CallWarning("unsupported", "stopSequences", null));
         }
 
         var input = XaiResponsesInput.Convert(options.Prompt, warnings);
@@ -251,7 +251,7 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
 
         if (!XaiReasoningEffort.Supports(ModelId))
         {
-            warnings.Add(new CallWarning("unsupported", "reasoning \"" + reasoning + "\" is not supported by this model."));
+            warnings.Add(new CallWarning("unsupported", "reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
             return null;
         }
 
@@ -267,7 +267,10 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
         var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, effortMap, mappingWarnings);
         foreach (var warning in mappingWarnings)
         {
-            warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
         }
 
         return effort;

@@ -73,7 +73,7 @@ public sealed class FireworksUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Flux);
         var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { Size = "512x512" }, CancellationToken.None);
-        Assert.Contains(result.CallWarnings, warning => warning.Message == "This model does not support the `size` option. Use `aspectRatio` instead.");
+        Assert.Contains(result.CallWarnings, warning => warning.Feature == "size" && warning.Message == "This model does not support the `size` option. Use `aspectRatio` instead.");
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public sealed class FireworksUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "PNG" };
         var model = Image(capture, Sized);
         var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "1:1" }, CancellationToken.None);
-        Assert.Contains(result.CallWarnings, warning => warning.Message == "This model does not support the `aspectRatio` option.");
+        Assert.Contains(result.CallWarnings, warning => warning.Feature == "aspectRatio" && warning.Message == "This model does not support the `aspectRatio` option.");
     }
 
     [Fact]
@@ -429,7 +429,7 @@ public sealed class FireworksUpstreamTests
         var files = new[] { ImageModelFile.FromFile(new byte[] { 137, 80, 78, 71 }, "image/png") };
         var mask = ImageModelFile.FromFile(new byte[] { 255, 255, 255, 0 }, "image/png");
         var result = await model.DoGenerateAsync(new ImageCallOptions("Edit with mask") { Files = files, Mask = mask }, CancellationToken.None);
-        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit.");
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Feature == "mask" && warning.Message == "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit.");
     }
 
     [Fact]

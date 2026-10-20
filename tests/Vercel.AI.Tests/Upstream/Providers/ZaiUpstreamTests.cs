@@ -42,9 +42,9 @@ public sealed class ZaiUpstreamTests
         Assert.Null(body["seed"]);
         Assert.Null(body["ignoredOption"]);
         Assert.Null(body["tool_choice"]);
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "frequencyPenalty");
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "presencePenalty");
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "seed");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "frequencyPenalty");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "presencePenalty");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "seed");
         Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "toolChoice required. Z.AI currently supports only automatic tool selection.");
     }
 
