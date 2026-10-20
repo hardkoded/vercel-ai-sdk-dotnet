@@ -166,6 +166,15 @@ public sealed class ExecutedTool
     /// <summary>The JSON input of the tool call this result answers, after any repair and refinement. Maps to the result's <c>input</c>.</summary>
     public string? InputJson { get; init; }
 
+    /// <summary>True when the tool is dynamic: a dynamic tool, a provider-executed dynamic call, or an invalid call. Maps to the result's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
+
+    /// <summary>Display title of the tool. Maps to the result's <c>title</c>.</summary>
+    public string? Title { get; init; }
+
+    /// <summary>Metadata of the tool. It stays apart from <see cref="ProviderMetadata"/>. Maps to the result's <c>toolMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
+
     /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
     internal string? ModelOutputType { get; init; }
 
@@ -1112,7 +1121,7 @@ public sealed class ToolApprovalRequestPart : TextStreamPart
 public sealed class ToolInputStartPart : TextStreamPart
 {
     /// <summary>Creates a tool-input-start part.</summary>
-    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic, ToolInputEncoding? inputEncoding = null)
+    public ToolInputStartPart(string id, string toolName, JsonElement? providerMetadata, bool? providerExecuted, bool dynamic, ToolInputEncoding? inputEncoding = null, string? title = null)
         : base("tool-input-start")
     {
         Id = id;
@@ -1121,7 +1130,11 @@ public sealed class ToolInputStartPart : TextStreamPart
         ProviderExecuted = providerExecuted;
         Dynamic = dynamic;
         InputEncoding = inputEncoding;
+        Title = title;
     }
+
+    /// <summary>Display title of the tool. Maps to <c>title</c>.</summary>
+    public string? Title { get; }
 
     /// <summary>Tool call id.</summary>
     public string Id { get; }

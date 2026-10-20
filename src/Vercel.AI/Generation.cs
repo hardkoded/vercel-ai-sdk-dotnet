@@ -384,8 +384,9 @@ internal static class Generation
                                     inputStart.ToolName,
                                     inputStart.ProviderMetadata,
                                     inputStart.ProviderExecuted,
-                                    inputStart.Dynamic ?? false,
-                                    inputStart.InputEncoding));
+                                    FindTool(options, inputStart.ToolName)?.IsDynamic ?? inputStart.Dynamic ?? false,
+                                    inputStart.InputEncoding,
+                                    FindTool(options, inputStart.ToolName)?.Title));
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
                                 outputChunkTimes.Add(ElapsedMs());
@@ -745,11 +746,13 @@ internal static class Generation
     private static ExecutedTool ProviderExecutedResult(GeneratedToolResult result, IReadOnlyList<GeneratedToolCall> toolCalls)
     {
         string? input = null;
+        GeneratedToolCall? matched = null;
         foreach (var call in toolCalls)
         {
             if (string.Equals(call.ToolCallId, result.ToolCallId, StringComparison.Ordinal))
             {
                 input = call.ArgumentsJson;
+                matched = call;
             }
         }
 
@@ -758,6 +761,9 @@ internal static class Generation
             ProviderExecuted = true,
             ProviderMetadata = result.ProviderMetadata,
             InputJson = input,
+            Dynamic = matched?.Dynamic ?? false,
+            Title = matched?.Title,
+            ToolMetadata = matched?.ToolMetadata,
         };
     }
 
@@ -1049,6 +1055,9 @@ internal static class Generation
         return new ExecutedTool(call.ToolCallId, call.ToolName, JsonSerializer.Serialize(new { error = message }), true)
         {
             InputJson = call.ArgumentsJson,
+            Dynamic = true,
+            Title = call.Title,
+            ToolMetadata = call.ToolMetadata,
             ModelOutputType = "error-text",
             ModelOutput = message,
         };
@@ -1330,7 +1339,7 @@ internal static class Generation
 
         if (tool?.Execute == null)
         {
-            return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
+            return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
         }
 
         if (options.ApproveTool != null)
@@ -1338,7 +1347,7 @@ internal static class Generation
             var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
             if (!approved)
             {
-                return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." }, 0);
+                return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." }, 0);
             }
         }
 
@@ -1353,12 +1362,12 @@ internal static class Generation
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
             var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, ModelOutputType = "error-text", ModelOutput = exception.Message };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = exception.Message };
         }
 
         var elapsedMs = now() - startMs;
