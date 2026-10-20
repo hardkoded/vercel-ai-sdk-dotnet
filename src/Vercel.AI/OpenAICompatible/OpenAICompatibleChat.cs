@@ -370,14 +370,14 @@ public static class OpenAICompatibleChat
         foreach (var part in content)
         {
             parts.Add(part is FileContentPart file
-                ? MapFile(file, metadataKey, providerName)
+                ? MapFile(file, metadataKey, providerName, includeProviderOptions: false)
                 : new JsonObject { ["type"] = "text", ["text"] = (part as TextContentPart)?.Text ?? throw Unsupported("custom tool content parts") });
         }
 
         return parts;
     }
 
-    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName)
+    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName, bool includeProviderOptions = true)
     {
         if (file.Url == null && file.Data == null)
         {
@@ -392,7 +392,8 @@ public static class OpenAICompatibleChat
                 ["type"] = "file",
                 ["file"] = new JsonObject { ["file_id"] = fileId },
             };
-            if (file.ProviderOptions != null
+            if (includeProviderOptions
+                && file.ProviderOptions != null
                 && (file.ProviderOptions.TryGetValue(metadataKey, out var custom)
                     || file.ProviderOptions.TryGetValue("openaiCompatible", out custom))
                 && custom.ValueKind == JsonValueKind.Object)
