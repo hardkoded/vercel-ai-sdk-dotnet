@@ -345,7 +345,7 @@ public sealed class UIMessageStreamResult : IResult
                         ["toolCallId"] = toolError.Result.ToolCallId,
                         ["errorText"] = providerError
                             ? ProviderErrorText(toolError.Result.OutputJson)
-                            : onError(toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
+                            : onError(toolError.Result.Error?.Message ?? toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
                     };
                     if (providerError)
                     {

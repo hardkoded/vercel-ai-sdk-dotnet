@@ -17,10 +17,7 @@ public sealed class ResultToolResultsTests
     private const string ValueSchema = "{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"additionalProperties\":false,\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"type\":\"object\"}";
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should contain tool results",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port sends no tool choice when none is set, where upstream sends auto.")]
+    [UpstreamTest(Prefix + "should contain tool results", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_contain_tool_results()
     {
         var model = new TestLanguageModel
@@ -46,7 +43,7 @@ public sealed class ResultToolResultsTests
         var tool = Assert.Single(call.Tools!);
         Assert.Equal("tool1", tool.Name);
         Assert.Equal(ValueSchema, tool.InputSchema.GetRawText());
-        Assert.Null(call.ToolChoice);
+        Assert.Equal("auto", call.ToolChoice!.Type);
         var user = Assert.IsType<UserModelMessage>(Assert.Single(call.Prompt));
         Assert.Equal("test-input", Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text);
 

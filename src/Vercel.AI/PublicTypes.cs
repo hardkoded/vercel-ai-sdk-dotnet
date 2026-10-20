@@ -157,6 +157,9 @@ public sealed class ExecutedTool
     /// <summary>Whether execution failed or was denied.</summary>
     public bool IsError { get; }
 
+    /// <summary>The exception the tool threw, when <see cref="IsError"/> is set by a failed execution. Maps to the error part's <c>error</c>.</summary>
+    public Exception? Error { get; init; }
+
     /// <summary>True when the provider ran the tool. Maps to the result's <c>providerExecuted</c>.</summary>
     public bool ProviderExecuted { get; init; }
 

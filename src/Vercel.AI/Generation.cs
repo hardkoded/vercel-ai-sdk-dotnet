@@ -61,7 +61,7 @@ internal static class Generation
             JsonSchemaName = options.Output?.SchemaName,
             JsonSchemaDescription = options.Output?.SchemaDescription,
             Tools = SelectTools(options),
-            ToolChoice = options.ToolChoice,
+            ToolChoice = options.ToolChoice ?? ToolChoice.Auto,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
             Reasoning = options.Reasoning,
@@ -931,7 +931,7 @@ internal static class Generation
         {
             if (!executed.ProviderExecuted)
             {
-                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
+                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Error = executed.Error, Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
             }
         }
 
@@ -1371,7 +1371,7 @@ internal static class Generation
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
             var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = exception.Message };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = ErrorMessage.ToErrorString(exception), Error = exception };
         }
 
         var elapsedMs = now() - startMs;

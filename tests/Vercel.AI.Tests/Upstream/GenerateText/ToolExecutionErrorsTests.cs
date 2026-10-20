@@ -17,10 +17,7 @@ public sealed class ToolExecutionErrorsTests
     private const string ValueSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should add tool error part to the content",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The error part is a GeneratedToolResult with IsError. It carries the message, not the Error object.")]
+    [UpstreamTest(Prefix + "should add tool error part to the content", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_add_tool_error_part_to_the_content()
     {
         var result = await RunAsync();
@@ -36,7 +33,8 @@ public sealed class ToolExecutionErrorsTests
         var error = Assert.IsType<GeneratedToolResult>(result.Content[1]);
         Assert.True(error.IsError);
         Assert.False(error.Dynamic);
-        Assert.Equal("test error", JsonSerializer.Deserialize<string>(error.ResultJson));
+        Assert.Equal("Error: test error", JsonSerializer.Deserialize<string>(error.ResultJson));
+        Assert.Equal("test error", error.Error!.Message);
         Assert.Equal("call-1", error.ToolCallId);
         Assert.Equal("tool1", error.ToolName);
         var executed = Assert.Single(result.ToolResults);
@@ -44,10 +42,7 @@ public sealed class ToolExecutionErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should include error result in response messages",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The error text is the exception message, not 'Error: test error'.")]
+    [UpstreamTest(Prefix + "should include error result in response messages", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_include_error_result_in_response_messages()
     {
         var result = await RunAsync();
@@ -61,7 +56,7 @@ public sealed class ToolExecutionErrorsTests
         Assert.Equal("tool1", call.ToolName);
         var tool = Assert.IsType<ToolModelMessage>(result.ResponseMessages[1]);
         Assert.Equal("error-text", tool.OutputType);
-        Assert.Equal("test error", tool.OutputJson);
+        Assert.Equal("Error: test error", tool.OutputJson);
         Assert.Equal("call-1", tool.ToolCallId);
         Assert.Equal("tool1", tool.ToolName);
     }
@@ -77,7 +72,7 @@ public sealed class ToolExecutionErrorsTests
             Model = model,
             Tools = new[]
             {
-                Tool.Function("tool1", null, ValueSchema, (_, _) => throw new InvalidOperationException("test error")),
+                Tool.Function("tool1", null, ValueSchema, (_, _) => throw new JsError("test error")),
             },
             Prompt = "test-input",
         });

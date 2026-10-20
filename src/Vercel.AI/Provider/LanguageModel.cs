@@ -415,6 +415,9 @@ public sealed class GeneratedToolResult : GeneratedContent
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
 
+    /// <summary>The exception the tool threw, when the generation loop ran a client tool that failed.</summary>
+    public Exception? Error { get; init; }
+
     /// <summary>Provider-specific metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
 
