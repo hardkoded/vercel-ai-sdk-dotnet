@@ -77,4 +77,27 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
         await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("call-2", handler.Headers["Custom"]);
     }
+
+    [Fact]
+    public async Task Mantle_call_headers_win_over_the_headers_provider_and_static_headers()
+    {
+        var handler = new UpstreamRecordingHandler("{\"id\":\"x\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"hi\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}");
+        var options = new BedrockMantleOptions { AccessKeyId = "k", SecretAccessKey = "s" };
+        options.Headers["Layer"] = "static";
+        options.Headers["Other"] = "static";
+        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Layer"] = "provider", ["Other"] = "provider" });
+        var model = BedrockMantleProvider.Create(options, handler).LanguageModel("test-model-id");
+
+        await model.DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+                Headers = new Dictionary<string, string?> { ["Layer"] = "call", ["User-Agent"] = "per-call-agent" },
+            },
+            CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal("call", handler.Headers["Layer"]);
+        Assert.Equal("provider", handler.Headers["Other"]);
+        Assert.Equal("per-call-agent", handler.Headers["User-Agent"]);
+    }
 }

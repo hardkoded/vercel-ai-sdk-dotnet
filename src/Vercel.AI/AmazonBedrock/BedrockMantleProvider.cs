@@ -194,18 +194,18 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Inner().DoGenerateAsync(options, cancellationToken);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Inner().DoStreamAsync(options, cancellationToken);
+        return await (await InnerAsync(cancellationToken).ConfigureAwait(false)).DoStreamAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
-    private ILanguageModel Inner()
+    private async Task<ILanguageModel> InnerAsync(CancellationToken cancellationToken)
     {
         var options = _provider.Options;
         var baseUrl = BedrockMantleRoutes.Url(options.Region, options.BaseUrl, ModelId, string.Empty);
@@ -228,71 +228,32 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             // The signing handler replaces the Authorization header, so any non-empty key does.
             ApiKey = "bedrock-mantle",
         };
-        var headers = options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
+
+        // Precedence: static Headers, then HeadersProvider, then per-call headers (applied by the OpenAI model).
+        var headers = options.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value, StringComparer.OrdinalIgnoreCase);
+        if (options.HeadersProvider != null)
+        {
+            foreach (var pair in await options.HeadersProvider(cancellationToken).ConfigureAwait(false))
+            {
+                if (pair.Value == null)
+                {
+                    headers.Remove(pair.Key);
+                }
+                else
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+        }
+
         foreach (var header in ProviderValues.WithUserAgentSuffix(headers, OpenAICompatibleInfo.UserAgent("amazon-bedrock")))
         {
             openAI.Headers[header.Key] = header.Value;
         }
 
-        HttpMessageHandler handler = signing;
-        if (options.HeadersProvider != null)
-        {
-            handler = new BedrockMantleHeadersHandler(signing, options.Headers, options.HeadersProvider, OpenAICompatibleInfo.UserAgent("amazon-bedrock"));
-        }
-
-        var provider = new OpenAIProvider(new HttpClient(handler, disposeHandler: false), openAI);
+        var provider = new OpenAIProvider(new HttpClient(signing, disposeHandler: false), openAI);
         return _responses
             ? new OpenAIResponsesLanguageModel(provider, ModelId) { SupportsWebSearchSourcesInclude = false }
             : provider.ChatModel(ModelId);
-    }
-}
-
-/// <summary>Resolves <see cref="BedrockMantleOptions.HeadersProvider"/> for each request, before signing.</summary>
-internal sealed class BedrockMantleHeadersHandler : DelegatingHandler
-{
-    private readonly IReadOnlyDictionary<string, string> _headers;
-    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> _provider;
-    private readonly string _userAgent;
-
-    public BedrockMantleHeadersHandler(
-        HttpMessageHandler inner,
-        IReadOnlyDictionary<string, string> headers,
-        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> provider,
-        string userAgent)
-        : base(inner)
-    {
-        _headers = headers;
-        _provider = provider;
-        _userAgent = userAgent;
-    }
-
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in _headers)
-        {
-            merged[pair.Key] = pair.Value;
-        }
-
-        foreach (var pair in await _provider(cancellationToken).ConfigureAwait(false))
-        {
-            merged[pair.Key] = pair.Value;
-        }
-
-        foreach (var pair in merged)
-        {
-            if (pair.Value == null)
-            {
-                request.Headers.Remove(pair.Key);
-            }
-        }
-
-        foreach (var pair in ProviderValues.WithUserAgentSuffix(merged, _userAgent))
-        {
-            request.Headers.Remove(pair.Key);
-            request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
-        }
-
-        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
