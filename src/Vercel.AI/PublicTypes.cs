@@ -1148,8 +1148,11 @@ public sealed class ToolInputStartPart : TextStreamPart
     /// <summary>True when the provider executes the tool.</summary>
     public bool? ProviderExecuted { get; }
 
-    /// <summary>True for a tool the caller did not declare.</summary>
+    /// <summary>True for a tool the caller did not declare, or a dynamic tool.</summary>
     public bool Dynamic { get; }
+
+    /// <summary>Metadata of the tool, apart from provider metadata. Maps to the part's <c>toolMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
 
     /// <summary>Encoding of the input deltas. Defaults to JSON when <see langword="null"/>.</summary>
     public ToolInputEncoding? InputEncoding { get; }

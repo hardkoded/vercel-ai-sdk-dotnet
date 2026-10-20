@@ -379,14 +379,18 @@ internal static class Generation
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 outputChunkTimes.Add(ElapsedMs());
+                                var inputStartTool = FindTool(options, inputStart.ToolName);
                                 buffer.Add(new ToolInputStartPart(
                                     inputStart.Id,
                                     inputStart.ToolName,
                                     inputStart.ProviderMetadata,
                                     inputStart.ProviderExecuted,
-                                    FindTool(options, inputStart.ToolName)?.IsDynamic ?? inputStart.Dynamic ?? false,
+                                    inputStartTool?.IsDynamic ?? inputStart.Dynamic ?? false,
                                     inputStart.InputEncoding,
-                                    FindTool(options, inputStart.ToolName)?.Title));
+                                    inputStartTool?.Title)
+                                {
+                                    ToolMetadata = inputStartTool?.Metadata,
+                                });
                                 break;
                             case ToolInputDeltaStreamPart inputDelta:
                                 outputChunkTimes.Add(ElapsedMs());
@@ -927,7 +931,7 @@ internal static class Generation
         {
             if (!executed.ProviderExecuted)
             {
-                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError));
+                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
             }
         }
 
