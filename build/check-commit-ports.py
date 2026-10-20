@@ -228,10 +228,11 @@ def not_ported_entries(body: str) -> set[str]:
         if not inside:
             continue
         text = re.sub(r"^\s*(?:[-*+]|\d+\.)\s*", "", line)
-        candidates = re.findall(r"`([^`]+)`", text) + [text, text.split(":")[0]]
+        candidates = re.findall(r"`([^`]+)`", text) + [text, re.split(r":\s", text)[0]]
         for candidate in candidates:
             entries.add(normalize(candidate))
-            entries.add(normalize(candidate.split(" > ")[-1]))
+            if "::" not in candidate:
+                entries.add(normalize(candidate.split(" > ")[-1]))
     return entries
 
 
@@ -241,7 +242,12 @@ def acknowledged(test: dict[str, object], entries: set[str]) -> bool:
     names = [str(test["title"])]
     if test["suite"]:
         names += [str(test["suite"]), str(test["suite"]).split(" > ")[-1]]
-    return any(normalize(name) in entries for name in names)
+    if any(normalize(name) in entries for name in names):
+        return True
+    # "describe chain::title", as the report prints ids. The chain may be a tail
+    # of the full chain, so `doGenerate > shell tool::title` names one test.
+    key = normalize(f"{test['suite']}::{test['title']}")
+    return any("::" in entry and (key == entry or key.endswith(" > " + entry)) for entry in entries)
 
 
 def self_test() -> None:
@@ -267,6 +273,11 @@ def self_test() -> None:
     assert acknowledged({"title": "should pass correct event information on success", "suite": ""}, entries)
     assert acknowledged({"title": "should x", "suite": "suite A"}, entries)
     assert not acknowledged({"title": "other", "suite": ""}, entries)
+    entries = not_ported_entries("## Not ported\n- `A > doGenerate > shell tool::should do it`\n- `doStream > shell tool::should stream`\n")
+    assert acknowledged({"title": "should do it", "suite": "Root > A > doGenerate > shell tool"}, entries)
+    assert not acknowledged({"title": "should do it", "suite": "Root > doStream > shell tool"}, entries)
+    assert acknowledged({"title": "should stream", "suite": "Root > doStream > shell tool"}, entries)
+    assert not acknowledged({"title": "should stream", "suite": "Root > doStream > other shell tool"}, entries)
     print("self-test passed")
 
 
