@@ -33,7 +33,7 @@ public sealed class DoGenerateDetectedLanguagesTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::detected languages::normalizes $language / $languages to $expected", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate > detected languages::normalizes $language / $languages to $expected", Coverage = UpstreamCoverage.Covered)]
     public async Task Normalizes_language_and_languages(string fields, string? expected)
     {
         var body = "{\"text\":\"Hello world\"," + fields.Substring(1);
@@ -60,7 +60,7 @@ public sealed class DoGenerateDetectedLanguagesTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::detected languages::preserves detected languages alongside diarized segments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate > detected languages::preserves detected languages alongside diarized segments", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_detected_languages_alongside_diarized_segments()
     {
         var capture = new OpenAICapture
