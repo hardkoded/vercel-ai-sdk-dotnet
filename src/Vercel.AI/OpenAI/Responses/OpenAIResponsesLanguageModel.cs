@@ -1209,7 +1209,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The shell tool call input is not valid JSON.", exception);
         }
 
-        if (parsed?["action"] is not JsonObject action
+        if ((parsed as JsonObject)?["action"] is not JsonObject action
             || action["commands"] is not JsonArray commands
             || commands.Any(command => !IsKind(command, JsonValueKind.String))
             || action["timeoutMs"] is { } timeout && !IsKind(timeout, JsonValueKind.Number)
@@ -1236,7 +1236,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             throw new AiSdkException("The shell tool result is not valid JSON.", exception);
         }
 
-        if (parsed?["output"] is not JsonArray items)
+        if ((parsed as JsonObject)?["output"] is not JsonArray items)
         {
             throw new AiSdkException("The shell tool result needs an output array.");
         }
