@@ -129,7 +129,7 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>())).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse)).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -265,6 +265,7 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
+                callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var stepRequest = new LanguageModelRequestMetadata
                 {
@@ -404,6 +405,14 @@ internal static class Generation
                                 usage = done.Usage;
                                 providerMetadata = done.ProviderMetadata;
                                 break;
+                            case RawStreamPart raw:
+                                if (options.Include?.RawChunks == true)
+                                {
+                                    using var rawDocument = JsonDocument.Parse(raw.RawJson.Length == 0 ? "null" : raw.RawJson);
+                                    buffer.Add(new RawPart(rawDocument.RootElement.Clone()));
+                                }
+
+                                break;
                             case ErrorStreamPart error:
                                 buffer.Add(new ErrorPart(error.Message));
                                 throw new AiSdkException(error.Message);
@@ -460,7 +469,8 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes)).ConfigureAwait(false);
+                var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
+                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -471,10 +481,7 @@ internal static class Generation
                     buffer.Add(toolResult.IsError ? new ToolErrorPart(toolResult) : new ToolResultPart(toolResult));
                 }
 
-                buffer.Add(new StepFinishPart(
-                    step,
-                    new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers),
-                    rawFinish));
+                buffer.Add(new StepFinishPart(step, stepResponse, rawFinish));
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
@@ -777,7 +784,10 @@ internal static class Generation
         List<ModelMessage> responseMessages,
         ILanguageModel model,
         CancellationToken cancellationToken,
-        StepTiming timing)
+        StepTiming timing,
+        LanguageModelRequestMetadata stepRequest,
+        LanguageModelResponseMetadata responseInfo,
+        JsonElement? responseBody)
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
         var toolCalls = new List<GeneratedToolCall>();
@@ -846,6 +856,7 @@ internal static class Generation
         }
 
         var stepInputMessages = messages.ToArray();
+        var stepResponseStart = responseMessages.Count;
         var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
@@ -914,8 +925,15 @@ internal static class Generation
             }
         }
 
+        var response = new StepResponse(
+            responseInfo.Id,
+            responseInfo.Timestamp,
+            responseInfo.ModelId,
+            responseInfo.Headers,
+            responseMessages.Skip(stepResponseStart).ToArray(),
+            responseBody);
         var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason);
     }
 
     // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
@@ -1409,6 +1427,34 @@ internal static class Generation
         return false;
     }
 
+    private static LanguageModelResponseMetadata GeneratedResponseInfo(LanguageModelGenerateResult generated, ILanguageModel model)
+    {
+        return new LanguageModelResponseMetadata(
+            generated.ResponseId ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-"),
+            generated.ResponseTimestamp ?? DateTimeOffset.UtcNow,
+            generated.ResponseModelId ?? model.ModelId,
+            generated.ResponseHeaders);
+    }
+
+    // The raw response body, as a JSON value when the provider sent JSON and as a string otherwise.
+    private static JsonElement? ParseResponseBody(string? rawResponse)
+    {
+        if (rawResponse == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(rawResponse);
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(rawResponse);
+        }
+    }
+
     private static GenerateTextResult ToResult(List<StepResult> steps, List<ModelMessage> responseMessages, GenerateTextOptions options)
     {
         var last = steps.Count == 0
@@ -1711,6 +1757,14 @@ public sealed class StreamTextResult
         FinishReason = finishReason;
         Usage = usage;
         Steps = steps;
+        Request = FromFinalStep(steps, step => step.Request);
+        Response = FromFinalStep(steps, step => step.Response);
+    }
+
+    private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return select(completed[completed.Count - 1]);
     }
 
     /// <summary>Text deltas only.</summary>
@@ -1742,4 +1796,14 @@ public sealed class StreamTextResult
 
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
+
+    /// <summary>
+    /// Additional request information of the last step. <see cref="LanguageModelRequestMetadata.Body"/> and
+    /// <see cref="LanguageModelRequestMetadata.Messages"/> are set only when <see cref="StreamTextOptions.Include"/> asks for them.
+    /// Completes when the stream finishes. Maps to <c>request</c>.
+    /// </summary>
+    public Task<LanguageModelRequestMetadata> Request { get; }
+
+    /// <summary>Additional response information of the last step, with the messages that step added. Completes when the stream finishes. Maps to <c>response</c>.</summary>
+    public Task<StepResponse> Response { get; }
 }

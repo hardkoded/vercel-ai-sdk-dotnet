@@ -191,8 +191,14 @@ public sealed class StepResult
         string? provider = null,
         string? modelId = null,
         IReadOnlyList<GeneratedContent>? content = null,
-        StepPerformance? performance = null)
+        StepPerformance? performance = null,
+        LanguageModelRequestMetadata? request = null,
+        StepResponse? response = null,
+        string? rawFinishReason = null)
     {
+        Request = request ?? LanguageModelRequestMetadata.Empty;
+        Response = response ?? new StepResponse(string.Empty, DateTimeOffset.MinValue, modelId ?? string.Empty);
+        RawFinishReason = rawFinishReason;
         Provider = provider;
         ModelId = modelId;
         Performance = performance ?? StepPerformance.Empty;
@@ -231,6 +237,9 @@ public sealed class StepResult
     /// <summary>Finish reason.</summary>
     public FinishReason FinishReason { get; }
 
+    /// <summary>The finish reason exactly as the provider reported it, or <see langword="null"/> when the provider reported none. Maps to <c>rawFinishReason</c>.</summary>
+    public string? RawFinishReason { get; }
+
     /// <summary>Usage for this step.</summary>
     public LanguageModelUsage Usage { get; }
 
@@ -254,6 +263,15 @@ public sealed class StepResult
 
     /// <summary>Performance metrics of this step. Streaming-only metrics are <see langword="null"/> for <c>generateText</c>.</summary>
     public StepPerformance Performance { get; }
+
+    /// <summary>
+    /// Additional request information for this step. <see cref="LanguageModelRequestMetadata.Body"/> and <see cref="LanguageModelRequestMetadata.Messages"/>
+    /// are set only when <see cref="StreamTextOptions.Include"/> asks for them. Maps to <c>request</c>.
+    /// </summary>
+    public LanguageModelRequestMetadata Request { get; }
+
+    /// <summary>Additional response information for this step, with the messages this step added to the conversation. Maps to <c>response</c>.</summary>
+    public StepResponse Response { get; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -864,6 +882,12 @@ public sealed class GenerateTextResult
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
 
+    /// <summary>Additional request information of the last step. Maps to <c>request</c>.</summary>
+    public LanguageModelRequestMetadata Request => FinalStep.Request;
+
+    /// <summary>Additional response information of the last step. Maps to <c>response</c>.</summary>
+    public StepResponse Response => FinalStep.Response;
+
     /// <summary>Warnings from every step.</summary>
     public IReadOnlyList<CallWarning> Warnings { get; }
 
@@ -917,7 +941,7 @@ public sealed class LanguageModelRequestMetadata
 /// Metadata for a language model response, as the <c>finish-step</c> part carries it.
 /// Maps to <c>Omit&lt;LanguageModelResponseMetadata, 'messages' | 'body'&gt;</c>.
 /// </summary>
-public sealed class LanguageModelResponseMetadata
+public class LanguageModelResponseMetadata
 {
     /// <summary>Creates response metadata.</summary>
     public LanguageModelResponseMetadata(string id, DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string>? headers = null)
@@ -941,6 +965,35 @@ public sealed class LanguageModelResponseMetadata
     public IReadOnlyDictionary<string, string>? Headers { get; }
 }
 
+/// <summary>
+/// Response information of one step. Maps to <c>LanguageModelResponseMetadata &amp; { messages, body? }</c> on <c>StepResult.response</c>.
+/// </summary>
+public sealed class StepResponse : LanguageModelResponseMetadata
+{
+    /// <summary>Creates step response information.</summary>
+    public StepResponse(
+        string id,
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string>? headers = null,
+        IReadOnlyList<ModelMessage>? messages = null,
+        JsonElement? body = null)
+        : base(id, timestamp, modelId, headers)
+    {
+        Messages = messages ?? Array.Empty<ModelMessage>();
+        Body = body;
+    }
+
+    /// <summary>
+    /// The response messages that were generated during the call: the assistant message of this step, then the tool message with
+    /// the results the client ran. Maps to <c>messages</c>.
+    /// </summary>
+    public IReadOnlyList<ModelMessage> Messages { get; }
+
+    /// <summary>Response body, for providers that use HTTP and report it. It is not set for streams. Maps to <c>body</c>.</summary>
+    public JsonElement? Body { get; }
+}
+
 /// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
 public sealed class StreamTextInclude
 {
@@ -955,6 +1008,12 @@ public sealed class StreamTextInclude
     /// Maps to <c>requestMessages</c>. The default is <see langword="false"/>.
     /// </summary>
     public bool RequestMessages { get; init; }
+
+    /// <summary>
+    /// Whether to forward the provider's raw chunks as <see cref="RawPart"/> in the full stream. It asks the model to include them.
+    /// Maps to <c>rawChunks</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RawChunks { get; init; }
 }
 
 /// <summary>A step started. It comes before the parts of that step.</summary>
@@ -973,6 +1032,20 @@ public sealed class StartStepPart : TextStreamPart
 
     /// <summary>Warnings from the model call of this step.</summary>
     public IReadOnlyList<CallWarning> Warnings { get; }
+}
+
+/// <summary>A raw chunk of the provider stream. It appears only when <see cref="StreamTextInclude.RawChunks"/> is set.</summary>
+public sealed class RawPart : TextStreamPart
+{
+    /// <summary>Creates a raw part.</summary>
+    public RawPart(JsonElement rawValue)
+        : base("raw")
+    {
+        RawValue = rawValue;
+    }
+
+    /// <summary>The raw value the provider sent. Maps to <c>rawValue</c>.</summary>
+    public JsonElement RawValue { get; }
 }
 
 /// <summary>Text delta.</summary>
