@@ -34,6 +34,12 @@ public sealed class TestLanguageModel : ILanguageModel
     /// <summary>When set, stream yields these parts instead of a single text delta.</summary>
     public IReadOnlyList<LanguageModelStreamPart>? StreamParts { get; set; }
 
+    /// <summary>The request info stream calls report.</summary>
+    public LanguageModelStreamRequest? StreamRequest { get; set; }
+
+    /// <summary>The response info stream calls report.</summary>
+    public LanguageModelStreamResponse? StreamResponse { get; set; }
+
     /// <summary>A generate result whose only content is <paramref name="text"/>.</summary>
     public static LanguageModelGenerateResult Text(string text)
     {
@@ -59,7 +65,7 @@ public sealed class TestLanguageModel : ILanguageModel
         CancellationToken cancellationToken)
     {
         Calls.Add(options);
-        return Task.FromResult(new LanguageModelStreamResult(Stream(cancellationToken)));
+        return Task.FromResult(new LanguageModelStreamResult(Stream(cancellationToken), StreamRequest, StreamResponse));
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> Stream([EnumeratorCancellation] CancellationToken cancellationToken)
