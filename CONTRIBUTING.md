@@ -33,7 +33,7 @@ When the upstream commit in `COMPATIBILITY.md` moves, update that file and the p
 
 ## Porting an upstream commit
 
-Link every ported test with `[UpstreamTest]` (see `tests/parity/README.md`). Before you open the pull request, run `python3 build/check-commit-ports.py <upstream-sha>` on your branch. It lists the tests the commit adds or changes and marks each one COVERED, PARTIAL, ACKNOWLEDGED, or MISSING. Port every MISSING test, or list it under a `Not ported` heading in the PR body with the reason. Write each entry as the exact test title, the describe name, or `describe chain::title`. Then run it again with `--pr <number>` so it reads that heading. The script needs a `vercel/ai` clone that has the commit (default `/Users/dario/Code/vercel/ai`, or pass `--upstream-repo`).
+Link every ported test with `[UpstreamTest]` (see `tests/parity/README.md`). Before you open the pull request, run `python3 build/check-commit-ports.py <upstream-sha>` on your branch. It lists the tests the commit adds or changes and marks each one COVERED, PARTIAL, ACKNOWLEDGED, AMBIGUOUS, or MISSING. Port every MISSING test, or list it under a `Not ported` heading in the PR body with the reason. Write each entry as the exact test title, the describe name, or `describe chain::title`. Then run it again with `--pr <number>` so it reads that heading. The script needs a `vercel/ai` clone that has the commit (default `/Users/dario/Code/vercel/ai`, or pass `--upstream-repo`).
 
 ## Examples
 

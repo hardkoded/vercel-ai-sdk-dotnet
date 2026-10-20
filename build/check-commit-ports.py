@@ -9,13 +9,14 @@ PR body. Each upstream test is reported as one of:
   COVERED        a .NET test links it with Coverage = Covered
   PARTIAL        a .NET test links it with Coverage = Partial
   ACKNOWLEDGED   the PR body lists it under a "Not ported" heading
-  AMBIGUOUS      a link from the PR diff has a prefix the script cannot
-                 resolve, and its title ends the ids of several tests
+  AMBIGUOUS      only a link from the PR diff matches, and its prefix cannot be
+                 resolved, so its title fits several tests. Define the prefix
+                 constant in the same diff, or list the test under Not ported
   MISSING        none of the above
 
-The exit code is 1 when any test is MISSING or AMBIGUOUS. Tests in packages that the
-catalog marks out of scope, and in integration or e2e files, are listed apart
-and never fail the check.
+The exit code is 1 when any test is MISSING or AMBIGUOUS. Tests in packages
+that the catalog marks out of scope, and in integration or e2e files, are
+listed apart and never fail the check.
 
 By default the links come from the current working tree. With --pr they also
 come from the added lines of the pull request diff, and the acknowledged gaps
@@ -211,13 +212,15 @@ def find_link(test_id: str, links: list[dict[str, str]], ids: list[str]) -> tupl
     for link in links:
         if link.get("upstreamId") == test_id:
             return link, False
+    ambiguous = False
     for link in links:
         suffix = link.get("suffix")
         if suffix and test_id.endswith(suffix):
             if sum(1 for other in ids if other.endswith(suffix)) > 1:
-                return None, True
+                ambiguous = True
+                continue
             return link, False
-    return None, False
+    return None, ambiguous
 
 
 def normalize(name: str) -> str:
@@ -227,7 +230,7 @@ def normalize(name: str) -> str:
 def not_ported_entries(body: str) -> set[str]:
     """Entries under every heading that contains "Not ported", up to the next
     heading. An entry is a backtick span, a whole bullet, or the bullet text
-    before its first colon. A span "suite > title" also gives its last part."""
+    before its first colon. Entries are kept as written."""
     entries: set[str] = set()
     inside = False
     for line in body.splitlines():
@@ -347,21 +350,19 @@ def main() -> None:
     rows = []
     skipped = []
     found = commit_tests(repo, args.sha)
-    ids = [str(test["id"]) for test in found]
+    ids = [str(test["id"]) for test in found if scope_of(str(test["file"])) == "in-scope"]
     for test in found:
         scope = scope_of(str(test["file"]))
         if scope != "in-scope":
             skipped.append((test, scope))
             continue
         link, ambiguous = find_link(str(test["id"]), links, ids)
-        if ambiguous:
-            status = "AMBIGUOUS"
-        elif link:
+        if link:
             status = "COVERED" if link["coverage"] == "Covered" else "PARTIAL"
         elif ack and acknowledged(test, ack):
             status = "ACKNOWLEDGED"
         else:
-            status = "MISSING"
+            status = "AMBIGUOUS" if ambiguous else "MISSING"
         rows.append((status, test))
 
     print(f"Upstream commit {args.sha}: {len(rows)} in-scope tests added or changed, {len(skipped)} out of scope.\n")

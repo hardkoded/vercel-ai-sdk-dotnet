@@ -1,7 +1,7 @@
 # Porting an upstream change
 
 - Port every test that the upstream commit adds or changes. Keep its name, steps, and assertions.
-- Before you report a port as ready, run `python3 build/check-commit-ports.py <upstream-sha> --pr <n>`. It must show no MISSING test. Every test it lists as ACKNOWLEDGED must be named under "Not ported" in the PR body. A changed test that already had a link needs a manual look.
+- Before you report a port as ready, run `python3 build/check-commit-ports.py <upstream-sha> --pr <n>`. It must show no MISSING or AMBIGUOUS test. Every test it lists as ACKNOWLEDGED must be named under "Not ported" in the PR body. A changed test that already had a link needs a manual look.
 - A test that needs a real model or a testbed page is still a test to port. Port the page too. Run it as a real-model test (`[Category("RealModel")]`).
 - When the port adds or changes public API or user-visible behavior, update `docs/` in the same PR. Mirror what upstream's `docs/**/*.mdx` say about that member, in the port's C# names.
 - Skip an upstream test only when the port has no such feature at all (for example, tracing). Name each skipped test and the reason in the PR report.
