@@ -81,13 +81,13 @@ public sealed class OpenAITranscriptionResult
     /// <summary>Segments, or words when the response has no segments.</summary>
     public IReadOnlyList<TranscriptSegment> Segments { get; }
 
-    /// <summary>ISO-639-1 code, when OpenAI reports a known language name.</summary>
+    /// <summary>ISO-639-1 code, when OpenAI reports a two-letter code, a known language name, or a single detected language.</summary>
     public string? Language { get; }
 
     /// <summary>Audio duration in seconds.</summary>
     public double? DurationInSeconds { get; }
 
-    /// <summary>Speaker segments under <c>openai.segments</c> for diarized responses.</summary>
+    /// <summary>Speaker segments under <c>openai.segments</c> for diarized responses and detected languages under <c>openai.languages</c>.</summary>
     public JsonElement? ProviderMetadata { get; }
 
     /// <summary>Response metadata.</summary>
@@ -239,13 +239,23 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
             }
         }
 
+        var languages = DetectedLanguages(root);
         var languageName = OpenAIJson.String(root, "language");
+        var language = IsLanguageCode(languageName)
+            ? languageName
+            : languageName != null && LanguageCodes.TryGetValue(languageName, out var code) ? code : null;
+        if (language == null && languages?.Count == 1)
+        {
+            var detected = languages[0]!["code"]!.GetValue<string>();
+            language = IsLanguageCode(detected) ? detected : null;
+        }
+
         return new OpenAITranscriptionResult(
             OpenAIJson.String(root, "text") ?? string.Empty,
             segments,
-            languageName != null && LanguageCodes.TryGetValue(languageName, out var code) ? code : null,
+            language,
             root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
-            speakers.Count > 0 ? SpeakerMetadata(speakers) : null,
+            speakers.Count > 0 || languages != null ? ProviderMetadata(speakers, languages) : null,
             new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body));
     }
 
@@ -303,9 +313,42 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
         return content;
     }
 
-    private static JsonElement SpeakerMetadata(JsonArray segments)
+    // Two lowercase ASCII letters, as in /^[a-z]{2}$/ upstream.
+    private static bool IsLanguageCode(string? language)
     {
-        var metadata = new JsonObject { ["openai"] = new JsonObject { ["segments"] = segments } };
+        return language is { Length: 2 } && language[0] is >= 'a' and <= 'z' && language[1] is >= 'a' and <= 'z';
+    }
+
+    private static JsonArray? DetectedLanguages(JsonElement root)
+    {
+        if (!root.TryGetProperty("languages", out var items) || items.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var languages = new JsonArray();
+        foreach (var item in items.EnumerateArray())
+        {
+            languages.Add(new JsonObject { ["code"] = OpenAIJson.String(item, "code") ?? throw new AiSdkException("Invalid transcription response: language code is missing.") });
+        }
+
+        return languages;
+    }
+
+    private static JsonElement ProviderMetadata(JsonArray segments, JsonArray? languages)
+    {
+        var openai = new JsonObject();
+        if (segments.Count > 0)
+        {
+            openai["segments"] = segments;
+        }
+
+        if (languages != null)
+        {
+            openai["languages"] = languages;
+        }
+
+        var metadata = new JsonObject { ["openai"] = openai };
         using var document = JsonDocument.Parse(metadata.ToJsonString());
         return document.RootElement.Clone();
     }
