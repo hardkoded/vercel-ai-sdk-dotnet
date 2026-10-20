@@ -882,7 +882,7 @@ public sealed class GenerateTextResult
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>Additional request information of the last step. Maps to <c>request</c>.</summary>
+    /// <summary>Additional request information of the last step. Maps to <c>request</c>. <see cref="GenerateTextOptions"/> has no include option yet, so <c>Body</c> and <c>Messages</c> are <see langword="null"/>.</summary>
     public LanguageModelRequestMetadata Request => FinalStep.Request;
 
     /// <summary>Additional response information of the last step. Maps to <c>response</c>.</summary>
