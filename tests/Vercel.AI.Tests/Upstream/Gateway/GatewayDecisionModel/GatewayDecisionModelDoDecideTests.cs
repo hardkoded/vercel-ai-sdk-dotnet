@@ -25,6 +25,51 @@ public sealed class GatewayDecisionModelDoDecideTests
         Assert.Equal(new Dictionary<string, double> { ["0"] = 0.05, ["1"] = 0.1, ["2"] = 0.85 }, answers["quality"].Probabilities);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("provider-default")]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [InlineData("low")]
+    [InlineData("medium")]
+    [InlineData("high")]
+    [InlineData("xhigh")]
+    [InlineData("max")]
+    [UpstreamTest(Prefix + "forwards reasoning when supplied: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_reasoning_when_supplied(string? reasoning)
+    {
+        var (model, capture) = Setup();
+        await model.DoDecideAsync(Call(reasoning: reasoning));
+        var body = RequestBody(capture)!.AsObject();
+        if (reasoning == null)
+        {
+            Assert.False(body.ContainsKey("reasoning"));
+        }
+        else
+        {
+            Assert.Equal(reasoning, body["reasoning"]!.GetValue<string>());
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(512.0)]
+    [UpstreamTest(Prefix + "forwards maxOutputTokens when supplied: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_maxOutputTokens_when_supplied(double? maxOutputTokens)
+    {
+        var (model, capture) = Setup();
+        await model.DoDecideAsync(Call(maxOutputTokens: maxOutputTokens));
+        var body = RequestBody(capture)!.AsObject();
+        if (maxOutputTokens == null)
+        {
+            Assert.False(body.ContainsKey("maxOutputTokens"));
+        }
+        else
+        {
+            Assert.Equal(maxOutputTokens.Value, body["maxOutputTokens"]!.GetValue<double>());
+        }
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "should pass headers correctly", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_headers_correctly()

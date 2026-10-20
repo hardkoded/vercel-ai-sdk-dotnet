@@ -66,10 +66,12 @@ internal static class PerplexityDecisionModelSupport
         IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        double? maxOutputTokens = null,
+        string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(P(State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(P(State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
     }
 
     internal static (PerplexityProvider Provider, OpenAICapture Capture) SetupProvider(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK, string? rawBody = null)

@@ -41,7 +41,9 @@ internal static class OpenAIDecisionSupport
         object? state = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        double? maxOutputTokens = null,
+        string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
@@ -49,7 +51,9 @@ internal static class OpenAIDecisionSupport
             questions ?? Questions(),
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
-            cancellationToken);
+            cancellationToken,
+            maxOutputTokens,
+            reasoning);
     }
 
     internal static (OpenAIDecisionModel Model, OpenAICapture Capture) Setup(JsonNode? body = null, HttpStatusCode status = HttpStatusCode.OK)

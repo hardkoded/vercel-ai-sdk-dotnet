@@ -188,6 +188,15 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         }
 
         var warnings = new List<OperationWarning>();
+        if (call.MaxOutputTokens != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "maxOutputTokens"));
+        }
+
+        if (call.Reasoning != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
+        }
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty(PerplexityProvider.ProviderId, out var options)
             && options.ValueKind == JsonValueKind.Object)

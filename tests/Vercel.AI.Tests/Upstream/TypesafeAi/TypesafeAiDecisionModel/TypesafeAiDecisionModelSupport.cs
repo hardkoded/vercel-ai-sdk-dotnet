@@ -141,7 +141,9 @@ internal static class TypesafeAiDecisionModelSupport
         IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         object? state = null,
         string providerOptions = "{}",
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
         return new DecisionModelCall(
@@ -149,7 +151,9 @@ internal static class TypesafeAiDecisionModelSupport
             questions ?? Questions(),
             document.RootElement.Clone(),
             headers ?? new Dictionary<string, string>(),
-            CancellationToken.None);
+            CancellationToken.None,
+            maxOutputTokens,
+            reasoning);
     }
 
     internal static Dictionary<string, object?> FilePart(string mediaType, object? data, string? filename = null, object? reference = null, bool withReference = false, bool? insertReference = null)

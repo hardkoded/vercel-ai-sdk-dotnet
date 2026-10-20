@@ -54,10 +54,12 @@ internal static class DecisionLanguageModelSupport
         IReadOnlyList<object?>? state = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        double? maxOutputTokens = null,
+        string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        return new DecisionModelCall(P(state ?? State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(P(state ?? State()), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
     }
 
     internal static LanguageModelGenerateResult Result(

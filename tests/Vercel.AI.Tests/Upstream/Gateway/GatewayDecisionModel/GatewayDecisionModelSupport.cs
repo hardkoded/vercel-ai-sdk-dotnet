@@ -55,11 +55,11 @@ internal static class GatewayDecisionModelSupport
         return new List<object?> { new Dictionary<string, object?> { ["type"] = "text", ["text"] = text } };
     }
 
-    internal static DecisionModelCall Call(string? providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null, object? state = null)
+    internal static DecisionModelCall Call(string? providerOptions = "{}", IReadOnlyDictionary<string, string>? headers = null, object? state = null, double? maxOutputTokens = null, string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions ?? "{}");
         var options = providerOptions == null ? default : document.RootElement.Clone();
-        return new DecisionModelCall(P((IEnumerable<object?>)(state ?? State(TestState))), Questions(), options, headers ?? new Dictionary<string, string>(), CancellationToken.None);
+        return new DecisionModelCall(P((IEnumerable<object?>)(state ?? State(TestState))), Questions(), options, headers ?? new Dictionary<string, string>(), CancellationToken.None, maxOutputTokens, reasoning);
     }
 
     /// <summary>Builds a model whose requests are answered with <paramref name="body"/> (a decision-model response).</summary>

@@ -151,6 +151,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         }
 
         var warnings = new List<OperationWarning>();
+        if (call.MaxOutputTokens != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "maxOutputTokens"));
+        }
+
+        if (call.Reasoning != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
+        }
+
         var longContext = false;
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty("typesafe", out var options)

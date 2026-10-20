@@ -251,7 +251,8 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
         var result = await _model.DoGenerateAsync(
             new LanguageModelCallOptions
             {
-                Reasoning = "none",
+                Reasoning = call.Reasoning ?? "none",
+                MaxOutputTokens = call.MaxOutputTokens == null ? null : (int)call.MaxOutputTokens.Value,
                 Prompt = new ModelMessage[] { new SystemModelMessage(SystemPrompt), new UserModelMessage(content) },
                 JsonSchema = schemaDocument.RootElement.Clone(),
                 JsonSchemaName = "decision",
