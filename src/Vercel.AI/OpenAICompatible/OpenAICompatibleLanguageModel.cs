@@ -81,6 +81,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         var content = new List<GeneratedContent>();
+        var reasoning = PreferredString(message, "reasoning_content", "reasoning");
+        if (!string.IsNullOrEmpty(reasoning))
+        {
+            content.Add(new GeneratedReasoning(reasoning!));
+        }
+
         if (message.TryGetProperty("content", out var contentElement))
         {
             foreach (var part in OpenAICompatibleChat.ConvertContent(contentElement))
@@ -93,12 +99,6 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
                 content.Add(part.Reasoning ? (GeneratedContent)new GeneratedReasoning(part.Text) : new GeneratedText(part.Text));
             }
-        }
-
-        var reasoning = PreferredString(message, "reasoning_content", "reasoning");
-        if (!string.IsNullOrEmpty(reasoning))
-        {
-            content.Add(new GeneratedReasoning(reasoning!));
         }
 
         if (message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)

@@ -370,10 +370,12 @@ public sealed class OpenAICompatibleChatUpstreamTests
     [UpstreamTest("packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate::should prefer reasoning_content over reasoning field when both are provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Reasoning_content_wins_over_reasoning()
     {
-        var capture = new UpstreamCapture { ResponseBody = "{\"choices\":[{\"message\":{\"content\":\"Hi\",\"reasoning_content\":\"first\",\"reasoning\":\"second\"},\"finish_reason\":\"stop\"}]}" };
+        var capture = new UpstreamCapture { ResponseBody = "{\"choices\":[{\"message\":{\"content\":\"Hello, World!\",\"reasoning_content\":\"This is from reasoning_content\",\"reasoning\":\"This is from reasoning field\"},\"finish_reason\":\"stop\"}]}" };
         var result = await UpstreamChat.Model(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
-        var reasoning = result.Content.OfType<GeneratedReasoning>().Single();
-        Assert.Equal("first", reasoning.Text);
+        Assert.Collection(
+            result.Content,
+            part => Assert.Equal("This is from reasoning_content", Assert.IsType<GeneratedReasoning>(part).Text),
+            part => Assert.Equal("Hello, World!", Assert.IsType<GeneratedText>(part).Text));
     }
 
     [Fact]
