@@ -53,13 +53,13 @@ internal static class PerplexityAgent
 
         if (string.Equals(reasoning, "none", StringComparison.Ordinal))
         {
-            warnings.Add(new CallWarning("unsupported", "reasoning \"none\""));
+            warnings.Add(new CallWarning("unsupported", "reasoning \"none\"", null));
             return null;
         }
 
         if (!EffortMap.ContainsKey(reasoning))
         {
-            warnings.Add(new CallWarning("unsupported", "reasoning \"" + reasoning + "\""));
+            warnings.Add(new CallWarning("unsupported", "reasoning \"" + reasoning + "\"", null));
             return null;
         }
 
@@ -67,7 +67,7 @@ internal static class PerplexityAgent
         var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning, EffortMap, mappingWarnings);
         foreach (var warning in mappingWarnings.OfType<CompatibilityWarning>())
         {
-            warnings.Add(new CallWarning(warning.Type, warning.Details ?? string.Empty));
+            warnings.Add(new CallWarning(warning.Type, warning.Feature, warning.Details));
         }
 
         return effort;

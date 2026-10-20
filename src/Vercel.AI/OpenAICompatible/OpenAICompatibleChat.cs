@@ -211,7 +211,7 @@ public static class OpenAICompatibleChat
     }
 
     /// <summary>Converts prompt messages to Chat Completions messages.</summary>
-    public static JsonArray ConvertMessages(IReadOnlyList<ModelMessage> prompt, string metadataKey, string? providerName = null)
+    public static JsonArray ConvertMessages(IReadOnlyList<ModelMessage> prompt, string metadataKey, string? providerName = null, bool supportsMultiPartToolContent = false)
     {
         var messages = new JsonArray();
         if (prompt == null)
@@ -237,7 +237,9 @@ public static class OpenAICompatibleChat
                     {
                         ["role"] = "tool",
                         ["tool_call_id"] = tool.ToolCallId,
-                        ["content"] = tool.OutputJson,
+                        ["content"] = supportsMultiPartToolContent && tool.OutputContent != null
+                            ? MapToolContent(tool.OutputContent, metadataKey, providerName ?? metadataKey)
+                            : tool.OutputJson,
                     });
                     break;
                 default:
@@ -362,7 +364,20 @@ public static class OpenAICompatibleChat
         return parts;
     }
 
-    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName)
+    private static JsonArray MapToolContent(IReadOnlyList<UserContentPart> content, string metadataKey, string providerName)
+    {
+        var parts = new JsonArray();
+        foreach (var part in content)
+        {
+            parts.Add(part is FileContentPart file
+                ? MapFile(file, metadataKey, providerName, includeProviderOptions: false)
+                : new JsonObject { ["type"] = "text", ["text"] = (part as TextContentPart)?.Text ?? throw Unsupported("custom tool content parts") });
+        }
+
+        return parts;
+    }
+
+    private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName, bool includeProviderOptions = true)
     {
         if (file.Url == null && file.Data == null)
         {
@@ -377,7 +392,8 @@ public static class OpenAICompatibleChat
                 ["type"] = "file",
                 ["file"] = new JsonObject { ["file_id"] = fileId },
             };
-            if (file.ProviderOptions != null
+            if (includeProviderOptions
+                && file.ProviderOptions != null
                 && (file.ProviderOptions.TryGetValue(metadataKey, out var custom)
                     || file.ProviderOptions.TryGetValue("openaiCompatible", out custom))
                 && custom.ValueKind == JsonValueKind.Object)

@@ -215,22 +215,22 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
         if (options.Tools != null && options.Tools.Count > 0)
         {
-            warnings.Add(new CallWarning("unsupported", "tools"));
+            warnings.Add(new CallWarning("unsupported", "tools", null));
         }
 
         if (options.ToolChoice != null)
         {
-            warnings.Add(new CallWarning("unsupported", "toolChoice"));
+            warnings.Add(new CallWarning("unsupported", "toolChoice", null));
         }
 
         if (options.JsonSchema != null && options.JsonSchema.Value.ValueKind != JsonValueKind.Undefined && options.JsonSchema.Value.ValueKind != JsonValueKind.Null)
         {
-            warnings.Add(new CallWarning("unsupported", "JSON response format is not supported."));
+            warnings.Add(new CallWarning("unsupported", "responseFormat", "JSON response format is not supported."));
         }
 
         var settings = ReadSettings(options.ProviderOptions, rawName, camel);

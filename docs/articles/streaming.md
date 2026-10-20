@@ -104,6 +104,10 @@ A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails 
 
 `StepFinishPart.Response` is a `LanguageModelResponseMetadata` with the response `Id`, `ModelId`, `Timestamp`, and HTTP `Headers` (`null` for a provider that does not use HTTP). A provider's `ResponseMetadataStreamPart` sets them. Without one, `Id` is generated, `Timestamp` is the step start, and `ModelId` is the requested model. `RawFinishReason` is the provider's own finish reason, and `ProviderMetadata` is the step's provider metadata.
 
+A step carries the same data afterwards. `StepResult.Request` is the step's `LanguageModelRequestMetadata`, `StepResult.Response` is a `StepResponse` (the response metadata plus `Messages`, the response messages the step added, and `Body`, which streams leave unset), and `StepResult.RawFinishReason` is the provider's own finish reason. `StreamTextResult.Request` and `StreamTextResult.Response` are tasks that resolve with the last step's `Request` and `Response`, and `GenerateTextResult.Request` and `GenerateTextResult.Response` are the last step's too.
+
+Set `StreamTextInclude.RawChunks` to receive the provider's raw stream chunks as `RawPart` (`raw`) values with a `RawValue`. It also asks the model to include them. It is `false` by default.
+
 A tool that has no `Execute` is for the caller to run. Its call is streamed as a `ToolCallPart`, and the step has no result for it.
 
 `StepResult.Performance` is a `StepPerformance` for the step (`StepFinishPart.Performance` is the same value). `GenerateTextAsync` fills it too, without the streaming-only metrics (`TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs`, `OutputTokensPerSecond`, `InputTokensPerSecond`). It has: `StepTimeMs`, `ResponseTimeMs`, `ToolExecutionMs` (by tool call id), `TimeToFirstOutputMs`, `TimeBetweenOutputChunksMs` (`Min`, `Max`, `Avg`, `Median`, `P10`, `P90`), and the token rates `EffectiveOutputTokensPerSecond`, `EffectiveTotalTokensPerSecond`, `OutputTokensPerSecond` and `InputTokensPerSecond`. The first-output metrics are `null` when the step produced no output chunk.

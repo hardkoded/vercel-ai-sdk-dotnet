@@ -471,14 +471,22 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
 #pragma warning restore CS0618
 
 /// <summary>Anthropic Messages language model.</summary>
-public sealed class AnthropicLanguageModel : ILanguageModel
+public class AnthropicLanguageModel : ILanguageModel
 {
     private readonly AnthropicProvider _provider;
+    private readonly AnthropicModelSettings? _settings;
 
     /// <summary>Creates a model.</summary>
     public AnthropicLanguageModel(AnthropicProvider provider, string modelId)
+        : this(provider, modelId, null)
+    {
+    }
+
+    /// <summary>Creates a model for a Messages-compatible provider that adjusts the adapter with <paramref name="settings"/>.</summary>
+    public AnthropicLanguageModel(AnthropicProvider provider, string modelId, AnthropicModelSettings? settings)
     {
         _provider = provider;
+        _settings = settings;
         ModelId = modelId;
     }
 
@@ -492,7 +500,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <summary>URL patterns the model accepts for images and PDFs.</summary>
-    public IReadOnlyDictionary<string, string> SupportedUrls => _provider.SupportedUrls;
+    public virtual IReadOnlyDictionary<string, string> SupportedUrls => _provider.SupportedUrls;
 
     /// <summary>True when <paramref name="url"/> is an http or https URL for a supported media type.</summary>
     public bool SupportsUrl(string mediaType, string url)
@@ -502,7 +510,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public virtual async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var prepared = Prepare(options, false);
         var body = prepared.Body.ToJsonString();
@@ -513,7 +521,7 @@ public sealed class AnthropicLanguageModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public virtual async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var prepared = Prepare(options, true);
         var body = prepared.Body.ToJsonString();
@@ -546,24 +554,37 @@ public sealed class AnthropicLanguageModel : ILanguageModel
         return transform == null ? headers : transform(headers, options.ProviderOptions);
     }
 
+    /// <summary>
+    /// Lets a compatible provider rewrite the call options before the request is built.
+    /// Warnings added to <paramref name="warnings"/> are reported after the request's own warnings.
+    /// </summary>
+    protected virtual LanguageModelCallOptions PrepareCallOptions(LanguageModelCallOptions options, IList<AnthropicWarning> warnings)
+    {
+        return options;
+    }
+
     private AnthropicPreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
     {
+        var callWarnings = new List<AnthropicWarning>();
         var prepared = AnthropicMessagesRequest.Prepare(
             ModelId,
-            options ?? new LanguageModelCallOptions(),
+            PrepareCallOptions(options ?? new LanguageModelCallOptions(), callWarnings),
             stream,
             Provider,
             _provider.SupportsNativeStructuredOutput,
-            _provider.SupportsStrictTools);
+            _provider.SupportsStrictTools,
+            _settings);
         var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
-        if (ReferenceEquals(transformed, prepared.Body))
+        if (ReferenceEquals(transformed, prepared.Body) && callWarnings.Count == 0)
         {
             return prepared;
         }
 
+        var warnings = new List<AnthropicWarning>(prepared.Warnings);
+        warnings.AddRange(callWarnings);
         return new AnthropicPreparedRequest(
             transformed,
-            prepared.Warnings,
+            warnings,
             prepared.Betas,
             prepared.UsesJsonResponseTool,
             prepared.ProviderOptionsName,

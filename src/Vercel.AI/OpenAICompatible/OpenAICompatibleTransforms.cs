@@ -28,7 +28,7 @@ public static class OpenAICompatibleTransforms
             if (model != "qwen/qwen3.6-27b")
             {
                 body.Remove("reasoning_effort");
-                warnings.Add(new CallWarning("unsupported", "reasoning \"none\" is not supported by this model."));
+                warnings.Add(new CallWarning("unsupported", "reasoning", "reasoning \"none\" is not supported by this model."));
             }
 
             return body;
@@ -37,12 +37,12 @@ public static class OpenAICompatibleTransforms
         if (effort == "minimal")
         {
             body["reasoning_effort"] = "low";
-            warnings.Add(new CallWarning("compatibility", "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."));
+            warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."));
         }
         else if (effort == "xhigh" || effort == "max")
         {
             body["reasoning_effort"] = "high";
-            warnings.Add(new CallWarning("compatibility", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"high\"."));
+            warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"high\"."));
         }
 
         return body;
@@ -97,7 +97,7 @@ public static class OpenAICompatibleTransforms
             body["reasoning_effort"] = mapped;
             if (mapped != effort)
             {
-                warnings.Add(new CallWarning("compatibility", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
+                warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
             }
         }
 
@@ -167,19 +167,19 @@ public static class OpenAICompatibleTransforms
         if (body.ContainsKey("frequency_penalty"))
         {
             body.Remove("frequency_penalty");
-            warnings.Add(new CallWarning("unsupported", "frequencyPenalty"));
+            warnings.Add(new CallWarning("unsupported", "frequencyPenalty", null));
         }
 
         if (body.ContainsKey("presence_penalty"))
         {
             body.Remove("presence_penalty");
-            warnings.Add(new CallWarning("unsupported", "presencePenalty"));
+            warnings.Add(new CallWarning("unsupported", "presencePenalty", null));
         }
 
         if (body.ContainsKey("seed"))
         {
             body.Remove("seed");
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", null));
         }
 
         body.Remove("user");

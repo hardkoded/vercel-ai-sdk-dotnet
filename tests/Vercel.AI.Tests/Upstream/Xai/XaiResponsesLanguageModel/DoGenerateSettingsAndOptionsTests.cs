@@ -44,6 +44,7 @@ public sealed class DoGenerateSettingsAndOptionsTests
 
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("stopSequences", warning.Feature);
         Assert.Equal("stopSequences", warning.Message);
     }
 
@@ -58,7 +59,7 @@ public sealed class DoGenerateSettingsAndOptionsTests
 
         var result = await Model(EmptyResponse()).DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, result.Warnings.Select(warning => warning.Message));
+        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, result.Warnings.Select(warning => warning.Feature));
         Assert.All(result.Warnings, warning => Assert.Equal("unsupported", warning.Type));
     }
 }

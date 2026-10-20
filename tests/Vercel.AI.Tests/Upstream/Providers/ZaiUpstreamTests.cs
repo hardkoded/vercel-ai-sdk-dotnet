@@ -42,9 +42,9 @@ public sealed class ZaiUpstreamTests
         Assert.Null(body["seed"]);
         Assert.Null(body["ignoredOption"]);
         Assert.Null(body["tool_choice"]);
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "frequencyPenalty");
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "presencePenalty");
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "seed");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "frequencyPenalty");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "presencePenalty");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "seed");
         Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "toolChoice required. Z.AI currently supports only automatic tool selection.");
     }
 
@@ -84,8 +84,8 @@ public sealed class ZaiUpstreamTests
         };
         var result = await Chat(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal(3, result.Content.Count);
-        Assert.Equal("The answer is 42.", Assert.IsType<GeneratedText>(result.Content[0]).Text);
-        Assert.Equal("I should calculate the answer.", Assert.IsType<GeneratedReasoning>(result.Content[1]).Text);
+        Assert.Equal("I should calculate the answer.", Assert.IsType<GeneratedReasoning>(result.Content[0]).Text);
+        Assert.Equal("The answer is 42.", Assert.IsType<GeneratedText>(result.Content[1]).Text);
         var call = Assert.IsType<GeneratedToolCall>(result.Content[2]);
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("calculator", call.ToolName);

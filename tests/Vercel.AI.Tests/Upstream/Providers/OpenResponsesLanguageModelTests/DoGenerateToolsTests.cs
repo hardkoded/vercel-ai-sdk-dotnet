@@ -77,7 +77,7 @@ public sealed class DoGenerateToolsTests
             requestBody["tools"]);
         AssertJson(Obj("{\"type\":\"acme:document_search\",\"name\":\"documentSearch\"}"), requestBody["tool_choice"]);
         var warning = Assert.Single(result.Warnings);
-        Assert.Equal(("unsupported", "provider-defined tool acme.unregistered"), (warning.Type, warning.Message));
+        Assert.Equal(("unsupported", "provider-defined tool acme.unregistered", "provider-defined tool acme.unregistered"), (warning.Type, warning.Feature, warning.Message));
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class DoGenerateToolsTests
         Assert.False(requestBody.ContainsKey("tools"));
         Assert.False(requestBody.ContainsKey("tool_choice"));
         var warning = Assert.Single(result.Warnings);
-        Assert.Equal(("unsupported", "provider-defined tool acme.document_search"), (warning.Type, warning.Message));
+        Assert.Equal(("unsupported", "provider-defined tool acme.document_search", "provider-defined tool acme.document_search"), (warning.Type, warning.Feature, warning.Message));
     }
 
     [Fact]
@@ -117,6 +117,6 @@ public sealed class DoGenerateToolsTests
         Assert.False(requestBody.ContainsKey("tools"));
         Assert.False(requestBody.ContainsKey("tool_choice"));
         var warning = Assert.Single(result.Warnings);
-        Assert.Equal(("unsupported", "provider-defined tool acme.unregistered"), (warning.Type, warning.Message));
+        Assert.Equal(("unsupported", "provider-defined tool acme.unregistered", "provider-defined tool acme.unregistered"), (warning.Type, warning.Feature, warning.Message));
     }
 }

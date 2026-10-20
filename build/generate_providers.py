@@ -19,7 +19,6 @@ THIN = [
     ("Fireworks", "fireworks", "https://api.fireworks.ai/inference/v1", "FIREWORKS_API_KEY", True, True, []),
     ("Groq", "groq", "https://api.groq.com/openai/v1", "GROQ_API_KEY", False, False, []),
     ("HuggingFace", "huggingface", "https://router.huggingface.co/v1", "HUGGINGFACE_API_KEY", True, False, []),
-    ("MiniMax", "minimax", "https://api.minimax.io/v1", "MINIMAX_API_KEY", False, False, []),
     ("Moonshot", "moonshotai", "https://api.moonshot.ai/v1", "MOONSHOT_API_KEY", False, False, []),
     ("Perplexity", "perplexity", "https://api.perplexity.ai", "PERPLEXITY_API_KEY", True, False, []),
     ("TogetherAI", "togetherai", "https://api.together.xyz/v1", "TOGETHER_AI_API_KEY", True, True, ["TOGETHER_API_KEY"]),

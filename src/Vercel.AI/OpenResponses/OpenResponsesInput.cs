@@ -446,7 +446,7 @@ internal static class OpenResponsesInput
 
         if (encoded == null)
         {
-            warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool.ProviderToolId + " " + part.Type + " history"));
+            warnings.Add(new CallWarning("unsupported", "provider-defined tool " + providerTool.ProviderToolId + " " + part.Type + " history", null));
             return true;
         }
 

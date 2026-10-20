@@ -312,7 +312,7 @@ public sealed class CohereLanguageModel : ILanguageModel
         var tokenBudget = ReasoningMap.MapReasoningToProviderBudget(options.Reasoning!, MaxThinkingBudget, MaxThinkingBudget, modelWarnings);
         foreach (var warning in modelWarnings.OfType<UnsupportedWarning>())
         {
-            warnings.Add(new CallWarning(warning.Type, warning.Details ?? warning.Feature));
+            warnings.Add(new CallWarning(warning.Type, warning.Feature, warning.Details));
         }
 
         return tokenBudget is { } value ? new JsonObject { ["type"] = "enabled", ["token_budget"] = value } : null;

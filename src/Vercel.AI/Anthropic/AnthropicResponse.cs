@@ -308,7 +308,7 @@ public static class AnthropicResponse
             },
         });
         var input = part.TryGetProperty("input", out var inputElement) ? inputElement.GetRawText() : "{}";
-        content.Add(new GeneratedToolCall(id, name, input, metadata));
+        content.Add(new GeneratedToolCall(id, name, input, metadata) { ProviderExecuted = true, Dynamic = true });
     }
 
     private static void MapMcpResult(JsonElement part, List<GeneratedContent> content, Dictionary<string, string> mcpNames)

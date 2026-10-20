@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.ProviderUtils;
@@ -18,6 +19,17 @@ public static class ReasoningMap
         { "xhigh", 0.9 },
         { "max", 0.95 },
     };
+
+    /// <summary>Converts a warning produced while mapping reasoning into a call warning that keeps its feature.</summary>
+    internal static CallWarning? ToCallWarning(ModelWarning warning)
+    {
+        return warning switch
+        {
+            UnsupportedWarning unsupported => new CallWarning(unsupported.Type, unsupported.Feature, unsupported.Details),
+            CompatibilityWarning compatibility => new CallWarning(compatibility.Type, compatibility.Feature, compatibility.Details),
+            _ => null,
+        };
+    }
 
     /// <summary>True for every reasoning value except omitted and <c>provider-default</c>. Maps to <c>isCustomReasoning</c>.</summary>
     public static bool IsCustomReasoning(string? reasoning)

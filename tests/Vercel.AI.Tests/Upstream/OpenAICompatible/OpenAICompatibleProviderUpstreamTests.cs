@@ -155,7 +155,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         var options = UpstreamChat.Prompt();
         options.JsonSchema = UpstreamChat.Json("{\"type\":\"object\"}");
         var completion = await provider.CompletionModel("completion").DoGenerateAsync(options, CancellationToken.None);
-        Assert.Contains(completion.Warnings, warning => warning.Message == "JSON response format is not supported.");
+        Assert.Contains(completion.Warnings, warning => warning.Feature == "responseFormat" && warning.Message == "JSON response format is not supported.");
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["response_format"]);
         Assert.IsType<OpenAICompatibleEmbeddingModel>(provider.EmbeddingModel("embed"));
     }

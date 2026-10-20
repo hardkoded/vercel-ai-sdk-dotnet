@@ -39,10 +39,8 @@ public sealed class HuggingFaceToolCall : GeneratedToolCall
         : base(toolCallId, toolName, argumentsJson)
     {
         ProviderExecuted = providerExecuted;
+        Dynamic = providerExecuted;
     }
-
-    /// <summary>True when Hugging Face executed the tool.</summary>
-    public new bool ProviderExecuted { get; }
 }
 
 /// <summary>A tool result returned in the response output.</summary>
