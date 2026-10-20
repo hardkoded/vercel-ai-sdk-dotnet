@@ -59,6 +59,15 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
         string? safetyIdentifier = null;
         var warnings = new List<OperationWarning>();
+        if (call.MaxOutputTokens != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "maxOutputTokens"));
+        }
+
+        if (call.Reasoning != null)
+        {
+            warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
+        }
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.TryGetProperty("openai", out var openai) && openai.ValueKind == JsonValueKind.Object)
         {
             foreach (var option in openai.EnumerateObject())

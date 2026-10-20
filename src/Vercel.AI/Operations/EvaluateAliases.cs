@@ -45,19 +45,19 @@ public sealed class EvaluationRounding : DecisionRounding
 public sealed class EvaluationModelCall : DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
-        : base(state, questions == null ? null! : EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken)
+    public EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, EvaluationQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens = null, string? reasoning = null)
+        : base(state, questions == null ? null! : EvaluateAliases.ToDecision(questions), providerOptions, headers, cancellationToken, maxOutputTokens, reasoning)
     {
     }
 
-    private EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
-        : base(state, questions, providerOptions, headers, cancellationToken)
+    private EvaluationModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens, string? reasoning)
+        : base(state, questions, providerOptions, headers, cancellationToken, maxOutputTokens, reasoning)
     {
     }
 
     internal static EvaluationModelCall From(DecisionModelCall call)
     {
-        return new EvaluationModelCall(call.State, call.Questions, call.ProviderOptions, call.Headers, call.CancellationToken);
+        return new EvaluationModelCall(call.State, call.Questions, call.ProviderOptions, call.Headers, call.CancellationToken, call.MaxOutputTokens, call.Reasoning);
     }
 }
 
@@ -139,14 +139,14 @@ public sealed class EvaluationUnsupportedQuestionTypeException : DecisionUnsuppo
 public sealed class EvaluateEvent : DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
-        : base(callId, operationId, runtimeContext, provider, modelId, state, questions, maxRetries, headers, providerOptions, answers, usage, warnings, recordInputs, recordOutputs, functionId)
+    public EvaluateEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null, double? maxOutputTokens = null, string? reasoning = null)
+        : base(callId, operationId, runtimeContext, provider, modelId, state, questions, maxRetries, headers, providerOptions, answers, usage, warnings, recordInputs, recordOutputs, functionId, maxOutputTokens, reasoning)
     {
     }
 
     internal static EvaluateEvent From(DecideEvent e)
     {
-        return e as EvaluateEvent ?? new EvaluateEvent(e.CallId, e.OperationId, e.RuntimeContext, e.Provider, e.ModelId, e.State, e.Questions, e.MaxRetries, e.Headers, e.ProviderOptions, e.Answers, e.Usage, e.Warnings, e.RecordInputs, e.RecordOutputs, e.FunctionId);
+        return e as EvaluateEvent ?? new EvaluateEvent(e.CallId, e.OperationId, e.RuntimeContext, e.Provider, e.ModelId, e.State, e.Questions, e.MaxRetries, e.Headers, e.ProviderOptions, e.Answers, e.Usage, e.Warnings, e.RecordInputs, e.RecordOutputs, e.FunctionId, e.MaxOutputTokens, e.Reasoning);
     }
 }
 

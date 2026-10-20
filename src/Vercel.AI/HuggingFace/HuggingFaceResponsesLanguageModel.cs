@@ -145,7 +145,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         }
 
         var huggingFace = ReadHuggingFaceOptions(options.ProviderOptions);
-        var effort = options.Reasoning;
+        var effort = options.Reasoning == "provider-default" ? null : options.Reasoning;
         if (huggingFace.ReasoningEffort != null)
         {
             effort = huggingFace.ReasoningEffort;

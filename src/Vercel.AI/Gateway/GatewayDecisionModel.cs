@@ -71,6 +71,16 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         }
 
         var body = new JsonObject { ["stateParts"] = StateParts(call.State), ["questions"] = questions };
+        if (call.MaxOutputTokens != null)
+        {
+            body["maxOutputTokens"] = call.MaxOutputTokens;
+        }
+
+        if (call.Reasoning != null)
+        {
+            body["reasoning"] = call.Reasoning;
+        }
+
         if (call.ProviderOptions.ValueKind == JsonValueKind.Object)
         {
             body["providerOptions"] = JsonNode.Parse(call.ProviderOptions.GetRawText());

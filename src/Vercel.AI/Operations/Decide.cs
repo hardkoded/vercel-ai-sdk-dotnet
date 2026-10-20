@@ -159,13 +159,15 @@ public class DecisionModelResult
 public class DecisionModelCall
 {
     /// <summary>Creates a call.</summary>
-    public DecisionModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    public DecisionModelCall(IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, DecisionQuestion> questions, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken, double? maxOutputTokens = null, string? reasoning = null)
     {
         State = state;
         Questions = questions;
         ProviderOptions = providerOptions;
         Headers = headers;
         CancellationToken = cancellationToken;
+        MaxOutputTokens = maxOutputTokens;
+        Reasoning = reasoning;
     }
 
     /// <summary>Shared state as an ordered list of text, JSON, and file parts. See <see cref="DecisionState.PrepareDecisionStateAsync"/>.</summary>
@@ -182,6 +184,15 @@ public class DecisionModelCall
 
     /// <summary>Cancellation token.</summary>
     public CancellationToken CancellationToken { get; }
+
+    /// <summary>Maximum output tokens, an integer of at least 1. Null when the caller set none.</summary>
+    public double? MaxOutputTokens { get; }
+
+    /// <summary>
+    /// Reasoning effort: <c>provider-default</c>, <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>, <c>xhigh</c>, or <c>max</c>.
+    /// Language-model adapters default to <c>none</c> when it is null. Native decision providers report an unsupported-setting warning.
+    /// </summary>
+    public string? Reasoning { get; }
 }
 
 /// <summary>Decision model used by <see cref="Decide"/>.</summary>
@@ -217,7 +228,7 @@ public interface IDecisionProvider
 public class DecideEvent
 {
     /// <summary>Creates an event.</summary>
-    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    public DecideEvent(string callId, string operationId, IReadOnlyDictionary<string, object?> runtimeContext, string provider, string modelId, DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion> questions, int maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, IReadOnlyList<OperationWarning>? warnings = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null, double? maxOutputTokens = null, string? reasoning = null)
     {
         CallId = callId;
         OperationId = operationId;
@@ -235,6 +246,8 @@ public class DecideEvent
         RecordInputs = recordInputs;
         RecordOutputs = recordOutputs;
         FunctionId = functionId;
+        MaxOutputTokens = maxOutputTokens;
+        Reasoning = reasoning;
     }
 
     /// <summary>Call id.</summary>
@@ -257,6 +270,12 @@ public class DecideEvent
 
     /// <summary>Questions.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion> Questions { get; }
+
+    /// <summary>Maximum output tokens requested for the decision.</summary>
+    public double? MaxOutputTokens { get; }
+
+    /// <summary>Reasoning effort requested for the decision.</summary>
+    public string? Reasoning { get; }
 
     /// <summary>Resolved retry limit.</summary>
     public int MaxRetries { get; }
@@ -453,6 +472,16 @@ public sealed class DecideRequest : OperationRequest
     /// <summary>Nonempty question map.</summary>
     public IReadOnlyDictionary<string, DecisionQuestion>? Questions { get; set; }
 
+    /// <summary>Maximum output tokens for supported models. Must be an integer of at least 1 when set.</summary>
+    public double? MaxOutputTokens { get; set; }
+
+    /// <summary>
+    /// Reasoning effort for supported models: <c>provider-default</c>, <c>none</c>, <c>minimal</c>, <c>low</c>, <c>medium</c>, <c>high</c>,
+    /// <c>xhigh</c>, or <c>max</c>. Language-model adapters default to <c>none</c>; <c>provider-default</c> uses the wrapped language
+    /// model's own default instead. Native decision providers return an unsupported-setting warning.
+    /// </summary>
+    public string? Reasoning { get; set; }
+
     /// <summary>Called when the decision begins. Receives the full runtime context.</summary>
     public Func<DecideEvent, Task>? OnStart { get; set; }
 
@@ -478,6 +507,7 @@ public static class Decide
 
         var model = DecisionModels.Resolve(request.Model, request.ModelId);
 
+        LanguageModelCallPreparation.PrepareLanguageModelCallOptions(new LanguageModelCallOptionsInput { MaxOutputTokens = request.MaxOutputTokens });
         var questions = request.Questions ?? new Dictionary<string, DecisionQuestion>();
         ValidateInput(request.State, questions);
         foreach (var pair in questions)
@@ -498,7 +528,7 @@ public static class Decide
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var telemetry = request.Telemetry;
         var enabled = telemetry == null || telemetry.IsEnabled;
-        var userStart = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions);
+        var userStart = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, maxOutputTokens: request.MaxOutputTokens, reasoning: request.Reasoning);
         await OperationCallbacks.NotifyAsync(userStart, request.OnStart).ConfigureAwait(false);
         if (enabled)
         {
@@ -518,7 +548,7 @@ public static class Decide
             var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
             {
                 OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                return await model.DoDecideAsync(new DecisionModelCall(preparedState, questions, providerOptions, headers, ct), ct).ConfigureAwait(false);
+                return await model.DoDecideAsync(new DecisionModelCall(preparedState, questions, providerOptions, headers, ct, request.MaxOutputTokens, request.Reasoning), ct).ConfigureAwait(false);
             }, null).ConfigureAwait(false);
             OperationRetry.ThrowIfAborted(token, request.AbortReason);
             ValidateAnswers(questions, result.Answers, result.Rounding);
@@ -540,7 +570,7 @@ public static class Decide
             var now = request.Now?.Invoke() ?? DateTime.UtcNow;
             var response = new ProviderResponse(result.Response?.Headers, result.Response?.Body, result.Response?.Id, result.Response?.Timestamp ?? now, result.Response?.ModelId ?? model.ModelId, result.Response?.ProviderMetadata);
             var decision = new DecisionResult(result.Answers, usage, result.Warnings, result.Rounding, result.ProviderMetadata, response);
-            var end = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, result.Answers, usage, result.Warnings);
+            var end = new DecideEvent(callId, "ai.decide", context, model.Provider, model.ModelId, request.State, questions, maxRetries, request.Headers, providerOptions, result.Answers, usage, result.Warnings, maxOutputTokens: request.MaxOutputTokens, reasoning: request.Reasoning);
             await OperationCallbacks.NotifyAsync(end, request.OnEnd).ConfigureAwait(false);
             if (enabled)
             {
@@ -791,6 +821,6 @@ public static class Decide
 
     private static DecideEvent WithTelemetry(DecideEvent source, IReadOnlyDictionary<string, object?> context, DecideTelemetry? telemetry)
     {
-        return new DecideEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.State, source.Questions, source.MaxRetries, source.Headers, source.ProviderOptions, source.Answers, source.Usage, source.Warnings, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId);
+        return new DecideEvent(source.CallId, source.OperationId, context, source.Provider, source.ModelId, source.State, source.Questions, source.MaxRetries, source.Headers, source.ProviderOptions, source.Answers, source.Usage, source.Warnings, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId, source.MaxOutputTokens, source.Reasoning);
     }
 }

@@ -466,6 +466,45 @@ public sealed class DecisionLanguageModelTests
             JsonNode.Parse(Assert.IsType<TextContentPart>(message.Content[0]).Text));
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(1.0)]
+    [InlineData(512.0)]
+    [UpstreamTest(Prefix + "forwards maxOutputTokens to the language model: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_maxOutputTokens_to_the_language_model(double? maxOutputTokens)
+    {
+        var (model, language, _) = Setup();
+        await model.DoDecideAsync(Call(maxOutputTokens: maxOutputTokens));
+        Assert.Equal((int?)maxOutputTokens, language.Calls[0].MaxOutputTokens);
+    }
+
+    [Fact]
+    public async Task Rejects_a_maxOutputTokens_that_does_not_fit_an_int()
+    {
+        var (model, language, _) = Setup();
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => model.DoDecideAsync(Call(maxOutputTokens: 2147483648.0)));
+        Assert.Empty(language.Calls);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("provider-default")]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [InlineData("low")]
+    [InlineData("medium")]
+    [InlineData("high")]
+    [InlineData("xhigh")]
+    [InlineData("max")]
+    [UpstreamTest(Prefix + "forwards reasoning and defaults to none when omitted: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_reasoning_and_defaults_to_none_when_omitted(string? reasoning)
+    {
+        var (model, language, _) = Setup();
+        await model.DoDecideAsync(Call(maxOutputTokens: 512, reasoning: reasoning));
+        Assert.Equal(reasoning ?? "none", language.Calls[0].Reasoning);
+        Assert.Equal(512, language.Calls[0].MaxOutputTokens);
+    }
+
     private static GeneratedContent[] Text(string text)
     {
         return new GeneratedContent[] { new GeneratedText(text) };

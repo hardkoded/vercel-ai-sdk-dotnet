@@ -505,4 +505,68 @@ public sealed class DecideTests
             Questions = new Dictionary<string, DecisionQuestion> { ["severity"] = Q("score", null, new List<object?> { "Product unusable" }) },
         }));
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(1.0)]
+    [InlineData(512.0)]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::forwards maxOutputTokens: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_maxOutputTokens(double? maxOutputTokens)
+    {
+        var model = new DecideModel();
+        await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "test", Questions = SampleQuestions(), MaxOutputTokens = maxOutputTokens });
+        Assert.Equal(maxOutputTokens, model.Calls[0].MaxOutputTokens);
+    }
+
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(-1.0)]
+    [InlineData(1.5)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects invalid maxOutputTokens before calling the model: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_invalid_maxOutputTokens_before_calling_the_model(double maxOutputTokens)
+    {
+        var model = new DecideModel();
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "test", Questions = SampleQuestions(), MaxOutputTokens = maxOutputTokens }));
+        Assert.Empty(model.Calls);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("provider-default")]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [InlineData("low")]
+    [InlineData("medium")]
+    [InlineData("high")]
+    [InlineData("xhigh")]
+    [InlineData("max")]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::forwards reasoning and reports it in lifecycle callbacks: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Forwards_reasoning_and_reports_it_in_lifecycle_callbacks(string? reasoning)
+    {
+        var model = new DecideModel();
+        DecideEvent? start = null;
+        DecideEvent? end = null;
+        await DecideOperation.DecideAsync(new DecideRequest
+        {
+            Model = model,
+            State = "test",
+            Questions = SampleQuestions(),
+            Reasoning = reasoning,
+            OnStart = e =>
+            {
+                start = e;
+                return Task.CompletedTask;
+            },
+            OnEnd = e =>
+            {
+                end = e;
+                return Task.CompletedTask;
+            },
+        });
+        Assert.Equal(reasoning, model.Calls[0].Reasoning);
+        Assert.Equal(reasoning, start!.Reasoning);
+        Assert.Equal(reasoning, end!.Reasoning);
+    }
 }
