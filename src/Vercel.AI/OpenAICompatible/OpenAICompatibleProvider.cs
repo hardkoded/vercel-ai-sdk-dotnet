@@ -779,12 +779,12 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         var warnings = new List<CallWarning>();
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
-            warnings.Add(new CallWarning("unsupported", "This model does not support aspect ratio. Use `size` instead."));
+            warnings.Add(new CallWarning("unsupported", "aspectRatio", "This model does not support aspect ratio. Use `size` instead."));
         }
 
         if (options.Seed != null)
         {
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", null));
         }
 
         var headers = _provider.CreateHeaders(options.Headers);

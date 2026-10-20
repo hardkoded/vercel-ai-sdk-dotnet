@@ -93,7 +93,7 @@ public sealed class GroqUpstreamTests
         options.Reasoning = "none";
         var result = await Chat(capture, "llama-3.3-70b-versatile").DoGenerateAsync(options, CancellationToken.None);
         Assert.Null(UpstreamChat.Body(capture)["reasoning_effort"]);
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Message == "reasoning \"none\" is not supported by this model.");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "reasoning" && warning.Message == "reasoning \"none\" is not supported by this model.");
     }
 
     [Fact]

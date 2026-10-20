@@ -22,7 +22,9 @@ public sealed class DoGenerateWarningsTests
 
         var result = await Model(capture, "mistral-large-latest").DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported");
+        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported"
+            && warning.Feature == "reasoning"
+            && warning.Message == "This model does not support reasoning configuration.");
     }
 
     [Fact]
@@ -35,7 +37,7 @@ public sealed class DoGenerateWarningsTests
 
         var result = await Model(capture, "mistral-small-latest").DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility");
+        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Feature == "reasoning");
     }
 
     [Fact]

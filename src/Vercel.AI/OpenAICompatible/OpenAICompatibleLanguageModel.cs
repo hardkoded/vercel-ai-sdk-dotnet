@@ -467,7 +467,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
         var body = new JsonObject
@@ -614,7 +614,8 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             warnings.Add(new CallWarning(
                 "unsupported",
-                "responseFormat. JSON response format schema is only supported with structuredOutputs."));
+                "responseFormat",
+                "JSON response format schema is only supported with structuredOutputs"));
         }
 
         body["response_format"] = new JsonObject { ["type"] = "json_object" };

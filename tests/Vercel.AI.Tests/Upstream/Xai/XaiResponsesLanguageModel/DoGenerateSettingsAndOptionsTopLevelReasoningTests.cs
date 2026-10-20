@@ -76,6 +76,7 @@ public sealed class DoGenerateSettingsAndOptionsTopLevelReasoningTests
         Assert.Equal("xhigh", (string?)Body(capture)["reasoning"]!["effort"]);
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
         Assert.Equal("reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\".", warning.Message);
     }
 
@@ -108,6 +109,7 @@ public sealed class DoGenerateSettingsAndOptionsTopLevelReasoningTests
         Assert.False(Body(capture).ContainsKey("reasoning"));
         var warning = Assert.Single(result.Warnings);
         Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
         Assert.Equal("reasoning \"none\" is not supported by this model.", warning.Message);
     }
 

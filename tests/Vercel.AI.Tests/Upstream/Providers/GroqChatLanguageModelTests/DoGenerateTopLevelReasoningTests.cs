@@ -22,6 +22,6 @@ public sealed class DoGenerateTopLevelReasoningTests
         var result = await model.DoGenerateAsync(options, CancellationToken.None);
 
         Assert.Equal("high", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
-        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Message == "reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".");
+        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Feature == "reasoning" && warning.Message == "reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".");
     }
 }

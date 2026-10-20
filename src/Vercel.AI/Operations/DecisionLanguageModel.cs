@@ -359,7 +359,11 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             }
         }
 
-        var warnings = result.Warnings.Select(warning => new OperationWarning(warning.Type, warning.Message)).ToList();
+        var warnings = result.Warnings
+            .Select(warning => warning.Feature != null
+                ? new OperationWarning(warning.Type, feature: warning.Feature, details: warning.Message)
+                : new OperationWarning(warning.Type, warning.Message))
+            .ToList();
         return new DecisionModelResult(
             answers,
             warnings,

@@ -53,13 +53,13 @@ public sealed class TogetherAIImageModel : IImageModel
         var warnings = new List<CallWarning>();
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
-            warnings.Add(new CallWarning("unsupported", "This model does not support the `aspectRatio` option. Use `size` instead."));
+            warnings.Add(new CallWarning("unsupported", "aspectRatio", "This model does not support the `aspectRatio` option. Use `size` instead."));
         }
 
         var nonDiffusion = ModelId == NonDiffusionModelId;
         if (nonDiffusion && options.Seed != null)
         {
-            warnings.Add(new CallWarning("unsupported", "The " + ModelId + " model does not support the `seed` option."));
+            warnings.Add(new CallWarning("unsupported", "seed", "The " + ModelId + " model does not support the `seed` option."));
         }
 
         if (options.Files != null && options.Files.Count > 1)

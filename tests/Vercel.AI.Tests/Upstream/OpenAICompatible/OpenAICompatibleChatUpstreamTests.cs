@@ -461,7 +461,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         Assert.Equal("END", body["stop"]![0]!.GetValue<string>());
         Assert.Equal("low", body["reasoning_effort"]!.GetValue<string>());
         Assert.Null(body["top_k"]);
-        Assert.Contains((await Result(capture, options)).Warnings, warning => warning.Type == "unsupported" && warning.Message == "topK");
+        Assert.Contains((await Result(capture, options)).Warnings, warning => warning.Type == "unsupported" && warning.Feature == "topK");
     }
 
     [Fact]
