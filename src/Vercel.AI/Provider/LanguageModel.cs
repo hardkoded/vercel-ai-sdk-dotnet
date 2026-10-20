@@ -417,6 +417,12 @@ public sealed class GeneratedToolResult : GeneratedContent
 
     /// <summary>Provider-specific metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
+
+    /// <summary>True when the tool is dynamic. Maps to the result's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
+
+    /// <summary>Metadata of the tool, apart from provider metadata. Maps to the result's <c>toolMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
 }
 
 /// <summary>
@@ -1845,6 +1851,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>Provider metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
+
+    /// <summary>True when the tool is dynamic. Maps to the result's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
 }
 
 /// <summary>A cited URL.</summary>
