@@ -1,6 +1,6 @@
 {
   "upstreamRepo": "https://github.com/vercel/ai",
-  "upstreamCommit": "fa98094401a7318eec5d4005d427579150f970aa",
+  "upstreamCommit": "0c2a9de5de76570cc2ad0281382aa90cbd199d43",
   "excludedFiles": [
     {
       "file": "packages/ai/src/generate-text/stream-provider-error.integration.test.ts",

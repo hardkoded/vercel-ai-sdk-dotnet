@@ -364,7 +364,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             else if (generated is GoogleToolCall tool)
                             {
                                 // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
-                                yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted };
+                                yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted, Dynamic = tool.Dynamic };
                             }
                             else if (generated is GoogleGeneratedFile file)
                             {

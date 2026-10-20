@@ -43,7 +43,7 @@ public sealed class GoogleWarning
             }
         }
 
-        return new CallWarning(Type, message);
+        return Feature == null ? new CallWarning(Type, message) : new CallWarning(Type, Feature, message);
     }
 
     /// <summary>Unsupported feature warning.</summary>

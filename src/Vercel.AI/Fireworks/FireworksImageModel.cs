@@ -51,12 +51,12 @@ public sealed class FireworksImageModel : IImageModel
         var supportsSize = SupportsSize(ModelId);
         if (!supportsSize && !string.IsNullOrEmpty(options.Size))
         {
-            warnings.Add(new CallWarning("unsupported", "This model does not support the `size` option. Use `aspectRatio` instead."));
+            warnings.Add(new CallWarning("unsupported", "size", "This model does not support the `size` option. Use `aspectRatio` instead."));
         }
 
         if (supportsSize && !string.IsNullOrEmpty(options.AspectRatio))
         {
-            warnings.Add(new CallWarning("unsupported", "This model does not support the `aspectRatio` option."));
+            warnings.Add(new CallWarning("unsupported", "aspectRatio", "This model does not support the `aspectRatio` option."));
         }
 
         if (options.Files != null && options.Files.Count > 1)
@@ -66,7 +66,7 @@ public sealed class FireworksImageModel : IImageModel
 
         if (options.Mask != null)
         {
-            warnings.Add(new CallWarning("unsupported", "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit."));
+            warnings.Add(new CallWarning("unsupported", "mask", "Fireworks Kontext models do not support explicit masks. Use the prompt to describe the areas to edit."));
         }
 
         var body = new JsonObject

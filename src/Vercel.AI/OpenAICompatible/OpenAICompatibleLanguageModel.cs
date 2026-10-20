@@ -81,6 +81,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         var content = new List<GeneratedContent>();
+        var reasoning = PreferredString(message, "reasoning_content", "reasoning");
+        if (!string.IsNullOrEmpty(reasoning))
+        {
+            content.Add(new GeneratedReasoning(reasoning!));
+        }
+
         if (message.TryGetProperty("content", out var contentElement))
         {
             foreach (var part in OpenAICompatibleChat.ConvertContent(contentElement))
@@ -93,12 +99,6 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
                 content.Add(part.Reasoning ? (GeneratedContent)new GeneratedReasoning(part.Text) : new GeneratedText(part.Text));
             }
-        }
-
-        var reasoning = PreferredString(message, "reasoning_content", "reasoning");
-        if (!string.IsNullOrEmpty(reasoning))
-        {
-            content.Add(new GeneratedReasoning(reasoning!));
         }
 
         if (message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
@@ -467,7 +467,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         if (options.TopK != null)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
         var body = new JsonObject
@@ -533,7 +533,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         var metadataKey = OpenAICompatibleChat.ResolveProviderOptionsKey(rawName, options.ProviderOptions);
-        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName);
+        body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName, _provider.Options.SupportsMultiPartToolContent);
         if (responseTool == null)
         {
             AddTools(body, options.Tools, options.ToolChoice);
@@ -614,7 +614,8 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             warnings.Add(new CallWarning(
                 "unsupported",
-                "responseFormat. JSON response format schema is only supported with structuredOutputs."));
+                "responseFormat",
+                "JSON response format schema is only supported with structuredOutputs"));
         }
 
         body["response_format"] = new JsonObject { ["type"] = "json_object" };

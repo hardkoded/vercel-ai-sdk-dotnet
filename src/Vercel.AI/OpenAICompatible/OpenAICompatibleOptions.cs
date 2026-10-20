@@ -84,6 +84,9 @@ public class OpenAICompatibleOptions
     /// <summary>When true, a JSON schema is sent as <c>json_schema</c> instead of <c>json_object</c>.</summary>
     public bool SupportsStructuredOutputs { get; set; }
 
+    /// <summary>When true, a tool result with <see cref="ToolModelMessage.OutputContent"/> is sent as an array of content parts. Otherwise the parts are sent as a JSON string.</summary>
+    public bool SupportsMultiPartToolContent { get; set; }
+
     /// <summary>When true, a JSON-mode response that has text drops its tool calls, and a <c>tool_calls</c> finish becomes stop.</summary>
     public bool JsonTextOverridesToolCalls { get; set; }
 

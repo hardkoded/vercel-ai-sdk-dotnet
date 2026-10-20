@@ -571,7 +571,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools));
+        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), prepared.Body["store"]?.GetValue<bool>() == true);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;

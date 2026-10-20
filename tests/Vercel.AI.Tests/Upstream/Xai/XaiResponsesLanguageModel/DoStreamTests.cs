@@ -25,7 +25,7 @@ public sealed class DoStreamTests
         var parts = await Collect(Model(capture), options);
 
         var start = First<StreamStartStreamPart>(parts);
-        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, start.Warnings.Select(warning => warning.Message));
+        Assert.Equal(new[] { "frequencyPenalty", "presencePenalty" }, start.Warnings.Select(warning => warning.Feature));
         Assert.All(start.Warnings, warning => Assert.Equal("unsupported", warning.Type));
     }
 }

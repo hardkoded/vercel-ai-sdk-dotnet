@@ -221,17 +221,17 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         var warnings = new List<CallWarning>();
         if (options.StopSequences != null)
         {
-            warnings.Add(new CallWarning("unsupported", "stopSequences"));
+            warnings.Add(new CallWarning("unsupported", "stopSequences", null));
         }
 
         if (options.TopK.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "topK"));
+            warnings.Add(new CallWarning("unsupported", "topK", null));
         }
 
         if (options.Seed.HasValue)
         {
-            warnings.Add(new CallWarning("unsupported", "seed"));
+            warnings.Add(new CallWarning("unsupported", "seed", null));
         }
 
         var providerToolsByName = new Dictionary<string, LanguageModelTool>(StringComparer.Ordinal);
@@ -302,7 +302,10 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 effort = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, ReasoningEffortMap, mappingWarnings);
                 foreach (var warning in mappingWarnings)
                 {
-                    warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
+                    if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+                    {
+                        warnings.Add(callWarning);
+                    }
                 }
             }
         }
@@ -355,7 +358,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
 
                 if (encoded == null)
                 {
-                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId));
+                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId, null));
                 }
                 else
                 {
@@ -420,7 +423,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
 
             if (fields == null)
             {
-                warnings.Add(new CallWarning("unsupported", "tool choice for provider-defined tool " + tool.ProviderToolId));
+                warnings.Add(new CallWarning("unsupported", "tool choice for provider-defined tool " + tool.ProviderToolId, null));
                 return null;
             }
         }
