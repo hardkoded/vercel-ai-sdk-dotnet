@@ -4,11 +4,12 @@
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock;
 
-/// <summary>Clears the endpoint variables for a test and restores them on dispose.</summary>
+/// <summary>Clears the endpoint and region variables for a test and restores them on dispose.</summary>
 public class BedrockEndpointEnvironment : IDisposable
 {
     private static readonly string[] Names =
     [
+        "AWS_REGION",
         "AWS_ENDPOINT_URL",
         "AWS_ENDPOINT_URL_BEDROCK_RUNTIME",
         "AWS_ENDPOINT_URL_BEDROCK_AGENT_RUNTIME",

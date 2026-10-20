@@ -14,8 +14,14 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Settings for Anthropic Messages on Amazon Bedrock InvokeModel.</summary>
 public sealed class AmazonBedrockAnthropicOptions
 {
-    /// <summary>AWS region. Defaults to <c>us-east-1</c>.</summary>
-    public string Region { get; set; } = "us-east-1";
+    /// <summary>AWS region. Falls back to <c>AWS_REGION</c>, then <c>us-east-1</c>.</summary>
+    public string Region
+    {
+        get => _region ?? AmazonBedrockEndpoints.DefaultRegion();
+        set => _region = value;
+    }
+
+    private string? _region;
 
     /// <summary>Bearer token. When set, SigV4 is not used. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>.</summary>
     public string? ApiKey { get; set; }
@@ -47,6 +53,11 @@ public sealed class AmazonBedrockAnthropicOptions
 
     /// <summary>Extra headers sent on every call. The SDK user-agent suffix is appended.</summary>
     public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
+    /// </summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
 }
 
 /// <summary>Builds InvokeModel URLs and the Bedrock Anthropic request body.</summary>
@@ -361,7 +372,7 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
             options.UtcNow,
             options.CredentialProvider);
         var client = new HttpClient(AmazonBedrockAnthropicFetch.Create(signing), disposeHandler: false);
-        return new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers);
+        return new AmazonBedrockAnthropicInnerProvider(client, baseUrl, ModelId, options.Headers, options.HeadersProvider);
     }
 }
 
@@ -371,13 +382,20 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
     private readonly string _baseUrl;
     private readonly string _modelId;
     private readonly IReadOnlyDictionary<string, string?> _headers;
+    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? _headersProvider;
 
-    public AmazonBedrockAnthropicInnerProvider(HttpClient httpClient, string baseUrl, string modelId, IReadOnlyDictionary<string, string?> headers)
+    public AmazonBedrockAnthropicInnerProvider(
+        HttpClient httpClient,
+        string baseUrl,
+        string modelId,
+        IReadOnlyDictionary<string, string?> headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headersProvider = null)
         : base(httpClient, new Vercel.AI.Anthropic.AnthropicOptions { BaseUrl = baseUrl, Name = AmazonBedrockAnthropicProvider.ProviderId })
     {
         _baseUrl = baseUrl;
         _modelId = modelId;
         _headers = headers;
+        _headersProvider = headersProvider;
     }
 
     // Bedrock Anthropic does not support URL sources, so images and files are downloaded and sent as base64.
@@ -397,10 +415,27 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
         return AmazonBedrockAnthropicRequests.Transform(body, betas);
     }
 
-    public override Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public override async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in ProviderValues.WithUserAgentSuffix(_headers, "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version))
+        var configured = _headers;
+        if (_headersProvider != null)
+        {
+            var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in _headers)
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            foreach (var pair in await _headersProvider(cancellationToken).ConfigureAwait(false))
+            {
+                merged[pair.Key] = pair.Value;
+            }
+
+            configured = merged;
+        }
+
+        foreach (var pair in ProviderValues.WithUserAgentSuffix(configured, "ai-sdk-amazon-bedrock/" + AiSdkVersion.Version))
         {
             headers[pair.Key] = pair.Value;
         }
@@ -418,6 +453,6 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
             }
         }
 
-        return Task.FromResult(headers);
+        return headers;
     }
 }

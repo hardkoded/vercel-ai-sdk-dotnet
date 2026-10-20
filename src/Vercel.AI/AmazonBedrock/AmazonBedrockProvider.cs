@@ -18,8 +18,14 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Amazon Bedrock settings.</summary>
 public sealed class AmazonBedrockOptions
 {
-    /// <summary>AWS region.</summary>
-    public string Region { get; set; } = "us-east-1";
+    /// <summary>AWS region. Falls back to <c>AWS_REGION</c>, then <c>us-east-1</c>.</summary>
+    public string Region
+    {
+        get => _region ?? AmazonBedrockEndpoints.DefaultRegion();
+        set => _region = value;
+    }
+
+    private string? _region;
 
     /// <summary>
     /// Bedrock Runtime origin. Falls back to <c>AWS_ENDPOINT_URL_BEDROCK_RUNTIME</c>, then <c>AWS_ENDPOINT_URL</c>.

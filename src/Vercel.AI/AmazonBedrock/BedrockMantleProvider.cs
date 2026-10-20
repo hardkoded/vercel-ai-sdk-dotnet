@@ -13,8 +13,14 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Settings for the OpenAI-compatible Bedrock Mantle endpoint.</summary>
 public sealed class BedrockMantleOptions
 {
-    /// <summary>AWS region. Defaults to <c>us-east-1</c>.</summary>
-    public string Region { get; set; } = "us-east-1";
+    /// <summary>AWS region. Falls back to <c>AWS_REGION</c>, then <c>us-east-1</c>.</summary>
+    public string Region
+    {
+        get => _region ?? AmazonBedrockEndpoints.DefaultRegion();
+        set => _region = value;
+    }
+
+    private string? _region;
 
     /// <summary>Bearer token. When set, SigV4 is not used. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>.</summary>
     public string? ApiKey { get; set; }
@@ -43,6 +49,11 @@ public sealed class BedrockMantleOptions
 
     /// <summary>Extra headers sent on every call. The SDK user-agent suffix is appended.</summary>
     public Dictionary<string, string> Headers { get; } = new();
+
+    /// <summary>
+    /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
+    /// </summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
 }
 
 /// <summary>Mantle URL rules. Some model ids are served under <c>/openai/v1</c>.</summary>
@@ -223,9 +234,65 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
             openAI.Headers[header.Key] = header.Value;
         }
 
-        var provider = new OpenAIProvider(new HttpClient(signing, disposeHandler: false), openAI);
+        HttpMessageHandler handler = signing;
+        if (options.HeadersProvider != null)
+        {
+            handler = new BedrockMantleHeadersHandler(signing, options.Headers, options.HeadersProvider, OpenAICompatibleInfo.UserAgent("amazon-bedrock"));
+        }
+
+        var provider = new OpenAIProvider(new HttpClient(handler, disposeHandler: false), openAI);
         return _responses
             ? new OpenAIResponsesLanguageModel(provider, ModelId) { SupportsWebSearchSourcesInclude = false }
             : provider.ChatModel(ModelId);
+    }
+}
+
+/// <summary>Resolves <see cref="BedrockMantleOptions.HeadersProvider"/> for each request, before signing.</summary>
+internal sealed class BedrockMantleHeadersHandler : DelegatingHandler
+{
+    private readonly IReadOnlyDictionary<string, string> _headers;
+    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> _provider;
+    private readonly string _userAgent;
+
+    public BedrockMantleHeadersHandler(
+        HttpMessageHandler inner,
+        IReadOnlyDictionary<string, string> headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> provider,
+        string userAgent)
+        : base(inner)
+    {
+        _headers = headers;
+        _provider = provider;
+        _userAgent = userAgent;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in _headers)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in await _provider(cancellationToken).ConfigureAwait(false))
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in merged)
+        {
+            if (pair.Value == null)
+            {
+                request.Headers.Remove(pair.Key);
+            }
+        }
+
+        foreach (var pair in ProviderValues.WithUserAgentSuffix(merged, _userAgent))
+        {
+            request.Headers.Remove(pair.Key);
+            request.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
+        }
+
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
