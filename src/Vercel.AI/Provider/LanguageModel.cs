@@ -1219,9 +1219,14 @@ public sealed class ToolModelMessage : ModelMessage
     /// does not read <see cref="OutputContent"/> sends the stringified parts, as upstream does by default.
     /// </summary>
     public ToolModelMessage(string toolCallId, string toolName, IReadOnlyList<UserContentPart> content, JsonElement? providerMetadata = null)
-        : this(toolCallId, toolName, SerializeContent(content), false, "json", providerMetadata)
+        : this(toolCallId, toolName, Snapshot(content), providerMetadata, true)
     {
-        OutputContent = content.ToArray();
+    }
+
+    private ToolModelMessage(string toolCallId, string toolName, UserContentPart[] snapshot, JsonElement? providerMetadata, bool snapshotted)
+        : this(toolCallId, toolName, SerializeContent(snapshot), false, "json", providerMetadata)
+    {
+        OutputContent = snapshot;
     }
 
     /// <summary>
@@ -1325,6 +1330,37 @@ public sealed class ToolModelMessage : ModelMessage
     public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }
 
     private static readonly JsonSerializerOptions ContentJsonOptions = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    private static UserContentPart[] Snapshot(IReadOnlyList<UserContentPart> content)
+    {
+        if (content is null)
+        {
+            throw new ArgumentNullException(nameof(content));
+        }
+
+        var copy = new UserContentPart[content.Count];
+        for (var i = 0; i < copy.Length; i++)
+        {
+            var part = content[i];
+            if (part is FileContentPart file)
+            {
+                var options = file.ProviderOptions == null ? null : new Dictionary<string, JsonElement>(file.ProviderOptions.ToDictionary(pair => pair.Key, pair => pair.Value));
+                copy[i] = file.ProviderReference != null
+                    ? FileContentPart.FromProviderReference(file.MediaType, new Dictionary<string, string>(file.ProviderReference.ToDictionary(pair => pair.Key, pair => pair.Value)), file.FileName, options)
+                    : new FileContentPart(file.MediaType, file.Url, (byte[]?)file.Data?.Clone(), file.FileName) { ProviderOptions = options };
+            }
+            else if (part is TextContentPart)
+            {
+                copy[i] = part;
+            }
+            else
+            {
+                throw new ArgumentException("Tool content parts must be text or file parts.", nameof(content));
+            }
+        }
+
+        return copy;
+    }
 
     private static string SerializeContent(IReadOnlyList<UserContentPart> content)
     {

@@ -60,4 +60,28 @@ public sealed class ToolCallsTests
                 + "{\"type\":\"image_url\",\"image_url\":{\"url\":\"https://example.com/image.png\"}}]}]"),
             result));
     }
+
+    [Fact]
+    public void Tool_content_snapshots_file_values_and_omits_provider_options()
+    {
+        using var options = System.Text.Json.JsonDocument.Parse("{\"custom\":\"value\"}");
+        var providerOptions = new Dictionary<string, System.Text.Json.JsonElement> { ["openaiCompatible"] = options.RootElement.Clone() };
+        var reference = new Dictionary<string, string> { ["custom-provider"] = "file-123" };
+        var bytes = new byte[] { 1, 2, 3 };
+        var message = new ToolModelMessage("call-1", "useImage", new UserContentPart[]
+        {
+            FileContentPart.FromProviderReference("application/pdf", reference, null, providerOptions),
+            new FileContentPart("image/png", null, bytes, null),
+        });
+        var json = message.OutputJson;
+
+        reference["custom-provider"] = "file-999";
+        bytes[0] = 9;
+        var result = OpenAICompatibleChat.ConvertMessages(new ModelMessage[] { message }, "openaiCompatible", "custom-provider", supportsMultiPartToolContent: true);
+
+        Assert.Equal(json, message.OutputJson);
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("[{\"type\":\"file\",\"file\":{\"file_id\":\"file-123\"}},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,AQID\"}}]"),
+            result[0]!["content"]));
+    }
 }
