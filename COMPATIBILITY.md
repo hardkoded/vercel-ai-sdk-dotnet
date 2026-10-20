@@ -1,6 +1,6 @@
 # Compatibility
 
-Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `fa98094401a7318eec5d4005d427579150f970aa` (`feat(openai): support ordered 'additional_tools' from tool results (#23291)`), recorded on 2026-10-16.
+Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `0c2a9de5de76570cc2ad0281382aa90cbd199d43` (`feat: add maxOutputTokens and reasoning to decide (#23590)`), recorded on 2026-10-20.
 
 This port targets AI SDK 7 / Language Model specification **V4**. Names are C# versions of the JavaScript API: `generateText` is `GenerateTextAsync`, `streamText` is `StreamTextAsync` (it returns `StreamTextResult`, not a task), `AbortSignal` is `CancellationToken`, and option properties are PascalCase.
 
@@ -63,6 +63,6 @@ Not emitted yet, because the core stream does not surface them:
 - Amazon Bedrock Anthropic and Mantle delegate to the Anthropic Messages and OpenAI models. The Mantle Responses model does not turn off `supportsWebSearchSourcesInclude`, and the Bedrock Anthropic provider has no `credentialProvider` or `tools` member.
 - Cohere chat streaming is generate-then-delta.
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
-- MiniMax uses the OpenAI-compatible `/v1` base. The JavaScript package also has an Anthropic-compatible path.
+- MiniMax uses the Anthropic-compatible `/anthropic/v1` base through the shared Anthropic adapter, as the JavaScript package does. The MiniMax video models are not ported. The typed `MiniMaxLanguageModelOptions`, `MiniMaxCacheControlOptions`, `MiniMaxImagePartOptions`, and `MiniMaxVideoPartOptions` types are not ported either; pass the options as JSON under `minimax`.
 - Media providers speak that provider’s public HTTP API for one modality. Their inherited chat method is the OpenAI-compatible client and is not the supported entry point.
 - Perplexity language generation uses the Agent API at `{base}/v1/agent`. Embeddings stay on the OpenAI-compatible embeddings route. Legacy Sonar model ids are not aliased. Sonar PDF input, video input, and image or video results have no Agent API equivalent.

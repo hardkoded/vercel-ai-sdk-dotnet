@@ -331,7 +331,7 @@ internal static class OpenResponsesExtensionItems
         switch (part)
         {
             case GeneratedToolCall call:
-                return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted };
+                return new ToolCallStreamPart(call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderMetadata) { ProviderExecuted = call.ProviderExecuted, Dynamic = call.Dynamic };
             case GeneratedToolResult toolResult:
                 return new ToolResultStreamPart(toolResult.ToolCallId, toolResult.ToolName, JsonValues.ParseOrEmpty(toolResult.ResultJson)) { IsError = toolResult.IsError, ProviderMetadata = toolResult.ProviderMetadata };
             case GeneratedSource source:
@@ -394,7 +394,7 @@ internal static class OpenResponsesExtensionItems
             case GeneratedReasoning reasoning:
                 return new GeneratedReasoning(reasoning.Text, merged);
             case GeneratedToolCall call:
-                return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, merged) { ProviderExecuted = call.ProviderExecuted };
+                return new GeneratedToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson, merged) { ProviderExecuted = call.ProviderExecuted, Dynamic = call.Dynamic };
             case GeneratedToolResult toolResult:
                 return new GeneratedToolResult(toolResult.ToolCallId, toolResult.ToolName, toolResult.ResultJson, toolResult.IsError) { ProviderMetadata = merged };
             case GeneratedSource source:

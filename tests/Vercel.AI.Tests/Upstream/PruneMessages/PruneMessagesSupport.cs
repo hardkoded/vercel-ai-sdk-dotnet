@@ -125,13 +125,15 @@ internal static class PruneMessagesSupport
                         {
                             content.Add(part switch
                             {
-                                AssistantReasoningPart r => new JsonObject { ["text"] = r.Text, ["type"] = "reasoning" },
-                                AssistantFilePart f => new JsonObject
-                                {
-                                    ["data"] = System.Text.Encoding.UTF8.GetString(f.Data!),
-                                    ["mediaType"] = f.MediaType,
-                                    ["type"] = f.Type,
-                                },
+                                AssistantReasoningPart r => WithProviderOptions(new JsonObject { ["text"] = r.Text, ["type"] = "reasoning" }, r),
+                                AssistantFilePart f => WithProviderOptions(
+                                    new JsonObject
+                                    {
+                                        ["data"] = System.Text.Encoding.UTF8.GetString(f.Data!),
+                                        ["mediaType"] = f.MediaType,
+                                        ["type"] = f.Type,
+                                    },
+                                    f),
                                 AssistantTextPart t => new JsonObject { ["text"] = t.Text, ["type"] = "text" },
                                 AssistantToolCallPart c => new JsonObject
                                 {
@@ -186,6 +188,31 @@ internal static class PruneMessagesSupport
         }
 
         return array;
+    }
+
+    internal static IReadOnlyDictionary<string, JsonElement> ItemId(string itemId)
+    {
+        return new Dictionary<string, JsonElement>
+        {
+            ["openai"] = JsonSerializer.SerializeToElement(new { itemId }),
+        };
+    }
+
+    private static JsonObject WithProviderOptions(JsonObject node, AssistantContentPart part)
+    {
+        if (part.ProviderOptions is not null)
+        {
+            node["providerOptions"] = JsonSerializer.SerializeToNode(part.ProviderOptions);
+        }
+
+        return node;
+    }
+
+    internal static void AssertEqual(IReadOnlyList<ModelMessage> expected, IReadOnlyList<ModelMessage> actual)
+    {
+        var expectedNode = Render(expected);
+        var actualNode = Render(actual);
+        Assert.True(JsonNode.DeepEquals(expectedNode, actualNode), "Expected: " + expectedNode.ToJsonString() + "\nActual: " + actualNode.ToJsonString());
     }
 
     internal static void AssertSnapshot(string expectedJson, IReadOnlyList<ModelMessage> actual)

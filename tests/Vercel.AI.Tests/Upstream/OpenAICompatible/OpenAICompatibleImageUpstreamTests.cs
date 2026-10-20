@@ -93,8 +93,8 @@ public sealed class OpenAICompatibleImageUpstreamTests
         var model = Image(capture);
         var seed = 123;
         var result = await model.DoGenerateAsync(new ImageCallOptions("draw") { AspectRatio = "16:9", Seed = seed }, CancellationToken.None);
-        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "This model does not support aspect ratio. Use `size` instead.");
-        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Message == "seed");
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Feature == "aspectRatio" && warning.Message == "This model does not support aspect ratio. Use `size` instead.");
+        Assert.Contains(result.CallWarnings, warning => warning.Type == "unsupported" && warning.Feature == "seed");
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["seed"]);
     }
 

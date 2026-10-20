@@ -87,7 +87,7 @@ public sealed class TogetherAIUpstreamTests
         var capture = new UpstreamCapture { ResponseBody = "{\"data\":[]}" };
         var model = Image(capture, "black-forest-labs/FLUX.1-dev");
         var result = await model.DoGenerateAsync(new ImageCallOptions("a cat") { AspectRatio = "16:9", Size = "1024x1024" }, CancellationToken.None);
-        Assert.Contains(result.CallWarnings, warning => warning.Message == "This model does not support the `aspectRatio` option. Use `size` instead.");
+        Assert.Contains(result.CallWarnings, warning => warning.Feature == "aspectRatio" && warning.Message == "This model does not support the `aspectRatio` option. Use `size` instead.");
         Assert.Null(JsonNode.Parse(capture.Requests[0].Body)!["aspect_ratio"]);
     }
 
@@ -354,6 +354,7 @@ public sealed class TogetherAIUpstreamTests
             capture.Requests[0].Body);
         var warning = Assert.Single(result.CallWarnings);
         Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("seed", warning.Feature);
         Assert.Equal("The google/gemini-3-pro-image model does not support the `seed` option.", warning.Message);
     }
 

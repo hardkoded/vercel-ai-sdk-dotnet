@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -225,6 +226,29 @@ public sealed class OpenAICompatibleChatUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate::should pass multi-part tool content when supported", Coverage = UpstreamCoverage.Covered)]
+    public async Task Multi_part_tool_content_is_sent_when_supported()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Prompt = new ModelMessage[]
+        {
+            new ToolModelMessage("call-1", "useImage", new UserContentPart[]
+            {
+                new TextContentPart("image result"),
+                new FileContentPart("image/png", null, Convert.FromBase64String("iVBORw0KGgo="), null),
+            }),
+        };
+        await UpstreamChat.Model(capture, "test-provider", "grok-3", o => o.SupportsMultiPartToolContent = true).DoGenerateAsync(options, CancellationToken.None);
+        var message = UpstreamChat.Body(capture)["messages"]![0]!;
+        Assert.Equal("tool", message["role"]!.GetValue<string>());
+        Assert.Equal("call-1", message["tool_call_id"]!.GetValue<string>());
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("[{\"type\":\"text\",\"text\":\"image result\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,iVBORw0KGgo=\"}}]"),
+            message["content"]));
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::Google Gemini thought signatures (OpenAI compatibility)::should serialize thought signature from a custom provider namespace", Coverage = UpstreamCoverage.Covered)]
     public async Task Thought_signature_uses_the_provider_metadata_key()
     {
@@ -370,10 +394,12 @@ public sealed class OpenAICompatibleChatUpstreamTests
     [UpstreamTest("packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate::should prefer reasoning_content over reasoning field when both are provided", Coverage = UpstreamCoverage.Covered)]
     public async Task Reasoning_content_wins_over_reasoning()
     {
-        var capture = new UpstreamCapture { ResponseBody = "{\"choices\":[{\"message\":{\"content\":\"Hi\",\"reasoning_content\":\"first\",\"reasoning\":\"second\"},\"finish_reason\":\"stop\"}]}" };
+        var capture = new UpstreamCapture { ResponseBody = "{\"choices\":[{\"message\":{\"content\":\"Hello, World!\",\"reasoning_content\":\"This is from reasoning_content\",\"reasoning\":\"This is from reasoning field\"},\"finish_reason\":\"stop\"}]}" };
         var result = await UpstreamChat.Model(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
-        var reasoning = result.Content.OfType<GeneratedReasoning>().Single();
-        Assert.Equal("first", reasoning.Text);
+        Assert.Collection(
+            result.Content,
+            part => Assert.Equal("This is from reasoning_content", Assert.IsType<GeneratedReasoning>(part).Text),
+            part => Assert.Equal("Hello, World!", Assert.IsType<GeneratedText>(part).Text));
     }
 
     [Fact]
@@ -459,7 +485,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
         Assert.Equal("END", body["stop"]![0]!.GetValue<string>());
         Assert.Equal("low", body["reasoning_effort"]!.GetValue<string>());
         Assert.Null(body["top_k"]);
-        Assert.Contains((await Result(capture, options)).Warnings, warning => warning.Type == "unsupported" && warning.Message == "topK");
+        Assert.Contains((await Result(capture, options)).Warnings, warning => warning.Type == "unsupported" && warning.Feature == "topK");
     }
 
     [Fact]

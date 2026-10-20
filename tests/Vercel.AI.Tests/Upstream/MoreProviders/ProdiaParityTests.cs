@@ -398,7 +398,8 @@ public sealed class ProdiaParityTests
         Assert.All(result.Warnings, warning => Assert.Equal("unsupported", warning.Type));
         Assert.Equal(
             new[] { "temperature", "topP", "topK", "seed", "maxOutputTokens", "stopSequences", "presencePenalty", "frequencyPenalty", "tools", "toolChoice", "responseFormat", "reasoning" },
-            result.Warnings.Select(warning => warning.Message));
+            result.Warnings.Select(warning => warning.Feature));
+        Assert.Equal("This provider does not support reasoning configuration.", result.Warnings[^1].Message);
     }
 
     [Fact]

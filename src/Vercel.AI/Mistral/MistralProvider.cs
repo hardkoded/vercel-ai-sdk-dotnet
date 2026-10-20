@@ -69,7 +69,7 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         {
             if (ReasoningMap.IsCustomReasoning(reasoning))
             {
-                warnings.Add(new CallWarning("unsupported", "This model does not support reasoning configuration."));
+                warnings.Add(new CallWarning("unsupported", "reasoning", "This model does not support reasoning configuration."));
             }
 
             return null;
@@ -94,7 +94,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, EffortMap, mappingWarnings);
         foreach (var warning in mappingWarnings)
         {
-            warnings.Add(new CallWarning(warning.Type, (warning as CompatibilityWarning)?.Details ?? (warning as UnsupportedWarning)?.Details ?? string.Empty));
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
         }
 
         return effort;
