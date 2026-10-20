@@ -9,9 +9,11 @@ PR body. Each upstream test is reported as one of:
   COVERED        a .NET test links it with Coverage = Covered
   PARTIAL        a .NET test links it with Coverage = Partial
   ACKNOWLEDGED   the PR body lists it under a "Not ported" heading
+  AMBIGUOUS      a link from the PR diff has a prefix the script cannot
+                 resolve, and its title ends the ids of several tests
   MISSING        none of the above
 
-The exit code is 1 when any test is MISSING. Tests in packages that the
+The exit code is 1 when any test is MISSING or AMBIGUOUS. Tests in packages that the
 catalog marks out of scope, and in integration or e2e files, are listed apart
 and never fail the check.
 
