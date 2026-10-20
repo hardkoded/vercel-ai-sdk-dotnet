@@ -967,7 +967,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     break;
                 case AssistantModelMessage assistant:
                     AddStoredReasoning(input, assistant, providerOptionsName, hasContinuation, store);
-                    if (assistant.Parts.Any(part => part is AssistantTextPart && TextItemId(part, providerOptionsName) != null))
+                    var hasTextItemIds = assistant.Parts.Any(part => part is AssistantTextPart && TextItemId(part, providerOptionsName) != null);
+                    if (hasTextItemIds)
                     {
                         AddStoredText(input, assistant, providerOptionsName, explicitItem, store, isReasoningModel, hasConversation);
                     }
@@ -987,6 +988,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
                             AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
+                            continue;
+                        }
+
+                        if (IsShellToolName(call.ToolName, toolNameMapping))
+                        {
+                            AddShellCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
                             continue;
                         }
 
@@ -1054,6 +1061,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         {
                             AddProgramOutput(input, resultPart, providerOptionsName, store, hasConversation);
                         }
+                        else if (IsShellToolName(resultPart.ToolName, toolNameMapping) && !hasConversation && resultPart.Output.OutputType == "json")
+                        {
+                            // The shell_call_output has its own item id, which the call's metadata does not hold, so it is rebuilt.
+                            input.Add(ShellCallOutput(resultPart.ToolCallId, resultPart.Output.OutputJson));
+                        }
+                    }
+
+                    if (hasTextItemIds)
+                    {
+                        AddStoredText(input, assistant, providerOptionsName, explicitItem, store, isReasoningModel, hasConversation, afterToolParts: true);
                     }
 
                     break;
@@ -1073,6 +1090,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             ["text"] = toolText,
                             ["prompt_cache_breakpoint"] = toolBreakpoint,
                         });
+                    }
+
+                    if (IsShellToolName(tool.ToolName, toolNameMapping) && tool.OutputType == "json")
+                    {
+                        input.Add(ShellCallOutput(tool.ToolCallId, tool.OutputJson));
+                        break;
                     }
 
                     var resultCaller = ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName));
@@ -1120,6 +1143,134 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
     private static bool IsProgrammaticToolName(string toolName, ToolNameMapping? toolNameMapping) =>
         toolNameMapping?.ToProviderToolName(toolName) == "programmatic_tool_calling";
+
+    private static bool IsShellToolName(string toolName, ToolNameMapping? toolNameMapping) =>
+        toolNameMapping?.ToProviderToolName(toolName) == "shell";
+
+    // A stored shell call replays as an item reference. Without storage, a call is rebuilt as a shell_call.
+    private static void AddShellCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    {
+        var itemId = OpenAIJson.String(options, "itemId");
+        if (hasConversation && itemId != null)
+        {
+            return;
+        }
+
+        if (store && itemId != null)
+        {
+            // A previous response id already holds the client-executed call.
+            if (call.ProviderExecuted || !hasContinuation)
+            {
+                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            }
+
+            return;
+        }
+
+        // A stored provider-executed call has no id to reference, and it cannot be rebuilt without its output.
+        if (store && call.ProviderExecuted)
+        {
+            return;
+        }
+
+        var action = ShellInput(call.ArgumentsJson);
+        var shellAction = new JsonObject { ["commands"] = action["commands"]!.DeepClone() };
+        if (action["timeoutMs"] is { } timeout)
+        {
+            shellAction["timeout_ms"] = timeout.DeepClone();
+        }
+
+        if (action["maxOutputLength"] is { } maxOutput)
+        {
+            shellAction["max_output_length"] = maxOutput.DeepClone();
+        }
+
+        var shellCall = new JsonObject { ["type"] = "shell_call", ["call_id"] = call.ToolCallId };
+        if (itemId != null)
+        {
+            shellCall["id"] = itemId;
+        }
+
+        shellCall["status"] = "completed";
+        shellCall["action"] = shellAction;
+        input.Add(shellCall);
+    }
+
+    // The shell input schema: { action: { commands: string[], timeoutMs?: number, maxOutputLength?: number } }.
+    private static JsonObject ShellInput(string argumentsJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(argumentsJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The shell tool call input is not valid JSON.", exception);
+        }
+
+        if (parsed?["action"] is not JsonObject action
+            || action["commands"] is not JsonArray commands
+            || commands.Any(command => !IsKind(command, JsonValueKind.String))
+            || action["timeoutMs"] is { } timeout && !IsKind(timeout, JsonValueKind.Number)
+            || action["maxOutputLength"] is { } maxOutput && !IsKind(maxOutput, JsonValueKind.Number))
+        {
+            throw new AiSdkException("The shell tool call input needs an action with a commands array of strings.");
+        }
+
+        return action;
+    }
+
+    private static bool IsKind(JsonNode? node, JsonValueKind kind) => node is JsonValue value && value.GetValueKind() == kind;
+
+    // The shell output schema: { output: { stdout, stderr, outcome: { type: "timeout" } | { type: "exit", exitCode } }[] }.
+    private static JsonObject ShellCallOutput(string callId, string outputJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(outputJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The shell tool result is not valid JSON.", exception);
+        }
+
+        if (parsed?["output"] is not JsonArray items)
+        {
+            throw new AiSdkException("The shell tool result needs an output array.");
+        }
+
+        var output = new JsonArray();
+        foreach (var item in items)
+        {
+            if (item is not JsonObject entry
+                || !IsKind(entry["stdout"], JsonValueKind.String)
+                || !IsKind(entry["stderr"], JsonValueKind.String)
+                || entry["outcome"] is not JsonObject outcome)
+            {
+                throw new AiSdkException("Each shell tool result output needs stdout, stderr, and an outcome.");
+            }
+
+            var outcomeType = IsKind(outcome["type"], JsonValueKind.String) ? outcome["type"]!.GetValue<string>() : null;
+            JsonObject converted = outcomeType switch
+            {
+                "timeout" => new JsonObject { ["type"] = "timeout" },
+                "exit" when IsKind(outcome["exitCode"], JsonValueKind.Number) =>
+                    new JsonObject { ["type"] = "exit", ["exit_code"] = outcome["exitCode"]!.DeepClone() },
+                _ => throw new AiSdkException("The shell tool result outcome must be a timeout or an exit with an exitCode."),
+            };
+
+            output.Add(new JsonObject
+            {
+                ["stdout"] = entry["stdout"]!.DeepClone(),
+                ["stderr"] = entry["stderr"]!.DeepClone(),
+                ["outcome"] = converted,
+            });
+        }
+
+        return new JsonObject { ["type"] = "shell_call_output", ["call_id"] = callId, ["output"] = output };
+    }
 
     private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(AssistantModelMessage assistant, GeneratedToolCall call) =>
         assistant.Parts.OfType<AssistantToolCallPart>().FirstOrDefault(part => part.ToolCall == call)?.ProviderOptions;
@@ -1320,10 +1471,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool explicitItem,
         bool store,
         bool isReasoningModel,
-        bool hasConversation)
+        bool hasConversation,
+        bool afterToolParts = false)
     {
         var emittedTextItemIds = new HashSet<string>();
         var hasPrecedingReasoning = false;
+        var seenToolPart = false;
         foreach (var part in assistant.Parts)
         {
             if (part is AssistantReasoningPart)
@@ -1332,7 +1485,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 continue;
             }
 
-            if (part is not AssistantTextPart text)
+            if (part is AssistantToolCallPart or AssistantToolResultPart)
+            {
+                seenToolPart = true;
+                continue;
+            }
+
+            // Text keeps its place around the tool parts: one pass sends the text before them, the other the text after them.
+            if (part is not AssistantTextPart text || seenToolPart != afterToolParts)
             {
                 continue;
             }
