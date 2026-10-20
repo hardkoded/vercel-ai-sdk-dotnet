@@ -1341,12 +1341,12 @@ public sealed class ToolModelMessage : ModelMessage
         var copy = new UserContentPart[content.Count];
         for (var i = 0; i < copy.Length; i++)
         {
-            var part = content[i];
+            var part = content[i] ?? throw new ArgumentException("Tool content parts cannot be null.", nameof(content));
             if (part is FileContentPart file)
             {
-                var options = file.ProviderOptions == null ? null : new Dictionary<string, JsonElement>(file.ProviderOptions.ToDictionary(pair => pair.Key, pair => pair.Value));
+                var options = file.ProviderOptions == null ? null : file.ProviderOptions.ToDictionary(pair => pair.Key, pair => pair.Value.Clone());
                 copy[i] = file.ProviderReference != null
-                    ? FileContentPart.FromProviderReference(file.MediaType, new Dictionary<string, string>(file.ProviderReference.ToDictionary(pair => pair.Key, pair => pair.Value)), file.FileName, options)
+                    ? FileContentPart.FromProviderReference(file.MediaType, file.ProviderReference.ToDictionary(pair => pair.Key, pair => pair.Value), file.FileName, options)
                     : new FileContentPart(file.MediaType, file.Url, (byte[]?)file.Data?.Clone(), file.FileName) { ProviderOptions = options };
             }
             else if (part is TextContentPart)
