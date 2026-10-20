@@ -1851,9 +1851,6 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>Provider metadata for this result, keyed by provider name.</summary>
     public JsonElement? ProviderMetadata { get; init; }
-
-    /// <summary>True when the tool is dynamic. Maps to the result's <c>dynamic</c>.</summary>
-    public bool Dynamic { get; init; }
 }
 
 /// <summary>A cited URL.</summary>
