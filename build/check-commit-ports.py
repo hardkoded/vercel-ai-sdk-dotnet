@@ -91,15 +91,19 @@ def file_tests(relative: str, text: str) -> list[dict[str, object]]:
     return tests
 
 
-def changed_lines(repo: Path, sha: str, path: str) -> list[tuple[int, int]]:
-    diff = run(["git", "-C", str(repo), "diff", "-U0", "--no-renames", f"{sha}^", sha, "--", path])
+def hunk_ranges(diff: str) -> list[tuple[int, int]]:
+    """New-side line ranges of a -U0 diff. A deletion-only hunk counts as the
+    line before the deletion, which belongs to the test that lost lines."""
     ranges = []
     for match in HUNK.finditer(diff):
         start = int(match.group(1))
         count = int(match.group(2)) if match.group(2) is not None else 1
-        if count:
-            ranges.append((start, start + count - 1))
+        ranges.append((start, start + count - 1) if count else (start, start))
     return ranges
+
+
+def changed_lines(repo: Path, sha: str, path: str) -> list[tuple[int, int]]:
+    return hunk_ranges(run(["git", "-C", str(repo), "diff", "-U0", "--no-renames", f"{sha}^", sha, "--", path]))
 
 
 def commit_tests(repo: Path, sha: str) -> list[dict[str, object]]:
@@ -144,29 +148,52 @@ def scope_of(path: str) -> str:
     return collector.scope_for(parts[1])[0]
 
 
+def resolve_constant(name: str, constants: dict[str, str], stack: tuple[str, ...] = ()) -> str | None:
+    """Value of a C# string constant, or None when a name in its chain is unknown."""
+    if name not in constants or name in stack:
+        return None
+    parts = []
+    for literal, ident in report.TERM_RE.findall(constants[name]):
+        value = report.unescape(literal[1:-1]) if literal else resolve_constant(ident, constants, stack + (name,))
+        if value is None:
+            return None
+        parts.append(value)
+    return "".join(parts)
+
+
 def diff_links(diff: str) -> list[dict[str, str]]:
-    """Links from the added lines of a diff, file by file so that each file's
-    constants resolve its own prefixes. A prefix the diff does not define
-    cannot be resolved, so that link matches by id suffix."""
+    """Links from the lines a diff adds, file by file so that each file's
+    constants resolve its own prefixes. As in parity-report.py, an attribute
+    counts only when a test method follows it, and a commented-out attribute
+    does not count. Context lines are read too, so an attribute added above an
+    unchanged method works. A prefix that cannot be resolved from the diff makes
+    the link match by id suffix instead."""
     links = []
     for section in re.split(r"^diff --git ", diff, flags=re.M):
-        added = "\n".join(
-            line[1:] for line in section.splitlines() if line.startswith("+") and not line.startswith("+++")
-        )
-        constants = dict(report.CONST_RE.findall(added))
-        for match in report.ATTR.finditer(added):
+        text = ""
+        added_spans = []
+        for line in section.splitlines():
+            if line.startswith("+") and not line.startswith("+++"):
+                added_spans.append((len(text), len(text) + len(line)))
+                text += line[1:] + "\n"
+            elif line.startswith(" "):
+                text += line[1:] + "\n"
+        constants = dict(report.CONST_RE.findall(text))
+        for match in report.ATTR.finditer(text):
+            line_start = text.rfind("\n", 0, match.start()) + 1
+            if text[line_start:match.start()].strip():
+                continue  # commented out, or not at the start of a line
+            if not any(low <= match.start() < high for low, high in added_spans):
+                continue
+            if report.METHOD_RE.search(text, match.end()) is None:
+                continue
             upstream_id = report.unescape(match.group("id"))
             prefix = match.group("prefix")
             link = {"coverage": "Covered" if "UpstreamCoverage.Covered" in match.group("rest") else "Partial"}
-            if prefix and prefix not in constants:
+            resolved = resolve_constant(prefix, constants) if prefix else ""
+            if resolved is None:
                 link["suffix"] = upstream_id
             else:
-                resolved = ""
-                if prefix:
-                    resolved = "".join(
-                        report.unescape(literal[1:-1]) if literal else constants.get(ident, "")
-                        for literal, ident in report.TERM_RE.findall(constants[prefix])
-                    )
                 link["upstreamId"] = resolved + upstream_id
             links.append(link)
     return links
@@ -183,25 +210,64 @@ def find_link(test_id: str, links: list[dict[str, str]]) -> dict[str, str] | Non
     return None
 
 
-def not_ported_text(body: str) -> str:
-    """Text under every heading that contains "Not ported", up to the next heading."""
-    lines: list[str] = []
+def normalize(name: str) -> str:
+    return " ".join(name.replace("`", "").lower().split())
+
+
+def not_ported_entries(body: str) -> set[str]:
+    """Entries under every heading that contains "Not ported", up to the next
+    heading. An entry is a backtick span, a whole bullet, or the bullet text
+    before its first colon. A span "suite > title" also gives its last part."""
+    entries: set[str] = set()
     inside = False
     for line in body.splitlines():
         heading = HEADING.match(line)
         if heading:
             inside = "not ported" in heading.group(1).lower()
-        elif inside:
-            lines.append(line)
-    return " ".join("\n".join(lines).lower().split())
+            continue
+        if not inside:
+            continue
+        text = re.sub(r"^\s*(?:[-*+]|\d+\.)\s*", "", line)
+        candidates = re.findall(r"`([^`]+)`", text) + [text, text.split(":")[0]]
+        for candidate in candidates:
+            entries.add(normalize(candidate))
+            entries.add(normalize(candidate.split(" > ")[-1]))
+    return entries
 
 
-def acknowledged(test: dict[str, object], text: str) -> bool:
-    """Loose match: the test title or its describe name appears in the section."""
+def acknowledged(test: dict[str, object], entries: set[str]) -> bool:
+    """A test is acknowledged when an entry is exactly its title, or exactly
+    its describe name (the full chain or its last part) for a suite-wide gap."""
     names = [str(test["title"])]
     if test["suite"]:
         names += [str(test["suite"]), str(test["suite"]).split(" > ")[-1]]
-    return any(" ".join(name.lower().split()) in text for name in names)
+    return any(normalize(name) in entries for name in names)
+
+
+def self_test() -> None:
+    """Checks of the diff and body logic that need no upstream clone."""
+    assert hunk_ranges("@@ -10,2 +9,0 @@\n@@ -20 +18,3 @@\n") == [(9, 9), (18, 20)]
+    diff = (
+        "diff --git a/T.cs b/T.cs\n"
+        + "+    private const string TestFile = \"a.test.ts\";\n"
+        + "+    private const string Prefix = TestFile + \"::\";\n"
+        + "+    [UpstreamTest(Prefix + \"ok\", Coverage = UpstreamCoverage.Covered)]\n"
+        + "+    public void Ok() {}\n"
+        + "+    // [UpstreamTest(\"commented\")]\n"
+        + "+    [UpstreamTest(Unknown + \"far\")]\n"
+        + " [Fact]\n"
+        + " public void Far() {}\n"
+        + "+    [UpstreamTest(\"orphan\")]\n"
+    )
+    ids = [link.get("upstreamId") or "~" + link["suffix"] for link in diff_links(diff)]
+    assert ids == ["a.test.ts::ok", "~far"], ids
+    entries = not_ported_entries("## Not ported\n- `should pass correct event information on success`: no hook\n- `suite A > should x`\n## Tests\n- other\n")
+    test = {"title": "should pass correct event information", "suite": "suite B"}
+    assert not acknowledged(test, entries)
+    assert acknowledged({"title": "should pass correct event information on success", "suite": ""}, entries)
+    assert acknowledged({"title": "should x", "suite": "suite A"}, entries)
+    assert not acknowledged({"title": "other", "suite": ""}, entries)
+    print("self-test passed")
 
 
 def main() -> None:
@@ -209,7 +275,8 @@ def main() -> None:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("sha", help="Upstream commit in the vercel/ai clone")
+    parser.add_argument("sha", nargs="?", help="Upstream commit in the vercel/ai clone")
+    parser.add_argument("--self-test", action="store_true", help="Run the built-in checks of the diff and body logic and exit")
     parser.add_argument(
         "--upstream-repo",
         type=Path,
@@ -220,6 +287,11 @@ def main() -> None:
     source.add_argument("--pr", type=int, help="Pull request number: read its diff and its Not ported section")
     source.add_argument("--base", help="Git ref: read [UpstreamTest] links added since it (git diff REF...HEAD)")
     args = parser.parse_args()
+    if args.self_test:
+        self_test()
+        return
+    if not args.sha:
+        parser.error("the sha argument is required")
 
     repo = args.upstream_repo.resolve()
     if not (repo / ".git").exists():
@@ -229,7 +301,7 @@ def main() -> None:
     if args.pr:
         links = tree_links() + diff_links(run(["gh", "pr", "diff", str(args.pr), "--repo", REPO]))
         body = run(["gh", "pr", "view", str(args.pr), "--repo", REPO, "--json", "body", "-q", ".body"])
-        ack = not_ported_text(body)
+        ack = not_ported_entries(body)
     elif args.base:
         links = tree_links() + diff_links(run(["git", "-C", str(BUILD.parent), "diff", f"{args.base}...HEAD", "--", "tests"]))
     else:
