@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
@@ -61,7 +62,8 @@ public static class AnthropicMessagesRequest
         bool stream,
         string providerName,
         bool supportsNativeStructuredOutput = true,
-        bool supportsStrictTools = true)
+        bool supportsStrictTools = true,
+        AnthropicModelSettings? settings = null)
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -84,14 +86,17 @@ public static class AnthropicMessagesRequest
             warnings.Add(new AnthropicWarning("unsupported", "seed"));
         }
 
-        if (temperature != null && temperature > 1)
+        var maxTemperature = settings?.MaxTemperature ?? 1;
+        var temperatureProvider = settings?.MaxTemperature == null ? "anthropic" : ProviderOptionsName(providerName);
+        if (temperature != null && temperature > maxTemperature)
         {
-            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature + " exceeds anthropic maximum of 1.0. clamped to 1.0"));
-            temperature = 1;
+            var maxText = maxTemperature.ToString("0.0", CultureInfo.InvariantCulture);
+            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature.Value.ToString(CultureInfo.InvariantCulture) + " exceeds " + temperatureProvider + " maximum of " + maxText + ". clamped to " + maxText));
+            temperature = maxTemperature;
         }
         else if (temperature != null && temperature < 0)
         {
-            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature + " is below anthropic minimum of 0. clamped to 0"));
+            warnings.Add(new AnthropicWarning("unsupported", "temperature", temperature.Value.ToString(CultureInfo.InvariantCulture) + " is below " + temperatureProvider + " minimum of 0. clamped to 0"));
             temperature = 0;
         }
 
@@ -155,13 +160,13 @@ public static class AnthropicMessagesRequest
                 "The model \"" + modelId + "\" is unknown. The max output tokens have been limited to " + capabilities.MaxOutputTokens + ". Set maxOutputTokens explicitly to override this limit."));
         }
 
-        var validator = new AnthropicCacheControlValidator();
+        var validator = settings?.CacheControlProviderOptionsName == null ? new AnthropicCacheControlValidator() : new AnthropicCacheControlValidator(settings.CacheControlProviderOptionsName);
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
         var toolNames = ProviderToolNames(options);
         var toolsets = ToolsetNames(options);
         var converted = PromptOverride(options) is { } promptJson
-            ? AnthropicPrompt.ConvertJson(promptJson, sendReasoning, validator, toolNames, toolsets)
-            : AnthropicPrompt.Convert(options.Prompt, sendReasoning, validator, toolNames, toolsets);
+            ? AnthropicPrompt.ConvertJson(promptJson, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart)
+            : AnthropicPrompt.Convert(options.Prompt, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart);
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
@@ -254,7 +259,7 @@ public static class AnthropicMessagesRequest
 
         if (isThinking)
         {
-            if (temperature != null)
+            if (temperature != null && settings?.SupportsTemperatureAndTopPWithThinking != true)
             {
                 temperature = null;
                 warnings.Add(new AnthropicWarning("unsupported", "temperature", "temperature is not supported when thinking is enabled"));
@@ -266,7 +271,7 @@ public static class AnthropicMessagesRequest
                 warnings.Add(new AnthropicWarning("unsupported", "topK", "topK is not supported when thinking is enabled"));
             }
 
-            if (topP != null)
+            if (topP != null && settings?.SupportsTemperatureAndTopPWithThinking != true)
             {
                 topP = null;
                 warnings.Add(new AnthropicWarning("unsupported", "topP", "topP is not supported when thinking is enabled"));

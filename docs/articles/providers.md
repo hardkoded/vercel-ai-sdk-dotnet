@@ -496,6 +496,63 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 
 `GenerateImage` returns `providerMetadata.blackForestLabs.images[0]` with `seed`, `start_time`, `end_time`, `duration`, `cost`, `inputMegapixels`, and `outputMegapixels` when the API sent them, and the response `Timestamp`, `ModelId`, and `Headers` of the download.
 
+## MiniMax
+
+`MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. MiniMax video models are not ported ([#650](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/658)).
+
+```csharp
+using Vercel.AI.MiniMax;
+
+var minimax = MiniMaxProvider.Create(new MiniMaxOptions { ApiKey = Environment.GetEnvironmentVariable("MINIMAX_API_KEY") });
+var model = minimax.LanguageModel("minimax-m3.1-flash");
+```
+
+A model id from M3.1 on gets the extra capabilities below: `minimax-m3.1-flash`, `MiniMax-M3.1-Flash-Preview`, `minimax-m3.2`, `minimax-m4`, and so on. The version is compared by its numbers, so `m3.10` is newer than `m3.1`. Older and unrecognized ids (`minimax-m3`, `minimax-m2.7`, `custom-model`) keep the plain Anthropic adapter behavior.
+
+### Sampling
+
+For M3.1 and later ids, `Temperature` accepts `0` to `2` and `TopP` accepts `0` to `1`. Both are kept when adaptive thinking is on or when you set `Reasoning`. A temperature outside the range is clamped with an `unsupported` `temperature` warning that names `minimax`. Omit them to use MiniMax's defaults. Older ids clamp the temperature to `1` and drop `Temperature` and `TopP` when thinking is on.
+
+### Prompt caching
+
+For M3.1 and later ids, mark stable text with `minimax.cacheControl`. It becomes `cache_control` on the matching content block. Set it on a system message, a text part, or a user message (which marks its final content block).
+
+```csharp
+var part = new TextContentPart("Long reference material reused across requests...")
+{
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["minimax"] = JsonDocument.Parse("{\"cacheControl\":{\"type\":\"ephemeral\"}}").RootElement.Clone(),
+    },
+};
+```
+
+Keep the stable prefix unchanged and put the changing question after it. A marker does not guarantee a hit; check the cache-read token usage. `anthropic.cacheControl` still works. When both namespaces set it on a block, `minimax` wins. At most four blocks are cached; the rest add a `cacheControl breakpoint limit` warning. Older ids read only the `anthropic` namespace.
+
+### Image and video input
+
+For M3.1 and later ids, user messages accept images and videos, with `GenerateText` and `StreamText`. Pass bytes or a public http(s) URL; the URL is sent to MiniMax as is. Set the media options on each file part under `minimax`:
+
+- **fps** _number_ (video): the frame sampling rate, from `0.2` to `5`. Omit it for the server default. A value outside the range, or a non-number, throws `InvalidArgumentException` before the request.
+- **detail** _string_ (image): `low`, `default`, or `high`. Higher detail can use more tokens. Any other value throws `InvalidArgumentException`.
+
+For a video you already uploaded to MiniMax, use a provider reference. `FileContentPart.FromProviderReference("video/mp4", new Dictionary<string, string> { ["minimax"] = "your-uploaded-file-id" })` is sent as `mm_file://your-uploaded-file-id`; an id that already starts with `mm_file://` is kept. A reference without a `minimax` entry throws `NoSuchProviderReferenceError`, and an image reference throws `UnsupportedFunctionalityException`. The provider does not upload the file. `MiniMaxChatLanguageModel.SupportedUrls` lists `image/*` and `video/*` for M3.1 and later ids, and nothing for older ids, which reject video with `UnsupportedFunctionalityException`.
+
+MiniMax documents JPEG, PNG, GIF, and WebP images (up to 10 MB), and MP4, AVI, MOV, and MKV videos (up to 50 MB inline or by URL, 512 MB uploaded). The request body limit is 64 MB, including base64 overhead. Audio input is not supported.
+
+### Reasoning
+
+Pass thinking and effort under the `minimax` key of `ProviderOptions`:
+
+- **thinking** _object_: `{ "type": "adaptive" }` lets the model decide when to reason. `{ "type": "disabled" }` answers directly. Thinking control works on `minimax-m3`. The M2.x models always think, and `MiniMax-M3.1-Flash` always thinks and returns an error for `disabled`.
+- **effort** _string_: `low`, `medium`, `high`, `xhigh`, or `max`, for M3.1 and later ids. It sets `output_config.effort`. When omitted, the server picks its default (`max` for M3.1 Flash).
+
+The output token budget covers the reasoning and the answer, so higher effort may need a larger `MaxOutputTokens`.
+
+For M3.1 and later ids, `LanguageModelCallOptions.Reasoning` maps to the effort instead of an Anthropic thinking budget: `low`, `medium`, `high`, `xhigh`, and `max` map to the same effort, `minimal` maps to `low` with a `compatibility` warning, and `none` also maps to `low` with a `compatibility` `reasoning` warning, because Flash always reasons. `provider-default` or no `Reasoning` leaves the server default. An explicit `minimax.effort` or `anthropic.effort` wins over `Reasoning`. Older ids keep the Anthropic mapping.
+
+`MiniMaxChatLanguageModel.Serialize()` returns the model id and config for a workflow boundary (provider id, base URL, and headers). It leaves out the API key and any header whose name contains `authorization`, `key`, `token`, `secret`, or `cookie`. `MiniMaxChatLanguageModel.Deserialize(serialized, apiKey)` restores the model; without `apiKey` it reads `MINIMAX_API_KEY`.
+
 ## xAI Responses
 
 `XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.
