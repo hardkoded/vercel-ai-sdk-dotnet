@@ -21,6 +21,15 @@ A .NET test that asserts the same behavior links the upstream id:
 
 `python3 build/open-upstream-test-issues.py` opens one GitHub issue per feature that does not yet have a `url`. It needs `gh auth login` on `hardkoded/vercel-ai-sdk-dotnet`.
 
+Before you open a port PR, check it against the upstream commit it ports:
+
+```bash
+python3 build/check-commit-ports.py <upstream-sha>
+python3 build/check-commit-ports.py <upstream-sha> --pr <number>
+```
+
+The script lists the unit tests the commit adds or changes (with the catalog ids) and marks each one `COVERED` or `PARTIAL` (linked by `[UpstreamTest]`), `ACKNOWLEDGED` (named under a `Not ported` heading in the PR body), or `MISSING`. It exits with 1 when any test is `MISSING`. Tests in packages that are not ported, and in integration or e2e files, are listed apart. `--base` reads the links from the diff against that ref and does not read the PR body, so use `--pr` once the body is written. The default upstream clone is `/Users/dario/Code/vercel/ai`; pass `--upstream-repo` for another path.
+
 Refresh the catalog when the compatibility commit moves:
 
 ```bash
