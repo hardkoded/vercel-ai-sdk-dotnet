@@ -1,6 +1,6 @@
 # Compatibility
 
-Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `fa98094401a7318eec5d4005d427579150f970aa` (`feat(openai): support ordered 'additional_tools' from tool results (#23291)`), recorded on 2026-10-16.
+Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `0c2a9de5de76570cc2ad0281382aa90cbd199d43` (`feat: add maxOutputTokens and reasoning to decide (#23590)`), recorded on 2026-10-20.
 
 This port targets AI SDK 7 / Language Model specification **V4**. Names are C# versions of the JavaScript API: `generateText` is `GenerateTextAsync`, `streamText` is `StreamTextAsync` (it returns `StreamTextResult`, not a task), `AbortSignal` is `CancellationToken`, and option properties are PascalCase.
 
