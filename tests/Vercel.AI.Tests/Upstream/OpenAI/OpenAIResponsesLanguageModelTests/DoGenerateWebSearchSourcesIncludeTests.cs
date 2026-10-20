@@ -11,7 +11,7 @@ using Vercel.AI.Tests.OpenAIResponsesReasoningEffortUpdate;
 
 namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 
-/// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doGenerate &gt; web search sources include</c>.</summary>
+/// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doGenerate &gt; web search tool</c> and the web search include tests. The duplicate-include and Bedrock Mantle tests have no upstream test.</summary>
 public sealed class DoGenerateWebSearchSourcesIncludeTests
 {
     private static LanguageModelTool WebSearch(string id) =>

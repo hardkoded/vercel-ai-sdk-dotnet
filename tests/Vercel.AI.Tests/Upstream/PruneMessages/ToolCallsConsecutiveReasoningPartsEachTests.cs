@@ -8,25 +8,25 @@ using static Vercel.AI.Tests.PruneMessages.PruneMessagesSupport;
 
 namespace Vercel.AI.Tests.PruneMessages;
 
-/// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; consecutive reasoning parts &gt; %s</c>.</summary>
+/// <summary>Port of <c>prune-messages.test.ts</c> &gt; <c>pruneMessages &gt; toolCalls &gt; consecutive reasoning parts &gt; %s</c>, run for the rules all, before-last-message, and before-last-2-messages.</summary>
 public sealed class ToolCallsConsecutiveReasoningPartsEachTests
 {
-    public static TheoryData<PruneToolCallsRule, int> Cases()
+    private static PruneToolCallsRule Rule(string name) => name switch
     {
-        var data = new TheoryData<PruneToolCallsRule, int>();
-        foreach (var rule in new[] { PruneToolCallsRule.All(), PruneToolCallsRule.BeforeLastMessage(), PruneToolCallsRule.BeforeLastMessages(2) })
-        {
-            data.Add(rule, 2);
-            data.Add(rule, 3);
-        }
-
-        return data;
-    }
+        "all" => PruneToolCallsRule.All(),
+        "before-last-message" => PruneToolCallsRule.BeforeLastMessage(),
+        _ => PruneToolCallsRule.BeforeLastMessages(2),
+    };
 
     [UpstreamTest(Prefix + "pruneMessages > toolCalls > consecutive reasoning parts > %s::should prune all %i reasoning summaries", Coverage = UpstreamCoverage.Covered)]
     [Theory]
-    [MemberData(nameof(Cases))]
-    public void Should_prune_all_i_reasoning_summaries(PruneToolCallsRule rule, int count)
+    [InlineData("all", 2)]
+    [InlineData("all", 3)]
+    [InlineData("before-last-message", 2)]
+    [InlineData("before-last-message", 3)]
+    [InlineData("before-last-2-messages", 2)]
+    [InlineData("before-last-2-messages", 3)]
+    public void Should_prune_all_i_reasoning_summaries(string rule, int count)
     {
         var parts = new List<AssistantContentPart>();
         for (var index = 0; index < count; index++)
@@ -44,6 +44,6 @@ public sealed class ToolCallsConsecutiveReasoningPartsEachTests
             new AssistantModelMessage(new AssistantContentPart[] { new AssistantTextPart("Final answer.") }),
         };
 
-        AssertEqual(messages.Skip(2).ToArray(), Prune(messages, PruneReasoning.None, rule));
+        AssertEqual(messages.Skip(2).ToArray(), Prune(messages, PruneReasoning.None, Rule(rule)));
     }
 }
