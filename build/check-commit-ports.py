@@ -258,6 +258,8 @@ def acknowledged(test: dict[str, object], entries: set[str]) -> bool:
     if suite:
         bare.update({suite, suite.split(" > ")[-1]})
         qualified = [f"{suite} > {title}", f"{suite}::{title}", suite]
+    if title in entries:
+        return True  # the exact title, even when it contains " > " or "::"
     for entry in entries:
         if " > " in entry or "::" in entry:
             if any(name == entry or name.endswith(" > " + entry) for name in qualified):
@@ -307,6 +309,10 @@ def self_test() -> None:
     assert find_link(ids[0], one, ids) == (None, True)
     assert find_link(ids[0], one, ids[:1] + ids[2:])[0] == one[0]
     assert find_link(ids[1], [{"upstreamId": ids[1], "coverage": "Covered"}], ids)[0] is not None
+    entries = not_ported_entries("## Not ported\n- `should map A > B`\n- `parses a::b`\n")
+    assert acknowledged({"title": "should map A > B", "suite": ""}, entries)
+    assert acknowledged({"title": "parses a::b", "suite": "Root"}, entries)
+    assert not acknowledged({"title": "other", "suite": "Root"}, entries)
     print("self-test passed")
 
 
