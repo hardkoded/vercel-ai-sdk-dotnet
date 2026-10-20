@@ -27,6 +27,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private readonly OpenAICompatibleProvider _provider;
     private readonly string _providerId;
+    private readonly string? _requestModelId;
 
     /// <summary>Creates a language model.</summary>
     public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId)
@@ -36,7 +37,17 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     /// <summary>Creates a language model with an explicit provider id such as <c>anthropic.beta</c>.</summary>
     public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId)
+        : this(provider, modelId, providerId, null)
     {
+    }
+
+    /// <summary>
+    /// Creates a language model whose reported <see cref="ModelId"/> differs from the model sent to the API.
+    /// <paramref name="requestModelId"/>, when set, is used for the request <c>model</c> and the deployment route.
+    /// </summary>
+    public OpenAICompatibleLanguageModel(OpenAICompatibleProvider provider, string modelId, string? providerId, string? requestModelId)
+    {
+        _requestModelId = requestModelId;
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _providerId = providerId ?? OpenAICompatibleChat.Qualify(provider.Options.ProviderName, "chat");
@@ -489,7 +500,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         var body = new JsonObject
         {
-            ["model"] = ModelId,
+            ["model"] = _requestModelId ?? ModelId,
         };
         if (!string.IsNullOrEmpty(settings.User))
         {
@@ -816,7 +827,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private Uri RequestUri()
     {
-        return Endpoint ?? _provider.ChatUri(ModelId);
+        return Endpoint ?? _provider.ChatUri(_requestModelId ?? ModelId);
     }
 
     private LanguageModelUsage ModelUsage(JsonElement? usage, OpenAICompatibleUsage converted)

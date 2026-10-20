@@ -36,6 +36,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private readonly ProviderHttp _http;
     private readonly string _providerName;
     private readonly string _providerOptionsName;
+    private readonly string? _requestModelId;
     private readonly Func<Uri> _url;
     private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
@@ -67,13 +68,24 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <c>azure</c> provider options first and fall back to <c>openai</c> when <c>azure</c> is absent.
     /// </summary>
     public OpenAIResponsesLanguageModel(Azure.AzureOpenAIProvider provider, string modelId)
+        : this(provider, modelId, null)
+    {
+    }
+
+    /// <summary>
+    /// Creates an Azure OpenAI Responses model for a deployment. <see cref="ModelId"/> reports
+    /// <paramref name="settings"/>.<see cref="Azure.AzureOpenAILanguageModelSettings.ModelId"/> when set and
+    /// drives capability detection. Requests always use <paramref name="deploymentId"/>.
+    /// </summary>
+    public OpenAIResponsesLanguageModel(Azure.AzureOpenAIProvider provider, string deploymentId, Azure.AzureOpenAILanguageModelSettings? settings)
     {
         if (provider == null)
         {
             throw new ArgumentNullException(nameof(provider));
         }
 
-        ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _requestModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
+        ModelId = settings?.ModelId ?? deploymentId;
         _http = provider.Http;
         _providerName = provider.Name;
         _providerOptionsName = "azure";
@@ -201,6 +213,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <c>openai</c> when that key is absent.
     /// </summary>
     public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude = true)
+    {
+        return Prepare(modelId, options, stream, providerOptionsName, supportsWebSearchSourcesInclude, null);
+    }
+
+    /// <summary>
+    /// Builds the Responses body. <paramref name="modelId"/> drives capability detection and
+    /// <paramref name="requestModelId"/>, when set, is sent as the request <c>model</c>.
+    /// </summary>
+    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude, string? requestModelId)
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
@@ -332,7 +353,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var body = new JsonObject
         {
-            ["model"] = modelId,
+            ["model"] = requestModelId ?? modelId,
             ["input"] = converted.Input,
         };
         if (options.Temperature is { } temperature)
@@ -583,7 +604,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude);
+        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId);
         var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
             _url(),
@@ -597,7 +618,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude);
+        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId);
         var json = prepared.Body.ToJsonString();
         var sse = await _http.OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken).ConfigureAwait(false);
         return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
