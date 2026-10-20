@@ -1759,6 +1759,10 @@ public sealed class StreamTextResult
         Steps = steps;
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
+
+        // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
+        _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
