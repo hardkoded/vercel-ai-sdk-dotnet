@@ -258,8 +258,9 @@ internal sealed class OpenAIResponsesStream
                     && reasoningDone["id"]?.GetValue<string>() is { } reasoningDoneId)
                 {
                     var itemIdForDone = ResolveOutputItemId(reasoningDoneId, node);
-                    if (_activeReasoning.Remove(itemIdForDone, out var finishedReasoning))
+                    if (_activeReasoning.TryGetValue(itemIdForDone, out var finishedReasoning))
                     {
+                        _activeReasoning.Remove(itemIdForDone);
                         var finalEncrypted = reasoningDone["encrypted_content"]?.GetValue<string>();
                         foreach (var summaryIndex in finishedReasoning.SummaryParts
                             .Where(entry => entry.Value is ReasoningPartState.Active or ReasoningPartState.CanConclude)
