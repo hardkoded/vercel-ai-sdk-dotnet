@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Operations;
 
@@ -252,7 +253,7 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             new LanguageModelCallOptions
             {
                 Reasoning = call.Reasoning ?? "none",
-                MaxOutputTokens = call.MaxOutputTokens == null ? null : (int)call.MaxOutputTokens.Value,
+                MaxOutputTokens = call.MaxOutputTokens == null ? null : MaxOutputTokens(call.MaxOutputTokens.Value),
                 Prompt = new ModelMessage[] { new SystemModelMessage(SystemPrompt), new UserModelMessage(content) },
                 JsonSchema = schemaDocument.RootElement.Clone(),
                 JsonSchemaName = "decision",
@@ -372,6 +373,11 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             providerMetadata: result.ProviderMetadata,
             response: new ProviderResponse(result.ResponseHeaders, body, result.ResponseId, result.ResponseTimestamp?.UtcDateTime, result.ResponseModelId));
     }
+
+    private static int MaxOutputTokens(double value) =>
+        value > int.MaxValue
+            ? throw new InvalidArgumentError("maxOutputTokens", value, "maxOutputTokens must be at most " + int.MaxValue + ".")
+            : (int)value;
 
     private static string FinishReasonName(FinishReason reason)
     {

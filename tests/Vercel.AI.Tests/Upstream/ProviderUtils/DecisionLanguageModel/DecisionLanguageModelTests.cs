@@ -478,6 +478,14 @@ public sealed class DecisionLanguageModelTests
         Assert.Equal((int?)maxOutputTokens, language.Calls[0].MaxOutputTokens);
     }
 
+    [Fact]
+    public async Task Rejects_a_maxOutputTokens_that_does_not_fit_an_int()
+    {
+        var (model, language, _) = Setup();
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => model.DoDecideAsync(Call(maxOutputTokens: 2147483648.0)));
+        Assert.Empty(language.Calls);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("provider-default")]

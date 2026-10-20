@@ -708,6 +708,19 @@ public sealed class HuggingFaceUpstreamTests
         return await UpstreamChat.Read((await Responses(capture).DoStreamAsync(UpstreamChat.Prompt(), CancellationToken.None)));
     }
 
+    [Theory]
+    [InlineData("provider-default", false)]
+    [InlineData("high", true)]
+    public async Task Sends_top_level_reasoning_as_effort_except_provider_default(string reasoning, bool sent)
+    {
+        var capture = new UpstreamCapture { ResponseBody = "{\"output\":[]}" };
+        await Responses(capture).DoGenerateAsync(
+            new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") }, Reasoning = reasoning },
+            CancellationToken.None);
+        var body = JsonNode.Parse(capture.Requests[0].Body)!;
+        Assert.Equal(sent, body["reasoning"] != null);
+    }
+
     private static async Task<LanguageModelGenerateResult> Generate(string body)
     {
         var capture = new UpstreamCapture { ResponseBody = body };
