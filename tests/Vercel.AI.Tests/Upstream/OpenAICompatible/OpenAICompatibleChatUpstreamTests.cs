@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -222,6 +223,29 @@ public sealed class OpenAICompatibleChatUpstreamTests
         var message = UpstreamChat.Body(capture)["messages"]![0]!;
         Assert.Equal("tool", message["role"]!.GetValue<string>());
         Assert.Equal("\"sunny\"", message["content"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate::should pass multi-part tool content when supported", Coverage = UpstreamCoverage.Covered)]
+    public async Task Multi_part_tool_content_is_sent_when_supported()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Prompt = new ModelMessage[]
+        {
+            new ToolModelMessage("call-1", "useImage", new UserContentPart[]
+            {
+                new TextContentPart("image result"),
+                new FileContentPart("image/png", null, Convert.FromBase64String("iVBORw0KGgo="), null),
+            }),
+        };
+        await UpstreamChat.Model(capture, "test-provider", "grok-3", o => o.SupportsMultiPartToolContent = true).DoGenerateAsync(options, CancellationToken.None);
+        var message = UpstreamChat.Body(capture)["messages"]![0]!;
+        Assert.Equal("tool", message["role"]!.GetValue<string>());
+        Assert.Equal("call-1", message["tool_call_id"]!.GetValue<string>());
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("[{\"type\":\"text\",\"text\":\"image result\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,iVBORw0KGgo=\"}}]"),
+            message["content"]));
     }
 
     [Fact]

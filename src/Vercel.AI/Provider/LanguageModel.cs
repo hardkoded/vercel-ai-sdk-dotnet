@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Prompt;
 
 namespace Vercel.AI.Provider;
@@ -1212,6 +1214,17 @@ public sealed class ToolModelMessage : ModelMessage
     }
 
     /// <summary>
+    /// Creates a tool result whose output is a list of text and file parts, as upstream <c>output: { type: 'content' }</c>.
+    /// <see cref="OutputType"/> is <c>json</c> and <see cref="OutputJson"/> is the JSON text of the parts, so a provider that
+    /// does not read <see cref="OutputContent"/> sends the stringified parts, as upstream does by default.
+    /// </summary>
+    public ToolModelMessage(string toolCallId, string toolName, IReadOnlyList<UserContentPart> content, JsonElement? providerMetadata = null)
+        : this(toolCallId, toolName, SerializeContent(content), false, "json", providerMetadata)
+    {
+        OutputContent = content.ToArray();
+    }
+
+    /// <summary>
     /// Creates one tool message that carries several tool results, as upstream does for the calls of one step.
     /// Its single-result members describe the first result.
     /// </summary>
@@ -1234,6 +1247,7 @@ public sealed class ToolModelMessage : ModelMessage
         ToolName = first.ToolName;
         OutputType = first.OutputType;
         OutputJson = first.OutputJson;
+        OutputContent = first.OutputContent;
         IsError = first.IsError;
         ProviderMetadata = first.ProviderMetadata;
         OutputProviderOptions = first.OutputProviderOptions;
@@ -1289,6 +1303,9 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>JSON result. For <c>text</c> and <c>error-text</c> it is the text itself. For <c>execution-denied</c> it is the reason, or empty for none.</summary>
     public string OutputJson { get; }
 
+    /// <summary>Text and file parts of a multi-part output, or null for a single value. <see cref="OutputJson"/> holds the same parts as JSON text.</summary>
+    public IReadOnlyList<UserContentPart>? OutputContent { get; }
+
     /// <summary>Whether the tool failed.</summary>
     public bool IsError { get; }
 
@@ -1306,6 +1323,68 @@ public sealed class ToolModelMessage : ModelMessage
 
     /// <summary>Provider options of the whole tool message, such as an Amazon Bedrock <c>cachePoint</c> added after all its results.</summary>
     public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }
+
+    private static readonly JsonSerializerOptions ContentJsonOptions = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    private static string SerializeContent(IReadOnlyList<UserContentPart> content)
+    {
+        if (content is null)
+        {
+            throw new ArgumentNullException(nameof(content));
+        }
+
+        var array = new JsonArray();
+        foreach (var part in content)
+        {
+            if (part is TextContentPart text)
+            {
+                array.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+            }
+            else if (part is FileContentPart file)
+            {
+                var data = new JsonObject();
+                if (file.ProviderReference != null)
+                {
+                    var reference = new JsonObject();
+                    foreach (var pair in file.ProviderReference)
+                    {
+                        reference[pair.Key] = pair.Value;
+                    }
+
+                    data["type"] = "reference";
+                    data["reference"] = reference;
+                }
+                else if (file.Data != null)
+                {
+                    data["type"] = "data";
+                    data["data"] = Convert.ToBase64String(file.Data);
+                }
+                else if (file.Url != null)
+                {
+                    data["type"] = "url";
+                    data["url"] = file.Url;
+                }
+                else
+                {
+                    throw new ArgumentException("A file part needs a URL, data, or a provider reference.", nameof(content));
+                }
+
+                var json = new JsonObject { ["type"] = "file", ["data"] = data, ["mediaType"] = file.MediaType };
+                if (file.FileName != null)
+                {
+                    json["filename"] = file.FileName;
+                }
+
+                array.Add(json);
+            }
+            else
+            {
+                throw new ArgumentException("Tool content parts must be text or file parts.", nameof(content));
+            }
+        }
+
+        return array.ToJsonString(ContentJsonOptions);
+    }
 
     private static bool IsJson(string? value)
     {
