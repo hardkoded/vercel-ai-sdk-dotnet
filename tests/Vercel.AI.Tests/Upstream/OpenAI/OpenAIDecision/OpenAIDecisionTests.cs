@@ -206,6 +206,46 @@ public sealed class OpenAIDecisionTests
         Assert.False(RequestBody(capture).ContainsKey("reasoning"));
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "warns about unsupported maxOutputTokens without sending it", Coverage = UpstreamCoverage.Covered)]
+    public async Task Warns_about_unsupported_maxOutputTokens_without_sending_it()
+    {
+        var (model, capture) = Setup();
+        var result = await model.DoDecideAsync(Call(maxOutputTokens: 512));
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("maxOutputTokens", warning.Feature);
+        var body = RequestBody(capture);
+        Assert.False(body.ContainsKey("maxOutputTokens"));
+        Assert.False(body.ContainsKey("max_output_tokens"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("none")]
+    [InlineData("provider-default")]
+    [InlineData("high")]
+    [UpstreamTest(Prefix + "warns about unsupported reasoning without sending it: %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Warns_about_unsupported_reasoning_without_sending_it(string? reasoning)
+    {
+        var (model, capture) = Setup();
+        var result = await model.DoDecideAsync(Call(reasoning: reasoning));
+        if (reasoning == null)
+        {
+            Assert.Empty(result.Warnings);
+        }
+        else
+        {
+            var warning = Assert.Single(result.Warnings);
+            Assert.Equal("unsupported", warning.Type);
+            Assert.Equal("reasoning", warning.Feature);
+        }
+
+        var body = RequestBody(capture);
+        Assert.False(body.ContainsKey("reasoning"));
+        Assert.False(body.ContainsKey("reasoning_effort"));
+    }
+
     [Theory]
     [MemberData(nameof(BadAnswerSets))]
     [UpstreamTest(Prefix + "rejects missing, duplicate, and unexpected answer names", Coverage = UpstreamCoverage.Covered)]
