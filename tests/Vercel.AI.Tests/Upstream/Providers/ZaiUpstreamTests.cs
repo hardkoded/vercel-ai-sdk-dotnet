@@ -84,8 +84,8 @@ public sealed class ZaiUpstreamTests
         };
         var result = await Chat(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Equal(3, result.Content.Count);
-        Assert.Equal("The answer is 42.", Assert.IsType<GeneratedText>(result.Content[0]).Text);
-        Assert.Equal("I should calculate the answer.", Assert.IsType<GeneratedReasoning>(result.Content[1]).Text);
+        Assert.Equal("I should calculate the answer.", Assert.IsType<GeneratedReasoning>(result.Content[0]).Text);
+        Assert.Equal("The answer is 42.", Assert.IsType<GeneratedText>(result.Content[1]).Text);
         var call = Assert.IsType<GeneratedToolCall>(result.Content[2]);
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("calculator", call.ToolName);

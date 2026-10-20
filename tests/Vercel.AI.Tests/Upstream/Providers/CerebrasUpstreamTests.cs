@@ -73,8 +73,8 @@ public sealed class CerebrasUpstreamTests
         var result = await Chat(FixtureCapture("cerebras-structured-output-tools.2.json")).DoGenerateAsync(JsonMode(), CancellationToken.None);
         Assert.Collection(
             result.Content,
-            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text),
-            part => Assert.Equal(SecondStepReasoning, Assert.IsType<GeneratedReasoning>(part).Text));
+            part => Assert.Equal(SecondStepReasoning, Assert.IsType<GeneratedReasoning>(part).Text),
+            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text));
         Assert.Equal(FinishReason.Stop, result.FinishReason);
         Assert.Equal("tool_calls", result.RawFinishReason);
     }
@@ -86,8 +86,8 @@ public sealed class CerebrasUpstreamTests
         var result = await Chat(FixtureCapture("cerebras-structured-output-tools.2.json")).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
         Assert.Collection(
             result.Content,
-            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text),
             part => Assert.Equal(SecondStepReasoning, Assert.IsType<GeneratedReasoning>(part).Text),
+            part => Assert.Equal("{\"result\":\"2026\"}", Assert.IsType<GeneratedText>(part).Text),
             part => AssertToolCall(part, "0babb4517"));
         Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
         Assert.Equal("tool_calls", result.RawFinishReason);
