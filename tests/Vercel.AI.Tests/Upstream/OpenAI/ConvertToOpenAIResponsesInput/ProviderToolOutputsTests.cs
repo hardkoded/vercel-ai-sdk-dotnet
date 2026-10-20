@@ -30,6 +30,12 @@ public sealed class ProviderToolOutputsTests
             toolNameMapping: Mapping);
 
     [Fact]
+    public void Should_reject_a_non_numeric_maxOutputLength_in_a_shell_tool_result()
+    {
+        Assert.Throws<AiSdkException>(() => Convert("""{"maxOutputLength":"10000","output":[{"stdout":"hi\n","stderr":"","outcome":{"type":"exit","exitCode":0}}]}"""));
+    }
+
+    [Fact]
     [UpstreamTest(Id + "should include max_output_length in shell_call_output when the tool result has maxOutputLength", Coverage = UpstreamCoverage.Covered)]
     public void Should_include_max_output_length_in_shell_call_output_when_the_tool_result_has_maxOutputLength()
     {

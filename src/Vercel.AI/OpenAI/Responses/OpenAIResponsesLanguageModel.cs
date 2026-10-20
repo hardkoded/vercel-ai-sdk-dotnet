@@ -1270,9 +1270,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         var shellCallOutput = new JsonObject { ["type"] = "shell_call_output", ["call_id"] = callId };
-        if (IsKind(parsedObject["maxOutputLength"], JsonValueKind.Number))
+        if (parsedObject["maxOutputLength"] is { } maxOutputLength)
         {
-            shellCallOutput["max_output_length"] = parsedObject["maxOutputLength"]!.DeepClone();
+            if (!IsKind(maxOutputLength, JsonValueKind.Number))
+            {
+                throw new AiSdkException("The shell tool result maxOutputLength must be a number.");
+            }
+
+            shellCallOutput["max_output_length"] = maxOutputLength.DeepClone();
         }
 
         shellCallOutput["output"] = output;
