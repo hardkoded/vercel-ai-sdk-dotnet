@@ -36,9 +36,15 @@ internal sealed class OpenAIResponsesStream
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
 
     private readonly ToolNameMapping? _toolNameMapping;
+    private readonly bool _store;
+    private readonly Dictionary<string, ActiveReasoning> _activeReasoning = new(StringComparer.Ordinal);
 
-    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null, ToolNameMapping? toolNameMapping = null)
+    // Compatible providers can rotate item ids between events. The output index stays the same for the life of an item.
+    private readonly Dictionary<int, string> _activeOutputItemIds = new();
+
+    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null, ToolNameMapping? toolNameMapping = null, bool store = false)
     {
+        _store = store;
         _toolNameMapping = toolNameMapping;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
         _generateId = generateId ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
@@ -94,6 +100,19 @@ internal sealed class OpenAIResponsesStream
                         customCall["async"] is JsonValue asyncValue && asyncValue.TryGetValue<bool>(out var asyncMode) ? asyncMode : null);
                     parts.Add(new ToolInputStartStreamPart(customCallId, customName, inputEncoding: ToolInputEncoding.Text));
                 }
+                else if (node["item"] is JsonObject reasoningAdded
+                    && reasoningAdded["type"]?.GetValue<string>() == "reasoning"
+                    && reasoningAdded["id"]?.GetValue<string>() is { } reasoningId)
+                {
+                    if (OutputIndex(node) is { } reasoningIndex)
+                    {
+                        _activeOutputItemIds[reasoningIndex] = reasoningId;
+                    }
+
+                    var encrypted = reasoningAdded["encrypted_content"]?.GetValue<string>();
+                    _activeReasoning[reasoningId] = new ActiveReasoning(encrypted);
+                    parts.Add(new ReasoningStartStreamPart(ReasoningPartId(reasoningId, 0), ReasoningMetadata(reasoningId, encrypted, includeEncrypted: true)));
+                }
                 else if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
                 {
                     _annotations.Clear();
@@ -108,6 +127,63 @@ internal sealed class OpenAIResponsesStream
                 if (!string.IsNullOrEmpty(delta))
                 {
                     parts.Add(new TextDeltaStreamPart(itemId, delta!));
+                }
+
+                break;
+            case "response.reasoning_summary_part.added":
+                if (node["item_id"]?.GetValue<string>() is { } partItem)
+                {
+                    var partItemId = ResolveOutputItemId(partItem, node);
+                    var summaryIndex = SummaryIndex(node);
+                    // The first reasoning start comes from output_item.added.
+                    if (summaryIndex > 0 && _activeReasoning.TryGetValue(partItemId, out var activeReasoning))
+                    {
+                        activeReasoning.SummaryParts[summaryIndex] = ReasoningPartState.Active;
+
+                        // A new summary part lets every part that could conclude conclude.
+                        foreach (var concludable in activeReasoning.SummaryParts.Where(entry => entry.Value == ReasoningPartState.CanConclude).Select(entry => entry.Key).ToList())
+                        {
+                            parts.Add(new ReasoningEndStreamPart(ReasoningPartId(partItemId, concludable), ReasoningMetadata(partItemId, null)));
+                            activeReasoning.SummaryParts[concludable] = ReasoningPartState.Concluded;
+                        }
+
+                        parts.Add(new ReasoningStartStreamPart(
+                            ReasoningPartId(partItemId, summaryIndex),
+                            ReasoningMetadata(partItemId, activeReasoning.EncryptedContent, includeEncrypted: true)));
+                    }
+                }
+
+                break;
+            case "response.reasoning_summary_text.delta":
+                if (node["item_id"]?.GetValue<string>() is { } deltaItem)
+                {
+                    var reasoningDeltaItemId = ResolveOutputItemId(deltaItem, node);
+                    parts.Add(new ReasoningDeltaStreamPart(
+                        ReasoningPartId(reasoningDeltaItemId, SummaryIndex(node)),
+                        node["delta"]?.GetValue<string>() ?? string.Empty,
+                        ReasoningMetadata(reasoningDeltaItemId, null)));
+                }
+
+                break;
+            case "response.reasoning_summary_part.done":
+                if (node["item_id"]?.GetValue<string>() is { } doneItem)
+                {
+                    var reasoningDoneItemId = ResolveOutputItemId(doneItem, node);
+                    if (_activeReasoning.TryGetValue(reasoningDoneItemId, out var doneReasoning))
+                    {
+                        var doneSummaryIndex = SummaryIndex(node);
+                        if (_store)
+                        {
+                            // Stored reasoning needs no encrypted content, so the part can end now.
+                            parts.Add(new ReasoningEndStreamPart(ReasoningPartId(reasoningDoneItemId, doneSummaryIndex), ReasoningMetadata(reasoningDoneItemId, null)));
+                            doneReasoning.SummaryParts[doneSummaryIndex] = ReasoningPartState.Concluded;
+                        }
+                        else
+                        {
+                            // Wait for the final item, which carries the encrypted content.
+                            doneReasoning.SummaryParts[doneSummaryIndex] = ReasoningPartState.CanConclude;
+                        }
+                    }
                 }
 
                 break;
@@ -176,6 +252,29 @@ internal sealed class OpenAIResponsesStream
                     _ongoingCustomToolCalls.TryGetValue(customDoneIndex, out var finishedCustom);
                     _ongoingCustomToolCalls.Remove(customDoneIndex);
                     CustomToolCallDone(parts, JsonSerializer.Deserialize<JsonElement>(customCallDone.ToJsonString()), finishedCustom);
+                }
+                else if (node["item"] is JsonObject reasoningDone
+                    && reasoningDone["type"]?.GetValue<string>() == "reasoning"
+                    && reasoningDone["id"]?.GetValue<string>() is { } reasoningDoneId)
+                {
+                    var itemIdForDone = ResolveOutputItemId(reasoningDoneId, node);
+                    if (_activeReasoning.Remove(itemIdForDone, out var finishedReasoning))
+                    {
+                        var finalEncrypted = reasoningDone["encrypted_content"]?.GetValue<string>();
+                        foreach (var summaryIndex in finishedReasoning.SummaryParts
+                            .Where(entry => entry.Value is ReasoningPartState.Active or ReasoningPartState.CanConclude)
+                            .Select(entry => entry.Key))
+                        {
+                            parts.Add(new ReasoningEndStreamPart(
+                                ReasoningPartId(itemIdForDone, summaryIndex),
+                                ReasoningMetadata(itemIdForDone, finalEncrypted, includeEncrypted: true)));
+                        }
+                    }
+
+                    if (OutputIndex(node) is { } finishedIndex)
+                    {
+                        _activeOutputItemIds.Remove(finishedIndex);
+                    }
                 }
                 else if (node["item"] is JsonObject done)
                 {
@@ -294,6 +393,43 @@ internal sealed class OpenAIResponsesStream
 
         _openTextId = id;
         parts.Add(new TextStartStreamPart(id, OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id })));
+    }
+
+    private static int? OutputIndex(JsonObject node) =>
+        node["output_index"] is JsonValue value && value.TryGetValue<int>(out var index) ? index : null;
+
+    private static int SummaryIndex(JsonObject node) =>
+        node["summary_index"] is JsonValue value && value.TryGetValue<int>(out var index) ? index : 0;
+
+    private string ResolveOutputItemId(string itemId, JsonObject node) =>
+        OutputIndex(node) is { } index && _activeOutputItemIds.TryGetValue(index, out var active) ? active : itemId;
+
+    private static string ReasoningPartId(string itemId, int summaryIndex) => itemId + ":" + summaryIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    // The start and end parts carry the encrypted content, null when there is none. Deltas carry only the item id.
+    private static JsonElement ReasoningMetadata(string itemId, string? encryptedContent, bool includeEncrypted = false)
+    {
+        var values = new JsonObject { ["itemId"] = itemId };
+        if (includeEncrypted)
+        {
+            values["reasoningEncryptedContent"] = encryptedContent;
+        }
+
+        return OpenAIJson.ProviderMetadata(values);
+    }
+
+    private enum ReasoningPartState
+    {
+        Active,
+        CanConclude,
+        Concluded,
+    }
+
+    private sealed class ActiveReasoning(string? encryptedContent)
+    {
+        public string? EncryptedContent { get; } = encryptedContent;
+
+        public Dictionary<int, ReasoningPartState> SummaryParts { get; } = new() { [0] = ReasoningPartState.Active };
     }
 
     private sealed class OngoingFunctionCall(string toolName, string toolCallId, bool suppressInputStreaming, bool? async)
