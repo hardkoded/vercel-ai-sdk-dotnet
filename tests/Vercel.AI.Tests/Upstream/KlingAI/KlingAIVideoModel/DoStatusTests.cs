@@ -16,6 +16,31 @@ public sealed class DoStatusTests
     private const string T2VStatusPath = "/v1/videos/text2video/task-abc-123";
 
     [Fact]
+    [UpstreamTest(Prefix + "should encode the task ID as a single URL path segment", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_encode_the_task_ID_as_a_single_URL_path_segment()
+    {
+        var server = new Server();
+        var taskId = "abc/../../internal";
+
+        await CreateModel(server.Handler, "kling-v2.6-t2v").DoStatusAsync(Status(taskId: taskId), CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal(TestBaseUrl + "/v1/videos/text2video/" + Uri.EscapeDataString(taskId), server.Calls[0].Uri.AbsoluteUri);
+    }
+
+    [Theory]
+    [InlineData(".", "%252E")]
+    [InlineData("..", "%252E%252E")]
+    [UpstreamTest(Prefix + "should preserve the $taskId task ID as a URL path segment", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_preserve_the_taskId_task_ID_as_a_URL_path_segment(string taskId, string encodedTaskId)
+    {
+        var server = new Server();
+
+        await CreateModel(server.Handler, "kling-v2.6-t2v").DoStatusAsync(Status(taskId: taskId), CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Equal(TestBaseUrl + "/v1/videos/text2video/" + encodedTaskId, server.Calls[0].Uri.AbsoluteUri);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should return completed with video data when succeed", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_completed_with_video_data_when_succeed()
     {

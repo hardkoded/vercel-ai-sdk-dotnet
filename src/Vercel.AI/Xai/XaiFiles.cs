@@ -260,7 +260,7 @@ public sealed class XaiFiles : IFileStore
         var response = await ProviderExchange.SendAsync(
             _httpClient,
             HttpMethod.Get,
-            ApiKeys.Combine(_baseUrl, "/files/" + EncodePathSegment(id)),
+            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
             null,
             _headers(),
             cancellationToken).ConfigureAwait(false);
@@ -274,7 +274,7 @@ public sealed class XaiFiles : IFileStore
         var response = await ProviderExchange.SendAsync(
             _httpClient,
             HttpMethod.Get,
-            ApiKeys.Combine(_baseUrl, "/files/" + EncodePathSegment(id) + "/content"),
+            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id) + "/content"),
             null,
             _headers(),
             cancellationToken).ConfigureAwait(false);
@@ -300,7 +300,7 @@ public sealed class XaiFiles : IFileStore
         var response = await ProviderExchange.SendAsync(
             _httpClient,
             HttpMethod.Delete,
-            ApiKeys.Combine(_baseUrl, "/files/" + EncodePathSegment(id)),
+            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
             null,
             _headers(),
             cancellationToken).ConfigureAwait(false);
@@ -310,23 +310,6 @@ public sealed class XaiFiles : IFileStore
             var deleted = document.RootElement.TryGetProperty("deleted", out var flag) && flag.ValueKind == JsonValueKind.True;
             return new XaiFileDeleteResult(new Dictionary<string, string> { ["xai"] = deletedId }, deleted);
         }
-    }
-
-    /// <summary>Percent-encodes a path segment and double-encodes <c>.</c> and <c>..</c>.</summary>
-    public static string EncodePathSegment(string value)
-    {
-        var encoded = Uri.EscapeDataString(value ?? string.Empty);
-        if (encoded == ".")
-        {
-            return "%252E";
-        }
-
-        if (encoded == "..")
-        {
-            return "%252E%252E";
-        }
-
-        return encoded;
     }
 
     private static void ValidateExpiresAfter(double? expiresAfter)

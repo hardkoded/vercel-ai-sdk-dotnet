@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Tests;
 
@@ -951,12 +952,12 @@ internal static class AnthropicAssertions
 
     public static void SkillSegments()
     {
-        Assert.Equal("skill%2F..%2F..%2Fadmin", AnthropicSkills.EncodePathSegment("skill/../../admin"));
-        Assert.Equal("v1%2F..%2F..%2Fadmin", AnthropicSkills.EncodePathSegment("v1/../../admin"));
-        Assert.Equal("%252E", AnthropicSkills.EncodePathSegment("."));
-        Assert.Equal("%252E%252E", AnthropicSkills.EncodePathSegment(".."));
-        Assert.Equal("skill-1", AnthropicSkills.EncodePathSegment("skill-1"));
-        Assert.Equal("version-1", AnthropicSkills.EncodePathSegment("version-1"));
+        Assert.Equal("skill%2F..%2F..%2Fadmin", PathSegments.Encode("skill/../../admin"));
+        Assert.Equal("v1%2F..%2F..%2Fadmin", PathSegments.Encode("v1/../../admin"));
+        Assert.Equal("%252E", PathSegments.Encode("."));
+        Assert.Equal("%252E%252E", PathSegments.Encode(".."));
+        Assert.Equal("skill-1", PathSegments.Encode("skill-1"));
+        Assert.Equal("version-1", PathSegments.Encode("version-1"));
     }
 
     public static async Task SkillMultipart(bool displayTitle)
