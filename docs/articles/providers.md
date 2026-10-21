@@ -124,6 +124,22 @@ An OpenAI-compatible image model (`ImageModel(id)`) reads image generation and e
 
 Speech, transcription, image, video, and Voyage each have a package that calls that provider’s public HTTP API. Use `SpeechModel`, `TranscriptionModel`, `ImageModel`, `VideoModel`, or `EmbeddingModel` rather than `LanguageModel`. Every provider (`ProviderBase.SpecificationVersion`) and every video model (`IVideoModel.SpecificationVersion`) reports `v4`.
 
+## Alibaba chat
+
+The Alibaba chat model (`AlibabaProvider.LanguageModel(id)`) builds its own request from the OpenAI-compatible chat model. Pass options as JSON under `alibaba` in `LanguageModelCallOptions.ProviderOptions`.
+
+| Option | Request field | Notes |
+| --- | --- | --- |
+| `enableThinking` | `enable_thinking` | Turns thinking mode on or off. |
+| `thinkingBudget` | `thinking_budget` | Maximum reasoning tokens. |
+| `preserveThinking` | `preserve_thinking` | Replays earlier assistant reasoning as `reasoning_content`. Defaults to `true` for models Alibaba documents as supporting it (such as `qwen3.7-max`). Other models send the field only when you set it. |
+| `parallelToolCalls` | `parallel_tool_calls` | Sent only when the call has tools. |
+
+- `LanguageModelCallOptions.Reasoning` maps to `enable_thinking` and `thinking_budget`. `none` sends `enable_thinking: false`. Any other level sends `enable_thinking: true` with a budget. `enableThinking` and `thinkingBudget` win over `Reasoning`. Alibaba never receives `reasoning_effort`.
+- Reasoning from the current tool-call round (after the last user message) always goes back with the tool results. Earlier reasoning is sent only when `preserveThinking` is on. An assistant message with no text, no tool call, and no reasoning to send is left out.
+- Models `qwen3.7-plus`, `qwen3.7-flash`, `qwen3.7-max`, `qwen3.8-max`, and `qwen3.8-flash` (and their dated ids) use `response_format.type = json_schema` when the call has a JSON schema. Other models use `json_object`, inject the schema into the system message, and add a `compatibility` warning. A JSON call with no schema uses `json_object` and the instruction `You MUST answer with JSON.`.
+- Usage reports `cache_creation_input_tokens` as cache write tokens. Cache reads and writes are both inside `prompt_tokens`, so `NoCacheInputTokens` excludes both. The raw usage object keeps fields the SDK does not map, such as `cache_type`.
+
 ## HeyGen
 
 The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It supports video generation only. HeyGen's avatar, voice, translation, and video editing APIs are not included.

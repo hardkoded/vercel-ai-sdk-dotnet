@@ -73,6 +73,9 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
             options.AdditionalApiKeyEnvironmentVariables = new[] { "DASHSCOPE_API_KEY" };
         }
 
+        options.TransformChatRequest = AlibabaChatRequest.Transform;
+        options.ConvertUsage = AlibabaChatRequest.ConvertUsage;
+        options.ResolveReasoningEffort = (_, _, _, _) => null;
         options.UserAgent = ProviderExchange.UserAgent("alibaba");
         return options;
     }
