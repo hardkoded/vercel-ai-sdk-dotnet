@@ -70,4 +70,44 @@ public sealed class ProviderToolOutputsTests
         Assert.True(JsonNode.DeepEquals(expected, result.Input), result.Input.ToJsonString());
         Assert.False(((JsonObject)result.Input[0]!).ContainsKey("max_output_length"));
     }
+
+    [Fact]
+    [UpstreamTest(Id + "should include apply_patch output when multiple tool results are present", Coverage = UpstreamCoverage.Covered)]
+    public void Should_include_apply_patch_output_when_multiple_tool_results_are_present()
+    {
+        var result = OpenAIResponsesLanguageModel.ConvertInput(
+            new ModelMessage[]
+            {
+                new ToolModelMessage(new[]
+                {
+                    new ToolModelMessage("call-shell", "shell", """{"output":[{"stdout":"hi\n","stderr":"","outcome":{"type":"exit","exitCode":0}}]}""", false, "json"),
+                    new ToolModelMessage("call-apply", "apply_patch", """{"status":"completed","output":"patched"}""", false, "json"),
+                }),
+            },
+            "system",
+            false,
+            null,
+            "openai",
+            false,
+            true,
+            toolNameMapping: Mapping);
+
+        var expected = JsonNode.Parse(
+            """
+            [
+              {
+                "type": "shell_call_output",
+                "call_id": "call-shell",
+                "output": [{"stdout":"hi\n","stderr":"","outcome":{"type":"exit","exit_code":0}}]
+              },
+              {
+                "type": "apply_patch_call_output",
+                "call_id": "call-apply",
+                "status": "completed",
+                "output": "patched"
+              }
+            ]
+            """);
+        Assert.True(JsonNode.DeepEquals(expected, result.Input), result.Input.ToJsonString());
+    }
 }
