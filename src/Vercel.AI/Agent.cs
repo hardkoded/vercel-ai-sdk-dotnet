@@ -72,7 +72,9 @@ public sealed class Agent
             OnFinish = prepared.OnFinish,
             OnError = prepared.OnError,
             ApproveTool = prepared.ApproveTool,
-            RepairToolCall = prepared.RepairToolCall,
+#pragma warning disable CS0618
+            RepairToolCall = prepared.RepairToolCall ?? prepared.ExperimentalRepairToolCall,
+#pragma warning restore CS0618
             RefineToolInput = prepared.RefineToolInput,
             AbortSignal = abortSignal,
             OnAbort = Options.OnAbort,

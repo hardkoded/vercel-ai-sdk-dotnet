@@ -128,6 +128,8 @@ Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call
 - `RepairToolCall`: called once for a `NoSuchToolError` or `InvalidToolInputError`. It gets a `ToolCallRepairContext` (the call, the tools, `InputSchema(toolName)`, the error, `Messages`, `Instructions` and a `CancellationToken`) and returns a repaired `GeneratedToolCall`, or null to keep the error. If it throws, the result carries a `ToolCallRepairError`. Cancelling the token stops the wait and cancels `ParseToolCallAsync`.
 - `RefineToolInput`: a map from tool name to a function that returns a refined input for a valid call.
 
+On `GenerateTextOptions` and `StreamTextOptions`, `ExperimentalRepairToolCall` is the deprecated alias of `RepairToolCall` (`experimental_repairToolCall` upstream). `RepairToolCall` wins when both are set.
+
 A `Tool` can carry a `Title` and `Metadata`. A parsed call copies both as `Title` and `ToolMetadata`; `ToolMetadata` stays apart from the model's `ProviderMetadata`. `Tool.DynamicTool(...)` declares a dynamic tool, and its parsed calls have `Dynamic` set. A provider-executed `GeneratedToolCall` with `Dynamic` set parses even when no tool matches.
 
 The generation loop passes both options on from `GenerateTextOptions` and `StreamTextOptions` (`RepairToolCall` and `RefineToolInput`), and from `AgentOptions`. The repair function gets the messages of the step and the instructions. A repaired or refined call replaces the model's call everywhere: in `StepResult.ToolCalls` and `Content`, in the `OnLanguageModelCallEnd` event, in the stream parts, in the executed tool's `InputJson`, and in the assistant message of `ResponseMessages`.
