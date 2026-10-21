@@ -90,7 +90,7 @@ public static class DownloadUrls
             throw new DownloadException(text, "URL must have a hostname");
         }
 
-        if (string.Equals(hostname, "localhost", StringComparison.Ordinal) || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal))
+        if (string.Equals(hostname, "localhost", StringComparison.Ordinal) || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal) || hostname.EndsWith(".internal", StringComparison.Ordinal))
         {
             throw new DownloadException(text, "URL with hostname " + hostname + " is not allowed");
         }
