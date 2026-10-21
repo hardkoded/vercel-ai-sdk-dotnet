@@ -96,9 +96,17 @@ public sealed class FetchWithValidatedRedirectsTests
     public async Task Starts_cancelling_redirect_response_bodies_to_prevent_socket_leaks()
     {
         var cancelled = 0;
+        var bothCancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action onCancel = delegate
+        {
+            if (Interlocked.Increment(ref cancelled) == 2)
+            {
+                bothCancelled.SetResult(true);
+            }
+        };
         var fetch = new FetchMock(
-            RedirectResponse("https://cdn.example.com/file", onCancel: delegate { cancelled++; }),
-            RedirectResponse("http://169.254.169.254/", onCancel: delegate { cancelled++; }));
+            RedirectResponse("https://cdn.example.com/file", onCancel: onCancel),
+            RedirectResponse("http://169.254.169.254/", onCancel: onCancel));
 
         await Assert.ThrowsAsync<DownloadError>(delegate
         {
@@ -106,7 +114,54 @@ public sealed class FetchWithValidatedRedirectsTests
         });
 
         // Both the followed hop and the hop rejected by the SSRF guard must have their bodies cancelled.
+        // Cancellation is started without being awaited, so wait for it to run.
+        await bothCancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal(2, cancelled);
+    }
+
+    [Theory]
+    [InlineData(301)]
+    [InlineData(302)]
+    [InlineData(303)]
+    [InlineData(307)]
+    [InlineData(308)]
+    [UpstreamTest(Prefix + "does not wait for cancellation before following a %d redirect", Coverage = UpstreamCoverage.Covered)]
+    public async Task Does_not_wait_for_cancellation_before_following_a_redirect(int status)
+    {
+        var cancelEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishCancellation = new ManualResetEventSlim(false);
+        var secondRequest = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var redirect = RedirectResponse(
+            "https://cdn.example.com/file",
+            status,
+            delegate
+            {
+                cancelEntered.SetResult(true);
+                finishCancellation.Wait();
+            });
+        var fetch = new FetchMock(redirect, OkResponse());
+        fetch.OnCall = delegate (int count)
+        {
+            if (count == 2)
+            {
+                secondRequest.SetResult(true);
+            }
+        };
+
+        var download = Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+
+        await cancelEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        try
+        {
+            await secondRequest.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(2, fetch.Calls.Count);
+        }
+        finally
+        {
+            finishCancellation.Set();
+            await download;
+        }
     }
 
     [Fact]
@@ -280,6 +335,24 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "strips blocked request headers before sending", Coverage = UpstreamCoverage.Covered)]
+    public async Task Strips_blocked_request_headers_before_sending()
+    {
+        var fetch = new FetchMock(OkResponse());
+
+        await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            Headers(("authorization", "Bearer secret"), ("metadata-flavor", "Google"), ("x-forwarded-for", "10.0.0.1"), ("cookie", "session=abc")),
+            fetch: fetch.Fetch);
+
+        var sent = fetch.Calls[0].Request.Headers;
+        Assert.Null(sent.Get("metadata-flavor"));
+        Assert.Null(sent.Get("x-forwarded-for"));
+        Assert.Null(sent.Get("cookie"));
+        Assert.Equal("Bearer secret", sent.Get("authorization"));
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "drops all caller headers except user-agent on a cross-origin redirect but keeps them same-origin", Coverage = UpstreamCoverage.Covered)]
     public async Task Drops_all_caller_headers_except_user_agent_on_a_cross_origin_redirect_but_keeps_them_same_origin()
     {
@@ -378,9 +451,13 @@ public sealed class FetchWithValidatedRedirectsTests
 
         public List<FetchCall> Calls { get; } = new List<FetchCall>();
 
+        /// <summary>Called with the call count after each request is recorded.</summary>
+        public Action<int>? OnCall { get; set; }
+
         public Task<DownloadResponse> Fetch(string url, DownloadRequest request)
         {
             Calls.Add(new FetchCall(url, request));
+            OnCall?.Invoke(Calls.Count);
             return Task.FromResult(_factory != null ? _factory() : _responses.Dequeue());
         }
     }
