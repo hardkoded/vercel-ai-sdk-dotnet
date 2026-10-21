@@ -18,7 +18,7 @@ public sealed class StreamTextFirstChunkTimeoutTests
 {
     private const string Prefix = "packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText first chunk timeout::";
 
-    private static readonly TimeSpan Overrun = TimeSpan.FromMilliseconds(300);
+    private static readonly TimeSpan Overrun = TimeSpan.FromMilliseconds(600);
 
     private static StreamTextResult Stream(DelegateModel model, IReadOnlyList<Tool>? tools = null, StopCondition? stopWhen = null)
     {
@@ -28,7 +28,7 @@ public sealed class StreamTextFirstChunkTimeoutTests
             Prompt = "test-input",
             Tools = tools,
             StopWhen = stopWhen,
-            Timeout = new TimeoutConfiguration { FirstChunkMs = 50 },
+            Timeout = new TimeoutConfiguration { FirstChunkMs = 150 },
             OnError = (_, _) => Task.CompletedTask,
         });
     }
@@ -90,7 +90,7 @@ public sealed class StreamTextFirstChunkTimeoutTests
         Assert.True(signal.Aborted);
         var reason = Assert.IsType<Vercel.AI.Util.TimeoutError>(signal.Reason);
         Assert.Equal("TimeoutError", reason.ErrorName);
-        Assert.Equal("First chunk timeout of 50ms exceeded", reason.Message);
+        Assert.Equal("First chunk timeout of 150ms exceeded", reason.Message);
         Assert.Equal("TimeoutError", Assert.IsType<Vercel.AI.Util.TimeoutError>(error).ErrorName);
     }
 

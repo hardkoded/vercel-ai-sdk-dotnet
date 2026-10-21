@@ -338,9 +338,9 @@ internal static class Generation
                 }
 
                 var disposal = abort.Track(new StreamResultDisposal(enumerator, streamResult));
-                timeouts?.StartFirstChunk();
                 try
                 {
+                    timeouts?.StartFirstChunk();
                     while (true)
                     {
                         cancellationToken.ThrowIfCancellationRequested();

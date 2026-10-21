@@ -34,7 +34,7 @@ In ASP.NET Core, `services.AddAiSdk()` registers `IAiClient` and a named `HttpCl
 
 - `TotalMs`: the limit for the entire call, including all steps.
 - `StepMs`: the limit for each step, including model generation, retries, and local tool execution. Each step starts a new budget.
-- `FirstChunkMs`: the limit until the first chunk of model output of each step. It starts when the model response of the step starts, and each step starts a new budget. A chunk without output (response metadata, raw chunks, empty deltas) does not end it. `StreamTextAsync` only: `GenerateTextAsync` logs a warning for it.
+- `FirstChunkMs`: the limit until the first chunk of model output of each step. It starts when the provider returns the response stream, so it does not limit the wait for the response itself (use `StepMs` for that). Each step starts a new budget. A chunk without output (response metadata, raw chunks, empty deltas) does not end it. `StreamTextAsync` only: `GenerateTextAsync` logs a warning for it.
 - `ChunkMs`: the limit between chunks of model output, after the first chunk of output arrived. It does not limit the wait for the first chunk. A chunk without output (response metadata, raw chunks, empty deltas) does not reset it. The timer stops when the model response ends. `StreamTextAsync` only: `GenerateTextAsync` logs a warning for it.
 
 ```csharp

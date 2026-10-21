@@ -35,7 +35,7 @@ public sealed class TimeoutConfiguration
 
     /// <summary>
     /// Timeout until the first content chunk of each step, in milliseconds. Streaming only.
-    /// It starts when the model response of the step starts. A chunk without output, such as response metadata or an empty delta, does not end it.
+    /// It starts when the provider returns the response stream of the step, so it does not limit the wait for the response itself. A chunk without output, such as response metadata or an empty delta, does not end it.
     /// <c>GenerateTextAsync</c> does not support it.
     /// </summary>
     public int? FirstChunkMs
