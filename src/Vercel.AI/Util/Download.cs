@@ -324,6 +324,13 @@ public static class Download
     private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
     {
         var currentHeaders = headers;
+
+        // Snapshot per hop: an injected fetch may defer, and hops between credential drops would otherwise share one instance.
+        DownloadRequest PerHopInit(string redirect)
+        {
+            return new DownloadRequest(currentHeaders == null ? null : new HeaderCollection(currentHeaders.Entries()), abortSignal, redirect) { MaxBytes = maxBytes };
+        }
+
         var currentUrl = url;
         for (var redirectCount = 0; redirectCount <= maxRedirects; redirectCount++)
         {
@@ -334,7 +341,7 @@ public static class Download
             }
 
             var currentFetch = fetch ?? Fetch ?? DefaultFetchAsync;
-            var response = await currentFetch(currentUrl, new DownloadRequest(Snapshot(currentHeaders), abortSignal, "manual") { MaxBytes = maxBytes }).ConfigureAwait(false);
+            var response = await currentFetch(currentUrl, PerHopInit("manual")).ConfigureAwait(false);
             if (string.Equals(response.Type, "opaqueredirect", StringComparison.Ordinal))
             {
                 if (!IsBrowser)
@@ -342,7 +349,7 @@ public static class Download
                     throw new DownloadError(url, "Redirect from " + currentUrl + " could not be validated and was blocked");
                 }
 
-                return await currentFetch(currentUrl, new DownloadRequest(Snapshot(currentHeaders), abortSignal, "follow") { MaxBytes = maxBytes }).ConfigureAwait(false);
+                return await currentFetch(currentUrl, PerHopInit("follow")).ConfigureAwait(false);
             }
 
             var location = response.Headers.Get("location");
@@ -368,11 +375,6 @@ public static class Download
         }
 
         throw new DownloadError(url, "Too many redirects (max " + maxRedirects + ")");
-    }
-
-    private static HeaderCollection? Snapshot(HeaderCollection? headers)
-    {
-        return headers == null ? null : new HeaderCollection(headers.Entries());
     }
 
     private static byte[] ReadWithLimit(DownloadResponse response, string url, long maxBytes)
