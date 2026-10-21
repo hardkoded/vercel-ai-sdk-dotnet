@@ -37,4 +37,16 @@ public sealed class BlockedHostnamesTests
     {
         AssertBlocked("http://app.localhost/file");
     }
+
+    [Theory]
+    [InlineData("http://metadata.google.internal/file")]
+    [InlineData("https://service.namespace.internal/file")]
+    [InlineData("https://SERVICE.INTERNAL/file")]
+    [InlineData("https://service.internal./file")]
+    [InlineData("http://service.internal:8080/file")]
+    [UpstreamTest(Suite + "should block .internal hostnames: %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_block_internal_hostnames(string url)
+    {
+        AssertBlocked(url);
+    }
 }

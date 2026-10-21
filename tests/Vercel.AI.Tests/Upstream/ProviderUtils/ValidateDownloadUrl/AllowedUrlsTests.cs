@@ -47,4 +47,15 @@ public sealed class AllowedUrlsTests
     {
         AssertAllowed("data:text/plain;base64,aGVsbG8=");
     }
+
+    [Theory]
+    [InlineData("https://internal.example.com/file")]
+    [InlineData("https://service.internal.example.com/file")]
+    [InlineData("https://service.notinternal/file")]
+    [InlineData("https://example.com/service.internal")]
+    [UpstreamTest(Suite + "should allow URLs without an .internal hostname suffix: %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_allow_URLs_without_an_internal_hostname_suffix(string url)
+    {
+        AssertAllowed(url);
+    }
 }

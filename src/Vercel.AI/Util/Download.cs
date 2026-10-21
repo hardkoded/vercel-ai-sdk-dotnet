@@ -241,7 +241,7 @@ public static class Download
             throw new DownloadError(url, "URL must have a hostname");
         }
 
-        if (hostname == "localhost" || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal))
+        if (hostname == "localhost" || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal) || hostname.EndsWith(".internal", StringComparison.Ordinal))
         {
             throw new DownloadError(url, "URL with hostname " + hostname + " is not allowed");
         }

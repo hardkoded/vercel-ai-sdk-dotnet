@@ -12,3 +12,5 @@
   href: compatibility.md
 - name: Warnings
   href: warnings.md
+- name: Secure URL fetching
+  href: secure-url-fetching.md
