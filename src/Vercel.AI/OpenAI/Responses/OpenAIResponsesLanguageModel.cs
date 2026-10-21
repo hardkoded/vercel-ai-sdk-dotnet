@@ -271,7 +271,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             outputSchemaToolNames: outputSchemaToolNames,
             isReasoningModel: reasoning,
             hasConversation: OpenAIJson.String(openai, "conversation") != null,
-            toolNameMapping: toolNameMapping);
+            toolNameMapping: toolNameMapping,
+            hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -946,7 +947,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ISet<string>? outputSchemaToolNames = null,
         bool isReasoningModel = false,
         bool hasConversation = false,
-        ToolNameMapping? toolNameMapping = null)
+        ToolNameMapping? toolNameMapping = null,
+        bool hasApplyPatchTool = false)
     {
         var input = new JsonArray();
         var programmaticToolCallIds = new HashSet<string>();
@@ -1156,7 +1158,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         break;
                     }
 
-                    if (tool.ToolName == "apply_patch" && tool.OutputType == "json")
+                    if (hasApplyPatchTool && tool.ToolName == "apply_patch" && tool.OutputType == "json")
                     {
                         input.Add(ApplyPatchCallOutput(tool.ToolCallId, tool.OutputJson));
                         break;

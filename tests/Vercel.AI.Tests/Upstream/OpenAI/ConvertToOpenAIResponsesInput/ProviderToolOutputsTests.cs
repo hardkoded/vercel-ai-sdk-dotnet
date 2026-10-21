@@ -90,7 +90,8 @@ public sealed class ProviderToolOutputsTests
             "openai",
             false,
             true,
-            toolNameMapping: Mapping);
+            toolNameMapping: Mapping,
+            hasApplyPatchTool: true);
 
         var expected = JsonNode.Parse(
             """
