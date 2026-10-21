@@ -29,6 +29,7 @@ internal static class GoogleInteractionsPolling
     /// <summary>
     /// Polls until the status is terminal. Throws when the loop exceeds <paramref name="timeout"/> or the interaction has no id.
     /// When the caller cancels, sends a best-effort <c>POST /interactions/{id}/cancel</c> and rethrows.
+    /// A timeout only stops the wait. It does not cancel the interaction, so the server-side run may continue.
     /// </summary>
     internal static async Task<JsonDocument> PollUntilTerminalAsync(
         ProviderHttp http,
