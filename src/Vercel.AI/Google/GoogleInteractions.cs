@@ -203,6 +203,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var input = GoogleInteractionsInput.Convert(options.Prompt);
         input["model"] = ModelId;
         var background = Background(options);
+        var pollingTimeout = PollingTimeout(options);
         if (background)
         {
             input["background"] = true;
@@ -226,7 +227,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         // status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
         if (background)
         {
-            document = await PollUntilTerminalAsync(document, baseUrl, headers, cancellationToken).ConfigureAwait(false);
+            document = await PollIfNonTerminalAsync(document, baseUrl, headers, pollingTimeout, cancellationToken).ConfigureAwait(false);
         }
 
         using (document)
@@ -247,53 +248,36 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             && flag.ValueKind == JsonValueKind.True;
     }
 
-    private static bool IsTerminal(string? status)
+    private static TimeSpan? PollingTimeout(LanguageModelCallOptions options)
     {
-        return status == "completed" || status == "failed" || status == "cancelled" || status == "incomplete";
+        if (options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("pollingTimeoutMs", out var value)
+            && value.ValueKind != JsonValueKind.Null)
+        {
+            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var milliseconds) || milliseconds <= 0 || milliseconds > int.MaxValue)
+            {
+                throw new AiSdkException("providerOptions.google.pollingTimeoutMs must be a positive integer of at most 2147483647.");
+            }
+
+            return TimeSpan.FromMilliseconds(milliseconds);
+        }
+
+        return null;
     }
 
-    private async Task<JsonDocument> PollUntilTerminalAsync(JsonDocument first, string baseUrl, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+    private async Task<JsonDocument> PollIfNonTerminalAsync(JsonDocument first, string baseUrl, IReadOnlyDictionary<string, string?> headers, TimeSpan? timeout, CancellationToken cancellationToken)
     {
-        var current = first;
-        var delay = TimeSpan.FromSeconds(1);
-        var deadline = DateTime.UtcNow + TimeSpan.FromMinutes(30);
-        try
+        var status = first.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        if (GoogleInteractionsPolling.IsTerminal(status))
         {
-            while (true)
-            {
-                var status = current.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-                if (IsTerminal(status))
-                {
-                    return current;
-                }
-
-                var id = current.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
-                if (string.IsNullOrEmpty(id))
-                {
-                    throw new InvalidOperationException("The Interactions response has no id to poll.");
-                }
-
-                if (DateTime.UtcNow + delay > deadline)
-                {
-                    throw new TimeoutException("Polling the Interactions response for '" + id + "' timed out.");
-                }
-
-                current.Dispose();
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                delay = TimeSpan.FromSeconds(Math.Min(delay.TotalSeconds * 2, 10));
-                current = await _provider.Http.SendJsonAsync(
-                    HttpMethod.Get,
-                    ProviderUtils.ApiKeys.Combine(baseUrl, "interactions/" + Uri.EscapeDataString(id!)),
-                    null,
-                    headers,
-                    cancellationToken).ConfigureAwait(false);
-            }
+            return first;
         }
-        catch
-        {
-            current.Dispose();
-            throw;
-        }
+
+        var id = first.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
+        first.Dispose();
+        return await GoogleInteractionsPolling.PollUntilTerminalAsync(_provider.Http, baseUrl, id, headers, null, null, timeout, cancellationToken).ConfigureAwait(false);
     }
 
     // total_output_tokens is the text count. Thought tokens add to the output total.
