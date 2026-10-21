@@ -75,6 +75,10 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
 
         options.TransformChatRequest = AlibabaChatRequest.Transform;
         options.ConvertUsage = AlibabaChatRequest.ConvertUsage;
+        options.TextBlockId = "0";
+        options.StreamToolInput = true;
+        options.ReasoningBlockId ??= static () => JsonValues.GenerateId(string.Empty);
+
         options.ResolveReasoningEffort = (_, _, _, _) => null;
         options.UserAgent = ProviderExchange.UserAgent("alibaba");
         return options;

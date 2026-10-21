@@ -114,6 +114,15 @@ public class OpenAICompatibleOptions
     /// </summary>
     internal Func<string, LanguageModelCallOptions, JsonObject, IList<CallWarning>, JsonObject>? TransformChatRequest { get; set; }
 
+    /// <summary>Streams <c>tool-input-start</c>, <c>tool-input-delta</c> and <c>tool-input-end</c> parts for every tool call, not only for the JSON response tool.</summary>
+    internal bool StreamToolInput { get; set; }
+
+    /// <summary>Id of the streamed text block. Upstream openai-compatible uses <c>txt-0</c>.</summary>
+    internal string TextBlockId { get; set; } = "txt-0";
+
+    /// <summary>Creates the id of a streamed reasoning block. Null keeps <c>reasoning-0</c>, like upstream openai-compatible.</summary>
+    internal Func<string>? ReasoningBlockId { get; set; }
+
     /// <summary>
     /// Resolves <c>reasoning_effort</c> for a model. Arguments are the model id, the portable <c>Reasoning</c> level,
     /// the provider option effort, and the call warnings. Null removes the field. Null here keeps the default behavior.
