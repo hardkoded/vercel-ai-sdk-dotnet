@@ -13,6 +13,7 @@ public sealed class TimeoutConfiguration
 {
     private int? _totalMs;
     private int? _stepMs;
+    private int? _firstChunkMs;
     private int? _chunkMs;
 
     /// <summary>Total timeout for the entire call, including all steps, in milliseconds.</summary>
@@ -30,6 +31,17 @@ public sealed class TimeoutConfiguration
     {
         get => _stepMs;
         set => _stepMs = Validate(value, nameof(StepMs));
+    }
+
+    /// <summary>
+    /// Timeout until the first content chunk of each step, in milliseconds. Streaming only.
+    /// It starts when the model response of the step starts. A chunk without output, such as response metadata or an empty delta, does not end it.
+    /// <c>GenerateTextAsync</c> does not support it.
+    /// </summary>
+    public int? FirstChunkMs
+    {
+        get => _firstChunkMs;
+        set => _firstChunkMs = Validate(value, nameof(FirstChunkMs));
     }
 
     /// <summary>

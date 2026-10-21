@@ -195,18 +195,26 @@ internal static class Generation
         }
     }
 
-    // generateText does not stream, so a chunkMs timeout has no effect.
+    // generateText does not stream, so a firstChunkMs or chunkMs timeout has no effect.
     private static void WarnUnsupportedTimeouts(GenerateTextOptions options, ILanguageModel model)
     {
-        if (options.Timeout?.ChunkMs == null)
+        var warnings = new List<ModelWarning>();
+        if (options.Timeout?.FirstChunkMs != null)
+        {
+            warnings.Add(new UnsupportedWarning("timeout.firstChunkMs", "The firstChunkMs timeout is only supported by streaming functions."));
+        }
+
+        if (options.Timeout?.ChunkMs != null)
+        {
+            warnings.Add(new UnsupportedWarning("timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions."));
+        }
+
+        if (warnings.Count == 0)
         {
             return;
         }
 
-        LogWarnings.Log(new LogWarningsOptions(
-            new ModelWarning[] { new UnsupportedWarning("timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions.") },
-            model.Provider,
-            model.ModelId));
+        LogWarnings.Log(new LogWarningsOptions(warnings, model.Provider, model.ModelId));
     }
 
     public static StreamTextResult Stream(
@@ -330,6 +338,7 @@ internal static class Generation
                 }
 
                 var disposal = abort.Track(new StreamResultDisposal(enumerator, streamResult));
+                timeouts?.StartFirstChunk();
                 try
                 {
                     while (true)
@@ -491,7 +500,7 @@ internal static class Generation
                 }
                 finally
                 {
-                    timeouts?.ClearChunk();
+                    timeouts?.ClearModelOutput();
                     await abort.DisposeAsync(disposal).ConfigureAwait(false);
                 }
 
@@ -635,7 +644,7 @@ internal static class Generation
                 break;
             case FinishStreamPart:
             case ErrorStreamPart:
-                timeouts.ClearChunk();
+                timeouts.ClearModelOutput();
                 break;
         }
     }

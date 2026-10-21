@@ -630,7 +630,7 @@ public class GenerateTextOptions
 
     /// <summary>
     /// Aborts the call with a <see cref="TimeoutError"/> when a timeout expires. A <see cref="TimeSpan"/> sets the total timeout.
-    /// <see cref="TimeoutConfiguration.StepMs"/> and <see cref="TimeoutConfiguration.ChunkMs"/> set the others. Maps to <c>timeout</c>.
+    /// <see cref="TimeoutConfiguration.StepMs"/>, <see cref="TimeoutConfiguration.FirstChunkMs"/>, and <see cref="TimeoutConfiguration.ChunkMs"/> set the others. Maps to <c>timeout</c>.
     /// </summary>
     public TimeoutConfiguration? Timeout { get; set; }
 
