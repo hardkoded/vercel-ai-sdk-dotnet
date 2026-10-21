@@ -86,7 +86,7 @@ internal static class GoogleInteractionsPolling
     }
 
     // Best effort: stops the run billing on Google's side. Errors are ignored, because the caller is already handling a cancelled run.
-    private static async Task CancelOnServerAsync(ProviderHttp http, string baseUrl, string id, IReadOnlyDictionary<string, string?> headers)
+    internal static async Task CancelOnServerAsync(ProviderHttp http, string baseUrl, string id, IReadOnlyDictionary<string, string?> headers)
     {
         using var timeout = new CancellationTokenSource(CancelTimeout);
         try

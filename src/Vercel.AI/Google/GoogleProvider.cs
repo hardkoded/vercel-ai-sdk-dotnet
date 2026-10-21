@@ -110,6 +110,12 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
         return new GoogleInteractionsModel(this, modelId);
     }
 
+    /// <summary>Language model that calls an agent through the Interactions API. The request sends <c>agent</c> instead of <c>model</c>.</summary>
+    public virtual ILanguageModel Interactions(GoogleInteractionsAgent agent)
+    {
+        return new GoogleInteractionsModel(this, agent);
+    }
+
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
