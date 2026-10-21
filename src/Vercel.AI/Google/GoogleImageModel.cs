@@ -17,14 +17,6 @@ namespace Vercel.AI.Google;
 /// </summary>
 public sealed class GoogleImageModel : IImageModel, IImageCaller
 {
-    private static readonly HashSet<string> ModelsWithFileInputSupport = new(StringComparer.Ordinal)
-    {
-        "gemini-2.5-flash-image",
-        "gemini-3-pro-image-preview",
-        "gemini-3.1-flash-image-preview",
-        "gemini-nano-banana-2.1",
-    };
-
     private readonly GoogleProvider _provider;
 
     /// <summary>Creates an image model.</summary>
@@ -55,7 +47,12 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
     int? IImageCaller.MaxImagesPerCall => MaxImagesPerCall;
 
     /// <summary><see langword="true"/> for Gemini image models that take input images, otherwise <see langword="null"/>. Maps to <c>supportsFileInputs</c>.</summary>
-    public bool? SupportsFileInputs => ModelsWithFileInputSupport.Contains(ModelId) ? true : null;
+    public bool? SupportsFileInputs => ModelId is "gemini-2.5-flash-image"
+        or "gemini-3-pro-image-preview"
+        or "gemini-3.1-flash-image-preview"
+        or "gemini-nano-banana-2.1"
+        ? true
+        : null;
 
     /// <summary><see langword="false"/> for Gemini image models that take input images but no mask, otherwise <see langword="null"/>. Maps to <c>supportsMaskInputs</c>.</summary>
     public bool? SupportsMaskInputs => SupportsFileInputs == true ? false : null;
