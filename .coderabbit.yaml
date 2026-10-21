@@ -5,7 +5,7 @@ reviews:
       mode: "off"
     custom_checks:
       - name: "Upstream parity"
-        mode: "warning"
+        mode: "error"
         instructions: |
           This repo is a .NET port of vercel/ai. The rules are in CLAUDE.md ("Porting an upstream change"). The pinned upstream commit is in COMPATIBILITY.md.
 
