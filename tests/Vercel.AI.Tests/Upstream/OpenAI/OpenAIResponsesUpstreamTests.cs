@@ -123,7 +123,7 @@ public sealed class OpenAIResponsesUpstreamTests
     [UpstreamTest(Generate + "should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task ExtractsUsage()
     {
-        var usage = (await GenerateFromJson("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"future_usage_field\":{\"value\":true},\"input_tokens\":345,\"input_tokens_details\":{\"cache_write_tokens\":45,\"cached_tokens\":234,\"future_input_detail\":{\"tokens\":7}},\"output_tokens\":538,\"output_tokens_details\":{\"future_output_detail\":[\"preserved\"],\"reasoning_tokens\":123},\"total_tokens\":572}}")).Usage;
+        var usage = (await GenerateFromJson("{\"id\":\"resp_test\",\"output\":[],\"usage\":{\"future_usage_field\":{\"value\":true},\"input_tokens\":345,\"input_tokens_details\":{\"cache_write_tokens\":45,\"cache_write_tokens_details\":{\"ttl_30m_tokens\":15,\"ttl_12h_tokens\":30},\"cached_tokens\":234,\"future_input_detail\":{\"tokens\":7}},\"output_tokens\":538,\"output_tokens_details\":{\"future_output_detail\":[\"preserved\"],\"reasoning_tokens\":123},\"total_tokens\":572}}")).Usage;
         Assert.Equal(345, usage.InputTokens);
         Assert.Equal(234, usage.CacheReadTokens);
         Assert.Equal(45, usage.CacheWriteTokens);
@@ -132,7 +132,9 @@ public sealed class OpenAIResponsesUpstreamTests
         Assert.Equal(123, usage.ReasoningTokens);
         Assert.Equal(415, usage.TextTokens);
         Assert.Equal(572, usage.TotalTokens);
-        Assert.Equal(7, usage.Raw!.Value.GetProperty("input_tokens_details").GetProperty("future_input_detail").GetProperty("tokens").GetInt32());
+        Assert.Equal(15, usage.Raw!.Value.GetProperty("input_tokens_details").GetProperty("cache_write_tokens_details").GetProperty("ttl_30m_tokens").GetInt32());
+        Assert.Equal(30, usage.Raw.Value.GetProperty("input_tokens_details").GetProperty("cache_write_tokens_details").GetProperty("ttl_12h_tokens").GetInt32());
+        Assert.Equal(7, usage.Raw.Value.GetProperty("input_tokens_details").GetProperty("future_input_detail").GetProperty("tokens").GetInt32());
         Assert.Equal("preserved", usage.Raw.Value.GetProperty("output_tokens_details").GetProperty("future_output_detail")[0].GetString());
     }
 
