@@ -49,8 +49,18 @@ public sealed class TimeoutConfiguration
     /// </summary>
     public static implicit operator TimeoutConfiguration(TimeSpan timeout)
     {
+        if (timeout == System.Threading.Timeout.InfiniteTimeSpan)
+        {
+            return new TimeoutConfiguration();
+        }
+
+        if (timeout < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "A timeout cannot be negative.");
+        }
+
         var milliseconds = Math.Ceiling(timeout.TotalMilliseconds);
-        if (timeout == System.Threading.Timeout.InfiniteTimeSpan || milliseconds > int.MaxValue)
+        if (milliseconds > int.MaxValue)
         {
             return new TimeoutConfiguration();
         }
