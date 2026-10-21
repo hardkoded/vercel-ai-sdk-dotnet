@@ -337,7 +337,7 @@ public static class Download
     /// <param name="trustedOrigin">A developer-configured origin whose requests skip validation. Never derive it from response data.</param>
     /// <param name="redirect"><c>error</c> or <c>manual</c>.</param>
     /// <exception cref="DownloadError">The URL is unsafe.</exception>
-    public static Task<DownloadResponse> FetchWithValidatedEndpointAsync(
+    public static async Task<DownloadResponse> FetchWithValidatedEndpointAsync(
         string url,
         DownloadRequest? request = null,
         DownloadFetch? fetch = null,
@@ -356,7 +356,7 @@ public static class Download
             Body = request?.Body,
             MaxBytes = request?.MaxBytes ?? DefaultMaxBytes,
         };
-        return (fetch ?? Fetch ?? DefaultFetchAsync)(url, init);
+        return await (fetch ?? Fetch ?? DefaultFetchAsync)(url, init).ConfigureAwait(false);
     }
 
     private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
