@@ -1057,6 +1057,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             continue;
                         }
 
+                        if (hasApplyPatchTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "apply_patch")
+                        {
+                            AddApplyPatchCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            continue;
+                        }
+
                         if (customToolNames?.Contains(call.ToolName) == true)
                         {
                             var callOptions = ProviderOptionsFor(
@@ -1348,6 +1354,83 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         shellCallOutput["output"] = output;
         return shellCallOutput;
+    }
+
+    // A stored apply_patch call replays as an item reference. Without storage, it is rebuilt as an apply_patch_call that the apply_patch_call_output matches.
+    private static void AddApplyPatchCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    {
+        var itemId = OpenAIJson.String(options, "itemId");
+        if (hasConversation && itemId != null)
+        {
+            return;
+        }
+
+        if (store && itemId != null)
+        {
+            // A previous response id already holds the call.
+            if (!hasContinuation)
+            {
+                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            }
+
+            return;
+        }
+
+        var applyPatchInput = ApplyPatchInput(call.ArgumentsJson);
+        var applyPatchCall = new JsonObject { ["type"] = "apply_patch_call", ["call_id"] = applyPatchInput["callId"]!.DeepClone() };
+        if (itemId != null)
+        {
+            applyPatchCall["id"] = itemId;
+        }
+
+        applyPatchCall["status"] = "completed";
+        applyPatchCall["operation"] = applyPatchInput["operation"]!.DeepClone();
+        input.Add(applyPatchCall);
+    }
+
+    // The apply_patch input schema: { callId: string, operation: create_file | update_file { path, diff } | delete_file { path } }.
+    private static JsonObject ApplyPatchInput(string argumentsJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(argumentsJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The apply_patch tool call input is not valid JSON.", exception);
+        }
+
+        if (parsed is not JsonObject root
+            || !IsKind(root["callId"], JsonValueKind.String)
+            || root["operation"] is not JsonObject operation
+            || !IsKind(operation["path"], JsonValueKind.String)
+            || operation["type"] is not JsonValue typeValue
+            || typeValue.GetValueKind() != JsonValueKind.String)
+        {
+            throw new AiSdkException("The apply_patch tool call input needs a callId and an operation with a type and a path.");
+        }
+
+        var type = typeValue.GetValue<string>();
+        var rebuilt = new JsonObject { ["type"] = type, ["path"] = operation["path"]!.DeepClone() };
+        switch (type)
+        {
+            case "create_file":
+            case "update_file":
+                if (!IsKind(operation["diff"], JsonValueKind.String))
+                {
+                    throw new AiSdkException("The apply_patch " + type + " operation needs a diff string.");
+                }
+
+                rebuilt["diff"] = operation["diff"]!.DeepClone();
+                break;
+            case "delete_file":
+                break;
+            default:
+                throw new AiSdkException("The apply_patch operation type must be create_file, update_file, or delete_file.");
+        }
+
+        return new JsonObject { ["callId"] = root["callId"]!.DeepClone(), ["operation"] = rebuilt };
     }
 
     // The apply_patch output schema: { status: "completed" | "failed", output?: string }.
