@@ -341,7 +341,7 @@ internal sealed class GoogleInteractionsStreamTransform
                     yield return new TextDeltaStreamPart(blockId, text.Text);
                 }
 
-                yield return new TextEndStreamPart(blockId, null, TextMetadata());
+                yield return new TextEndStreamPart(blockId, null, GoogleMetadata());
             }
             else if (item is GeneratedToolCall call)
             {
@@ -413,7 +413,7 @@ internal sealed class GoogleInteractionsStreamTransform
         // A feed that ends or fails mid-block leaves text blocks open. Close them so consumers see matching start and end parts.
         foreach (var open in _openBlocks.OrderBy(pair => pair.Key).Select(pair => pair.Value).Where(block => block.Kind == OpenBlockKind.Text))
         {
-            yield return new TextEndStreamPart(open.Id, null, TextMetadata());
+            yield return new TextEndStreamPart(open.Id, null, GoogleMetadata());
         }
 
         _openBlocks.Clear();
@@ -439,11 +439,6 @@ internal sealed class GoogleInteractionsStreamTransform
             GoogleInteractionsModel.Usage(_usage),
             _finishStatus,
             metadata);
-    }
-
-    private JsonElement? TextMetadata()
-    {
-        return GoogleMetadata();
     }
 
     // The provider metadata of a part: the interaction id and, where the part has one, its signature.
@@ -686,7 +681,7 @@ internal sealed class GoogleInteractionsStreamTransform
         switch (open.Kind)
         {
             case OpenBlockKind.Text:
-                parts.Add(new TextEndStreamPart(open.Id, null, TextMetadata()));
+                parts.Add(new TextEndStreamPart(open.Id, null, GoogleMetadata()));
                 break;
             case OpenBlockKind.Reasoning:
                 parts.Add(new ReasoningEndStreamPart(open.Id, GoogleMetadata(open.Signature)));
