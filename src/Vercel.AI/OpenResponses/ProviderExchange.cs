@@ -85,7 +85,7 @@ internal static class ProviderExchange
 
     /// <summary>
     /// Gets a URL that came from response text. Redirects are followed here, one hop at a time. A hop off <paramref name="trustedOrigin"/>
-    /// must pass <paramref name="validateUrl"/> before it is requested, and gets no <paramref name="trustedHeaders"/>.
+    /// must pass <paramref name="validateUrl"/> before it is requested, and gets <paramref name="untrustedHeaders"/> instead of <paramref name="trustedHeaders"/> (none by default).
     /// Hops off the trusted origin use <paramref name="downloadClient"/> (null uses <paramref name="httpClient"/>); it should not follow redirects.
     /// When a client follows one anyway, the final URL is checked too. The body is read in chunks and stops at the download size limit.
     /// </summary>
@@ -96,7 +96,8 @@ internal static class ProviderExchange
         Action<string> validateUrl,
         IReadOnlyDictionary<string, string?>? trustedHeaders,
         CancellationToken cancellationToken,
-        HttpClient? downloadClient = null)
+        HttpClient? downloadClient = null,
+        IReadOnlyDictionary<string, string?>? untrustedHeaders = null)
     {
         var current = new Uri(url);
         for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
@@ -109,7 +110,7 @@ internal static class ProviderExchange
 
             using (var request = new HttpRequestMessage(HttpMethod.Get, current))
             {
-                Apply(request, trusted ? trustedHeaders : null);
+                Apply(request, trusted ? trustedHeaders : untrustedHeaders);
                 var client = trusted ? httpClient : downloadClient ?? httpClient;
                 using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false))
                 {

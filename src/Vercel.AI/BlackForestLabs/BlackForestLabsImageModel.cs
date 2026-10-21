@@ -61,6 +61,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
     }
 
+    /// <summary>Called each time <c>GetArgs</c> parses the provider options. Tests count the calls.</summary>
+    internal Action? OnProviderOptionsParsed { get; set; }
+
     /// <inheritdoc />
     public string Provider => "black-forest-labs.image";
 
@@ -190,7 +193,8 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             DownloadUrls.ValidateDownloadUrl,
             downloadHeaders,
             cancellationToken,
-            ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+            ProviderExchange.DownloadClient(_provider.Options),
+            UserAgentOnly(headers)).ConfigureAwait(false);
 
         var metadata = new JsonObject();
         AddNumber(metadata, "seed", polled.Seed);
@@ -253,6 +257,7 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         }
 
         var bflOptions = BflOptions.Parse(rawOptions, modelApi);
+        OnProviderOptionsParsed?.Invoke();
 
         var inputImages = new List<string>();
         if (call.Files != null)
@@ -398,7 +403,8 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                         DownloadUrls.ValidateDownloadUrl,
                         trusted ? headers : null,
                         linked.Token,
-                        ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+                        ProviderExchange.DownloadClient(_provider.Options),
+                        UserAgentOnly(headers)).ConfigureAwait(false);
                 }
                 catch (ApiException exception)
                 {
