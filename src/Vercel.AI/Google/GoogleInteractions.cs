@@ -165,16 +165,43 @@ public static class GoogleInteractionsOutput
     }
 }
 
+/// <summary>An agent to call through the Interactions API: <c>{ agent: name }</c> or <c>{ managedAgent: name }</c> upstream.</summary>
+public sealed class GoogleInteractionsAgent
+{
+    /// <summary>Creates an agent input for a Gemini agent preset such as <c>deep-research-pro-preview-12-2025</c>.</summary>
+    public GoogleInteractionsAgent(string agent)
+    {
+        Agent = !string.IsNullOrEmpty(agent) ? agent : throw new ArgumentException("The agent name is required.", nameof(agent));
+    }
+
+    /// <summary>The agent name, sent as <c>agent</c> in the request body.</summary>
+    public string Agent { get; }
+
+    /// <summary>Creates an agent input for a managed agent you created on Google's side.</summary>
+    public static GoogleInteractionsAgent Managed(string managedAgent)
+    {
+        return new GoogleInteractionsAgent(managedAgent);
+    }
+}
+
 /// <summary>Language model that posts to the Gemini Interactions API.</summary>
 public sealed class GoogleInteractionsModel : ILanguageModel
 {
     private readonly GoogleProvider _provider;
+    private readonly bool _isAgent;
 
     /// <summary>Creates an interactions model.</summary>
     public GoogleInteractionsModel(GoogleProvider provider, string modelId)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+    }
+
+    /// <summary>Creates an interactions model that calls an agent. The request sends <c>agent</c> instead of <c>model</c>.</summary>
+    public GoogleInteractionsModel(GoogleProvider provider, GoogleInteractionsAgent agent)
+        : this(provider, (agent ?? throw new ArgumentNullException(nameof(agent))).Agent)
+    {
+        _isAgent = true;
     }
 
     /// <inheritdoc />
@@ -200,20 +227,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var input = GoogleInteractionsInput.Convert(options.Prompt);
-        input["model"] = ModelId;
+        var (input, warnings) = Prepare(options);
         var background = Background(options);
         var pollingTimeout = PollingTimeout(options);
-        if (background)
-        {
-            input["background"] = true;
-        }
-
-        if (options.MaxOutputTokens is { } maxOutputTokens)
-        {
-            input["generation_config"] = new JsonObject { ["max_output_tokens"] = maxOutputTokens };
-        }
-
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
         var document = await _provider.Http.SendJsonAsync(
@@ -223,9 +239,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             headers,
             cancellationToken).ConfigureAwait(false);
 
-        // A background call (such as Gemini 4 long decode, where the server runs every hop) may return a non-terminal
-        // status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
-        if (background)
+        // A background or agent call (such as Gemini 4 long decode, where the server runs every hop) may return a
+        // non-terminal status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
+        if (background || _isAgent)
         {
             document = await PollIfNonTerminalAsync(document, baseUrl, headers, pollingTimeout, cancellationToken).ConfigureAwait(false);
         }
@@ -235,8 +251,67 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             var response = JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
             var parsed = GoogleInteractionsOutput.Parse(response);
             var status = (string?)response["status"];
-            return new LanguageModelGenerateResult(parsed.Content, GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall), Usage(response["usage"] as JsonObject), status);
+            return new LanguageModelGenerateResult(parsed.Content, GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall), Usage(response["usage"] as JsonObject), status, warnings);
         }
+    }
+
+    // Builds the request body. An agent call sends `agent` and no generation_config, because the API rejects it.
+    private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(LanguageModelCallOptions options)
+    {
+        var warnings = new List<CallWarning>();
+        var input = GoogleInteractionsInput.Convert(options.Prompt);
+        input[_isAgent ? "agent" : "model"] = ModelId;
+        if (Background(options))
+        {
+            input["background"] = true;
+        }
+
+        if (Store(options) is { } store)
+        {
+            input["store"] = store;
+        }
+
+        if (_isAgent)
+        {
+            var dropped = new List<string>();
+            AddIf(dropped, options.Temperature != null, "temperature");
+            AddIf(dropped, options.TopP != null, "topP");
+            AddIf(dropped, options.TopK != null, "topK");
+            AddIf(dropped, options.FrequencyPenalty != null, "frequencyPenalty");
+            AddIf(dropped, options.PresencePenalty != null, "presencePenalty");
+            AddIf(dropped, options.Seed != null, "seed");
+            AddIf(dropped, options.StopSequences is { Count: > 0 }, "stopSequences");
+            AddIf(dropped, options.MaxOutputTokens != null, "maxOutputTokens");
+            if (dropped.Count > 0)
+            {
+                warnings.Add(new CallWarning("other", "google.interactions: " + string.Join(", ", dropped) + (dropped.Count == 1 ? " is" : " are") + " not supported when an agent is set; use providerOptions.google.agentConfig instead. Dropped from the request body."));
+            }
+        }
+        else if (options.MaxOutputTokens is { } maxOutputTokens)
+        {
+            input["generation_config"] = new JsonObject { ["max_output_tokens"] = maxOutputTokens };
+        }
+
+        return (input, warnings);
+    }
+
+    private static void AddIf(List<string> list, bool condition, string name)
+    {
+        if (condition)
+        {
+            list.Add(name);
+        }
+    }
+
+    private static bool? Store(LanguageModelCallOptions options)
+    {
+        return options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty("store", out var flag)
+            && (flag.ValueKind == JsonValueKind.True || flag.ValueKind == JsonValueKind.False)
+            ? flag.GetBoolean()
+            : null;
     }
 
     private static bool Background(LanguageModelCallOptions options)
@@ -281,7 +356,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     }
 
     // total_output_tokens is the text count. Thought tokens add to the output total.
-    private static LanguageModelUsage Usage(JsonObject? usage)
+    internal static LanguageModelUsage Usage(JsonObject? usage)
     {
         if (usage == null)
         {
@@ -304,9 +379,14 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     }
 
     /// <inheritdoc />
-    public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new LanguageModelStreamResult(StreamAsync(options, cancellationToken)));
+        if (Background(options))
+        {
+            return await StreamBackgroundAsync(options, cancellationToken).ConfigureAwait(false);
+        }
+
+        return new LanguageModelStreamResult(StreamAsync(options, cancellationToken));
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
@@ -318,6 +398,55 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         }
 
         yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+    }
+
+    // `background: true` is incompatible with `stream: true` on POST. POST the background call, then stream
+    // GET /interactions/{id}?stream=true. A terminal POST response has nothing left to stream, so replay it.
+    private async Task<LanguageModelStreamResult> StreamBackgroundAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    {
+        var (body, warnings) = Prepare(options);
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
+        var requestJson = GoogleJson.Write(body);
+        using var post = await _provider.Http.SendJsonAsync(
+            HttpMethod.Post,
+            ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
+            requestJson,
+            headers,
+            cancellationToken).ConfigureAwait(false);
+        var response = JsonNode.Parse(post.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
+        var id = (string?)response["id"];
+        if (string.IsNullOrEmpty(id))
+        {
+            throw new InvalidOperationException("google.interactions: background POST response did not include an interaction id; cannot stream the result.");
+        }
+
+        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks);
+        var request = LanguageModelStreamRequest.FromJson(requestJson);
+        if (GoogleInteractionsPolling.IsTerminal((string?)response["status"]))
+        {
+            return new LanguageModelStreamResult(ToAsync(transform.Replay(response)), request);
+        }
+
+        var events = GoogleInteractionsStreaming.StreamEvents(
+            _provider.Http,
+            baseUrl,
+            id,
+            headers,
+            GoogleInteractionsStreaming.DefaultMaxRetries,
+            GoogleInteractionsStreaming.DefaultRetryDelay,
+            cancellationToken);
+        return new LanguageModelStreamResult(transform.Pipe(events, cancellationToken), request);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> ToAsync(IEnumerable<LanguageModelStreamPart> parts)
+    {
+        foreach (var part in parts)
+        {
+            yield return part;
+        }
+
+        await Task.CompletedTask.ConfigureAwait(false);
     }
 
     private static string InteractionsBase(string? baseUrl)

@@ -169,7 +169,7 @@ internal sealed class RecordingHandler : HttpMessageHandler
 /// <summary>Returns scripted responses in order and records every request. The last response repeats.</summary>
 internal sealed class SequencedHandler : HttpMessageHandler
 {
-    private readonly List<(string Body, string MediaType, HttpStatusCode Status)> _responses = new();
+    private readonly List<(string Body, string MediaType, HttpStatusCode Status, bool Hang)> _responses = new();
 
     public List<string> Uris { get; } = new();
 
@@ -179,13 +179,20 @@ internal sealed class SequencedHandler : HttpMessageHandler
 
     public SequencedHandler Json(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
-        _responses.Add((body, "application/json", status));
+        _responses.Add((body, "application/json", status, false));
         return this;
     }
 
     public SequencedHandler Sse(string body)
     {
-        _responses.Add((body, "text/event-stream", HttpStatusCode.OK));
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, false));
+        return this;
+    }
+
+    /// <summary>An event stream that sends <paramref name="body"/> and then stays open until the caller cancels.</summary>
+    public SequencedHandler HangingSse(string body)
+    {
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, true));
         return this;
     }
 
@@ -196,9 +203,68 @@ internal sealed class SequencedHandler : HttpMessageHandler
         Methods.Add(request.Method.Method);
         Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false));
         var response = _responses[Math.Min(index, _responses.Count - 1)];
+        if (response.Hang)
+        {
+            var content = new StreamContent(new HangingStream(Encoding.UTF8.GetBytes(response.Body)));
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(response.MediaType);
+            return new HttpResponseMessage(response.Status) { Content = content };
+        }
+
         return new HttpResponseMessage(response.Status)
         {
             Content = new StringContent(response.Body, Encoding.UTF8, response.MediaType),
         };
+    }
+
+    /// <summary>Yields its bytes, then waits for the read to be cancelled.</summary>
+    private sealed class HangingStream : Stream
+    {
+        private readonly byte[] _bytes;
+        private int _position;
+
+        public HangingStream(byte[] bytes)
+        {
+            _bytes = bytes;
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (_position < _bytes.Length)
+            {
+                var read = Math.Min(count, _bytes.Length - _position);
+                Array.Copy(_bytes, _position, buffer, offset, read);
+                _position += read;
+                return read;
+            }
+
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            return 0;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }
