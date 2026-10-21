@@ -6,7 +6,7 @@ namespace Vercel.AI.Prompt;
 
 /// <summary>
 /// Timeout configuration for <c>GenerateTextAsync</c> and <c>StreamTextAsync</c>. Maps to <c>TimeoutConfiguration</c>.
-/// Upstream takes a number (the total timeout in milliseconds) or an object. A <see cref="TimeSpan"/> converts to the total timeout.
+/// Upstream takes a number (the total timeout in milliseconds) or an object. A <see cref="TimeSpan"/> converts to the total timeout, as the number form does upstream.
 /// An expired timeout aborts the call with a <see cref="Vercel.AI.Util.TimeoutError"/> reason.
 /// </summary>
 public sealed class TimeoutConfiguration
@@ -43,12 +43,6 @@ public sealed class TimeoutConfiguration
         set => _chunkMs = Validate(value, nameof(ChunkMs));
     }
 
-    /// <summary>A configuration whose total timeout is <paramref name="milliseconds"/>. Maps to the number form of <c>timeout</c>.</summary>
-    public static TimeoutConfiguration FromMilliseconds(int milliseconds)
-    {
-        return new TimeoutConfiguration { TotalMs = milliseconds };
-    }
-
     /// <summary>A configuration whose total timeout is <paramref name="timeout"/>, rounded up to a whole millisecond.</summary>
     public static implicit operator TimeoutConfiguration(TimeSpan timeout)
     {
@@ -58,7 +52,7 @@ public sealed class TimeoutConfiguration
             throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "The timeout is longer than " + int.MaxValue + " milliseconds.");
         }
 
-        return FromMilliseconds((int)milliseconds);
+        return new TimeoutConfiguration { TotalMs = (int)milliseconds };
     }
 
     private static int? Validate(int? value, string name)

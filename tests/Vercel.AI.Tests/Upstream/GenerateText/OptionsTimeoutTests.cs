@@ -70,7 +70,7 @@ public sealed class OptionsTimeoutTests
         {
             Model = model,
             Prompt = "test-input",
-            Timeout = TimeoutConfiguration.FromMilliseconds(5000),
+            Timeout = TimeSpan.FromMilliseconds(5000),
         });
 
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
@@ -88,7 +88,7 @@ public sealed class OptionsTimeoutTests
             {
                 Model = model,
                 Prompt = "test-input",
-                Timeout = TimeoutConfiguration.FromMilliseconds(5000),
+                Timeout = TimeSpan.FromMilliseconds(5000),
             },
             abort.Token);
 
@@ -127,7 +127,7 @@ public sealed class OptionsTimeoutTests
                     return Task.FromResult("\"tool result\"");
                 }),
             },
-            Timeout = TimeoutConfiguration.FromMilliseconds(5000),
+            Timeout = TimeSpan.FromMilliseconds(5000),
         });
 
         var call = Assert.Single(toolCalls);

@@ -50,7 +50,7 @@ public sealed class OptionsTimeoutTests
     {
         var model = HelloModel();
 
-        await Consume(Stream(model, TimeoutConfiguration.FromMilliseconds(5000)));
+        await Consume(Stream(model, TimeSpan.FromMilliseconds(5000)));
 
         Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
     }
@@ -62,7 +62,7 @@ public sealed class OptionsTimeoutTests
         var abortController = new AbortController();
         var model = HelloModel();
 
-        await Consume(Stream(model, TimeoutConfiguration.FromMilliseconds(5000), abortController.Signal));
+        await Consume(Stream(model, TimeSpan.FromMilliseconds(5000), abortController.Signal));
 
         // The merged signal should be different from the original
         var received = Assert.Single(model.Calls).AbortSignal;
