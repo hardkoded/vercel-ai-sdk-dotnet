@@ -359,6 +359,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                     reasoningId = null;
                 }
 
+                if (streamToolInput && textOpen)
+                {
+                    textOpen = false;
+                    yield return new TextEndStreamPart(textBlockId);
+                }
+
                 foreach (var item in toolDeltas)
                 {
                     if (item is JsonObject tool)
