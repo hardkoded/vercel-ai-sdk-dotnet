@@ -15,6 +15,8 @@ public sealed class TimeoutConfiguration
     private int? _stepMs;
     private int? _firstChunkMs;
     private int? _chunkMs;
+    private int? _toolMs;
+    private IReadOnlyDictionary<string, int>? _tools;
 
     /// <summary>Total timeout for the entire call, including all steps, in milliseconds.</summary>
     public int? TotalMs
@@ -53,6 +55,56 @@ public sealed class TimeoutConfiguration
     {
         get => _chunkMs;
         set => _chunkMs = Validate(value, nameof(ChunkMs));
+    }
+
+    /// <summary>
+    /// Default timeout of each tool execution, in milliseconds. A tool that runs longer is cancelled and its call ends with a tool error, so the model can respond or retry.
+    /// <see cref="Tools"/> overrides it for one tool.
+    /// </summary>
+    public int? ToolMs
+    {
+        get => _toolMs;
+        set => _toolMs = Validate(value, nameof(ToolMs));
+    }
+
+    /// <summary>
+    /// Per-tool timeouts in milliseconds. A key is the tool name followed by <c>Ms</c>, such as <c>weatherMs</c> for the tool <c>weather</c>, as in upstream.
+    /// An entry takes precedence over <see cref="ToolMs"/>. Upstream types the keys from the tool set. C# cannot, so a key that matches no tool has no effect.
+    /// </summary>
+    public IReadOnlyDictionary<string, int>? Tools
+    {
+        get => _tools;
+        set
+        {
+            if (value != null)
+            {
+                foreach (var entry in value)
+                {
+                    Validate(entry.Value, entry.Key);
+                }
+            }
+
+            _tools = value;
+        }
+    }
+
+    /// <summary>
+    /// The timeout of the tool <paramref name="toolName"/> in milliseconds: its entry in <see cref="Tools"/>, else <see cref="ToolMs"/>, else <c>null</c>.
+    /// A <see cref="TimeSpan"/> converts to the total timeout only, so it has no tool timeout. Maps to <c>getToolTimeoutMs</c>.
+    /// </summary>
+    public static int? GetToolTimeoutMs(TimeoutConfiguration? timeout, string toolName)
+    {
+        if (timeout == null)
+        {
+            return null;
+        }
+
+        if (timeout.Tools != null && timeout.Tools.TryGetValue(toolName + "Ms", out var toolTimeoutMs))
+        {
+            return toolTimeoutMs;
+        }
+
+        return timeout.ToolMs;
     }
 
     /// <summary>

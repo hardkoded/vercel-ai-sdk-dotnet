@@ -36,6 +36,8 @@ In ASP.NET Core, `services.AddAiSdk()` registers `IAiClient` and a named `HttpCl
 - `StepMs`: the limit for each step, including model generation, retries, and local tool execution. Each step starts a new budget.
 - `FirstChunkMs`: the limit until the first chunk of model output of each step. It starts when the provider returns the response stream, so it does not limit the wait for the response itself (use `StepMs` for that). Each step starts a new budget. A chunk without output (response metadata, raw chunks, empty deltas) does not end it. `StreamTextAsync` only: `GenerateTextAsync` logs a warning for it.
 - `ChunkMs`: the limit between chunks of model output, after the first chunk of output arrived. It does not limit the wait for the first chunk. A chunk without output (response metadata, raw chunks, empty deltas) does not reset it. The timer stops when the model response ends. `StreamTextAsync` only: `GenerateTextAsync` logs a warning for it.
+- `ToolMs`: the limit for each tool execution. A tool that runs longer is cancelled through its `CancellationToken`, and its call ends with a tool error (an `ExecutedTool` with `IsError` set, and a `TimeoutError` as the `Error` when the tool stopped on its token), so the model can respond or retry. The limit starts after `OnToolExecutionStart`, and it cancels that tool only, not the call.
+- `Tools`: per-tool limits that take precedence over `ToolMs`. Each key is the tool name followed by `Ms`, such as `weatherMs`. Upstream types the keys from the tool set. C# cannot, so a key that matches no tool has no effect. `TimeoutConfiguration.GetToolTimeoutMs(timeout, toolName)` returns the limit of one tool. Maps to `getToolTimeoutMs`.
 
 ```csharp
 var result = await client.GenerateTextAsync(new GenerateTextOptions
@@ -51,8 +53,22 @@ var stream = client.StreamTextAsync(new StreamTextOptions
     Prompt = "Invent a new holiday and describe its traditions.",
     Timeout = new TimeoutConfiguration { ChunkMs = 5000 }, // abort if the output stalls for 5 seconds
 });
+
+var tools = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    ModelId = "openai/gpt-6-astra",
+    Prompt = "What is the weather in Lisbon?",
+    Tools = new[] { weather, slowApi },
+    Timeout = new TimeoutConfiguration
+    {
+        ToolMs = 5000, // default for all tools
+        Tools = new Dictionary<string, int> { ["slowApiMs"] = 10000 }, // a longer limit for one tool
+    },
+});
 ```
+
+`AgentOptions.Timeout` takes the same configuration for every `Agent.GenerateAsync` and `Agent.Stream` call. `PrepareCall` can replace it. Maps to `timeout` of `ToolLoopAgentSettings`.
 
 When a limit passes, the `CancellationToken` of the model call and of every tool call is cancelled, and `LanguageModelCallOptions.AbortSignal` aborts with a `TimeoutError` reason. `GenerateTextAsync` throws that `TimeoutError`. The results of `StreamTextAsync` fault with it, as they do for any abort reason that is an exception. The model and the tools must observe the token to stop early. `AbortSignal` is `null` when the call has no timeout and no `StreamTextOptions.AbortSignal`.
 
-Before this option worked, `Timeout` was a `TimeSpan?` that the call ignored. A `TimeSpan` still converts to a `TimeoutConfiguration`, so code that assigns a `TimeSpan` compiles and now takes effect. Code that assigns a `TimeSpan?` or reads `Timeout.Value` no longer compiles. `Timeout.InfiniteTimeSpan` means no timeout. `toolMs` and per-tool timeouts of upstream are not available yet. See [#702](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/702).
+Before this option worked, `Timeout` was a `TimeSpan?` that the call ignored. A `TimeSpan` still converts to a `TimeoutConfiguration`, so code that assigns a `TimeSpan` compiles and now takes effect. Code that assigns a `TimeSpan?` or reads `Timeout.Value` no longer compiles. `Timeout.InfiniteTimeSpan` means no timeout.
