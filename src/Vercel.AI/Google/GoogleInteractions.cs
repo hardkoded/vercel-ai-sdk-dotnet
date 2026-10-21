@@ -203,6 +203,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var input = GoogleInteractionsInput.Convert(options.Prompt);
         input["model"] = ModelId;
         var background = Background(options);
+        var pollingTimeout = PollingTimeout(options);
         if (background)
         {
             input["background"] = true;
@@ -226,7 +227,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         // status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
         if (background)
         {
-            document = await PollIfNonTerminalAsync(document, baseUrl, headers, PollingTimeout(options), cancellationToken).ConfigureAwait(false);
+            document = await PollIfNonTerminalAsync(document, baseUrl, headers, pollingTimeout, cancellationToken).ConfigureAwait(false);
         }
 
         using (document)
@@ -255,9 +256,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             && google.TryGetProperty("pollingTimeoutMs", out var value)
             && value.ValueKind != JsonValueKind.Null)
         {
-            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var milliseconds) || milliseconds <= 0)
+            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var milliseconds) || milliseconds <= 0 || milliseconds > int.MaxValue)
             {
-                throw new AiSdkException("providerOptions.google.pollingTimeoutMs must be a positive integer.");
+                throw new AiSdkException("providerOptions.google.pollingTimeoutMs must be a positive integer of at most 2147483647.");
             }
 
             return TimeSpan.FromMilliseconds(milliseconds);

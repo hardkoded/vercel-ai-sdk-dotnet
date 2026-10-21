@@ -42,7 +42,7 @@ internal static class GoogleInteractionsPolling
     {
         if (string.IsNullOrEmpty(interactionId))
         {
-            throw new AiSdkException("google.interactions: cannot poll a background interaction without an id. The POST response did not include an interaction id.");
+            throw new InvalidOperationException("google.interactions: cannot poll a background interaction without an id. The POST response did not include an interaction id.");
         }
 
         var id = interactionId!;
@@ -58,7 +58,7 @@ internal static class GoogleInteractionsPolling
                 cancellationToken.ThrowIfCancellationRequested();
                 if (DateTime.UtcNow - startedAt > limit)
                 {
-                    throw new AiSdkException("google.interactions: timed out polling interaction " + id + " after " + (long)limit.TotalMilliseconds + "ms.");
+                    throw new TimeoutException("google.interactions: timed out polling interaction " + id + " after " + (long)limit.TotalMilliseconds + "ms.");
                 }
 
                 await Task.Delay(nextDelay, cancellationToken).ConfigureAwait(false);

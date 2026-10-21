@@ -103,7 +103,7 @@ public sealed class GoogleInteractionsPollingUpstreamTests
     {
         var handler = new SequencedHandler().Json("{}");
 
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
             Http(handler),
             BaseUrl,
             null,
@@ -122,7 +122,7 @@ public sealed class GoogleInteractionsPollingUpstreamTests
     {
         var handler = new SequencedHandler().Json("{\"id\":\"" + InteractionId + "\",\"status\":\"in_progress\"}");
 
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
+        var error = await Assert.ThrowsAsync<TimeoutException>(() => GoogleInteractionsPolling.PollUntilTerminalAsync(
             Http(handler),
             BaseUrl,
             InteractionId,
