@@ -15,7 +15,18 @@ public sealed class DoGenerateTests
 {
     private const string Id = "packages/black-forest-labs/src/black-forest-labs-image-model.test.ts::BlackForestLabsImageModel > doGenerate::";
 
-    // 'parses provider options only once' is not ported: it spies on parseProviderOptions, which the port does not have.
+    [Fact]
+    [UpstreamTest(Id + "parses provider options only once", Coverage = UpstreamCoverage.Covered)]
+    public async Task ParsesProviderOptionsOnlyOnce()
+    {
+        var model = CreateBasicModel(new BlackForestLabsServer());
+        var parseCount = 0;
+        model.OnProviderOptionsParsed = () => parseCount++;
+
+        await model.DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None);
+
+        Assert.Equal(1, parseCount);
+    }
 
     [Fact]
     [UpstreamTest(Id + "passes the correct parameters including aspect ratio and providerOptions", Coverage = UpstreamCoverage.Covered)]
@@ -144,6 +155,7 @@ public sealed class DoGenerateTests
         var downloadCall = server.Calls.FirstOrDefault(call => call.Url == "https://cdn.evil.example/image.png");
         Assert.NotNull(downloadCall);
         Assert.False(downloadCall!.Headers.ContainsKey("x-key"));
+        Assert.StartsWith("ai-sdk/", downloadCall.Headers["user-agent"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -173,6 +185,7 @@ public sealed class DoGenerateTests
         Assert.NotNull(downloadCall);
         Assert.False(downloadCall!.Headers.ContainsKey("x-key"));
         Assert.False(downloadCall.Headers.ContainsKey("authorization"));
+        Assert.StartsWith("ai-sdk/", downloadCall.Headers["user-agent"], StringComparison.Ordinal);
     }
 
     [Theory]

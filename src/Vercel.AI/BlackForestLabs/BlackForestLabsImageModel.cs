@@ -61,6 +61,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
     }
 
+    /// <summary>Called each time <c>GetArgs</c> parses the provider options. Tests count the calls.</summary>
+    internal Action? OnProviderOptionsParsed { get; set; }
+
     /// <inheritdoc />
     public string Provider => "black-forest-labs.image";
 
@@ -179,9 +182,8 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var useCustomDownloadHeaders = ProviderValues.IsSameOrigin(polled.ImageUrl, baseUrl)
             && baseHost != "bfl.ai"
             && !baseHost.EndsWith(".bfl.ai", StringComparison.OrdinalIgnoreCase);
-        var downloadHeaders = useCustomDownloadHeaders
-            ? headers
-            : UserAgentOnly(headers);
+        var userAgentOnly = UserAgentOnly(headers);
+        var downloadHeaders = useCustomDownloadHeaders ? headers : userAgentOnly;
         // The sample URL comes from the response body. Signed BFL downloads need no credentials; custom proxies may.
         var image = await ProviderExchange.GetResponseUrlAsync(
             _provider.HttpClient,
@@ -190,7 +192,8 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             DownloadUrls.ValidateDownloadUrl,
             downloadHeaders,
             cancellationToken,
-            ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+            ProviderExchange.DownloadClient(_provider.Options),
+            userAgentOnly).ConfigureAwait(false);
 
         var metadata = new JsonObject();
         AddNumber(metadata, "seed", polled.Seed);
@@ -253,6 +256,7 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         }
 
         var bflOptions = BflOptions.Parse(rawOptions, modelApi);
+        OnProviderOptionsParsed?.Invoke();
 
         var inputImages = new List<string>();
         if (call.Files != null)
@@ -382,6 +386,7 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var trusted = IsTrustedUrl(url.AbsoluteUri, baseUrl);
         var trustedOrigin = trusted ? url.AbsoluteUri : baseUrl;
 
+        var userAgentOnly = UserAgentOnly(headers);
         using var timeout = new CancellationTokenSource(pollTimeoutMillis);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
@@ -398,7 +403,8 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                         DownloadUrls.ValidateDownloadUrl,
                         trusted ? headers : null,
                         linked.Token,
-                        ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+                        ProviderExchange.DownloadClient(_provider.Options),
+                        userAgentOnly).ConfigureAwait(false);
                 }
                 catch (ApiException exception)
                 {
