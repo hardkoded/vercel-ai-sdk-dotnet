@@ -404,6 +404,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             if (dropToolCalls)
             {
+                if (streamToolInput)
+                {
+                    yield return new ToolInputEndStreamPart(call.ToolCallId);
+                }
+
                 continue;
             }
 

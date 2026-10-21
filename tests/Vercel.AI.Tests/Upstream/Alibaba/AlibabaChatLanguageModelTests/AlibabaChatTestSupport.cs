@@ -68,13 +68,14 @@ internal static class AlibabaChatTestSupport
             actual.Add(SnapshotOf(part));
         }
 
-        Assert.Equal(expected.Count, actual.Count);
-        for (var index = 0; index < expected.Count; index++)
+        for (var index = 0; index < Math.Min(expected.Count, actual.Count); index++)
         {
             Assert.True(
                 JsonNode.DeepEquals(expected[index], actual[index]),
                 "Part " + index + ": expected " + expected[index]!.ToJsonString() + " but got " + actual[index]!.ToJsonString());
         }
+
+        Assert.Equal(expected.Count, actual.Count);
     }
 
     public static JsonNode SnapshotOf(LanguageModelStreamPart part)
