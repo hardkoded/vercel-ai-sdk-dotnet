@@ -326,16 +326,23 @@ public sealed class StreamingToolCallTrackerTests
     [InlineData(" \n")]
     [UpstreamTest(
         "packages/provider-utils/src/streaming-tool-call-tracker.test.ts::StreamingToolCallTracker > processDelta::should retain an incomplete call when its id changes on a named fragment with arguments %j",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The tracker returns tool calls only. It does not emit the tool-input-start part.")]
+        Coverage = UpstreamCoverage.Covered)]
     public void Should_retain_an_incomplete_call_when_its_id_changes_on_a_named_fragment(string? argumentsDelta)
     {
         var tracker = new StreamingToolCallTracker();
-        tracker.ProcessDelta(Delta(0, "call_1", "get_weather", "{\"city\":"));
-        tracker.ProcessDelta(Delta(0, "alias", "get_weather", argumentsDelta));
-        tracker.ProcessDelta(Delta(0, "alias", null, "\"Berlin\"}"));
+        var inputs = new[]
+        {
+            tracker.ProcessDelta(Delta(0, "call_1", "get_weather", "{\"city\":")),
+            tracker.ProcessDelta(Delta(0, "alias", "get_weather", argumentsDelta)),
+            tracker.ProcessDelta(Delta(0, "alias", null, "\"Berlin\"}")),
+        };
         var call = Assert.Single(tracker.Flush());
         AssertCall(call, "call_1", "get_weather", "{\"city\":" + argumentsDelta + "\"Berlin\"}");
+
+        // Upstream's tool-input-start part is the input that started a call.
+        var start = Assert.Single(inputs, input => input != null && input.Started);
+        Assert.Equal("call_1", start!.Id);
+        Assert.Equal("get_weather", start.Name);
     }
 
     [Fact]

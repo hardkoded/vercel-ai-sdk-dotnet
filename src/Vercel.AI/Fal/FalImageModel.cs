@@ -55,6 +55,51 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     /// <summary>Fal returns one image per call.</summary>
     public int? MaxImagesPerCall => 1;
 
+    /// <summary>True when the model takes input images, false when it does not, null when unknown. Maps to <c>supportsFileInputs</c>.</summary>
+    public bool? SupportsFileInputs
+    {
+        get
+        {
+            return ModelId switch
+            {
+                "fal-ai/flux-2/edit"
+                    or "fal-ai/flux-pro/kontext"
+                    or "fal-ai/flux-pro/kontext/max"
+                    or "fal-ai/flux-general/image-to-image"
+                    or "fal-ai/flux-general/inpainting"
+                    or "fal-ai/flux-lora/image-to-image"
+                    or "fal-ai/flux-lora/inpainting"
+                    or "fal-ai/flux/dev/image-to-image"
+                    or "fal-ai/flux/krea/image-to-image"
+                    or "fal-ai/recraft/v3/image-to-image" => true,
+                "bria/text-to-image/3.2"
+                    or "fal-ai/bria/text-to-image/base"
+                    or "fal-ai/bria/text-to-image/fast"
+                    or "fal-ai/bria/text-to-image/hd"
+                    or "fal-ai/bytedance/dreamina/v3.1/text-to-image"
+                    or "fal-ai/flux-kontext-lora/text-to-image"
+                    or "fal-ai/recraft/v3/text-to-image"
+                    or "fal-ai/wan/v2.2-5b/text-to-image"
+                    or "fal-ai/wan/v2.2-a14b/text-to-image" => false,
+                _ => null,
+            };
+        }
+    }
+
+    /// <summary>True when the model takes a mask, false when it takes input images but no mask, null when unknown. Maps to <c>supportsMaskInputs</c>.</summary>
+    public bool? SupportsMaskInputs
+    {
+        get
+        {
+            if (ModelId == "fal-ai/flux-general/inpainting" || ModelId == "fal-ai/flux-lora/inpainting")
+            {
+                return true;
+            }
+
+            return SupportsFileInputs == null ? null : false;
+        }
+    }
+
     /// <inheritdoc />
     public Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken)
     {
