@@ -32,33 +32,6 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
     private static readonly HashSet<string> ResponseFieldsOutsideMetadata = new HashSet<string> { "images", "prompt", "has_nsfw_concepts", "nsfw_content_detected" };
 
-    private static readonly HashSet<string> ModelsWithFileInputs = new HashSet<string>
-    {
-        "fal-ai/flux-2/edit",
-        "fal-ai/flux-pro/kontext",
-        "fal-ai/flux-pro/kontext/max",
-        "fal-ai/flux-general/image-to-image",
-        "fal-ai/flux-general/inpainting",
-        "fal-ai/flux-lora/image-to-image",
-        "fal-ai/flux-lora/inpainting",
-        "fal-ai/flux/dev/image-to-image",
-        "fal-ai/flux/krea/image-to-image",
-        "fal-ai/recraft/v3/image-to-image",
-    };
-
-    private static readonly HashSet<string> ModelsWithoutFileInputs = new HashSet<string>
-    {
-        "bria/text-to-image/3.2",
-        "fal-ai/bria/text-to-image/base",
-        "fal-ai/bria/text-to-image/fast",
-        "fal-ai/bria/text-to-image/hd",
-        "fal-ai/bytedance/dreamina/v3.1/text-to-image",
-        "fal-ai/flux-kontext-lora/text-to-image",
-        "fal-ai/recraft/v3/text-to-image",
-        "fal-ai/wan/v2.2-5b/text-to-image",
-        "fal-ai/wan/v2.2-a14b/text-to-image",
-    };
-
     private readonly FalProvider _provider;
     private readonly Func<DateTime>? _clock;
 
@@ -87,12 +60,29 @@ public sealed class FalImageModel : IImageModel, IImageCaller
     {
         get
         {
-            if (ModelsWithFileInputs.Contains(ModelId))
+            return ModelId switch
             {
-                return true;
-            }
-
-            return ModelsWithoutFileInputs.Contains(ModelId) ? false : null;
+                "fal-ai/flux-2/edit"
+                    or "fal-ai/flux-pro/kontext"
+                    or "fal-ai/flux-pro/kontext/max"
+                    or "fal-ai/flux-general/image-to-image"
+                    or "fal-ai/flux-general/inpainting"
+                    or "fal-ai/flux-lora/image-to-image"
+                    or "fal-ai/flux-lora/inpainting"
+                    or "fal-ai/flux/dev/image-to-image"
+                    or "fal-ai/flux/krea/image-to-image"
+                    or "fal-ai/recraft/v3/image-to-image" => true,
+                "bria/text-to-image/3.2"
+                    or "fal-ai/bria/text-to-image/base"
+                    or "fal-ai/bria/text-to-image/fast"
+                    or "fal-ai/bria/text-to-image/hd"
+                    or "fal-ai/bytedance/dreamina/v3.1/text-to-image"
+                    or "fal-ai/flux-kontext-lora/text-to-image"
+                    or "fal-ai/recraft/v3/text-to-image"
+                    or "fal-ai/wan/v2.2-5b/text-to-image"
+                    or "fal-ai/wan/v2.2-a14b/text-to-image" => false,
+                _ => null,
+            };
         }
     }
 
