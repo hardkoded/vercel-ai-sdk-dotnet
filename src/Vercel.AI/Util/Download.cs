@@ -323,7 +323,7 @@ public static class Download
 
     private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
     {
-        var currentHeaders = headers == null ? null : new HeaderCollection(headers.Entries());
+        var currentHeaders = headers;
         var currentUrl = url;
         for (var redirectCount = 0; redirectCount <= maxRedirects; redirectCount++)
         {
