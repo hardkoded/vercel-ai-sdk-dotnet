@@ -96,6 +96,12 @@ public class OpenAICompatibleOptions
     /// </summary>
     internal bool UsesJsonResponseToolWithTools { get; set; }
 
+    /// <summary>
+    /// When true, the shared request leaves out <c>tools</c> and <c>tool_choice</c>. <see cref="TransformChatRequest"/> adds them,
+    /// so a tool the shared mapping cannot serialize (a provider-defined tool) does not fail the call.
+    /// </summary>
+    internal bool PreparesOwnTools { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 

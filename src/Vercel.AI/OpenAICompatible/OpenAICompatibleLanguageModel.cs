@@ -550,7 +550,10 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName, _provider.Options.SupportsMultiPartToolContent);
         if (responseTool == null)
         {
-            AddTools(body, options.Tools, options.ToolChoice);
+            if (!_provider.Options.PreparesOwnTools)
+            {
+                AddTools(body, options.Tools, options.ToolChoice);
+            }
         }
         else
         {

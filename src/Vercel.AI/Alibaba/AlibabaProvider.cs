@@ -74,6 +74,7 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         }
 
         options.TransformChatRequest = AlibabaChatRequest.Transform;
+        options.PreparesOwnTools = true;
         options.ConvertUsage = AlibabaChatRequest.ConvertUsage;
         options.TextBlockId = "0";
         options.StreamToolInput = true;
