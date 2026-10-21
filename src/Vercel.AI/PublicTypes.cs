@@ -677,6 +677,13 @@ public class GenerateTextOptions
     public ToolCallRepairFunction? RepairToolCall { get; set; }
 
     /// <summary>
+    /// Deprecated alias of <see cref="RepairToolCall"/>. <see cref="RepairToolCall"/> wins when both are set.
+    /// Maps to <c>experimental_repairToolCall</c>.
+    /// </summary>
+    [Obsolete("Use RepairToolCall instead.")]
+    public ToolCallRepairFunction? ExperimentalRepairToolCall { get; set; }
+
+    /// <summary>
     /// Refines the parsed input of a tool call, keyed by tool name, before the tool runs and before outputs and callbacks see it.
     /// A tool without an entry keeps its parsed input. Maps to <c>experimental_refineToolInput</c>.
     /// </summary>

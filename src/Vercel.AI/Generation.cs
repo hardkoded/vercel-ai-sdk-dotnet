@@ -1016,11 +1016,14 @@ internal static class Generation
 
         var tools = ActiveTools(options);
 
+#pragma warning disable CS0618
+        var repairToolCall = options.RepairToolCall ?? options.ExperimentalRepairToolCall;
+#pragma warning restore CS0618
         var parsed = await ToolCallParser.ParseToolCallAsync(
             new ParseToolCallOptions(call)
             {
                 Tools = tools,
-                RepairToolCall = options.RepairToolCall,
+                RepairToolCall = repairToolCall,
                 RefineToolInput = options.RefineToolInput,
                 Messages = history.ToArray(),
                 Instructions = instructions,

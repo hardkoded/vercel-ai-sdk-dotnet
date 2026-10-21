@@ -84,6 +84,28 @@ public sealed class OptionsRepairToolCallTests
         Assert.False(executed);
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "should support the deprecated experimental_repairToolCall option", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_support_the_deprecated_experimental_repairToolCall_option()
+    {
+#pragma warning disable CS0618
+        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = InvalidToolCallModel(),
+            Tools = RepairToolCallTools(),
+            Prompt = "test-input",
+            ExperimentalRepairToolCall = RepairInput,
+        });
+#pragma warning restore CS0618
+
+        var toolCall = Assert.Single(result.ToolCalls);
+        Assert.Equal("call-1", toolCall.ToolCallId);
+        Assert.Equal("tool1", toolCall.ToolName);
+        Assert.Equal("{\"value\":\"repaired\"}", Compact(toolCall.ArgumentsJson));
+        var toolResult = Assert.Single(result.ToolResults);
+        Assert.Equal("\"result-repaired\"", toolResult.OutputJson);
+    }
+
     private static TestLanguageModel InvalidToolCallModel() =>
         new() { OnGenerate = _ => ToolCallResponse("{ \"value\": broken") };
 
