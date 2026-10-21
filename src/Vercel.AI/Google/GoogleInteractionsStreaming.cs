@@ -167,7 +167,9 @@ internal static class GoogleInteractionsStreaming
                     continue;
                 }
 
+                // The limit counts failures in a row, so an event that arrives clears the count.
                 receivedAny = true;
+                attempt = 0;
                 var streamEvent = new GoogleInteractionsEvent(reader.Current);
                 var eventId = String(streamEvent.Value, "event_id");
                 if (!string.IsNullOrEmpty(eventId))
@@ -374,6 +376,13 @@ internal sealed class GoogleInteractionsStreamTransform
 
     internal IEnumerable<LanguageModelStreamPart> Flush()
     {
+        // A feed that ends or fails mid-block leaves text blocks open. Close them so consumers see matching start and end parts.
+        foreach (var open in _openBlocks.OrderBy(pair => pair.Key).Select(pair => pair.Value).Where(block => block.Kind == OpenBlockKind.Text))
+        {
+            yield return new TextEndStreamPart(open.Id, null, TextMetadata());
+        }
+
+        _openBlocks.Clear();
         yield return Finish(false);
     }
 
@@ -479,6 +488,8 @@ internal sealed class GoogleInteractionsStreamTransform
         {
             parts.Add(new TextEndStreamPart(open.Id, null, TextMetadata()));
         }
+
+        _openBlocks.Remove(index);
     }
 
     private void Completed(JsonObject value)

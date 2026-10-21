@@ -169,7 +169,7 @@ internal sealed class RecordingHandler : HttpMessageHandler
 /// <summary>Returns scripted responses in order and records every request. The last response repeats.</summary>
 internal sealed class SequencedHandler : HttpMessageHandler
 {
-    private readonly List<(string Body, string MediaType, HttpStatusCode Status, bool Hang)> _responses = new();
+    private readonly List<(string Body, string MediaType, HttpStatusCode Status, bool Hang, bool Fail)> _responses = new();
 
     public List<string> Uris { get; } = new();
 
@@ -179,20 +179,27 @@ internal sealed class SequencedHandler : HttpMessageHandler
 
     public SequencedHandler Json(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
-        _responses.Add((body, "application/json", status, false));
+        _responses.Add((body, "application/json", status, false, false));
         return this;
     }
 
     public SequencedHandler Sse(string body)
     {
-        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, false));
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, false, false));
+        return this;
+    }
+
+    /// <summary>An event stream that sends <paramref name="body"/> and then fails with an <see cref="IOException"/>.</summary>
+    public SequencedHandler FailingSse(string body)
+    {
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, false, true));
         return this;
     }
 
     /// <summary>An event stream that sends <paramref name="body"/> and then stays open until the caller cancels.</summary>
     public SequencedHandler HangingSse(string body)
     {
-        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, true));
+        _responses.Add((body, "text/event-stream", HttpStatusCode.OK, true, false));
         return this;
     }
 
@@ -203,9 +210,9 @@ internal sealed class SequencedHandler : HttpMessageHandler
         Methods.Add(request.Method.Method);
         Bodies.Add(request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false));
         var response = _responses[Math.Min(index, _responses.Count - 1)];
-        if (response.Hang)
+        if (response.Hang || response.Fail)
         {
-            var content = new StreamContent(new HangingStream(Encoding.UTF8.GetBytes(response.Body)));
+            var content = new StreamContent(new HangingStream(Encoding.UTF8.GetBytes(response.Body), response.Fail));
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(response.MediaType);
             return new HttpResponseMessage(response.Status) { Content = content };
         }
@@ -222,9 +229,12 @@ internal sealed class SequencedHandler : HttpMessageHandler
         private readonly byte[] _bytes;
         private int _position;
 
-        public HangingStream(byte[] bytes)
+        private readonly bool _fail;
+
+        public HangingStream(byte[] bytes, bool fail = false)
         {
             _bytes = bytes;
+            _fail = fail;
         }
 
         public override bool CanRead => true;
@@ -249,6 +259,11 @@ internal sealed class SequencedHandler : HttpMessageHandler
                 Array.Copy(_bytes, _position, buffer, offset, read);
                 _position += read;
                 return read;
+            }
+
+            if (_fail)
+            {
+                throw new IOException("The connection was reset.");
             }
 
             await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
