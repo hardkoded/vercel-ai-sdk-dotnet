@@ -151,6 +151,53 @@ public sealed class DoStreamTests
 
     [Fact]
     [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should finish a prewarm stream with no content",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_finish_a_prewarm_stream_with_no_content()
+    {
+        var capture = new OpenAICapture
+        {
+            ServerSentEvents = OpenAIResponsesSupport.Sse(new JsonNode[]
+            {
+                JsonNode.Parse("""{"type":"response.created","response":{"id":"resp_prewarm","created_at":1,"model":"gpt-6.1-sol"}}""")!,
+                JsonNode.Parse("""
+                    {
+                      "type": "response.completed",
+                      "response": {
+                        "incomplete_details": null,
+                        "output": [],
+                        "usage": {
+                          "input_tokens": 2048,
+                          "input_tokens_details": {
+                            "cached_tokens": 0,
+                            "cache_write_tokens": 2048,
+                            "cache_write_tokens_details": { "ttl_30m_tokens": 0, "ttl_12h_tokens": 2048 }
+                          },
+                          "output_tokens": 0
+                        }
+                      }
+                    }
+                    """)!,
+            }),
+        };
+
+        var events = await OpenAIUpstream.Read(
+            await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-6.1-sol").DoStreamAsync(new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"promptCacheOptions":{"ttl":"12h","prewarm":true}}"""),
+            }, CancellationToken.None));
+
+        Assert.DoesNotContain(events, @event => @event is TextStartStreamPart or TextDeltaStreamPart or ErrorStreamPart);
+        var finish = Assert.IsType<FinishStreamPart>(events[^1]);
+        Assert.Equal(2048, finish.Usage.InputTokens);
+        Assert.Equal(0, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(2048, finish.Usage.CacheWriteTokens);
+        Assert.Equal(0, finish.Usage.OutputTokens);
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should preserve namespace on streaming function_call output",
         Coverage = UpstreamCoverage.Covered)]
     public async Task Should_preserve_namespace_on_streaming_function_call_output()

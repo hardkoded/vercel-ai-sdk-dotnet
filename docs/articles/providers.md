@@ -730,6 +730,23 @@ var anthropic = AnthropicProvider.Create(new AnthropicOptions
 
 `JsonStreams.ReadJsonLinesAsync` takes the same limit as `maxLineBytes`, plus the `url` reported by the `DownloadError`.
 
+### OpenAI prompt caching
+
+For GPT-5.6 and later models, `providerOptions.openai.promptCacheOptions` configures prompt caching on the Responses API. `mode` is `implicit` or `explicit`. `ttl` sets the minimum cache lifetime: `30m` (the default) or `12h`. 12-hour writes are billed at a higher rate than 30-minute writes. Any other `ttl` throws `InvalidArgumentException`. Set `prewarm` to `true` to write the prompt to the cache without generating output; the result then has no content. Chat Completions accepts `30m` only.
+
+```csharp
+var options = new LanguageModelCallOptions
+{
+    Prompt = prompt,
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["openai"] = JsonDocument.Parse("{\"promptCacheOptions\":{\"mode\":\"implicit\",\"ttl\":\"12h\",\"prewarm\":true}}").RootElement.Clone(),
+    },
+};
+```
+
+In explicit mode, only content marked with `promptCacheBreakpoint` is cached. Set `{"mode":"explicit","ttl":"12h"}` under `openai` in the `ProviderOptions` of a system message, a `TextContentPart`, or a `FileContentPart`; the Responses request carries it as `prompt_cache_breakpoint`. `Usage.CacheWriteTokens` reports the tokens written, and `Usage.Raw` holds `input_tokens_details.cache_write_tokens_details` with `ttl_30m_tokens` and `ttl_12h_tokens`.
+
 ### OpenAI batch
 
 Batch support is experimental and the API may change in patch releases.
