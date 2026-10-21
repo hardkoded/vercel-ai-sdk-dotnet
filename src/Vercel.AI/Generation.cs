@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -20,11 +21,7 @@ internal static class Generation
     public static List<ModelMessage> BuildPrompt(GenerateTextOptions options)
     {
         var messages = new List<ModelMessage>();
-        var instructions = options.Instructions ?? options.System;
-        if (!string.IsNullOrEmpty(instructions))
-        {
-            messages.Add(new SystemModelMessage(instructions!));
-        }
+        messages.AddRange(InstructionMessages(options));
 
         if (options.Messages != null)
         {
@@ -42,6 +39,18 @@ internal static class Generation
         }
 
         return messages;
+    }
+
+    /// <summary>The leading system messages for the call's instructions. An empty string adds none.</summary>
+    private static IReadOnlyList<SystemModelMessage> InstructionMessages(GenerateTextOptions options)
+    {
+        var instructions = options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
+        if (instructions?.Messages is { } systemMessages)
+        {
+            return systemMessages;
+        }
+
+        return string.IsNullOrEmpty(instructions?.Text) ? Array.Empty<SystemModelMessage>() : new[] { new SystemModelMessage(instructions!.Text!) };
     }
 
     public static LanguageModelCallOptions CallOptions(GenerateTextOptions options, IReadOnlyList<ModelMessage> prompt)
@@ -986,12 +995,8 @@ internal static class Generation
         CancellationToken cancellationToken)
     {
         // The instructions travel as the leading system message. The repair function gets them apart from the messages.
-        var instructions = options.Instructions ?? options.System;
-        var history = messages;
-        if (!string.IsNullOrEmpty(instructions) && messages.Count > 0 && messages[0] is SystemModelMessage)
-        {
-            history = messages.Skip(1).ToArray();
-        }
+        var instructions = options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
+        var history = messages.Skip(InstructionMessages(options).Count).ToArray();
 
         var tools = ActiveTools(options);
 
