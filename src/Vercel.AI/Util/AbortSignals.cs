@@ -262,7 +262,7 @@ public static class SetAbortTimeout
         {
             if (!cancelled)
             {
-                controller.Abort(new TimeoutError(timeoutLabel + " timeout of " + milliseconds + "ms exceeded"));
+                AbortQuietly(controller, new TimeoutError(timeoutLabel + " timeout of " + milliseconds + "ms exceeded"));
             }
         };
 
@@ -281,6 +281,19 @@ public static class SetAbortTimeout
         }
 
         return new CancelTimeout(delegate { cancelled = true; });
+    }
+
+    // A timer thread has no caller to report to, and an exception from an abort handler would crash the process.
+    internal static void AbortQuietly(AbortController controller, object reason)
+    {
+        try
+        {
+            controller.Abort(reason);
+        }
+        catch (Exception)
+        {
+            // The signal is aborted either way.
+        }
     }
 
     private sealed class CancelTimeout : IDisposable

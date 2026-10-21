@@ -91,7 +91,7 @@ internal sealed class CallTimeouts : IDisposable
         if (totalController != null)
         {
             var reason = new TimeoutError("The operation was aborted due to timeout");
-            totalTimer = new Timer(_ => totalController.Abort(reason), null, totalMs!.Value, System.Threading.Timeout.Infinite);
+            totalTimer = new Timer(_ => SetAbortTimeout.AbortQuietly(totalController, reason), null, totalMs!.Value, System.Threading.Timeout.Infinite);
         }
 
         var timeouts = new CallTimeouts(merged, registrations, timeout, stepController, chunkController, totalTimer);

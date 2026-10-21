@@ -43,13 +43,16 @@ public sealed class TimeoutConfiguration
         set => _chunkMs = Validate(value, nameof(ChunkMs));
     }
 
-    /// <summary>A configuration whose total timeout is <paramref name="timeout"/>, rounded up to a whole millisecond.</summary>
+    /// <summary>
+    /// A configuration whose total timeout is <paramref name="timeout"/>, rounded up to a whole millisecond.
+    /// <see cref="System.Threading.Timeout.InfiniteTimeSpan"/> and a value longer than <see cref="int.MaxValue"/> milliseconds mean no timeout.
+    /// </summary>
     public static implicit operator TimeoutConfiguration(TimeSpan timeout)
     {
         var milliseconds = Math.Ceiling(timeout.TotalMilliseconds);
-        if (milliseconds > int.MaxValue)
+        if (timeout == System.Threading.Timeout.InfiniteTimeSpan || milliseconds > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "The timeout is longer than " + int.MaxValue + " milliseconds.");
+            return new TimeoutConfiguration();
         }
 
         return new TimeoutConfiguration { TotalMs = (int)milliseconds };

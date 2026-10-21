@@ -180,10 +180,10 @@ internal static class Generation
         catch (Exception exception) when (exception is not ApiUserAbortException)
         {
             // An expired timeout aborts the call. Like upstream, the call fails with the timeout reason.
-            var error = !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
+            var error = exception is OperationCanceledException or ApiTimeoutException && !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
             if (options.OnError != null)
             {
-                await options.OnError(error, cancellationToken).ConfigureAwait(false);
+                await options.OnError(error, callerToken).ConfigureAwait(false);
             }
 
             if (!ReferenceEquals(error, exception))
@@ -222,7 +222,7 @@ internal static class Generation
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var abort = new StreamAbort();
-        var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true);
+        var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true, cancellationToken);
         var signal = timeouts?.Signal ?? options.AbortSignal;
         if (signal != null)
         {
