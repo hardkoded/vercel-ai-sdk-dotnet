@@ -317,7 +317,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                         var transcript = await ProviderExchange.SendAsync(
                             _provider._httpClient,
                             HttpMethod.Get,
-                            ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + Uri.EscapeDataString(jobId) + "/transcript"),
+                            ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + PathSegments.Encode(jobId) + "/transcript"),
                             null,
                             headers,
                             cancellationToken).ConfigureAwait(false);
@@ -353,7 +353,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                 var statusResponse = await ProviderExchange.SendAsync(
                     _provider._httpClient,
                     HttpMethod.Get,
-                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + Uri.EscapeDataString(jobId)),
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + PathSegments.Encode(jobId)),
                     null,
                     headers,
                     cancellationToken).ConfigureAwait(false);

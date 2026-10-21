@@ -69,25 +69,6 @@ public sealed class AnthropicSkills
     /// <summary>Provider id.</summary>
     public string Provider { get; }
 
-    /// <summary>
-    /// Encodes one URL path segment. <c>.</c> and <c>..</c> become <c>%252E</c> and <c>%252E%252E</c>
-    /// so they cannot traverse directories. Other characters use URI escaping.
-    /// </summary>
-    public static string EncodePathSegment(string value)
-    {
-        if (value == ".")
-        {
-            return "%252E";
-        }
-
-        if (value == "..")
-        {
-            return "%252E%252E";
-        }
-
-        return Uri.EscapeDataString(value ?? string.Empty);
-    }
-
     /// <summary>Uploads skill files, then reads the latest version metadata.</summary>
     public async Task<AnthropicSkillUpload> UploadSkillAsync(IReadOnlyList<AnthropicSkillFile> files, string? displayTitle, CancellationToken cancellationToken)
     {
@@ -110,7 +91,7 @@ public sealed class AnthropicSkills
         var root = document.RootElement;
         var id = AnthropicJson.String(root, "id") ?? string.Empty;
         var version = AnthropicJson.String(root, "latest_version") ?? string.Empty;
-        var versionUri = ApiKeys.Combine(_baseUrl(), "skills/" + EncodePathSegment(id) + "/versions/" + EncodePathSegment(version));
+        var versionUri = ApiKeys.Combine(_baseUrl(), "skills/" + PathSegments.Encode(id) + "/versions/" + PathSegments.Encode(version));
         var metadataResponse = await _http.SendJsonStringAsync(HttpMethod.Get, versionUri, null, headers, cancellationToken).ConfigureAwait(false);
         string? name = null;
         var metadata = metadataResponse.Body;

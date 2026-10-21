@@ -176,7 +176,7 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
 
         var baseUrl = _provider.Options.BaseUrl;
         var response = await GetAsync(
-            ApiKeys.Combine(baseUrl, endpointPath + "/" + Uri.EscapeDataString(taskId!)),
+            ApiKeys.Combine(baseUrl, endpointPath + "/" + PathSegments.Encode(taskId!)),
             call,
             baseUrl,
             cancellationToken).ConfigureAwait(false);

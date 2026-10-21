@@ -380,6 +380,6 @@ public sealed class LumaImageModel : IImageModel
 
     private Uri GenerationsUri(string path)
     {
-        return ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations/" + path);
+        return ApiKeys.Combine(_provider.Options.BaseUrl, "/dream-machine/v1/generations/" + PathSegments.Encode(path));
     }
 }

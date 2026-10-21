@@ -768,8 +768,8 @@ public sealed class OpenAIMediaUpstreamTests
     [UpstreamTest("packages/openai/src/files/openai-files.test.ts::OpenAI Files - getFileMetadata::should preserve dot-segment file id $fileId as a URL path segment", Coverage = UpstreamCoverage.Covered)]
     public async Task PreservesDotSegmentFileIds()
     {
-        Assert.Equal("%252E", OpenAIJson.EncodePathSegment("."));
-        Assert.Equal("%252E%252E", OpenAIJson.EncodePathSegment(".."));
+        Assert.Equal("%252E", PathSegments.Encode("."));
+        Assert.Equal("%252E%252E", PathSegments.Encode(".."));
         foreach (var pair in new[] { (".", "%252E"), ("..", "%252E%252E") })
         {
             var capture = new OpenAICapture { ResponseJson = "{\"id\":\"file\"}" };
