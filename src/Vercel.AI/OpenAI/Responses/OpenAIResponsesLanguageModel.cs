@@ -271,7 +271,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             outputSchemaToolNames: outputSchemaToolNames,
             isReasoningModel: reasoning,
             hasConversation: OpenAIJson.String(openai, "conversation") != null,
-            toolNameMapping: toolNameMapping);
+            toolNameMapping: toolNameMapping,
+            hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -946,7 +947,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ISet<string>? outputSchemaToolNames = null,
         bool isReasoningModel = false,
         bool hasConversation = false,
-        ToolNameMapping? toolNameMapping = null)
+        ToolNameMapping? toolNameMapping = null,
+        bool hasApplyPatchTool = false)
     {
         var input = new JsonArray();
         var programmaticToolCallIds = new HashSet<string>();
@@ -1156,6 +1158,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         break;
                     }
 
+                    if (hasApplyPatchTool && tool.ToolName == "apply_patch" && tool.OutputType == "json")
+                    {
+                        input.Add(ApplyPatchCallOutput(tool.ToolCallId, tool.OutputJson));
+                        break;
+                    }
+
                     var resultCaller = ToolCaller(ProviderOptionsFor(ToOptions(tool.ProviderMetadata), providerOptionsName));
                     if (tool.OutputType == "execution-denied"
                         && (programmaticToolCallIds.Contains(tool.ToolCallId)
@@ -1340,6 +1348,45 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         shellCallOutput["output"] = output;
         return shellCallOutput;
+    }
+
+    // The apply_patch output schema: { status: "completed" | "failed", output?: string }.
+    private static JsonObject ApplyPatchCallOutput(string callId, string outputJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(outputJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The apply_patch tool result is not valid JSON.", exception);
+        }
+
+        if (parsed is not JsonObject parsedObject
+            || !IsKind(parsedObject["status"], JsonValueKind.String)
+            || parsedObject["status"]!.GetValue<string>() is not ("completed" or "failed"))
+        {
+            throw new AiSdkException("The apply_patch tool result needs a status of completed or failed.");
+        }
+
+        var item = new JsonObject
+        {
+            ["type"] = "apply_patch_call_output",
+            ["call_id"] = callId,
+            ["status"] = parsedObject["status"]!.DeepClone(),
+        };
+        if (parsedObject["output"] is { } output)
+        {
+            if (!IsKind(output, JsonValueKind.String))
+            {
+                throw new AiSdkException("The apply_patch tool result output must be a string.");
+            }
+
+            item["output"] = output.DeepClone();
+        }
+
+        return item;
     }
 
     private static IReadOnlyDictionary<string, JsonElement>? AssistantCallOptions(AssistantModelMessage assistant, GeneratedToolCall call) =>
