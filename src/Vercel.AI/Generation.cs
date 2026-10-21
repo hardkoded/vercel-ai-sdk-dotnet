@@ -41,10 +41,15 @@ internal static class Generation
         return messages;
     }
 
+    private static Instructions? ResolveInstructions(GenerateTextOptions options)
+    {
+        return options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
+    }
+
     /// <summary>The leading system messages for the call's instructions. An empty string adds none.</summary>
     private static IReadOnlyList<SystemModelMessage> InstructionMessages(GenerateTextOptions options)
     {
-        var instructions = options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
+        var instructions = ResolveInstructions(options);
         if (instructions?.Messages is { } systemMessages)
         {
             return systemMessages;
@@ -995,8 +1000,9 @@ internal static class Generation
         CancellationToken cancellationToken)
     {
         // The instructions travel as the leading system message. The repair function gets them apart from the messages.
-        var instructions = options.Instructions ?? (options.System != null ? Instructions.From(options.System) : null);
-        var history = messages.Skip(InstructionMessages(options).Count).ToArray();
+        var instructions = ResolveInstructions(options);
+        var instructionCount = InstructionMessages(options).Count;
+        var history = messages.SkipWhile((message, index) => index < instructionCount && message is SystemModelMessage).ToArray();
 
         var tools = ActiveTools(options);
 

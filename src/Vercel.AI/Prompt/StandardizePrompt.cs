@@ -49,7 +49,7 @@ public sealed class Instructions
             throw new InvalidPromptException("instructions must be a string, SystemModelMessage, or array of SystemModelMessage");
         }
 
-        return new Instructions(null, messages);
+        return new Instructions(null, messages.ToArray());
     }
 
     /// <summary>Converts a string to instructions.</summary>
