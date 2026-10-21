@@ -272,7 +272,9 @@ public static class Download
                 return DecodeDataUrl(urlText, maxBytes);
             }
 
-            var response = await FetchWithValidatedRedirectsAsync(urlText, maxBytes, abortSignal, fetch).ConfigureAwait(false);
+            var headers = new HeaderCollection();
+            headers.Add("user-agent", UserAgent ?? "ai-sdk/dotnet");
+            var response = await FetchWithValidatedRedirectsAsync(urlText, maxBytes, headers, abortSignal, MaxRedirects, fetch, null).ConfigureAwait(false);
             if (!response.Ok)
             {
                 response.Cancel();
@@ -293,16 +295,46 @@ public static class Download
         }
     }
 
-    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, CancellationToken abortSignal, DownloadFetch? fetch)
+    /// <summary>
+    /// Fetches a URL and validates every hop with <see cref="ValidateDownloadUrl(string)"/> before it is requested.
+    /// Redirects are followed one hop at a time. All caller headers except <c>user-agent</c> are dropped on a redirect that
+    /// crosses origin. Each hop gets its own copy of the headers.
+    /// </summary>
+    /// <param name="url">First URL to request.</param>
+    /// <param name="headers">Request headers, or <c>null</c> to send none.</param>
+    /// <param name="abortSignal">Cancellation signal passed to every hop.</param>
+    /// <param name="maxRedirects">Largest number of redirects to follow.</param>
+    /// <param name="fetch">Fetch used for every hop. Defaults to <see cref="Fetch"/>, then the built-in fetch.</param>
+    /// <param name="trustedOrigin">
+    /// A developer-configured origin, such as a provider base URL, whose hops skip validation. Never derive it from response data.
+    /// </param>
+    /// <returns>The final response. The caller checks <see cref="DownloadResponse.Ok"/> and reads the body.</returns>
+    /// <exception cref="DownloadError">A hop is unsafe, the redirect limit is exceeded, or a redirect cannot be validated.</exception>
+    public static Task<DownloadResponse> FetchWithValidatedRedirectsAsync(
+        string url,
+        HeaderCollection? headers = null,
+        CancellationToken abortSignal = default,
+        int maxRedirects = MaxRedirects,
+        DownloadFetch? fetch = null,
+        string? trustedOrigin = null)
     {
+        return FetchWithValidatedRedirectsAsync(url, DefaultMaxBytes, headers, abortSignal, maxRedirects, fetch, trustedOrigin);
+    }
+
+    private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
+    {
+        var currentHeaders = headers == null ? null : new HeaderCollection(headers.Entries());
         var currentUrl = url;
-        HeaderCollection headers = new HeaderCollection();
-        headers.Add("user-agent", UserAgent ?? "ai-sdk/dotnet");
-        for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
+        for (var redirectCount = 0; redirectCount <= maxRedirects; redirectCount++)
         {
-            ValidateDownloadUrl(currentUrl);
+            var isTrustedHop = trustedOrigin != null && ProviderValues.IsSameOrigin(currentUrl, trustedOrigin);
+            if (!isTrustedHop)
+            {
+                ValidateDownloadUrl(currentUrl);
+            }
+
             var currentFetch = fetch ?? Fetch ?? DefaultFetchAsync;
-            var response = await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "manual") { MaxBytes = maxBytes }).ConfigureAwait(false);
+            var response = await currentFetch(currentUrl, new DownloadRequest(Snapshot(currentHeaders), abortSignal, "manual") { MaxBytes = maxBytes }).ConfigureAwait(false);
             if (string.Equals(response.Type, "opaqueredirect", StringComparison.Ordinal))
             {
                 if (!IsBrowser)
@@ -310,7 +342,7 @@ public static class Download
                     throw new DownloadError(url, "Redirect from " + currentUrl + " could not be validated and was blocked");
                 }
 
-                return await currentFetch(currentUrl, new DownloadRequest(headers, abortSignal, "follow") { MaxBytes = maxBytes }).ConfigureAwait(false);
+                return await currentFetch(currentUrl, new DownloadRequest(Snapshot(currentHeaders), abortSignal, "follow") { MaxBytes = maxBytes }).ConfigureAwait(false);
             }
 
             var location = response.Headers.Get("location");
@@ -318,13 +350,13 @@ public static class Download
             {
                 response.Cancel();
                 var next = new Uri(new Uri(currentUrl), location);
-                if (!IsSameOrigin(next.AbsoluteUri, currentUrl))
+                if (currentHeaders != null && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl))
                 {
-                    var userAgent = headers.Get("user-agent");
-                    headers = new HeaderCollection();
+                    var userAgent = currentHeaders.Get("user-agent");
+                    currentHeaders = new HeaderCollection();
                     if (userAgent != null)
                     {
-                        headers.Add("user-agent", userAgent);
+                        currentHeaders.Add("user-agent", userAgent);
                     }
                 }
 
@@ -335,7 +367,12 @@ public static class Download
             return response;
         }
 
-        throw new DownloadError(url, "Too many redirects (max " + MaxRedirects + ")");
+        throw new DownloadError(url, "Too many redirects (max " + maxRedirects + ")");
+    }
+
+    private static HeaderCollection? Snapshot(HeaderCollection? headers)
+    {
+        return headers == null ? null : new HeaderCollection(headers.Entries());
     }
 
     private static byte[] ReadWithLimit(DownloadResponse response, string url, long maxBytes)
@@ -388,15 +425,6 @@ public static class Download
     private static bool IsRedirectStatus(int status)
     {
         return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
-    }
-
-    private static bool IsSameOrigin(string left, string right)
-    {
-        var a = new Uri(left);
-        var b = new Uri(right);
-        return string.Equals(a.Scheme, b.Scheme, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(a.Host, b.Host, StringComparison.OrdinalIgnoreCase)
-            && a.Port == b.Port;
     }
 
     private static Task<DownloadResponse> DefaultFetchAsync(string url, DownloadRequest request)
