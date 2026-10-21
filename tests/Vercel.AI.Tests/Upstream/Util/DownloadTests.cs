@@ -65,12 +65,12 @@ public sealed class DownloadTests
     public async Task Does_not_request_a_private_redirect()
     {
         var calls = 0;
-        var cancelled = false;
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var headers = new HeaderCollection();
         headers.Add("location", "http://169.254.169.254/latest/meta-data/");
         var response = new DownloadResponse(302, "Found", headers, EncodingBytes("redirecting"))
         {
-            OnCancel = delegate { cancelled = true; },
+            OnCancel = delegate { cancelled.TrySetResult(true); },
         };
         var error = await Assert.ThrowsAsync<DownloadError>(delegate
         {
@@ -82,7 +82,8 @@ public sealed class DownloadTests
         });
         Assert.True(DownloadError.IsInstance(error));
         Assert.Equal(1, calls);
-        Assert.True(cancelled);
+        // A redirect body is cancelled without being awaited, so wait for it to run.
+        Assert.True(await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10)));
     }
 
     [UpstreamTest("packages/ai/src/util/download/download.test.ts::download SSRF redirect protection::should reject a redirect to localhost without requesting it", Coverage = UpstreamCoverage.Covered)]
@@ -90,12 +91,12 @@ public sealed class DownloadTests
     public async Task Does_not_request_a_localhost_redirect()
     {
         var calls = 0;
-        var cancelled = false;
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var headers = new HeaderCollection();
         headers.Add("location", "http://localhost:8080/admin");
         var response = new DownloadResponse(307, "Temporary Redirect", headers, EncodingBytes("redirecting"))
         {
-            OnCancel = delegate { cancelled = true; },
+            OnCancel = delegate { cancelled.TrySetResult(true); },
         };
         await Assert.ThrowsAsync<DownloadError>(delegate
         {
@@ -106,7 +107,8 @@ public sealed class DownloadTests
             });
         });
         Assert.Equal(1, calls);
-        Assert.True(cancelled);
+        // A redirect body is cancelled without being awaited, so wait for it to run.
+        Assert.True(await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10)));
     }
 
     [UpstreamTest("packages/ai/src/util/download/download.test.ts::download SSRF redirect protection::should let the browser follow redirects natively on an opaque redirect", Coverage = UpstreamCoverage.Covered)]

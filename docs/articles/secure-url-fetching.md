@@ -21,5 +21,16 @@ var response = await Download.FetchWithValidatedRedirectsAsync(
     trustedOrigin: "https://example.com");
 ```
 
-- **Headers.** Each hop receives its own copy of the headers. A redirect that crosses origin drops every header except `user-agent`, and the dropped headers do not return when a later hop comes back to the first origin.
+- **Headers.** Before the first request, the helper removes proxy, origin-spoofing, cloud-metadata, cookie, and hop-by-hop headers (`host`, `forwarded`, `via`, `x-forwarded-*`, `x-real-ip`, `metadata`, `metadata-flavor`, `cookie`, and similar). It keeps `authorization` and other credential headers, so the caller must make sure the first URL may receive them. Each hop receives its own copy of the headers. A redirect that crosses origin drops every header except `user-agent`, and the dropped headers do not return when a later hop comes back to the first origin.
 - **`trustedOrigin`.** A hop on this origin skips validation. Use it for an origin that you configure, such as a provider base URL that points to `localhost` or an internal host. Never build it from response data. A hop on any other origin is always validated, even when `trustedOrigin` is set.
+- **Cancelling redirect bodies.** The helper starts cancelling a redirect response's body and moves on. It does not wait for the cancel to finish.
+
+## Fetching one endpoint
+
+`Download.FetchWithValidatedEndpointAsync` validates one URL and requests it once, without following redirects. Use it for requests that carry credentials or a body. Pass a `DownloadRequest` with `Method`, `Headers`, and `Body`. By default a redirect is rejected (`redirect` is `error`). Pass `manual` only if you validate the `Location` target yourself before you request it. As with `FetchWithValidatedRedirectsAsync`, `trustedOrigin` skips validation for a developer-configured origin.
+
+```csharp
+var response = await Download.FetchWithValidatedEndpointAsync(
+    "https://auth.example.com/token",
+    new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
+```

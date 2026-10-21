@@ -87,8 +87,14 @@ public sealed class DownloadRequest
     /// <summary>Cancellation signal for the attempt.</summary>
     public CancellationToken AbortSignal { get; }
 
-    /// <summary><c>manual</c> or <c>follow</c>.</summary>
+    /// <summary><c>manual</c>, <c>follow</c>, or <c>error</c>.</summary>
     public string Redirect { get; }
+
+    /// <summary>HTTP method. Defaults to <c>GET</c>.</summary>
+    public string Method { get; set; } = "GET";
+
+    /// <summary>Request body, or <c>null</c> for none.</summary>
+    public byte[]? Body { get; set; }
 
     /// <summary>Largest body the fetch may read. The default fetch stops reading past it.</summary>
     public long MaxBytes { get; set; } = Download.DefaultMaxBytes;
@@ -321,9 +327,41 @@ public static class Download
         return FetchWithValidatedRedirectsAsync(url, DefaultMaxBytes, headers, abortSignal, maxRedirects, fetch, trustedOrigin);
     }
 
+    /// <summary>
+    /// Fetches one validated URL without following redirects. A redirect is rejected by default (<c>error</c>). A caller that passes
+    /// <c>manual</c> must validate the <c>Location</c> target before it requests another URL.
+    /// </summary>
+    /// <param name="url">URL to request.</param>
+    /// <param name="request">Method, headers, body, and cancellation signal. Its <see cref="DownloadRequest.Redirect"/> is replaced by <paramref name="redirect"/>.</param>
+    /// <param name="fetch">Fetch used for the request. Defaults to <see cref="Fetch"/>, then the built-in fetch.</param>
+    /// <param name="trustedOrigin">A developer-configured origin whose requests skip validation. Never derive it from response data.</param>
+    /// <param name="redirect"><c>error</c> or <c>manual</c>.</param>
+    /// <exception cref="DownloadError">The URL is unsafe.</exception>
+    public static async Task<DownloadResponse> FetchWithValidatedEndpointAsync(
+        string url,
+        DownloadRequest? request = null,
+        DownloadFetch? fetch = null,
+        string? trustedOrigin = null,
+        string redirect = "error")
+    {
+        var isTrusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
+        if (!isTrusted)
+        {
+            ValidateDownloadUrl(url);
+        }
+
+        var init = new DownloadRequest(request == null ? null : new HeaderCollection(request.Headers.Entries()), request?.AbortSignal ?? default, redirect)
+        {
+            Method = request?.Method ?? "GET",
+            Body = request?.Body,
+            MaxBytes = request?.MaxBytes ?? DefaultMaxBytes,
+        };
+        return await (fetch ?? Fetch ?? DefaultFetchAsync)(url, init).ConfigureAwait(false);
+    }
+
     private static async Task<DownloadResponse> FetchWithValidatedRedirectsAsync(string url, long maxBytes, HeaderCollection? headers, CancellationToken abortSignal, int maxRedirects, DownloadFetch? fetch, string? trustedOrigin)
     {
-        var currentHeaders = headers;
+        var currentHeaders = headers == null ? null : RequestHeaders.SanitizeRequestHeaders(headers);
 
         // Snapshot per hop: an injected fetch may defer, and hops between credential drops would otherwise share one instance.
         DownloadRequest PerHopInit(string redirect)
@@ -355,7 +393,9 @@ public static class Download
             var location = response.Headers.Get("location");
             if (IsRedirectStatus(response.Status) && !string.IsNullOrEmpty(location))
             {
-                response.Cancel();
+                // Start releasing the redirect response's connection before the next hop. Do not wait for it: a cancel that stays
+                // pending must not hold up the redirect.
+                _ = Task.Run(response.Cancel);
                 var next = new Uri(new Uri(currentUrl), location);
                 if (currentHeaders != null && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl))
                 {
@@ -438,16 +478,28 @@ public static class Download
     {
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
         using (var client = new HttpClient(handler))
-        using (var message = new HttpRequestMessage(HttpMethod.Get, url))
+        using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {
-            var userAgent = request.Headers.Get("user-agent");
-            if (!string.IsNullOrEmpty(userAgent))
+            if (request.Body != null)
             {
-                message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+                message.Content = new ByteArrayContent(request.Body);
+            }
+
+            foreach (var header in request.Headers.Entries())
+            {
+                if (!message.Headers.TryAddWithoutValidation(header.Key, header.Value))
+                {
+                    message.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
             }
 
             using (var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, request.AbortSignal).ConfigureAwait(false))
             {
+                if (string.Equals(request.Redirect, "error", StringComparison.Ordinal) && IsRedirectStatus((int)response.StatusCode))
+                {
+                    throw new DownloadError(url, "Redirect from " + url + " was blocked");
+                }
+
                 var headers = new HeaderCollection();
                 foreach (var header in response.Headers)
                 {
