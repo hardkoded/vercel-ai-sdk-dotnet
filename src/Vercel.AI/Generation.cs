@@ -1001,8 +1001,18 @@ internal static class Generation
     {
         // The instructions travel as the leading system message. The repair function gets them apart from the messages.
         var instructions = ResolveInstructions(options);
-        var instructionCount = InstructionMessages(options).Count;
-        var history = messages.SkipWhile((message, index) => index < instructionCount && message is SystemModelMessage).ToArray();
+        var instructionMessages = InstructionMessages(options);
+        var leading = 0;
+        while (leading < instructionMessages.Count
+            && leading < messages.Count
+            && messages[leading] is SystemModelMessage system
+            && system.Content == instructionMessages[leading].Content
+            && ReferenceEquals(system.ProviderOptions, instructionMessages[leading].ProviderOptions))
+        {
+            leading++;
+        }
+
+        var history = messages.Skip(leading).ToArray();
 
         var tools = ActiveTools(options);
 
