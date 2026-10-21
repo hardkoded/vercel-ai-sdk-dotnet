@@ -497,6 +497,10 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 
 `GenerateImage` returns `providerMetadata.blackForestLabs.images[0]` with `seed`, `start_time`, `end_time`, `duration`, `cost`, `inputMegapixels`, and `outputMegapixels` when the API sent them, and the response `Timestamp`, `ModelId`, and `Headers` of the download.
 
+## fal image models
+
+`FalImageModel.SupportsFileInputs` and `SupportsMaskInputs` report what the model id accepts. `SupportsFileInputs` is `true` for the known image-to-image and edit models (for example `fal-ai/flux-2/edit` and `fal-ai/flux-pro/kontext`), `false` for known text-to-image models (for example `fal-ai/recraft/v3/text-to-image`), and `null` for any other id. `SupportsMaskInputs` is `true` for `fal-ai/flux-general/inpainting` and `fal-ai/flux-lora/inpainting`, `false` for the other known ids, and `null` when `SupportsFileInputs` is `null`.
+
 ## MiniMax
 
 `MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. MiniMax video models are not ported ([#650](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/658)).

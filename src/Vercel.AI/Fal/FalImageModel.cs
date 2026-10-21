@@ -32,6 +32,33 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
     private static readonly HashSet<string> ResponseFieldsOutsideMetadata = new HashSet<string> { "images", "prompt", "has_nsfw_concepts", "nsfw_content_detected" };
 
+    private static readonly HashSet<string> ModelsWithFileInputs = new HashSet<string>
+    {
+        "fal-ai/flux-2/edit",
+        "fal-ai/flux-pro/kontext",
+        "fal-ai/flux-pro/kontext/max",
+        "fal-ai/flux-general/image-to-image",
+        "fal-ai/flux-general/inpainting",
+        "fal-ai/flux-lora/image-to-image",
+        "fal-ai/flux-lora/inpainting",
+        "fal-ai/flux/dev/image-to-image",
+        "fal-ai/flux/krea/image-to-image",
+        "fal-ai/recraft/v3/image-to-image",
+    };
+
+    private static readonly HashSet<string> ModelsWithoutFileInputs = new HashSet<string>
+    {
+        "bria/text-to-image/3.2",
+        "fal-ai/bria/text-to-image/base",
+        "fal-ai/bria/text-to-image/fast",
+        "fal-ai/bria/text-to-image/hd",
+        "fal-ai/bytedance/dreamina/v3.1/text-to-image",
+        "fal-ai/flux-kontext-lora/text-to-image",
+        "fal-ai/recraft/v3/text-to-image",
+        "fal-ai/wan/v2.2-5b/text-to-image",
+        "fal-ai/wan/v2.2-a14b/text-to-image",
+    };
+
     private readonly FalProvider _provider;
     private readonly Func<DateTime>? _clock;
 
@@ -54,6 +81,34 @@ public sealed class FalImageModel : IImageModel, IImageCaller
 
     /// <summary>Fal returns one image per call.</summary>
     public int? MaxImagesPerCall => 1;
+
+    /// <summary>True when the model takes input images, false when it does not, null when unknown. Maps to <c>supportsFileInputs</c>.</summary>
+    public bool? SupportsFileInputs
+    {
+        get
+        {
+            if (ModelsWithFileInputs.Contains(ModelId))
+            {
+                return true;
+            }
+
+            return ModelsWithoutFileInputs.Contains(ModelId) ? false : null;
+        }
+    }
+
+    /// <summary>True when the model takes a mask, false when it takes input images but no mask, null when unknown. Maps to <c>supportsMaskInputs</c>.</summary>
+    public bool? SupportsMaskInputs
+    {
+        get
+        {
+            if (ModelId == "fal-ai/flux-general/inpainting" || ModelId == "fal-ai/flux-lora/inpainting")
+            {
+                return true;
+            }
+
+            return SupportsFileInputs == null ? null : false;
+        }
+    }
 
     /// <inheritdoc />
     public Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken)
