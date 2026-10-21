@@ -8,13 +8,15 @@ namespace Vercel.AI.Util;
 
 /// <summary>
 /// The abort sources of one <c>GenerateTextAsync</c> or <c>StreamTextAsync</c> call: the caller's signal,
-/// the total timeout, the step timeout, and the chunk timeout. Maps to the merged abort signal in <c>generateText</c> and <c>streamText</c>.
+/// the total timeout, the step timeout, the first chunk timeout, and the chunk timeout. Maps to the merged abort signal in <c>generateText</c> and <c>streamText</c>.
 /// </summary>
 internal sealed class CallTimeouts : IDisposable
 {
     private readonly int? _stepMs;
+    private readonly int? _firstChunkMs;
     private readonly int? _chunkMs;
     private readonly AbortController? _stepController;
+    private readonly AbortController? _firstChunkController;
     private readonly AbortController? _chunkController;
     private readonly Timer? _totalTimer;
     private readonly object _gate = new();
@@ -22,18 +24,21 @@ internal sealed class CallTimeouts : IDisposable
     private Action? _cancel;
     private CancellationTokenRegistration _tokenRegistration;
     private IDisposable? _stepTimer;
+    private IDisposable? _firstChunkTimer;
     private IDisposable? _chunkTimer;
     private bool _disposed;
 
     private readonly List<KeyValuePair<AbortSignal, Action>> _registrations;
 
-    private CallTimeouts(AbortSignal signal, List<KeyValuePair<AbortSignal, Action>> registrations, TimeoutConfiguration timeout, AbortController? stepController, AbortController? chunkController, Timer? totalTimer)
+    private CallTimeouts(AbortSignal signal, List<KeyValuePair<AbortSignal, Action>> registrations, TimeoutConfiguration timeout, AbortController? stepController, AbortController? firstChunkController, AbortController? chunkController, Timer? totalTimer)
     {
         Signal = signal;
         _registrations = registrations;
         _stepMs = timeout.StepMs;
+        _firstChunkMs = timeout.FirstChunkMs;
         _chunkMs = timeout.ChunkMs;
         _stepController = stepController;
+        _firstChunkController = firstChunkController;
         _chunkController = chunkController;
         _totalTimer = totalTimer;
     }
@@ -52,18 +57,20 @@ internal sealed class CallTimeouts : IDisposable
     {
         var totalMs = timeout?.TotalMs;
         var stepMs = timeout?.StepMs;
+        var firstChunkMs = streaming ? timeout?.FirstChunkMs : null;
         var chunkMs = streaming ? timeout?.ChunkMs : null;
-        if (timeout == null || (totalMs == null && stepMs == null && chunkMs == null))
+        if (timeout == null || (totalMs == null && stepMs == null && firstChunkMs == null && chunkMs == null))
         {
             return null;
         }
 
         var totalController = totalMs != null ? new AbortController() : null;
         var stepController = stepMs != null ? new AbortController() : null;
+        var firstChunkController = firstChunkMs != null ? new AbortController() : null;
         var chunkController = chunkMs != null ? new AbortController() : null;
         var tokenController = token.CanBeCanceled ? new AbortController() : null;
         var sources = new List<AbortSignal>();
-        foreach (var source in new[] { signal, tokenController?.Signal, totalController?.Signal, stepController?.Signal, chunkController?.Signal })
+        foreach (var source in new[] { signal, tokenController?.Signal, totalController?.Signal, stepController?.Signal, firstChunkController?.Signal, chunkController?.Signal })
         {
             if (source != null)
             {
@@ -94,7 +101,7 @@ internal sealed class CallTimeouts : IDisposable
             totalTimer = new Timer(_ => SetAbortTimeout.AbortQuietly(totalController, reason), null, totalMs!.Value, System.Threading.Timeout.Infinite);
         }
 
-        var timeouts = new CallTimeouts(merged, registrations, timeout, stepController, chunkController, totalTimer);
+        var timeouts = new CallTimeouts(merged, registrations, timeout, stepController, firstChunkController, chunkController, totalTimer);
         if (tokenController != null)
         {
             timeouts._tokenRegistration = token.Register(() => tokenController.Abort(new OperationCanceledException(token)));
@@ -144,8 +151,7 @@ internal sealed class CallTimeouts : IDisposable
             }
 
             _stepTimer?.Dispose();
-            _chunkTimer?.Dispose();
-            _chunkTimer = null;
+            ClearModelOutputLocked();
             _stepTimer = SetAbortTimeout.Schedule(_stepController, "Step", _stepMs);
         }
     }
@@ -157,16 +163,35 @@ internal sealed class CallTimeouts : IDisposable
         {
             _stepTimer?.Dispose();
             _stepTimer = null;
-            _chunkTimer?.Dispose();
-            _chunkTimer = null;
+            ClearModelOutputLocked();
         }
     }
 
-    /// <summary>Called for each chunk of model output. Starts the chunk timeout again.</summary>
+    /// <summary>
+    /// Starts the first chunk timeout. Called when the model response of a step starts.
+    /// The first chunk of model output ends it, as do the end of the model response and the end of the step.
+    /// </summary>
+    public void StartFirstChunk()
+    {
+        lock (_gate)
+        {
+            if (_disposed || Signal.Aborted)
+            {
+                return;
+            }
+
+            _firstChunkTimer?.Dispose();
+            _firstChunkTimer = SetAbortTimeout.Schedule(_firstChunkController, "First chunk", _firstChunkMs);
+        }
+    }
+
+    /// <summary>Called for each chunk of model output. Ends the first chunk timeout and starts the chunk timeout again.</summary>
     public void OnOutputChunk()
     {
         lock (_gate)
         {
+            _firstChunkTimer?.Dispose();
+            _firstChunkTimer = null;
             if (_disposed || Signal.Aborted)
             {
                 return;
@@ -177,14 +202,21 @@ internal sealed class CallTimeouts : IDisposable
         }
     }
 
-    /// <summary>Stops the chunk timeout. Called when the model response ends.</summary>
-    public void ClearChunk()
+    /// <summary>Stops the first chunk and chunk timeouts. Called when the model response ends.</summary>
+    public void ClearModelOutput()
     {
         lock (_gate)
         {
-            _chunkTimer?.Dispose();
-            _chunkTimer = null;
+            ClearModelOutputLocked();
         }
+    }
+
+    private void ClearModelOutputLocked()
+    {
+        _firstChunkTimer?.Dispose();
+        _firstChunkTimer = null;
+        _chunkTimer?.Dispose();
+        _chunkTimer = null;
     }
 
     /// <summary>Stops every timer of the call.</summary>
@@ -195,8 +227,7 @@ internal sealed class CallTimeouts : IDisposable
             _disposed = true;
             _stepTimer?.Dispose();
             _stepTimer = null;
-            _chunkTimer?.Dispose();
-            _chunkTimer = null;
+            ClearModelOutputLocked();
         }
 
         _totalTimer?.Dispose();

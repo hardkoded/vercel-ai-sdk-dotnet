@@ -23,9 +23,11 @@ public sealed class OptionsTimeoutTests
         return new DelegateModel { Generate = (_, _) => Task.FromResult(TextResult("Hello, world!")) };
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "should warn before the model responds when $warning.feature is configured", Coverage = UpstreamCoverage.Partial, Note = "Only the chunkMs case. TimeoutConfiguration has no firstChunkMs.")]
-    public async Task Should_warn_before_the_model_responds_when_chunkMs_is_configured()
+    [Theory]
+    [InlineData("firstChunkMs", "timeout.firstChunkMs", "The firstChunkMs timeout is only supported by streaming functions.")]
+    [InlineData("chunkMs", "timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions.")]
+    [UpstreamTest(Prefix + "should warn before the model responds when $warning.feature is configured", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_warn_before_the_model_responds_when_feature_is_configured(string configured, string feature, string details)
     {
         var logged = new List<LogWarningsOptions>();
         using var recorder = new Upstream.Logger.LogWarningsRecorder((Action<LogWarningsOptions>)logged.Add);
@@ -45,19 +47,52 @@ public sealed class OptionsTimeoutTests
         {
             Model = model,
             Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { ChunkMs = 5000 },
+            Timeout = configured == "firstChunkMs" ? new TimeoutConfiguration { FirstChunkMs = 5000 } : new TimeoutConfiguration { ChunkMs = 5000 },
         });
 
         await called.Task.WaitAsync(SettleTimeout);
         var warned = Assert.Single(logged);
         var warning = Assert.IsType<UnsupportedWarning>(Assert.Single(warned.Warnings));
-        Assert.Equal("timeout.chunkMs", warning.Feature);
-        Assert.Equal("The chunkMs timeout is only supported by streaming functions.", warning.Details);
+        Assert.Equal(feature, warning.Feature);
+        Assert.Equal(details, warning.Details);
         Assert.Equal("mock-provider", warned.Provider);
         Assert.Equal("mock-model-id", warned.Model);
 
         gate.SetResult();
         await generation;
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should warn about both streaming-only timeouts in one call", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_warn_about_both_streaming_only_timeouts_in_one_call()
+    {
+        var logged = new List<LogWarningsOptions>();
+        using var recorder = new Upstream.Logger.LogWarningsRecorder((Action<LogWarningsOptions>)logged.Add);
+
+        await Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = TextModel(),
+            Prompt = "test-input",
+            Timeout = new TimeoutConfiguration { FirstChunkMs = 5000, ChunkMs = 5000 },
+        });
+
+        var warned = logged[0];
+        Assert.Collection(
+            warned.Warnings,
+            first =>
+            {
+                var warning = Assert.IsType<UnsupportedWarning>(first);
+                Assert.Equal("timeout.firstChunkMs", warning.Feature);
+                Assert.Equal("The firstChunkMs timeout is only supported by streaming functions.", warning.Details);
+            },
+            second =>
+            {
+                var warning = Assert.IsType<UnsupportedWarning>(second);
+                Assert.Equal("timeout.chunkMs", warning.Feature);
+                Assert.Equal("The chunkMs timeout is only supported by streaming functions.", warning.Details);
+            });
+        Assert.Equal("mock-provider", warned.Provider);
+        Assert.Equal("mock-model-id", warned.Model);
     }
 
     [Fact]
