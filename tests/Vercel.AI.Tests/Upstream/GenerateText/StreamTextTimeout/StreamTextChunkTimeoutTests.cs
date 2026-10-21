@@ -33,9 +33,9 @@ public sealed class StreamTextChunkTimeoutTests
                     yield return new TextDeltaStreamPart("1", "Hello");
 
                     // Chunks without output do not reset the timeout.
-                    await Task.Delay(60);
+                    await Task.Delay(150);
                     yield return new ResponseMetadataStreamPart("response-1", null, null);
-                    await Task.Delay(60);
+                    await Task.Delay(150);
                     yield return new RawStreamPart("\": ping\"");
                     await Task.Delay(TimeSpan.FromSeconds(30));
                 }
@@ -46,7 +46,7 @@ public sealed class StreamTextChunkTimeoutTests
         {
             Model = model,
             Prompt = "test-input",
-            Timeout = new TimeoutConfiguration { ChunkMs = 200 },
+            Timeout = new TimeoutConfiguration { ChunkMs = 500 },
             OnError = (_, _) => Task.CompletedTask,
         });
 
@@ -56,7 +56,7 @@ public sealed class StreamTextChunkTimeoutTests
         Assert.True(signal.Aborted);
         Assert.Equal("TimeoutError", Assert.IsType<Vercel.AI.Util.TimeoutError>(signal.Reason).ErrorName);
 
-        // The timeout ran from the text delta. A reset by the two later chunks would add at least 120 ms.
-        Assert.True(abortedAt - deltaSentAt < 300, "The chunk timeout fired " + (abortedAt - deltaSentAt) + " ms after the text delta.");
+        // The timeout ran from the text delta. A reset by the two later chunks would add at least 300 ms.
+        Assert.True(abortedAt - deltaSentAt < 650, "The chunk timeout fired " + (abortedAt - deltaSentAt) + " ms after the text delta.");
     }
 }

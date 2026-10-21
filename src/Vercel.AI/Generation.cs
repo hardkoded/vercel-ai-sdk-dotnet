@@ -180,7 +180,7 @@ internal static class Generation
         catch (Exception exception) when (exception is not ApiUserAbortException)
         {
             // An expired timeout aborts the call. Like upstream, the call fails with the timeout reason.
-            var error = exception is OperationCanceledException && !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
+            var error = !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
             if (options.OnError != null)
             {
                 await options.OnError(error, cancellationToken).ConfigureAwait(false);
