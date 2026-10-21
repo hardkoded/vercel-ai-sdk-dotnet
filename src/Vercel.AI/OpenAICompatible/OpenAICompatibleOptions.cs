@@ -112,7 +112,7 @@ public class OpenAICompatibleOptions
     /// Rewrites the JSON body from the call options before <see cref="TransformRequestBody"/> runs. Arguments are the model id,
     /// the call options, the body, and the call warnings. Use it when a provider builds fields, such as messages, from the call itself.
     /// </summary>
-    public Func<string, LanguageModelCallOptions, JsonObject, IList<CallWarning>, JsonObject>? TransformChatRequest { get; set; }
+    internal Func<string, LanguageModelCallOptions, JsonObject, IList<CallWarning>, JsonObject>? TransformChatRequest { get; set; }
 
     /// <summary>
     /// Resolves <c>reasoning_effort</c> for a model. Arguments are the model id, the portable <c>Reasoning</c> level,
