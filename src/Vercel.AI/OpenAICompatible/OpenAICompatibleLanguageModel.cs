@@ -553,6 +553,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             }
         }
 
+        if (_provider.Options.TransformChatRequest != null)
+        {
+            body = _provider.Options.TransformChatRequest(ModelId, options, body, warnings) ?? body;
+        }
+
         if (_provider.Options.TransformRequestBody != null)
         {
             body = _provider.Options.TransformRequestBody(body, warnings) ?? body;
