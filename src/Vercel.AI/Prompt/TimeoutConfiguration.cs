@@ -76,12 +76,16 @@ public sealed class TimeoutConfiguration
         get => _tools;
         set
         {
+            // A copy, so the caller cannot add a negative limit after the check.
             if (value != null)
             {
+                var copy = new Dictionary<string, int>(StringComparer.Ordinal);
                 foreach (var entry in value)
                 {
-                    Validate(entry.Value, entry.Key);
+                    copy[entry.Key] = Validate(entry.Value, entry.Key)!.Value;
                 }
+
+                value = copy;
             }
 
             _tools = value;

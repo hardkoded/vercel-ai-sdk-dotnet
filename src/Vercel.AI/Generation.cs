@@ -1469,7 +1469,7 @@ internal static class Generation
         catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
             // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
-            var exception = thrown is OperationCanceledException && toolTimeout?.IsCancellationRequested == true ? new TimeoutError("The operation was aborted due to timeout") : thrown;
+            var exception = thrown is OperationCanceledException cancelled && toolTimeout != null && cancelled.CancellationToken == toolToken && toolToken.IsCancellationRequested ? new TimeoutError("The operation was aborted due to timeout") : thrown;
             var error = JsonSerializer.Serialize(new { error = exception.Message });
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = ErrorMessage.ToErrorString(exception), Error = exception };
         }
