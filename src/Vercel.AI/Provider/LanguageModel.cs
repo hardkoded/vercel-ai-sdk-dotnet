@@ -1512,6 +1512,12 @@ public sealed class LanguageModelCallOptions
     /// <summary>When true, the stream includes one raw provider chunk for each event.</summary>
     public bool IncludeRawChunks { get; set; }
 
+    /// <summary>
+    /// Aborts when the call is aborted. It carries the reason, for example a <see cref="Vercel.AI.Util.TimeoutError"/> for an expired timeout.
+    /// Set only when the call has a timeout or a <see cref="StreamTextOptions.AbortSignal"/>. The <see cref="CancellationToken"/> of the call is cancelled at the same time. Maps to <c>abortSignal</c>.
+    /// </summary>
+    public Vercel.AI.Util.AbortSignal? AbortSignal { get; set; }
+
     /// <summary>Copies the options, so a provider can adjust them without changing the caller's object.</summary>
     internal LanguageModelCallOptions Copy()
     {

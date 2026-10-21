@@ -628,8 +628,11 @@ public class GenerateTextOptions
     /// <summary>Retries for provider calls made by this request. Providers that own their HTTP stack use their own policy.</summary>
     public int? MaxRetries { get; set; }
 
-    /// <summary>Per-call timeout.</summary>
-    public TimeSpan? Timeout { get; set; }
+    /// <summary>
+    /// Aborts the call with a <see cref="TimeoutError"/> when a timeout expires. A <see cref="TimeSpan"/> sets the total timeout.
+    /// <see cref="TimeoutConfiguration.StepMs"/> and <see cref="TimeoutConfiguration.ChunkMs"/> set the others. Maps to <c>timeout</c>.
+    /// </summary>
+    public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>Extra headers forwarded to the language model.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }

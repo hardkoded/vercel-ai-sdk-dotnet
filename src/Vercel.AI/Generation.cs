@@ -86,11 +86,15 @@ internal static class Generation
         ILanguageModel model,
         GenerateTextOptions options,
         IAiTelemetry? telemetry,
-        CancellationToken cancellationToken)
+        CancellationToken callerToken)
     {
+        // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
+        using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
+        var cancellationToken = timeouts?.Token ?? callerToken;
         try
         {
             ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
+            WarnUnsupportedTimeouts(options, model);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
             var messages = BuildPrompt(options);
             var responseMessages = new List<ModelMessage>();
@@ -100,6 +104,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                timeouts?.StartStep();
                 var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
                 if (update?.Messages != null)
                 {
@@ -113,6 +118,7 @@ internal static class Generation
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var callOptions = CallOptions(options, messages.ToArray());
+                callOptions.AbortSignal = timeouts?.Signal;
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -156,6 +162,7 @@ internal static class Generation
                 }
             }
 
+            timeouts?.EndStep();
             var result = ToResult(steps, responseMessages, options);
             if (telemetry != null && scope != null)
             {
@@ -172,13 +179,34 @@ internal static class Generation
         }
         catch (Exception exception) when (exception is not ApiUserAbortException)
         {
+            // An expired timeout aborts the call. Like upstream, the call fails with the timeout reason.
+            var error = exception is OperationCanceledException or ApiTimeoutException && !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
             if (options.OnError != null)
             {
-                await options.OnError(exception, cancellationToken).ConfigureAwait(false);
+                await options.OnError(error, callerToken).ConfigureAwait(false);
+            }
+
+            if (!ReferenceEquals(error, exception))
+            {
+                throw error;
             }
 
             throw;
         }
+    }
+
+    // generateText does not stream, so a chunkMs timeout has no effect.
+    private static void WarnUnsupportedTimeouts(GenerateTextOptions options, ILanguageModel model)
+    {
+        if (options.Timeout?.ChunkMs == null)
+        {
+            return;
+        }
+
+        LogWarnings.Log(new LogWarningsOptions(
+            new ModelWarning[] { new UnsupportedWarning("timeout.chunkMs", "The chunkMs timeout is only supported by streaming functions.") },
+            model.Provider,
+            model.ModelId));
     }
 
     public static StreamTextResult Stream(
@@ -194,7 +222,8 @@ internal static class Generation
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var abort = new StreamAbort();
-        var signal = options.AbortSignal;
+        var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true, cancellationToken);
+        var signal = timeouts?.Signal ?? options.AbortSignal;
         if (signal != null)
         {
             Action onSignal = () => abort.Fire(signal.Reason as Exception ?? new OperationCanceledException(signal.Reason?.ToString()), textSource, finishSource, usageSource, stepsSource);
@@ -208,7 +237,7 @@ internal static class Generation
         }
 
         buffer.OnConsumerStop = abort.Stop;
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, textSource, finishSource, usageSource, stepsSource));
+        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource));
         return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task);
     }
 
@@ -218,6 +247,7 @@ internal static class Generation
         IAiTelemetry? telemetry,
         PartBuffer buffer,
         StreamAbort abort,
+        CallTimeouts? timeouts,
         TaskCompletionSource<string> textSource,
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
@@ -236,6 +266,7 @@ internal static class Generation
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                timeouts?.StartStep();
                 var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
                 if (update?.Messages != null)
                 {
@@ -250,6 +281,7 @@ internal static class Generation
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var stepMessages = messages.ToArray();
                 var callOptions = CallOptions(options, stepMessages);
+                callOptions.AbortSignal = timeouts?.Signal ?? options.AbortSignal;
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -318,6 +350,11 @@ internal static class Generation
                         }
 
                         var part = enumerator.Current;
+                        if (timeouts != null)
+                        {
+                            ObserveChunkTimeout(timeouts, part);
+                        }
+
                         if (!stepStarted && part is not StreamStartStreamPart)
                         {
                             stepStarted = true;
@@ -454,6 +491,7 @@ internal static class Generation
                 }
                 finally
                 {
+                    timeouts?.ClearChunk();
                     await abort.DisposeAsync(disposal).ConfigureAwait(false);
                 }
 
@@ -513,6 +551,7 @@ internal static class Generation
                 }
             }
 
+            timeouts?.EndStep();
             var result = ToResult(steps, responseMessages, options);
             if (telemetry != null && scope != null)
             {
@@ -575,9 +614,29 @@ internal static class Generation
         }
         finally
         {
+            timeouts?.Dispose();
             abort.Registration.Dispose();
             abort.SignalCleanup?.Invoke();
             abort.Dispose();
+        }
+    }
+
+    // A chunk of model output starts the chunkMs timeout again. A chunk without output leaves it as it is.
+    // The timeout ends with the model response, so a finish part ends it before the next step or a slow consumer can trip it.
+    private static void ObserveChunkTimeout(CallTimeouts timeouts, LanguageModelStreamPart part)
+    {
+        switch (part)
+        {
+            case TextDeltaStreamPart { Delta.Length: > 0 }:
+            case ReasoningDeltaStreamPart { Delta.Length: > 0 }:
+            case ToolInputDeltaStreamPart { Delta.Length: > 0 }:
+            case ToolCallStreamPart:
+                timeouts.OnOutputChunk();
+                break;
+            case FinishStreamPart:
+            case ErrorStreamPart:
+                timeouts.ClearChunk();
+                break;
         }
     }
 
