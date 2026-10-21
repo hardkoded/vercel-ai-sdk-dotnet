@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -111,8 +112,8 @@ public sealed class AgentOptions
     /// <summary>Gateway model id.</summary>
     public string? ModelId { get; set; }
 
-    /// <summary>System instructions.</summary>
-    public string? Instructions { get; set; }
+    /// <summary>System instructions: a string, one <see cref="SystemModelMessage"/>, or an array of them.</summary>
+    public Instructions? Instructions { get; set; }
 
     /// <summary>Tools.</summary>
     public IReadOnlyList<Tool>? Tools { get; set; }

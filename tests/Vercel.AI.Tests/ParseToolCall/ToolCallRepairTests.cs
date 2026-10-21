@@ -41,8 +41,8 @@ public sealed class ToolCallRepairTests
         Assert.NotNull(call.Tools);
         Assert.NotNull(call.InputSchema);
         Assert.Same(messages, call.Messages);
-        Assert.Equal("test instructions", call.Instructions);
-        Assert.Equal("test instructions", call.System);
+        Assert.Equal("test instructions", call.Instructions!.Text);
+        Assert.Equal("test instructions", call.System!.Text);
         Assert.True(InvalidToolInputError.IsInstance(call.Error));
         Assert.Equal(default, call.CancellationToken);
 
@@ -74,8 +74,8 @@ public sealed class ToolCallRepairTests
             },
             instructions: "test instructions");
 
-        Assert.Equal("test instructions", seen!.Instructions);
-        Assert.Equal("test instructions", seen.System);
+        Assert.Equal("test instructions", seen!.Instructions!.Text);
+        Assert.Equal("test instructions", seen.System!.Text);
         JsonAssert.Equal(result.Input, "{\"param1\":\"test\",\"param2\":42}");
     }
 
