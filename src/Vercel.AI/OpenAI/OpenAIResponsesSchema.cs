@@ -193,7 +193,7 @@ internal static class OpenAIResponsesSchema
 
     private static readonly Rule Usage = Object(
         ("input_tokens", Number),
-        ("input_tokens_details", Nullish(Object(("cached_tokens", Nullish(Number)), ("cache_write_tokens", Nullish(Number)), ("orchestration_input_tokens", Nullish(Number)), ("orchestration_input_cached_tokens", Nullish(Number))))),
+        ("input_tokens_details", Nullish(Object(("cached_tokens", Nullish(Number)), ("cache_write_tokens", Nullish(Number)), ("cache_write_tokens_details", Nullish(Object(("ttl_30m_tokens", Nullish(Number)), ("ttl_12h_tokens", Nullish(Number))))), ("orchestration_input_tokens", Nullish(Number)), ("orchestration_input_cached_tokens", Nullish(Number))))),
         ("output_tokens", Number),
         ("output_tokens_details", Nullish(Object(("reasoning_tokens", Nullish(Number)), ("orchestration_output_tokens", Nullish(Number))))),
         ("total_tokens", Optional(Number)));

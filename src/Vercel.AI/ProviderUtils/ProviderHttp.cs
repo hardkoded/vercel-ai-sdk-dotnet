@@ -165,13 +165,24 @@ public sealed class ProviderHttp
     /// Like <see cref="OpenSseWithResourceAsync"/>, and also returns the response headers.
     /// A failed response throws here.
     /// </summary>
-    internal async Task<ProviderSseResponse> OpenSseResponseAsync(
+    internal Task<ProviderSseResponse> OpenSseResponseAsync(
         Uri uri,
         string jsonBody,
         IReadOnlyDictionary<string, string?>? headers,
         CancellationToken cancellationToken)
     {
-        var response = await SendAsync(HttpMethod.Post, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
+        return OpenSseResponseAsync(HttpMethod.Post, uri, jsonBody, headers, cancellationToken);
+    }
+
+    /// <summary>Opens an SSE response with the method of your choice. A GET sends no body.</summary>
+    internal async Task<ProviderSseResponse> OpenSseResponseAsync(
+        HttpMethod method,
+        Uri uri,
+        string? jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(method, uri, jsonBody, "application/json", headers, cancellationToken).ConfigureAwait(false);
         try
         {
             if (!response.IsSuccessStatusCode)

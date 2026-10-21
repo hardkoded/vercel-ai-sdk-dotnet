@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -79,7 +80,7 @@ public sealed class ToolCallRepairContext
         Func<string, Task<JsonElement>> inputSchema,
         AiSdkError error,
         IReadOnlyList<ModelMessage> messages,
-        string? instructions,
+        Instructions? instructions,
         CancellationToken cancellationToken)
     {
         ToolCall = toolCall;
@@ -107,10 +108,10 @@ public sealed class ToolCallRepairContext
     public IReadOnlyList<ModelMessage> Messages { get; }
 
     /// <summary>The instructions given to the model.</summary>
-    public string? Instructions { get; }
+    public Instructions? Instructions { get; }
 
     /// <summary>Same as <see cref="Instructions"/>. Deprecated upstream; use <see cref="Instructions"/>.</summary>
-    public string? System => Instructions;
+    public Instructions? System => Instructions;
 
     /// <summary>Cancels the repair. Maps to <c>abortSignal</c>.</summary>
     public CancellationToken CancellationToken { get; }
@@ -150,7 +151,7 @@ public sealed class ParseToolCallOptions
     public IReadOnlyList<ModelMessage>? Messages { get; init; }
 
     /// <summary>The instructions given to the model. They are passed to <see cref="RepairToolCall"/>.</summary>
-    public string? Instructions { get; init; }
+    public Instructions? Instructions { get; init; }
 }
 
 /// <summary>Parses the input of a tool call and validates it against the tool's input schema. Maps to <c>parseToolCall</c>.</summary>

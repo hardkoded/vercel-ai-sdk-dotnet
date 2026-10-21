@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
@@ -564,8 +565,8 @@ public class GenerateTextOptions
     /// <summary>System prompt. <see cref="Instructions"/> wins when both are set.</summary>
     public string? System { get; set; }
 
-    /// <summary>System prompt. Maps to <c>instructions</c>.</summary>
-    public string? Instructions { get; set; }
+    /// <summary>System prompt: a string, one <see cref="SystemModelMessage"/>, or an array of them. Maps to <c>instructions</c>.</summary>
+    public Instructions? Instructions { get; set; }
 
     /// <summary>A single user prompt.</summary>
     public string? Prompt { get; set; }

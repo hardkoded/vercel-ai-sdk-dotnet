@@ -167,7 +167,7 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
         var response = await ProviderExchange.SendAsync(
             _provider._httpClient,
             HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks/" + Uri.EscapeDataString(taskId)),
+            ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks/" + PathSegments.Encode(taskId)),
             null,
             ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
             cancellationToken).ConfigureAwait(false);

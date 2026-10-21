@@ -150,7 +150,7 @@ public sealed class OpenAIFileStore : IFileStore
         var id = RequireId(file);
         using var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + OpenAIJson.EncodePathSegment(id)),
+            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + PathSegments.Encode(id)),
             null,
             _provider.CreateOpenAIHeaders(),
             cancellationToken).ConfigureAwait(false);
@@ -163,7 +163,7 @@ public sealed class OpenAIFileStore : IFileStore
         var id = RequireId(file);
         var response = await _provider.Http.SendBinaryAsync(
             HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + OpenAIJson.EncodePathSegment(id) + "/content"),
+            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + PathSegments.Encode(id) + "/content"),
             null,
             _provider.CreateOpenAIHeaders(),
             cancellationToken).ConfigureAwait(false);
@@ -176,7 +176,7 @@ public sealed class OpenAIFileStore : IFileStore
         var id = RequireId(file);
         using var document = await _provider.Http.SendJsonAsync(
             HttpMethod.Delete,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + OpenAIJson.EncodePathSegment(id)),
+            ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + PathSegments.Encode(id)),
             null,
             _provider.CreateOpenAIHeaders(),
             cancellationToken).ConfigureAwait(false);

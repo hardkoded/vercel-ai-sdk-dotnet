@@ -153,6 +153,43 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return new OpenAIResponsesAllowedTools(nameArray.EnumerateArray().Select(name => name.GetString()!).ToArray(), mode);
     }
 
+    private static JsonNode? ParsePromptCacheOptions(JsonElement? options)
+    {
+        if (options is not { } value || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var mode = OpenAIJson.String(value, "mode");
+        var ttl = OpenAIJson.String(value, "ttl");
+        var prewarm = OpenAIJson.Child(value, "prewarm");
+        if (value.ValueKind != JsonValueKind.Object
+            || OpenAIJson.Child(value, "mode") != null && mode != "implicit" && mode != "explicit"
+            || OpenAIJson.Child(value, "ttl") != null && ttl != "30m" && ttl != "12h"
+            || prewarm is { } rawPrewarm && rawPrewarm.ValueKind != JsonValueKind.True && rawPrewarm.ValueKind != JsonValueKind.False)
+        {
+            throw new InvalidArgumentException("providerOptions", value.GetRawText(), "invalid openai provider options");
+        }
+
+        var parsed = new JsonObject();
+        if (mode != null)
+        {
+            parsed["mode"] = mode;
+        }
+
+        if (ttl != null)
+        {
+            parsed["ttl"] = ttl;
+        }
+
+        if (prewarm is { } flag)
+        {
+            parsed["prewarm"] = flag.GetBoolean();
+        }
+
+        return parsed;
+    }
+
     /// <summary>Builds the Responses body for <paramref name="modelId"/>. Generate calls omit <c>stream</c>.</summary>
     public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream)
     {
@@ -333,7 +370,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Copy(body, "instructions", OpenAIJson.String(openai, "instructions"));
         Copy(body, "service_tier", OpenAIJson.String(openai, "serviceTier"));
         Copy(body, "prompt_cache_key", OpenAIJson.String(openai, "promptCacheKey"));
-        Copy(body, "prompt_cache_options", OpenAIJson.Node(OpenAIJson.Child(openai, "promptCacheOptions")));
+        Copy(body, "prompt_cache_options", ParsePromptCacheOptions(OpenAIJson.Child(openai, "promptCacheOptions")));
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         Copy(body, "truncation", OpenAIJson.String(openai, "truncation"));
@@ -947,7 +984,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         throw new AiSdkException("Unsupported system message mode: " + systemMessageMode);
                     }
 
-                    input.Add(MessageItem(systemMessageMode, JsonValue.Create(system.Content)!, explicitItem));
+                    var systemBreakpoint = OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(system.ProviderOptions, providerOptionsName));
+                    JsonNode systemContent = systemBreakpoint == null
+                        ? JsonValue.Create(system.Content)!
+                        : new JsonArray(new JsonObject
+                        {
+                            ["type"] = "input_text",
+                            ["text"] = system.Content,
+                            ["prompt_cache_breakpoint"] = systemBreakpoint,
+                        });
+                    input.Add(MessageItem(systemMessageMode, systemContent, explicitItem));
                     break;
                 case UserModelMessage user:
                     var parts = new JsonArray();
@@ -955,11 +1001,23 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     {
                         if (part is TextContentPart text)
                         {
-                            parts.Add(new JsonObject { ["type"] = "input_text", ["text"] = text.Text });
+                            var item = new JsonObject { ["type"] = "input_text", ["text"] = text.Text };
+                            if (OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(text.ProviderOptions, providerOptionsName)) is { } textBreakpoint)
+                            {
+                                item["prompt_cache_breakpoint"] = textBreakpoint;
+                            }
+
+                            parts.Add(item);
                         }
                         else if (part is FileContentPart file)
                         {
-                            parts.Add(ConvertFile(file));
+                            var item = ConvertFile(file);
+                            if (OpenAIJson.PromptCacheBreakpoint(ProviderOptionsFor(file.ProviderOptions, providerOptionsName)) is { } fileBreakpoint)
+                            {
+                                item["prompt_cache_breakpoint"] = fileBreakpoint;
+                            }
+
+                            parts.Add(item);
                         }
                     }
 

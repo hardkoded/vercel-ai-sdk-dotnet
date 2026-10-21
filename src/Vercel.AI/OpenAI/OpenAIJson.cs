@@ -376,22 +376,6 @@ internal static class OpenAIJson
         }
     }
 
-    public static string EncodePathSegment(string value)
-    {
-        var encoded = Uri.EscapeDataString(value);
-        if (encoded == ".")
-        {
-            return "%252E";
-        }
-
-        if (encoded == "..")
-        {
-            return "%252E%252E";
-        }
-
-        return encoded;
-    }
-
     public static DateTimeOffset? UnixSeconds(long? seconds)
     {
         if (seconds == null || seconds.Value == 0)

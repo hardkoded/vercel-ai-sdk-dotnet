@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.ParseToolCall;
@@ -27,7 +28,7 @@ internal static class ParseToolCallFixture
         ToolCallRepairFunction? repairToolCall = null,
         IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? refineToolInput = null,
         IReadOnlyList<ModelMessage>? messages = null,
-        string? instructions = null,
+        Instructions? instructions = null,
         CancellationToken cancellationToken = default) =>
         ToolCallParser.ParseToolCallAsync(
             new ParseToolCallOptions(toolCall)

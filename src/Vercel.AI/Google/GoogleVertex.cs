@@ -278,6 +278,17 @@ public sealed class GoogleVertexProvider : GoogleProvider
         return base.Interactions(modelId);
     }
 
+    /// <summary>Interactions use the location resource and reject Express Mode.</summary>
+    public override ILanguageModel Interactions(GoogleInteractionsAgent agent)
+    {
+        if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
+        {
+            throw new InvalidOperationException("Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+        }
+
+        return base.Interactions(agent);
+    }
+
     /// <summary>Chirp speech models use Cloud Text-to-Speech. Gemini speech models use generateContent.</summary>
     public override ISpeechModel SpeechModel(string modelId)
     {
