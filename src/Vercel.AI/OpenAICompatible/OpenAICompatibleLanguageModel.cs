@@ -220,8 +220,11 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         JsonElement? usageElement = null;
         var metadataSent = false;
         var textOpen = false;
+        var textBlockId = _provider.Options.TextBlockId;
+        var streamToolInput = _provider.Options.StreamToolInput;
+        var reasoningBlockId = _provider.Options.ReasoningBlockId ?? (static () => "reasoning-0");
         var sawText = false;
-        var reasoningOpen = false;
+        string? reasoningId = null;
         var failed = false;
 
         await foreach (var data in sse.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -314,7 +317,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             var reasoning = PreferredString(delta, "reasoning_content", "reasoning");
             if (!string.IsNullOrEmpty(reasoning))
             {
-                foreach (var part in OpenReasoning(ref textOpen, ref reasoningOpen, reasoning!))
+                foreach (var part in OpenReasoning(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, reasoning!))
                 {
                     yield return part;
                 }
@@ -332,7 +335,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 {
                     if (fragment.Reasoning)
                     {
-                        foreach (var part in OpenReasoning(ref textOpen, ref reasoningOpen, fragment.Text))
+                        foreach (var part in OpenReasoning(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, fragment.Text))
                         {
                             yield return part;
                         }
@@ -340,7 +343,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                     else
                     {
                         sawText |= fragment.Text.Length > 0;
-                        foreach (var part in OpenText(ref textOpen, ref reasoningOpen, fragment.Text))
+                        foreach (var part in OpenText(textBlockId, reasoningBlockId, ref textOpen, ref reasoningId, fragment.Text))
                         {
                             yield return part;
                         }
@@ -350,10 +353,10 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
             if (delta["tool_calls"] is JsonArray toolDeltas && toolDeltas.Count > 0)
             {
-                if (reasoningOpen)
+                if (reasoningId != null)
                 {
-                    reasoningOpen = false;
-                    yield return new ReasoningEndStreamPart("reasoning-0");
+                    yield return new ReasoningEndStreamPart(reasoningId);
+                    reasoningId = null;
                 }
 
                 foreach (var item in toolDeltas)
@@ -361,7 +364,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                     if (item is JsonObject tool)
                     {
                         var input = HandleToolDelta(tool, toolCalls, pending, forwarded, signatures);
-                        foreach (var part in ResponseToolInput(input, prepared.JsonResponseToolName))
+                        foreach (var part in ToolInput(input, prepared.JsonResponseToolName, streamToolInput))
                         {
                             yield return part;
                         }
@@ -370,20 +373,20 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             }
         }
 
-        if (reasoningOpen)
+        if (reasoningId != null)
         {
-            yield return new ReasoningEndStreamPart("reasoning-0");
+            yield return new ReasoningEndStreamPart(reasoningId);
         }
 
         if (textOpen)
         {
-            yield return new TextEndStreamPart("txt-0");
+            yield return new TextEndStreamPart(textBlockId);
         }
 
         foreach (var pair in pending)
         {
             var input = toolCalls.ProcessDelta(new StreamingToolCallDelta(pair.Key, pair.Value.Id, null, pair.Value.Arguments.ToString()));
-            foreach (var part in ResponseToolInput(input, prepared.JsonResponseToolName))
+            foreach (var part in ToolInput(input, prepared.JsonResponseToolName, streamToolInput))
             {
                 yield return part;
             }
@@ -398,7 +401,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 continue;
             }
 
-            if (call.ToolName == prepared.JsonResponseToolName)
+            if (streamToolInput || call.ToolName == prepared.JsonResponseToolName)
             {
                 yield return new ToolInputEndStreamPart(call.ToolCallId);
             }
@@ -811,48 +814,49 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         return mapped ?? FinishReasons.Parse(raw);
     }
 
-    private static List<LanguageModelStreamPart> OpenReasoning(ref bool textOpen, ref bool reasoningOpen, string delta)
+    private static List<LanguageModelStreamPart> OpenReasoning(string textBlockId, Func<string> reasoningBlockId, ref bool textOpen, ref string? reasoningId, string delta)
     {
         var parts = new List<LanguageModelStreamPart>();
         if (textOpen)
         {
             textOpen = false;
-            parts.Add(new TextEndStreamPart("txt-0"));
+            parts.Add(new TextEndStreamPart(textBlockId));
         }
 
-        if (!reasoningOpen)
+        if (reasoningId == null)
         {
-            reasoningOpen = true;
-            parts.Add(new ReasoningStartStreamPart("reasoning-0"));
+            reasoningId = reasoningBlockId();
+            parts.Add(new ReasoningStartStreamPart(reasoningId));
         }
 
-        parts.Add(new ReasoningDeltaStreamPart("reasoning-0", delta));
+        parts.Add(new ReasoningDeltaStreamPart(reasoningId, delta));
         return parts;
     }
 
-    private static List<LanguageModelStreamPart> OpenText(ref bool textOpen, ref bool reasoningOpen, string delta)
+    private static List<LanguageModelStreamPart> OpenText(string textBlockId, Func<string> reasoningBlockId, ref bool textOpen, ref string? reasoningId, string delta)
     {
         var parts = new List<LanguageModelStreamPart>();
-        if (reasoningOpen)
+        if (reasoningId != null)
         {
-            reasoningOpen = false;
-            parts.Add(new ReasoningEndStreamPart("reasoning-0"));
+            parts.Add(new ReasoningEndStreamPart(reasoningId));
+            reasoningId = null;
         }
 
         if (!textOpen)
         {
             textOpen = true;
-            parts.Add(new TextStartStreamPart("txt-0"));
+            parts.Add(new TextStartStreamPart(textBlockId));
         }
 
-        parts.Add(new TextDeltaStreamPart("txt-0", delta));
+        parts.Add(new TextDeltaStreamPart(textBlockId, delta));
         return parts;
     }
 
     // The response-tool converter turns these input parts into text deltas while the call streams.
-    private static IEnumerable<LanguageModelStreamPart> ResponseToolInput(StreamingToolCallInput? input, string? responseToolName)
+    // Providers that stream every tool input, such as Alibaba, get them for all calls.
+    private static IEnumerable<LanguageModelStreamPart> ToolInput(StreamingToolCallInput? input, string? responseToolName, bool streamToolInput)
     {
-        if (input == null || input.Name != responseToolName)
+        if (input == null || (!streamToolInput && input.Name != responseToolName))
         {
             yield break;
         }

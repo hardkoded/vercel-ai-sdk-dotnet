@@ -25,9 +25,132 @@ internal static class AlibabaChatTestSupport
         return new UpstreamCapture { ResponseBody = Fixture(name) };
     }
 
-    public static OpenAICompatibleLanguageModel Model(UpstreamCapture capture, string modelId = "qwen-plus")
+    public static OpenAICompatibleLanguageModel Model(HttpMessageHandler handler, string modelId = "qwen-plus", Action<OpenAICompatibleOptions>? configure = null)
     {
-        return (OpenAICompatibleLanguageModel)AlibabaProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture).LanguageModel(modelId);
+        var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
+        configure?.Invoke(options);
+        return (OpenAICompatibleLanguageModel)AlibabaProvider.Create(options, handler).LanguageModel(modelId);
+    }
+
+    /// <summary>The reasoning id upstream gets from its mocked <c>generateId</c>.</summary>
+    public const string ReasoningId = "test-reasoning-id";
+
+    /// <summary>A model whose reasoning block ids are <see cref="ReasoningId"/>, like the upstream test file mocks <c>generateId</c>.</summary>
+    public static OpenAICompatibleLanguageModel StreamModel(HttpMessageHandler handler, string modelId = "qwen-plus")
+    {
+        return Model(handler, modelId, options => options.ReasoningBlockId = () => ReasoningId);
+    }
+
+    public static SseStreamHandler FixtureStream(string name)
+    {
+        return new SseStreamHandler(SseStreamHandler.FixtureChunks(name, done: true));
+    }
+
+    public static async Task<List<LanguageModelStreamPart>> ReadStream(OpenAICompatibleLanguageModel model, LanguageModelCallOptions options)
+    {
+        var result = await model.DoStreamAsync(options, CancellationToken.None);
+        var parts = new List<LanguageModelStreamPart>();
+        await foreach (var part in result.ConfigureAwait(false))
+        {
+            parts.Add(part);
+        }
+
+        return parts;
+    }
+
+    /// <summary>Asserts a stream against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
+    public static void AssertStreamSnapshot(IReadOnlyList<LanguageModelStreamPart> parts, string fixture)
+    {
+        var expected = JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture + ".stream.snap.json")))!.AsArray();
+        var actual = new JsonArray();
+        foreach (var part in parts)
+        {
+            actual.Add(SnapshotOf(part));
+        }
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var index = 0; index < expected.Count; index++)
+        {
+            Assert.True(
+                JsonNode.DeepEquals(expected[index], actual[index]),
+                "Part " + index + ": expected " + expected[index]!.ToJsonString() + " but got " + actual[index]!.ToJsonString());
+        }
+    }
+
+    public static JsonNode SnapshotOf(LanguageModelStreamPart part)
+    {
+        var node = new JsonObject { ["type"] = part.Type };
+        switch (part)
+        {
+            case StreamStartStreamPart start:
+                node["warnings"] = new JsonArray(start.Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message)).ToArray());
+                break;
+            case ResponseMetadataStreamPart metadata:
+                node["id"] = metadata.Id;
+                node["modelId"] = metadata.ModelId;
+                node["timestamp"] = metadata.Timestamp!.Value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture);
+                break;
+            case TextStartStreamPart textStart:
+                node["id"] = textStart.Id;
+                break;
+            case TextDeltaStreamPart textDelta:
+                node["id"] = textDelta.Id;
+                node["delta"] = textDelta.Delta;
+                break;
+            case TextEndStreamPart textEnd:
+                node["id"] = textEnd.Id;
+                break;
+            case ReasoningStartStreamPart reasoningStart:
+                node["id"] = reasoningStart.Id;
+                break;
+            case ReasoningDeltaStreamPart reasoningDelta:
+                node["id"] = reasoningDelta.Id;
+                node["delta"] = reasoningDelta.Delta;
+                break;
+            case ReasoningEndStreamPart reasoningEnd:
+                node["id"] = reasoningEnd.Id;
+                break;
+            case ToolInputStartStreamPart inputStart:
+                node["id"] = inputStart.Id;
+                node["toolName"] = inputStart.ToolName;
+                break;
+            case ToolInputDeltaStreamPart inputDelta:
+                node["id"] = inputDelta.Id;
+                node["delta"] = inputDelta.Delta;
+                break;
+            case ToolInputEndStreamPart inputEnd:
+                node["id"] = inputEnd.Id;
+                break;
+            case ToolCallStreamPart call:
+                node["input"] = call.ArgumentsJson;
+                node["toolCallId"] = call.ToolCallId;
+                node["toolName"] = call.ToolName;
+                break;
+            case FinishStreamPart finish:
+                node["finishReason"] = new JsonObject { ["raw"] = finish.RawFinishReason, ["unified"] = finish.FinishReason == FinishReason.ToolCalls ? "tool-calls" : finish.FinishReason.ToString().ToLowerInvariant() };
+                node["usage"] = new JsonObject
+                {
+                    ["inputTokens"] = new JsonObject
+                    {
+                        ["cacheRead"] = finish.Usage.CacheReadTokens,
+                        ["cacheWrite"] = finish.Usage.CacheWriteTokens,
+                        ["noCache"] = finish.Usage.NoCacheInputTokens,
+                        ["total"] = finish.Usage.InputTokens,
+                    },
+                    ["outputTokens"] = new JsonObject
+                    {
+                        ["reasoning"] = finish.Usage.ReasoningTokens,
+                        ["text"] = finish.Usage.TextTokens,
+                        ["total"] = finish.Usage.OutputTokens,
+                    },
+                    ["raw"] = JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()),
+                };
+                break;
+            default:
+                throw new InvalidOperationException("Unexpected stream part " + part.Type);
+        }
+
+        return node;
     }
 
     public static IReadOnlyDictionary<string, JsonElement> AlibabaOptions(string json)

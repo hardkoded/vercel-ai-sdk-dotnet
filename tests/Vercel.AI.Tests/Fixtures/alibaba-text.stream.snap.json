@@ -1,0 +1,903 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "chatcmpl-d2d6aab7-cbca-970f-8aa6-7d58c9724733",
+  "modelId": "qwen3-max",
+  "timestamp": "2026-02-10T23:08:26.000Z",
+  "type": "response-metadata"
+ },
+ {
+  "id": "0",
+  "type": "text-start"
+ },
+ {
+  "delta": "##",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " The Festival",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of Shared",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Stories",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ": \"Tale",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "weave Day\"\n\n**When",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ":** The first full moon after",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the autumn equinox (",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "symbolizing the transition",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " into introspection and",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " gathering as nights grow longer",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ").\n\n**Core Concept:** Tale",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "weave Day celebrates",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the power of human connection",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " through the simple, profound",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " act of sharing personal",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " stories—especially those that",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " reveal vulnerability, growth",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", or unexpected kindness. It",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "’s a deliberate counter",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "point to curated online",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " personas, fostering authentic",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " community bonds.\n\n**Trad",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "itions & Rituals:**\n\n",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "1.  **The Story",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Stone Exchange:**\n   ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " *   In the days",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " leading up, participants find or",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " craft a smooth, palm",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "-sized stone.\n    *  ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " On Taleweave Day",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " evening, people gather in homes",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", community centers, parks",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " (weather permitting), or even",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " virtually in small groups",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ".\n    *   Each",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " person holds their stone and shares",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " a brief, true",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " story from their life",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ". This isn't about grand",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " achievements, but moments",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of:\n        *  ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " **Learning:** A mistake",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " that taught a valuable",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " lesson.\n        *   **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "Connection:** An unexpected act",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of kindness received or",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " given.\n        *   **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "Wonder:** A moment",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of awe or simple",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " beauty observed.\n        *",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "   **Resilience:**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " How they navigated a small",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " challenge.\n    *   After",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " sharing, they pass their",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " stone to someone else in the",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " circle. The recipient",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " holds the stone,",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " acknowledging the gift of",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the story, before",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " sharing their own.",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " The stones physically weave",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the group together through",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " narrative.\n\n2.",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  **The Listening",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Feast:**\n   ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " *   Food is central",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", but with a twist",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ": it must be simple",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", shared from common",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " dishes (no individual",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " plating), and ideally",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " made collaboratively beforehand",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " by the group.\n",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "    *   **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "Crucially:**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " During the meal, there is",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " a designated period of **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "silent eating** (",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "15-3",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "0 minutes). This",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " isn't awkward silence, but",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " intentional space to s",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "avor the food,",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " observe companions, and reflect",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " on the stories just",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " heard. Conversation resumes",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " afterward, often naturally",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " flowing from the shared",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " narratives.\n\n3.",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  **The Tape",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "stry of Voices (Community",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Level):**\n   ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " *   Larger communities",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " might host a public",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " \"Story Grove.\"",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Volunteers set up cozy",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " nooks with blankets",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", cushions, and warm",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " drinks.\n    *",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "   Anyone can sit",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " and listen to short",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", pre-volunte",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "ered stories read aloud",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " by diverse community members (",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "elders, children",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", newcomers, long",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "-time residents) –",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " anonymized if desired",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", focusing on universal human",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " experiences.\n    *  ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Alternatively, a large",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " communal loom or fabric",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " banner is set up where",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " people can embroider a",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " simple symbol representing a story they",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " heard or wish to share,",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " creating a physical \"tape",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "stry\" of the community's",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " collective voice over the years.\n\n",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "4.  **The Un",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "sent Letter (Personal",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " Reflection):**\n   ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " *   Individuals are",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " encouraged to write a short",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " letter to someone who",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " impacted their story (a",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " mentor, a stranger",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", even a past version",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of themselves). They",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " don't send it;",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " instead, they fold",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " it and place it in",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " a special box at",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " home or a community collection",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " point (which might",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " be ceremonially compost",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "ed or recycled later",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", symbolizing release).",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " This honors the story",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " without demanding a response.\n\n**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "Symbol:** An intertwined",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " spiral or a simple",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " woven knot, representing interconnected",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "ness and the threads",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of narrative.\n\n**Why",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " it Matters:** In an age",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of digital noise and superficial",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " connection, Talewe",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "ave Day creates sacred",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " space for deep listening",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", empathy, and the",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " recognition that everyone has",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " a story worth hearing",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ". It builds bridges",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " across generations, backgrounds",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", and experiences, reminding us",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of our shared humanity",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " through the most ancient",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " form of connection: storytelling",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ". The passed stones become",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " tangible reminders of the vulnerability",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " and trust exchanged,",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " often kept on a",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " windowsill or shelf",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " as a year-round",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " touchstone.\n\n**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "Mantra:** *\"",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "I hear you. Your",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " story matters. We",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " are woven together.\"*",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "id": "0",
+  "type": "text-end"
+ },
+ {
+  "finishReason": {
+   "raw": "stop",
+   "unified": "stop"
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 18,
+    "total": 18
+   },
+   "outputTokens": {
+    "reasoning": 0,
+    "text": 779,
+    "total": 779
+   },
+   "raw": {
+    "completion_tokens": 779,
+    "prompt_tokens": 18,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "total_tokens": 797
+   }
+  }
+ }
+]

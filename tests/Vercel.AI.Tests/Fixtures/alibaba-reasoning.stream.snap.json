@@ -1,0 +1,1419 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "chatcmpl-3792851e-8f1b-9182-a1dc-b84603c81344",
+  "modelId": "qwen3-max",
+  "timestamp": "2026-02-10T23:09:02.000Z",
+  "type": "response-metadata"
+ },
+ {
+  "id": "test-reasoning-id",
+  "type": "reasoning-start"
+ },
+ {
+  "delta": "We",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " are asked:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"How many",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " '",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "r's are in the",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " word 'strawberry'",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "?\" We need to count",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the occurrences of the letter",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " 'r' (case-sensitive",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "? The word is given",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " in lowercase, and",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the question uses lowercase",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"r\", so we assume",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " case-insensitive but",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the word is all",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " lowercase). Let's write the",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " word: s t r a",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " w b e r r y",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".\n\nNow, let's",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " go through each letter:\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "s: not r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\nt: not r\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "r: yes (",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "1)\na: not r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\nw: not r\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "b: not r\ne",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": not r\nr:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " yes (2)\nr:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " yes (3) ???",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Wait, let's",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " check spelling: strawberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " is spelled s-t-r-a",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-w-b-e-r-r-y",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ". So after '",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "e', there are",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " two 'r's in",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " a row? Actually",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", let me confirm",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": \nStandard spelling: s",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-t-r-a-w-b-e",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-r-r-y. Yes",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", there is \"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "rr\" after \"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "be\". So positions",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ":\n1: s\n2",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": t\n3: r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " (first r)\n4",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": a\n5: w",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\n6: b\n7",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": e\n8: r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " (second r)\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "9: r (third r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "?) Wait, no:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " position 8 is",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r, position ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "9 is r? Let",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s count indices:\n\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "Index: 1",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ":s, 2",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ":t, 3:r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", 4:a, ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "5:w, 6:b",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", 7:e, ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "8:r, 9",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ":r, 10:y",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "? Wait, that would",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " be 10 letters",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "? Let's count total",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " letters in \"straw",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "berry\": \ns(",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "1), t(2",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "), r(3),",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " a(4), w",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "(5), b(",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "6), e(7",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "), r(8),",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r(9), y(",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "10). Yes, ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "10 letters. So",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " there are three r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s? Wait, at",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " position 3, ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "8, and 9:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " that's three r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s. But I think I",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " recall that \"str",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "awberry\" has two",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r's? Let me double",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-check the spelling. Actually",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", I think I made",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " a mistake: The",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " correct spelling is s",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-t-r-a-w-b-e",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-r-r-y. So after",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"straw\"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " (which has one",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r at position 3",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "), then \"berry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\" part: b-e-r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-r-y. In",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"berry\", there are two",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r's together. So total",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r's: one",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " in \"straw\" (",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "the third letter) and two",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " in \"berry\" (the",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " eighth and ninth letters",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "). So that is",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " three r's?",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Wait, let's write",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " it out:\n\ns t",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r a w b e r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r y\nLetters",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": \n1. s\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "2. t\n3.",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r  -> count",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " 1\n4. a",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\n5. w\n6",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ". b\n7. e",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\n8. r  ->",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " count 2\n9.",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r  -> count 3",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\n10. y\n\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "So indeed there are three occurrences",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " of the letter 'r'.",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " But I have a feeling",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " that sometimes people might mis",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "count. Let me verify",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " with a quick mental check",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": The word \"str",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "awberry\" contains",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the substring \"rr",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\" which is two r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s, plus the earlier",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r in \"straw",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\", so total 3.",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " However, I recall a",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " common trick question:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"How many r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s in strawberry?\"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " and some people might",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " say 2 because",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " they think of the",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " double r as one sound",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", but the question asks",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " for the letter \"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "r\", so we count",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " each occurrence. Let",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " me confirm with an",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " external source: I know",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " that \"strawberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\" has 3 r's",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ". For example, in the",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " word \"raspberry\",",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " there are also 3 r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s? Wait, raspberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": r-a-s-p",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-b-e-r-r-y",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " -> r at start, then",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " r at position 7",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", and r at position",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " 8? Actually",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", raspberry: r(",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "1), a(2),",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " s(3), p(",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "4), b(5",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "), e(6), r",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "(7), r(8",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "), y(9) ->",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " that's three r's as",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " well. But for strawberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", yes, three",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".\n\nWait, let me",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " spell it slowly: S",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-T-R (that",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "'s one R), A-W",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "-B-E, then",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " R-R (that's",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " two more R's),",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Y. So total",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " three.\n\nI think I've",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " seen this as a common trick",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " question where people might overlook",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the first R and",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " only count the double",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " R, saying 2,",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " or they might count",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the double R as one",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " and say 2 total",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ". But the correct",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " answer is 3",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".\n\nHowever, let",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " me make sure there",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " is no alternative spelling",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ". No, standard",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " English spelling is with",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " three r's.\n\nTherefore",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", the answer should be ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "3.\n\nBut wait",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ", the question is:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"How many \"",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "r\"s are in the word",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " \"strawberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "\"?\" The quotes",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " around r and strawberry",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " suggest we are counting",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " the character. So",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " answer is 3",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".\n\nI can also write",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " a quick code in mind",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ": \nword = \"str",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "awberry\"\ncount = ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "0\nfor char",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " in word:\n   ",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " if char == 'r':\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "        count += 1\n",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "print(count) ->",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " 3.\n\nYes",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".\n\nSo final answer:",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " 3.",
+  "id": "test-reasoning-id",
+  "type": "reasoning-delta"
+ },
+ {
+  "id": "test-reasoning-id",
+  "type": "reasoning-end"
+ },
+ {
+  "id": "0",
+  "type": "text-start"
+ },
+ {
+  "delta": "The word **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "\"strawberry\"**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " contains **3** instances",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of the letter **\"r",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "\"**.  \n\nHere",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " is the breakdown for",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " clarity:  \n- **s",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "** → not r  \n",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "- **t** → not",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " r  \n- **r**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " → **1st r",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "**  \n- **a**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " → not r  \n- **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "w** → not r  \n",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "- **b** → not",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " r  \n- **e**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " → not r  \n- **",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "r** → **2nd",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " r**  \n- **r",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "** → **3rd r",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "**  \n- **y**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " → not r  \n\n⚠",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "️ **Common Pit",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "fall**:  \nMany",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " people mistakenly count only",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " **2** \"",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "r\"s because:",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n- They overlook",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the **first \"r",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "\"** in \"straw",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "\" (position 3).",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n- They treat",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the double \"r\" in",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " \"berry\" as a",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " single unit (but",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " the question asks for *",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "individual letter occurrences*, not sounds",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " or digraphs).",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n\n✅ **Verification**:",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n- Spelling confirmed",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " via standard English dictionaries (",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "e.g., Merriam",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "-Webster, Oxford).",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n- Programmatic check (",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "e.g., Python",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ": `len([",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "c for c in",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " \"strawberry\" if",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " c == \"r\"])`",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": " returns `3`).",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "  \n\n**Answer: ",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "3**",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "id": "0",
+  "type": "text-end"
+ },
+ {
+  "finishReason": {
+   "raw": "stop",
+   "unified": "stop"
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 24,
+    "total": 24
+   },
+   "outputTokens": {
+    "reasoning": 1084,
+    "text": 271,
+    "total": 1355
+   },
+   "raw": {
+    "completion_tokens": 1355,
+    "completion_tokens_details": {
+     "reasoning_tokens": 1084
+    },
+    "prompt_tokens": 24,
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "total_tokens": 1379
+   }
+  }
+ }
+]
