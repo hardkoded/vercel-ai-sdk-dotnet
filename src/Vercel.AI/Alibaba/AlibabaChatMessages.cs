@@ -14,67 +14,109 @@ internal static class AlibabaChatMessages
 {
     private const string ExecutionDeniedText = "Tool call execution denied.";
 
-    public static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, bool preserveThinking)
+    public static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, bool preserveThinking, AlibabaCacheControlValidator? cacheControlValidator = null)
     {
         var messages = new JsonArray();
-        var flat = ToolModelMessage.Flatten(prompt ?? Array.Empty<ModelMessage>());
+        prompt ??= Array.Empty<ModelMessage>();
         var lastUserMessageIndex = -1;
-        for (var i = flat.Count - 1; i >= 0; i--)
+        for (var i = prompt.Count - 1; i >= 0; i--)
         {
-            if (flat[i] is UserModelMessage)
+            if (prompt[i] is UserModelMessage)
             {
                 lastUserMessageIndex = i;
                 break;
             }
         }
 
-        for (var index = 0; index < flat.Count; index++)
+        for (var index = 0; index < prompt.Count; index++)
         {
-            switch (flat[index])
+            switch (prompt[index])
             {
                 case SystemModelMessage system:
-                    messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
+                    messages.Add(new JsonObject
+                    {
+                        ["role"] = "system",
+                        ["content"] = TextContent(system.Content, cacheControlValidator?.GetCacheControl(system.ProviderOptions)),
+                    });
                     break;
                 case UserModelMessage user:
-                    messages.Add(new JsonObject { ["role"] = "user", ["content"] = MapUserContent(user) });
+                    messages.Add(new JsonObject
+                    {
+                        ["role"] = "user",
+                        ["content"] = MapUserContent(user, cacheControlValidator, cacheControlValidator?.GetCacheControl(user.ProviderOptions)),
+                    });
                     break;
                 case AssistantModelMessage assistant:
-                    if (MapAssistant(assistant, preserveThinking || index > lastUserMessageIndex) is { } mapped)
+                    var assistantCacheControl = cacheControlValidator?.GetCacheControl(assistant.ProviderOptions);
+                    if (MapAssistant(assistant, preserveThinking || index > lastUserMessageIndex, assistantCacheControl) is { } mapped)
                     {
                         messages.Add(mapped);
                     }
 
                     break;
                 case ToolModelMessage tool:
-                    messages.Add(new JsonObject
+                    var toolCacheControl = cacheControlValidator?.GetCacheControl(tool.MessageProviderOptions);
+                    var results = tool.Results;
+                    for (var i = 0; i < results.Count; i++)
                     {
-                        ["role"] = "tool",
-                        ["tool_call_id"] = tool.ToolCallId,
-                        ["content"] = ToolContent(tool),
-                    });
+                        var partCacheControl = cacheControlValidator?.GetCacheControl(results[i].ProviderOptions)
+                            ?? (i == results.Count - 1 ? toolCacheControl : null);
+                        messages.Add(new JsonObject
+                        {
+                            ["role"] = "tool",
+                            ["tool_call_id"] = results[i].ToolCallId,
+                            ["content"] = TextContent(ToolContent(results[i]), partCacheControl),
+                        });
+                    }
+
                     break;
                 default:
-                    throw new AiSdkException("Unsupported role: " + flat[index].Role + ".");
+                    throw new AiSdkException("Unsupported role: " + prompt[index].Role + ".");
             }
         }
 
         return messages;
     }
 
-    private static JsonArray MapUserContent(UserModelMessage user)
+    // A plain string, or one text block that carries the cache control.
+    private static JsonNode? TextContent(string text, JsonNode? cacheControl)
+    {
+        return cacheControl == null
+            ? JsonValue.Create(text)
+            : new JsonArray(new JsonObject { ["type"] = "text", ["text"] = text, ["cache_control"] = cacheControl });
+    }
+
+    private static JsonArray MapUserContent(UserModelMessage user, AlibabaCacheControlValidator? cacheControlValidator, JsonNode? messageCacheControl)
     {
         var parts = new JsonArray();
-        foreach (var part in user.Content)
+        for (var i = 0; i < user.Content.Count; i++)
         {
-            switch (part)
+            var part = user.Content[i];
+            var providerOptions = part switch
             {
-                case TextContentPart text:
-                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
-                    break;
-                case FileContentPart file:
-                    parts.Add(MapFile(file));
-                    break;
+                TextContentPart text => text.ProviderOptions,
+                FileContentPart file => file.ProviderOptions,
+                _ => null,
+            };
+            var partCacheControl = cacheControlValidator?.GetCacheControl(providerOptions)
+                ?? (i == user.Content.Count - 1 ? messageCacheControl : null);
+            var mapped = part switch
+            {
+                TextContentPart text => new JsonObject { ["type"] = "text", ["text"] = text.Text },
+                FileContentPart file => MapFile(file),
+                _ => null,
+            };
+            if (mapped == null)
+            {
+                continue;
             }
+
+            if (partCacheControl != null)
+            {
+                mapped["cache_control"] = partCacheControl;
+            }
+
+            parts.Add(mapped);
         }
 
         return parts;
@@ -106,7 +148,7 @@ internal static class AlibabaChatMessages
 
     // Reasoning from the current round (after the last user message) always accompanies tool calls.
     // Earlier rounds are replayed only when preserved thinking is enabled.
-    private static JsonObject? MapAssistant(AssistantModelMessage assistant, bool includeReasoning)
+    private static JsonObject? MapAssistant(AssistantModelMessage assistant, bool includeReasoning, JsonNode? cacheControl)
     {
         var text = new StringBuilder();
         var reasoning = new StringBuilder();
@@ -141,10 +183,13 @@ internal static class AlibabaChatMessages
             return null;
         }
 
+        var reasoningOnly = text.Length == 0 && toolCalls.Count == 0;
         var message = new JsonObject
         {
             ["role"] = "assistant",
-            ["content"] = text.Length > 0 ? JsonValue.Create(text.ToString()) : null,
+            ["content"] = reasoningOnly ? null
+                : cacheControl != null ? TextContent(text.ToString(), cacheControl)
+                : text.Length > 0 ? JsonValue.Create(text.ToString()) : null,
         };
         if (reasoning.Length > 0)
         {

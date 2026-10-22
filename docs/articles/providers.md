@@ -146,6 +146,37 @@ The Alibaba chat model (`AlibabaProvider.LanguageModel(id)`) builds its own requ
 - `DoStreamAsync` streams reasoning, text, and tool calls as separate blocks. A reasoning block ends when text or a tool call starts, and a text block ends when reasoning or a tool call starts. Text uses block id `0`, and each reasoning block gets a new generated id. Every tool call streams `tool-input-start`, `tool-input-delta`, and `tool-input-end` parts before its `tool-call` part. A chunk with an empty `tool_calls` array does not end the reasoning block.
 - Usage reports `cache_creation_input_tokens` as cache write tokens. Cache reads and writes are both inside `prompt_tokens`, so `NoCacheInputTokens` excludes both. The raw usage object keeps fields the SDK does not map, such as `cache_type`.
 
+### Prompt caching
+
+Alibaba caches repeated prompts without any setting (implicit caching). For more control, mark content with `alibaba.cacheControl` (explicit caching). The value, for example `{ "type": "ephemeral" }`, is sent as `cache_control` and Alibaba validates it. `alibaba.cache_control` works too.
+
+Set it in the `ProviderOptions` of a `SystemModelMessage`, `UserModelMessage`, `AssistantModelMessage`, `TextContentPart`, `FileContentPart`, or `ToolModelMessage`. The marked content is sent as a text block with `cache_control`, or as a part that carries it. A part-level marker wins over a message-level marker. A message-level marker on a user message marks its last part. On a tool message, set `ProviderOptions` on a result to mark that result, or `MessageProviderOptions` to mark the last result.
+
+```csharp
+var system = new SystemModelMessage(
+    "You are a helpful assistant. [... long system prompt ...]",
+    new Dictionary<string, JsonElement>
+    {
+        ["alibaba"] = JsonDocument.Parse("{\"cacheControl\":{\"type\":\"ephemeral\"}}").RootElement.Clone(),
+    });
+```
+
+```csharp
+var message = new UserModelMessage(new UserContentPart[]
+{
+    new TextContentPart("Context: Please analyze this document."),
+    new TextContentPart(longDocument)
+    {
+        ProviderOptions = new Dictionary<string, JsonElement>
+        {
+            ["alibaba"] = JsonDocument.Parse("{\"cacheControl\":{\"type\":\"ephemeral\"}}").RootElement.Clone(),
+        },
+    },
+});
+```
+
+The minimum content length for a cache block is 1,024 tokens. Alibaba allows 4 cache breakpoints per request. A fifth marker adds an `other` warning, `Max breakpoint limit exceeded. Only the last 4 cache markers will take effect.`, and is still sent.
+
 ## HeyGen
 
 The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It supports video generation only. HeyGen's avatar, voice, translation, and video editing APIs are not included.
