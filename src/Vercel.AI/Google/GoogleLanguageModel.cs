@@ -222,6 +222,12 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     }
                     catch (Exception error) when (hop > 0 && error is not OperationCanceledException)
                     {
+                        if (!awaitingFirstEvent)
+                        {
+                            // The continuation had started, so it did not just end early.
+                            finish = FinishReason.Error;
+                        }
+
                         failure = error;
                         break;
                     }

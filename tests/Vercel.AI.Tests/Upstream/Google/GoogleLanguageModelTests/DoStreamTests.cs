@@ -198,7 +198,7 @@ public sealed class DoStreamTests
     [InlineData("partial")]
     [InlineData("complete")]
     [InlineData("request-error")]
-    [UpstreamTest(Prefix + "tracks a %s continuation in stream order under backpressure", Coverage = UpstreamCoverage.Covered, Note = "The stream is pull-based, so the first response's CONTINUATION chunk is never buffered ahead of the new response and the test does not wait for the second request before reading.")]
+    [UpstreamTest(Prefix + "tracks a %s continuation in stream order under backpressure", Coverage = UpstreamCoverage.Partial, Note = "The stream is pull-based, so the first response's CONTINUATION chunk is never buffered ahead of the new response and the test does not wait for the second request before reading.")]
     public async Task Tracks_a_continuation_in_stream_order_under_backpressure(string ending)
     {
         var firstChunk = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}]},\"finishReason\":\"CONTINUATION\",\"continuationToken\":\"token-1\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":5}}";

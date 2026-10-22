@@ -315,6 +315,12 @@ internal sealed class OpenAIResponsesStream
                     var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
                     _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall) : FinishReason.Error;
                     _failedRaw = failedReason ?? "error";
+                    if (failed["error"] is JsonNode failedError && !_streamError)
+                    {
+                        _streamError = true;
+                        parts.Add(new ErrorStreamPart(failedError["message"]?.GetValue<string>() ?? failedError.ToJsonString()));
+                    }
+
                     if (failed["usage"] != null)
                     {
                         _usage = OpenAIJson.ResponsesUsage(JsonSerializer.Deserialize<JsonElement>(failed["usage"]!.ToJsonString()));
