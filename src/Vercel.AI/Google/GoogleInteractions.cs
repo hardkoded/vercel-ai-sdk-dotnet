@@ -386,18 +386,34 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             return await StreamBackgroundAsync(options, cancellationToken).ConfigureAwait(false);
         }
 
-        return new LanguageModelStreamResult(StreamAsync(options, cancellationToken));
+        return await StreamLiveAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    // POSTs with `stream: true` and pipes the SSE feed through the transform.
+    private async Task<LanguageModelStreamResult> StreamLiveAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
-        {
-            yield return new TextDeltaStreamPart("text", result.Text);
-        }
+        var (body, warnings) = Prepare(options);
+        body["stream"] = true;
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        var requestJson = GoogleJson.Write(body);
+        var sse = await _provider.Http.OpenSseResponseAsync(
+            ProviderUtils.ApiKeys.Combine(InteractionsBase(_provider.Options.BaseUrl), "interactions"),
+            requestJson,
+            headers,
+            cancellationToken).ConfigureAwait(false);
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        // The tier is in the interaction.completed body. The header is the fallback, and the body wins.
+        sse.Headers.TryGetValue("x-gemini-service-tier", out var headerServiceTier);
+        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId, headerServiceTier);
+        return sse.ToStreamResult(transform.Pipe(ParseEvents(sse.Events, cancellationToken), cancellationToken), requestJson);
+    }
+
+    private static async IAsyncEnumerable<GoogleInteractionsEvent> ParseEvents(IAsyncEnumerable<string> data, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var raw in data.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            yield return new GoogleInteractionsEvent(raw);
+        }
     }
 
     // `background: true` is incompatible with `stream: true` on POST. POST the background call, then stream
@@ -421,7 +437,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             throw new InvalidOperationException("google.interactions: background POST response did not include an interaction id; cannot stream the result.");
         }
 
-        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks);
+        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId);
         var request = LanguageModelStreamRequest.FromJson(requestJson);
         if (GoogleInteractionsPolling.IsTerminal((string?)response["status"]))
         {

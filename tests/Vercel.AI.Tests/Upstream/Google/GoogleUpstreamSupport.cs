@@ -177,6 +177,9 @@ internal sealed class SequencedHandler : HttpMessageHandler
 
     public List<string> Bodies { get; } = new();
 
+    /// <summary>Headers added to every response.</summary>
+    public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public SequencedHandler Json(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
         _responses.Add((body, "application/json", status, false, false));
@@ -214,13 +217,23 @@ internal sealed class SequencedHandler : HttpMessageHandler
         {
             var content = new StreamContent(new HangingStream(Encoding.UTF8.GetBytes(response.Body), response.Fail));
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(response.MediaType);
-            return new HttpResponseMessage(response.Status) { Content = content };
+            return WithHeaders(new HttpResponseMessage(response.Status) { Content = content });
         }
 
-        return new HttpResponseMessage(response.Status)
+        return WithHeaders(new HttpResponseMessage(response.Status)
         {
             Content = new StringContent(response.Body, Encoding.UTF8, response.MediaType),
-        };
+        });
+    }
+
+    private HttpResponseMessage WithHeaders(HttpResponseMessage message)
+    {
+        foreach (var header in ResponseHeaders)
+        {
+            message.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return message;
     }
 
     /// <summary>Yields its bytes, then waits for the read to be cancelled.</summary>
