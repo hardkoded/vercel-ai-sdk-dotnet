@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Google;
 using Vercel.AI.Provider;
 
@@ -81,5 +83,171 @@ public sealed class DoStreamTests
         GoogleUpstream.JsonEqual(
             finish.ProviderMetadata!.Value,
             "{\"google\":{\"promptFeedback\":null,\"groundingMetadata\":null,\"urlContextMetadata\":null,\"safetyRatings\":" + safetyRatings + ",\"usageMetadata\":null,\"finishMessage\":null,\"serviceTier\":null}}");
+    }
+
+    private const string Prefix = "packages/google/src/google-language-model.test.ts::doStream::";
+
+    private const string ContinuationChunk = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}]},\"finishReason\":\"CONTINUATION\",\"continuationToken\":\"token-1\"}]}";
+
+    private static string Sse(string json)
+    {
+        return "data: " + json + "\n\n";
+    }
+
+    private static async Task<List<LanguageModelStreamPart>> Stream(SequencedHandler handler, LanguageModelCallOptions options)
+    {
+        var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key" }, handler);
+        return await GoogleUpstream.Collect(await provider.LanguageModel("gemini-pro").DoStreamAsync(options, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("BLOCK_REASON_UNSPECIFIED")]
+    [InlineData("BLOCKED_REASON_UNSPECIFIED")]
+    [UpstreamTest(Prefix + "should not classify the default prompt block reason %j as a content filter", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_classify_the_default_prompt_block_reason_as_a_content_filter(string blockReason)
+    {
+        var handler = new SequencedHandler().Sse(
+            Sse("{\"candidates\":[],\"promptFeedback\":{\"blockReason\":" + JsonSerializer.Serialize(blockReason) + "},\"usageMetadata\":{\"promptTokenCount\":9,\"totalTokenCount\":9}}"));
+
+        var parts = await Stream(handler, GoogleUpstream.Hello());
+
+        var finish = parts.OfType<FinishStreamPart>().First();
+        Assert.Equal(FinishReason.Interrupted, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "preserves grounding per streamed request (terminal grounding: %s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_grounding_per_streamed_request(bool terminalGrounding)
+    {
+        var first = (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-continuation-grounding-1.json")))!;
+        var last = (JsonObject)JsonNode.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-continuation-grounding-2.json")))!;
+        var firstGrounding = first["candidates"]![0]!["groundingMetadata"]!.DeepClone();
+        if (terminalGrounding)
+        {
+            last["candidates"]![0]!["groundingMetadata"] = firstGrounding.DeepClone();
+        }
+
+        var handler = new SequencedHandler().Sse(Sse(first.ToJsonString())).Sse(Sse(last.ToJsonString()));
+        var options = GoogleUpstream.Hello();
+        options.MaxOutputTokens = 33_280;
+
+        var parts = await Stream(handler, options);
+        var finish = parts.OfType<FinishStreamPart>().First();
+
+        Assert.Equal(2, handler.Bodies.Count);
+        var expected = new JsonArray(firstGrounding.DeepClone(), last["candidates"]![0]!["groundingMetadata"]?.DeepClone());
+        Assert.True(JsonNode.DeepEquals(expected, JsonNode.Parse(finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("groundingMetadataPerRequest").GetRawText())));
+        Assert.Equal(33_246, finish.Usage.InputTokens);
+        Assert.Equal(33_306, finish.Usage.OutputTokens);
+    }
+
+    [Theory]
+    [InlineData(null, FinishReason.Interrupted)]
+    [InlineData("STOP", FinishReason.Stop)]
+    [InlineData("MAX_TOKENS", FinishReason.Length)]
+    [InlineData("SAFETY", FinishReason.ContentFilter)]
+    [InlineData("unknown_reason", FinishReason.Other)]
+    [UpstreamTest(Prefix + "maps a stream ending with finishReason %j to %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Maps_a_stream_ending_with_finishReason(string? raw, FinishReason unified)
+    {
+        var candidate = new JsonObject
+        {
+            ["content"] = new JsonObject { ["role"] = "model", ["parts"] = new JsonArray(new JsonObject { ["text"] = "Partial answer" }) },
+            ["index"] = 0,
+        };
+        if (raw != null)
+        {
+            candidate["finishReason"] = raw;
+        }
+
+        var handler = new SequencedHandler().Sse(Sse(new JsonObject { ["candidates"] = new JsonArray(candidate) }.ToJsonString()));
+
+        var parts = await Stream(handler, GoogleUpstream.Hello());
+
+        Assert.Contains(parts.OfType<TextDeltaStreamPart>(), part => part.Delta == "Partial answer");
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(unified, finish.FinishReason);
+        Assert.Equal(raw, finish.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "reports interruption when an automatically continued stream ends without a finish reason", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reports_interruption_when_an_automatically_continued_stream_ends_without_a_finish_reason()
+    {
+        var handler = new SequencedHandler()
+            .Sse(Sse(ContinuationChunk))
+            .Sse(Sse("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\", partial\"}]}}]}"));
+
+        var parts = await Stream(handler, GoogleUpstream.Hello());
+
+        Assert.Equal(2, handler.Bodies.Count);
+        Assert.Equal(new[] { "Hello", ", partial" }, parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta).ToArray());
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(FinishReason.Interrupted, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
+    [Theory]
+    [InlineData("empty")]
+    [InlineData("partial")]
+    [InlineData("complete")]
+    [InlineData("request-error")]
+    [UpstreamTest(Prefix + "tracks a %s continuation in stream order under backpressure", Coverage = UpstreamCoverage.Covered, Note = "The stream is pull-based, so the first response's CONTINUATION chunk is never buffered ahead of the new response and the test does not wait for the second request before reading.")]
+    public async Task Tracks_a_continuation_in_stream_order_under_backpressure(string ending)
+    {
+        var firstChunk = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}]},\"finishReason\":\"CONTINUATION\",\"continuationToken\":\"token-1\"}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":5}}";
+        var continuedChunks = new List<string>();
+        if (ending is "partial" or "complete")
+        {
+            var finishReason = ending == "complete" ? ",\"finishReason\":\"STOP\"" : string.Empty;
+            continuedChunks.Add("{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\", world\"}]}" + finishReason + "}],\"usageMetadata\":{\"promptTokenCount\":20,\"candidatesTokenCount\":2}}");
+        }
+
+        var handler = new SequencedHandler().Sse(Sse(firstChunk));
+        if (ending == "request-error")
+        {
+            handler.Json("{\"error\":{\"code\":400,\"message\":\"Invalid continuation token\"}}", HttpStatusCode.BadRequest);
+        }
+        else
+        {
+            handler.Sse(string.Concat(continuedChunks.Select(Sse)));
+        }
+
+        var options = GoogleUpstream.Hello();
+        options.IncludeRawChunks = true;
+        var parts = await Stream(handler, options);
+
+        Assert.Equal(2, handler.Bodies.Count);
+        Assert.Equal(continuedChunks.Count > 0 ? new[] { "Hello", ", world" } : new[] { "Hello" }, parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta).ToArray());
+        Assert.Equal(ending == "request-error" ? 1 : 0, parts.OfType<ErrorStreamPart>().Count());
+        var raw = parts.OfType<RawStreamPart>().Select(part => JsonNode.Parse(part.RawJson)).ToList();
+        var expectedRaw = new[] { firstChunk }.Concat(continuedChunks).Select(chunk => JsonNode.Parse(chunk)).ToList();
+        Assert.Equal(expectedRaw.Count, raw.Count);
+        for (var index = 0; index < raw.Count; index++)
+        {
+            Assert.True(JsonNode.DeepEquals(expectedRaw[index], raw[index]));
+        }
+
+        var finish = parts.OfType<FinishStreamPart>().First();
+        var (expectedReason, expectedRawReason) = ending switch
+        {
+            "complete" => (FinishReason.Stop, "STOP"),
+            "request-error" => (FinishReason.Length, "CONTINUATION"),
+            _ => (FinishReason.Interrupted, (string?)null),
+        };
+        Assert.Equal(expectedReason, finish.FinishReason);
+        Assert.Equal(expectedRawReason, finish.RawFinishReason);
+        Assert.Equal(continuedChunks.Count > 0 ? 30 : 10, finish.Usage.InputTokens);
+        Assert.Equal(continuedChunks.Count > 0 ? 7 : 5, finish.Usage.OutputTokens);
+        if (ending == "request-error")
+        {
+            Assert.Equal("token-1", finish.ProviderMetadata!.Value.GetProperty("google").GetProperty("continuationToken").GetString());
+        }
     }
 }
