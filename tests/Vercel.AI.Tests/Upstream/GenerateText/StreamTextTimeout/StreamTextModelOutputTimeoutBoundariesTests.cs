@@ -122,7 +122,7 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
         }
         else
         {
-            Assert.DoesNotContain("Chunk", reason.Message);
+            Assert.Equal("The operation was aborted due to timeout", reason.Message);
         }
 
         Assert.IsType<AbortPart>(parts[^1]);
@@ -132,7 +132,7 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
     [InlineData("finish")]
     [InlineData("error")]
     [InlineData("close")]
-    [UpstreamTest(Prefix + "should clear output timers on ${terminal} before slow stream processing", Coverage = UpstreamCoverage.Covered, Note = "The budgets are scaled up for real timers: firstChunkMs 150, chunkMs 150, and callbacks that wait 400 ms.")]
+    [UpstreamTest(Prefix + "should clear output timers on ${terminal} before slow stream processing", Coverage = UpstreamCoverage.Covered, Note = "The budgets are scaled up for real timers: firstChunkMs 300, chunkMs 300, and callbacks that wait 700 ms.")]
     public async Task Should_clear_output_timers_on_terminal_before_slow_stream_processing(string terminal)
     {
         AbortSignal? signal = null;
@@ -155,9 +155,9 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
         {
             Model = model,
             Prompt = "test",
-            Timeout = new TimeoutConfiguration { FirstChunkMs = 150, ChunkMs = 150 },
-            OnError = (_, token) => Task.Delay(400, token),
-            OnStepEnd = (_, token) => Task.Delay(400, token),
+            Timeout = new TimeoutConfiguration { FirstChunkMs = 300, ChunkMs = 300 },
+            OnError = (_, token) => Task.Delay(700, token),
+            OnStepEnd = (_, token) => Task.Delay(700, token),
         });
         try
         {

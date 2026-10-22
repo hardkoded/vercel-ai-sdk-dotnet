@@ -37,7 +37,12 @@ public sealed class Agent
     public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null)
     {
         var prepared = Prepare(CreateOptions(prompt));
-        prepared.Timeout = timeout ?? prepared.Timeout;
+        if (timeout != null)
+        {
+            prepared = prepared.ShallowCopy();
+            prepared.Timeout = timeout;
+        }
+
         return _client.GenerateTextAsync(prepared, cancellationToken);
     }
 
