@@ -1452,16 +1452,24 @@ internal static class Generation
             await NotifyAsync(() => options.OnToolExecutionStart(new ToolExecutionStartEvent(call, stepMessages), cancellationToken), cancellationToken).ConfigureAwait(false);
         }
 
+        // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
+        var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(options.Timeout, call.ToolName);
+        using var toolTimeout = toolTimeoutMs != null ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
+        toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
+        var toolToken = toolTimeout?.Token ?? cancellationToken;
+
         var startMs = now();
         ExecutedTool executed;
         try
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
-            var output = await tool.Execute(arguments.RootElement.Clone(), cancellationToken).ConfigureAwait(false);
+            var output = await tool.Execute(arguments.RootElement.Clone(), toolToken).ConfigureAwait(false);
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
         }
-        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
+            // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
+            var exception = thrown is OperationCanceledException cancelled && toolTimeout != null && cancelled.CancellationToken == toolToken && toolToken.IsCancellationRequested ? new TimeoutError("The operation was aborted due to timeout") : thrown;
             var error = JsonSerializer.Serialize(new { error = exception.Message });
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, error, true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = ErrorMessage.ToErrorString(exception), Error = exception };
         }

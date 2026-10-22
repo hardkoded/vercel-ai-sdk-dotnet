@@ -101,6 +101,7 @@ public sealed class Agent
             ToolCallConcurrency = Options.ToolCallConcurrency,
             RepairToolCall = Options.RepairToolCall,
             RefineToolInput = Options.RefineToolInput,
+            Timeout = Options.Timeout,
         };
     }
 }
@@ -140,6 +141,12 @@ public sealed class AgentOptions
 
     /// <summary>Refines the parsed input of tool calls. See <see cref="GenerateTextOptions.RefineToolInput"/>. <see cref="PrepareCall"/> can replace it.</summary>
     public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
+
+    /// <summary>
+    /// Timeout of each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
+    /// <see cref="PrepareCall"/> can replace it. Maps to <c>timeout</c> of <c>ToolLoopAgentSettings</c>.
+    /// </summary>
+    public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>
     /// Called before each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call with the options the agent would use,
