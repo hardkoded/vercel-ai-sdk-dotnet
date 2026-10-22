@@ -272,7 +272,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             isReasoningModel: reasoning,
             hasConversation: OpenAIJson.String(openai, "conversation") != null,
             toolNameMapping: toolNameMapping,
-            hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true);
+            hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true,
+            hasLocalShellTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell") == true);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -948,7 +949,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool isReasoningModel = false,
         bool hasConversation = false,
         ToolNameMapping? toolNameMapping = null,
-        bool hasApplyPatchTool = false)
+        bool hasApplyPatchTool = false,
+        bool hasLocalShellTool = false)
     {
         var input = new JsonArray();
         var programmaticToolCallIds = new HashSet<string>();
@@ -1057,6 +1059,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             continue;
                         }
 
+                        if (hasLocalShellTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "local_shell")
+                        {
+                            AddLocalShellCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            continue;
+                        }
+
                         if (hasApplyPatchTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "apply_patch")
                         {
                             AddApplyPatchCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
@@ -1161,6 +1169,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     if (IsShellToolName(tool.ToolName, toolNameMapping) && tool.OutputType == "json")
                     {
                         input.Add(ShellCallOutput(tool.ToolCallId, tool.OutputJson));
+                        break;
+                    }
+
+                    if (hasLocalShellTool && toolNameMapping?.ToProviderToolName(tool.ToolName) == "local_shell" && tool.OutputType == "json")
+                    {
+                        input.Add(LocalShellCallOutput(tool.ToolCallId, tool.OutputJson));
                         break;
                     }
 
@@ -1386,6 +1400,95 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         applyPatchCall["status"] = "completed";
         applyPatchCall["operation"] = applyPatchInput["operation"]!.DeepClone();
         input.Add(applyPatchCall);
+    }
+
+    // A stored local_shell call replays as an item reference. Without storage, it is rebuilt as a local_shell_call that the local_shell_call_output matches.
+    private static void AddLocalShellCall(JsonArray input, GeneratedToolCall call, JsonElement? options, bool store, bool hasContinuation, bool hasConversation)
+    {
+        var itemId = OpenAIJson.String(options, "itemId");
+        if (hasConversation && itemId != null)
+        {
+            return;
+        }
+
+        if (store && itemId != null)
+        {
+            // A previous response id already holds the call.
+            if (!hasContinuation)
+            {
+                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = itemId });
+            }
+
+            return;
+        }
+
+        var action = LocalShellAction(call.ArgumentsJson);
+        var wireAction = new JsonObject { ["type"] = "exec", ["command"] = action["command"]!.DeepClone() };
+        foreach (var (key, wireKey) in new[] { ("timeoutMs", "timeout_ms"), ("user", "user"), ("workingDirectory", "working_directory"), ("env", "env") })
+        {
+            if (action[key] is { } value)
+            {
+                wireAction[wireKey] = value.DeepClone();
+            }
+        }
+
+        var localShellCall = new JsonObject { ["type"] = "local_shell_call", ["call_id"] = call.ToolCallId };
+        if (itemId != null)
+        {
+            localShellCall["id"] = itemId;
+        }
+
+        localShellCall["action"] = wireAction;
+        input.Add(localShellCall);
+    }
+
+    // The local_shell input schema: { action: { type: "exec", command: string[], timeoutMs?: number, user?: string, workingDirectory?: string, env?: Record<string, string> } }.
+    private static JsonObject LocalShellAction(string argumentsJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(argumentsJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The local_shell tool call input is not valid JSON.", exception);
+        }
+
+        if ((parsed as JsonObject)?["action"] is not JsonObject action
+            || action["type"] is not JsonValue { } type || type.GetValueKind() != JsonValueKind.String || type.GetValue<string>() != "exec"
+            || action["command"] is not JsonArray command
+            || command.Any(part => !IsKind(part, JsonValueKind.String))
+            || action["timeoutMs"] is { } timeout && !IsKind(timeout, JsonValueKind.Number)
+            || action["user"] is { } user && !IsKind(user, JsonValueKind.String)
+            || action["workingDirectory"] is { } workingDirectory && !IsKind(workingDirectory, JsonValueKind.String)
+            || action["env"] is { } env && (env is not JsonObject envObject || envObject.Any(entry => !IsKind(entry.Value, JsonValueKind.String))))
+        {
+            throw new AiSdkException("The local_shell tool call input needs an exec action with a command array of strings.");
+        }
+
+        return action;
+    }
+
+    // The local_shell output schema: { output: string }.
+    private static JsonObject LocalShellCallOutput(string callId, string outputJson)
+    {
+        JsonNode? parsed;
+        try
+        {
+            parsed = JsonNode.Parse(outputJson);
+        }
+        catch (JsonException exception)
+        {
+            throw new AiSdkException("The local_shell tool result is not valid JSON.", exception);
+        }
+
+        if ((parsed as JsonObject)?["output"] is not { } output || !IsKind(output, JsonValueKind.String))
+        {
+            throw new AiSdkException("The local_shell tool result needs an output string.");
+        }
+
+        return new JsonObject { ["type"] = "local_shell_call_output", ["call_id"] = callId, ["output"] = output.DeepClone() };
     }
 
     // The apply_patch input schema: { callId: string, operation: create_file | update_file { path, diff } | delete_file { path } }.
