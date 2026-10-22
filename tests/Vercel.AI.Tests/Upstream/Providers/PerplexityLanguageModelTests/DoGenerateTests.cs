@@ -28,4 +28,25 @@ public sealed class DoGenerateTests
         Assert.Equal("xhigh", UpstreamChat.Body(capture)["reasoning"]!["effort"]!.GetValue<string>());
         Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Message == "reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\".");
     }
+
+    [Fact]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::passes request and provider headers and exposes response headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Passes_request_and_provider_headers_and_exposes_response_headers()
+    {
+        var capture = new UpstreamCapture { ResponseBody = AgentResponse };
+        capture.ResponseHeaders["test-header"] = "test-value";
+        var options = new OpenAICompatibleOptions { ApiKey = "custom-key" };
+        options.Headers["custom-provider-header"] = "provider-value";
+        var model = PerplexityProvider.Create(options, capture).LanguageModel("fast");
+        var call = UpstreamChat.Prompt();
+        call.Headers = new Dictionary<string, string?> { ["custom-request-header"] = "request-value" };
+
+        var result = await model.DoGenerateAsync(call, CancellationToken.None);
+
+        var headers = capture.Requests[0].Headers;
+        Assert.Equal("Bearer custom-key", headers["Authorization"]);
+        Assert.Equal("provider-value", headers["custom-provider-header"]);
+        Assert.Equal("request-value", headers["custom-request-header"]);
+        Assert.Equal("test-value", result.ResponseHeaders["test-header"]);
+    }
 }

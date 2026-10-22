@@ -47,8 +47,8 @@ public sealed class AmazonBedrockChatLanguageModelDoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Suite + "allows EOF at a complete frame boundary without messageStop", Coverage = UpstreamCoverage.Covered)]
-    public async Task Allows_EOF_at_a_complete_frame_boundary_without_messageStop()
+    [UpstreamTest(Suite + "reports interruption at a complete frame boundary without messageStop", Coverage = UpstreamCoverage.Covered)]
+    public async Task Reports_interruption_at_a_complete_frame_boundary_without_messageStop()
     {
         var handler = Frames(EventStreamFrames.Event("contentBlockDelta", """{"contentBlockIndex":0,"delta":{"text":"complete frame"}}"""));
 
@@ -56,7 +56,7 @@ public sealed class AmazonBedrockChatLanguageModelDoStreamTests
 
         Assert.Contains("text-delta 0 \"complete frame\"", Render(parts));
         var finish = parts.OfType<FinishStreamPart>().Single();
-        Assert.Equal(FinishReason.Other, finish.FinishReason);
+        Assert.Equal(FinishReason.Interrupted, finish.FinishReason);
         Assert.Null(finish.RawFinishReason);
     }
 

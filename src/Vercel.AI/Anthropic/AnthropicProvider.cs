@@ -545,6 +545,11 @@ public class AnthropicLanguageModel : ILanguageModel
                 yield return part;
             }
         }
+
+        foreach (var part in reader.Complete())
+        {
+            yield return part;
+        }
     }
 
     private async Task<Dictionary<string, string?>> CreateHeadersAsync(AnthropicPreparedRequest prepared, LanguageModelCallOptions options, string body, CancellationToken cancellationToken)
