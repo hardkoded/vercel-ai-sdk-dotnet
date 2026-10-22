@@ -27,6 +27,12 @@ internal static class GoogleInteractionsStreamSupport
             .ToList();
     }
 
+    /// <summary>The text of a <c>__fixtures__/*.json</c> file.</summary>
+    public static string JsonFixture(string name)
+    {
+        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-interactions-" + name + ".json"));
+    }
+
     /// <summary>The body of an event stream response that sends each event as one <c>data:</c> line.</summary>
     public static string Sse(IEnumerable<JsonObject> events)
     {

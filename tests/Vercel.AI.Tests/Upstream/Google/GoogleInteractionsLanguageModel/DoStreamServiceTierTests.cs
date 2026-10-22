@@ -10,8 +10,6 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel.doStream</c> &gt; <c>service tier</c>.
-/// <c>sends service_tier in the request body when providerOptions.google.serviceTier is set</c> is not ported:
-/// the port does not send <c>service_tier</c> in the request yet.
 /// </summary>
 public sealed class DoStreamServiceTierTests
 {
@@ -45,6 +43,20 @@ public sealed class DoStreamServiceTierTests
         var finish = Assert.IsType<FinishStreamPart>(parts.Single(part => part is FinishStreamPart));
         var google = finish.ProviderMetadata!.Value.GetProperty("google");
         return google.TryGetProperty("serviceTier", out var tier) && tier.ValueKind == JsonValueKind.String ? tier.GetString() : null;
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "sends service_tier in the request body when providerOptions.google.serviceTier is set", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_service_tier_in_the_request_body_when_providerOptions_google_serviceTier_is_set()
+    {
+        var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
+        var options = Options();
+        options.ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"serviceTier\":\"priority\"}}");
+
+        await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler), options);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.Equal("priority", (string?)body["service_tier"]);
     }
 
     [Fact]

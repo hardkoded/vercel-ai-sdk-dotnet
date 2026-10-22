@@ -422,23 +422,11 @@ internal sealed class GoogleInteractionsStreamTransform
 
     private FinishStreamPart Finish()
     {
-        var google = new JsonObject();
-        if (_interactionId != null)
-        {
-            google["interactionId"] = _interactionId;
-        }
-
-        if (_serviceTier != null)
-        {
-            google["serviceTier"] = _serviceTier;
-        }
-
-        var metadata = JsonSerializer.SerializeToElement(new JsonObject { ["google"] = google });
         return new FinishStreamPart(
             GoogleInteractionsFinish.Map(_finishStatus, _hasFunctionCall),
             GoogleInteractionsModel.Usage(_usage),
             _finishStatus,
-            metadata);
+            GoogleInteractionsModel.ProviderMetadata(_interactionId, _serviceTier, GoogleInteractionsModel.OutputTokensByModality(_usage)));
     }
 
     // The provider metadata of a part: the interaction id and, where the part has one, its signature.
