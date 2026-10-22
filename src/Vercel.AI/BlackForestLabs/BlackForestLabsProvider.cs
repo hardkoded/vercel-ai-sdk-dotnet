@@ -17,7 +17,7 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.bfl.ai/v1";
 
-    /// <summary>Creates a provider. The poll settings apply to every image model it creates.</summary>
+    /// <summary>Creates a provider. The poll settings apply to every image and video model it creates.</summary>
     public BlackForestLabsProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null, int? pollIntervalMillis = null, int? pollTimeoutMillis = null)
         : base(Prepare(options), httpClient)
     {
@@ -29,10 +29,10 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     /// <summary>HTTP client used for submit, poll, and download requests.</summary>
     public HttpClient HttpClient { get; }
 
-    /// <summary>Poll interval in milliseconds between status checks. Null uses 500ms.</summary>
+    /// <summary>Poll interval in milliseconds between status checks. Null uses 500ms for images and 2s for video.</summary>
     public int? PollIntervalMillis { get; }
 
-    /// <summary>Overall timeout in milliseconds for polling before giving up. Null uses 60s.</summary>
+    /// <summary>Overall timeout in milliseconds for polling before giving up. Null uses 60s for images and 10 minutes for video.</summary>
     public int? PollTimeoutMillis { get; }
 
     /// <inheritdoc />
@@ -71,6 +71,15 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId) => new BlackForestLabsImageModel(this, modelId);
+
+    /// <summary>Creates an image model. Same as <see cref="ImageModel"/>.</summary>
+    public IImageModel Image(string modelId) => ImageModel(modelId);
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId) => new BlackForestLabsVideoModel(this, modelId);
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
+    public IVideoModel Video(string modelId) => VideoModel(modelId);
 }
 
 /// <summary>Registers BlackForestLabs.</summary>
