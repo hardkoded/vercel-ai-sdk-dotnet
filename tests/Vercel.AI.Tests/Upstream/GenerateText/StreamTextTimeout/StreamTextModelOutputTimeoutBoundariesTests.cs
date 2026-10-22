@@ -229,15 +229,19 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should keep chunkMs active during provider-executed tools without resetting on their results", Coverage = UpstreamCoverage.Partial, Note = "The tool result has no preliminary flag, because the port's tool-result stream part has none. The budgets are scaled up for real timers: chunkMs 150 and a result after 120 ms.")]
+    [UpstreamTest(Prefix + "should keep chunkMs active during provider-executed tools without resetting on their results", Coverage = UpstreamCoverage.Partial, Note = "The tool result has no preliminary flag, because the port's tool-result stream part has none. The budgets are scaled up for real timers: chunkMs 300 and a result after 240 ms.")]
     public async Task Should_keep_chunkMs_active_during_provider_executed_tools_without_resetting_on_their_results()
     {
+        var clock = Stopwatch.StartNew();
+        var callAt = 0L;
+        var abortedAt = 0L;
         AbortSignal? signal = null;
         var model = new DelegateModel
         {
             Stream = (options, _) =>
             {
                 signal = options.AbortSignal;
+                options.AbortSignal!.AddAbortHandler(() => abortedAt = clock.ElapsedMilliseconds);
                 return Task.FromResult(new LanguageModelStreamResult(ToolThenStall(options.AbortSignal!)));
             },
         };
@@ -247,17 +251,21 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
             Model = model,
             Prompt = "test",
             Tools = new[] { Tool.Function("slow", null, "{\"type\":\"object\",\"properties\":{}}", null) },
-            Timeout = new TimeoutConfiguration { ChunkMs = 150 },
+            Timeout = new TimeoutConfiguration { ChunkMs = 300 },
             OnError = (_, _) => Task.CompletedTask,
         });
         await Consume(result).WaitAsync(SettleTimeout);
 
-        Assert.Equal("Chunk timeout of 150ms exceeded", Assert.IsType<Vercel.AI.Util.TimeoutError>(signal?.Reason).Message);
+        Assert.Equal("Chunk timeout of 300ms exceeded", Assert.IsType<Vercel.AI.Util.TimeoutError>(signal?.Reason).Message);
 
-        static async IAsyncEnumerable<LanguageModelStreamPart> ToolThenStall(AbortSignal signal)
+        // The timeout ran from the tool call. A reset by the result after 240 ms would put the abort at least 540 ms after the call.
+        Assert.True(abortedAt - callAt < 450, "The chunk timeout fired " + (abortedAt - callAt) + " ms after the tool call.");
+
+        async IAsyncEnumerable<LanguageModelStreamPart> ToolThenStall(AbortSignal signal)
         {
+            callAt = clock.ElapsedMilliseconds;
             yield return new ToolCallStreamPart("call-1", "slow", "{}") { ProviderExecuted = true };
-            await Task.Delay(120);
+            await Task.Delay(240);
             yield return new ToolResultStreamPart("call-1", "slow", JsonDocument.Parse("\"progress\"").RootElement);
             var aborted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             signal.AddAbortHandler(() => aborted.TrySetResult());
