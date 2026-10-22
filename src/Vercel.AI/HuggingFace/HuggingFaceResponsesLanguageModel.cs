@@ -639,7 +639,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
 
     private sealed class StreamState
     {
-        private FinishReason _finish = FinishReason.Other;
+        private FinishReason _finish = FinishReason.Interrupted;
         private string? _rawFinish;
         private string? _responseId;
         private JsonElement? _usage;
