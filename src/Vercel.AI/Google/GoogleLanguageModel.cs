@@ -227,6 +227,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             // The continuation had started, so it did not just end early.
                             finish = FinishReason.Error;
                         }
+                        else
+                        {
+                            groundingPerRequest.Add(requestGrounding);
+                            requestGrounding = null;
+                        }
 
                         failure = error;
                         break;
