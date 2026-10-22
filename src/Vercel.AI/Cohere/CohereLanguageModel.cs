@@ -384,7 +384,7 @@ public sealed class CohereLanguageModel : ILanguageModel
             _includeRawChunks = includeRawChunks;
         }
 
-        public FinishReason FinishReason { get; private set; } = FinishReason.Other;
+        public FinishReason FinishReason { get; private set; } = FinishReason.Interrupted;
 
         public string? RawFinishReason { get; private set; }
 

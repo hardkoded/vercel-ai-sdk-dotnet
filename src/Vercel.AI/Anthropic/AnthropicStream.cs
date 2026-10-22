@@ -22,6 +22,8 @@ public sealed class AnthropicStream
     private string? _finish;
     private JsonElement? _usage;
     private bool _jsonTool;
+    private bool _finished;
+    private bool _failed;
 
     /// <summary>Creates a stream reader.</summary>
     public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
@@ -56,6 +58,7 @@ public sealed class AnthropicStream
 
         if (invalidJson)
         {
+            _failed = true;
             yield return new ErrorStreamPart("The stream event was not valid JSON.");
             yield break;
         }
@@ -77,6 +80,7 @@ public sealed class AnthropicStream
             var errorType = Text(error?["type"]);
             var message = Text(error?["message"]) ?? "Unknown provider error.";
             var status = AnthropicStreamError.StatusCode(errorType);
+            _failed = true;
             yield return new ErrorStreamPart(status == null ? message : message + " (" + status.Value.ToString(CultureInfo.InvariantCulture) + ")");
             yield break;
         }
@@ -124,6 +128,7 @@ public sealed class AnthropicStream
         else if (type == "message_stop")
         {
             _open = false;
+            _finished = true;
             yield return Finish();
         }
     }
@@ -135,6 +140,7 @@ public sealed class AnthropicStream
         if (_open && id != _activeId)
         {
             _invalid = true;
+            _failed = true;
             yield return new ErrorStreamPart("Received a new message_start event while a message was still open.");
             yield break;
         }
@@ -145,6 +151,8 @@ public sealed class AnthropicStream
         }
 
         _open = true;
+        _finished = false;
+        _finish = null;
         _activeId = id;
         var usage = message?["usage"];
         if (usage != null)
@@ -311,19 +319,45 @@ public sealed class AnthropicStream
             _finish = stop;
         }
 
-        var usage = node["usage"];
-        if (usage != null)
+        if (node["usage"] is JsonObject usage)
         {
-            _usage = ParseElement(usage.ToJsonString());
+            // The delta only reports what changed; keep the counts from message_start.
+            var merged = _usage is { ValueKind: JsonValueKind.Object } current
+                ? (JsonNode.Parse(current.GetRawText()) as JsonObject ?? new JsonObject())
+                : new JsonObject();
+            foreach (var pair in usage)
+            {
+                if (pair.Value != null)
+                {
+                    merged[pair.Key] = pair.Value.DeepClone();
+                }
+            }
+
+            _usage = ParseElement(merged.ToJsonString());
         }
     }
 
-    private FinishStreamPart Finish()
+    /// <summary>
+    /// Ends the stream. Returns an interrupted finish part when the events ended cleanly without a
+    /// <c>message_stop</c> for the last message. Errors keep their own error path and get no finish part.
+    /// </summary>
+    public IEnumerable<LanguageModelStreamPart> Complete()
+    {
+        if (!_finished && !_failed)
+        {
+            _finished = true;
+            yield return Finish(true);
+        }
+    }
+
+    private FinishStreamPart Finish(bool interrupted = false)
     {
         var usage = _usage is { } element && element.ValueKind == JsonValueKind.Object
             ? AnthropicUsage.Convert(element)
             : LanguageModelUsage.Empty;
-        return new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish);
+        return interrupted
+            ? new FinishStreamPart(FinishReason.Interrupted, usage)
+            : new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish);
     }
 
     private static JsonElement ParseElement(string json)
