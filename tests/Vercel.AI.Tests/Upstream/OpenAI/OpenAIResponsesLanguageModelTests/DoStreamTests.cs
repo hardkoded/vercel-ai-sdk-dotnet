@@ -12,6 +12,66 @@ namespace Vercel.AI.Tests.OpenAIResponsesLanguageModelTests;
 /// <summary>Port of <c>openai-responses-language-model.test.ts</c> &gt; <c>OpenAIResponsesLanguageModel &gt; doStream</c>.</summary>
 public sealed class DoStreamTests
 {
+    [Theory]
+    [InlineData(null, null, FinishReason.Interrupted)]
+    [InlineData("response.completed", null, FinishReason.Stop)]
+    [InlineData("response.incomplete", "max_output_tokens", FinishReason.Length)]
+    [InlineData("response.incomplete", "unknown_reason", FinishReason.Other)]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::maps a stream ending with %s (%s) to %s",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Maps_a_stream_ending_with_to(string? type, string? reason, FinishReason unified)
+    {
+        var events = new List<JsonNode>
+        {
+            new JsonObject
+            {
+                ["type"] = "response.created",
+                ["response"] = new JsonObject { ["id"] = "r1", ["created_at"] = 1, ["model"] = "gpt-4o", ["status"] = "in_progress" },
+            },
+            new JsonObject
+            {
+                ["type"] = "response.output_item.added",
+                ["output_index"] = 0,
+                ["item"] = new JsonObject
+                {
+                    ["type"] = "message",
+                    ["id"] = "msg1",
+                    ["role"] = "assistant",
+                    ["status"] = "in_progress",
+                    ["content"] = new JsonArray(),
+                },
+            },
+            new JsonObject
+            {
+                ["type"] = "response.output_text.delta",
+                ["item_id"] = "msg1",
+                ["output_index"] = 0,
+                ["content_index"] = 0,
+                ["delta"] = "Partial answer",
+            },
+        };
+        if (type != null)
+        {
+            events.Add(new JsonObject
+            {
+                ["type"] = type,
+                ["response"] = new JsonObject
+                {
+                    ["incomplete_details"] = reason == null ? null : new JsonObject { ["reason"] = reason },
+                },
+            });
+        }
+
+        var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(events));
+
+        Assert.Contains(parts, part => part is TextDeltaStreamPart { Delta: "Partial answer" });
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(unified, finish.FinishReason);
+        Assert.Equal(reason, finish.RawFinishReason);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::preserves repeated citation ranges and versioned fragment URLs with Unicode text in generation and streaming",

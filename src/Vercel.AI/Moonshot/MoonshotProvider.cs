@@ -71,6 +71,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
+        options.InterruptedWithoutFinish = true;
         options.RequireApiKey = true;
         if (string.IsNullOrEmpty(options.UserAgent))
         {

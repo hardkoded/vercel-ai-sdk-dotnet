@@ -12,6 +12,67 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; doStream</c>.</summary>
 public sealed class DoStreamTests
 {
+    // Stands for a message_delta event that is not sent at all.
+    private const string Undefined = "<undefined>";
+
+    [Fact]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::reports interruption for a later message even when an earlier message completed",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Reports_interruption_for_a_later_message_even_when_an_earlier_message_completed()
+    {
+        static string MessageStart(string id) =>
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"" + id + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n";
+
+        var parts = await StreamAsync(
+            MessageStart("msg1") +
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n" +
+            "data: {\"type\":\"message_stop\"}\n\n" +
+            MessageStart("msg2") +
+            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n");
+
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finishes = parts.OfType<FinishStreamPart>().ToList();
+        Assert.Equal(2, finishes.Count);
+        Assert.Equal(FinishReason.Stop, finishes[0].FinishReason);
+        Assert.Equal("end_turn", finishes[0].RawFinishReason);
+        Assert.Equal(FinishReason.Interrupted, finishes[1].FinishReason);
+        Assert.Null(finishes[1].RawFinishReason);
+    }
+
+    [Theory]
+    [InlineData(Undefined, false, "Interrupted")]
+    [InlineData(null, false, "Interrupted")]
+    [InlineData("end_turn", false, "Interrupted")]
+    [InlineData("end_turn", true, "Stop")]
+    [InlineData(Undefined, true, "Other")]
+    [InlineData("unknown_reason", true, "Other")]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::maps stop_reason %j and message_stop %s to %s",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The finish part carries no providerMetadata in this port, so the anthropic.usage.input_tokens assertion is not ported.")]
+    public async Task Maps_stop_reason_and_message_stop_to_a_finish_reason(string? stopReason, bool messageStop, string unified)
+    {
+        var sse =
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
+            "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+            "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Partial answer\"}}\n\n" +
+            (stopReason == Undefined
+                ? string.Empty
+                : "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":" + (stopReason == null ? "null" : "\"" + stopReason + "\"") + ",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\n\n") +
+            (messageStop ? "data: {\"type\":\"message_stop\"}\n\n" : string.Empty);
+
+        var parts = await StreamAsync(sse);
+
+        Assert.Contains(parts, part => part is TextDeltaStreamPart delta && delta.Delta == "Partial answer");
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(unified, finish.FinishReason.ToString());
+        Assert.Equal(messageStop && stopReason != Undefined ? stopReason : null, finish.RawFinishReason);
+        Assert.Equal(10, finish.Usage.InputTokens);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::should stream compaction content blocks with provider metadata",

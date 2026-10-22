@@ -59,6 +59,7 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
+        options.InterruptedWithoutFinish = true;
         options.RequireApiKey = true;
         if (string.IsNullOrEmpty(options.UserAgent))
         {

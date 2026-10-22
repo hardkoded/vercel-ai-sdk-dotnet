@@ -17,6 +17,35 @@ public sealed class DoStreamTests
     private const string ToolSchema = """{"type":"object","properties":{"value":{"type":"string"}},"required":["value"],"additionalProperties":false,"$schema":"http://json-schema.org/draft-07/schema#"}""";
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Suite + "handles a truncated stream (with error: %s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Handles_a_truncated_stream(bool withError)
+    {
+        var events = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "amazon-bedrock-text.chunks.txt"))
+            .Where(line => line.Length > 0)
+            .ToList();
+        var firstText = events.FindIndex(line => JsonDocument.Parse(line).RootElement.TryGetProperty("contentBlockDelta", out var delta)
+            && delta.TryGetProperty("delta", out var inner)
+            && inner.TryGetProperty("text", out var text)
+            && text.ValueKind != JsonValueKind.Null);
+        Assert.True(firstText >= 0);
+        var lines = events.Take(firstText + 1).ToList();
+        if (withError)
+        {
+            lines.Add("""{"modelStreamErrorException":{"message":"Stream failed"}}""");
+        }
+
+        var parts = await Stream(Chunks(lines.ToArray()));
+
+        Assert.Contains(parts, part => part is TextDeltaStreamPart);
+        Assert.Equal(withError ? 1 : 0, parts.Count(part => part is ErrorStreamPart));
+        var finish = Assert.IsType<FinishStreamPart>(Assert.Single(parts, part => part is FinishStreamPart));
+        Assert.Equal(withError ? FinishReason.Error : FinishReason.Interrupted, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
+    [Theory]
     [InlineData("amazonBedrock")]
     [InlineData("bedrock")]
     [UpstreamTest(Suite + "should ignore portable max without warnings in streams with explicit %s reasoning effort", Coverage = UpstreamCoverage.Covered)]

@@ -363,7 +363,7 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
     {
         private readonly JsonObject _metadata = new JsonObject();
         private bool _started;
-        private FinishReason _finish = FinishReason.Other;
+        private FinishReason _finish = FinishReason.Interrupted; // A clean end without the provider's completion signal is interrupted.
         private string? _rawFinish;
         private LanguageModelUsage? _usage;
 

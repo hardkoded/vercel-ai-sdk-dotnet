@@ -91,6 +91,7 @@ public static class GenAiConventions
             FinishReason.ContentFilter => "content-filter",
             FinishReason.ToolCalls => "tool-calls",
             FinishReason.Error => "error",
+            FinishReason.Interrupted => "interrupted",
             _ => "other",
         };
     }

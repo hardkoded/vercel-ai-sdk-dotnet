@@ -68,6 +68,7 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
+        options.InterruptedWithoutFinish = true;
         if (options.AdditionalApiKeyEnvironmentVariables == null || options.AdditionalApiKeyEnvironmentVariables.Length == 0)
         {
             options.AdditionalApiKeyEnvironmentVariables = new[] { "DASHSCOPE_API_KEY" };

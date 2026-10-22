@@ -29,6 +29,10 @@ internal sealed class OpenAIResponsesStream
     private bool _hasFileSearchResults;
     private string? _incompleteReason;
     private bool _hasFunctionCall;
+    private bool _finished;
+    private bool _streamError;
+    private FinishReason? _failedFinish;
+    private string? _failedRaw;
     private LanguageModelUsage _usage = LanguageModelUsage.Empty;
     private string? _responseId;
     private readonly IReadOnlyCollection<string> _functionToolNames;
@@ -285,6 +289,7 @@ internal sealed class OpenAIResponsesStream
                 break;
             case "response.completed":
             case "response.incomplete":
+                _finished = true;
                 if (node["response"] is JsonObject response)
                 {
                     _responseId = response["id"]?.GetValue<string>() ?? _responseId;
@@ -304,12 +309,42 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case "response.failed":
+                if (node["response"] is JsonObject failed)
+                {
+                    var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
+                    _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall) : FinishReason.Error;
+                    _failedRaw = failedReason ?? "error";
+                    if (failed["error"] is JsonNode failedError && !_streamError)
+                    {
+                        _streamError = true;
+                        parts.Add(new ErrorStreamPart(failedError["message"]?.GetValue<string>() ?? failedError.ToJsonString()));
+                    }
+
+                    if (failed["usage"] != null)
+                    {
+                        _usage = OpenAIJson.ResponsesUsage(JsonSerializer.Deserialize<JsonElement>(failed["usage"]!.ToJsonString()));
+                    }
+                }
+
+                break;
             case "error":
+                _streamError = true;
+                _failedFinish = FinishReason.Error;
+                _failedRaw = "error";
                 parts.Add(new ErrorStreamPart(node["message"]?.GetValue<string>() ?? node.ToJsonString()));
                 break;
         }
 
         return parts;
+    }
+
+    /// <summary>Records an unparsable chunk: the stream finishes with the error reason.</summary>
+    public void MarkParseError()
+    {
+        _streamError = true;
+        _failedFinish = FinishReason.Error;
+        _failedRaw = null;
     }
 
     /// <summary>Ends the stream: sources that only citations supplied, then the finish part.</summary>
@@ -372,10 +407,17 @@ internal sealed class OpenAIResponsesStream
         }
 
         _fallbackAnnotations.Clear();
+        // A clean end without the provider's completion signal is interrupted.
+        var failedFinish = _failedFinish != null && (_streamError || !_finished);
+        var finish = failedFinish
+            ? _failedFinish!.Value
+            : _finished
+                ? OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall)
+                : FinishReason.Interrupted;
         parts.Add(new FinishStreamPart(
-            OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall),
+            finish,
             _usage,
-            _incompleteReason,
+            failedFinish ? _failedRaw : _incompleteReason,
             OpenAIJson.ProviderMetadata(new JsonObject { ["responseId"] = _responseId })));
         return parts;
     }

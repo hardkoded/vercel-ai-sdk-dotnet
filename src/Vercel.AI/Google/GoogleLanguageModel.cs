@@ -174,7 +174,8 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var textId = (string?)null;
         var reasoningId = (string?)null;
         var block = 0;
-        FinishReason finish = FinishReason.Other;
+        // A clean end without the provider's completion signal is interrupted.
+        FinishReason finish = FinishReason.Interrupted;
         string? rawFinish = null;
         JsonElement? usageRaw = null;
         // Usage of the completed requests of an automatically continued response.
@@ -187,6 +188,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
         var clientTool = false;
         string? confirmedBlock = null;
         var seenSources = new HashSet<string>(StringComparer.Ordinal);
+        // Grounding metadata of each request of an automatically continued response (null when a request had none).
+        var groundingPerRequest = new List<JsonElement?>();
+        JsonElement? requestGrounding = null;
         var callContext = StreamContext(prepared);
         var activeCalls = new List<StreamingCall>();
 
@@ -206,6 +210,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
             // The first request is already open. A continuation sends a new request.
             var enumerator = (hop == 0 ? firstEvents : _provider.Http.SendSseAsync(Url(":streamGenerateContent?alt=sse"), GoogleJson.Write(requestBody), headers, cancellationToken))
                 .GetAsyncEnumerator(cancellationToken);
+            var awaitingFirstEvent = hop > 0;
             try
             {
                 while (true)
@@ -217,8 +222,29 @@ public sealed class GoogleLanguageModel : ILanguageModel
                     }
                     catch (Exception error) when (hop > 0 && error is not OperationCanceledException)
                     {
+                        if (!awaitingFirstEvent)
+                        {
+                            // The continuation had started, so it did not just end early.
+                            finish = FinishReason.Error;
+                        }
+                        else
+                        {
+                            groundingPerRequest.Add(requestGrounding);
+                            requestGrounding = null;
+                        }
+
                         failure = error;
                         break;
+                    }
+
+                    if (awaitingFirstEvent)
+                    {
+                        // The continuation request succeeded (even if its stream is empty). Reset the per-response state in stream order.
+                        awaitingFirstEvent = false;
+                        finish = FinishReason.Interrupted;
+                        rawFinish = null;
+                        groundingPerRequest.Add(requestGrounding);
+                        requestGrounding = null;
                     }
 
                     if (!moved)
@@ -245,6 +271,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                     if (invalidJson || document == null)
                     {
+                        if (finish == FinishReason.Interrupted)
+                        {
+                            finish = FinishReason.Error;
+                        }
+
                         yield return new ErrorStreamPart("The Gemini stream chunk was not valid JSON.");
                         continue;
                     }
@@ -318,6 +349,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
                         if (candidates[0].TryGetProperty("groundingMetadata", out var grounding))
                         {
+                            if (grounding.ValueKind == JsonValueKind.Object)
+                            {
+                                requestGrounding = grounding.Clone();
+                            }
+
                             foreach (var source in GoogleResponse.Sources(grounding, StreamContext(prepared)))
                             {
                                 if (seenSources.Add(source.Url))
@@ -431,7 +467,12 @@ public sealed class GoogleLanguageModel : ILanguageModel
         // Only surface the token when the response stopped early (budget used up, or continuing failed), not for the
         // checkpoint tokens of a stream that finished normally.
         var exposeToken = lastToken != null && (rawFinish == "MAX_TOKENS" || rawFinish == "CONTINUATION");
-        metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null);
+        if (groundingPerRequest.Count > 0)
+        {
+            groundingPerRequest.Add(requestGrounding);
+        }
+
+        metadata = GoogleResponse.WithLongDecode(metadata, exposeToken ? lastToken : null, initialPromptTokenCount, continuedUsage != null ? totalUsage : null, groundingPerRequest.Count > 0 ? groundingPerRequest : null);
         yield return new FinishStreamPart(finish, usage, rawFinish, metadata);
     }
 
