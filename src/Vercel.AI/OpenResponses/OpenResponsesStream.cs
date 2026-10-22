@@ -134,7 +134,8 @@ internal sealed class OpenResponsesStream
     private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(StringComparer.Ordinal);
     private string? _activeReasoningId;
     private bool _hasToolCalls;
-    private FinishReason _finishReason = FinishReason.Other;
+    // A clean end without the provider's completion signal is interrupted.
+    private FinishReason _finishReason = FinishReason.Interrupted;
     private string? _rawFinishReason;
     private LanguageModelUsage _usage = LanguageModelUsage.Null;
 
@@ -163,6 +164,7 @@ internal sealed class OpenResponsesStream
         }
         catch (JsonException)
         {
+            _finishReason = FinishReason.Error;
             parts.Add(new ErrorStreamPart("JSON parsing failed: Text: " + data + "."));
             return parts;
         }
@@ -338,6 +340,7 @@ internal sealed class OpenResponsesStream
         }
         catch (Exception exception)
         {
+            _finishReason = FinishReason.Error;
             parts.Add(new ErrorStreamPart(exception.Message));
             return;
         }
@@ -363,6 +366,7 @@ internal sealed class OpenResponsesStream
         }
         catch (Exception exception)
         {
+            _finishReason = FinishReason.Error;
             parts.Add(new ErrorStreamPart(exception.Message));
             return;
         }

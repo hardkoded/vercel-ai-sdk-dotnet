@@ -626,6 +626,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
             if (invalidJson)
             {
+                state.MarkParseError();
                 yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
                 continue;
             }
