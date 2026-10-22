@@ -145,7 +145,7 @@ internal static class BlackForestLabsImageModelFixture
             }
         }
 
-        var provider = BlackForestLabsProvider.Create(options, server, pollIntervalMillis, pollTimeoutMillis);
+        var provider = Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(options, server, pollIntervalMillis, pollTimeoutMillis);
         return new Model(provider, modelId, currentDate);
     }
 
