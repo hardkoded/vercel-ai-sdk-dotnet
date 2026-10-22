@@ -6,8 +6,8 @@ using System.Collections.Concurrent;
 using Vercel.AI.Gateway;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
-using Vercel.AI.Testing;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Testing;
 using static Vercel.AI.Tests.Upstream.GenerateText.ToolCallConcurrency.ToolCallConcurrencySupport;
 
 namespace Vercel.AI.Tests.Upstream.GenerateText;
