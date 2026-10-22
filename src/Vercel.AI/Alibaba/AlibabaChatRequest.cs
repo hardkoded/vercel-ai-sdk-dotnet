@@ -142,7 +142,12 @@ internal static class AlibabaChatRequest
         }
 
         var prompt = useJsonObject ? InjectJsonInstruction(options.Prompt, hasSchema ? options.JsonSchema : null) : options.Prompt;
-        body["messages"] = AlibabaChatMessages.Convert(prompt, preserveThinking ?? false);
+        var cacheControlValidator = new AlibabaCacheControlValidator();
+        body["messages"] = AlibabaChatMessages.Convert(prompt, preserveThinking ?? false, cacheControlValidator);
+        foreach (var warning in cacheControlValidator.Warnings)
+        {
+            warnings.Add(warning);
+        }
 
         var thinking = ResolveThinking(options.Reasoning, alibaba, warnings);
         foreach (var pair in thinking)
