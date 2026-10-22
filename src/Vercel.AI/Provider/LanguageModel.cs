@@ -27,6 +27,9 @@ public enum FinishReason
     /// <summary>The call failed.</summary>
     Error,
 
+    /// <summary>The provider stream ended without a completion signal. Output may be incomplete.</summary>
+    Interrupted,
+
     /// <summary>A provider-specific reason.</summary>
     Other,
 }

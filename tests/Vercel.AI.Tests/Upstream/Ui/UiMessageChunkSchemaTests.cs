@@ -12,6 +12,19 @@ public sealed class UiMessageChunkSchemaTests
 {
     [Fact]
     [UpstreamTest(
+        "packages/ai/src/ui-message-stream/ui-message-chunks.test.ts::uiMessageChunkSchema::accepts interrupted finish chunks over SSE",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Accepts_interrupted_finish_chunks_over_SSE()
+    {
+        var sse = "data: {\"type\":\"finish\",\"finishReason\":\"interrupted\"}\n\n";
+        var chunk = Assert.Single(UIMessageChunks.ParseSse(sse));
+
+        Assert.Equal("finish", chunk["type"]!.GetValue<string>());
+        Assert.Equal("interrupted", chunk["finishReason"]!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/ai/src/ui-message-stream/ui-message-chunks.test.ts::uiMessageChunkSchema::returns UI message chunks",
         Coverage = UpstreamCoverage.Covered)]
     public void Returns_ui_message_chunks()
