@@ -8,6 +8,9 @@ PR body. Each upstream test is reported as one of:
 
   COVERED        a .NET test links it with Coverage = Covered
   PARTIAL        a .NET test links it with Coverage = Partial
+  (renamed)      after COVERED or PARTIAL: the id is not in the catalog any more
+                 (upstream renamed a describe or moved the file later), and the
+                 current id of the same test title carries the link
   ACKNOWLEDGED   the PR body lists it under a "Not ported" heading
   AMBIGUOUS      only a link from the PR diff matches, and its prefix cannot be
                  resolved, so its title fits several tests. Define the prefix
@@ -37,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -223,6 +227,35 @@ def find_link(test_id: str, links: list[dict[str, str]], ids: list[str]) -> tupl
     return None, ambiguous
 
 
+def load_catalog() -> dict[str, dict[str, object]]:
+    """The catalog rows by id."""
+    lines = (BUILD.parent / "tests" / "parity" / "upstream-unit-tests.jsonl").read_text(encoding="utf-8").splitlines()
+    rows = (json.loads(line) for line in lines if line.strip())
+    return {str(row["id"]): row for row in rows}
+
+
+def find_renamed(test: dict[str, object], catalog: dict[str, dict[str, object]], links: list[dict[str, str]]) -> tuple[str, dict[str, str]] | None:
+    """The current id and link of a test whose id is stale. An id that the
+    catalog does not hold was renamed or moved after the commit. The test is
+    then the one current test with the same title in the same file or, when the
+    file moved, in a file of the same name, narrowed by describe chain when
+    several share the title. The match must be unique and linked."""
+    if test["id"] in catalog:
+        return None
+    path = str(test["file"])
+    same_title = [row for row in catalog.values() if row["title"] == test["title"]]
+    for fits in (lambda row: row["file"] == path, lambda row: Path(str(row["file"])).name == Path(path).name):
+        tier = [row for row in same_title if fits(row)]
+        if tier:
+            if len(tier) > 1:
+                tier = [row for row in tier if row["suite"] == test["suite"]]
+            if len(tier) != 1:
+                return None
+            link, _ = find_link(str(tier[0]["id"]), links, list(catalog))
+            return (str(tier[0]["id"]), link) if link else None
+    return None
+
+
 def normalize(name: str) -> str:
     return " ".join(name.replace("`", "").lower().split())
 
@@ -313,6 +346,19 @@ def self_test() -> None:
     assert acknowledged({"title": "should map A > B", "suite": ""}, entries)
     assert acknowledged({"title": "parses a::b", "suite": "Root"}, entries)
     assert not acknowledged({"title": "other", "suite": "Root"}, entries)
+    row = lambda file, suite, title: {"id": f"{file}::{suite}::{title}", "file": file, "suite": suite, "title": title}
+    catalog = {r["id"]: r for r in (
+        row("a/x.test.ts", "S > two", "t"), row("a/x.test.ts", "S > one", "t"), row("b/y.test.ts", "S", "u"),
+        row("c/y.test.ts", "S", "u"), row("a/x.test.ts", "S", "v"),
+    )}
+    links = [{"upstreamId": cid, "coverage": "Partial"} for cid in catalog if "y.test" not in cid]
+    assert find_renamed(row("a/x.test.ts", "S > old", "t"), catalog, links) is None  # two titles share the file and no suite matches
+    assert find_renamed(row("a/x.test.ts", "S > one", "t"), catalog, links) is None  # id is current
+    assert find_renamed(row("a/x.test.ts", "S > old", "v"), catalog, links)[0] == "a/x.test.ts::S::v"
+    assert find_renamed(row("old/x.test.ts", "S", "v"), catalog, links)[0] == "a/x.test.ts::S::v"  # moved file
+    assert find_renamed(row("old/y.test.ts", "S", "u"), catalog, links) is None  # two files of that name
+    assert find_renamed(row("a/x.test.ts", "S", "gone"), catalog, links) is None  # no test with the title
+    assert find_renamed(row("a/x.test.ts", "S > old", "v"), catalog, []) is None  # not linked
     print("self-test passed")
 
 
@@ -353,6 +399,7 @@ def main() -> None:
     else:
         links = tree_links()
 
+    catalog = load_catalog()
     rows = []
     skipped = []
     found = commit_tests(repo, args.sha)
@@ -363,23 +410,29 @@ def main() -> None:
             skipped.append((test, scope))
             continue
         link, ambiguous = find_link(str(test["id"]), links, ids)
+        renamed = None
+        if not link and not ambiguous and not (ack and acknowledged(test, ack)):
+            match = find_renamed(test, catalog, links)
+            if match:
+                renamed, link = match
         if link:
             status = "COVERED" if link["coverage"] == "Covered" else "PARTIAL"
         elif ack and acknowledged(test, ack):
             status = "ACKNOWLEDGED"
         else:
             status = "AMBIGUOUS" if ambiguous else "MISSING"
-        rows.append((status, test))
+        rows.append((status, test, renamed))
 
     print(f"Upstream commit {args.sha}: {len(rows)} in-scope tests added or changed, {len(skipped)} out of scope.\n")
-    for status, test in rows:
-        print(f"{status:<13} {test['how']:<8} {test['id']}")
+    for status, test, renamed in rows:
+        label = f"{status} (renamed)" if renamed else status
+        print(f"{label:<17} {test['how']:<8} {test['id']}" + (f"\n{'':<26}now {renamed}" if renamed else ""))
     if skipped:
         print("\nOut of scope:")
         for test, scope in skipped:
             print(f"  ({scope}) {test['id']}")
     names = ("COVERED", "PARTIAL", "ACKNOWLEDGED", "AMBIGUOUS", "MISSING")
-    counts = {name: sum(1 for status, _ in rows if status == name) for name in names}
+    counts = {name: sum(1 for status, _, _ in rows if status == name) for name in names}
     print("\n" + ", ".join(f"{count} {name}" for name, count in counts.items()))
     sys.exit(1 if counts["MISSING"] or counts["AMBIGUOUS"] else 0)
 
