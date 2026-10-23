@@ -396,7 +396,7 @@ public class OpenAICompatibleProvider : ProviderBase
     /// Azure URL for <paramref name="path"/>: <c>/openai/deployments/{modelId}{path}</c> when
     /// <see cref="OpenAICompatibleOptions.AzureUseDeploymentBasedUrls"/> is set, otherwise <c>/openai/v1{path}</c>.
     /// </summary>
-    public Uri AzureUri(string path, string modelId)
+    internal Uri AzureUri(string path, string modelId)
     {
         var route = Options.AzureUseDeploymentBasedUrls ? "deployments/" + Uri.EscapeDataString(modelId) : "v1";
         return WithQuery(ApiKeys.Combine(Options.BaseUrl, "openai/" + route + "/" + path + "?api-version=" + Options.AzureApiVersion));
