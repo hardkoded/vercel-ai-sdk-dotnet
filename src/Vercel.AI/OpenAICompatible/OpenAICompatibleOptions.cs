@@ -96,6 +96,12 @@ public class OpenAICompatibleOptions
     /// </summary>
     internal bool UsesJsonResponseToolWithTools { get; set; }
 
+    /// <summary>
+    /// When true, the shared request leaves out <c>tools</c> and <c>tool_choice</c>. <see cref="TransformChatRequest"/> adds them,
+    /// so a tool the shared mapping cannot serialize (a provider-defined tool) does not fail the call.
+    /// </summary>
+    internal bool PreparesOwnTools { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 
@@ -116,6 +122,9 @@ public class OpenAICompatibleOptions
 
     /// <summary>Streams <c>tool-input-start</c>, <c>tool-input-delta</c> and <c>tool-input-end</c> parts for every tool call, not only for the JSON response tool.</summary>
     internal bool StreamToolInput { get; set; }
+
+    /// <summary>Reports <see cref="FinishReason.Interrupted"/> without an error part when a stream ends cleanly without a finish reason. Upstream openai-compatible keeps its own behavior; providers built on it opt in.</summary>
+    internal bool InterruptedWithoutFinish { get; set; }
 
     /// <summary>Id of the streamed text block. Upstream openai-compatible uses <c>txt-0</c>.</summary>
     internal string TextBlockId { get; set; } = "txt-0";

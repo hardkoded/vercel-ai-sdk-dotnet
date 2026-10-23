@@ -49,7 +49,7 @@ public sealed class DoGenerateStatelessMultiTurnTests
         Assert.Empty(result.Warnings);
         // The API omits `id` when `store: false`, so no interactionId is surfaced.
         Assert.Null(result.ResponseId);
-        Assert.Null(result.ProviderMetadata);
+        Assert.False(result.ProviderMetadata!.Value.GetProperty("google").TryGetProperty("interactionId", out _));
 
         var text = Text(result);
         Assert.Contains("Madrid", text);

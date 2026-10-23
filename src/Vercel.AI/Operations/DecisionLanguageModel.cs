@@ -387,6 +387,7 @@ public sealed class DecisionLanguageModel : IEvaluationDecisionCaller
             FinishReason.ContentFilter => "content-filter",
             FinishReason.ToolCalls => "tool-calls",
             FinishReason.Error => "error",
+            FinishReason.Interrupted => "interrupted",
             FinishReason.Stop => "stop",
             _ => "other",
         };

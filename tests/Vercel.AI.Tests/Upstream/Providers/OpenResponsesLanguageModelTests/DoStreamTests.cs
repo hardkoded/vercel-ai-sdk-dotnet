@@ -16,6 +16,80 @@ public sealed class DoStreamTests
 {
     private const string Prefix = "packages/open-responses/src/responses/open-responses-language-model.test.ts::OpenResponsesLanguageModel > doStream::";
 
+    [Theory]
+    [InlineData("throw")]
+    [UpstreamTest(
+        Prefix + "preserves extension item decoding errors when the stream ends (%s)",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Only the throw case: DecodeItem is synchronous, so there is no rejected-promise case. ErrorStreamPart carries the error message, not the Error instance.")]
+    public async Task Preserves_extension_item_decoding_errors_when_the_stream_ends(string failure)
+    {
+        Assert.Equal("throw", failure);
+        var error = new InvalidOperationException("Extension item decoding failed");
+        var extension = CreateDocumentSearchExtension(providerExecuted: true);
+        extension.DecodeItem = _ => throw error;
+        var capture = new UpstreamCapture();
+        PrepareStreamChunks(
+            capture,
+            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":0,\"output_index\":0,\"item\":{\"id\":\"search-1\",\"type\":\"acme:document_search_receipt\",\"status\":\"completed\",\"call_id\":\"call-1\",\"name\":\"documentSearch\"}}"));
+
+        var parts = await Collect(CreateModel(capture, "test-model", extension), TestPrompt());
+
+        Assert.Equal(error.Message, Assert.Single(parts.OfType<ErrorStreamPart>()).Message);
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(FinishReason.Error, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "preserves extension errors when the stream ends",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "ErrorStreamPart carries the error message, not the Error instance.")]
+    public async Task Preserves_extension_errors_when_the_stream_ends()
+    {
+        var error = new InvalidOperationException("Extension failed");
+        var extension = CreateDocumentSearchExtension(providerExecuted: true);
+        extension.DecodeEvent = _ => throw error;
+        var capture = new UpstreamCapture();
+        PrepareStreamChunks(
+            capture,
+            Obj("{\"type\":\"acme:document_search_input\",\"sequence_number\":0,\"call_id\":\"call-1\",\"name\":\"documentSearch\",\"delta\":\"{}\"}"));
+
+        var parts = await Collect(CreateModel(capture, "test-model", extension), TestPrompt());
+
+        Assert.Contains(parts.OfType<ErrorStreamPart>(), part => part.Message == error.Message);
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(FinishReason.Error, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "handles a truncated stream (with error: %s)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Handles_a_truncated_stream_with_error(bool withError)
+    {
+        var events = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "open-responses-lmstudio-basic.1.chunks.txt"))
+            .Where(line => line.Trim().Length > 0)
+            .ToList();
+        var firstText = events.FindIndex(line => JsonNode.Parse(line)!["type"]!.GetValue<string>() == "response.output_text.delta");
+        Assert.True(firstText >= 0);
+        var chunks = events.Take(firstText + 1).ToList();
+        if (withError)
+        {
+            chunks.Add("{invalid-json}");
+        }
+
+        var parts = await Collect(Model(StreamResponse(chunks.ToArray())), TestPrompt());
+
+        Assert.Contains(parts, part => part is TextDeltaStreamPart);
+        Assert.Equal(withError ? 1 : 0, parts.OfType<ErrorStreamPart>().Count());
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        Assert.Equal(withError ? FinishReason.Error : FinishReason.Interrupted, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "should stream reasoning summary text deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_stream_reasoning_summary_text_deltas()

@@ -431,14 +431,17 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             }
         }
 
-        if (!sawFinish)
+        var interrupted = !sawFinish && _provider.Options.InterruptedWithoutFinish;
+        if (!sawFinish && !interrupted)
         {
             failed = true;
             yield return new ErrorStreamPart("Response stream ended without a finish reason.");
         }
 
         var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
-        var finishReason = !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
+        var finishReason = interrupted
+            ? FinishReason.Interrupted
+            : !sawFinish || (failed && finishRaw == null) ? FinishReason.Error : MapFinish(finishRaw);
         if (dropToolCalls && finishRaw == "tool_calls")
         {
             finishReason = FinishReason.Stop;
@@ -550,7 +553,10 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         body["messages"] = OpenAICompatibleChat.ConvertMessages(options.Prompt, metadataKey, rawName, _provider.Options.SupportsMultiPartToolContent);
         if (responseTool == null)
         {
-            AddTools(body, options.Tools, options.ToolChoice);
+            if (!_provider.Options.PreparesOwnTools)
+            {
+                AddTools(body, options.Tools, options.ToolChoice);
+            }
         }
         else
         {

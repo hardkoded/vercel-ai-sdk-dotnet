@@ -669,7 +669,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         private readonly StreamingToolCallTracker _tools = new StreamingToolCallTracker();
         private bool _metadata;
         private bool _text;
-        private FinishReason _finish = FinishReason.Other;
+        private FinishReason _finish = FinishReason.Interrupted; // A clean end without the provider's completion signal is interrupted.
         private string? _rawFinish;
         private LanguageModelUsage? _usage;
         private readonly JsonObject _metadataObject = new JsonObject();

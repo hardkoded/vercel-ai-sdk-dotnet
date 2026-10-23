@@ -232,12 +232,13 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var pollingTimeout = PollingTimeout(options);
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
-        var document = await _provider.Http.SendJsonAsync(
+        var post = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
             GoogleJson.Write(input),
             headers,
             cancellationToken).ConfigureAwait(false);
+        var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(post.Body) ? "{}" : post.Body);
 
         // A background or agent call (such as Gemini 4 long decode, where the server runs every hop) may return a
         // non-terminal status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
@@ -251,24 +252,124 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             var response = JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
             var parsed = GoogleInteractionsOutput.Parse(response);
             var status = (string?)response["status"];
-            return new LanguageModelGenerateResult(parsed.Content, GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall), Usage(response["usage"] as JsonObject), status, warnings);
+
+            // The API omits `id` when `store: false`. Surface an interaction id only when the API returned one.
+            var interactionId = GoogleInteractionsStreaming.String(response, "id") is { Length: > 0 } id ? id : null;
+
+            // The Interactions API returns the applied tier in the body. The header is a defensive fallback.
+            post.Headers.TryGetValue("x-gemini-service-tier", out var headerServiceTier);
+            var serviceTier = GoogleInteractionsStreaming.String(response, "service_tier") ?? headerServiceTier;
+            var usage = response["usage"] as JsonObject;
+            return new LanguageModelGenerateResult(
+                parsed.Content,
+                GoogleInteractionsFinish.Map(status, parsed.HasFunctionCall),
+                Usage(usage),
+                status,
+                warnings,
+                interactionId,
+                ProviderMetadata(interactionId, serviceTier, OutputTokensByModality(usage)));
         }
+    }
+
+    // The `google` provider metadata of a result: the interaction id, the applied service tier, and the output token breakdown.
+    internal static JsonElement ProviderMetadata(string? interactionId, string? serviceTier, JsonObject? outputTokensByModality)
+    {
+        var google = new JsonObject();
+        if (interactionId != null)
+        {
+            google["interactionId"] = interactionId;
+        }
+
+        if (serviceTier != null)
+        {
+            google["serviceTier"] = serviceTier;
+        }
+
+        if (outputTokensByModality != null)
+        {
+            google["outputTokensByModality"] = outputTokensByModality;
+        }
+
+        return JsonSerializer.SerializeToElement(new JsonObject { ["google"] = google });
+    }
+
+    // Maps usage.output_tokens_by_modality (a list of { modality, tokens }) to { modality: tokens }, or null when it has no entry.
+    internal static JsonObject? OutputTokensByModality(JsonObject? usage)
+    {
+        if (usage?["output_tokens_by_modality"] is not JsonArray entries)
+        {
+            return null;
+        }
+
+        var result = new JsonObject();
+        foreach (var entry in entries)
+        {
+            if (entry is JsonObject item && GoogleInteractionsStreaming.String(item, "modality") is { } modality && item["tokens"] is JsonValue tokens)
+            {
+                result[modality] = tokens.DeepClone();
+            }
+        }
+
+        return result.Count > 0 ? result : null;
     }
 
     // Builds the request body. An agent call sends `agent` and no generation_config, because the API rejects it.
     private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(LanguageModelCallOptions options)
     {
         var warnings = new List<CallWarning>();
+        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high");
+        var thinkingSummaries = EnumOption(options, "thinkingSummaries", "auto", "none");
+        var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
+        var previousInteractionId = StringOption(options, "previousInteractionId");
+        var store = Store(options);
+
+        if (!_isAgent)
+        {
+            if (options.FrequencyPenalty != null)
+            {
+                warnings.Add(new CallWarning("unsupported", "frequencyPenalty", null));
+            }
+
+            if (options.PresencePenalty != null)
+            {
+                warnings.Add(new CallWarning("unsupported", "presencePenalty", null));
+            }
+        }
+
+        // `response_format` is an array of entries. A JSON call-level response format adds one text entry.
+        JsonArray? responseFormat = null;
+        if (options.JsonResponse)
+        {
+            if (_isAgent)
+            {
+                warnings.Add(new CallWarning("other", "google.interactions: structured output (responseFormat) is not supported when an agent is set; responseFormat will be ignored."));
+            }
+            else
+            {
+                var entry = new JsonObject { ["type"] = "text", ["mime_type"] = "application/json" };
+                if (options.JsonSchema is { } schema)
+                {
+                    entry["schema"] = JsonNode.Parse(schema.GetRawText());
+                }
+
+                responseFormat = new JsonArray { entry };
+            }
+        }
+
         var input = GoogleInteractionsInput.Convert(options.Prompt);
+        if (previousInteractionId != null && store == false)
+        {
+            warnings.Add(new CallWarning("other", "google.interactions: providerOptions.google.previousInteractionId was set together with store: false. These are incoherent (the prior interaction cannot be referenced when nothing was stored on the server); the full history will be sent and previous_interaction_id will still be emitted."));
+        }
+
         input[_isAgent ? "agent" : "model"] = ModelId;
+        GoogleJson.Set(input, "response_format", responseFormat);
+        GoogleJson.Set(input, "previous_interaction_id", previousInteractionId);
+        GoogleJson.Set(input, "service_tier", serviceTier);
+        GoogleJson.Set(input, "store", store);
         if (Background(options))
         {
             input["background"] = true;
-        }
-
-        if (Store(options) is { } store)
-        {
-            input["store"] = store;
         }
 
         if (_isAgent)
@@ -282,14 +383,32 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             AddIf(dropped, options.Seed != null, "seed");
             AddIf(dropped, options.StopSequences is { Count: > 0 }, "stopSequences");
             AddIf(dropped, options.MaxOutputTokens != null, "maxOutputTokens");
+            AddIf(dropped, thinkingLevel != null, "thinkingLevel");
+            AddIf(dropped, thinkingSummaries != null, "thinkingSummaries");
             if (dropped.Count > 0)
             {
                 warnings.Add(new CallWarning("other", "google.interactions: " + string.Join(", ", dropped) + (dropped.Count == 1 ? " is" : " are") + " not supported when an agent is set; use providerOptions.google.agentConfig instead. Dropped from the request body."));
             }
         }
-        else if (options.MaxOutputTokens is { } maxOutputTokens)
+        else
         {
-            input["generation_config"] = new JsonObject { ["max_output_tokens"] = maxOutputTokens };
+            var generationConfig = new JsonObject();
+            GoogleJson.Set(generationConfig, "temperature", options.Temperature);
+            GoogleJson.Set(generationConfig, "top_p", options.TopP);
+            GoogleJson.Set(generationConfig, "top_k", options.TopK);
+            GoogleJson.Set(generationConfig, "seed", options.Seed);
+            if (options.StopSequences is { Count: > 0 } stopSequences)
+            {
+                generationConfig["stop_sequences"] = new JsonArray(stopSequences.Select(sequence => (JsonNode?)JsonValue.Create(sequence)).ToArray());
+            }
+
+            GoogleJson.Set(generationConfig, "max_output_tokens", options.MaxOutputTokens);
+            GoogleJson.Set(generationConfig, "thinking_level", thinkingLevel);
+            GoogleJson.Set(generationConfig, "thinking_summaries", thinkingSummaries);
+            if (generationConfig.Count > 0)
+            {
+                input["generation_config"] = generationConfig;
+            }
         }
 
         return (input, warnings);
@@ -301,6 +420,35 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         {
             list.Add(name);
         }
+    }
+
+    private static JsonElement? GoogleOption(LanguageModelCallOptions options, string name)
+    {
+        return options.ProviderOptions != null
+            && options.ProviderOptions.TryGetValue("google", out var google)
+            && google.ValueKind == JsonValueKind.Object
+            && google.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            ? value
+            : null;
+    }
+
+    private static string? StringOption(LanguageModelCallOptions options, string name)
+    {
+        return GoogleOption(options, name) is { } value
+            ? value.ValueKind == JsonValueKind.String ? value.GetString() : throw new AiSdkException("providerOptions.google." + name + " must be a string.")
+            : null;
+    }
+
+    private static string? EnumOption(LanguageModelCallOptions options, string name, params string[] allowed)
+    {
+        var text = StringOption(options, name);
+        if (text != null && Array.IndexOf(allowed, text) < 0)
+        {
+            throw new AiSdkException("providerOptions.google." + name + " must be one of: " + string.Join(", ", allowed) + ".");
+        }
+
+        return text;
     }
 
     private static bool? Store(LanguageModelCallOptions options)
@@ -386,18 +534,34 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             return await StreamBackgroundAsync(options, cancellationToken).ConfigureAwait(false);
         }
 
-        return new LanguageModelStreamResult(StreamAsync(options, cancellationToken));
+        return await StreamLiveAsync(options, cancellationToken).ConfigureAwait(false);
     }
 
-    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(LanguageModelCallOptions options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    // POSTs with `stream: true` and pipes the SSE feed through the transform.
+    private async Task<LanguageModelStreamResult> StreamLiveAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(result.Text))
-        {
-            yield return new TextDeltaStreamPart("text", result.Text);
-        }
+        var (body, warnings) = Prepare(options);
+        body["stream"] = true;
+        var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
+        var requestJson = GoogleJson.Write(body);
+        var sse = await _provider.Http.OpenSseResponseAsync(
+            ProviderUtils.ApiKeys.Combine(InteractionsBase(_provider.Options.BaseUrl), "interactions"),
+            requestJson,
+            headers,
+            cancellationToken).ConfigureAwait(false);
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, result.RawFinishReason);
+        // The tier is in the interaction.completed body. The header is the fallback, and the body wins.
+        sse.Headers.TryGetValue("x-gemini-service-tier", out var headerServiceTier);
+        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId, headerServiceTier);
+        return sse.ToStreamResult(transform.Pipe(ParseEvents(sse.Events, cancellationToken), cancellationToken), requestJson);
+    }
+
+    private static async IAsyncEnumerable<GoogleInteractionsEvent> ParseEvents(IAsyncEnumerable<string> data, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var raw in data.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            yield return new GoogleInteractionsEvent(raw);
+        }
     }
 
     // `background: true` is incompatible with `stream: true` on POST. POST the background call, then stream
@@ -421,7 +585,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             throw new InvalidOperationException("google.interactions: background POST response did not include an interaction id; cannot stream the result.");
         }
 
-        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks);
+        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId);
         var request = LanguageModelStreamRequest.FromJson(requestJson);
         if (GoogleInteractionsPolling.IsTerminal((string?)response["status"]))
         {
