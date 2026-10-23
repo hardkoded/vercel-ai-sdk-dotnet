@@ -42,17 +42,50 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
+    /// <param name="options">Provider options.</param>
+    /// <param name="handler">
+    /// Optional message handler. The provider follows redirects by hand so a status poll cannot send the API key to another host.
+    /// For that reason it sets <c>AllowAutoRedirect = false</c> on a supplied <see cref="HttpClientHandler"/> or (on .NET 5 and later) <see cref="System.Net.Http.SocketsHttpHandler"/>,
+    /// including one wrapped in <see cref="DelegatingHandler"/>s. This changes the handler you pass, and it throws if the handler has already sent a request.
+    /// A custom handler of any other type is left as is. It must not follow redirects on its own.
+    /// </param>
+    /// <param name="pollIntervalMillis">Poll interval in milliseconds between status checks.</param>
+    /// <param name="pollTimeoutMillis">Overall polling timeout in milliseconds.</param>
     public static BlackForestLabsProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null, int? pollIntervalMillis = null, int? pollTimeoutMillis = null)
     {
         // Redirects are followed by hand so a status poll cannot send the API key to another host.
         var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
+            DisableAutoRedirect(handler);
             options = options?.Copy() ?? new OpenAICompatibleOptions();
             options.DownloadHttpClient ??= client;
         }
 
         return new BlackForestLabsProvider(client, options, pollIntervalMillis, pollTimeoutMillis);
+    }
+
+    private static void DisableAutoRedirect(HttpMessageHandler? handler)
+    {
+        while (handler is not null)
+        {
+            switch (handler)
+            {
+                case HttpClientHandler clientHandler:
+                    clientHandler.AllowAutoRedirect = false;
+                    return;
+#if NET5_0_OR_GREATER
+                case SocketsHttpHandler socketsHandler:
+                    socketsHandler.AllowAutoRedirect = false;
+                    return;
+#endif
+                case DelegatingHandler delegating:
+                    handler = delegating.InnerHandler;
+                    break;
+                default:
+                    return;
+            }
+        }
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)

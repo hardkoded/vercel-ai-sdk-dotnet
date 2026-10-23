@@ -178,4 +178,24 @@ public sealed class BlackForestLabsProviderTests
 
         Assert.Contains("Black Forest Labs video generation timed out after 25ms. Request id: req-123", exception.Message);
     }
+
+    [Fact]
+    public void DisablesAutoRedirectOnASuppliedHandler()
+    {
+        var clientHandler = new HttpClientHandler { AllowAutoRedirect = true };
+        var socketsHandler = new SocketsHttpHandler { AllowAutoRedirect = true };
+        var wrappedHandler = new HttpClientHandler { AllowAutoRedirect = true };
+
+        Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(null, clientHandler);
+        Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(null, socketsHandler);
+        Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(null, new PassThroughHandler { InnerHandler = new PassThroughHandler { InnerHandler = wrappedHandler } });
+
+        Assert.False(clientHandler.AllowAutoRedirect);
+        Assert.False(socketsHandler.AllowAutoRedirect);
+        Assert.False(wrappedHandler.AllowAutoRedirect);
+    }
+
+    private sealed class PassThroughHandler : DelegatingHandler
+    {
+    }
 }
