@@ -29,26 +29,67 @@ public sealed class OpenAIChatPreparedRequest
 /// <summary>OpenAI Chat Completions language model.</summary>
 public sealed class OpenAIChatLanguageModel : ILanguageModel
 {
-    private readonly OpenAIProvider _provider;
+    private readonly ProviderHttp _http;
+    private readonly string _providerName;
+    private readonly string? _requestModelId;
+    private readonly Func<Uri> _url;
+    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
     /// <summary>Creates a Chat Completions model.</summary>
     public OpenAIChatLanguageModel(OpenAIProvider provider, string modelId)
     {
-        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "chat/completions");
+        _headers = provider.CreateOpenAIHeaders;
+    }
+
+    /// <summary>
+    /// Creates an Azure OpenAI Chat Completions model for a deployment. <see cref="ModelId"/> reports
+    /// <paramref name="settings"/>.<see cref="Azure.AzureOpenAILanguageModelSettings.ModelId"/> when set and
+    /// drives capability detection. Requests always use <paramref name="deploymentId"/>.
+    /// </summary>
+    public OpenAIChatLanguageModel(Azure.AzureOpenAIProvider provider, string deploymentId, Azure.AzureOpenAILanguageModelSettings? settings)
+    {
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
+        _requestModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
+        ModelId = settings?.ModelId ?? deploymentId;
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _url = () => provider.ChatUri(deploymentId);
+        _headers = provider.CreateHeaders;
     }
 
     /// <inheritdoc />
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public string Provider => _provider.Name + ".chat";
+    public string Provider => _providerName + ".chat";
 
     /// <inheritdoc />
     public string ModelId { get; }
 
     /// <summary>Builds the Chat Completions body for <paramref name="modelId"/>.</summary>
     public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options)
+    {
+        return Prepare(modelId, options, null);
+    }
+
+    /// <summary>
+    /// Builds the Chat Completions body. <paramref name="modelId"/> drives capability detection and
+    /// <paramref name="requestModelId"/>, when set, is sent as the request <c>model</c>.
+    /// </summary>
+    public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, string? requestModelId)
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
@@ -69,7 +110,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         var strictJsonSchema = OpenAIJson.Bool(openai, "strictJsonSchema") ?? true;
         var body = new JsonObject
         {
-            ["model"] = modelId,
+            ["model"] = requestModelId ?? modelId,
             ["messages"] = converted.Messages,
         };
         Copy(body, "logit_bias", OpenAIJson.Node(OpenAIJson.Child(openai, "logitBias")));
@@ -234,12 +275,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options);
-        var response = await _provider.Http.SendJsonStringAsync(
+        var prepared = Prepare(ModelId, options, _requestModelId);
+        var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "chat/completions"),
+            _url(),
             prepared.Body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(options.Headers),
+            _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers);
@@ -248,15 +289,15 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options);
+        var prepared = Prepare(ModelId, options, _requestModelId);
         var body = prepared.Body;
         body["stream"] = true;
         body["stream_options"] = new JsonObject { ["include_usage"] = true };
         var json = body.ToJsonString();
-        var sse = await _provider.Http.OpenSseResponseAsync(
-            ApiKeys.Combine(_provider.Options.BaseUrl, "chat/completions"),
+        var sse = await _http.OpenSseResponseAsync(
+            _url(),
             json,
-            _provider.CreateOpenAIHeaders(options.Headers),
+            _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
     }
