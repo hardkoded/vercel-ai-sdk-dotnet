@@ -130,7 +130,7 @@ internal static class Generation
                 var stepStartMs = now();
                 var modelResponse = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var responseTimeMs = now() - stepStartMs;
-                var generated = await ParseToolCallsAsync(modelResponse, options, messages, cancellationToken).ConfigureAwait(false);
+                var generated = await ParseToolCallsAsync(modelResponse, options, messages, callOptions.ToolChoice?.Type == "none", cancellationToken).ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await NotifyAsync(
@@ -320,6 +320,9 @@ internal static class Generation
                 IReadOnlyList<CallWarning>? warnings = null;
                 var usage = LanguageModelUsage.Null;
                 callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
+                // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
+                var withholdToolParts = callOptions.ToolChoice?.Type == "none";
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var stepRequest = new LanguageModelRequestMetadata
                 {
@@ -413,9 +416,15 @@ internal static class Generation
                                         new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted, Dynamic = toolCall.Dynamic },
                                         options,
                                         stepMessages,
+                                        withholdToolParts,
                                         cancellationToken).ConfigureAwait(false));
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
+                                if (withholdToolParts)
+                                {
+                                    break;
+                                }
+
                                 outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolCallPart(call));
                                 if (call.Invalid && !call.ProviderExecuted)
@@ -424,6 +433,8 @@ internal static class Generation
                                     buffer.Add(new ToolErrorPart(InvalidToolResult(call)));
                                 }
 
+                                break;
+                            case ToolApprovalRequestStreamPart when withholdToolParts:
                                 break;
                             case ToolApprovalRequestStreamPart approvalRequest:
                                 var resolvedRequest = ResolveApprovalRequest(new GeneratedToolApprovalRequest(approvalRequest.ApprovalId, approvalRequest.ToolCallId), toolContent);
@@ -435,7 +446,14 @@ internal static class Generation
                                 toolContent.Add(providerResult);
                                 var providerExecuted = ProviderExecutedResult(providerResult, toolCalls);
                                 emittedResultIds.Add(providerResult.ToolCallId);
+                                if (withholdToolParts)
+                                {
+                                    break;
+                                }
+
                                 buffer.Add(providerResult.IsError ? new ToolErrorPart(providerExecuted) : new ToolResultPart(providerExecuted));
+                                break;
+                            case ToolInputStartStreamPart or ToolInputDeltaStreamPart or ToolInputEndStreamPart when withholdToolParts:
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 outputChunkTimes.Add(ElapsedMs());
@@ -1034,6 +1052,7 @@ internal static class Generation
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        bool toolChoiceNone,
         CancellationToken cancellationToken)
     {
         var parses = new List<Task<GeneratedToolCall>>();
@@ -1041,7 +1060,7 @@ internal static class Generation
         {
             if (part is GeneratedToolCall call)
             {
-                parses.Add(ParseToolCallAsync(call, options, messages, cancellationToken));
+                parses.Add(ParseToolCallAsync(call, options, messages, toolChoiceNone, cancellationToken));
             }
         }
 
@@ -1065,6 +1084,7 @@ internal static class Generation
         GeneratedToolCall call,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        bool toolChoiceNone,
         CancellationToken cancellationToken)
     {
         // The instructions travel as the leading system message. The repair function gets them apart from the messages.
@@ -1087,12 +1107,18 @@ internal static class Generation
 #pragma warning disable CS0618
         var repairToolCall = options.RepairToolCall ?? options.ExperimentalRepairToolCall;
 #pragma warning restore CS0618
+        // Tool calls are rejected with tool choice none, so user callbacks must not process them.
+        if (toolChoiceNone)
+        {
+            repairToolCall = null;
+        }
+
         var parsed = await ToolCallParser.ParseToolCallAsync(
             new ParseToolCallOptions(call)
             {
                 Tools = tools,
                 RepairToolCall = repairToolCall,
-                RefineToolInput = options.RefineToolInput,
+                RefineToolInput = toolChoiceNone ? null : options.RefineToolInput,
                 Messages = history.ToArray(),
                 Instructions = instructions,
             },
@@ -1294,7 +1320,28 @@ internal static class Generation
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
     {
-        if (generated.FinishReason == FinishReason.Interrupted || toolChoice is null || toolChoice.Type == "auto" || toolChoice.Type == "none")
+        if (toolChoice is null || toolChoice.Type == "auto")
+        {
+            return;
+        }
+
+        if (toolChoice.Type == "none")
+        {
+            if (generated.Content.Any(part => part is GeneratedToolCall))
+            {
+                throw new ToolChoiceViolationException(
+                    "Model response contained a tool call even though tool choice was none.",
+                    toolChoice,
+                    generated.FinishReason,
+                    model.Provider,
+                    model.ModelId,
+                    generated.Content);
+            }
+
+            return;
+        }
+
+        if (generated.FinishReason == FinishReason.Interrupted)
         {
             return;
         }
