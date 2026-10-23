@@ -1463,8 +1463,13 @@ internal static class Generation
         try
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
-            var output = await tool.Execute(arguments.RootElement.Clone(), toolToken).ConfigureAwait(false);
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
+            var input = arguments.RootElement.Clone();
+            var output = tool.ExecuteWithOptions != null
+                ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
+                : await tool.Execute(input, toolToken).ConfigureAwait(false);
+            output = string.IsNullOrEmpty(output) ? "null" : output;
+            var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = modelOutput?.Type, ModelOutput = ModelOutputText(modelOutput) };
         }
         catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
@@ -1482,6 +1487,19 @@ internal static class Generation
         }
 
         return (executed, elapsedMs);
+    }
+
+    // The model-facing result of a tool's toModelOutput. Only text and error-text results travel as plain text.
+    private static string? ModelOutputText(ToolModelOutput? output)
+    {
+        return output switch
+        {
+            TextToolModelOutput text => text.Value,
+            ErrorTextToolModelOutput errorText => errorText.Value,
+            JsonToolModelOutput json => json.Value.GetRawText(),
+            ErrorJsonToolModelOutput errorJson => errorJson.Value.GetRawText(),
+            _ => null,
+        };
     }
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
