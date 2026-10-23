@@ -45,7 +45,7 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
     /// <param name="options">Provider options.</param>
     /// <param name="handler">
     /// Optional message handler. The provider follows redirects by hand so a status poll cannot send the API key to another host.
-    /// For that reason it sets <c>AllowAutoRedirect = false</c> on a supplied <see cref="HttpClientHandler"/> or (on .NET 5 and later) <see cref="System.Net.Http.SocketsHttpHandler"/>,
+    /// For that reason it sets <c>AllowAutoRedirect = false</c> on a supplied <see cref="HttpClientHandler"/> or (on .NET 5 and later) <c>SocketsHttpHandler</c>,
     /// including one wrapped in <see cref="DelegatingHandler"/>s. This changes the handler you pass, and it throws if the handler has already sent a request.
     /// A custom handler of any other type is left as is. It must not follow redirects on its own.
     /// </param>
