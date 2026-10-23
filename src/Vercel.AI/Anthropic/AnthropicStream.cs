@@ -30,7 +30,13 @@ public sealed class AnthropicStream
     private bool _failed;
 
     /// <summary>Creates a stream reader.</summary>
-    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName = "anthropic", bool usedCustomProviderKey = false)
+    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
+        : this(includeRawChunks, usesJsonResponseTool, "anthropic", false)
+    {
+    }
+
+    /// <summary>Creates a stream reader that mirrors the finish metadata under a custom provider key.</summary>
+    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey)
     {
         _includeRaw = includeRawChunks;
         _usesJsonTool = usesJsonResponseTool;
@@ -393,7 +399,9 @@ public sealed class AnthropicStream
         {
             ["usage"] = _usage is { ValueKind: JsonValueKind.Object } usage ? JsonNode.Parse(usage.GetRawText()) : null,
             ["stopSequence"] = _stopSequence,
+            ["iterations"] = null,
             ["container"] = _container?.DeepClone(),
+            ["contextManagement"] = null,
         };
         var metadata = new JsonObject { ["anthropic"] = anthropic };
         if (_usedCustomProviderKey && _providerOptionsName != "anthropic")
