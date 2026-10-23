@@ -580,17 +580,24 @@ public sealed class HuggingFaceUpstreamTests
         Assert.Equal("getWeather", body["tool_choice"]!["function"]!["name"]!.GetValue<string>());
     }
 
-    [Fact]
-    [UpstreamTest("packages/huggingface/src/responses/huggingface-responses-language-model.test.ts::HuggingFaceResponsesLanguageModel > tool preparation::should handle auto and required tool choices", Coverage = UpstreamCoverage.Covered)]
-    public async Task Auto_and_required_tool_choices_are_strings()
+    [Theory]
+    [InlineData("auto")]
+    [InlineData("required")]
+    [InlineData("none")]
+    [UpstreamTest("packages/huggingface/src/responses/huggingface-responses-language-model.test.ts::HuggingFaceResponsesLanguageModel > tool preparation::should forward tool choice %s", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_forward_tool_choice(string toolChoice)
     {
         var capture = new UpstreamCapture();
         var model = Responses(capture);
         var tools = new[] { new LanguageModelTool("test", null, UpstreamChat.Json("{\"type\":\"object\"}")) };
-        await model.DoGenerateAsync(new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") }, Tools = tools, ToolChoice = ToolChoice.Auto }, CancellationToken.None);
-        await model.DoGenerateAsync(new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") }, Tools = tools, ToolChoice = ToolChoice.Required }, CancellationToken.None);
-        Assert.Equal("auto", JsonNode.Parse(capture.Requests[0].Body)!["tool_choice"]!.GetValue<string>());
-        Assert.Equal("required", JsonNode.Parse(capture.Requests[1].Body)!["tool_choice"]!.GetValue<string>());
+        var choice = toolChoice switch { "auto" => ToolChoice.Auto, "required" => ToolChoice.Required, _ => ToolChoice.None };
+        await model.DoGenerateAsync(new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") }, Tools = tools, ToolChoice = choice }, CancellationToken.None);
+        var body = JsonNode.Parse(capture.Requests[0].Body)!;
+        Assert.Equal(toolChoice, body["tool_choice"]!.GetValue<string>());
+        var tool = Assert.Single(body["tools"]!.AsArray());
+        Assert.Equal("function", tool!["type"]!.GetValue<string>());
+        Assert.Equal("test", tool["name"]!.GetValue<string>());
+        Assert.Equal("object", tool["parameters"]!["type"]!.GetValue<string>());
     }
 
     [Fact]

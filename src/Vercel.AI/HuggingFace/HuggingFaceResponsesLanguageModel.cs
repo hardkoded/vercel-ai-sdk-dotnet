@@ -203,7 +203,7 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             }
 
             body["tools"] = tools;
-            if (options.ToolChoice != null && options.ToolChoice.Type != "none")
+            if (options.ToolChoice != null)
             {
                 body["tool_choice"] = MapToolChoice(options.ToolChoice);
             }
@@ -306,6 +306,11 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
         if (toolChoice.Type == "required")
         {
             return "required";
+        }
+
+        if (toolChoice.Type == "none")
+        {
+            return "none";
         }
 
         if (toolChoice is ToolChoice.NamedChoice named)
