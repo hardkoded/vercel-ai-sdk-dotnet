@@ -195,6 +195,23 @@ public sealed class BlackForestLabsProviderTests
         Assert.False(wrappedHandler.AllowAutoRedirect);
     }
 
+    [Fact]
+    public void DisablesAutoRedirectByReflectionOnACustomHandler()
+    {
+        var handler = new RedirectingHandler { AllowAutoRedirect = true };
+
+        Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(null, handler);
+
+        Assert.False(handler.AllowAutoRedirect);
+    }
+
+    private sealed class RedirectingHandler : HttpMessageHandler
+    {
+        public bool AllowAutoRedirect { get; set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     private sealed class PassThroughHandler : DelegatingHandler
     {
     }
