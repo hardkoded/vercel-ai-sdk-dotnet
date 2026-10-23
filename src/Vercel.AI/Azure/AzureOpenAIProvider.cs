@@ -25,7 +25,7 @@ public sealed class AzureOpenAIOptions
     /// <summary>Explicit key. Falls back to <c>AZURE_API_KEY</c>.</summary>
     public string? ApiKey { get; set; }
 
-    /// <summary>API version query parameter. Defaults to <c>v1</c>.</summary>
+    /// <summary>API version query parameter. Defaults to <c>v1</c>, also when set to null or empty.</summary>
     public string ApiVersion { get; set; } = "v1";
 
     /// <summary>
@@ -156,7 +156,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             ApiKeyEnvironmentVariable = "AZURE_API_KEY",
             ApiKeyStyle = options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
             ApiKeyHeaderName = "api-key",
-            AzureApiVersion = options.ApiVersion,
+            AzureApiVersion = string.IsNullOrEmpty(options.ApiVersion) ? "v1" : options.ApiVersion,
             AzureUseDeploymentBasedUrls = options.UseDeploymentBasedUrls,
             SupportsEmbeddings = true,
             SupportsImages = false,

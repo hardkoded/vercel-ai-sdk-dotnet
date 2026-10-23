@@ -399,7 +399,7 @@ public class OpenAICompatibleProvider : ProviderBase
     internal Uri AzureUri(string path, string modelId)
     {
         var route = Options.AzureUseDeploymentBasedUrls ? "deployments/" + Uri.EscapeDataString(modelId) : "v1";
-        return WithQuery(ApiKeys.Combine(Options.BaseUrl, "openai/" + route + "/" + path + "?api-version=" + Options.AzureApiVersion));
+        return WithQuery(ApiKeys.Combine(Options.BaseUrl, "openai/" + route + "/" + path + "?api-version=" + Uri.EscapeDataString(Options.AzureApiVersion!)));
     }
 
     /// <summary>Chat Completions URL for a model. Azure deployment routes include the model id.</summary>
