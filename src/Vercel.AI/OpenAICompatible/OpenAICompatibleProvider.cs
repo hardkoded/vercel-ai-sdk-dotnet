@@ -392,14 +392,22 @@ public class OpenAICompatibleProvider : ProviderBase
         return new ProviderTextResponse(body, copied);
     }
 
+    /// <summary>
+    /// Azure URL for <paramref name="path"/>: <c>/openai/deployments/{modelId}{path}</c> when
+    /// <see cref="OpenAICompatibleOptions.AzureUseDeploymentBasedUrls"/> is set, otherwise <c>/openai/v1{path}</c>.
+    /// </summary>
+    public Uri AzureUri(string path, string modelId)
+    {
+        var route = Options.AzureUseDeploymentBasedUrls ? "deployments/" + Uri.EscapeDataString(modelId) : "v1";
+        return WithQuery(ApiKeys.Combine(Options.BaseUrl, "openai/" + route + "/" + path + "?api-version=" + Options.AzureApiVersion));
+    }
+
     /// <summary>Chat Completions URL for a model. Azure deployment routes include the model id.</summary>
     public Uri ChatUri(string modelId)
     {
         if (!string.IsNullOrEmpty(Options.AzureApiVersion))
         {
-            return WithQuery(ApiKeys.Combine(
-                Options.BaseUrl,
-                "openai/deployments/" + Uri.EscapeDataString(modelId) + "/chat/completions?api-version=" + Options.AzureApiVersion));
+            return AzureUri("chat/completions", modelId);
         }
 
         return WithQuery(ApiKeys.Combine(Options.BaseUrl, Options.ChatCompletionsPath));
@@ -410,9 +418,7 @@ public class OpenAICompatibleProvider : ProviderBase
     {
         if (!string.IsNullOrEmpty(Options.AzureApiVersion))
         {
-            return WithQuery(ApiKeys.Combine(
-                Options.BaseUrl,
-                "openai/deployments/" + Uri.EscapeDataString(modelId) + "/completions?api-version=" + Options.AzureApiVersion));
+            return AzureUri("completions", modelId);
         }
 
         return WithQuery(ApiKeys.Combine(Options.BaseUrl, Options.CompletionsPath));
@@ -423,9 +429,7 @@ public class OpenAICompatibleProvider : ProviderBase
     {
         if (!string.IsNullOrEmpty(Options.AzureApiVersion))
         {
-            return WithQuery(ApiKeys.Combine(
-                Options.BaseUrl,
-                "openai/deployments/" + Uri.EscapeDataString(modelId) + "/embeddings?api-version=" + Options.AzureApiVersion));
+            return AzureUri("embeddings", modelId);
         }
 
         return WithQuery(ApiKeys.Combine(Options.BaseUrl, Options.EmbeddingsPath));

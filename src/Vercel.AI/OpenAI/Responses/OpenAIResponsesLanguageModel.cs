@@ -89,9 +89,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         _http = provider.Http;
         _providerName = provider.Name;
         _providerOptionsName = "azure";
-        _url = () => ApiKeys.Combine(
-            provider.Options.BaseUrl,
-            "openai/v1/responses?api-version=" + provider.Options.AzureApiVersion);
+        _url = () => provider.AzureUri("responses", deploymentId);
         _headers = provider.CreateHeaders;
     }
 

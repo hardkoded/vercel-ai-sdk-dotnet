@@ -69,8 +69,11 @@ public class OpenAICompatibleOptions
     /// <summary>Whether <see cref="OpenAICompatibleProvider.ImageModel"/> is supported.</summary>
     public bool SupportsImages { get; set; }
 
-    /// <summary>When set, chat and embedding URLs use the Azure deployments route and this API version.</summary>
+    /// <summary>When set, chat, completion, embedding, and Responses URLs use the Azure routes and this API version.</summary>
     public string? AzureApiVersion { get; set; }
+
+    /// <summary>With <see cref="AzureApiVersion"/>, uses <c>/openai/deployments/{id}</c> routes instead of <c>/openai/v1</c>.</summary>
+    public bool AzureUseDeploymentBasedUrls { get; set; }
 
     /// <summary>Extra headers sent on every call. These override the API key header.</summary>
     public Dictionary<string, string> Headers { get; private set; } = new();

@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Azure;
 
@@ -24,8 +25,13 @@ public sealed class AzureOpenAIOptions
     /// <summary>Explicit key. Falls back to <c>AZURE_API_KEY</c>.</summary>
     public string? ApiKey { get; set; }
 
-    /// <summary>API version query parameter.</summary>
-    public string ApiVersion { get; set; } = "2024-10-21";
+    /// <summary>API version query parameter. Defaults to <c>v1</c>.</summary>
+    public string ApiVersion { get; set; } = "v1";
+
+    /// <summary>
+    /// Uses the legacy <c>/openai/deployments/{deploymentId}{path}</c> routes instead of <c>/openai/v1{path}</c>.
+    /// </summary>
+    public bool UseDeploymentBasedUrls { get; set; }
 
     /// <summary>Microsoft Entra token provider. Each call receives a fresh bearer token.</summary>
     public Func<string>? TokenProvider { get; set; }
@@ -44,7 +50,10 @@ public sealed class AzureOpenAILanguageModelSettings
     public string? ModelId { get; set; }
 }
 
-/// <summary>Azure OpenAI provider. Chat calls use the deployments route and the <c>api-key</c> header.</summary>
+/// <summary>
+/// Azure OpenAI provider. Calls use the <c>/openai/v1</c> routes and the <c>api-key</c> header, or the
+/// deployments routes when <see cref="AzureOpenAIOptions.UseDeploymentBasedUrls"/> is set.
+/// </summary>
 public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 {
     /// <summary>Provider id.</summary>
@@ -76,6 +85,21 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>
+    /// Responses API model, like <see cref="ResponsesModel(string)"/>. The optional model ID in
+    /// <paramref name="settings"/> is used for reported identity and capability detection.
+    /// </summary>
+    public OpenAI.OpenAIResponsesLanguageModel LanguageModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    {
+        return new OpenAI.OpenAIResponsesLanguageModel(this, deploymentId, settings);
+    }
+
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId)
+    {
+        return ResponsesModel(modelId);
+    }
+
+    /// <summary>
     /// Responses API model. The provider id is <c>azure.responses</c>.
     /// Options are read from the <c>azure</c> provider options and fall back to <c>openai</c>.
     /// </summary>
@@ -97,13 +121,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Chat model for a deployment. The optional model ID is used for reported identity and capability
     /// detection; requests always use the deployment ID.
     /// </summary>
-    public OpenAICompatibleLanguageModel ChatModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    public OpenAI.OpenAIChatLanguageModel ChatModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
     {
-        return new OpenAICompatibleLanguageModel(
-            this,
-            settings?.ModelId ?? deploymentId,
-            null,
-            deploymentId);
+        return new OpenAI.OpenAIChatLanguageModel(this, deploymentId, settings);
     }
 
     /// <summary>
@@ -137,6 +157,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             ApiKeyStyle = options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
             ApiKeyHeaderName = "api-key",
             AzureApiVersion = options.ApiVersion,
+            AzureUseDeploymentBasedUrls = options.UseDeploymentBasedUrls,
             SupportsEmbeddings = true,
             SupportsImages = false,
         };

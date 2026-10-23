@@ -10,17 +10,13 @@ namespace Vercel.AI.Tests;
 public sealed class AzureOpenAIParityTests
 {
     [Fact]
-    [UpstreamTest(
-        "packages/azure/src/azure-openai-provider.test.ts::chat > doGenerate::should set the correct default api version",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Deployment chat URLs keep api-version 2024-10-21. Upstream chat calls send v1.")]
-    public async Task Chat_uses_the_deployment_api_version()
+    [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::chat > doGenerate::should set the correct default api version", Coverage = UpstreamCoverage.Covered)]
+    public async Task Chat_uses_the_v1_api_version()
     {
-        var handler = new UpstreamRecordingHandler("{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}");
+        var handler = new UpstreamRecordingHandler(ChatResponse);
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, handler);
-        await provider.LanguageModel("test-deployment").DoGenerateAsync(Prompt(), CancellationToken.None);
-        Assert.Contains("api-version=2024-10-21", handler.Uri);
-        Assert.Contains("openai/deployments/test-deployment/chat/completions", handler.Uri);
+        await provider.ChatModel("test-deployment", null).DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("https://test-resource.openai.azure.com/openai/v1/chat/completions?api-version=v1", handler.Uri);
     }
 
     [Fact]
@@ -35,19 +31,18 @@ public sealed class AzureOpenAIParityTests
     [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::responses (default language model) > doGenerate::should set the correct modified api version", Coverage = UpstreamCoverage.Covered)]
     public async Task Default_language_model_sends_a_modified_api_version()
     {
-        var uri = await Chat("2025-04-01-preview");
+        var uri = await Responses("2025-04-01-preview");
         Assert.Contains("api-version=2025-04-01-preview", uri);
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/azure/src/azure-openai-provider.test.ts::responses (default language model) > doGenerate::should set the correct default api version",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The deployment route sends api-version 2024-10-21. Upstream responses calls send v1.")]
-    public async Task Default_language_model_uses_the_deployment_api_version()
+    [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::responses (default language model) > doGenerate::should set the correct default api version", Coverage = UpstreamCoverage.Covered)]
+    public async Task Default_language_model_uses_the_v1_api_version()
     {
-        var uri = await Chat("2024-10-21");
-        Assert.Contains("api-version=2024-10-21", uri);
+        var handler = new UpstreamRecordingHandler(ResponsesResponse);
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, handler);
+        await provider.LanguageModel("test-deployment").DoGenerateAsync(Prompt(), CancellationToken.None);
+        Assert.Equal("https://test-resource.openai.azure.com/openai/v1/responses?api-version=v1", handler.Uri);
     }
 
     [Fact]
@@ -57,11 +52,11 @@ public sealed class AzureOpenAIParityTests
         Note = "Provider headers and the api-key header are sent. Per-call headers and the ai-sdk user-agent suffix are not forwarded by the shared chat client.")]
     public async Task Chat_sends_provider_headers()
     {
-        var handler = new UpstreamRecordingHandler("{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}");
+        var handler = new UpstreamRecordingHandler(ChatResponse);
         var options = new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var provider = AzureOpenAIProvider.Create(options, handler);
-        await provider.LanguageModel("test-deployment").DoGenerateAsync(Prompt(), CancellationToken.None);
+        await provider.ChatModel("test-deployment", null).DoGenerateAsync(Prompt(), CancellationToken.None);
         Assert.Equal("test-api-key", handler.Headers["api-key"]);
         Assert.Equal("provider-header-value", handler.Headers["Custom-Provider-Header"]);
     }
@@ -73,7 +68,7 @@ public sealed class AzureOpenAIParityTests
         Note = "Authorization is Bearer test-azure-ad-token and api-key is absent. The ai-sdk user-agent suffix is not sent.")]
     public async Task Uses_the_entra_token()
     {
-        var handler = new UpstreamRecordingHandler("{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}");
+        var handler = new UpstreamRecordingHandler(ResponsesResponse);
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
         {
             ResourceName = "test-resource",
@@ -88,7 +83,7 @@ public sealed class AzureOpenAIParityTests
     [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::responses (default language model) > doGenerate::should call tokenProvider for every request", Coverage = UpstreamCoverage.Covered)]
     public async Task Calls_the_token_provider_for_every_request()
     {
-        var handler = new UpstreamRecordingHandler("{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}");
+        var handler = new UpstreamRecordingHandler(ResponsesResponse);
         var count = 0;
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
         {
@@ -116,22 +111,35 @@ public sealed class AzureOpenAIParityTests
     }
 
     [Fact]
-    [UpstreamTest(
-        "packages/azure/src/azure-openai-provider.test.ts::embedding > doEmbed::should set the correct api version",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Embedding calls use the deployments route and api-version 2024-10-21. Upstream sends v1.")]
-    public async Task Embeddings_use_the_deployment_api_version()
+    [UpstreamTest("packages/azure/src/azure-openai-provider.test.ts::embedding > doEmbed::should set the correct api version", Coverage = UpstreamCoverage.Covered)]
+    public async Task Embeddings_use_the_v1_api_version()
     {
         var handler = new UpstreamRecordingHandler("{\"data\":[{\"embedding\":[0.1,0.2]}],\"usage\":{\"prompt_tokens\":2,\"total_tokens\":2}}");
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" }, handler);
         await provider.EmbeddingModel("my-embedding").DoEmbedAsync(new[] { "sunny day at the beach" }, null, CancellationToken.None);
-        Assert.Contains("api-version=2024-10-21", handler.Uri);
-        Assert.Contains("openai/deployments/my-embedding/embeddings", handler.Uri);
+        Assert.Equal("https://test-resource.openai.azure.com/openai/v1/embeddings?api-version=v1", handler.Uri);
     }
+
+    private const string ChatResponse = "{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}";
+
+    private const string ResponsesResponse = "{\"id\":\"resp-test\",\"created_at\":1741257730,\"model\":\"gpt-5\",\"output\":[],\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
 
     private static async Task<string> Chat(string apiVersion)
     {
-        var handler = new UpstreamRecordingHandler("{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}");
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
+        {
+            ApiKey = "test-api-key",
+            ResourceName = "test-resource",
+            ApiVersion = apiVersion,
+        }, handler);
+        await provider.ChatModel("test-deployment", null).DoGenerateAsync(Prompt(), CancellationToken.None);
+        return handler.Uri;
+    }
+
+    private static async Task<string> Responses(string apiVersion)
+    {
+        var handler = new UpstreamRecordingHandler(ResponsesResponse);
         var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions
         {
             ApiKey = "test-api-key",
