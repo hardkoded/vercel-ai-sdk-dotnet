@@ -10,7 +10,7 @@ internal static class RedirectGuard
     /// <summary>
     /// Sets <c>AllowAutoRedirect = false</c> on <paramref name="handler"/> and on every handler it wraps.
     /// It covers <see cref="HttpClientHandler"/>, <c>SocketsHttpHandler</c> (.NET 5 and later), and any other handler with a public settable <c>bool AllowAutoRedirect</c> property.
-    /// A <see cref="DelegatingHandler"/> chain is walked to the end. The handlers are changed in place.
+    /// A <see cref="DelegatingHandler"/> chain is walked to the end. The handlers are changed in place. A handler that already has the option off is not written, so one that has sent a request does not throw.
     /// </summary>
     public static void DisableAutoRedirect(HttpMessageHandler? handler)
     {
@@ -19,17 +19,25 @@ internal static class RedirectGuard
             switch (handler)
             {
                 case HttpClientHandler clientHandler:
-                    clientHandler.AllowAutoRedirect = false;
+                    if (clientHandler.AllowAutoRedirect)
+                    {
+                        clientHandler.AllowAutoRedirect = false;
+                    }
+
                     break;
 #if NET5_0_OR_GREATER
                 case SocketsHttpHandler socketsHandler:
-                    socketsHandler.AllowAutoRedirect = false;
+                    if (socketsHandler.AllowAutoRedirect)
+                    {
+                        socketsHandler.AllowAutoRedirect = false;
+                    }
+
                     break;
 #endif
                 default:
                     // Covers SocketsHttpHandler on netstandard2.0 (a .NET runtime can still supply one) and custom handlers that expose the same property.
                     var property = handler.GetType().GetProperty("AllowAutoRedirect", typeof(bool));
-                    if (property?.CanWrite == true && property.SetMethod!.IsPublic)
+                    if (property?.CanWrite == true && property.SetMethod!.IsPublic && property.GetValue(handler) is true)
                     {
                         property.SetValue(handler, false);
                     }
