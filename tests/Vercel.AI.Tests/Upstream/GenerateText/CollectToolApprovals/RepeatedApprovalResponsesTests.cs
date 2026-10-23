@@ -10,15 +10,13 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.CollectToolApprovals;
 /// <summary>
 /// Port of <c>collect-tool-approvals.test.ts</c> &gt; <c>collectToolApprovals</c> &gt; <c>repeated approval responses</c>.
 /// <see cref="ApprovalResponsePart"/> has no <c>providerExecuted</c> field, so the metadata test varies only the reason.
+/// Upstream 1727442 is newer than the parity pin, so the catalog has no ids to link yet.
 /// </summary>
 public sealed class RepeatedApprovalResponsesTests
 {
-    private const string Prefix = "packages/ai/src/generate-text/collect-tool-approvals.test.ts::collectToolApprovals > repeated approval responses::";
-
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    [UpstreamTest(Prefix + "should collect an identical response once when approved is %s", Coverage = UpstreamCoverage.Covered)]
     public void Should_collect_an_identical_response_once_when_approved_is(bool approved)
     {
         var response = new ApprovalResponsePart("approval-1", approved);
@@ -27,7 +25,6 @@ public sealed class RepeatedApprovalResponsesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should ignore a replayed decision with different metadata: %j", Coverage = UpstreamCoverage.Partial)]
     public void Should_ignore_a_replayed_decision_with_different_metadata()
     {
         var response1 = new ApprovalResponsePart("approval-1", true);
@@ -36,7 +33,6 @@ public sealed class RepeatedApprovalResponsesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should keep the first of conflicting decisions", Coverage = UpstreamCoverage.Covered)]
     public void Should_keep_the_first_of_conflicting_decisions()
     {
         var response1 = new ApprovalResponsePart("approval-1", true);
@@ -47,7 +43,6 @@ public sealed class RepeatedApprovalResponsesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should collect one response per tool call across approval IDs", Coverage = UpstreamCoverage.Covered)]
     public void Should_collect_one_response_per_tool_call_across_approval_IDs()
     {
         var response1 = new ApprovalResponsePart("approval-1", true);
@@ -57,7 +52,6 @@ public sealed class RepeatedApprovalResponsesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should collect a denial with an existing execution-denied result once", Coverage = UpstreamCoverage.Covered)]
     public void Should_collect_a_denial_with_an_existing_execution_denied_result_once()
     {
         var denial = new ApprovalResponsePart("approval-1", false);
