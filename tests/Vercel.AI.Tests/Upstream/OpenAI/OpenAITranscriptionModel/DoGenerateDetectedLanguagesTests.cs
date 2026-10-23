@@ -46,6 +46,7 @@ public sealed class DoGenerateDetectedLanguagesTests
         var result = await new TranscriptionModel(OpenAIUpstream.Provider(capture), "gpt-transcribe").TranscribeAsync(call, CancellationToken.None);
 
         Assert.Equal(expected, result.Language);
+        Assert.Empty(result.Warnings);
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(body), JsonNode.Parse(result.Response.Body)));
         var languages = JsonNode.Parse(body)!["languages"];
         if (languages == null)

@@ -65,6 +65,7 @@ public sealed class OpenAITranscriptionResult
         string? language,
         double? durationInSeconds,
         JsonElement? providerMetadata,
+        IReadOnlyList<OpenAICallWarning> warnings,
         OpenAITranscriptionResponse response)
     {
         Text = text;
@@ -72,6 +73,7 @@ public sealed class OpenAITranscriptionResult
         Language = language;
         DurationInSeconds = durationInSeconds;
         ProviderMetadata = providerMetadata;
+        Warnings = warnings;
         Response = response;
     }
 
@@ -89,6 +91,9 @@ public sealed class OpenAITranscriptionResult
 
     /// <summary>Speaker segments under <c>openai.segments</c> for diarized responses and detected languages under <c>openai.languages</c>.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Warnings produced while preparing the request. OpenAI transcription reports none today.</summary>
+    public IReadOnlyList<OpenAICallWarning> Warnings { get; }
 
     /// <summary>Response metadata.</summary>
     public OpenAITranscriptionResponse Response { get; }
@@ -256,6 +261,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
             language,
             root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
             speakers.Count > 0 || languages != null ? ProviderMetadata(speakers, languages) : null,
+            Array.Empty<OpenAICallWarning>(),
             new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body));
     }
 
