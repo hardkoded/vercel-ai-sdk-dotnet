@@ -48,6 +48,18 @@ public sealed class Tool
     public bool? Strict { get; }
 
     /// <summary>
+    /// Executes the tool with the options of the call, such as the messages of the step. When it is set, the loop calls it
+    /// instead of <see cref="Execute"/>. Maps to <c>execute(input, { toolCallId, messages, abortSignal })</c>.
+    /// </summary>
+    public Func<JsonElement, ToolExecutionOptions, Task<string>>? ExecuteWithOptions { get; set; }
+
+    /// <summary>
+    /// Converts the JSON output of the tool into the result sent to the model. Null sends the output as it is.
+    /// Maps to <c>toModelOutput</c>.
+    /// </summary>
+    public Func<ToolModelOutputCall, ToolModelOutput>? ToModelOutput { get; set; }
+
+    /// <summary>
     /// When true, a call to this tool is not executed. The loop ends at that step and the call is left for the caller,
     /// unless <see cref="GenerateTextOptions.ApproveTool"/> is set, which then decides. Maps to <c>needsApproval</c>.
     /// </summary>
@@ -111,6 +123,27 @@ public sealed class Tool
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(jsonSchema) ? "{}" : jsonSchema);
         return new Tool(name, description, document.RootElement.Clone(), execute, strict);
     }
+}
+
+/// <summary>The options a tool receives when it runs. Maps to the second argument of <c>execute</c>.</summary>
+public sealed class ToolExecutionOptions
+{
+    /// <summary>Creates the options.</summary>
+    public ToolExecutionOptions(string toolCallId, IReadOnlyList<ModelMessage> messages, CancellationToken abortSignal)
+    {
+        ToolCallId = toolCallId;
+        Messages = messages ?? Array.Empty<ModelMessage>();
+        AbortSignal = abortSignal;
+    }
+
+    /// <summary>Id of the tool call.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Messages sent to the model in the step that made the call.</summary>
+    public IReadOnlyList<ModelMessage> Messages { get; }
+
+    /// <summary>Cancellation signal of the call.</summary>
+    public CancellationToken AbortSignal { get; }
 }
 
 /// <summary>A tool call the caller may approve before it runs.</summary>

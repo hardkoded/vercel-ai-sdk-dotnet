@@ -27,6 +27,7 @@ The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by t
 | `ai` UI message stream used by `useChat` | `Vercel.AI.AspNetCore` (`ToUIMessageStreamResult`) |
 | OpenTelemetry | `Vercel.AI.OpenTelemetry` |
 | MCP tools | `Vercel.AI.Mcp` |
+| `@ai-sdk/tool-web-fetch` | `Vercel.AI.WebFetch` (in `Vercel.AI`) |
 
 `@ai-sdk/typesafe-ai` is `Vercel.AI.TypeSafeAi`. It provides the experimental TypeSafe decision model. See [TypeSafe](docs/articles/typesafe-ai.md). The [TypeSafe.AI.Sdk](https://github.com/hardkoded/typesafe-sdk-dotnet) package remains available as a standalone client.
 
