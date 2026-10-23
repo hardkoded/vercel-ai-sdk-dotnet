@@ -54,6 +54,7 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
         };
 
         await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(1, calls);
         Assert.Equal("call-1", chat.Headers["Custom"]);
         Assert.Equal("static", chat.Headers["Static"]);
         Assert.Equal("call", chat.Headers["Layer"]);
@@ -66,6 +67,11 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
         var embed = new UpstreamRecordingHandler("{\"embedding\":[0.1],\"inputTextTokenCount\":1}");
         await AmazonBedrockProvider.Create(options, embed).EmbeddingModel("amazon.titan-embed-text-v2:0").DoEmbedAsync(new[] { "a" }, null, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("call-3", embed.Headers["Custom"]);
+
+        var rerank = new UpstreamRecordingHandler("{\"results\":[{\"index\":0,\"relevanceScore\":0.5}]}");
+        await AmazonBedrockProvider.Create(options, rerank).RerankingModel("amazon.rerank-v1:0").DoRerankAsync("q", new[] { "a" }, 1, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("call-4", rerank.Headers["Custom"]);
+        Assert.Equal(4, calls);
     }
 
     [Fact]
