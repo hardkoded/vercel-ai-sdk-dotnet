@@ -205,6 +205,21 @@ public sealed class BlackForestLabsProviderTests
         Assert.False(handler.AllowAutoRedirect);
     }
 
+    [Fact]
+    public void DisablesAutoRedirectOnADelegatingHandlerThatExposesTheProperty()
+    {
+        var handler = new RedirectingDelegatingHandler { AllowAutoRedirect = true, InnerHandler = new HttpClientHandler() };
+
+        Vercel.AI.BlackForestLabs.BlackForestLabsProvider.Create(null, handler);
+
+        Assert.False(handler.AllowAutoRedirect);
+    }
+
+    private sealed class RedirectingDelegatingHandler : DelegatingHandler
+    {
+        public bool AllowAutoRedirect { get; set; }
+    }
+
     private sealed class RedirectingHandler : HttpMessageHandler
     {
         public bool AllowAutoRedirect { get; set; }

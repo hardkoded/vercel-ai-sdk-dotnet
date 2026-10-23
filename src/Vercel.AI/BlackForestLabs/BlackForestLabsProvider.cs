@@ -80,18 +80,24 @@ public sealed class BlackForestLabsProvider : OpenAICompatibleProvider
                     return;
 #endif
                 case DelegatingHandler delegating:
+                    // A wrapper can expose the property itself, so set it before moving to the inner handler.
+                    SetAllowAutoRedirectByReflection(delegating);
                     handler = delegating.InnerHandler;
                     break;
                 default:
                     // Covers SocketsHttpHandler on netstandard2.0 (a .NET runtime can still supply one) and custom handlers that expose the same property.
-                    var property = handler.GetType().GetProperty("AllowAutoRedirect", typeof(bool));
-                    if (property?.CanWrite == true && property.SetMethod!.IsPublic)
-                    {
-                        property.SetValue(handler, false);
-                    }
-
+                    SetAllowAutoRedirectByReflection(handler);
                     return;
             }
+        }
+    }
+
+    private static void SetAllowAutoRedirectByReflection(HttpMessageHandler handler)
+    {
+        var property = handler.GetType().GetProperty("AllowAutoRedirect", typeof(bool));
+        if (property?.CanWrite == true && property.SetMethod!.IsPublic)
+        {
+            property.SetValue(handler, false);
         }
     }
 
