@@ -18,7 +18,7 @@ public sealed class DurationTests
     [InlineData("preserves a reported zero", "0", Words, 0.0)]
     [InlineData("falls back when audio duration is absent", null, Words, 2.06)]
     [InlineData("falls back when audio duration is null", "null", Words, 2.06)]
-    [UpstreamTest("packages/elevenlabs/src/elevenlabs-transcription-model.test.ts::doGenerate > transcription > duration::%s", Coverage = UpstreamCoverage.Covered)]
+    // Ports upstream 762d96e, which is newer than the parity pin, so the catalog has no id to link yet.
     public async Task Duration(string name, string? audioDuration, string words, double expectedDuration)
     {
         Assert.NotEmpty(name);
