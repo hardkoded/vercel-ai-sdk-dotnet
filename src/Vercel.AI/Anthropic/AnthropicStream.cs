@@ -22,8 +22,9 @@ public sealed class AnthropicStream
     private string? _finish;
     private JsonElement? _usage;
     private bool _jsonTool;
-    private bool _finished;
+    private bool _hasOutput;
     private bool _failed;
+    private FinishStreamPart? _lastFinish;
 
     /// <summary>Creates a stream reader.</summary>
     public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
@@ -128,7 +129,6 @@ public sealed class AnthropicStream
         else if (type == "message_stop")
         {
             _open = false;
-            _finished = true;
             yield return Finish();
         }
     }
@@ -151,7 +151,7 @@ public sealed class AnthropicStream
         }
 
         _open = true;
-        _finished = false;
+        _hasOutput = false;
         _finish = null;
         _activeId = id;
         var usage = message?["usage"];
@@ -174,6 +174,22 @@ public sealed class AnthropicStream
             },
         };
         yield return new CustomStreamPart("anthropic.message_start", ParseElement(metadata.ToJsonString()));
+
+        // Pre-populated tool_use blocks (deferred tool calls) arrive in message_start.
+        if (message?["content"] is JsonArray content)
+        {
+            foreach (var item in content)
+            {
+                if (item is JsonObject part && Text(part["type"]) == "tool_use")
+                {
+                    _hasOutput = true;
+                    yield return new ToolCallStreamPart(
+                        Text(part["id"]) ?? string.Empty,
+                        Text(part["name"]) ?? string.Empty,
+                        (part["input"] ?? new JsonObject()).ToJsonString());
+                }
+            }
+        }
     }
 
     private IEnumerable<LanguageModelStreamPart> BlockStart(JsonObject node)
@@ -207,6 +223,7 @@ public sealed class AnthropicStream
             var summary = Text(block["content"]);
             if (!string.IsNullOrEmpty(summary))
             {
+                _hasOutput = true;
                 yield return new TextDeltaStreamPart(id, summary!);
             }
         }
@@ -231,6 +248,7 @@ public sealed class AnthropicStream
                 Input = new StringBuilder(initial),
                 HasInitialInput = initial.Length > 0,
             };
+            _hasOutput |= initial.Length > 0;
         }
     }
 
@@ -247,13 +265,16 @@ public sealed class AnthropicStream
         var deltaType = Text(delta["type"]);
         if (deltaType == "text_delta" && block.Kind == "text")
         {
-            yield return new TextDeltaStreamPart(block.Id, Text(delta["text"]) ?? string.Empty);
+            var text = Text(delta["text"]) ?? string.Empty;
+            _hasOutput |= text.Length > 0;
+            yield return new TextDeltaStreamPart(block.Id, text);
         }
         else if (deltaType == "compaction_delta" && block.Kind == "text")
         {
             var summary = Text(delta["content"]);
             if (!string.IsNullOrEmpty(summary))
             {
+                _hasOutput = true;
                 yield return new TextDeltaStreamPart(block.Id, summary!);
             }
         }
@@ -261,7 +282,9 @@ public sealed class AnthropicStream
         {
             if (deltaType == "thinking_delta")
             {
-                yield return new ReasoningDeltaStreamPart(block.Id, Text(delta["thinking"]) ?? string.Empty);
+                var thinking = Text(delta["thinking"]) ?? string.Empty;
+                _hasOutput |= thinking.Length > 0;
+                yield return new ReasoningDeltaStreamPart(block.Id, thinking);
             }
         }
         else if (deltaType == "citations_delta" && block.Kind == "text" && delta["citation"] != null)
@@ -271,7 +294,9 @@ public sealed class AnthropicStream
         else if (deltaType == "input_json_delta" && block.Kind == "tool")
         {
             block.SawDelta = true;
-            block.Input.Append(Text(delta["partial_json"]) ?? string.Empty);
+            var partial = Text(delta["partial_json"]) ?? string.Empty;
+            _hasOutput |= partial.Length > 0;
+            block.Input.Append(partial);
         }
     }
 
@@ -301,10 +326,12 @@ public sealed class AnthropicStream
             if (_usesJsonTool && block.ToolName == "json")
             {
                 _jsonTool = true;
+                _hasOutput = true;
                 yield return new TextDeltaStreamPart(block.Id, arguments);
             }
             else
             {
+                _hasOutput = true;
                 yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments);
             }
         }
@@ -338,26 +365,28 @@ public sealed class AnthropicStream
     }
 
     /// <summary>
-    /// Ends the stream. Returns an interrupted finish part when the events ended cleanly without a
-    /// <c>message_stop</c> for the last message. Errors keep their own error path and get no finish part.
+    /// Ends the stream. Returns an interrupted finish part when the events ended cleanly after output
+    /// without a <c>message_stop</c> for the last message. A stream without output, or with an error,
+    /// gets no finish part so the existing no-output and error paths apply.
     /// </summary>
     public IEnumerable<LanguageModelStreamPart> Complete()
     {
-        if (!_finished && !_failed)
+        if (_hasOutput && !_failed)
         {
-            _finished = true;
-            yield return Finish(true);
+            _hasOutput = false;
+            // Keep the usage core already had before the cutoff.
+            yield return new FinishStreamPart(FinishReason.Interrupted, _lastFinish?.Usage ?? LanguageModelUsage.Null);
         }
     }
 
-    private FinishStreamPart Finish(bool interrupted = false)
+    private FinishStreamPart Finish()
     {
         var usage = _usage is { } element && element.ValueKind == JsonValueKind.Object
             ? AnthropicUsage.Convert(element)
             : LanguageModelUsage.Empty;
-        return interrupted
-            ? new FinishStreamPart(FinishReason.Interrupted, usage)
-            : new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish);
+        _hasOutput = false;
+        _lastFinish = new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish);
+        return _lastFinish;
     }
 
     private static JsonElement ParseElement(string json)
