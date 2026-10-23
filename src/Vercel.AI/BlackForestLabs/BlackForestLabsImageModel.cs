@@ -10,6 +10,7 @@ using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using static Vercel.AI.BlackForestLabs.BlackForestLabsApi;
 using ProviderGeneratedImage = Vercel.AI.Provider.GeneratedImage;
 
 namespace Vercel.AI.BlackForestLabs;
@@ -38,11 +39,6 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     private static readonly string[] Flux3Options =
     {
         "grounding", "pollIntervalMillis", "pollTimeoutMillis", "resolution", "safetyTolerance", "version",
-    };
-
-    private static readonly string[] TerminalStatuses =
-    {
-        "Content Moderated", "Error", "Failed", "Request Moderated", "Task not found",
     };
 
     private static readonly string[] PollStatuses =
@@ -374,14 +370,7 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var pollIntervalMillis = options.Integer("pollIntervalMillis") ?? _provider.PollIntervalMillis ?? DefaultPollIntervalMillis;
         var pollTimeoutMillis = options.Integer("pollTimeoutMillis") ?? _provider.PollTimeoutMillis ?? DefaultPollTimeoutMillis;
 
-        var builder = new UriBuilder(pollUrl);
-        var query = builder.Query.TrimStart('?');
-        if (!query.Split('&').Any(part => part == "id" || part.StartsWith("id=", StringComparison.Ordinal)))
-        {
-            builder.Query = (query.Length == 0 ? string.Empty : query + "&") + "id=" + Uri.EscapeDataString(requestId);
-        }
-
-        var url = builder.Uri;
+        var url = WithRequestId(pollUrl, requestId);
         // Credentials only go to a trusted provider host. For those the poll origin is the trusted origin.
         var trusted = IsTrustedUrl(url.AbsoluteUri, baseUrl);
         var trustedOrigin = trusted ? url.AbsoluteUri : baseUrl;
@@ -448,83 +437,6 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         }
     }
 
-    /// <summary>
-    /// Black Forest Labs returns polling URLs on sibling cluster hosts of the API origin (for example <c>api.us1.bfl.ai</c>
-    /// for a base URL on <c>api.bfl.ai</c>), so a strict same-origin check is not enough. Credentials may also go to
-    /// any https host under the official <c>bfl.ai</c> domain.
-    /// </summary>
-    internal static bool IsTrustedUrl(string url, string baseUrl)
-    {
-        if (ProviderValues.IsSameOrigin(url, baseUrl))
-        {
-            return true;
-        }
-
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
-        {
-            return false;
-        }
-
-        return parsed.Scheme == "https"
-            && (parsed.Host == "bfl.ai" || parsed.Host.EndsWith(".bfl.ai", StringComparison.OrdinalIgnoreCase));
-    }
-
-    private static ApiException Failed(ApiException exception, string url)
-    {
-        var body = exception.ResponseBody;
-        string? message = null;
-        string? status = null;
-        try
-        {
-            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
-            var root = document.RootElement;
-            if (root.ValueKind == JsonValueKind.Object)
-            {
-                status = StringProperty(root, "status") ?? StringProperty(root, "state");
-                if (root.TryGetProperty("detail", out var detail) && detail.ValueKind != JsonValueKind.Null)
-                {
-                    message = detail.ValueKind == JsonValueKind.String ? detail.GetString() : JsonNode.Parse(detail.GetRawText())!.ToJsonString();
-                }
-                else
-                {
-                    message = StringProperty(root, "message");
-                }
-
-                message ??= status != null ? "Black Forest Labs generation failed: " + status + "." : "Unknown Black Forest Labs error";
-            }
-        }
-        catch (JsonException)
-        {
-            // Not a Black Forest Labs error body. The HTTP failure message stays.
-        }
-
-        var retryable = Array.IndexOf(TerminalStatuses, status ?? string.Empty) < 0
-            && (exception.StatusCode == 408 || exception.StatusCode == 409 || exception.StatusCode == 429 || exception.StatusCode >= 500);
-        return new ApiException(message ?? exception.Message, exception.StatusCode, body)
-        {
-            Url = url,
-            IsRetryable = retryable,
-            ResponseHeaders = exception.ResponseHeaders,
-        };
-    }
-
-    private static JsonDocument ParseSubmit(string text)
-    {
-        var document = Parse(text);
-        var root = document.RootElement;
-        var valid = root.ValueKind == JsonValueKind.Object
-            && root.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
-            && root.TryGetProperty("polling_url", out var pollingUrl) && IsUrl(pollingUrl)
-            && NullableNumber(root, "cost") && NullableNumber(root, "input_mp") && NullableNumber(root, "output_mp");
-        if (!valid)
-        {
-            document.Dispose();
-            throw new InvalidResponseDataException(text, "Invalid Black Forest Labs submit response");
-        }
-
-        return document;
-    }
-
     private static JsonDocument ParsePoll(string text, out string status)
     {
         var document = Parse(text);
@@ -562,41 +474,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         return document;
     }
 
-    private static JsonDocument Parse(string text)
-    {
-        try
-        {
-            return JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        }
-        catch (JsonException exception)
-        {
-            throw new InvalidResponseDataException(text, "Invalid JSON response: " + exception.Message);
-        }
-    }
-
-    private static bool IsUrl(JsonElement value)
-    {
-        return value.ValueKind == JsonValueKind.String && Uri.TryCreate(value.GetString(), UriKind.Absolute, out _);
-    }
-
-    private static bool NullableNumber(JsonElement root, string name)
-    {
-        return !root.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.Number;
-    }
-
     private static bool OptionalNumber(JsonElement root, string name)
     {
         return !root.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Number;
-    }
-
-    private static string? StringProperty(JsonElement root, string name)
-    {
-        return root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-    }
-
-    private static JsonElement? Number(JsonElement root, string name)
-    {
-        return root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.Clone() : null;
     }
 
     private static void AddNumber(JsonObject target, string name, JsonElement? value)
@@ -605,17 +485,6 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         {
             target[name] = JsonNode.Parse(value.Value.GetRawText());
         }
-    }
-
-    private static Dictionary<string, string?> UserAgentOnly(IReadOnlyDictionary<string, string?> headers)
-    {
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        if (headers.TryGetValue("User-Agent", out var userAgent))
-        {
-            result["User-Agent"] = userAgent;
-        }
-
-        return result;
     }
 
     private static Dictionary<string, JsonElement> RawOptions(JsonElement? providerOptions)

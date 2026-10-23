@@ -16,7 +16,7 @@ public sealed class GenerateTextBehaviorTests
     [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText::should not execute tools when the finish reason is %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Does_not_execute_tools_for_disallowed_finish_reasons()
     {
-        foreach (var reason in new[] { FinishReason.Length, FinishReason.Error, FinishReason.ContentFilter, FinishReason.Other })
+        foreach (var reason in new[] { FinishReason.Length, FinishReason.Error, FinishReason.ContentFilter, FinishReason.Interrupted, FinishReason.Other })
         {
             var executed = false;
             var model = new TestLanguageModel

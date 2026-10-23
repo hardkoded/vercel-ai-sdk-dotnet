@@ -124,6 +124,7 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         options.ResolveReasoningEffort ??= ResolveReasoningEffort;
         options.SupportsEmbeddings = true;
         options.SupportsImages = false;
+        options.InterruptedWithoutFinish = true;
         options.RequireApiKey = true;
         if (string.IsNullOrEmpty(options.UserAgent))
         {

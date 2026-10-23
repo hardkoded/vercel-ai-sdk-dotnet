@@ -11,6 +11,18 @@ namespace Vercel.AI.Tests.Upstream.ToolLoopAgent;
 public sealed class GenerateTimeoutTests
 {
     [Fact]
+    [UpstreamTest("packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should pass timeout to generateText", Coverage = UpstreamCoverage.Covered, Note = "A timeout is merged into the abort signal of the model call, so the test checks that the call has one.")]
+    public async Task ShouldPassTimeoutToGenerateText()
+    {
+        var model = new TestLanguageModel();
+        var agent = new Agent(new AgentOptions { Model = model }, ToolLoopAgentInstructions.Client());
+
+        await agent.GenerateAsync("Hello, world!", timeout: TimeSpan.FromMilliseconds(5000));
+
+        Assert.NotNull(Assert.Single(model.Calls).AbortSignal);
+    }
+
+    [Fact]
     [UpstreamTest("packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should pass settings timeout to generateText", Coverage = UpstreamCoverage.Covered, Note = "A timeout is merged into the abort signal of the model call, so the test checks that the call has one.")]
     public async Task ShouldPassSettingsTimeoutToGenerateText()
     {

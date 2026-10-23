@@ -29,6 +29,9 @@ public enum FinishReason
 
     /// <summary>A provider-specific reason.</summary>
     Other,
+
+    /// <summary>The provider stream ended without a completion signal. Output may be incomplete.</summary>
+    Interrupted,
 }
 
 /// <summary>Token counts for a model call.</summary>

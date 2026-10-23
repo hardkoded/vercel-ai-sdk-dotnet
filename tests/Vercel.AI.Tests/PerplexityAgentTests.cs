@@ -342,7 +342,7 @@ public sealed class PerplexityAgentTests
         var parts = await Read((await Create(new AgentHandler(sse, sse: true)).LanguageModel("low").DoStreamAsync(Prompt("Hello"), CancellationToken.None)));
 
         Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
-        Assert.Equal(FinishReason.Other, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
+        Assert.Equal(FinishReason.Interrupted, Assert.Single(parts.OfType<FinishStreamPart>()).FinishReason);
         Assert.Equal("Fetched content from 0 URLs", string.Concat(parts.OfType<ReasoningDeltaStreamPart>().Select(part => part.Delta)));
         Assert.Contains(parts, part => part is ReasoningStartStreamPart start && start.Id == "reasoning-0");
         Assert.Contains(parts, part => part is ReasoningEndStreamPart end && end.Id == "reasoning-0");

@@ -78,6 +78,26 @@ internal static class AlibabaChatRequest
             body.Remove(name);
         }
 
+        // Alibaba accepts top_k and has no frequency penalty. The shared request does the opposite.
+        for (var i = warnings.Count - 1; i >= 0; i--)
+        {
+            if (warnings[i].Type == "unsupported" && warnings[i].Feature == "topK")
+            {
+                warnings.RemoveAt(i);
+            }
+        }
+
+        body.Remove("frequency_penalty");
+        if (options.FrequencyPenalty != null)
+        {
+            warnings.Insert(0, new CallWarning("unsupported", "frequencyPenalty", null));
+        }
+
+        if (options.TopK is { } topK)
+        {
+            body["top_k"] = topK;
+        }
+
         // Preserved thinking defaults to on for models that support it. An explicit option always passes through.
         // Unsupported models without an explicit option omit the wire field.
         var preserveThinking = ReadBool(alibaba, "preserveThinking") ?? (SupportsPreservedThinking(modelId) ? true : (bool?)null);
@@ -122,7 +142,12 @@ internal static class AlibabaChatRequest
         }
 
         var prompt = useJsonObject ? InjectJsonInstruction(options.Prompt, hasSchema ? options.JsonSchema : null) : options.Prompt;
-        body["messages"] = AlibabaChatMessages.Convert(prompt, preserveThinking ?? false);
+        var cacheControlValidator = new AlibabaCacheControlValidator();
+        body["messages"] = AlibabaChatMessages.Convert(prompt, preserveThinking ?? false, cacheControlValidator);
+        foreach (var warning in cacheControlValidator.Warnings)
+        {
+            warnings.Add(warning);
+        }
 
         var thinking = ResolveThinking(options.Reasoning, alibaba, warnings);
         foreach (var pair in thinking)
@@ -135,9 +160,25 @@ internal static class AlibabaChatRequest
             body["preserve_thinking"] = preserve;
         }
 
-        if (body.ContainsKey("tools") && ReadBool(alibaba, "parallelToolCalls") is { } parallel)
+        var prepared = AlibabaPrepareTools.Prepare(options.Tools, options.ToolChoice);
+        if (prepared.Tools != null)
+        {
+            body["tools"] = prepared.Tools;
+        }
+
+        if (prepared.ToolChoice != null)
+        {
+            body["tool_choice"] = prepared.ToolChoice;
+        }
+
+        if (prepared.Tools != null && ReadBool(alibaba, "parallelToolCalls") is { } parallel)
         {
             body["parallel_tool_calls"] = parallel;
+        }
+
+        foreach (var warning in prepared.ToolWarnings)
+        {
+            warnings.Add(warning);
         }
 
         return body;

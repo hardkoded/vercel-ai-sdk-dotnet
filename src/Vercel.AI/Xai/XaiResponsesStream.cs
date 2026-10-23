@@ -21,7 +21,8 @@ internal sealed class XaiResponsesStream
     private readonly Dictionary<int, string> _ongoingToolCalls = new();
     private bool _responseMetadataSent;
     private bool _hasFunctionCall;
-    private FinishReason _finish = FinishReason.Other;
+    // A clean end without the provider's completion signal is interrupted.
+    private FinishReason _finish = FinishReason.Interrupted;
     private string? _rawFinish;
     private LanguageModelUsage? _usage;
     private JsonNode? _costInUsdTicks;
@@ -118,6 +119,7 @@ internal sealed class XaiResponsesStream
         }
         catch (JsonException)
         {
+            _finish = FinishReason.Error;
             parts.Add(new ErrorStreamPart("JSON parsing failed: Text: " + data + "."));
             return parts;
         }
@@ -127,6 +129,7 @@ internal sealed class XaiResponsesStream
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object || OpenAIJson.String(root, "type") is not { } type)
             {
+                _finish = FinishReason.Error;
                 parts.Add(new ErrorStreamPart("Invalid xAI Responses stream chunk."));
                 return parts;
             }
@@ -137,6 +140,7 @@ internal sealed class XaiResponsesStream
             }
             catch (InvalidOperationException exception)
             {
+                _finish = FinishReason.Error;
                 parts.Add(new ErrorStreamPart("Invalid xAI Responses stream chunk: " + exception.Message));
             }
         }
@@ -212,6 +216,7 @@ internal sealed class XaiResponsesStream
                 Fail(root, parts);
                 break;
             case "error":
+                _finish = FinishReason.Error;
                 parts.Add(StreamError(root, Required(root, "message")));
                 break;
             case "response.function_call_arguments.delta":
@@ -374,6 +379,11 @@ internal sealed class XaiResponsesStream
         {
             _finish = _hasFunctionCall ? FinishReason.ToolCalls : XaiResponsesResults.MapFinishReason(status);
             _rawFinish = status;
+        }
+        else if (_finish == FinishReason.Interrupted)
+        {
+            // The terminal event arrived, but supplied no recognized reason.
+            _finish = FinishReason.Other;
         }
     }
 

@@ -228,7 +228,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         using var disposable = response;
 
         var isMistral = AmazonBedrockToolIds.IsMistralModel(ModelId);
-        var finishReason = FinishReason.Other;
+        var finishReason = FinishReason.Interrupted;
         string? rawFinishReason = null;
         JsonElement? usage = null;
         JsonObject? metadataPayload = null;

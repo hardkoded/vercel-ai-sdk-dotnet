@@ -599,7 +599,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         private string? _reasoningId;
         private bool _metadataSent;
         private bool _hasFunctionCall;
-        private FinishReason _finish = FinishReason.Other;
+        private FinishReason _finish = FinishReason.Interrupted;
         private string? _rawFinish;
         private JsonElement? _usage;
 
@@ -717,6 +717,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
 
                             _usage = chunk.Response.Usage;
                             _finish = PerplexityAgent.MapPerplexityFinishReason(chunk.Response.Status, chunk.Response.IncompleteReason, _hasFunctionCall, out _rawFinish);
+                        }
+                        else if (_finish == FinishReason.Interrupted)
+                        {
+                            // The terminal event arrived without response details.
+                            _finish = FinishReason.Other;
+                            _rawFinish = null;
                         }
 
                         break;

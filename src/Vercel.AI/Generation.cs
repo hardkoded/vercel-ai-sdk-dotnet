@@ -1294,7 +1294,7 @@ internal static class Generation
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
     {
-        if (toolChoice is null || toolChoice.Type == "auto" || toolChoice.Type == "none")
+        if (generated.FinishReason == FinishReason.Interrupted || toolChoice is null || toolChoice.Type == "auto" || toolChoice.Type == "none")
         {
             return;
         }

@@ -59,6 +59,7 @@ public static class UIMessageChunks
         "content-filter",
         "tool-calls",
         "error",
+        "interrupted",
         "other",
     };
 

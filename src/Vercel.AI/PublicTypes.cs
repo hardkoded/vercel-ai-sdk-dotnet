@@ -556,6 +556,9 @@ public class GenerateTextOptions
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
+    /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
+    internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
+
     /// <summary>Gateway model id such as <c>openai/gpt-4.1-mini</c>.</summary>
     public string? ModelId { get; set; }
 

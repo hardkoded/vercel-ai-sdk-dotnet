@@ -30,14 +30,27 @@ public sealed class Agent
     /// <summary>Agent options.</summary>
     public AgentOptions Options { get; }
 
-    /// <summary>Generates a reply to <paramref name="prompt"/>.</summary>
-    public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Generates a reply to <paramref name="prompt"/>.
+    /// <paramref name="timeout"/> replaces <see cref="AgentOptions.Timeout"/> and the timeout that <see cref="AgentOptions.PrepareCall"/> returns for this call. Maps to <c>timeout</c> of <c>generate</c>.
+    /// </summary>
+    public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null)
     {
-        return _client.GenerateTextAsync(Prepare(CreateOptions(prompt)), cancellationToken);
+        var prepared = Prepare(CreateOptions(prompt));
+        if (timeout != null)
+        {
+            prepared = prepared.ShallowCopy();
+            prepared.Timeout = timeout;
+        }
+
+        return _client.GenerateTextAsync(prepared, cancellationToken);
     }
 
-    /// <summary>Streams a reply to <paramref name="prompt"/>. <paramref name="abortSignal"/> aborts the stream and carries the reason.</summary>
-    public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null)
+    /// <summary>
+    /// Streams a reply to <paramref name="prompt"/>. <paramref name="abortSignal"/> aborts the stream and carries the reason.
+    /// <paramref name="timeout"/> replaces <see cref="AgentOptions.Timeout"/> and the timeout that <see cref="AgentOptions.PrepareCall"/> returns for this call. Maps to <c>timeout</c> of <c>stream</c>.
+    /// </summary>
+    public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null)
     {
         var prepared = Prepare(CreateOptions(prompt));
         return _client.StreamTextAsync(new StreamTextOptions
@@ -64,7 +77,7 @@ public sealed class Agent
             Seed = prepared.Seed,
             Reasoning = prepared.Reasoning,
             MaxRetries = prepared.MaxRetries,
-            Timeout = prepared.Timeout,
+            Timeout = timeout ?? prepared.Timeout,
             Headers = prepared.Headers,
             ProviderOptions = prepared.ProviderOptions,
             PrepareStep = prepared.PrepareStep,
