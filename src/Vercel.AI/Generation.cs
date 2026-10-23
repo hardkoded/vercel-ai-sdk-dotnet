@@ -49,13 +49,47 @@ internal static class Generation
     /// <summary>The leading system messages for the call's instructions. An empty string adds none.</summary>
     private static IReadOnlyList<SystemModelMessage> InstructionMessages(GenerateTextOptions options)
     {
-        var instructions = ResolveInstructions(options);
+        return InstructionMessages(ResolveInstructions(options));
+    }
+
+    private static IReadOnlyList<SystemModelMessage> InstructionMessages(Instructions? instructions)
+    {
         if (instructions?.Messages is { } systemMessages)
         {
             return systemMessages;
         }
 
         return string.IsNullOrEmpty(instructions?.Text) ? Array.Empty<SystemModelMessage>() : new[] { new SystemModelMessage(instructions!.Text!) };
+    }
+
+    /// <summary>
+    /// Runs <c>prepareStep</c> and applies its instructions and messages overrides, which carry forward to later steps.
+    /// The prompt keeps the instructions as leading system messages, so <paramref name="instructionCount"/> marks where the messages start.
+    /// </summary>
+    private static PrepareStepUpdate? PrepareStep(
+        GenerateTextOptions options,
+        IReadOnlyList<StepResult> steps,
+        ILanguageModel model,
+        Instructions? initialInstructions,
+        IReadOnlyList<ModelMessage> initialMessages,
+        IReadOnlyList<ModelMessage> responseMessages,
+        ref Instructions? instructions,
+        ref List<ModelMessage> messages,
+        ref int instructionCount)
+    {
+        var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.Skip(instructionCount).ToArray(), model, instructions, initialInstructions, initialMessages, responseMessages.ToArray()));
+        if (update?.Instructions != null || update?.Messages != null)
+        {
+            instructions = update.Instructions ?? instructions;
+            var instructionMessages = InstructionMessages(instructions);
+            var stepMessages = update.Messages ?? messages.Skip(instructionCount).ToArray();
+            messages = new List<ModelMessage>(instructionMessages.Count + stepMessages.Count);
+            messages.AddRange(instructionMessages);
+            messages.AddRange(stepMessages);
+            instructionCount = instructionMessages.Count;
+        }
+
+        return update;
     }
 
     public static LanguageModelCallOptions CallOptions(GenerateTextOptions options, IReadOnlyList<ModelMessage> prompt)
@@ -97,6 +131,10 @@ internal static class Generation
             WarnUnsupportedTimeouts(options, model);
             using var scope = telemetry?.Begin("generateText", model.ModelId);
             var messages = BuildPrompt(options);
+            var initialInstructions = ResolveInstructions(options);
+            var instructions = initialInstructions;
+            var instructionCount = InstructionMessages(instructions).Count;
+            var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
             var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
@@ -105,12 +143,7 @@ internal static class Generation
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
-                if (update?.Messages != null)
-                {
-                    messages = new List<ModelMessage>(update.Messages);
-                }
-
+                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, ref instructions, ref messages, ref instructionCount);
                 if (update?.Model != null)
                 {
                     current = update.Model;
@@ -130,7 +163,7 @@ internal static class Generation
                 var stepStartMs = now();
                 var modelResponse = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var responseTimeMs = now() - stepStartMs;
-                var generated = await ParseToolCallsAsync(modelResponse, options, messages, cancellationToken).ConfigureAwait(false);
+                var generated = await ParseToolCallsAsync(modelResponse, options, messages, instructions, instructionCount, cancellationToken).ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await NotifyAsync(
@@ -267,6 +300,10 @@ internal static class Generation
         {
             using var scope = telemetry?.Begin("streamText", model.ModelId);
             var messages = BuildPrompt(options);
+            var initialInstructions = ResolveInstructions(options);
+            var instructions = initialInstructions;
+            var instructionCount = InstructionMessages(instructions).Count;
+            var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
@@ -275,12 +312,7 @@ internal static class Generation
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.ToArray(), current));
-                if (update?.Messages != null)
-                {
-                    messages = new List<ModelMessage>(update.Messages);
-                }
-
+                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, ref instructions, ref messages, ref instructionCount);
                 if (update?.Model != null)
                 {
                     current = update.Model;
@@ -413,6 +445,8 @@ internal static class Generation
                                         new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted, Dynamic = toolCall.Dynamic },
                                         options,
                                         stepMessages,
+                                        instructions,
+                                        instructionCount,
                                         cancellationToken).ConfigureAwait(false));
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
@@ -1034,6 +1068,8 @@ internal static class Generation
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        Instructions? instructions,
+        int instructionCount,
         CancellationToken cancellationToken)
     {
         var parses = new List<Task<GeneratedToolCall>>();
@@ -1041,7 +1077,7 @@ internal static class Generation
         {
             if (part is GeneratedToolCall call)
             {
-                parses.Add(ParseToolCallAsync(call, options, messages, cancellationToken));
+                parses.Add(ParseToolCallAsync(call, options, messages, instructions, instructionCount, cancellationToken));
             }
         }
 
@@ -1065,22 +1101,12 @@ internal static class Generation
         GeneratedToolCall call,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        Instructions? instructions,
+        int instructionCount,
         CancellationToken cancellationToken)
     {
-        // The instructions travel as the leading system message. The repair function gets them apart from the messages.
-        var instructions = ResolveInstructions(options);
-        var instructionMessages = InstructionMessages(options);
-        var leading = 0;
-        while (leading < instructionMessages.Count
-            && leading < messages.Count
-            && messages[leading] is SystemModelMessage system
-            && system.Content == instructionMessages[leading].Content
-            && ReferenceEquals(system.ProviderOptions, instructionMessages[leading].ProviderOptions))
-        {
-            leading++;
-        }
-
-        var history = messages.Skip(leading).ToArray();
+        // The messages are the history without the leading instructions, which the repair function gets apart.
+        var history = messages.Skip(instructionCount).ToArray();
 
         var tools = ActiveTools(options);
 
@@ -1093,7 +1119,7 @@ internal static class Generation
                 Tools = tools,
                 RepairToolCall = repairToolCall,
                 RefineToolInput = options.RefineToolInput,
-                Messages = history.ToArray(),
+                Messages = history,
                 Instructions = instructions,
             },
             cancellationToken).ConfigureAwait(false);
