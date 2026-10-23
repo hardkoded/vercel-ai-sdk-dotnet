@@ -50,8 +50,7 @@ public sealed class DoStreamTests
     [InlineData("unknown_reason", true, "Other")]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::maps stop_reason %j and message_stop %s to %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The finish part carries no providerMetadata in this port, so the anthropic.usage.input_tokens assertion is not ported.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Maps_stop_reason_and_message_stop_to_a_finish_reason(string? stopReason, bool messageStop, string unified)
     {
         var sse =
@@ -71,6 +70,24 @@ public sealed class DoStreamTests
         Assert.Equal(unified, finish.FinishReason.ToString());
         Assert.Equal(messageStop && stopReason != Undefined ? stopReason : null, finish.RawFinishReason);
         Assert.Equal(10, finish.Usage.InputTokens);
+        if (messageStop)
+        {
+            Assert.Equal(10, finish.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("usage").GetProperty("input_tokens").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Finish_part_carries_stop_sequence_and_container_metadata()
+    {
+        var parts = await StreamAsync(
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\",\"skills\":[{\"type\":\"anthropic\",\"skill_id\":\"pptx\",\"version\":\"1\"}]}},\"usage\":{\"output_tokens\":3}}\n\n" +
+            "data: {\"type\":\"message_stop\"}\n\n");
+
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        JsonAssert.Equal(
+            finish.ProviderMetadata!.Value,
+            "{\"anthropic\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"stopSequence\":\"END\",\"container\":{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":[{\"type\":\"anthropic\",\"skillId\":\"pptx\",\"version\":\"1\"}]}}}");
     }
 
     [Fact]
