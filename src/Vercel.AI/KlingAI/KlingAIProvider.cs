@@ -75,10 +75,10 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     public static new KlingAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        RedirectGuard.DisableAutoRedirect(handler);
         var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
-            RedirectGuard.DisableAutoRedirect(handler);
             options = options?.Copy() ?? new KlingAIOptions();
             options.DownloadHttpClient ??= client;
         }

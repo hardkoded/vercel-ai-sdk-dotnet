@@ -57,6 +57,28 @@ public sealed class KlingAIProviderTests
         Assert.True(inner.AllowAutoRedirect);
     }
 
+    [Fact]
+    public void DisablesAutoRedirectOnACustomHandlerWithASetOnlyOption()
+    {
+        var handler = new SetOnlyRedirectHandler();
+
+        Vercel.AI.KlingAI.KlingAIProvider.Create(null, handler);
+
+        Assert.True(handler.AutoRedirectWasDisabled);
+    }
+
+    private sealed class SetOnlyRedirectHandler : HttpMessageHandler
+    {
+        public bool AutoRedirectWasDisabled { get; private set; }
+
+        public bool AllowAutoRedirect
+        {
+            set => AutoRedirectWasDisabled = !value;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
     private sealed class RedirectingHandler : HttpMessageHandler
     {
         public bool AllowAutoRedirect { get; set; }
