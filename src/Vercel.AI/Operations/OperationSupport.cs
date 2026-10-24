@@ -248,7 +248,13 @@ public sealed class NoSpeechGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public NoSpeechGeneratedException(IReadOnlyList<ProviderResponse> responses)
-        : base("No speech audio generated.")
+        : this(responses, null)
+    {
+    }
+
+    /// <summary>Creates the exception with the provider error that caused it.</summary>
+    public NoSpeechGeneratedException(IReadOnlyList<ProviderResponse> responses, Exception? cause)
+        : base("No speech audio generated.", cause!)
     {
         Responses = responses ?? Array.Empty<ProviderResponse>();
     }
