@@ -318,6 +318,7 @@ internal static class Generation
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
+                var receivedOutput = false;
                 var usage = LanguageModelUsage.Null;
                 callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
@@ -362,6 +363,11 @@ internal static class Generation
                         if (timeouts != null)
                         {
                             ObserveChunkTimeout(timeouts, part);
+                        }
+
+                        if (IsOutputChunk(part))
+                        {
+                            receivedOutput = true;
                         }
 
                         if (!stepStarted && part is not StreamStartStreamPart)
@@ -510,9 +516,18 @@ internal static class Generation
                     buffer.Add(new StartStepPart(null, stepRequest));
                 }
 
+                // A stream that ends without a finish part and without output is rejected instead of recorded as an empty step.
+                // An incomplete stream with partial output keeps the partial result.
+                if (finish == null && !receivedOutput)
+                {
+                    const string noOutputMessage = "No output generated. The model stream ended without a finish chunk.";
+                    buffer.Add(new ErrorPart(noOutputMessage));
+                    throw new NoOutputGeneratedException(noOutputMessage);
+                }
+
                 var generated = new LanguageModelGenerateResult(
                     BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolContent, sources, documentSources),
-                    finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
+                    finish ?? FinishReason.Other,
                     usage,
                     rawFinish,
                     warnings,
@@ -628,6 +643,19 @@ internal static class Generation
             abort.SignalCleanup?.Invoke();
             abort.Dispose();
         }
+    }
+
+    // Chunks that carry model output. Tells an empty incomplete stream from an incomplete stream with a partial result.
+    private static bool IsOutputChunk(LanguageModelStreamPart part)
+    {
+        return part switch
+        {
+            TextDeltaStreamPart { Delta.Length: > 0 } => true,
+            ReasoningDeltaStreamPart { Delta.Length: > 0 } => true,
+            ToolInputDeltaStreamPart { Delta.Length: > 0 } => true,
+            ToolCallStreamPart => true,
+            _ => false,
+        };
     }
 
     // A chunk of model output starts the chunkMs timeout again. A chunk without output leaves it as it is.
