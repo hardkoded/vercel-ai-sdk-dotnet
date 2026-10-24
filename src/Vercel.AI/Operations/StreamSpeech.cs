@@ -508,6 +508,7 @@ public sealed class StreamSpeechResult
         });
         try
         {
+            token.ThrowIfCancellationRequested();
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
             var call = new SpeechModelStreamCall(text, request.Voice, request.OutputFormat, request.Instructions, request.Speed, request.Language, providerOptions, headers, request.IncludeRawChunks, token);
