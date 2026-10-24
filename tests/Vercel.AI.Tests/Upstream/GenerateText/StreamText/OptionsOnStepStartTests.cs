@@ -20,8 +20,11 @@ public sealed class OptionsOnStepStartTests
     {
         var calls = new List<PrepareStepContext>();
         var responseCount = 0;
-        var model = new StreamTextAbortSupport.ScriptedStreamModel(
-            () => responseCount++ == 0 ? ToolCallStream(("call-1", "{ \"value\": \"test\" }")) : TextStream());
+        var prompts = new List<IReadOnlyList<ModelMessage>>();
+        var model = new PromptRecordingModel(
+            new StreamTextAbortSupport.ScriptedStreamModel(
+                () => responseCount++ == 0 ? ToolCallStream(("call-1", "{ \"value\": \"test\" }")) : TextStream()),
+            prompts);
         var initialMessage = new UserModelMessage("test-input");
 
         await ConsumeAsync(Client().StreamTextAsync(new StreamTextOptions
@@ -54,5 +57,27 @@ public sealed class OptionsOnStepStartTests
         Assert.Equal("tool1", toolMessage.ToolName);
         Assert.Equal("test-result", toolMessage.OutputJson.Trim('"'));
         Assert.Equal(calls[1].InitialMessages.Concat(calls[1].ResponseMessages), calls[1].Messages);
+        var prompt = Assert.IsType<SystemModelMessage>(prompts[1][0]);
+        Assert.Equal("prepared instructions", prompt.Content);
+    }
+
+    private sealed class PromptRecordingModel(ILanguageModel inner, List<IReadOnlyList<ModelMessage>> prompts) : ILanguageModel
+    {
+        public string SpecificationVersion => inner.SpecificationVersion;
+
+        public string Provider => inner.Provider;
+
+        public string ModelId => inner.ModelId;
+
+        public Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        {
+            return inner.DoGenerateAsync(options, cancellationToken);
+        }
+
+        public Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+        {
+            prompts.Add(options.Prompt);
+            return inner.DoStreamAsync(options, cancellationToken);
+        }
     }
 }
