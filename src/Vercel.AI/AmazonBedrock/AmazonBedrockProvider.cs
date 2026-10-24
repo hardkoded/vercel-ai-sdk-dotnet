@@ -109,7 +109,7 @@ public sealed class AmazonBedrockProvider : ProviderBase
     }
 
     // Stops waiting when the token is cancelled, even if the provider ignores it. A later failure is still observed.
-    private static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
+    internal static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
     {
         if (!cancellationToken.CanBeCanceled)
         {

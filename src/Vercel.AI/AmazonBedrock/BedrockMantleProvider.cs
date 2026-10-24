@@ -233,7 +233,7 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
         var headers = options.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value, StringComparer.OrdinalIgnoreCase);
         if (options.HeadersProvider != null)
         {
-            foreach (var pair in await options.HeadersProvider(cancellationToken).ConfigureAwait(false))
+            foreach (var pair in await AmazonBedrockProvider.WaitAsync(options.HeadersProvider(cancellationToken), cancellationToken).ConfigureAwait(false))
             {
                 if (pair.Value == null)
                 {
