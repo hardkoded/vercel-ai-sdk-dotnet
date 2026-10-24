@@ -14,6 +14,9 @@ namespace Vercel.AI.Tests.Upstream.GenerateText;
 public sealed class OptionsOnStepStartTests
 {
     [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.onStepStart::should pass initialInstructions, initialMessages, and responseMessages to prepareStep",
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_pass_initialInstructions_initialMessages_and_responseMessages_to_prepareStep()
     {
         var calls = new List<PrepareStepContext>();
