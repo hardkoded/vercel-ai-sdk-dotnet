@@ -45,12 +45,12 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
         options.Headers["Static"] = "static";
         options.Headers["Custom"] = "static";
         options.Headers["Dropped"] = "static";
-        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Custom"] = "call-" + ++calls, ["Dropped"] = null });
+        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Custom"] = "call-" + ++calls, ["Dropped"] = null, ["Shared"] = "provider" });
         var model = AmazonBedrockProvider.Create(options, chat).LanguageModel("anthropic.claude-v2");
         var call = new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
-            Headers = new Dictionary<string, string?> { ["Layer"] = "call" },
+            Headers = new Dictionary<string, string?> { ["Layer"] = "call", ["Shared"] = "call" },
         };
 
         await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
@@ -58,6 +58,7 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
         Assert.Equal("call-1", chat.Headers["Custom"]);
         Assert.Equal("static", chat.Headers["Static"]);
         Assert.Equal("call", chat.Headers["Layer"]);
+        Assert.Equal("call", chat.Headers["Shared"]);
         Assert.False(chat.Headers.ContainsKey("Dropped"));
         Assert.Contains("ai-sdk-amazon-bedrock", chat.Headers["user-agent"], StringComparison.Ordinal);
 
