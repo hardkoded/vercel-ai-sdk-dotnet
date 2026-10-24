@@ -104,8 +104,33 @@ public sealed class AmazonBedrockProvider : ProviderBase
     {
         var resolved = Options.HeadersProvider == null
             ? null
-            : await Options.HeadersProvider(cancellationToken).ConfigureAwait(false);
+            : await WaitAsync(Options.HeadersProvider(cancellationToken), cancellationToken).ConfigureAwait(false);
         Apply(request, Options.Headers, resolved, callHeaders);
+    }
+
+    // Stops waiting when the token is cancelled, even if the provider ignores it. A later failure is still observed.
+    private static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
+    {
+        if (!cancellationToken.CanBeCanceled)
+        {
+            return await task.ConfigureAwait(false);
+        }
+
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+        {
+            if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
+            {
+                _ = task.ContinueWith(
+                    failed => { _ = failed.Exception; },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+                throw new OperationCanceledException(cancellationToken);
+            }
+        }
+
+        return await task.ConfigureAwait(false);
     }
 
     private static void Apply(
