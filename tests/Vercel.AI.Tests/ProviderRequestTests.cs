@@ -182,7 +182,7 @@ public sealed class ProviderRequestTests
         yield return Chat("zai", "api.z.ai", h => ZaiProvider.Create(Key(), h));
         yield return Chat("gmicloud", "api.gmi-serving.com", h => GmiCloudProvider.Create(Key(), h));
         yield return Chat("mistral", "api.mistral.ai", h => MistralProvider.Create(Key(), h));
-        yield return Row("openai/deployments/m/chat/completions", "api-key", "secret", h => AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret", ResourceName = "demo" }, h), "chat");
+        yield return Row("openai/v1/responses", "api-key", "secret", h => AzureOpenAIProvider.Create(new AzureOpenAIOptions { ApiKey = "secret", ResourceName = "demo" }, h), "chat");
         yield return Row("/language-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "chat");
         yield return Row("/embedding-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "gateway-embed");
         yield return Row("/image-model", "Authorization", "Bearer secret", h => GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, h), "gateway-image");

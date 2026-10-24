@@ -537,7 +537,7 @@ public class AnthropicLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool);
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))

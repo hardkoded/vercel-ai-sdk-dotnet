@@ -275,6 +275,7 @@ public static class ToolApprovalCollection
 
         var approved = new List<CollectedToolApproval>();
         var denied = new List<CollectedToolApproval>();
+        var collectedToolCallIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var response in responses)
         {
             if (!requests.TryGetValue(response.ApprovalId, out var request))
@@ -291,6 +292,14 @@ public static class ToolApprovalCollection
             if (!toolCalls.TryGetValue(request.ToolCallId, out var toolCall))
             {
                 throw new ToolCallNotFoundForApprovalException(request.ToolCallId, request.ApprovalId);
+            }
+
+            // Only the first response for a tool call is collected. Later responses (replays,
+            // conflicting decisions, or responses to another approval of the same call) would
+            // otherwise execute the tool twice or both execute and deny it.
+            if (!collectedToolCallIds.Add(toolCall.ToolCallId))
+            {
+                continue;
             }
 
             var collected = new CollectedToolApproval(request, response, toolCall, existing);
