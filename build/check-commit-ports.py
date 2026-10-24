@@ -248,7 +248,7 @@ def find_renamed(test: dict[str, object], catalog: dict[str, dict[str, object]],
         tier = [row for row in same_title if fits(row)]
         if tier:
             if len(tier) > 1:
-                tier = [row for row in tier if row["suite"] == test["suite"]]
+                tier = [row for row in tier if row.get("suite", "") == test["suite"]]
             if len(tier) != 1:
                 return None
             link, _ = find_link(str(tier[0]["id"]), links, list(catalog))
@@ -349,8 +349,10 @@ def self_test() -> None:
     row = lambda file, suite, title: {"id": f"{file}::{suite}::{title}", "file": file, "suite": suite, "title": title}
     catalog = {r["id"]: r for r in (
         row("a/x.test.ts", "S > two", "t"), row("a/x.test.ts", "S > one", "t"), row("b/y.test.ts", "S", "u"),
-        row("c/y.test.ts", "S", "u"), row("a/x.test.ts", "S", "v"),
+        row("c/y.test.ts", "S", "u"), row("a/x.test.ts", "S", "v"), row("a/z.test.ts", "S", "w"),
     )}
+    top = {"id": "a/z.test.ts::w", "file": "a/z.test.ts", "title": "w"}  # top-level test: the catalog omits "suite"
+    catalog[top["id"]] = top
     links = [{"upstreamId": cid, "coverage": "Partial"} for cid in catalog if "y.test" not in cid]
     assert find_renamed(row("a/x.test.ts", "S > old", "t"), catalog, links) is None  # two titles share the file and no suite matches
     assert find_renamed(row("a/x.test.ts", "S > one", "t"), catalog, links) is None  # id is current
@@ -359,6 +361,8 @@ def self_test() -> None:
     assert find_renamed(row("old/y.test.ts", "S", "u"), catalog, links) is None  # two files of that name
     assert find_renamed(row("a/x.test.ts", "S", "gone"), catalog, links) is None  # no test with the title
     assert find_renamed(row("a/x.test.ts", "S > old", "v"), catalog, []) is None  # not linked
+    assert find_renamed(row("a/z.test.ts", "S > old", "w"), catalog, links) is None  # a top-level candidate without suite does not raise
+    assert find_renamed(row("a/z.test.ts", "", "w"), catalog, links)[0] == "a/z.test.ts::w"
     print("self-test passed")
 
 
