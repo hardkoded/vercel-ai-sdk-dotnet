@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
@@ -124,8 +125,7 @@ public sealed class DoStreamTests
     [InlineData("unknown_reason", true, "Other")]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::maps stop_reason %j and message_stop %s to %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The finish part carries no providerMetadata in this port, so the anthropic.usage.input_tokens assertion is not ported.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Maps_stop_reason_and_message_stop_to_a_finish_reason(string? stopReason, bool messageStop, string unified)
     {
         var sse =
@@ -145,10 +145,28 @@ public sealed class DoStreamTests
         Assert.Equal(unified, finish.FinishReason.ToString());
         Assert.Equal(messageStop && stopReason != Undefined ? stopReason : null, finish.RawFinishReason);
         Assert.Equal(messageStop ? 10 : null, finish.Usage.InputTokens);
-        if (!messageStop)
+        if (messageStop)
+        {
+            Assert.Equal(10, finish.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("usage").GetProperty("input_tokens").GetInt32());
+        }
+        else
         {
             Assert.Null(finish.ProviderMetadata);
         }
+    }
+
+    [Fact]
+    public async Task Finish_part_carries_stop_sequence_and_container_metadata()
+    {
+        var parts = await StreamAsync(
+            "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\n\n" +
+            "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\",\"skills\":[{\"type\":\"anthropic\",\"skill_id\":\"pptx\",\"version\":\"1\"}]}},\"usage\":{\"output_tokens\":3}}\n\n" +
+            "data: {\"type\":\"message_stop\"}\n\n");
+
+        var finish = Assert.Single(parts.OfType<FinishStreamPart>());
+        JsonAssert.Equal(
+            finish.ProviderMetadata!.Value,
+            "{\"anthropic\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":3},\"stopSequence\":\"END\",\"iterations\":null,\"container\":{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":[{\"type\":\"anthropic\",\"skillId\":\"pptx\",\"version\":\"1\"}]},\"contextManagement\":null}}");
     }
 
     [Fact]
@@ -217,6 +235,71 @@ public sealed class DoStreamTests
         Assert.Empty(parts.OfType<ErrorStreamPart>());
         var delta = Assert.Single(parts.OfType<TextDeltaStreamPart>(), part => part.Id == "0");
         Assert.Equal("Summary of conversation.", delta.Delta);
+    }
+
+    private const string StartWithContainer =
+        "{\"type\":\"message_start\",\"message\":{\"id\":\"msg1\",\"model\":\"m\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\"},\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}";
+
+    private static JsonElement FinishMetadata(AnthropicStream stream, params string[] events)
+    {
+        var parts = events.SelectMany(stream.Push).ToList();
+        return parts.OfType<FinishStreamPart>().Last().ProviderMetadata!.Value;
+    }
+
+    [Fact]
+    public void Finish_metadata_is_mirrored_under_a_custom_provider_key()
+    {
+        var metadata = FinishMetadata(
+            new AnthropicStream(false, false, "custom", true),
+            StartWithContainer,
+            "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}",
+            "{\"type\":\"message_stop\"}");
+
+        Assert.Equal(metadata.GetProperty("anthropic").GetRawText(), metadata.GetProperty("custom").GetRawText());
+    }
+
+    [Fact]
+    public void Container_from_message_start_has_null_skills_and_is_cleared_by_a_delta_without_one()
+    {
+        var withoutDelta = FinishMetadata(new AnthropicStream(false, false), StartWithContainer, "{\"type\":\"message_stop\"}");
+        JsonAssert.Equal(
+            withoutDelta.GetProperty("anthropic").GetProperty("container"),
+            "{\"expiresAt\":\"2030-01-01T00:00:00Z\",\"id\":\"c1\",\"skills\":null}");
+
+        var withDelta = FinishMetadata(
+            new AnthropicStream(false, false),
+            StartWithContainer,
+            "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}",
+            "{\"type\":\"message_stop\"}");
+        Assert.Equal(JsonValueKind.Null, withDelta.GetProperty("anthropic").GetProperty("container").ValueKind);
+    }
+
+    [Fact]
+    public void Stop_sequence_is_null_when_the_delta_has_none()
+    {
+        var metadata = FinishMetadata(
+            new AnthropicStream(false, false),
+            StartWithContainer,
+            "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":3}}",
+            "{\"type\":\"message_stop\"}");
+
+        Assert.Equal(JsonValueKind.Null, metadata.GetProperty("anthropic").GetProperty("stopSequence").ValueKind);
+    }
+
+    [Fact]
+    public void A_new_message_resets_the_stop_sequence_and_container()
+    {
+        var metadata = FinishMetadata(
+            new AnthropicStream(false, false),
+            StartWithContainer,
+            "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"END\",\"container\":{\"id\":\"c1\",\"expires_at\":\"2030-01-01T00:00:00Z\"}},\"usage\":{\"output_tokens\":3}}",
+            "{\"type\":\"message_stop\"}",
+            "{\"type\":\"message_start\",\"message\":{\"id\":\"msg2\",\"model\":\"m\",\"usage\":{\"input_tokens\":5,\"output_tokens\":1}}}",
+            "{\"type\":\"message_stop\"}");
+
+        var anthropic = metadata.GetProperty("anthropic");
+        Assert.Equal(JsonValueKind.Null, anthropic.GetProperty("stopSequence").ValueKind);
+        Assert.Equal(JsonValueKind.Null, anthropic.GetProperty("container").ValueKind);
     }
 
     private static async Task<List<LanguageModelStreamPart>> StreamAsync(string sse)

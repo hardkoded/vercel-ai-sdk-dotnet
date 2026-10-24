@@ -15,12 +15,16 @@ public sealed class AnthropicStream
 {
     private readonly bool _includeRaw;
     private readonly bool _usesJsonTool;
+    private readonly string _providerOptionsName;
+    private readonly bool _usedCustomProviderKey;
     private readonly Dictionary<int, Block> _blocks = new Dictionary<int, Block>();
     private bool _invalid;
     private bool _open;
     private string? _activeId;
     private string? _finish;
     private JsonElement? _usage;
+    private string? _stopSequence;
+    private JsonNode? _container;
     private bool _jsonTool;
     private bool _hasOutput;
     private bool _failed;
@@ -28,9 +32,17 @@ public sealed class AnthropicStream
 
     /// <summary>Creates a stream reader.</summary>
     public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
+        : this(includeRawChunks, usesJsonResponseTool, "anthropic", false)
+    {
+    }
+
+    /// <summary>Creates a stream reader that mirrors the finish metadata under a custom provider key.</summary>
+    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey)
     {
         _includeRaw = includeRawChunks;
         _usesJsonTool = usesJsonResponseTool;
+        _providerOptionsName = providerOptionsName;
+        _usedCustomProviderKey = usedCustomProviderKey;
     }
 
     /// <summary>Reads one SSE data payload.</summary>
@@ -153,11 +165,18 @@ public sealed class AnthropicStream
         _open = true;
         _hasOutput = false;
         _finish = null;
+        _stopSequence = null;
+        _container = null;
         _activeId = id;
         var usage = message?["usage"];
         if (usage != null)
         {
             _usage = ParseElement(usage.ToJsonString());
+        }
+
+        if (message?["container"] is JsonObject startContainer)
+        {
+            _container = Container(startContainer, false);
         }
 
         var model = Text(message?["model"]);
@@ -248,7 +267,6 @@ public sealed class AnthropicStream
                 Input = new StringBuilder(initial),
                 HasInitialInput = initial.Length > 0,
             };
-            _hasOutput |= initial.Length > 0;
         }
     }
 
@@ -346,6 +364,9 @@ public sealed class AnthropicStream
             _finish = stop;
         }
 
+        _stopSequence = Text(delta?["stop_sequence"]);
+        _container = delta?["container"] is JsonObject container ? Container(container, true) : null;
+
         if (node["usage"] is JsonObject usage)
         {
             // The delta only reports what changed; keep the counts from message_start.
@@ -375,8 +396,51 @@ public sealed class AnthropicStream
         {
             _hasOutput = false;
             // Keep the usage core already had before the cutoff.
-            yield return new FinishStreamPart(FinishReason.Interrupted, _lastFinish?.Usage ?? LanguageModelUsage.Null);
+            yield return new FinishStreamPart(
+                FinishReason.Interrupted,
+                _lastFinish?.Usage ?? LanguageModelUsage.Null,
+                providerMetadata: _lastFinish?.ProviderMetadata);
         }
+    }
+
+    private static JsonObject Container(JsonObject container, bool withSkills)
+    {
+        var mapped = new JsonObject
+        {
+            ["expiresAt"] = Text(container["expires_at"]),
+            ["id"] = Text(container["id"]),
+            ["skills"] = null,
+        };
+        if (withSkills && container["skills"] is JsonArray skills)
+        {
+            mapped["skills"] = new JsonArray(skills.OfType<JsonObject>().Select(skill => (JsonNode)new JsonObject
+            {
+                ["type"] = skill["type"]?.DeepClone(),
+                ["skillId"] = skill["skill_id"]?.DeepClone(),
+                ["version"] = skill["version"]?.DeepClone(),
+            }).ToArray());
+        }
+
+        return mapped;
+    }
+
+    private JsonElement FinishMetadata()
+    {
+        var anthropic = new JsonObject
+        {
+            ["usage"] = _usage is { ValueKind: JsonValueKind.Object } usage ? JsonNode.Parse(usage.GetRawText()) : null,
+            ["stopSequence"] = _stopSequence,
+            ["iterations"] = null,
+            ["container"] = _container?.DeepClone(),
+            ["contextManagement"] = null,
+        };
+        var metadata = new JsonObject { ["anthropic"] = anthropic };
+        if (_usedCustomProviderKey && _providerOptionsName != "anthropic")
+        {
+            metadata[_providerOptionsName] = anthropic.DeepClone();
+        }
+
+        return ParseElement(metadata.ToJsonString());
     }
 
     private FinishStreamPart Finish()
@@ -385,7 +449,7 @@ public sealed class AnthropicStream
             ? AnthropicUsage.Convert(element)
             : LanguageModelUsage.Empty;
         _hasOutput = false;
-        _lastFinish = new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish);
+        _lastFinish = new FinishStreamPart(AnthropicStopReason.Map(_finish, _jsonTool), usage, _finish, FinishMetadata());
         return _lastFinish;
     }
 
