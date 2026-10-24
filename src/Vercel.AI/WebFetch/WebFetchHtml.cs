@@ -458,6 +458,9 @@ internal static class WebFetchHtml
             return resolved.Scheme == "http" || resolved.Scheme == "https" ? resolved.AbsoluteUri : null;
         }
 
+        private static string FormatDestination(string url) =>
+            url.IndexOf('(') >= 0 || url.IndexOf(')') >= 0 ? "<" + url + ">" : url;
+
         private void RenderLink(IElement element)
         {
             var href = Resolve(element.GetAttribute("href"));
@@ -469,7 +472,7 @@ internal static class WebFetchHtml
 
             _output.Append('[');
             RenderChildren(element);
-            _output.Append("](").Append(href).Append(')');
+            _output.Append("](").Append(FormatDestination(href)).Append(')');
         }
 
         private void RenderImage(IElement element)
@@ -480,7 +483,7 @@ internal static class WebFetchHtml
                 return;
             }
 
-            _output.Append("![").Append(element.GetAttribute("alt") ?? string.Empty).Append("](").Append(source).Append(')');
+            _output.Append("![").Append(element.GetAttribute("alt") ?? string.Empty).Append("](").Append(FormatDestination(source)).Append(')');
         }
 
         private void RenderList(IElement list)

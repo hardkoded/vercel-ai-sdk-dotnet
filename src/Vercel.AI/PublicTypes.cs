@@ -41,7 +41,7 @@ public sealed class Tool
     /// <summary>JSON Schema for the arguments. Undefined for a provider-defined tool declared without one.</summary>
     public JsonElement InputSchema { get; }
 
-    /// <summary>Executes the tool and returns a JSON string. Null means the call is not executed locally.</summary>
+    /// <summary>Executes the tool and returns a JSON string. Null means the call is not executed locally, unless <see cref="ExecuteWithOptions"/> is set.</summary>
     public Func<JsonElement, CancellationToken, Task<string>>? Execute { get; }
 
     /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>

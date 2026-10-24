@@ -974,7 +974,7 @@ internal static class Generation
                 var tool = FindTool(options, call.ToolName);
 
                 // A tool without execute is for the caller to run: the step has the call and no result.
-                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && tool.Execute == null))
+                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && !HasExecutor(tool)))
                 {
                     continue;
                 }
@@ -1410,6 +1410,8 @@ internal static class Generation
     }
 
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
+    private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null);
+
     private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
     {
         foreach (var call in step.ToolCalls)
@@ -1420,7 +1422,7 @@ internal static class Generation
             }
 
             var tool = FindTool(options, call.ToolName);
-            if ((tool != null && tool.Execute == null) || IsAwaitingApproval(tool, options))
+            if ((tool != null && !HasExecutor(tool)) || IsAwaitingApproval(tool, options))
             {
                 return true;
             }
@@ -1433,7 +1435,7 @@ internal static class Generation
     {
         var tool = FindTool(options, call.ToolName);
 
-        if (tool?.Execute == null)
+        if (tool == null || !HasExecutor(tool))
         {
             return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
         }
@@ -1466,7 +1468,7 @@ internal static class Generation
             var input = arguments.RootElement.Clone();
             var output = tool.ExecuteWithOptions != null
                 ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
-                : await tool.Execute(input, toolToken).ConfigureAwait(false);
+                : await tool.Execute!(input, toolToken).ConfigureAwait(false);
             output = string.IsNullOrEmpty(output) ? "null" : output;
             var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
             executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = modelOutput?.Type, ModelOutput = ModelOutputText(modelOutput) };

@@ -115,7 +115,12 @@ internal static class WebFetchResource
             if (IsRedirectStatus(response.Status) && !string.IsNullOrEmpty(location))
             {
                 response.Cancel();
-                currentUrl = new Uri(new Uri(currentUrl), location).AbsoluteUri;
+                if (!Uri.TryCreate(new Uri(currentUrl), location, out var next))
+                {
+                    return WebFetchResourceResult.Error("network_error", "A redirect could not be validated and was blocked.");
+                }
+
+                currentUrl = next.AbsoluteUri;
                 continue;
             }
 

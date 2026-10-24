@@ -292,6 +292,10 @@ public static class WebFetchTools
         if (end > 0 && end < totalLength && char.IsHighSurrogate(document.Content[end - 1]))
         {
             end--;
+            if (end == offset)
+            {
+                end = (int)Math.Min((long)offset + 2, totalLength);
+            }
         }
 
         return WebFetchOutput.ForDocument(
@@ -331,8 +335,9 @@ public static class WebFetchTools
         {
             lock (_gate)
             {
-                _entries.RemoveAll(entry => entry.Key == key);
-                _entries.Add((key, document, DateTime.UtcNow + DocumentCacheTtl));
+                var now = DateTime.UtcNow;
+                _entries.RemoveAll(entry => entry.Key == key || entry.ExpiresAt < now);
+                _entries.Add((key, document, now + DocumentCacheTtl));
                 while (_entries.Count > DocumentCacheSize)
                 {
                     _entries.RemoveAt(0);
