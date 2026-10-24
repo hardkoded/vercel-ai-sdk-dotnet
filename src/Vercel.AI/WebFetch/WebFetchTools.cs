@@ -165,6 +165,7 @@ public static class WebFetchTools
                 var cached = cache.Get(href);
                 if (cached != null)
                 {
+                    executionOptions.AbortSignal.ThrowIfCancellationRequested();
                     return SliceDocument(cached.WithUrl(url), offset, maxLength).ToJson();
                 }
             }
