@@ -102,6 +102,8 @@ public static class WebFetchTools
         var blockedDomains = options.BlockedDomains == null ? null : WebFetchDomainFilter.NormalizeDomains("BlockedDomains", options.BlockedDomains);
         var isDomainAllowed = WebFetchDomainFilter.Create(allowedDomains, blockedDomains);
         var requireUrlInUserMessage = options.RequireUrlInUserMessage;
+        var fetch = options.Fetch;
+        var defuddleOptions = options.DefuddleOptions;
 
         var headers = new HeaderCollection();
         headers.Add("accept", AcceptHeader);
@@ -176,7 +178,7 @@ public static class WebFetchTools
             WebFetchResourceResult result;
             try
             {
-                result = await WebFetchResource.FetchAsync(href, headers, timeoutSource.Token, maxBytes, options.Fetch, isDomainAllowed).ConfigureAwait(false);
+                result = await WebFetchResource.FetchAsync(href, headers, timeoutSource.Token, maxBytes, fetch, isDomainAllowed).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (!executionOptions.AbortSignal.IsCancellationRequested && timeoutSource.IsCancellationRequested)
             {
@@ -198,13 +200,14 @@ public static class WebFetchTools
                     "Content type " + (mediaType ?? "unknown") + " is not supported. Supported content types are HTML and text formats such as markdown, plain text, JSON, and XML.").ToJson();
             }
 
+            executionOptions.AbortSignal.ThrowIfCancellationRequested();
             string? title = null;
             string content;
             try
             {
                 if (kind == WebFetchContentKind.Html)
                 {
-                    (title, content) = WebFetchHtml.ToMarkdown(WebFetchContentType.DecodeText(result.Body, result.ContentType, true), result.FinalUrl, options.DefuddleOptions);
+                    (title, content) = WebFetchHtml.ToMarkdown(WebFetchContentType.DecodeText(result.Body, result.ContentType, true), result.FinalUrl, defuddleOptions);
                 }
                 else
                 {
@@ -215,6 +218,8 @@ public static class WebFetchTools
             {
                 return Error("conversion_failed", "Converting the content failed.").ToJson();
             }
+
+            executionOptions.AbortSignal.ThrowIfCancellationRequested();
 
             var document = new WebFetchOutput.ConvertedDocument(
                 url,

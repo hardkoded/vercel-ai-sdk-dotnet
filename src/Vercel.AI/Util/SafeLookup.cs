@@ -56,12 +56,31 @@ internal static class SafeLookup
     /// <summary>The system resolver.</summary>
     public static Task<IPAddress[]> SystemResolveAsync(string hostname, CancellationToken cancellationToken)
     {
+        return ResolveWithBoundAsync(hostname, cancellationToken);
+    }
+
+    private static readonly TimeSpan ResolveTimeout = TimeSpan.FromSeconds(30);
+
+    private static async Task<IPAddress[]> ResolveWithBoundAsync(string hostname, CancellationToken cancellationToken)
+    {
+        using (var bound = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+        {
+            bound.CancelAfter(ResolveTimeout);
 #if NET6_0_OR_GREATER
-        return Dns.GetHostAddressesAsync(hostname, cancellationToken);
+            return await Dns.GetHostAddressesAsync(hostname, bound.Token).ConfigureAwait(false);
 #else
-        cancellationToken.ThrowIfCancellationRequested();
-        return Dns.GetHostAddressesAsync(hostname);
+            // This target cannot cancel the lookup. Stop waiting for it when the bound ends. The lookup itself may keep running.
+            var lookup = Dns.GetHostAddressesAsync(hostname);
+            var finished = await Task.WhenAny(lookup, Task.Delay(Timeout.Infinite, bound.Token)).ConfigureAwait(false);
+            if (finished != lookup)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new DownloadError(hostname, "Resolving hostname " + hostname + " timed out.");
+            }
+
+            return await lookup.ConfigureAwait(false);
 #endif
+        }
     }
 
 #if NET5_0_OR_GREATER
@@ -74,6 +93,8 @@ internal static class SafeLookup
         return new SocketsHttpHandler
         {
             AllowAutoRedirect = false,
+            // With a proxy, the callback would receive the proxy endpoint instead of the destination.
+            UseProxy = false,
             ConnectCallback = ConnectValidatedAsync,
         };
     }
