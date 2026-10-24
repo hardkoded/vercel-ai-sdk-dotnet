@@ -541,6 +541,11 @@ public sealed class StreamSpeechResult
 
             _queue.Complete(reason);
         }
+        finally
+        {
+            // A late consumer cancel is absorbed by CancelPipe.
+            _pipe.Dispose();
+        }
     }
 
     // A stream that ends without a finish part: when nothing was heard it is a no-speech failure;
@@ -755,7 +760,7 @@ public static class StreamSpeech
         if (request.Model is null && request.ModelId is { } id)
         {
             request.ModelWasString = true;
-            model = SpeechModels.Default?.Invoke(id) ?? throw Unsupported(new MissingSpeechCaller(id), true);
+            model = SpeechModels.Default?.Invoke(id) ?? throw new UnsupportedFunctionalityException("streaming speech", "No speech model resolved for \"" + id + "\". Set SpeechModels.Default to a factory that returns an ISpeechCaller, or pass a model instance through StreamSpeechRequest.Model.");
         }
         else
         {
@@ -801,22 +806,5 @@ public static class StreamSpeech
         }
 
         return new UnsupportedFunctionalityException("streaming speech", message);
-    }
-
-    private sealed class MissingSpeechCaller : ISpeechCaller
-    {
-        public MissingSpeechCaller(string modelId)
-        {
-            ModelId = modelId;
-        }
-
-        public string Provider { get { return "gateway"; } }
-
-        public string ModelId { get; }
-
-        public Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
-        {
-            throw new NotSupportedException();
-        }
     }
 }

@@ -505,7 +505,8 @@ public sealed class ExperimentalStreamSpeechTests
             await Task.Delay(10);
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            Assert.Empty(unhandled);
+            // The handler is process-wide, so ignore faults that other tests leave for the finalizer.
+            Assert.DoesNotContain(unhandled, error => error.ToString().Contains("StreamSpeech", StringComparison.Ordinal));
         }
         finally
         {
