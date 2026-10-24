@@ -235,7 +235,7 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 ### Security
 
-The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport validates the URL only, it does not validate the resolved DNS addresses at connect time ([#755](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/755)), so restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. On `net10.0` the default transport also validates the resolved DNS addresses and connects to the validated address, so a hostname that resolves to a private or reserved address returns `url_not_allowed`. On `netstandard2.0` it validates the resolved addresses just before the request but cannot pin the connection, so restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
 
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 

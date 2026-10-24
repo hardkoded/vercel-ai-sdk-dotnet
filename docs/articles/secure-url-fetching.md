@@ -7,7 +7,9 @@ The SDK:
 - **Rejects private, loopback, and link-local targets.** This covers IPv4 (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, CGNAT, multicast, and so on) and the equivalent IPv6 ranges, plus `localhost`, `.local`, `.localhost`, and `.internal` hostnames. Hostnames are compared without case, a trailing dot, or a port. Non-`http(s)` schemes are rejected, except `data:` URLs, which the SDK accepts and decodes locally.
 - **Re-validates every inspectable redirect hop.** A URL that passes but then redirects to an internal address is blocked. An opaque redirect, whose destination the SDK cannot read, is blocked too, unless a browser-style runtime opts in to following it natively. In that case the SDK cannot validate the destination.
 
-The `.internal` rule is defense in depth. It does not replace network-level protection and does not solve DNS rebinding.
+- **Validates resolved addresses in the default fetch.** On `net10.0`, the default fetch resolves the hostname itself, rejects it with a `DownloadError` when any returned address is private or reserved, and connects to the validated address. The connection is pinned, so DNS rebinding cannot introduce a second lookup. On `netstandard2.0` the default fetch validates the resolved addresses just before the request but cannot pin the connection. A custom fetch must do its own validation. A `trustedOrigin` skips the check.
+
+The `.internal` rule is defense in depth. It does not replace network-level protection.
 
 ## Fetching with redirect validation
 
