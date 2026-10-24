@@ -162,7 +162,7 @@ public sealed class ToolChoiceEnforcementTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should allow prepareStep to replace none with auto", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should allow prepareStep to replace none with auto", Coverage = UpstreamCoverage.Partial, Note = "The port has no onInputAvailable tool callback, so the assertion that it runs once is not made.")]
     public async Task Should_allow_prepareStep_to_replace_none_with_auto()
     {
         var executed = 0;
