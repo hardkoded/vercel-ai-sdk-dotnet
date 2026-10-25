@@ -9,6 +9,7 @@ using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.BlackForestLabsImageModel;
+using Vercel.AI.Util;
 using static Vercel.AI.Tests.BlackForestLabsVideoModel.BlackForestLabsVideoModelFixture;
 
 namespace Vercel.AI.Tests.BlackForestLabsProvider;
@@ -177,6 +178,18 @@ public sealed class BlackForestLabsProviderTests
         var exception = await Assert.ThrowsAsync<AiSdkException>(() => model.DoGenerateAsync(Call(), CancellationToken.None));
 
         Assert.Contains("Black Forest Labs video generation timed out after 25ms. Request id: req-123", exception.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "throws NoSuchModelError for unsupported model types", Coverage = UpstreamCoverage.Covered)]
+    public void ThrowsNoSuchModelErrorForUnsupportedModelTypes()
+    {
+        var provider = CreateProvider(null);
+
+        var languageError = Assert.Throws<NoSuchModelError>(() => provider.LanguageModel("some-id"));
+        Assert.Contains("No such languageModel", languageError.Message);
+        var embeddingError = Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("some-id"));
+        Assert.Contains("No such embeddingModel", embeddingError.Message);
     }
 
     [Fact]
