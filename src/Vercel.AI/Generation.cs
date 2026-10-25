@@ -1105,7 +1105,7 @@ internal static class Generation
             responseMessages.Skip(stepResponseStart).ToArray(),
             responseBody);
         var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason);
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason) { StructuredOutputText = generated.StructuredOutputText };
     }
 
     // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
@@ -1694,10 +1694,13 @@ internal static class Generation
             sources.AddRange(step.Sources);
         }
 
+        // A provider-selected structured output text replaces the step text for JSON output only. An empty selection
+        // is explicit, so it is parsed (and rejected) instead of falling back to the step text.
+        var outputText = options.Output?.Schema != null ? last.StructuredOutputText ?? last.Text : last.Text;
         JsonElement? output = null;
-        if (options.Output?.Schema != null && !string.IsNullOrWhiteSpace(last.Text))
+        if (options.Output?.Schema != null && (last.StructuredOutputText != null || !string.IsNullOrWhiteSpace(last.Text)))
         {
-            using var document = JsonDocument.Parse(last.Text);
+            using var document = JsonDocument.Parse(outputText);
             output = document.RootElement.Clone();
         }
 

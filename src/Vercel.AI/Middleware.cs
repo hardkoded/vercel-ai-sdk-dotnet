@@ -140,29 +140,42 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
                 continue;
             }
 
-            var text = _startWithReasoning ? _opening + generatedText.Text : generatedText.Text;
-            if (!TryMatchReasoning(text, out var matches) || matches.Count == 0)
+            var (remaining, reasoning) = ExtractReasoning(generatedText.Text);
+            if (reasoning == null)
             {
                 content.Add(part);
                 continue;
             }
 
-            var reasoning = new string[matches.Count];
-            var remaining = text;
-            for (var i = matches.Count - 1; i >= 0; i--)
-            {
-                var match = matches[i];
-                reasoning[i] = match.Groups[1].Value;
-                var before = remaining.Substring(0, match.Index);
-                var after = remaining.Substring(match.Index + match.Length);
-                remaining = before + (before.Length > 0 && after.Length > 0 ? _separator : string.Empty) + after;
-            }
-
-            content.Add(new GeneratedReasoning(string.Join(_separator, reasoning)));
+            content.Add(new GeneratedReasoning(reasoning));
             content.Add(new GeneratedText(remaining));
         }
 
-        return MiddlewareResults.CopyResult(content, result);
+        var structuredOutputText = result.StructuredOutputText == null ? null : ExtractReasoning(result.StructuredOutputText).Text;
+        return MiddlewareResults.CopyResult(content, result, structuredOutputText);
+    }
+
+    // Splits the reasoning blocks out of one text. Reasoning is null when the text has none.
+    private (string Text, string? Reasoning) ExtractReasoning(string input)
+    {
+        var text = _startWithReasoning ? _opening + input : input;
+        if (!TryMatchReasoning(text, out var matches) || matches.Count == 0)
+        {
+            return (input, null);
+        }
+
+        var reasoning = new string[matches.Count];
+        var remaining = text;
+        for (var i = matches.Count - 1; i >= 0; i--)
+        {
+            var match = matches[i];
+            reasoning[i] = match.Groups[1].Value;
+            var before = remaining.Substring(0, match.Index);
+            var after = remaining.Substring(match.Index + match.Length);
+            remaining = before + (before.Length > 0 && after.Length > 0 ? _separator : string.Empty) + after;
+        }
+
+        return (remaining, string.Join(_separator, reasoning));
     }
 
     /// <inheritdoc />
@@ -355,7 +368,8 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
             }
         }
 
-        return MiddlewareResults.CopyResult(content, result);
+        var structuredOutputText = result.StructuredOutputText == null ? null : StripFence(result.StructuredOutputText);
+        return MiddlewareResults.CopyResult(content, result, structuredOutputText);
     }
 
     internal static string StripFence(string text)
@@ -384,7 +398,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 
 internal static class MiddlewareResults
 {
-    public static LanguageModelGenerateResult CopyResult(IReadOnlyList<GeneratedContent> content, LanguageModelGenerateResult result)
+    public static LanguageModelGenerateResult CopyResult(IReadOnlyList<GeneratedContent> content, LanguageModelGenerateResult result, string? structuredOutputText)
     {
         return new LanguageModelGenerateResult(
             content,
@@ -397,7 +411,8 @@ internal static class MiddlewareResults
             result.RawResponse,
             result.ResponseModelId,
             result.ResponseTimestamp,
-            result.ResponseHeaders);
+            result.ResponseHeaders,
+            structuredOutputText);
     }
 }
 

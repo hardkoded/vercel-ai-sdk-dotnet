@@ -264,6 +264,9 @@ public sealed class StepResult
     /// <summary>Text generated in this step.</summary>
     public string Text { get; }
 
+    // The model call result's StructuredOutputText: the text a JSON output parses instead of Text.
+    internal string? StructuredOutputText { get; init; }
+
     /// <summary>
     /// Content the model generated in this step, in order, followed by the results of the client tools the loop ran. A call that failed to
     /// parse stays here as an <see cref="GeneratedToolCall.Invalid"/> call, followed by its error result.

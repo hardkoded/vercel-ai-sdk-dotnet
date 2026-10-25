@@ -1543,9 +1543,11 @@ public sealed class LanguageModelGenerateResult
         string? rawResponse = null,
         string? responseModelId = null,
         DateTimeOffset? responseTimestamp = null,
-        IReadOnlyDictionary<string, string>? responseHeaders = null)
+        IReadOnlyDictionary<string, string>? responseHeaders = null,
+        string? structuredOutputText = null)
     {
         Content = content ?? Array.Empty<GeneratedContent>();
+        StructuredOutputText = structuredOutputText;
         FinishReason = finishReason;
         Usage = usage ?? LanguageModelUsage.Empty;
         RawFinishReason = rawFinishReason;
@@ -1561,6 +1563,14 @@ public sealed class LanguageModelGenerateResult
     /// <summary>Generated content parts.</summary>
     public IReadOnlyList<GeneratedContent> Content { get; }
 
+    /// <summary>
+    /// Text to parse for structured JSON output when it differs from the concatenation of all text parts in
+    /// <see cref="Content"/>, such as drafts followed by a final answer. It does not replace or remove any content.
+    /// When null, consumers concatenate all text parts. An empty string is an explicit selection and does not fall
+    /// back to the text parts. Maps to <c>structuredOutputText</c>.
+    /// </summary>
+    public string? StructuredOutputText { get; }
+
     internal LanguageModelGenerateResult WithContent(IReadOnlyList<GeneratedContent> content)
     {
         return new LanguageModelGenerateResult(
@@ -1574,7 +1584,8 @@ public sealed class LanguageModelGenerateResult
             RawResponse,
             ResponseModelId,
             ResponseTimestamp,
-            ResponseHeaders);
+            ResponseHeaders,
+            StructuredOutputText);
     }
 
     /// <summary>Normalized finish reason.</summary>

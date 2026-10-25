@@ -16,37 +16,37 @@ public sealed class ExtractReasoningMiddlewareTests
     private static readonly Dictionary<string, Case> Cases = new()
     {
         ["Gemma thought channel"] = new(
-            () => new ExtractReasoningMiddleware(GemmaTags),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(GemmaTags),
             "<|channel>thought\nChecking the sum.\nIt is four.<channel|>4",
             "Checking the sum.\nIt is four.",
             "4"),
         ["empty Gemma thought channel"] = new(
-            () => new ExtractReasoningMiddleware(GemmaTags),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(GemmaTags),
             "<|channel>thought\n<channel|>4",
             string.Empty,
             "4"),
         ["omitted opening delimiter"] = new(
-            () => new ExtractReasoningMiddleware(GemmaTags, startWithReasoning: true),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(GemmaTags, startWithReasoning: true),
             "Checking the sum.<channel|>4",
             "Checking the sum.",
             "4"),
         ["literal regex metacharacters"] = new(
-            () => new ExtractReasoningMiddleware(("[.*+?^${}()|\\]", "(end.*+?^${}|\\)")),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(("[.*+?^${}()|\\]", "(end.*+?^${}|\\)")),
             "[.*+?^${}()|\\]Checking the sum.(end.*+?^${}|\\)4",
             "Checking the sum.",
             "4"),
         ["multiple reasoning blocks and a custom separator"] = new(
-            () => new ExtractReasoningMiddleware(GemmaTags, separator: " / "),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(GemmaTags, separator: " / "),
             "Before<|channel>thought\nFirst<channel|>Between<|channel>thought\nSecond<channel|>After",
             "First / Second",
             "Before / Between / After"),
         ["text without delimiters"] = new(
-            () => new ExtractReasoningMiddleware(GemmaTags),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware(GemmaTags),
             "4",
             null,
             "4"),
         ["literal regex metacharacters in a string tag name"] = new(
-            () => new ExtractReasoningMiddleware("think|reason"),
+            () => new global::Vercel.AI.ExtractReasoningMiddleware("think|reason"),
             "<think|reason>Checking the sum.</think|reason>4",
             "Checking the sum.",
             "4"),
@@ -114,7 +114,7 @@ public sealed class ExtractReasoningMiddlewareTests
     [InlineData("<|channel>thought\n", "")]
     public void RejectsEmptyDelimiters(string opening, string closing)
     {
-        var error = Assert.Throws<InvalidArgumentError>(() => new ExtractReasoningMiddleware((opening, closing)));
+        var error = Assert.Throws<InvalidArgumentError>(() => new global::Vercel.AI.ExtractReasoningMiddleware((opening, closing)));
         Assert.Equal("tagName", error.Parameter);
         Assert.Contains("Reasoning delimiters must not be empty.", error.Message);
     }
@@ -124,5 +124,5 @@ public sealed class ExtractReasoningMiddlewareTests
         return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
     }
 
-    private sealed record Case(Func<ExtractReasoningMiddleware> Middleware, string Input, string? Reasoning, string Text);
+    private sealed record Case(Func<global::Vercel.AI.ExtractReasoningMiddleware> Middleware, string Input, string? Reasoning, string Text);
 }
