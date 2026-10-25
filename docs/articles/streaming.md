@@ -40,6 +40,12 @@ The response is `text/event-stream` with `x-vercel-ai-ui-message-stream: v1`. Ch
 
 `keepAliveMs` is optional. When it is set, the response writes `: stream-open` before the start event and `: keep-alive` whenever the next part is still pending after that many milliseconds. Omit it, or pass null, and the stream contains no comment lines.
 
+## A stream that ends without output
+
+When a provider stream ends without a finish part and without any output (no text, reasoning, tool input, or tool call), `StreamTextAsync` does not record an empty step. It reports a `NoOutputGeneratedException` (`AI_NoOutputGeneratedError`) with the message `No output generated. The model stream ended without a finish chunk.` `OnError` receives it, the stream ends with an `ErrorPart` and then fails, and `Text`, `Steps`, `FinishReason`, and `Usage` fault with it. `OnStepEnd` is not called for that step, but steps that finished before it keep their callbacks. When a later step of a tool loop ends this way, the whole call fails.
+
+A stream that ends without a finish part after it produced output keeps the partial result. The step finishes with `FinishReason.Other` and `OnError` is not called.
+
 ## Cancel a stream
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
