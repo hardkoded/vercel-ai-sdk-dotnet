@@ -40,6 +40,10 @@ A call to a tool that has no `Execute` ends the loop at that step. The stop cond
 
 Set `ApproveTool` to veto a call before it runs. A denied call is stored as an error tool result.
 
+## Tool choice none
+
+When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException`. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
+
 ## Tool call execution concurrency
 
 By default, when a model generates several tool calls in one step, `GenerateTextAsync`, `StreamTextAsync`, and `Agent` start all of them at once. Set `ToolCallConcurrency` to a positive integer to limit how many tool calls run at the same time. The property is on `GenerateTextOptions`, `StreamTextOptions` (which inherits it), and `AgentOptions`. `Agent` copies it onto the options it builds, so `PrepareCall` can replace it.

@@ -209,6 +209,129 @@ public sealed class GenerateTextBehaviorTests
         Assert.Same(result.Steps[result.Steps.Count - 1], result.FinalStep);
     }
 
+    public static IEnumerable<object[]> NoneToolChoiceCases() =>
+    [
+        [ToolChoice.None, null!, FinishReason.Stop],
+        [ToolChoice.None, null!, FinishReason.ToolCalls],
+        [ToolChoice.None, null!, FinishReason.Interrupted],
+        [ToolChoice.Auto, ToolChoice.None, FinishReason.ToolCalls],
+    ];
+
+    [Theory]
+    [MemberData(nameof(NoneToolChoiceCases))]
+    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > tool choice enforcement::should reject tool calls with none ($toolChoice, $stepToolChoice, $finishReason)", Coverage = UpstreamCoverage.Partial, Note = "The port has no onInputStart and onInputAvailable tool callbacks, so they are not asserted.")]
+    public async Task Should_reject_tool_calls_with_none(ToolChoice toolChoice, ToolChoice? stepToolChoice, FinishReason finishReason)
+    {
+        var executed = false;
+        var callEnds = 0;
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ => new LanguageModelGenerateResult(
+                new GeneratedContent[] { new GeneratedToolCall("call-1", "tool1", "{}") },
+                finishReason,
+                new LanguageModelUsage(3, 10, 13),
+                finishReason.ToString()),
+        };
+        var error = await Assert.ThrowsAsync<ToolChoiceViolationException>(() => Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools = new[]
+            {
+                Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
+                {
+                    executed = true;
+                    return Task.FromResult("tool-result");
+                }),
+            },
+            ToolChoice = toolChoice,
+            PrepareStep = stepToolChoice == null ? null : _ => new PrepareStepUpdate { ToolChoice = stepToolChoice },
+            OnLanguageModelCallEnd = (_, _) =>
+            {
+                callEnds++;
+                return Task.CompletedTask;
+            },
+        }));
+        Assert.Equal("AI_ToolChoiceViolationError", error.Name);
+        Assert.Equal("Model response contained a tool call even though tool choice was none.", error.Message);
+        Assert.Equal("none", error.ToolChoice.Type);
+        Assert.Equal(finishReason, error.FinishReason);
+        Assert.Equal("test", error.Provider);
+        Assert.Equal("test", error.ModelId);
+        Assert.IsType<GeneratedToolCall>(Assert.Single(error.Content));
+        Assert.False(executed);
+        Assert.Equal(1, callEnds);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > tool choice enforcement::should not repair or refine tool calls with none", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_repair_or_refine_tool_calls_with_none()
+    {
+        var repaired = false;
+        var refined = false;
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ => new LanguageModelGenerateResult(
+                new GeneratedContent[]
+                {
+                    new GeneratedToolCall("call-1", "tool1", "invalid json"),
+                    new GeneratedToolCall("call-2", "tool2", "{\"value\":\"x\"}"),
+                },
+                FinishReason.ToolCalls,
+                new LanguageModelUsage(3, 10, 13),
+                "tool_calls"),
+        };
+        var error = await Assert.ThrowsAsync<ToolChoiceViolationException>(() => Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools = new[]
+            {
+                Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}", null),
+                Tool.Function("tool2", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}", null),
+            },
+            ToolChoice = ToolChoice.None,
+            RepairToolCall = _ =>
+            {
+                repaired = true;
+                return Task.FromResult<GeneratedToolCall?>(null);
+            },
+            RefineToolInput = new Dictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>
+            {
+                ["tool2"] = (input, _) =>
+                {
+                    refined = true;
+                    return Task.FromResult(input);
+                },
+            },
+        }));
+        Assert.Equal("none", error.ToolChoice.Type);
+        Assert.False(repaired);
+        Assert.False(refined);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > tool choice enforcement::should allow text responses with none and preserve tool definitions", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_allow_text_responses_with_none_and_preserve_tool_definitions()
+    {
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ => TestLanguageModel.Text("No tool call."),
+        };
+        var result = await Client().GenerateTextAsync(new GenerateTextOptions
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools = new[] { Tool.Function("tool1", null, "{\"type\":\"object\"}", null) },
+            ToolChoice = ToolChoice.None,
+        });
+
+        var call = Assert.Single(model.Calls);
+        Assert.Equal("tool1", Assert.Single(call.Tools!).Name);
+        Assert.Equal("none", call.ToolChoice!.Type);
+        Assert.Equal("No tool call.", result.Text);
+    }
+
     [Fact]
     [UpstreamTest("packages/ai/src/generate-text/generate-text.test.ts::generateText > tool choice enforcement::should reject when a required tool choice produces no tool call", Coverage = UpstreamCoverage.Covered)]
     public async Task Required_tool_choice_without_a_call_throws()
