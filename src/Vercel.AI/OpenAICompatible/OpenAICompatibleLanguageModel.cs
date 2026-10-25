@@ -555,12 +555,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             if (!_provider.Options.PreparesOwnTools)
             {
-                AddTools(body, options.Tools, options.ToolChoice);
+                AddTools(body, options.Tools, options.ToolChoice, _provider.Options.NormalizeRequestSchema);
             }
         }
         else
         {
-            AddTools(body, options.Tools!.Concat(new[] { responseTool }).ToList(), JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name));
+            AddTools(body, options.Tools!.Concat(new[] { responseTool }).ToList(), JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name), _provider.Options.NormalizeRequestSchema);
             body["parallel_tool_calls"] = false;
         }
 
@@ -618,7 +618,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             var strict = settings.StrictJsonSchema ?? true;
             var schemaObject = new JsonObject
             {
-                ["schema"] = JsonNode.Parse(options.JsonSchema!.Value.GetRawText()),
+                ["schema"] = NormalizeSchema(JsonNode.Parse(options.JsonSchema!.Value.GetRawText()), _provider.Options.NormalizeRequestSchema),
                 ["strict"] = strict,
                 ["name"] = options.JsonSchemaName ?? "response",
             };
@@ -646,7 +646,12 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         body["response_format"] = new JsonObject { ["type"] = "json_object" };
     }
 
-    private static void AddTools(JsonObject body, IReadOnlyList<LanguageModelTool>? callTools, ToolChoice? toolChoice)
+    private static JsonNode? NormalizeSchema(JsonNode? schema, Func<JsonNode?, JsonNode?>? normalizeSchema)
+    {
+        return normalizeSchema == null ? schema : normalizeSchema(schema);
+    }
+
+    private static void AddTools(JsonObject body, IReadOnlyList<LanguageModelTool>? callTools, ToolChoice? toolChoice, Func<JsonNode?, JsonNode?>? normalizeSchema)
     {
         if (callTools == null || callTools.Count == 0)
         {
@@ -659,7 +664,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             var function = new JsonObject
             {
                 ["name"] = tool.Name,
-                ["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText()),
+                ["parameters"] = NormalizeSchema(JsonNode.Parse(tool.InputSchema.GetRawText()), normalizeSchema),
             };
             if (tool.Description != null)
             {
