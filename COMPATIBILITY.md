@@ -62,7 +62,6 @@ Not emitted yet, because the core stream does not surface them:
 - Azure OpenAI uses the `/openai/v1` URLs with API version `v1` and the `api-key` header. `UseDeploymentBasedUrls` switches to the deployments URLs.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.
 - Amazon Bedrock Anthropic and Mantle delegate to the Anthropic Messages and OpenAI models. The Mantle Responses model does not turn off `supportsWebSearchSourcesInclude`, and the Bedrock Anthropic provider has no `credentialProvider` or `tools` member.
-- Cohere chat streaming is generate-then-delta.
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
 - MiniMax uses the Anthropic-compatible `/anthropic/v1` base through the shared Anthropic adapter, as the JavaScript package does. The MiniMax video models are not ported. The typed `MiniMaxLanguageModelOptions`, `MiniMaxCacheControlOptions`, `MiniMaxImagePartOptions`, and `MiniMaxVideoPartOptions` types are not ported either; pass the options as JSON under `minimax`.
 - Media providers speak that provider’s public HTTP API for one modality. Their inherited chat method is the OpenAI-compatible client and is not the supported entry point.
