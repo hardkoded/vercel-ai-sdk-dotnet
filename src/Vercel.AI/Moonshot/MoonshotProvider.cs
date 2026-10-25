@@ -78,6 +78,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
             options.UserAgent = OpenAICompatibleInfo.UserAgent(ProviderId);
         }
         options.IncludeUsage = true;
+        options.NormalizeRequestSchema = MoonshotJsonSchema.NormalizeJsonSchemaForMFJS;
         return options;
     }
 }

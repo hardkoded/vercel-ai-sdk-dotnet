@@ -105,6 +105,12 @@ public class OpenAICompatibleOptions
     /// </summary>
     internal bool PreparesOwnTools { get; set; }
 
+    /// <summary>
+    /// .NET-only hook. Rewrites each tool input schema and the response-format schema before it is sent.
+    /// Moonshot uses it for <c>normalizeJsonSchemaForMFJS</c>, which upstream calls from its own chat model.
+    /// </summary>
+    internal Func<JsonNode?, JsonNode?>? NormalizeRequestSchema { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 
