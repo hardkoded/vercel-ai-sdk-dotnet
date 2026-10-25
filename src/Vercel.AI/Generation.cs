@@ -1601,6 +1601,7 @@ internal static class Generation
             ErrorTextToolModelOutput errorText => errorText.Value,
             JsonToolModelOutput json => json.Value.GetRawText(),
             ErrorJsonToolModelOutput errorJson => errorJson.Value.GetRawText(),
+            ContentToolModelOutput content => JsonSerializer.Serialize(content.Value.Select(part => new { type = part.Type, text = part.Text })),
             _ => null,
         };
     }

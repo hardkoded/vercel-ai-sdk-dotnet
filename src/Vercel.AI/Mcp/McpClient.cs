@@ -101,7 +101,18 @@ public static class McpClient
             json = "null";
         }
 
-        using var document = JsonDocument.Parse(json);
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(json);
+        }
+        catch (JsonException) when (call.Output is string plain)
+        {
+            // A wrapper that returns a plain string, not JSON text, returns a string upstream.
+            return new TextToolModelOutput(plain);
+        }
+
+        using var parsed = document;
         var root = document.RootElement;
 
         // The output is JSON text, so a JSON string is a string output upstream.
