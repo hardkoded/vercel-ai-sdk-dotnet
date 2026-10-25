@@ -552,11 +552,41 @@ public sealed class PrepareStepContext
         Model = model;
     }
 
+    /// <summary>Creates context with the instructions and the initial and response messages of the call.</summary>
+    public PrepareStepContext(
+        int stepNumber,
+        IReadOnlyList<StepResult> steps,
+        IReadOnlyList<ModelMessage> messages,
+        ILanguageModel model,
+        Instructions? instructions,
+        Instructions? initialInstructions,
+        IReadOnlyList<ModelMessage> initialMessages,
+        IReadOnlyList<ModelMessage> responseMessages)
+        : this(stepNumber, steps, messages, model)
+    {
+        Instructions = instructions;
+        InitialInstructions = initialInstructions;
+        InitialMessages = initialMessages;
+        ResponseMessages = responseMessages;
+    }
+
     /// <summary>Zero-based step index about to run.</summary>
     public int StepNumber { get; }
 
-    /// <summary>The messages the step is about to send: the prompt plus the responses of the earlier steps. Empty when the caller built the context without them.</summary>
+    /// <summary>The messages the step is about to send, without the instructions: the prompt plus the responses of the earlier steps. A <see cref="PrepareStepUpdate.Messages"/> override carries forward to later steps. Empty when the caller built the context without them.</summary>
     public IReadOnlyList<ModelMessage> Messages { get; } = Array.Empty<ModelMessage>();
+
+    /// <summary>The instructions the step is about to send. A <see cref="PrepareStepUpdate.Instructions"/> override carries forward to later steps. Null when there are none.</summary>
+    public Instructions? Instructions { get; }
+
+    /// <summary>The instructions the call started with. Null when there are none.</summary>
+    public Instructions? InitialInstructions { get; }
+
+    /// <summary>The messages the call started with, without the instructions. Empty when the caller built the context without them.</summary>
+    public IReadOnlyList<ModelMessage> InitialMessages { get; } = Array.Empty<ModelMessage>();
+
+    /// <summary>The response messages the earlier steps added. Empty when the caller built the context without them.</summary>
+    public IReadOnlyList<ModelMessage> ResponseMessages { get; } = Array.Empty<ModelMessage>();
 
     /// <summary>The model the step is about to use, or null when the caller built the context without it.</summary>
     public ILanguageModel? Model { get; }
@@ -568,7 +598,10 @@ public sealed class PrepareStepContext
 /// <summary>Optional changes applied before a step.</summary>
 public sealed class PrepareStepUpdate
 {
-    /// <summary>Replacement prompt.</summary>
+    /// <summary>Replacement instructions. The override carries forward to later steps.</summary>
+    public Instructions? Instructions { get; set; }
+
+    /// <summary>Replacement prompt, without the instructions. The override carries forward to later steps.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; set; }
 
     /// <summary>Replacement model.</summary>
