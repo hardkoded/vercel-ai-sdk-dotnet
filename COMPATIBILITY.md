@@ -42,14 +42,12 @@ These JavaScript packages are Node or browser products, not the model SDK:
 
 ## UI message stream
 
-`ToUIMessageStreamResult` emits `text/event-stream` with header `x-vercel-ai-ui-message-stream: v1` and these chunks: `start`, `start-step`, `text-start`, `text-delta`, `text-end`, `reasoning-start`, `reasoning-delta`, `reasoning-end`, `tool-input-available`, `tool-output-available`, `tool-output-error`, `source-url`, `finish-step`, `finish`, `error`, and `data: [DONE]`. The `text-end` chunk carries `citations` when the step's text has them.
+`ToUIMessageStreamResult` emits `text/event-stream` with header `x-vercel-ai-ui-message-stream: v1` and these chunks: `start`, `start-step`, `text-start`, `text-delta`, `text-end`, `reasoning-start`, `reasoning-delta`, `reasoning-end`, `tool-input-start`, `tool-input-delta`, `tool-input-available`, `tool-input-error`, `tool-approval-request`, `tool-output-available`, `tool-output-error`, `source-url`, `finish-step`, `finish`, `abort`, `error`, and `data: [DONE]`. The `text-end` chunk carries `citations` when the step's text has them.
 
 Optional `keepAliveMs` writes `: stream-open` before the start event and `: keep-alive` while the next part is still pending. Null sends no comment lines.
 
 Not emitted yet, because the core stream does not surface them:
 
-- `tool-input-start` and `tool-input-delta` (tool arguments are sent once, in `tool-input-available`)
-- `abort`
 - `message-metadata`
 - custom `data-*` parts
 - `source-document`
@@ -62,7 +60,6 @@ Not emitted yet, because the core stream does not surface them:
 - Azure OpenAI uses the `/openai/v1` URLs with API version `v1` and the `api-key` header. `UseDeploymentBasedUrls` switches to the deployments URLs.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.
 - Amazon Bedrock Anthropic and Mantle delegate to the Anthropic Messages and OpenAI models. The Mantle Responses model does not turn off `supportsWebSearchSourcesInclude`, and the Bedrock Anthropic provider has no `credentialProvider` or `tools` member.
-- Cohere chat streaming is generate-then-delta.
 - OpenAI Realtime WebSocket headers are implemented on `net10.0`. `netstandard2.0` throws `PlatformNotSupportedException`.
 - MiniMax uses the Anthropic-compatible `/anthropic/v1` base through the shared Anthropic adapter, as the JavaScript package does. The MiniMax video models are not ported. The typed `MiniMaxLanguageModelOptions`, `MiniMaxCacheControlOptions`, `MiniMaxImagePartOptions`, and `MiniMaxVideoPartOptions` types are not ported either; pass the options as JSON under `minimax`.
 - Media providers speak that provider’s public HTTP API for one modality. Their inherited chat method is the OpenAI-compatible client and is not the supported entry point.
