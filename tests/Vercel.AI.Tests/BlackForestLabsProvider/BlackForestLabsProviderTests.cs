@@ -8,8 +8,8 @@ using Vercel.AI.BlackForestLabs;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
-using Vercel.AI.Util;
 using Vercel.AI.Tests.BlackForestLabsImageModel;
+using Vercel.AI.Util;
 using static Vercel.AI.Tests.BlackForestLabsVideoModel.BlackForestLabsVideoModelFixture;
 
 namespace Vercel.AI.Tests.BlackForestLabsProvider;
