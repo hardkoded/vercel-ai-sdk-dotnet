@@ -610,7 +610,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), options.JsonResponse);
+        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), options.JsonResponse || options.JsonSchema != null);
     }
 
     /// <inheritdoc />
