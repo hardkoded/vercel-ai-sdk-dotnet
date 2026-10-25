@@ -274,4 +274,4 @@ Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOut
 
 Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` still throws an `AiSdkException`.
 
-Not ported: `outputSchema` support ([#774](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)) and file parts for `image` content ([#775](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/778)).
+Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)) and file parts for `image` content ([#778](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/778)).
