@@ -263,3 +263,15 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 ## Tool result title, metadata and dynamic flag
 
 `ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`.
+
+## MCP tool output
+
+Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOutput`. The output of an MCP tool is the JSON text of the call-tool result, and `ToModelOutput` converts it for the model:
+
+- A JSON string becomes a `TextToolModelOutput`. An output that is not JSON at all (for example a plain string from a wrapper) is also text.
+- A number, boolean, `null`, an empty or missing output, or an object without a `content` array becomes a `JsonToolModelOutput`. A missing output becomes JSON `null`.
+- An object with a `content` array becomes a `ContentToolModelOutput`, which reaches the prompt as a JSON array of `{type, text}` parts. A `text` part keeps its text, and any other part is sent as text holding its JSON.
+
+Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` still throws an `AiSdkException`.
+
+Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)) and file parts for `image` content ([#778](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/778)).

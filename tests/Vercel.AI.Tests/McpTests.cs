@@ -19,11 +19,11 @@ public sealed class McpTests
     public async Task List_tools_adapts_tools_call()
     {
         var transport = new FakeTransport();
-        var tools = await McpClient.ListToolsAsync(transport);
+        var tools = await Vercel.AI.Mcp.McpClient.ListToolsAsync(transport);
         Assert.Single(tools);
         using var arguments = JsonDocument.Parse("{\"city\":\"Paris\"}");
         var output = await tools[0].Execute!(arguments.RootElement, CancellationToken.None);
-        Assert.Equal("sunny", output);
+        Assert.Equal("{\"content\":[{\"type\":\"text\",\"text\":\"sunny\"}],\"isError\":false}", output);
         Assert.Equal("tools/call", transport.Methods[1]);
     }
 

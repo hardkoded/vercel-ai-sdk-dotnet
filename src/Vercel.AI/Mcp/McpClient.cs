@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -58,7 +59,9 @@ public static class McpClient
             var description = item.TryGetProperty("description", out var descriptionElement) ? descriptionElement.GetString() : null;
             var schema = item.TryGetProperty("inputSchema", out var schemaElement) ? schemaElement.GetRawText() : "{}";
             var toolName = name;
-            tools.Add(Tool.Function(toolName, description, schema, (arguments, token) => CallToolAsync(transport, toolName, arguments, token)));
+            var tool = Tool.Function(toolName, description, schema, (arguments, token) => CallToolAsync(transport, toolName, arguments, token));
+            tool.ToModelOutput = McpToModelOutput;
+            tools.Add(tool);
         }
 
         return tools;
@@ -79,7 +82,69 @@ public static class McpClient
             throw new AiSdkException(ReadText(normalized));
         }
 
-        return ReadText(normalized);
+        // Upstream's execute returns the call-tool result itself. The port's execute returns its JSON text.
+        return normalized.GetRawText();
+    }
+
+    /// <summary>Converts a tool output to the result sent to the model. Maps to <c>mcpToModelOutput</c>.</summary>
+    private static ToolModelOutput McpToModelOutput(ToolModelOutputCall call)
+    {
+        var json = call.Output switch
+        {
+            null => "null",
+            string text => text,
+            JsonElement element => element.GetRawText(),
+            var other => JsonSerializer.Serialize(other),
+        };
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            json = "null";
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(json);
+        }
+        catch (JsonException) when (call.Output is string plain)
+        {
+            // A wrapper that returns a plain string, not JSON text, returns a string upstream.
+            return new TextToolModelOutput(plain);
+        }
+
+        using var parsed = document;
+        var root = document.RootElement;
+
+        // The output is JSON text, so a JSON string is a string output upstream.
+        if (root.ValueKind == JsonValueKind.String)
+        {
+            return new TextToolModelOutput(root.GetString()!);
+        }
+
+        if (root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("content", out var content)
+            || content.ValueKind != JsonValueKind.Array)
+        {
+            return new JsonToolModelOutput(root.Clone());
+        }
+
+        var parts = new List<ToolModelContentPart>();
+        foreach (var part in content.EnumerateArray())
+        {
+            if (part.ValueKind == JsonValueKind.Object
+                && part.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "text"
+                && part.TryGetProperty("text", out var textValue) && textValue.ValueKind == JsonValueKind.String)
+            {
+                parts.Add(new ToolModelContentPart("text", textValue.GetString()!));
+            }
+            else
+            {
+                // Upstream turns an image part into a file part. The port's content part is text only, so it keeps the JSON of the part.
+                parts.Add(new ToolModelContentPart("text", part.GetRawText()));
+            }
+        }
+
+        return new ContentToolModelOutput(parts);
     }
 
     private static string ReadText(JsonElement result)
