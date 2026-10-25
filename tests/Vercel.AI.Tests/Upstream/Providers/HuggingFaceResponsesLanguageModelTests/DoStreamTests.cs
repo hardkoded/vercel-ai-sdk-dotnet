@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
 using Vercel.AI.HuggingFace;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -11,6 +12,29 @@ namespace Vercel.AI.Tests.HuggingFaceResponsesLanguageModelTests;
 /// <summary>Port of <c>huggingface-responses-language-model.test.ts</c> &gt; <c>HuggingFaceResponsesLanguageModel &gt; doStream</c>.</summary>
 public sealed class DoStreamTests
 {
+    [Fact]
+    [UpstreamTest("packages/huggingface/src/responses/huggingface-responses-language-model.test.ts::HuggingFaceResponsesLanguageModel > doStream::should forward tool choice none while preserving tool definitions", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_forward_tool_choice_none_while_preserving_tool_definitions()
+    {
+        var handler = new SseStreamHandler(new[]
+        {
+            "data:{\"type\":\"response.completed\",\"response\":{\"id\":\"resp_test\",\"status\":\"completed\",\"incomplete_details\":null,\"usage\":null},\"sequence_number\":1}\n\n",
+        });
+        var model = HuggingFaceProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler).ResponsesModel("test-model");
+        var options = UpstreamChat.Prompt();
+        options.Tools = new[] { new LanguageModelTool("test", null, UpstreamChat.Json("{\"type\":\"object\"}")) };
+        options.ToolChoice = ToolChoice.None;
+
+        await UpstreamChat.Read(await model.DoStreamAsync(options, CancellationToken.None));
+
+        var body = JsonNode.Parse(handler.Body)!;
+        Assert.Equal("none", body["tool_choice"]!.GetValue<string>());
+        var tool = Assert.Single(body["tools"]!.AsArray());
+        Assert.Equal("function", tool!["type"]!.GetValue<string>());
+        Assert.Equal("test", tool["name"]!.GetValue<string>());
+        Assert.Equal("object", tool["parameters"]!["type"]!.GetValue<string>());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

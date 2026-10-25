@@ -1,4 +1,4 @@
-// Copyright 2023 Vercel, Inc.
+﻿// Copyright 2023 Vercel, Inc.
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
@@ -57,7 +57,8 @@ public sealed class AmazonBedrockOptions
     public Dictionary<string, string?> Headers { get; set; } = new();
 
     /// <summary>
-    /// Resolves extra headers on every call, after <see cref="Headers"/>. Its values win. A null value drops the header.
+    /// Resolves extra headers on every call, like upstream's resolvable <c>headers</c>. Its values win over
+    /// <see cref="Headers"/>, and a null value drops a header. Call headers still win over both.
     /// </summary>
     public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersProvider { get; set; }
 }
@@ -86,28 +87,6 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
 
-    /// <summary>
-    /// Adds the provider headers, then the call headers (which win; a null call value drops the header), then the
-    /// <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing. This overload does not run
-    /// <see cref="AmazonBedrockOptions.HeadersProvider"/>; use <see cref="AddHeadersAsync"/> for that.
-    /// </summary>
-    public void AddHeaders(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders)
-    {
-        Apply(request, Options.Headers, null, callHeaders);
-    }
-
-    /// <summary>
-    /// Like <see cref="AddHeaders"/>, and also resolves <see cref="AmazonBedrockOptions.HeadersProvider"/> after
-    /// <see cref="AmazonBedrockOptions.Headers"/> and before the call headers.
-    /// </summary>
-    public async Task AddHeadersAsync(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders, CancellationToken cancellationToken)
-    {
-        var resolved = Options.HeadersProvider == null
-            ? null
-            : await WaitAsync(Options.HeadersProvider(cancellationToken), cancellationToken).ConfigureAwait(false);
-        Apply(request, Options.Headers, resolved, callHeaders);
-    }
-
     // Stops waiting when the token is cancelled, even if the provider ignores it. A later failure is still observed.
     internal static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
     {
@@ -133,14 +112,17 @@ public sealed class AmazonBedrockProvider : ProviderBase
         return await task.ConfigureAwait(false);
     }
 
-    private static void Apply(
-        HttpRequestMessage request,
-        IEnumerable<KeyValuePair<string, string?>> configured,
-        IEnumerable<KeyValuePair<string, string?>>? resolved,
-        IEnumerable<KeyValuePair<string, string?>>? callHeaders)
+    /// <summary>
+    /// Adds the provider headers, then <see cref="AmazonBedrockOptions.HeadersProvider"/>, then the call headers
+    /// (which win; a null value drops the header), then the <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing.
+    /// </summary>
+    public async Task AddHeadersAsync(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders, CancellationToken cancellationToken)
     {
+        var resolved = Options.HeadersProvider is { } headersProvider
+            ? await WaitAsync(headersProvider(cancellationToken), cancellationToken).ConfigureAwait(false)
+            : null;
         var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>?[] { configured, resolved, callHeaders })
+        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>?[] { Options.Headers, resolved, callHeaders })
         {
             if (source == null)
             {
@@ -226,7 +208,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
-        using var request = await CreateRequestAsync(_provider.ConverseUri(ModelId), bodyObject.ToJsonString(), options, cancellationToken).ConfigureAwait(false);
+        using var request = await CreateRequestAsync(_provider.ConverseUri(ModelId), bodyObject, options, cancellationToken).ConfigureAwait(false);
         using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -243,8 +225,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
         var bodyObject = Build(options, out var warnings, out var usesJsonTool, out var usesJsonInstruction);
+        using var request = await CreateRequestAsync(_provider.ConverseUri(ModelId, "converse-stream"), bodyObject, options, cancellationToken).ConfigureAwait(false);
         var requestBody = bodyObject.ToJsonString();
-        using var request = await CreateRequestAsync(_provider.ConverseUri(ModelId, "converse-stream"), requestBody, options, cancellationToken).ConfigureAwait(false);
         var response = await _provider.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -652,8 +634,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             : FinishReasons.Parse(raw);
     }
 
-    private async Task<HttpRequestMessage> CreateRequestAsync(Uri uri, string body, LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private async Task<HttpRequestMessage> CreateRequestAsync(Uri uri, JsonObject bodyObject, LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
+        var body = bodyObject.ToJsonString();
         var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json"),

@@ -130,7 +130,7 @@ internal static class Generation
                 var stepStartMs = now();
                 var modelResponse = await current.DoGenerateAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var responseTimeMs = now() - stepStartMs;
-                var generated = await ParseToolCallsAsync(modelResponse, options, messages, cancellationToken).ConfigureAwait(false);
+                var generated = await ParseToolCallsAsync(modelResponse, options, messages, callOptions.ToolChoice?.Type == "none", cancellationToken).ConfigureAwait(false);
                 if (options.OnLanguageModelCallEnd != null)
                 {
                     await NotifyAsync(
@@ -318,8 +318,12 @@ internal static class Generation
                 string? rawFinish = null;
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
+                var receivedOutput = false;
                 var usage = LanguageModelUsage.Null;
                 callOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
+                // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
+                var withholdToolParts = callOptions.ToolChoice?.Type == "none";
                 var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 var stepRequest = new LanguageModelRequestMetadata
                 {
@@ -362,6 +366,11 @@ internal static class Generation
                         if (timeouts != null)
                         {
                             ObserveChunkTimeout(timeouts, part);
+                        }
+
+                        if (IsOutputChunk(part))
+                        {
+                            receivedOutput = true;
                         }
 
                         if (!stepStarted && part is not StreamStartStreamPart)
@@ -413,9 +422,15 @@ internal static class Generation
                                         new GeneratedToolCall(toolCall.ToolCallId, toolCall.ToolName, toolCall.ArgumentsJson, toolCall.ProviderMetadata) { ProviderExecuted = toolCall.ProviderExecuted, Dynamic = toolCall.Dynamic },
                                         options,
                                         stepMessages,
+                                        withholdToolParts,
                                         cancellationToken).ConfigureAwait(false));
                                 toolCalls.Add(call);
                                 toolContent.Add(call);
+                                if (withholdToolParts)
+                                {
+                                    break;
+                                }
+
                                 outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ToolCallPart(call));
                                 if (call.Invalid && !call.ProviderExecuted)
@@ -424,6 +439,8 @@ internal static class Generation
                                     buffer.Add(new ToolErrorPart(InvalidToolResult(call)));
                                 }
 
+                                break;
+                            case ToolApprovalRequestStreamPart when withholdToolParts:
                                 break;
                             case ToolApprovalRequestStreamPart approvalRequest:
                                 var resolvedRequest = ResolveApprovalRequest(new GeneratedToolApprovalRequest(approvalRequest.ApprovalId, approvalRequest.ToolCallId), toolContent);
@@ -435,7 +452,14 @@ internal static class Generation
                                 toolContent.Add(providerResult);
                                 var providerExecuted = ProviderExecutedResult(providerResult, toolCalls);
                                 emittedResultIds.Add(providerResult.ToolCallId);
+                                if (withholdToolParts)
+                                {
+                                    break;
+                                }
+
                                 buffer.Add(providerResult.IsError ? new ToolErrorPart(providerExecuted) : new ToolResultPart(providerExecuted));
+                                break;
+                            case ToolInputStartStreamPart or ToolInputDeltaStreamPart or ToolInputEndStreamPart when withholdToolParts:
                                 break;
                             case ToolInputStartStreamPart inputStart:
                                 outputChunkTimes.Add(ElapsedMs());
@@ -510,9 +534,18 @@ internal static class Generation
                     buffer.Add(new StartStepPart(null, stepRequest));
                 }
 
+                // A stream that ends without a finish part and without output is rejected instead of recorded as an empty step.
+                // An incomplete stream with partial output keeps the partial result.
+                if (finish == null && !receivedOutput)
+                {
+                    const string noOutputMessage = "No output generated. The model stream ended without a finish chunk.";
+                    buffer.Add(new ErrorPart(noOutputMessage));
+                    throw new NoOutputGeneratedException(noOutputMessage);
+                }
+
                 var generated = new LanguageModelGenerateResult(
                     BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolContent, sources, documentSources),
-                    finish ?? (toolCalls.Count > 0 ? FinishReason.ToolCalls : FinishReason.Stop),
+                    finish ?? FinishReason.Other,
                     usage,
                     rawFinish,
                     warnings,
@@ -628,6 +661,19 @@ internal static class Generation
             abort.SignalCleanup?.Invoke();
             abort.Dispose();
         }
+    }
+
+    // Chunks that carry model output. Tells an empty incomplete stream from an incomplete stream with a partial result.
+    private static bool IsOutputChunk(LanguageModelStreamPart part)
+    {
+        return part switch
+        {
+            TextDeltaStreamPart { Delta.Length: > 0 } => true,
+            ReasoningDeltaStreamPart { Delta.Length: > 0 } => true,
+            ToolInputDeltaStreamPart { Delta.Length: > 0 } => true,
+            ToolCallStreamPart => true,
+            _ => false,
+        };
     }
 
     // A chunk of model output starts the chunkMs timeout again. A chunk without output leaves it as it is.
@@ -974,7 +1020,7 @@ internal static class Generation
                 var tool = FindTool(options, call.ToolName);
 
                 // A tool without execute is for the caller to run: the step has the call and no result.
-                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && tool.Execute == null))
+                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && !HasExecutor(tool)))
                 {
                     continue;
                 }
@@ -1034,6 +1080,7 @@ internal static class Generation
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        bool toolChoiceNone,
         CancellationToken cancellationToken)
     {
         var parses = new List<Task<GeneratedToolCall>>();
@@ -1041,7 +1088,7 @@ internal static class Generation
         {
             if (part is GeneratedToolCall call)
             {
-                parses.Add(ParseToolCallAsync(call, options, messages, cancellationToken));
+                parses.Add(ParseToolCallAsync(call, options, messages, toolChoiceNone, cancellationToken));
             }
         }
 
@@ -1065,6 +1112,7 @@ internal static class Generation
         GeneratedToolCall call,
         GenerateTextOptions options,
         IReadOnlyList<ModelMessage> messages,
+        bool toolChoiceNone,
         CancellationToken cancellationToken)
     {
         // The instructions travel as the leading system message. The repair function gets them apart from the messages.
@@ -1087,12 +1135,18 @@ internal static class Generation
 #pragma warning disable CS0618
         var repairToolCall = options.RepairToolCall ?? options.ExperimentalRepairToolCall;
 #pragma warning restore CS0618
+        // Tool calls are rejected with tool choice none, so user callbacks must not process them.
+        if (toolChoiceNone)
+        {
+            repairToolCall = null;
+        }
+
         var parsed = await ToolCallParser.ParseToolCallAsync(
             new ParseToolCallOptions(call)
             {
                 Tools = tools,
                 RepairToolCall = repairToolCall,
-                RefineToolInput = options.RefineToolInput,
+                RefineToolInput = toolChoiceNone ? null : options.RefineToolInput,
                 Messages = history.ToArray(),
                 Instructions = instructions,
             },
@@ -1294,7 +1348,28 @@ internal static class Generation
 
     private static void EnforceToolChoice(ToolChoice? toolChoice, LanguageModelGenerateResult generated, ILanguageModel model)
     {
-        if (generated.FinishReason == FinishReason.Interrupted || toolChoice is null || toolChoice.Type == "auto" || toolChoice.Type == "none")
+        if (toolChoice is null || toolChoice.Type == "auto")
+        {
+            return;
+        }
+
+        if (toolChoice.Type == "none")
+        {
+            if (generated.Content.Any(part => part is GeneratedToolCall))
+            {
+                throw new ToolChoiceViolationException(
+                    "Model response contained a tool call even though tool choice was none.",
+                    toolChoice,
+                    generated.FinishReason,
+                    model.Provider,
+                    model.ModelId,
+                    generated.Content);
+            }
+
+            return;
+        }
+
+        if (generated.FinishReason == FinishReason.Interrupted)
         {
             return;
         }
@@ -1410,6 +1485,8 @@ internal static class Generation
     }
 
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
+    private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null);
+
     private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
     {
         foreach (var call in step.ToolCalls)
@@ -1420,7 +1497,7 @@ internal static class Generation
             }
 
             var tool = FindTool(options, call.ToolName);
-            if ((tool != null && tool.Execute == null) || IsAwaitingApproval(tool, options))
+            if ((tool != null && !HasExecutor(tool)) || IsAwaitingApproval(tool, options))
             {
                 return true;
             }
@@ -1433,7 +1510,7 @@ internal static class Generation
     {
         var tool = FindTool(options, call.ToolName);
 
-        if (tool?.Execute == null)
+        if (tool == null || !HasExecutor(tool))
         {
             return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
         }
@@ -1463,8 +1540,13 @@ internal static class Generation
         try
         {
             using var arguments = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
-            var output = await tool.Execute(arguments.RootElement.Clone(), toolToken).ConfigureAwait(false);
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, string.IsNullOrEmpty(output) ? "null" : output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata };
+            var input = arguments.RootElement.Clone();
+            var output = tool.ExecuteWithOptions != null
+                ? await tool.ExecuteWithOptions(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)).ConfigureAwait(false)
+                : await tool.Execute!(input, toolToken).ConfigureAwait(false);
+            output = string.IsNullOrEmpty(output) ? "null" : output;
+            var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = modelOutput?.Type, ModelOutput = ModelOutputText(modelOutput) };
         }
         catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
@@ -1482,6 +1564,19 @@ internal static class Generation
         }
 
         return (executed, elapsedMs);
+    }
+
+    // The model-facing result of a tool's toModelOutput. Only text and error-text results travel as plain text.
+    private static string? ModelOutputText(ToolModelOutput? output)
+    {
+        return output switch
+        {
+            TextToolModelOutput text => text.Value,
+            ErrorTextToolModelOutput errorText => errorText.Value,
+            JsonToolModelOutput json => json.Value.GetRawText(),
+            ErrorJsonToolModelOutput errorJson => errorJson.Value.GetRawText(),
+            _ => null,
+        };
     }
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
