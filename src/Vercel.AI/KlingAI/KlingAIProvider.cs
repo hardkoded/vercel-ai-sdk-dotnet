@@ -65,9 +65,17 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
+    /// <param name="options">Provider options.</param>
+    /// <param name="handler">
+    /// Optional message handler. The provider follows redirects by hand so a status poll cannot send the credentials to another host.
+    /// For that reason it sets <c>AllowAutoRedirect = false</c> on a supplied <see cref="HttpClientHandler"/> or (on .NET 5 and later) <c>SocketsHttpHandler</c>,
+    /// including one wrapped in <see cref="DelegatingHandler"/>s. This changes the handler you pass, and it throws if the handler has already sent a request.
+    /// Any other handler type that exposes a public settable <c>bool AllowAutoRedirect</c> property is changed by reflection. Any remaining handler is left as is. It must not follow redirects on its own.
+    /// </param>
     public static new KlingAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        RedirectGuard.DisableAutoRedirect(handler);
         var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {

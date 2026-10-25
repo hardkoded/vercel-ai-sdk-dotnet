@@ -40,6 +40,12 @@ The response is `text/event-stream` with `x-vercel-ai-ui-message-stream: v1`. Ch
 
 `keepAliveMs` is optional. When it is set, the response writes `: stream-open` before the start event and `: keep-alive` whenever the next part is still pending after that many milliseconds. Omit it, or pass null, and the stream contains no comment lines.
 
+## A stream that ends without output
+
+When a provider stream ends without a finish part and without any output (no text, reasoning, tool input, or tool call), `StreamTextAsync` does not record an empty step. It reports a `NoOutputGeneratedException` (`AI_NoOutputGeneratedError`) with the message `No output generated. The model stream ended without a finish chunk.` `OnError` receives it, the stream ends with an `ErrorPart` and then fails, and `Text`, `Steps`, `FinishReason`, and `Usage` fault with it. `OnStepEnd` is not called for that step, but steps that finished before it keep their callbacks. When a later step of a tool loop ends this way, the whole call fails.
+
+A stream that ends without a finish part after it produced output keeps the partial result. The step finishes with `FinishReason.Other` and `OnError` is not called.
+
 ## Cancel a stream
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
@@ -104,7 +110,7 @@ A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails 
 
 `StepFinishPart.Response` is a `LanguageModelResponseMetadata` with the response `Id`, `ModelId`, `Timestamp`, and HTTP `Headers` (`null` for a provider that does not use HTTP). A provider's `ResponseMetadataStreamPart` sets them. Without one, `Id` is generated, `Timestamp` is the step start, and `ModelId` is the requested model. `RawFinishReason` is the provider's own finish reason, and `ProviderMetadata` is the step's provider metadata.
 
-`FinishReason.Interrupted` (`"interrupted"` on the wire) means the provider stream ended without a completion signal, so the output may be incomplete. The partial text and tool calls are kept. A required or named `ToolChoice` is not enforced for the step, no client tool runs, and the tool loop stops. Providers report it when a stream closes cleanly before their finish event.
+`FinishReason.Interrupted` (`"interrupted"` on the wire) means the provider stream ended without a completion signal, so the output may be incomplete. The partial text and tool calls are kept. A required or named `ToolChoice` is not enforced for the step, no client tool runs, and the tool loop stops. Providers report it when a stream closes cleanly before their finish event. A stream that produces no output and no finish part gets no interrupted finish from the Anthropic provider (see #769 for the core no-output rejection).
 
 A step carries the same data afterwards. `StepResult.Request` is the step's `LanguageModelRequestMetadata`, `StepResult.Response` is a `StepResponse` (the response metadata plus `Messages`, the response messages the step added, and `Body`, which streams leave unset), and `StepResult.RawFinishReason` is the provider's own finish reason. `StreamTextResult.Request` and `StreamTextResult.Response` are tasks that resolve with the last step's `Request` and `Response`, and `GenerateTextResult.Request` and `GenerateTextResult.Response` are the last step's too.
 

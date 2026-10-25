@@ -98,6 +98,12 @@ public sealed class DownloadRequest
 
     /// <summary>Largest body the fetch may read. The default fetch stops reading past it.</summary>
     public long MaxBytes { get; set; } = Download.DefaultMaxBytes;
+
+    /// <summary>
+    /// True for a developer-configured origin, such as a provider base URL. The default fetch skips the resolved-address check
+    /// for it, because such an origin may legitimately resolve to a private address.
+    /// </summary>
+    internal bool IsTrustedOrigin { get; set; }
 }
 
 /// <summary>One HTTP response seen by <see cref="Download"/>.</summary>
@@ -355,6 +361,7 @@ public static class Download
             Method = request?.Method ?? "GET",
             Body = request?.Body,
             MaxBytes = request?.MaxBytes ?? DefaultMaxBytes,
+            IsTrustedOrigin = isTrusted,
         };
         return await (fetch ?? Fetch ?? DefaultFetchAsync)(url, init).ConfigureAwait(false);
     }
@@ -364,9 +371,9 @@ public static class Download
         var currentHeaders = headers == null ? null : RequestHeaders.SanitizeRequestHeaders(headers);
 
         // Snapshot per hop: an injected fetch may defer, and hops between credential drops would otherwise share one instance.
-        DownloadRequest PerHopInit(string redirect)
+        DownloadRequest PerHopInit(string redirect, bool isTrustedHop)
         {
-            return new DownloadRequest(currentHeaders == null ? null : new HeaderCollection(currentHeaders.Entries()), abortSignal, redirect) { MaxBytes = maxBytes };
+            return new DownloadRequest(currentHeaders == null ? null : new HeaderCollection(currentHeaders.Entries()), abortSignal, redirect) { MaxBytes = maxBytes, IsTrustedOrigin = isTrustedHop };
         }
 
         var currentUrl = url;
@@ -379,7 +386,7 @@ public static class Download
             }
 
             var currentFetch = fetch ?? Fetch ?? DefaultFetchAsync;
-            var response = await currentFetch(currentUrl, PerHopInit("manual")).ConfigureAwait(false);
+            var response = await currentFetch(currentUrl, PerHopInit("manual", isTrustedHop)).ConfigureAwait(false);
             if (string.Equals(response.Type, "opaqueredirect", StringComparison.Ordinal))
             {
                 if (!IsBrowser)
@@ -387,7 +394,7 @@ public static class Download
                     throw new DownloadError(url, "Redirect from " + currentUrl + " could not be validated and was blocked");
                 }
 
-                return await currentFetch(currentUrl, PerHopInit("follow")).ConfigureAwait(false);
+                return await currentFetch(currentUrl, PerHopInit("follow", isTrustedHop)).ConfigureAwait(false);
             }
 
             var location = response.Headers.Get("location");
@@ -476,7 +483,19 @@ public static class Download
 
     private static async Task<DownloadResponse> DefaultFetchCoreAsync(string url, DownloadRequest request)
     {
+#if NET5_0_OR_GREATER
+        // The pinned handler resolves, validates, and connects to the validated address. A developer-configured origin keeps
+        // the plain handler, because it may legitimately resolve to a private address.
+        using (var handler = request.IsTrustedOrigin ? (HttpMessageHandler)new HttpClientHandler { AllowAutoRedirect = false } : SafeLookup.CreatePinnedHandler())
+#else
+        // This target cannot pin a connection. Validate the resolved addresses just before the request instead.
+        if (!request.IsTrustedOrigin)
+        {
+            await SafeLookup.ResolveValidatedAsync(new Uri(url).DnsSafeHost, SafeLookup.SystemResolveAsync, request.AbortSignal).ConfigureAwait(false);
+        }
+
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
+#endif
         using (var client = new HttpClient(handler))
         using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {

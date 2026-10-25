@@ -532,11 +532,15 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 }
             }
 
+            var audioDuration = Child(root, "audio_duration_secs") is { ValueKind: JsonValueKind.Number } audioDurationElement
+                ? audioDurationElement.GetDouble()
+                : (double?)null;
+
             return new ElevenLabsTranscriptionResult(
                 Child(root, "text")?.GetString() ?? string.Empty,
                 segments,
                 Child(root, "language_code")?.GetString(),
-                duration,
+                audioDuration ?? duration,
                 warnings,
                 new ElevenLabsResponse(timestamp, ModelId, response.Headers, root.Clone()));
         }

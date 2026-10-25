@@ -37,6 +37,28 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
     }
 
     [Fact]
+    public async Task Converse_headers_provider_runs_on_every_call_and_wins_over_static_headers()
+    {
+        var calls = 0;
+        var handler = new UpstreamRecordingHandler("{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"hi\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}");
+        var options = new AmazonBedrockOptions { AccessKeyId = "k", SecretAccessKey = "s" };
+        options.Headers["Static"] = "static";
+        options.Headers["Custom"] = "static";
+        options.Headers["Dropped"] = "static";
+        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Custom"] = "call-" + ++calls, ["Dropped"] = null });
+        var model = AmazonBedrockProvider.Create(options, handler).LanguageModel("test-model-id");
+        var call = new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") } };
+
+        await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("call-1", handler.Headers["Custom"]);
+        Assert.Equal("static", handler.Headers["Static"]);
+        Assert.False(handler.Headers.ContainsKey("Dropped"));
+
+        await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("call-2", handler.Headers["Custom"]);
+    }
+
+    [Fact]
     public async Task Anthropic_headers_provider_runs_on_every_call_and_wins_over_static_headers()
     {
         var calls = 0;

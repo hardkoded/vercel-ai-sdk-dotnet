@@ -122,7 +122,8 @@
     "voyage": "Vercel.AI.Voyage",
     "xai": "Vercel.AI.Xai",
     "zai": "Vercel.AI.Zai",
-    "mcp": "Vercel.AI.Mcp"
+    "mcp": "Vercel.AI.Mcp",
+    "tool-web-fetch": "Vercel.AI"
   },
   "notPortedPackages": [
     "angular",
