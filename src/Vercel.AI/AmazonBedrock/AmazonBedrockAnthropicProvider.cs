@@ -427,7 +427,7 @@ internal sealed class AmazonBedrockAnthropicInnerProvider : Vercel.AI.Anthropic.
                 merged[pair.Key] = pair.Value;
             }
 
-            foreach (var pair in await _headersProvider(cancellationToken).ConfigureAwait(false))
+            foreach (var pair in await AmazonBedrockProvider.WaitAsync(_headersProvider(cancellationToken), cancellationToken).ConfigureAwait(false))
             {
                 merged[pair.Key] = pair.Value;
             }

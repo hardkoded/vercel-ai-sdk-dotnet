@@ -37,25 +37,42 @@ public sealed class BedrockResolvableSettingsTests : BedrockEndpointEnvironment
     }
 
     [Fact]
-    public async Task Converse_headers_provider_runs_on_every_call_and_wins_over_static_headers()
+    public async Task Converse_headers_provider_runs_on_every_call_for_chat_and_embedding()
     {
         var calls = 0;
-        var handler = new UpstreamRecordingHandler("{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"hi\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}");
+        var chat = new UpstreamRecordingHandler("{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"hi\"}]}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}");
         var options = new AmazonBedrockOptions { AccessKeyId = "k", SecretAccessKey = "s" };
         options.Headers["Static"] = "static";
         options.Headers["Custom"] = "static";
         options.Headers["Dropped"] = "static";
-        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Custom"] = "call-" + ++calls, ["Dropped"] = null });
-        var model = AmazonBedrockProvider.Create(options, handler).LanguageModel("test-model-id");
-        var call = new LanguageModelCallOptions { Prompt = new ModelMessage[] { new UserModelMessage("Hello") } };
+        options.HeadersProvider = _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Custom"] = "call-" + ++calls, ["Dropped"] = null, ["Shared"] = "provider" });
+        var model = AmazonBedrockProvider.Create(options, chat).LanguageModel("anthropic.claude-v2");
+        var call = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+            Headers = new Dictionary<string, string?> { ["Layer"] = "call", ["Shared"] = "call" },
+        };
 
         await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("call-1", handler.Headers["Custom"]);
-        Assert.Equal("static", handler.Headers["Static"]);
-        Assert.False(handler.Headers.ContainsKey("Dropped"));
+        Assert.Equal(1, calls);
+        Assert.Equal("call-1", chat.Headers["Custom"]);
+        Assert.Equal("static", chat.Headers["Static"]);
+        Assert.Equal("call", chat.Headers["Layer"]);
+        Assert.Equal("call", chat.Headers["Shared"]);
+        Assert.False(chat.Headers.ContainsKey("Dropped"));
+        Assert.Contains("ai-sdk-amazon-bedrock", chat.Headers["user-agent"], StringComparison.Ordinal);
 
         await model.DoGenerateAsync(call, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("call-2", handler.Headers["Custom"]);
+        Assert.Equal("call-2", chat.Headers["Custom"]);
+
+        var embed = new UpstreamRecordingHandler("{\"embedding\":[0.1],\"inputTextTokenCount\":1}");
+        await AmazonBedrockProvider.Create(options, embed).EmbeddingModel("amazon.titan-embed-text-v2:0").DoEmbedAsync(new[] { "a" }, null, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("call-3", embed.Headers["Custom"]);
+
+        var rerank = new UpstreamRecordingHandler("{\"results\":[{\"index\":0,\"relevanceScore\":0.5}]}");
+        await AmazonBedrockProvider.Create(options, rerank).RerankingModel("amazon.rerank-v1:0").DoRerankAsync("q", new[] { "a" }, 1, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal("call-4", rerank.Headers["Custom"]);
+        Assert.Equal(4, calls);
     }
 
     [Fact]

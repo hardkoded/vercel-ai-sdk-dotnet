@@ -87,14 +87,39 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <summary>HTTP helper.</summary>
     public ProviderHttp Http { get; }
 
+    // Stops waiting when the token is cancelled, even if the provider ignores it. A later failure is still observed.
+    internal static async Task<T> WaitAsync<T>(Task<T> task, CancellationToken cancellationToken)
+    {
+        if (!cancellationToken.CanBeCanceled)
+        {
+            return await task.ConfigureAwait(false);
+        }
+
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+        {
+            if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
+            {
+                _ = task.ContinueWith(
+                    failed => { _ = failed.Exception; },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+                throw new OperationCanceledException(cancellationToken);
+            }
+        }
+
+        return await task.ConfigureAwait(false);
+    }
+
     /// <summary>
-    /// Adds the provider headers, then the call headers (which win; a null call value drops the header), then the
-    /// <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing.
+    /// Adds the provider headers, then <see cref="AmazonBedrockOptions.HeadersProvider"/>, then the call headers
+    /// (which win; a null value drops the header), then the <c>ai-sdk-amazon-bedrock</c> user agent. Call before signing.
     /// </summary>
     public async Task AddHeadersAsync(HttpRequestMessage request, IEnumerable<KeyValuePair<string, string?>>? callHeaders, CancellationToken cancellationToken)
     {
         var resolved = Options.HeadersProvider is { } headersProvider
-            ? await headersProvider(cancellationToken).ConfigureAwait(false)
+            ? await WaitAsync(headersProvider(cancellationToken), cancellationToken).ConfigureAwait(false)
             : null;
         var merged = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var source in new IEnumerable<KeyValuePair<string, string?>>?[] { Options.Headers, resolved, callHeaders })
