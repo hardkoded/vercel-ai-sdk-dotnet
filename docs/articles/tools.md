@@ -176,6 +176,71 @@ When you send a custom tool call back in the next request, OpenAI Responses send
 
 OpenAI Responses does not yet read `custom_tool_call` items in a response ([#571](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/571)), nor stream them ([#495](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/495)). Until then, a response that calls a custom tool does not return the call.
 
+## Web fetch tool
+
+`WebFetchTools.Create` (`Vercel.AI.WebFetch`) lets agents read web pages and documents by URL. It maps to `experimental_createWebFetchTool` of `@ai-sdk/tool-web-fetch` and is part of `Vercel.AI`.
+
+```csharp
+using Vercel.AI.WebFetch;
+
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    ModelId = "openai/gpt-6-astra",
+    Tools = new[] { WebFetchTools.Create() },
+    StopWhen = StopWhen.IsStepCount(5),
+    Prompt = "Summarize https://ai-sdk.dev/docs/introduction.",
+});
+```
+
+`WebFetchTools.Create` takes an optional `WebFetchToolOptions` and returns the tool, named `webFetch`, ready for `Tools`.
+
+| Option | Description |
+| --- | --- |
+| `AllowedDomains` | Only fetch from these domains and their subdomains, e.g. `new[] { "example.com" }`. List a subdomain such as `docs.example.com` to allow only that subdomain. Also applies to redirects. Cannot be combined with `BlockedDomains`. |
+| `BlockedDomains` | Never fetch from these domains or their subdomains. Also applies to redirects. |
+| `RequireUrlInUserMessage` | Only fetch URLs that appear in user messages. URLs in instructions, system messages, assistant messages, and tool results are not included. Defaults to `false`. |
+| `MaxLength` | Maximum characters returned per call. Longer content can be read with `offset`. Defaults to `50000`. |
+| `MaxBytes` | Maximum response size in bytes. Defaults to 10 MiB. |
+| `Timeout` | Timeout for fetching each URL, including redirects. Defaults to 30 seconds. |
+| `Fetch` | Custom `DownloadFetch`, for example to route requests through a proxy. It must validate resolved addresses itself. |
+| `DefuddleOptions` | Options for the HTML content extractor, such as `ContentSelector`. |
+
+An invalid option, or `AllowedDomains` together with `BlockedDomains`, throws an `InvalidArgumentError`.
+
+The model calls the tool with `{ url: string, offset?: number }` and receives one of the following results:
+
+- `{ type: 'document', url, finalUrl, contentType, title?, content, offset, totalLength, nextOffset? }` for HTML and text.
+- `{ type: 'error', url, errorCode, message, statusCode? }` when fetching fails.
+
+Errors are returned so the model can recover, for example by trying another URL. The model receives documents as text with the URL, title, and content type, followed by the content (`Tool.ToModelOutput`). Cancelling the `CancellationToken` aborts the request.
+
+The tool runs with `Tool.ExecuteWithOptions`, which receives the `ToolExecutionOptions` of the call: its `ToolCallId`, the `Messages` of the step, and the `AbortSignal`. `Tool.ToModelOutput` converts the JSON output of a tool into the result sent to the model.
+
+### Content handling
+
+Requests prefer markdown using the `Accept: text/markdown` header, which many documentation sites support. Otherwise, HTML pages are converted to markdown, which removes navigation, footers, and other boilerplate. Text formats such as plain text, JSON, XML, and CSV are returned as is. PDFs, images, audio, video, and other binary formats are not supported.
+
+JavaScript is not executed. Pages that render their content in the browser may return little or no content, in which case the model is told that the page may require JavaScript.
+
+The port converts HTML with [AngleSharp](https://anglesharp.github.io/) and a built-in extractor instead of [defuddle](https://github.com/kepano/defuddle). The extractor sometimes selects the wrong part of a page. If you fetch pages with a known structure, set `DefuddleOptions.ContentSelector` to choose the main content element. `WebFetchDefuddleOptions` also has `RemoveImages` and `RemoveHiddenElements`; the other defuddle options are not ported ([#756](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/756)).
+
+```csharp
+var webFetch = WebFetchTools.Create(new WebFetchToolOptions
+{
+    DefuddleOptions = new WebFetchDefuddleOptions { ContentSelector = "article" },
+});
+```
+
+Content longer than `MaxLength` is truncated. The model is told to call the tool again with `offset` to continue reading. Converted documents are cached for a few minutes per tool instance, so reading at an offset does not fetch the page again.
+
+### Security
+
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. On `net10.0` the default transport also validates the resolved DNS addresses and connects to the validated address, so a hostname that resolves to a private or reserved address returns `url_not_allowed`. On `netstandard2.0` it validates the resolved addresses just before the request but cannot pin the connection, so restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
+
+Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
+
+`RequireUrlInUserMessage` ignores URLs in tool results because the model can place arbitrary text there, for example through tool inputs that are reflected in outputs. As a result, the model cannot follow links from search results or fetched pages in this mode.
+
 ## MCP transports
 
 `McpClient.ConnectAsync(transport)` lists the tools of an MCP server over an `IMcpTransport`. The port ships `StdioMcpTransport`, `HttpMcpTransport` (Streamable HTTP), and `SseMcpTransport` (the legacy HTTP+SSE transport, `SseMCPTransport` upstream).

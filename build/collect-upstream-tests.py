@@ -87,6 +87,7 @@ DOTNET_PROJECTS = {
     "xai": "Vercel.AI.Xai",
     "zai": "Vercel.AI.Zai",
     "mcp": "Vercel.AI.Mcp",
+    "tool-web-fetch": "Vercel.AI",
 }
 
 
