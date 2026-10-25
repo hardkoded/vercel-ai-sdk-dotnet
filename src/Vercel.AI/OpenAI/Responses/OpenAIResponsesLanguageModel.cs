@@ -610,7 +610,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools));
+        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), options.JsonResponse);
     }
 
     /// <inheritdoc />
@@ -674,7 +674,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         IReadOnlyDictionary<string, string> headers,
         Func<string>? generateId = null,
         IReadOnlyCollection<string>? functionToolNames = null,
-        ToolNameMapping? toolNameMapping = null)
+        ToolNameMapping? toolNameMapping = null,
+        bool jsonResponse = false)
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -714,6 +715,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             hasFileSearchResults |= itemType == "file_search_call" && OpenAIResponsesOutput.HasResults(item);
         }
 
+        string? structuredOutputText = null;
         var retrievedFileIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in output.EnumerateArray())
         {
@@ -721,12 +723,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             if (type == "message" && item.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
             {
                 var itemId = OpenAIJson.String(item, "id");
+                var phase = OpenAIJson.String(item, "phase");
+
+                // Parse only the last final answer for JSON output, while every message stays in the content.
+                if (jsonResponse && phase == "final_answer")
+                {
+                    structuredOutputText = string.Concat(parts.EnumerateArray()
+                        .Select(contentPart => OpenAIJson.String(contentPart, "text")));
+                }
+
                 foreach (var part in parts.EnumerateArray())
                 {
                     if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                     {
                         var value = text.GetString();
-                        if (!string.IsNullOrEmpty(value))
+                        if (value != null)
                         {
                             var annotations = new List<JsonElement>();
                             if (part.TryGetProperty("annotations", out var annotationArray) && annotationArray.ValueKind == JsonValueKind.Array)
@@ -737,7 +748,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             content.Add(new OpenAIText(
                                 value!,
                                 OpenAIResponsesOutput.Citations(annotations),
-                                OpenAIResponsesOutput.TextMetadata(itemId, annotations)));
+                                OpenAIResponsesOutput.TextMetadata(itemId, annotations, phase)));
 
                             // Citation-derived sources are only used when retrieval data is unavailable.
                             foreach (var annotation in annotations)
@@ -881,7 +892,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             raw,
             string.IsNullOrEmpty(responseModel) ? null : responseModel,
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),
-            headers);
+            headers,
+            structuredOutputText);
     }
 
     internal static string ProgrammaticToolName(ToolNameMapping? toolNameMapping) =>

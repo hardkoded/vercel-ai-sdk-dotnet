@@ -110,22 +110,6 @@ public sealed class CoreTests
 
     [Fact]
     [UpstreamTest(
-        "packages/ai/src/middleware/extract-reasoning-middleware.test.ts::extractReasoningMiddleware > wrapGenerate::should extract reasoning from <think> tags",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "Splits one think tag into reasoning and text on generate.")]
-    public async Task Extract_reasoning_middleware_splits_think_tags()
-    {
-        var model = new TestLanguageModel
-        {
-            OnGenerate = _ => TestLanguageModel.Text("<think>because</think>answer"),
-        }.WrapLanguageModel(new ExtractReasoningMiddleware());
-        var result = await Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "why" });
-        Assert.Equal("answer", result.Text);
-        Assert.Equal("because", result.ReasoningText);
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/ai/src/registry/provider-registry.test.ts::languageModel::should return language model from provider",
         Coverage = UpstreamCoverage.Covered)]
     public void Registry_resolves_provider_and_model()

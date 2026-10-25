@@ -18,7 +18,7 @@ public sealed class OpenAIText : GeneratedText
         ProviderMetadata = providerMetadata;
     }
 
-    /// <summary>Provider metadata: <c>openai.itemId</c> and, when the text is annotated, <c>openai.annotations</c>.</summary>
+    /// <summary>Provider metadata: <c>openai.itemId</c>, <c>openai.phase</c> when the message has one, and, when the text is annotated, <c>openai.annotations</c>.</summary>
     public new JsonElement ProviderMetadata { get; }
 }
 
@@ -99,9 +99,14 @@ internal static class OpenAIResponsesOutput
         OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") });
 
     /// <summary>Provider metadata for a text block.</summary>
-    public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations)
+    public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations, string? phase = null)
     {
         var metadata = new JsonObject { ["itemId"] = itemId };
+        if (phase != null)
+        {
+            metadata["phase"] = phase;
+        }
+
         if (annotations.Count > 0)
         {
             var array = new JsonArray();
