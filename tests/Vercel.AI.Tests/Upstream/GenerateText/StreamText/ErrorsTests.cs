@@ -47,6 +47,7 @@ public sealed class ErrorsTests
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Steps));
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.FinishReason));
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Usage));
+        await WaitForErrorAsync(errors);
         AssertNoFinish(Assert.IsType<NoOutputGeneratedException>(Assert.Single(errors)));
         Assert.Empty(stepFinishes);
     }
@@ -129,8 +130,19 @@ public sealed class ErrorsTests
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Steps));
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.FinishReason));
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Usage));
+        await WaitForErrorAsync(errors);
         AssertNoFinish(Assert.IsType<NoOutputGeneratedException>(Assert.Single(errors)));
         Assert.Single(stepFinishes);
+    }
+
+    // OnError runs after the stream has failed, so wait for it, with a bound.
+    private static async Task WaitForErrorAsync(List<Exception> errors)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (errors.Count == 0)
+        {
+            await Task.Delay(10, timeout.Token);
+        }
     }
 
     private static void AssertNoFinish(Exception error)
