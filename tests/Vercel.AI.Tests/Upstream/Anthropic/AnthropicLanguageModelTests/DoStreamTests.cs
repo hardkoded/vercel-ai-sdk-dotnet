@@ -16,6 +16,78 @@ public sealed class DoStreamTests
     // Stands for a message_delta event that is not sent at all.
     private const string Undefined = "<undefined>";
 
+    [Theory]
+    [InlineData("empty")]
+    [InlineData("metadata-only")]
+    [InlineData("empty-text")]
+    [InlineData("empty-reasoning")]
+    [InlineData("empty-tool-input")]
+    [InlineData("later-message")]
+    [InlineData("partial-text")]
+    [InlineData("partial-reasoning")]
+    [InlineData("partial-tool-input")]
+    [InlineData("tool-call")]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::only emits an interrupted finish after output (%s)",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Only_emits_an_interrupted_finish_after_output(string scenario)
+    {
+        static string Event(string json) => "data: " + json + "\n\n";
+        static string MessageStart(string id, string content = "[]") =>
+            Event("{\"type\":\"message_start\",\"message\":{\"id\":\"" + id + "\",\"type\":\"message\",\"role\":\"assistant\",\"content\":" + content + ",\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}");
+        const string TextStart = "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n";
+        static string TextDelta(string text) =>
+            Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"" + text + "\"}}");
+
+        var sse = string.Empty;
+        if (scenario == "later-message")
+        {
+            sse += MessageStart("msg-previous") + TextStart + TextDelta("Previous answer") +
+                Event("{\"type\":\"content_block_stop\",\"index\":0}") +
+                Event("{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}") +
+                Event("{\"type\":\"message_stop\"}");
+        }
+
+        if (scenario != "empty")
+        {
+            sse += MessageStart("msg-current", scenario == "tool-call" ? "[{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}]" : "[]");
+        }
+
+        if (scenario == "empty-text" || scenario == "partial-text")
+        {
+            sse += TextStart + TextDelta(scenario == "partial-text" ? "Partial" : string.Empty);
+        }
+
+        if (scenario == "empty-reasoning" || scenario == "partial-reasoning")
+        {
+            sse += Event("{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"\"}}") +
+                Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"" + (scenario == "partial-reasoning" ? "Thinking" : string.Empty) + "\"}}");
+        }
+
+        if (scenario == "empty-tool-input" || scenario == "partial-tool-input")
+        {
+            sse += Event("{\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool-1\",\"name\":\"test-tool\",\"input\":{}}}") +
+                Event("{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"" + (scenario == "partial-tool-input" ? "{" : string.Empty) + "\"}}");
+        }
+
+        var parts = await StreamAsync(sse);
+
+        Assert.Empty(parts.OfType<ErrorStreamPart>());
+        var finishes = parts.OfType<FinishStreamPart>().Select(part => (part.FinishReason, part.RawFinishReason)).ToList();
+        if (scenario == "later-message")
+        {
+            Assert.Equal(new[] { (FinishReason.Stop, (string?)"end_turn") }, finishes);
+        }
+        else if (scenario is "partial-text" or "partial-reasoning" or "partial-tool-input" or "tool-call")
+        {
+            Assert.Equal(new[] { (FinishReason.Interrupted, (string?)null) }, finishes);
+        }
+        else
+        {
+            Assert.Empty(finishes);
+        }
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::reports interruption for a later message even when an earlier message completed",
@@ -40,6 +112,8 @@ public sealed class DoStreamTests
         Assert.Equal("end_turn", finishes[0].RawFinishReason);
         Assert.Equal(FinishReason.Interrupted, finishes[1].FinishReason);
         Assert.Null(finishes[1].RawFinishReason);
+        Assert.Equal(finishes[0].Usage, finishes[1].Usage);
+        Assert.Equal(finishes[0].ProviderMetadata, finishes[1].ProviderMetadata);
     }
 
     [Theory]
@@ -70,10 +144,14 @@ public sealed class DoStreamTests
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         Assert.Equal(unified, finish.FinishReason.ToString());
         Assert.Equal(messageStop && stopReason != Undefined ? stopReason : null, finish.RawFinishReason);
-        Assert.Equal(10, finish.Usage.InputTokens);
+        Assert.Equal(messageStop ? 10 : null, finish.Usage.InputTokens);
         if (messageStop)
         {
             Assert.Equal(10, finish.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("usage").GetProperty("input_tokens").GetInt32());
+        }
+        else
+        {
+            Assert.Null(finish.ProviderMetadata);
         }
     }
 
