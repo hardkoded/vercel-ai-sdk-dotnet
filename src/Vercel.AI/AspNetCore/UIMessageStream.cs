@@ -19,7 +19,7 @@ public static class UIMessageStreamExtensions
 {
     /// <summary>
     /// Returns a <c>text/event-stream</c> result a JavaScript <c>useChat</c> client can consume.
-    /// Emitted chunks are start, text, reasoning, tool input/output, source-url, step boundaries, finish, and error.
+    /// Emitted chunks are start, text, reasoning, tool input/output, tool approval request, source-url, step boundaries, finish, abort, and error.
     /// Finish reasons use the protocol values <c>stop</c>, <c>length</c>, <c>content-filter</c>, <c>tool-calls</c>, <c>error</c>, and <c>other</c>.
     /// </summary>
     /// <param name="result">The stream to write.</param>
