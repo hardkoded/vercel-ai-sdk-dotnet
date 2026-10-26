@@ -21,6 +21,11 @@ export default defineConfig({
             title: "Vercel AI SDK for .NET",
             description:
                 "Unofficial community port of the Vercel AI SDK for server applications. Not an official Vercel product.",
+            logo: {
+                src: "./src/assets/logo.png",
+                alt: "Hardkoded",
+            },
+            favicon: "/favicon.png",
             customCss: [
                 "@fontsource/inter/400.css",
                 "@fontsource/inter/500.css",
