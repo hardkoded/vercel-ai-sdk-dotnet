@@ -39,6 +39,8 @@ Link every ported test with `[UpstreamTest]` (see `tests/parity/README.md`). Bef
 
 Every code block in `README.md` comes from a runnable project in `examples/`. Do not type code into the README by hand. Use the same way for new code in `docs/articles`. Moving its older hand-written blocks is tracked in #250. [MarkdownSnippets.MsBuild](https://github.com/SimonCropp/MarkdownSnippets) rewrites the markdown when `examples/GenerateText` builds, so the code cannot drift from the API. CI fails when the committed markdown does not match the build output.
 
+The published site is Astro Starlight in `docs-site/`. It copies `docs/articles/` when it builds. Preview steps are in [docs-site/README.md](docs-site/README.md).
+
 To add an example:
 
 1. Create `examples/<Name>/<Name>.csproj` with `Microsoft.NET.Sdk` and a `Description`. `examples/Directory.Build.props` makes it a `net10.0` console app that references `Vercel.AI`.

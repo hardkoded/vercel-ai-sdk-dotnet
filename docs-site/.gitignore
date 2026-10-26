@@ -1,0 +1,35 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# DocFX metadata and generated guide copies
+.api-yaml/
+.redirect-staging/
+src/content/docs/.api-staging/
+src/content/docs/quickstart.md
+src/content/docs/tools.md
+src/content/docs/speech.md
+src/content/docs/streaming.md
+src/content/docs/providers.md
+src/content/docs/typesafe-ai.md
+src/content/docs/compatibility.md
+src/content/docs/warnings.md
+src/content/docs/secure-url-fetching.md
+
+# macOS-specific files
+.DS_Store
