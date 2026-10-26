@@ -1,0 +1,47 @@
+---
+title: Vercel AI SDK for .NET
+description: Unofficial community port of the Vercel AI SDK for server applications.
+sidebar:
+  label: Home
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Unofficial community port of the Vercel AI SDK for server applications. It is an independent reimplementation of the public AI SDK behavior and provider HTTP APIs. It is not an official Vercel product.
+
+## Quickstart
+
+Install `Vercel.AI` and the provider package you call. `OpenAIProvider.Create()` reads `OPENAI_API_KEY`. `GatewayProvider.Create()` reads `AI_GATEWAY_API_KEY`.
+
+```csharp
+using Vercel.AI;
+using Vercel.AI.OpenAI;
+
+var model = OpenAIProvider.Create().LanguageModel("gpt-4.1-mini");
+var client = new AiClient(Vercel.AI.Gateway.GatewayProvider.Create(new() { ApiKey = "unused" }));
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Instructions = "Answer in one sentence.",
+    Prompt = "What is a language model specification?",
+});
+Console.WriteLine(result.Text);
+```
+
+`AiClient` is only required for the high-level helpers. Pass `Model` when you already have an `ILanguageModel`. Pass `ModelId` (`openai/gpt-4.1-mini`) when the Gateway should resolve it.
+
+In ASP.NET Core, `services.AddAiSdk()` registers `IAiClient` and a named `HttpClient`.
+
+## Guides
+
+<CardGrid>
+  <LinkCard title="Quickstart" href={`${import.meta.env.BASE_URL}quickstart/`} description="Install the package and generate text." />
+  <LinkCard title="Tools" href={`${import.meta.env.BASE_URL}tools/`} description="Let the model call tools and read the results." />
+  <LinkCard title="Streaming" href={`${import.meta.env.BASE_URL}streaming/`} description="Stream text, tool calls, and UI messages." />
+  <LinkCard title="Providers" href={`${import.meta.env.BASE_URL}providers/`} description="Gateway and direct provider calls." />
+  <LinkCard title="Speech" href={`${import.meta.env.BASE_URL}speech/`} description="Streaming speech." />
+  <LinkCard title="TypeSafe" href={`${import.meta.env.BASE_URL}typesafe-ai/`} description="TypeSafe decision models." />
+  <LinkCard title="Compatibility" href={`${import.meta.env.BASE_URL}compatibility/`} description="What this port includes." />
+  <LinkCard title="API reference" href={`${import.meta.env.BASE_URL}api/`} description="Generated from the Vercel.AI library." />
+</CardGrid>

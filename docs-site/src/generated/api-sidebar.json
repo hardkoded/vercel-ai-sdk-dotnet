@@ -1,0 +1,234 @@
+[
+  {
+    "label": "Overview",
+    "slug": "api"
+  },
+  {
+    "label": "Vercel.AI",
+    "slug": "api/Vercel.AI"
+  },
+  {
+    "label": "Vercel.AI.Alibaba",
+    "slug": "api/Vercel.AI.Alibaba"
+  },
+  {
+    "label": "Vercel.AI.AmazonBedrock",
+    "slug": "api/Vercel.AI.AmazonBedrock"
+  },
+  {
+    "label": "Vercel.AI.Anthropic",
+    "slug": "api/Vercel.AI.Anthropic"
+  },
+  {
+    "label": "Vercel.AI.AspNetCore",
+    "slug": "api/Vercel.AI.AspNetCore"
+  },
+  {
+    "label": "Vercel.AI.AssemblyAI",
+    "slug": "api/Vercel.AI.AssemblyAI"
+  },
+  {
+    "label": "Vercel.AI.Azure",
+    "slug": "api/Vercel.AI.Azure"
+  },
+  {
+    "label": "Vercel.AI.Baseten",
+    "slug": "api/Vercel.AI.Baseten"
+  },
+  {
+    "label": "Vercel.AI.BlackForestLabs",
+    "slug": "api/Vercel.AI.BlackForestLabs"
+  },
+  {
+    "label": "Vercel.AI.ByteDance",
+    "slug": "api/Vercel.AI.ByteDance"
+  },
+  {
+    "label": "Vercel.AI.Cartesia",
+    "slug": "api/Vercel.AI.Cartesia"
+  },
+  {
+    "label": "Vercel.AI.Cerebras",
+    "slug": "api/Vercel.AI.Cerebras"
+  },
+  {
+    "label": "Vercel.AI.Cohere",
+    "slug": "api/Vercel.AI.Cohere"
+  },
+  {
+    "label": "Vercel.AI.Deepgram",
+    "slug": "api/Vercel.AI.Deepgram"
+  },
+  {
+    "label": "Vercel.AI.DeepInfra",
+    "slug": "api/Vercel.AI.DeepInfra"
+  },
+  {
+    "label": "Vercel.AI.DeepSeek",
+    "slug": "api/Vercel.AI.DeepSeek"
+  },
+  {
+    "label": "Vercel.AI.ElevenLabs",
+    "slug": "api/Vercel.AI.ElevenLabs"
+  },
+  {
+    "label": "Vercel.AI.Fal",
+    "slug": "api/Vercel.AI.Fal"
+  },
+  {
+    "label": "Vercel.AI.Fireworks",
+    "slug": "api/Vercel.AI.Fireworks"
+  },
+  {
+    "label": "Vercel.AI.FishAudio",
+    "slug": "api/Vercel.AI.FishAudio"
+  },
+  {
+    "label": "Vercel.AI.Gateway",
+    "slug": "api/Vercel.AI.Gateway"
+  },
+  {
+    "label": "Vercel.AI.GenerateText",
+    "slug": "api/Vercel.AI.GenerateText"
+  },
+  {
+    "label": "Vercel.AI.Gladia",
+    "slug": "api/Vercel.AI.Gladia"
+  },
+  {
+    "label": "Vercel.AI.GmiCloud",
+    "slug": "api/Vercel.AI.GmiCloud"
+  },
+  {
+    "label": "Vercel.AI.Google",
+    "slug": "api/Vercel.AI.Google"
+  },
+  {
+    "label": "Vercel.AI.Groq",
+    "slug": "api/Vercel.AI.Groq"
+  },
+  {
+    "label": "Vercel.AI.HeyGen",
+    "slug": "api/Vercel.AI.HeyGen"
+  },
+  {
+    "label": "Vercel.AI.HuggingFace",
+    "slug": "api/Vercel.AI.HuggingFace"
+  },
+  {
+    "label": "Vercel.AI.Hume",
+    "slug": "api/Vercel.AI.Hume"
+  },
+  {
+    "label": "Vercel.AI.KlingAI",
+    "slug": "api/Vercel.AI.KlingAI"
+  },
+  {
+    "label": "Vercel.AI.Luma",
+    "slug": "api/Vercel.AI.Luma"
+  },
+  {
+    "label": "Vercel.AI.Mcp",
+    "slug": "api/Vercel.AI.Mcp"
+  },
+  {
+    "label": "Vercel.AI.MiniMax",
+    "slug": "api/Vercel.AI.MiniMax"
+  },
+  {
+    "label": "Vercel.AI.Mistral",
+    "slug": "api/Vercel.AI.Mistral"
+  },
+  {
+    "label": "Vercel.AI.Moonshot",
+    "slug": "api/Vercel.AI.Moonshot"
+  },
+  {
+    "label": "Vercel.AI.OpenAI",
+    "slug": "api/Vercel.AI.OpenAI"
+  },
+  {
+    "label": "Vercel.AI.OpenAICompatible",
+    "slug": "api/Vercel.AI.OpenAICompatible"
+  },
+  {
+    "label": "Vercel.AI.OpenResponses",
+    "slug": "api/Vercel.AI.OpenResponses"
+  },
+  {
+    "label": "Vercel.AI.OpenTelemetry",
+    "slug": "api/Vercel.AI.OpenTelemetry"
+  },
+  {
+    "label": "Vercel.AI.Operations",
+    "slug": "api/Vercel.AI.Operations"
+  },
+  {
+    "label": "Vercel.AI.Perplexity",
+    "slug": "api/Vercel.AI.Perplexity"
+  },
+  {
+    "label": "Vercel.AI.Prodia",
+    "slug": "api/Vercel.AI.Prodia"
+  },
+  {
+    "label": "Vercel.AI.Prompt",
+    "slug": "api/Vercel.AI.Prompt"
+  },
+  {
+    "label": "Vercel.AI.Provider",
+    "slug": "api/Vercel.AI.Provider"
+  },
+  {
+    "label": "Vercel.AI.ProviderUtils",
+    "slug": "api/Vercel.AI.ProviderUtils"
+  },
+  {
+    "label": "Vercel.AI.QuiverAI",
+    "slug": "api/Vercel.AI.QuiverAI"
+  },
+  {
+    "label": "Vercel.AI.Replicate",
+    "slug": "api/Vercel.AI.Replicate"
+  },
+  {
+    "label": "Vercel.AI.RevAI",
+    "slug": "api/Vercel.AI.RevAI"
+  },
+  {
+    "label": "Vercel.AI.Testing",
+    "slug": "api/Vercel.AI.Testing"
+  },
+  {
+    "label": "Vercel.AI.TogetherAI",
+    "slug": "api/Vercel.AI.TogetherAI"
+  },
+  {
+    "label": "Vercel.AI.TypeSafeAi",
+    "slug": "api/Vercel.AI.TypeSafeAi"
+  },
+  {
+    "label": "Vercel.AI.Ui",
+    "slug": "api/Vercel.AI.Ui"
+  },
+  {
+    "label": "Vercel.AI.Util",
+    "slug": "api/Vercel.AI.Util"
+  },
+  {
+    "label": "Vercel.AI.Voyage",
+    "slug": "api/Vercel.AI.Voyage"
+  },
+  {
+    "label": "Vercel.AI.WebFetch",
+    "slug": "api/Vercel.AI.WebFetch"
+  },
+  {
+    "label": "Vercel.AI.Xai",
+    "slug": "api/Vercel.AI.Xai"
+  },
+  {
+    "label": "Vercel.AI.Zai",
+    "slug": "api/Vercel.AI.Zai"
+  }
+]
