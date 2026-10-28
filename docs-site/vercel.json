@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/vercel-ai-sdk-dotnet",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/vercel-ai-sdk-dotnet/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/vercel-ai-sdk-dotnet/pagefind/:path*",
+      "destination": "/pagefind/:path*"
+    },
+    {
+      "source": "/vercel-ai-sdk-dotnet/:path((?!.*\\.(?:css|js|mjs|map|png|jpg|jpeg|gif|svg|webp|avif|ico|woff|woff2|ttf|otf|eot|json|txt|xml|html|webmanifest|wasm)$).+)",
+      "destination": "/:path/index.html"
+    },
+    {
+      "source": "/vercel-ai-sdk-dotnet/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}
