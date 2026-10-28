@@ -6,7 +6,7 @@ The Vercel AI SDK for .NET is a provider-agnostic C# toolkit to build AI-powered
 
 It is an unofficial community port of the [AI SDK](https://github.com/vercel/ai). It is an independent reimplementation of the public AI SDK behavior and provider HTTP APIs. It is not a copy of Vercel’s TypeScript, not an official Vercel product, and not endorsed by Vercel. The parity target is AI SDK 7 / Language Model specification V4. See [COMPATIBILITY.md](COMPATIBILITY.md) for the upstream commit and the packages that are intentionally not ported.
 
-To learn more, read the [documentation](https://hardkoded.github.io/vercel-ai-sdk-dotnet/).
+To learn more, read the [documentation](https://www.hardkoded.com/vercel-ai-sdk-dotnet/).
 
 Preview the docs site locally:
 
@@ -14,7 +14,7 @@ Preview the docs site locally:
 cd docs-site && npm ci && npm run api && npm run dev
 ```
 
-Open http://localhost:4321/vercel-ai-sdk-dotnet/ . The path includes `/vercel-ai-sdk-dotnet/` because that is the GitHub Pages project-site base. Article sources stay in `docs/articles/`. See [docs-site/README.md](docs-site/README.md).
+Open http://localhost:4321/vercel-ai-sdk-dotnet/ . The path includes `/vercel-ai-sdk-dotnet/` because that is the base path on hardkoded.com (`https://www.hardkoded.com/vercel-ai-sdk-dotnet/`). Article sources stay in `docs/articles/`. See [docs-site/README.md](docs-site/README.md).
 
 ## Installation
 
@@ -190,7 +190,7 @@ Unit tests mock HTTP and do not need keys. Integration tests call a live provide
 
 ## Packages
 
-The library targets `net10.0` and `netstandard2.0`. The ASP.NET UI stream helper and the examples are `net10.0` only. Versions come from MinVer. Pushing a `vMAJOR.MINOR.PATCH` tag packs `Vercel.AI`, publishes that package to nuget.org with Trusted Publishing, and the docs workflow publishes the documentation site.
+The library targets `net10.0` and `netstandard2.0`. The ASP.NET UI stream helper and the examples are `net10.0` only. Versions come from MinVer. Pushing a `vMAJOR.MINOR.PATCH` tag packs `Vercel.AI` and publishes that package to nuget.org with Trusted Publishing. Vercel publishes the documentation site on push to `main`. `.github/workflows/docs.yml` only builds and checks it.
 
 ## Community
 
