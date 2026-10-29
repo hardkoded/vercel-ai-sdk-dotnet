@@ -31,6 +31,26 @@ internal static class MoonshotJsonSchema
         return NormalizeDefinition(schema, true);
     }
 
+    /// <summary>Normalizes a response schema after removing the top-level <c>$schema</c> keyword.</summary>
+    public static JsonNode? NormalizeResponseSchema(JsonNode? schema)
+    {
+        if (schema is not JsonObject record)
+        {
+            return NormalizeJsonSchemaForMFJS(schema);
+        }
+
+        var schemaWithoutDollarSchema = new JsonObject();
+        foreach (var pair in record)
+        {
+            if (pair.Key != "$schema")
+            {
+                schemaWithoutDollarSchema[pair.Key] = pair.Value?.DeepClone();
+            }
+        }
+
+        return NormalizeJsonSchemaForMFJS(schemaWithoutDollarSchema);
+    }
+
     private static UnsupportedFunctionalityException RootException()
     {
         return new UnsupportedFunctionalityException(RootError, "'" + RootError + "' functionality not supported.");
