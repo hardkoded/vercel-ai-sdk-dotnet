@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
@@ -19,7 +20,14 @@ public sealed class OptionsTimeoutTests
         return new DelegateModel { Stream = (_, _) => Task.FromResult(new LanguageModelStreamResult(Yield(HelloParts()))) };
     }
 
-    private static StreamTextResult Stream(DelegateModel model, TimeoutConfiguration? timeout, AbortSignal? signal = null, IReadOnlyList<Tool>? tools = null, StopCondition? stopWhen = null, int? maxRetries = null)
+    private static StreamTextResult Stream(
+        DelegateModel model,
+        TimeoutConfiguration? timeout,
+        AbortSignal? signal = null,
+        IReadOnlyList<Tool>? tools = null,
+        StopCondition? stopWhen = null,
+        int? maxRetries = null,
+        List<Exception>? errors = null)
     {
         return Client().StreamTextAsync(new StreamTextOptions
         {
@@ -30,7 +38,11 @@ public sealed class OptionsTimeoutTests
             Tools = tools,
             StopWhen = stopWhen,
             MaxRetries = maxRetries,
-            OnError = (_, _) => Task.CompletedTask,
+            OnError = (error, _) =>
+            {
+                errors?.Add(error);
+                return Task.CompletedTask;
+            },
         });
     }
 
@@ -308,12 +320,15 @@ public sealed class OptionsTimeoutTests
     public async Task Should_clean_up_step_timeout_when_doStream_throws_an_error()
     {
         var model = new DelegateModel { Stream = (_, _) => throw new InvalidOperationException("Fail immediately") };
+        var errors = new List<Exception>();
 
-        var result = Stream(model, new TimeoutConfiguration { StepMs = 10000 }, maxRetries: 0);
+        var result = Stream(model, new TimeoutConfiguration { StepMs = 10000 }, maxRetries: 0, errors: errors);
 
-        // The port reports the error to the reader and the result tasks. Upstream sends it to onError.
-        var error = await Assert.ThrowsAnyAsync<Exception>(() => Consume(result));
-        Assert.Equal("Fail immediately", error.Message);
-        await Assert.ThrowsAnyAsync<Exception>(() => result.Text);
+        await Consume(result);
+
+        Assert.Equal("Fail immediately", Assert.Single(errors).Message);
+        Assert.Equal(
+            "No output generated. Check the stream for errors.",
+            (await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Text)).Message);
     }
 }
