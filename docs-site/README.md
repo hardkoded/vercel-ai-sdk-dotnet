@@ -14,7 +14,9 @@ npm run dev
 
 Open http://localhost:4321/vercel-ai-sdk-dotnet/ . The path includes `/vercel-ai-sdk-dotnet/` because that is the base path on hardkoded.com (`https://www.hardkoded.com/vercel-ai-sdk-dotnet/`).
 
-`npm run dev` and `npm run build` copy `docs/articles/` into the site before Astro starts. Edit the articles in `docs/articles/`. The copies under `src/content/docs/` are generated.
+The site root is a marketing page (`src/pages/index.astro`), not the Starlight home. Documentation starts at `/docs/`. Quickstart, the other guides, and the API stay on their existing paths.
+
+`npm run dev` and `npm run build` copy `docs/articles/` into the site before Astro starts. Edit the articles in `docs/articles/`. The copies under `src/content/docs/` are generated. The documentation index at `src/content/docs/docs/index.mdx` is edited by hand.
 
 Search is built with the production output:
 

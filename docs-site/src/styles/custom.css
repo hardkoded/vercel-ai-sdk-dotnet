@@ -1,7 +1,9 @@
 :root {
     --sl-font: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
     --sl-font-mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    /* Violet accent. This site is an unofficial community port, distinct from the other Hardkoded docs. */
+    /* Violet accent. This site is an unofficial community port, distinct from the other Hardkoded docs.
+       The marketing page (src/styles/landing.css) uses a lighter step of this violet as --ai-accent
+       and this value as --ai-accent-deep. It does not use the blue in logo.png. */
     --sl-color-accent-low: #2a1b5e;
     --sl-color-accent: #7c5cff;
     --sl-color-accent-high: #e6e0ff;
