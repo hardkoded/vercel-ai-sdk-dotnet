@@ -38,9 +38,16 @@ public sealed class UpstreamParityTests
         Assert.Empty(duplicates);
         foreach (var link in links)
         {
-            Assert.True(byId.ContainsKey(link.UpstreamId), "Unknown upstream id: " + link.UpstreamId);
-            Assert.Equal("in-scope", byId[link.UpstreamId].Scope);
             Assert.True(link.Coverage is nameof(UpstreamCoverage.Covered) or nameof(UpstreamCoverage.Partial));
+            if (!byId.ContainsKey(link.UpstreamId))
+            {
+                Assert.True(
+                    link.Commit is { Length: 40 } && link.Commit.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f'),
+                    "Unknown upstream id must name its commit: " + link.UpstreamId);
+                continue;
+            }
+
+            Assert.Equal("in-scope", byId[link.UpstreamId].Scope);
         }
     }
 
@@ -51,9 +58,11 @@ public sealed class UpstreamParityTests
         var manifest = UpstreamCatalog.LoadManifest();
         var links = UpstreamCatalog.LoadLinks(typeof(UpstreamParityTests).Assembly);
         var summary = UpstreamCatalog.Summarize(tests, links, manifest.UpstreamCommit);
+        var catalogIds = tests.Select(test => test.Id).ToHashSet(StringComparer.Ordinal);
+        var catalogLinkCount = links.Count(link => catalogIds.Contains(link.UpstreamId));
 
         Assert.Equal(summary.UnitTests, summary.InScope + summary.OutOfScope);
-        Assert.Equal(links.Count, summary.Covered + summary.Partial);
+        Assert.Equal(catalogLinkCount, summary.Covered + summary.Partial);
         Assert.Equal(summary.InScope, summary.Covered + summary.Partial + summary.Missing);
     }
 }

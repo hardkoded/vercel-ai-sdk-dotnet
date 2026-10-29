@@ -19,7 +19,6 @@ public sealed class ElevenLabsParityTests
 {
     private const string Speech = "packages/elevenlabs/src/elevenlabs-speech-model.test.ts::ElevenLabsSpeechModel > doGenerate::";
     private const string Transcription = "packages/elevenlabs/src/elevenlabs-transcription-model.test.ts::doGenerate";
-    private const string ExhaustedMessage = "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Resource has been exhausted (e.g. check quota).\",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n";
     private const string TranscriptJson = "{\"language_code\":\"eng\",\"language_probability\":0.8905608654022217,\"text\":\"Hello from the Vercel AI SDK.\",\"words\":["
         + "{\"text\":\"Hello\",\"start\":0.199,\"end\":0.479,\"type\":\"word\",\"speaker_id\":\"speaker_0\",\"logprob\":0},"
         + "{\"text\":\" \",\"start\":0.479,\"end\":0.499,\"type\":\"spacing\",\"speaker_id\":\"speaker_0\",\"logprob\":0},"
@@ -35,19 +34,6 @@ public sealed class ElevenLabsParityTests
         + "],\"transcription_id\":\"dRgXxwt3SzzliHA3nDAQ\"}";
 
     private static readonly Regex FormField = new Regex("name=\"?(?<name>[^\";\\r\\n]+)\"?[^\\r\\n]*\\r\\n(?:[^\\r\\n]+\\r\\n)*\\r\\n(?<value>[^\\r\\n]*)\\r\\n", RegexOptions.Compiled);
-
-    [Fact]
-    [UpstreamTest("packages/elevenlabs/src/elevenlabs-error.test.ts::elevenlabsErrorDataSchema::should parse ElevenLabs resource exhausted error", Coverage = UpstreamCoverage.Covered)]
-    public void Error_parser_reads_the_resource_exhausted_error()
-    {
-        var json = new JsonObject { ["error"] = new JsonObject { ["message"] = ExhaustedMessage, ["code"] = 429 } }.ToJsonString();
-        var result = ElevenLabsError.Parse(json);
-        Assert.True(result.Success);
-        Assert.Equal(ExhaustedMessage, result.Value!.Message);
-        Assert.Equal(429, result.Value.Code);
-        Assert.Equal(result.Value.Message, result.RawValue!.Message);
-        Assert.Equal(result.Value.Code, result.RawValue.Code);
-    }
 
     [Fact]
     [UpstreamTest(Speech + "should generate speech with required parameters", Coverage = UpstreamCoverage.Covered)]

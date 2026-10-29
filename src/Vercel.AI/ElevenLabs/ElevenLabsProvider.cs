@@ -22,21 +22,171 @@ public class ElevenLabsOptions : OpenAICompatibleOptions
     public Func<DateTimeOffset>? Clock { get; set; }
 }
 
-/// <summary>Parsed ElevenLabs <c>error</c> object.</summary>
-public sealed class ElevenLabsErrorData
+/// <summary>One string or number in a FastAPI validation issue location.</summary>
+public sealed class ElevenLabsErrorLocation
 {
-    /// <summary>Creates parsed error data.</summary>
-    public ElevenLabsErrorData(string message, int code)
+    private ElevenLabsErrorLocation(string? text, double? number)
     {
-        Message = message ?? string.Empty;
-        Code = code;
+        Text = text;
+        Number = number;
     }
 
-    /// <summary>Provider message. Nested JSON is left as text.</summary>
+    /// <summary>String location component, when the provider sent a string.</summary>
+    public string? Text { get; }
+
+    /// <summary>Numeric location component, when the provider sent a number.</summary>
+    public double? Number { get; }
+
+    internal static ElevenLabsErrorLocation From(JsonElement value)
+    {
+        return value.ValueKind == JsonValueKind.String
+            ? new ElevenLabsErrorLocation(value.GetString(), null)
+            : new ElevenLabsErrorLocation(null, value.GetDouble());
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return Text ?? Number!.Value.ToString(CultureInfo.InvariantCulture);
+    }
+}
+
+/// <summary>One FastAPI validation issue from an ElevenLabs <c>detail</c> array.</summary>
+public sealed class ElevenLabsValidationIssue
+{
+    internal ElevenLabsValidationIssue(
+        string message,
+        IReadOnlyList<ElevenLabsErrorLocation>? location,
+        string? type,
+        IReadOnlyDictionary<string, JsonElement> additionalProperties)
+    {
+        Message = message;
+        Location = location;
+        Type = type;
+        AdditionalProperties = additionalProperties;
+    }
+
+    /// <summary>Validation message from <c>msg</c>.</summary>
+    public string Message { get; }
+
+    /// <summary>Path components from <c>loc</c>.</summary>
+    public IReadOnlyList<ElevenLabsErrorLocation>? Location { get; }
+
+    /// <summary>Validation issue type.</summary>
+    public string? Type { get; }
+
+    /// <summary>Loose fields ElevenLabs included in the issue.</summary>
+    public IReadOnlyDictionary<string, JsonElement> AdditionalProperties { get; }
+}
+
+/// <summary>ElevenLabs API error details.</summary>
+public sealed class ElevenLabsErrorDetail
+{
+    internal ElevenLabsErrorDetail(
+        string message,
+        string? code,
+        string? status,
+        string? type,
+        string? requestId,
+        string? parameter,
+        IReadOnlyDictionary<string, JsonElement> additionalProperties)
+    {
+        Message = message;
+        Code = code;
+        Status = status;
+        Type = type;
+        RequestId = requestId;
+        Parameter = parameter;
+        AdditionalProperties = additionalProperties;
+    }
+
+    /// <summary>Provider error message.</summary>
     public string Message { get; }
 
     /// <summary>Provider error code.</summary>
-    public int Code { get; }
+    public string? Code { get; }
+
+    /// <summary>Provider error status.</summary>
+    public string? Status { get; }
+
+    /// <summary>Provider error type.</summary>
+    public string? Type { get; }
+
+    /// <summary>ElevenLabs request id.</summary>
+    public string? RequestId { get; }
+
+    /// <summary>Invalid parameter name.</summary>
+    public string? Parameter { get; }
+
+    /// <summary>Loose fields ElevenLabs included in the detail object.</summary>
+    public IReadOnlyDictionary<string, JsonElement> AdditionalProperties { get; }
+}
+
+/// <summary>Legacy ElevenLabs <c>error</c> object.</summary>
+public sealed class ElevenLabsLegacyError
+{
+    internal ElevenLabsLegacyError(string message, double code)
+    {
+        Message = message;
+        Code = code;
+    }
+
+    /// <summary>Provider error message.</summary>
+    public string Message { get; }
+
+    /// <summary>Provider error code.</summary>
+    public double Code { get; }
+}
+
+/// <summary>Parsed ElevenLabs error body.</summary>
+public sealed class ElevenLabsErrorData
+{
+    /// <summary>Creates legacy parsed error data.</summary>
+    public ElevenLabsErrorData(string message, int code)
+        : this(null, null, null, new ElevenLabsLegacyError(message ?? string.Empty, code))
+    {
+    }
+
+    private ElevenLabsErrorData(
+        ElevenLabsErrorDetail? detail,
+        IReadOnlyList<ElevenLabsValidationIssue>? issues,
+        string? detailMessage,
+        ElevenLabsLegacyError? error)
+    {
+        Detail = detail;
+        Issues = issues;
+        DetailMessage = detailMessage;
+        Error = error;
+    }
+
+    /// <summary>Object-valued <c>detail</c>, when present.</summary>
+    public ElevenLabsErrorDetail? Detail { get; }
+
+    /// <summary>Array-valued <c>detail</c>, when present.</summary>
+    public IReadOnlyList<ElevenLabsValidationIssue>? Issues { get; }
+
+    /// <summary>String-valued <c>detail</c>, when present.</summary>
+    public string? DetailMessage { get; }
+
+    /// <summary>Legacy <c>error</c> object, when present.</summary>
+    public ElevenLabsLegacyError? Error { get; }
+
+    /// <summary>Legacy provider message. Use <see cref="Error"/> for parsed legacy bodies.</summary>
+    [Obsolete("Use Error.Message.")]
+    public string Message => Error?.Message ?? string.Empty;
+
+    /// <summary>Legacy integral provider code. Use <see cref="Error"/> for the upstream numeric code.</summary>
+    [Obsolete("Use Error.Code.")]
+    public int Code => checked((int)(Error?.Code ?? 0));
+
+    internal static ElevenLabsErrorData FromDetail(ElevenLabsErrorDetail detail) => new ElevenLabsErrorData(detail, null, null, null);
+
+    internal static ElevenLabsErrorData FromIssues(IReadOnlyList<ElevenLabsValidationIssue> issues) => new ElevenLabsErrorData(null, issues, null, null);
+
+    internal static ElevenLabsErrorData FromMessage(string message) => new ElevenLabsErrorData(null, null, message, null);
+
+    internal static ElevenLabsErrorData FromLegacy(string message, double code) =>
+        new ElevenLabsErrorData(null, null, null, new ElevenLabsLegacyError(message, code));
 }
 
 /// <summary>Result of parsing an ElevenLabs error body.</summary>
@@ -50,7 +200,7 @@ public sealed class ElevenLabsErrorParseResult
         RawValue = value;
     }
 
-    /// <summary>True when <c>error.message</c> and <c>error.code</c> were present.</summary>
+    /// <summary>True when the body matched an ElevenLabs error shape.</summary>
     public bool Success { get; }
 
     /// <summary>Parsed error.</summary>
@@ -64,14 +214,261 @@ public sealed class ElevenLabsErrorParseResult
 public static class ElevenLabsError
 {
     /// <summary>Parses an error body.</summary>
-    public static ElevenLabsErrorParseResult Parse(string json)
+    public static ElevenLabsErrorParseResult Parse(string? json)
     {
-        if (ProviderExchange.TryParseError(json, out var message, out var code))
+        if (string.IsNullOrWhiteSpace(json))
         {
-            return new ElevenLabsErrorParseResult(true, new ElevenLabsErrorData(message, code));
+            return new ElevenLabsErrorParseResult(false, null);
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(json!);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return new ElevenLabsErrorParseResult(false, null);
+            }
+
+            if (root.TryGetProperty("detail", out var detail))
+            {
+                return ParseDetail(detail);
+            }
+
+            if (root.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object
+                && RequiredString(error, "message") is { } message
+                && error.TryGetProperty("code", out var code)
+                && code.ValueKind == JsonValueKind.Number
+                && code.TryGetDouble(out var codeValue))
+            {
+                return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromLegacy(message, codeValue));
+            }
+        }
+        catch (JsonException)
+        {
         }
 
         return new ElevenLabsErrorParseResult(false, null);
+    }
+
+    internal static string ToMessage(ElevenLabsErrorData data)
+    {
+        if (data.Error is { } error)
+        {
+            return error.Message;
+        }
+
+        if (data.DetailMessage is { } detailMessage)
+        {
+            return detailMessage;
+        }
+
+        if (data.Issues is { } issues)
+        {
+            return string.Join("; ", issues.Select(issue =>
+                issue.Location is { Count: > 0 } location
+                    ? string.Join(".", location) + ": " + issue.Message
+                    : issue.Message));
+        }
+
+        var detail = data.Detail!;
+        return detail.Code != null ? detail.Message + " (" + detail.Code + ")" : detail.Message;
+    }
+
+    private static ElevenLabsErrorParseResult ParseDetail(JsonElement detail)
+    {
+        if (detail.ValueKind == JsonValueKind.String)
+        {
+            return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromMessage(detail.GetString()!));
+        }
+
+        if (detail.ValueKind == JsonValueKind.Object)
+        {
+            var message = RequiredString(detail, "message");
+            if (message == null
+                || !OptionalString(detail, "code", out var code)
+                || !OptionalString(detail, "status", out var status)
+                || !OptionalString(detail, "type", out var type)
+                || !OptionalString(detail, "request_id", out var requestId)
+                || !OptionalString(detail, "param", out var parameter))
+            {
+                return new ElevenLabsErrorParseResult(false, null);
+            }
+
+            var value = new ElevenLabsErrorDetail(
+                message,
+                code,
+                status,
+                type,
+                requestId,
+                parameter,
+                AdditionalProperties(detail, "message", "code", "status", "type", "request_id", "param"));
+            return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromDetail(value));
+        }
+
+        if (detail.ValueKind != JsonValueKind.Array)
+        {
+            return new ElevenLabsErrorParseResult(false, null);
+        }
+
+        var issues = new List<ElevenLabsValidationIssue>();
+        foreach (var issue in detail.EnumerateArray())
+        {
+            if (issue.ValueKind != JsonValueKind.Object
+                || RequiredString(issue, "msg") is not { } message
+                || !OptionalString(issue, "type", out var type)
+                || !TryLocation(issue, out var location))
+            {
+                return new ElevenLabsErrorParseResult(false, null);
+            }
+
+            issues.Add(new ElevenLabsValidationIssue(
+                message,
+                location,
+                type,
+                AdditionalProperties(issue, "msg", "loc", "type")));
+        }
+
+        return new ElevenLabsErrorParseResult(true, ElevenLabsErrorData.FromIssues(issues));
+    }
+
+    private static bool TryLocation(JsonElement issue, out IReadOnlyList<ElevenLabsErrorLocation>? location)
+    {
+        location = null;
+        if (!issue.TryGetProperty("loc", out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        var result = new List<ElevenLabsErrorLocation>();
+        foreach (var component in value.EnumerateArray())
+        {
+            if (component.ValueKind != JsonValueKind.String && component.ValueKind != JsonValueKind.Number)
+            {
+                return false;
+            }
+
+            result.Add(ElevenLabsErrorLocation.From(component));
+        }
+
+        location = result;
+        return true;
+    }
+
+    private static string? RequiredString(JsonElement value, string name)
+    {
+        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : null;
+    }
+
+    private static bool OptionalString(JsonElement value, string name, out string? result)
+    {
+        result = null;
+        if (!value.TryGetProperty(name, out var property) || property.ValueKind == JsonValueKind.Null)
+        {
+            return true;
+        }
+
+        if (property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        result = property.GetString();
+        return true;
+    }
+
+    private static IReadOnlyDictionary<string, JsonElement> AdditionalProperties(JsonElement value, params string[] knownProperties)
+    {
+        var known = new HashSet<string>(knownProperties, StringComparer.Ordinal);
+        return value.EnumerateObject()
+            .Where(property => !known.Contains(property.Name))
+            .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+    }
+}
+
+/// <summary>Creates .NET API exceptions from ElevenLabs failed JSON responses.</summary>
+public static class ElevenLabsFailedResponseHandler
+{
+    /// <summary>Parses an ElevenLabs error response and preserves the parsed body on <see cref="ApiException.ErrorData"/>.</summary>
+    public static ApiException Handle(
+        string responseBody,
+        int statusCode,
+        string url,
+        object requestBodyValues,
+        IReadOnlyDictionary<string, string>? responseHeaders = null)
+    {
+        var data = ElevenLabsError.Parse(responseBody).Value;
+        var message = data == null
+            ? JsonValues.ExtractErrorMessage(responseBody, statusCode)
+            : ElevenLabsError.ToMessage(data);
+
+        return statusCode switch
+        {
+            400 => new BadRequestException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            401 => new AuthenticationException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            403 => new PermissionDeniedException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            404 => new NotFoundException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            422 => new UnprocessableEntityException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            429 => new RateLimitException(message, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            >= 500 and <= 599 => new InternalServerException(message, statusCode, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+            _ => new ApiException(message, statusCode, responseBody)
+            {
+                Url = url,
+                RequestBodyValues = requestBodyValues,
+                ResponseHeaders = responseHeaders,
+                ErrorData = data,
+            },
+        };
     }
 }
 
@@ -284,6 +681,28 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         return parent != null && parent.Value.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
     }
 
+    private async Task<ProviderExchangeResult> SendAsync(
+        Uri uri,
+        HttpContent content,
+        object requestBodyValues,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, headers, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ApiException exception) when (ElevenLabsError.Parse(exception.ResponseBody).Success)
+        {
+            throw ElevenLabsFailedResponseHandler.Handle(
+                exception.ResponseBody!,
+                exception.StatusCode,
+                uri.ToString(),
+                requestBodyValues,
+                exception.ResponseHeaders);
+        }
+    }
+
     /// <summary>ElevenLabs text-to-speech model.</summary>
     public sealed class ElevenLabsSpeechModel : ISpeechModel
     {
@@ -407,11 +826,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var voice = string.IsNullOrEmpty(request.Voice) ? ElevenLabsSpeechRequest.DefaultVoiceId : request.Voice!;
             var path = "/v1/text-to-speech/" + Uri.EscapeDataString(voice) + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
             var json = body.ToJsonString();
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, path),
+            var uri = ApiKeys.Combine(_provider.Options.BaseUrl, path);
+            var response = await _provider.SendAsync(
+                uri,
                 ProviderExchange.Json(json),
+                body,
                 ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
                 cancellationToken).ConfigureAwait(false);
             var mediaType = "audio/mpeg";
@@ -511,11 +930,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 AddField(form, "file_format", FormValue(Child(elevenlabs, "fileFormat")) ?? "other");
             }
 
-            var response = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/speech-to-text"),
+            var uri = ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/speech-to-text");
+            var response = await _provider.SendAsync(
+                uri,
                 form,
+                new Dictionary<string, string> { ["model_id"] = ModelId },
                 ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers),
                 cancellationToken).ConfigureAwait(false);
             using var document = JsonDocument.Parse(response.Body);

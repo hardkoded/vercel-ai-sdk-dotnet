@@ -49,6 +49,8 @@ internal sealed class UpstreamLink
     public string Coverage { get; set; } = string.Empty;
 
     public string? Note { get; set; }
+
+    public string? Commit { get; set; }
 }
 
 internal sealed class FeatureCoverage
@@ -152,6 +154,7 @@ internal static class UpstreamCatalog
                         DotnetTest = type.FullName + "." + method.Name,
                         Coverage = attribute.Coverage.ToString(),
                         Note = attribute.Note,
+                        Commit = attribute.Commit,
                     });
                 }
             }
