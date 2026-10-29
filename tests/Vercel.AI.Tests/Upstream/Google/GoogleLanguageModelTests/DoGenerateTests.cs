@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Google;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -11,6 +12,28 @@ namespace Vercel.AI.Tests.GoogleLanguageModelTests;
 /// <summary>Port of <c>google-language-model.test.ts</c> &gt; <c>doGenerate</c> (the tests added for AUDIO response modalities and thought signatures on text).</summary>
 public sealed class DoGenerateTests
 {
+    [Fact]
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate::should send videoMetadata on video file parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_videoMetadata_on_video_file_parts()
+    {
+        var handler = new RecordingHandler();
+        var model = GoogleUpstream.Client(handler).LanguageModel("gemini-2.5-flash");
+        var file = new FileContentPart("video/mp4", "https://www.youtube.com/watch?v=example", null, null)
+        {
+            ProviderOptions = GoogleUpstream.ProviderOptions(
+                """{"google":{"videoMetadata":{"startOffset":"0s","endOffset":"10.5s","fps":0.5}}}"""),
+        };
+
+        await model.DoGenerateAsync(
+            GoogleUpstream.Prompt(new UserModelMessage(new UserContentPart[] { file })),
+            CancellationToken.None);
+
+        using var body = JsonDocument.Parse(handler.Body);
+        GoogleUpstream.JsonEqual(
+            body.RootElement.GetProperty("contents"),
+            """[{"role":"user","parts":[{"fileData":{"mimeType":"video/mp4","fileUri":"https://www.youtube.com/watch?v=example"},"videoMetadata":{"startOffset":"0s","endOffset":"10.5s","fps":0.5}}]}]""");
+    }
+
     [Fact]
     [UpstreamTest("packages/google/src/google-language-model.test.ts::doGenerate::should pass AUDIO responseModalities in provider options", Coverage = UpstreamCoverage.Covered)]
     public void Should_pass_AUDIO_responseModalities_in_provider_options()
