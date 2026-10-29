@@ -1,0 +1,351 @@
+---
+import "@fontsource-variable/figtree/wght.css";
+import "@fontsource/dm-mono/latin-400.css";
+import "@fontsource/dm-mono/latin-500.css";
+import logo from "../assets/logo.png";
+import { siteOrigin } from "../../site.mjs";
+import "../styles/landing.css";
+
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path.replace(/^\//, "")}`;
+const canonical = new URL(base, siteOrigin).href;
+const repo = "https://github.com/hardkoded/vercel-ai-sdk-dotnet";
+const sponsor = "https://github.com/sponsors/hardkoded";
+const sampleUrl = `${repo}/blob/main/examples/GenerateText/Program.cs`;
+const install = "dotnet add package Vercel.AI";
+const streamSample = `await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}`;
+
+const description =
+    "Unofficial community port of the Vercel AI SDK for .NET. Generate text, stream, call tools, and run agents through one NuGet package.";
+
+// examples/GenerateText/Program.cs, the generate-text region, plus the usings that file declares.
+// Line breaks are only so each identifier fits the card. The calls are the example's.
+const sampleHtml = [
+    `<span class="k">using</span> Vercel.AI;`,
+    `<span class="k">using</span> Vercel.AI.Gateway;`,
+    ``,
+    `<span class="k">var</span> client = <span class="k">new</span> <span class="t">AiClient</span>(<span class="t">GatewayProvider</span>.<span class="f">Create</span>());`,
+    ``,
+    `<span class="k">var</span> result = <span class="k">await</span> client.<span class="f">GenerateTextAsync</span>(`,
+    `    <span class="k">new</span> <span class="t">GenerateTextOptions</span>`,
+    `{`,
+    `    ModelId = <span class="s">&quot;openai/gpt-6-astra&quot;</span>,`,
+    `    <span class="c">// use Vercel AI Gateway</span>`,
+    `    Prompt = <span class="s">&quot;What is an agent?&quot;</span>,`,
+    `});`,
+    ``,
+    `<span class="t">Console</span>.<span class="f">WriteLine</span>(result.Text);`,
+].join("\n");
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Vercel AI SDK for .NET</title>
+        <meta name="description" content={description} />
+        <meta name="theme-color" content="#0c0a12" />
+        <link rel="canonical" href={canonical} />
+        <link rel="icon" href={href("favicon.png")} />
+        <meta property="og:title" content="Vercel AI SDK for .NET" />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:type" content="website" />
+    </head>
+    <body>
+        <a class="skip" href="#content">Skip to content</a>
+        <header class="nav">
+            <div class="wrap nav-inner">
+                <div class="nav-start">
+                    <a class="brand" href={base}>
+                        <img src={logo.src} width={logo.width} height={logo.height} alt="" />
+                        <span>Vercel AI SDK <span class="brand-mark">for .NET</span></span>
+                    </a>
+                    <a class="nav-docs" href={href("docs/")}>Docs</a>
+                </div>
+                <div class="nav-links">
+                    <a class="icon-button" href={repo} aria-label="Vercel AI SDK for .NET on GitHub">
+                        <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.7 7.7 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path>
+                        </svg>
+                    </a>
+                    <a class="button button-ghost" href={sponsor}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20s-7-4.4-7-9.1C5 8 6.8 6.2 9.2 6.2c1.3 0 2.4.6 2.8 1.6.4-1 1.5-1.6 2.8-1.6C17.2 6.2 19 8 19 10.9 19 15.6 12 20 12 20Z"></path>
+                        </svg>
+                        Sponsor
+                    </a>
+                </div>
+                <a class="button button-primary nav-cta" href={href("quickstart/")}>
+                    Get started
+                    <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 8h10M9 4l4 4-4 4"></path>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <main id="content">
+            <section class="hero" aria-labelledby="hero-title">
+                <svg class="hero-art" viewBox="0 0 1400 780" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                    <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M0 168h84l28 28h48"></path>
+                        <path d="M0 592h72l40-40h52"></path>
+                        <path d="M1224 112h72l44 44h60"></path>
+                        <path d="M1216 668h80l32-32h72"></path>
+                    </g>
+                    <g fill="none" stroke="currentColor" stroke-width="1.25">
+                        <circle cx="0" cy="168" r="5"></circle>
+                        <circle cx="160" cy="196" r="5"></circle>
+                        <circle cx="0" cy="592" r="5"></circle>
+                        <circle cx="164" cy="552" r="5"></circle>
+                        <circle cx="1224" cy="112" r="5"></circle>
+                        <circle cx="1400" cy="156" r="5"></circle>
+                        <circle cx="1216" cy="668" r="5"></circle>
+                        <circle cx="1400" cy="636" r="5"></circle>
+                    </g>
+                </svg>
+                <div class="wrap hero-grid">
+                    <div>
+                        <p class="eyebrow">Vercel AI SDK for .NET</p>
+                        <h1 id="hero-title">Call any model<br />from C#.</h1>
+                        <p class="lede">
+                            A provider-agnostic toolkit for text, structured data, tools, and agents.
+                            A model id such as <code>openai/gpt-6-astra</code> goes to the Vercel AI Gateway.
+                            Or call OpenAI, Anthropic, and Google directly.
+                        </p>
+                        <p class="fineprint">
+                            Unofficial community port of the <a href="https://github.com/vercel/ai">Vercel AI SDK</a>.
+                            Not an official Vercel product.
+                        </p>
+                        <div class="hero-actions">
+                            <a class="button button-primary" href={href("quickstart/")}>
+                                Get started
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 8h10M9 4l4 4-4 4"></path>
+                                </svg>
+                            </a>
+                            <a class="button button-ghost" href={repo}>
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+                                    <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
+                                </svg>
+                                Star on GitHub
+                            </a>
+                        </div>
+                        <div class="install">
+                            <span class="prompt" aria-hidden="true">$</span>
+                            <code>{install}</code>
+                            <button type="button" class="copy" data-copy={install} aria-live="polite">Copy</button>
+                        </div>
+                        <p class="install-note">
+                            One package. It targets <code>net10.0</code> and <code>netstandard2.0</code>.
+                            <a href="https://www.nuget.org/packages/Vercel.AI">Vercel.AI on NuGet</a>.
+                        </p>
+                    </div>
+
+                    <figure class="code-card">
+                        <figcaption class="code-bar">
+                            <span class="code-file">
+                                <span class="lang-badge">C#</span>
+                                GenerateText
+                            </span>
+                            <span class="code-status">
+                                <span class="live-dot" aria-hidden="true"></span>
+                                <a href={sampleUrl}>Example source</a>
+                            </span>
+                        </figcaption>
+                        <pre><code set:html={sampleHtml} /></pre>
+                        <div class="code-foot">
+                            <span>GatewayProvider.Create() reads AI_GATEWAY_API_KEY</span>
+                        </div>
+                    </figure>
+                </div>
+            </section>
+
+            <section class="band" aria-label="Project facts">
+                <div class="wrap band-grid">
+                    <div class="band-item">
+                        <p class="band-kicker">Package</p>
+                        <h2>Vercel.AI</h2>
+                        <p>Every provider, one package</p>
+                    </div>
+                    <div class="band-item">
+                        <p class="band-kicker">Targets</p>
+                        <h2>net10.0</h2>
+                        <p>and netstandard2.0</p>
+                    </div>
+                    <div class="band-item">
+                        <p class="band-kicker">Parity</p>
+                        <h2>AI SDK 7</h2>
+                        <p>Language Model spec V4</p>
+                    </div>
+                    <div class="band-item">
+                        <p class="band-kicker">License</p>
+                        <h2>Apache-2.0</h2>
+                        <p>Free for commercial use</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="features-title">
+                <div class="wrap">
+                    <div class="section-head">
+                        <p class="eyebrow">Why this SDK</p>
+                        <h2 id="features-title">The same ideas as the AI SDK, in the C# you already write.</h2>
+                    </div>
+                    <ul class="features">
+                        <li class="feature">
+                            <span class="feature-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M12 5V3M12 21v-2M5 12H3M21 12h-2M6.2 6.2 4.8 4.8M19.2 19.2l-1.4-1.4M17.8 6.2l1.4-1.4M4.8 19.2l1.4-1.4"></path>
+                                </svg>
+                            </span>
+                            <h3>Gateway or a provider</h3>
+                            <p>
+                                Pass <code>ModelId</code> and the Gateway resolves it. Pass <code>Model</code> when you already have an <code>ILanguageModel</code> from OpenAI, Anthropic, Google, and the other providers in this package.
+                            </p>
+                            <a class="more" href={href("providers/")}>
+                                Providers
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                            </a>
+                        </li>
+                        <li class="feature">
+                            <span class="feature-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 8h8v8H8z"></path>
+                                    <path d="M4 9V5h4M15 5h4v4M19 15v4h-4M9 19H5v-4"></path>
+                                </svg>
+                            </span>
+                            <h3>Tools and agents</h3>
+                            <p>
+                                <code>Tool.Function</code> gives the model a JSON schema and an <code>Execute</code> delegate. <code>Agent</code> runs that loop with instructions and tools.
+                            </p>
+                            <a class="more" href={href("tools/")}>
+                                Tools
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                            </a>
+                        </li>
+                        <li class="feature">
+                            <span class="feature-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 15c2-4 4-4 6 0s4 4 6 0 4-4 6 0"></path>
+                                    <path d="M4 9c2-4 4-4 6 0s4 4 6 0 4-4 6 0"></path>
+                                </svg>
+                            </span>
+                            <h3>Stream the reply</h3>
+                            <p>
+                                <code>StreamTextAsync</code> returns immediately. Read <code>TextStream</code> for deltas. <code>ToUIMessageStreamResult</code> writes the events a JavaScript <code>useChat</code> client already reads.
+                            </p>
+                            <a class="more" href={href("streaming/")}>
+                                Streaming
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                            </a>
+                        </li>
+                        <li class="feature">
+                            <span class="feature-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 4H5v15h14V8l-4-4H8z"></path>
+                                    <path d="M15 4v4h4M8 13h8M8 16h5"></path>
+                                </svg>
+                            </span>
+                            <h3>JSON that matches a schema</h3>
+                            <p>
+                                <code>OutputSpec.Object</code> takes a JSON schema. <code>GenerateTextAsync</code> parses the reply into <code>result.Output</code>.
+                            </p>
+                            <a class="more" href={href("api/Vercel.AI/OutputSpec/")}>
+                                OutputSpec
+                                <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="section steps-section" aria-labelledby="steps-title">
+                <div class="wrap steps-layout">
+                    <div class="steps-copy">
+                        <p class="eyebrow">Get started</p>
+                        <h2 id="steps-title">From an empty project to a first reply, in three steps.</h2>
+                        <p class="lede">
+                            Install the package, call a model, then stream the reply or hand the model a tool. Each step links to the page that has the rest.
+                        </p>
+                        <a class="button button-primary" href={href("quickstart/")}>
+                            Read the quickstart
+                            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 8h10M9 4l4 4-4 4"></path>
+                            </svg>
+                        </a>
+                    </div>
+                    <ol class="steps">
+                        <li class="step">
+                            <span class="step-index" aria-hidden="true"></span>
+                            <div>
+                                <h3>Install the package</h3>
+                                <p>Add <code>Vercel.AI</code> to a project that targets <code>net10.0</code> or <code>netstandard2.0</code>. Every provider ships in this package.</p>
+                                <pre class="chip"><code>dotnet add package Vercel.AI</code></pre>
+                                <a class="more" href={href("quickstart/")}>
+                                    Quickstart
+                                    <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                                </a>
+                            </div>
+                        </li>
+                        <li class="step">
+                            <span class="step-index" aria-hidden="true"></span>
+                            <div>
+                                <h3>Call a model</h3>
+                                <p><code>GatewayProvider.Create()</code> reads <code>AI_GATEWAY_API_KEY</code>. A string model id goes to the Gateway. Pass <code>Model</code> to call a provider directly.</p>
+                                <pre class="chip"><code>var client = new AiClient(GatewayProvider.Create());</code></pre>
+                                <a class="more" href={href("quickstart/#snippet-generate-text")}>
+                                    Generate text
+                                    <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                                </a>
+                            </div>
+                        </li>
+                        <li class="step">
+                            <span class="step-index" aria-hidden="true"></span>
+                            <div>
+                                <h3>Stream it, or add a tool</h3>
+                                <p>
+                                    <code>StreamTextAsync</code> yields text as the model writes it. To let the model call your code, add a <a href={href("tools/")}>tool</a>.
+                                </p>
+                                <pre class="chip"><code>{streamSample}</code></pre>
+                                <a class="more" href={href("streaming/")}>
+                                    Streaming
+                                    <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4"></path></svg>
+                                </a>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="wrap">
+                <p><strong>Vercel AI SDK for .NET</strong></p>
+                <p>
+                    Community port of <a href="https://github.com/vercel/ai">vercel/ai</a>.
+                    Not an official Vercel product.
+                    <a href={`${repo}/blob/main/LICENSE`}>Apache-2.0</a>.
+                    Copyright 2023 Vercel, Inc.
+                </p>
+                <nav class="footer-links" aria-label="Footer">
+                    <a href={href("docs/")}>Docs</a>
+                    <a href={href("quickstart/")}>Quickstart</a>
+                    <a href={href("providers/")}>Providers</a>
+                    <a href={href("tools/")}>Tools</a>
+                    <a href={href("streaming/")}>Streaming</a>
+                    <a href={href("api/")}>API</a>
+                    <a href={repo}>GitHub</a>
+                </nav>
+            </div>
+        </footer>
+        <script>
+            import "../scripts/landing-copy.js";
+        </script>
+    </body>
+</html>

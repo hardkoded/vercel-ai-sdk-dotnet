@@ -14,7 +14,7 @@ Preview the docs site locally:
 cd docs-site && npm ci && npm run api && npm run dev
 ```
 
-Open http://localhost:4321/vercel-ai-sdk-dotnet/ . The path includes `/vercel-ai-sdk-dotnet/` because that is the base path on hardkoded.com (`https://www.hardkoded.com/vercel-ai-sdk-dotnet/`). Article sources stay in `docs/articles/`. See [docs-site/README.md](docs-site/README.md).
+Open http://localhost:4321/vercel-ai-sdk-dotnet/ . The path includes `/vercel-ai-sdk-dotnet/` because that is the base path on hardkoded.com (`https://www.hardkoded.com/vercel-ai-sdk-dotnet/`). That URL is the marketing page. Documentation starts at http://localhost:4321/vercel-ai-sdk-dotnet/docs/ . Article sources stay in `docs/articles/`. See [docs-site/README.md](docs-site/README.md).
 
 ## Installation
 

@@ -86,8 +86,9 @@ const pages = [
 const pageTargets = new Map(pages.map((page) => [path.posix.basename(page.source), page.target]));
 
 const sectionRedirects = [
-    ["toc.html", "/"],
-    ["articles/toc.html", "/"],
+    // The old DocFX table of contents. The site root is now the marketing page.
+    ["toc.html", "/docs/"],
+    ["articles/toc.html", "/docs/"],
 ];
 
 await mkdir(contentDir, { recursive: true });
