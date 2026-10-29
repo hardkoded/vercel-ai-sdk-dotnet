@@ -475,6 +475,12 @@ public static class AnthropicResponse
             anthropic["container"] = mapped;
         }
 
+        if (root.TryGetProperty("safeguard_results", out var safeguardResults)
+            && safeguardResults.ValueKind != JsonValueKind.Null)
+        {
+            anthropic["safeguardResults"] = AnthropicJson.Node(safeguardResults);
+        }
+
         var metadata = new JsonObject { ["anthropic"] = anthropic };
         if (context.UsedCustomProviderKey && context.ProviderOptionsName != "anthropic")
         {

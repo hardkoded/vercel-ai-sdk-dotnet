@@ -201,11 +201,17 @@ public sealed class AnthropicStream
             {
                 if (item is JsonObject part && Text(part["type"]) == "tool_use")
                 {
+                    var toolCallId = Text(part["id"]) ?? string.Empty;
+                    var toolName = Text(part["name"]) ?? string.Empty;
+                    var input = (part["input"] ?? new JsonObject()).ToJsonString();
                     _hasOutput = true;
+                    yield return new ToolInputStartStreamPart(toolCallId, toolName);
+                    yield return new ToolInputDeltaStreamPart(toolCallId, input);
+                    yield return new ToolInputEndStreamPart(toolCallId);
                     yield return new ToolCallStreamPart(
-                        Text(part["id"]) ?? string.Empty,
-                        Text(part["name"]) ?? string.Empty,
-                        (part["input"] ?? new JsonObject()).ToJsonString());
+                        toolCallId,
+                        toolName,
+                        input);
                 }
             }
         }
@@ -267,6 +273,12 @@ public sealed class AnthropicStream
                 Input = new StringBuilder(initial),
                 HasInitialInput = initial.Length > 0,
             };
+            if (!(_usesJsonTool && Text(block["name"]) == "json"))
+            {
+                yield return new ToolInputStartStreamPart(
+                    Text(block["id"]) ?? string.Empty,
+                    Text(block["name"]) ?? string.Empty);
+            }
         }
     }
 
@@ -315,6 +327,10 @@ public sealed class AnthropicStream
             var partial = Text(delta["partial_json"]) ?? string.Empty;
             _hasOutput |= partial.Length > 0;
             block.Input.Append(partial);
+            if (partial.Length > 0 && !(_usesJsonTool && block.ToolName == "json"))
+            {
+                yield return new ToolInputDeltaStreamPart(block.ToolCallId, partial);
+            }
         }
     }
 
@@ -350,6 +366,7 @@ public sealed class AnthropicStream
             else
             {
                 _hasOutput = true;
+                yield return new ToolInputEndStreamPart(block.ToolCallId);
                 yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments);
             }
         }

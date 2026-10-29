@@ -86,6 +86,43 @@ public sealed class DoStreamTests
         {
             Assert.Empty(finishes);
         }
+
+        var toolInputParts = parts.Where(part =>
+            part is ToolInputStartStreamPart or ToolInputDeltaStreamPart or ToolInputEndStreamPart).ToList();
+        if (scenario == "tool-call")
+        {
+            Assert.Collection(
+                toolInputParts,
+                part =>
+                {
+                    var start = Assert.IsType<ToolInputStartStreamPart>(part);
+                    Assert.Equal("tool-1", start.Id);
+                    Assert.Equal("test-tool", start.ToolName);
+                },
+                part =>
+                {
+                    var delta = Assert.IsType<ToolInputDeltaStreamPart>(part);
+                    Assert.Equal("tool-1", delta.Id);
+                    Assert.Equal("{}", delta.Delta);
+                },
+                part => Assert.Equal("tool-1", Assert.IsType<ToolInputEndStreamPart>(part).Id));
+        }
+        else if (scenario is "empty-tool-input" or "partial-tool-input")
+        {
+            var start = Assert.IsType<ToolInputStartStreamPart>(toolInputParts[0]);
+            Assert.Equal("tool-1", start.Id);
+            Assert.Equal("test-tool", start.ToolName);
+            if (scenario == "partial-tool-input")
+            {
+                var delta = Assert.IsType<ToolInputDeltaStreamPart>(toolInputParts[1]);
+                Assert.Equal("tool-1", delta.Id);
+                Assert.Equal("{", delta.Delta);
+            }
+        }
+        else
+        {
+            Assert.Empty(toolInputParts);
+        }
     }
 
     [Fact]
