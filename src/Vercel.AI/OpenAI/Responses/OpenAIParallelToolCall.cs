@@ -30,7 +30,8 @@ internal static class OpenAIParallelToolCall
         string toolName,
         string input,
         IReadOnlyCollection<string> functionToolNames,
-        string itemId)
+        string itemId,
+        string providerName = "openai")
     {
         if (!IsUndeclared(toolName, functionToolNames))
         {
@@ -81,7 +82,7 @@ internal static class OpenAIParallelToolCall
                     ["index"] = index,
                     ["count"] = toolUses.Count,
                 },
-            });
+            }, providerName);
             expanded.Add(new OpenAIExpandedToolCall(
                 toolCallId + "_" + index.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 name,
@@ -93,7 +94,7 @@ internal static class OpenAIParallelToolCall
     }
 
     /// <summary>Provider metadata of a plain function call: item id, plus async mode, namespace and caller when present. The async mode falls back to the one seen when the item was added.</summary>
-    public static JsonElement? CallMetadata(JsonElement item, bool? ongoingAsync = null)
+    public static JsonElement? CallMetadata(JsonElement item, bool? ongoingAsync = null, string providerName = "openai")
     {
         var values = new JsonObject();
         if (OpenAIJson.String(item, "id") is { Length: > 0 } itemId)
@@ -122,6 +123,6 @@ internal static class OpenAIParallelToolCall
                 : JsonNode.Parse(caller.GetRawText());
         }
 
-        return values.Count > 0 ? OpenAIJson.ProviderMetadata(values) : null;
+        return values.Count > 0 ? OpenAIJson.ProviderMetadata(values, providerName) : null;
     }
 }
