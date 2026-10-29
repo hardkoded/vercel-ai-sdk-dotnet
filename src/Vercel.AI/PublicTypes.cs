@@ -217,6 +217,9 @@ public sealed class ExecutedTool
 
     /// <summary>The output sent to the model, such as an error message. Null means <see cref="OutputJson"/>.</summary>
     internal string? ModelOutput { get; init; }
+
+    /// <summary>Typed text and file parts sent to the model for a content output.</summary>
+    internal IReadOnlyList<UserContentPart>? ModelOutputContent { get; init; }
 }
 
 /// <summary>One language-model step, including any tool results from that step.</summary>

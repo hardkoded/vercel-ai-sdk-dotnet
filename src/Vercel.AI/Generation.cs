@@ -1076,7 +1076,9 @@ internal static class Generation
                 toolExecutionMs[executed.ToolCallId] = elapsedMs;
 
                 toolResults.Add(executed);
-                toolMessages.Add(new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+                toolMessages.Add(executed.ModelOutputContent != null
+                    ? new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutputContent)
+                    : new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
             }
 
             // Upstream sends the results of one step as a single tool message.
@@ -1572,7 +1574,16 @@ internal static class Generation
                 : await tool.Execute!(input, toolToken).ConfigureAwait(false);
             output = string.IsNullOrEmpty(output) ? "null" : output;
             var modelOutput = tool.ToModelOutput?.Invoke(new ToolModelOutputCall(call.ToolCallId, input, output));
-            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = modelOutput?.Type, ModelOutput = ModelOutputText(modelOutput) };
+            executed = new ExecutedTool(call.ToolCallId, call.ToolName, output, false)
+            {
+                InputJson = call.ArgumentsJson,
+                Dynamic = call.Dynamic,
+                Title = call.Title,
+                ToolMetadata = call.ToolMetadata,
+                ModelOutputType = modelOutput is ContentToolModelOutput ? null : modelOutput?.Type,
+                ModelOutput = modelOutput is ContentToolModelOutput ? null : ModelOutputText(modelOutput),
+                ModelOutputContent = modelOutput is ContentToolModelOutput content ? ToUserContent(content.Value) : null,
+            };
         }
         catch (Exception thrown) when (!cancellationToken.IsCancellationRequested)
         {
@@ -1601,9 +1612,29 @@ internal static class Generation
             ErrorTextToolModelOutput errorText => errorText.Value,
             JsonToolModelOutput json => json.Value.GetRawText(),
             ErrorJsonToolModelOutput errorJson => errorJson.Value.GetRawText(),
-            ContentToolModelOutput content => JsonSerializer.Serialize(content.Value.Select(part => new { type = part.Type, text = part.Text })),
             _ => null,
         };
+    }
+
+    private static IReadOnlyList<UserContentPart> ToUserContent(IReadOnlyList<ToolModelContentPart> content)
+    {
+        var parts = new List<UserContentPart>(content.Count);
+        foreach (var part in content)
+        {
+            if (part is not FileToolModelContentPart file)
+            {
+                parts.Add(new TextContentPart(part.Text));
+                continue;
+            }
+
+            parts.Add(new FileContentPart(
+                file.MediaType,
+                null,
+                Convert.FromBase64String(file.Data.TextData ?? string.Empty),
+                file.FileName));
+        }
+
+        return parts;
     }
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
