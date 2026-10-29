@@ -745,6 +745,10 @@ public class GenerateTextOptions
     /// <summary>Called when generation fails. Maps to <c>onError</c>.</summary>
     public Func<Exception, CancellationToken, Task>? OnError { get; set; }
 
+    internal Func<string, Exception, CancellationToken, Task<string?>>? RepairOutput { get; set; }
+
+    internal bool GenerateObjectMode { get; set; }
+
     /// <summary>Approves a tool call before it runs. A false result records an error tool result.</summary>
     public Func<ToolApprovalRequest, CancellationToken, Task<bool>>? ApproveTool { get; set; }
 
