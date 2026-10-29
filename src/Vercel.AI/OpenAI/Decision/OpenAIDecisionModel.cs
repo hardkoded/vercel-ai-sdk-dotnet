@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,6 +19,9 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 #pragma warning restore CS0618
 {
     private const int MaxSafetyIdentifierLength = 128;
+    private const int InputJsonMaxDepth = 32;
+    private const int InputJsonMaxValues = 10_000;
+    private const int InputJsonMaxBytes = 256 * 1024;
 
     private static readonly JsonSerializerOptions Text = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
@@ -58,6 +62,7 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         }
 
         string? safetyIdentifier = null;
+        string? promptCacheKey = null;
         var warnings = new List<OperationWarning>();
         if (call.MaxOutputTokens != null)
         {
@@ -81,6 +86,15 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
                     safetyIdentifier = option.Value.GetString();
                 }
+                else if (option.Name == "promptCacheKey")
+                {
+                    if (option.Value.ValueKind != JsonValueKind.String)
+                    {
+                        throw new InvalidArgumentException("providerOptions", option.Value.ToString(), "invalid openai provider options: promptCacheKey must be a string");
+                    }
+
+                    promptCacheKey = option.Value.GetString();
+                }
                 else
                 {
                     warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.openai." + option.Name));
@@ -92,6 +106,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         if (safetyIdentifier != null)
         {
             body["safety_identifier"] = safetyIdentifier;
+        }
+        if (promptCacheKey != null)
+        {
+            body["prompt_cache_key"] = promptCacheKey;
         }
 
         body["input"] = BuildInput(call.State);
@@ -238,7 +256,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
             if (part is DecisionModelJsonPart json)
             {
-                content.Add(new JsonObject { ["type"] = "input_text", ["text"] = JsonSerializer.Serialize(json.Value, Text) });
+                var serialized = JsonSerializer.Serialize(json.Value, Text);
+                content.Add(IsInputJsonData(json.Value, serialized)
+                    ? new JsonObject { ["type"] = "input_json", ["data"] = JsonNode.Parse(serialized) }
+                    : new JsonObject { ["type"] = "input_text", ["text"] = serialized });
                 continue;
             }
 
@@ -264,6 +285,48 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         }
 
         return new JsonArray(new JsonObject { ["role"] = "user", ["content"] = content });
+    }
+
+    private static bool IsInputJsonData(JsonElement value, string serialized)
+    {
+        var hasInputJsonShape = value.ValueKind == JsonValueKind.Array
+            ? value.GetArrayLength() > 0 && value.EnumerateArray().All(IsJsonObject)
+            : IsJsonObject(value);
+        return hasInputJsonShape && FitsInputJsonLimits(value, serialized);
+    }
+
+    private static bool FitsInputJsonLimits(JsonElement value, string serialized)
+    {
+        var count = 0;
+        bool Visit(JsonElement node, int depth)
+        {
+            count++;
+            if (count > InputJsonMaxValues)
+            {
+                return false;
+            }
+
+            if (node.ValueKind != JsonValueKind.Object && node.ValueKind != JsonValueKind.Array)
+            {
+                return true;
+            }
+
+            if (depth > InputJsonMaxDepth)
+            {
+                return false;
+            }
+
+            return node.ValueKind == JsonValueKind.Array
+                ? node.EnumerateArray().All(child => Visit(child, depth + 1))
+                : node.EnumerateObject().All(property => Visit(property.Value, depth + 1));
+        }
+
+        return Visit(value, 1) && Encoding.UTF8.GetByteCount(serialized) <= InputJsonMaxBytes;
+    }
+
+    private static bool IsJsonObject(JsonElement value)
+    {
+        return value.ValueKind == JsonValueKind.Object;
     }
 
     private static string ToText(DecisionInput input)

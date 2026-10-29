@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
@@ -58,6 +60,32 @@ public sealed class OpenAIDecisionTests
     public static TheoryData<string> Names()
     {
         return new TheoryData<string> { "department", "severity", "refund" };
+    }
+
+    public static TheoryData<string, string> JsonStateShapes()
+    {
+        return new TheoryData<string, string>
+        {
+            { "[{\"charge\":49},{\"charge\":49}]", "[{\"type\":\"input_json\",\"data\":[{\"charge\":49},{\"charge\":49}]}]" },
+            { "[]", "[{\"type\":\"input_text\",\"text\":\"[]\"}]" },
+            { "[{\"charge\":49},49]", "[{\"type\":\"input_text\",\"text\":\"[{\\\"charge\\\":49},49]\"}]" },
+            { "\"charged twice\"", "[{\"type\":\"input_text\",\"text\":\"\\\"charged twice\\\"\"}]" },
+            { "null", "[{\"type\":\"input_text\",\"text\":\"null\"}]" },
+        };
+    }
+
+    public static TheoryData<string, bool> InputJsonLimits()
+    {
+        return new TheoryData<string, bool>
+        {
+            { "32 container levels", true },
+            { "33 container levels", false },
+            { "9,000 values", true },
+            { "10,000 keys plus the root", false },
+            { "200 KiB of JSON", true },
+            { "more than 256 KiB of JSON", false },
+            { "more than 256 KiB of multibyte UTF-8", false },
+        };
     }
 
     [Fact]
@@ -164,7 +192,7 @@ public sealed class OpenAIDecisionTests
         JsonAssert.Equal(RequestBody(capture), """
             {
               "model": "gpt-6-luna",
-              "input": [{ "role": "user", "content": [{ "type": "input_text", "text": "{\"ticket\":[\"charged twice\"]}" }] }],
+              "input": [{ "role": "user", "content": [{ "type": "input_json", "data": { "ticket": ["charged twice"] } }] }],
               "questions": [
                 {
                   "name": "department",
@@ -334,6 +362,61 @@ public sealed class OpenAIDecisionTests
             Environment.SetEnvironmentVariable("OPENAI_API_KEY", previous);
             Environment.SetEnvironmentVariable("OPENAI_BASE_URL", baseUrl);
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(JsonStateShapes))]
+    [UpstreamTest(Prefix + "sends JSON state natively only when it is an object or array of objects: $value", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_JSON_state_natively_only_when_it_is_an_object_or_array_of_objects(string value, string expected)
+    {
+        var (model, capture) = Setup();
+        using var document = JsonDocument.Parse(value);
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?> { ["type"] = "json", ["value"] = document.RootElement.Clone() },
+        };
+        await model.DoDecideAsync(Call(state: state));
+        JsonAssert.Equal(RequestBody(capture)["input"]![0]!["content"], expected);
+    }
+
+    [Theory]
+    [MemberData(nameof(InputJsonLimits))]
+    [UpstreamTest(Prefix + "falls back to input_text beyond input_json limits: $label", Coverage = UpstreamCoverage.Covered)]
+    public async Task Falls_back_to_input_text_beyond_input_json_limits(string label, bool native)
+    {
+        object value = label switch
+        {
+            "32 container levels" => Nested(32),
+            "33 container levels" => Nested(33),
+            "9,000 values" => WithKeys(9_000),
+            "10,000 keys plus the root" => WithKeys(10_000),
+            "200 KiB of JSON" => new Dictionary<string, object?> { ["blob"] = new string('x', 200 * 1024) },
+            "more than 256 KiB of JSON" => new Dictionary<string, object?> { ["blob"] = new string('x', 256 * 1024) },
+            _ => new Dictionary<string, object?> { ["blob"] = new string('é', 140 * 1024) },
+        };
+        var (model, capture) = Setup();
+        var state = new List<object?> { new Dictionary<string, object?> { ["type"] = "json", ["value"] = value } };
+        await model.DoDecideAsync(Call(state: state));
+
+        var serialized = JsonSerializer.Serialize(value, new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        var expected = native
+            ? new JsonObject { ["type"] = "input_json", ["data"] = JsonNode.Parse(serialized) }
+            : new JsonObject { ["type"] = "input_text", ["text"] = serialized };
+        var part = RequestBody(capture)["input"]![0]!["content"]![0];
+        Assert.True(JsonNode.DeepEquals(expected, part), part!.ToJsonString() + " != " + expected.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "sends promptCacheKey without warning and omits it when unset", Coverage = UpstreamCoverage.Covered)]
+    public async Task Sends_promptCacheKey_without_warning_and_omits_it_when_unset()
+    {
+        var (model, capture) = Setup();
+        var result = await model.DoDecideAsync(Call(providerOptions: "{\"openai\":{\"promptCacheKey\":\"tenant-42\"}}"));
+        Assert.Empty(result.Warnings);
+        Assert.Equal("tenant-42", RequestBody(capture)["prompt_cache_key"]!.GetValue<string>());
+
+        await model.DoDecideAsync(Call());
+        Assert.False(RequestBody(capture).ContainsKey("prompt_cache_key"));
     }
 
     [Fact]
@@ -585,6 +668,22 @@ public sealed class OpenAIDecisionTests
         var error = await Assert.ThrowsAsync<InvalidResponseDataException>(() => Setup(body).Model.DoDecideAsync(Call()));
         Assert.Equal("OpenAI Decisions refused an unnamed question.", error.Message);
         JsonAssert.Equal((JsonElement)error.Data!, body.ToJsonString());
+    }
+
+    private static Dictionary<string, object?> Nested(int levels)
+    {
+        var value = new Dictionary<string, object?> { ["leaf"] = true };
+        for (var level = 1; level < levels; level++)
+        {
+            value = new Dictionary<string, object?> { ["next"] = value };
+        }
+
+        return value;
+    }
+
+    private static Dictionary<string, object?> WithKeys(int count)
+    {
+        return Enumerable.Range(0, count).ToDictionary(index => "k" + index.ToString(CultureInfo.InvariantCulture), _ => (object?)0);
     }
 
     private sealed class CancellationObserver : HttpMessageHandler
