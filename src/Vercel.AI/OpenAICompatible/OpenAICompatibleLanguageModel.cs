@@ -616,9 +616,10 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         if (hasSchema && structured)
         {
             var strict = settings.StrictJsonSchema ?? true;
+            var normalizeResponseSchema = _provider.Options.NormalizeResponseSchema ?? _provider.Options.NormalizeRequestSchema;
             var schemaObject = new JsonObject
             {
-                ["schema"] = NormalizeSchema(JsonNode.Parse(options.JsonSchema!.Value.GetRawText()), _provider.Options.NormalizeRequestSchema),
+                ["schema"] = NormalizeSchema(JsonNode.Parse(options.JsonSchema!.Value.GetRawText()), normalizeResponseSchema),
                 ["strict"] = strict,
                 ["name"] = options.JsonSchemaName ?? "response",
             };

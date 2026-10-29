@@ -111,6 +111,12 @@ public class OpenAICompatibleOptions
     /// </summary>
     internal Func<JsonNode?, JsonNode?>? NormalizeRequestSchema { get; set; }
 
+    /// <summary>
+    /// .NET-only hook. Rewrites the response-format schema before it is sent.
+    /// When unset, <see cref="NormalizeRequestSchema"/> is used for both tool and response schemas.
+    /// </summary>
+    internal Func<JsonNode?, JsonNode?>? NormalizeResponseSchema { get; set; }
+
     /// <summary>When true, a missing API key fails the call. The generic provider leaves this unset.</summary>
     public bool RequireApiKey { get; set; }
 
