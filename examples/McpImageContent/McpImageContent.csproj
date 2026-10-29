@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Converts MCP image tool results into model file parts.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="server.mjs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

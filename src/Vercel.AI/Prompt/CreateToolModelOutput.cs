@@ -106,7 +106,7 @@ public sealed class ErrorJsonToolModelOutput : ToolModelOutput
 }
 
 /// <summary>One content part inside a content tool output.</summary>
-public sealed class ToolModelContentPart
+public class ToolModelContentPart
 {
     /// <summary>Creates a text part.</summary>
     public ToolModelContentPart(string type, string text)
@@ -120,6 +120,28 @@ public sealed class ToolModelContentPart
 
     /// <summary>Part text.</summary>
     public string Text { get; }
+}
+
+/// <summary>An inline base64 file part inside a content tool output.</summary>
+public sealed class FileToolModelContentPart : ToolModelContentPart
+{
+    /// <summary>Creates a file part.</summary>
+    public FileToolModelContentPart(string mediaType, string data, string? fileName = null)
+        : base("file", string.Empty)
+    {
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        Data = FilePartInput.TaggedData(data);
+        FileName = fileName;
+    }
+
+    /// <summary>File data as a tagged <c>data</c> value.</summary>
+    public FilePartInput Data { get; }
+
+    /// <summary>IANA media type or top-level media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Optional file name.</summary>
+    public string? FileName { get; }
 }
 
 /// <summary>Multi-part tool output.</summary>
