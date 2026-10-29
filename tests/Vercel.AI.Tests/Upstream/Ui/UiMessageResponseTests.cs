@@ -120,30 +120,33 @@ public sealed class UiMessageResponseTests
         string? seen = null;
         var model = new TestLanguageModel
         {
-            StreamParts = new LanguageModelStreamPart[] { new ErrorStreamPart("boom") },
+            StreamParts =
+            [
+                new ErrorStreamPart("boom"),
+                new FinishStreamPart(FinishReason.Error, new LanguageModelUsage(0, 0, 0)),
+            ],
         };
         var stream = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
         using var buffer = new MemoryStream();
 
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => UIMessageStreamResult.WriteAsync(
+        await UIMessageStreamResult.WriteAsync(
             stream,
             buffer,
             onError: message =>
             {
                 seen = message;
                 return "handled error";
-            }));
+            });
 
-        Assert.Equal("boom", error.Message);
         Assert.Equal("boom", seen);
         Assert.Contains("\"type\":\"error\"", Body(buffer), StringComparison.Ordinal);
         Assert.Contains("\"errorText\":\"handled error\"", Body(buffer), StringComparison.Ordinal);
 
         // Without onError the error text is masked, as in the upstream default.
         using var masked = new MemoryStream();
-        await Assert.ThrowsAsync<AiSdkException>(() => UIMessageStreamResult.WriteAsync(
+        await UIMessageStreamResult.WriteAsync(
             Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" }),
-            masked));
+            masked);
         Assert.Contains("\"errorText\":\"An error occurred.\"", Body(masked), StringComparison.Ordinal);
         Assert.DoesNotContain("boom", Body(masked), StringComparison.Ordinal);
     }
