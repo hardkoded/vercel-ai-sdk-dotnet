@@ -32,7 +32,7 @@ public sealed class VideoMetadataTests
         },
         {
             "base64 data",
-            File("data", data: new byte[] { 0, 1, 2, 3 }),
+            File("data", base64: "AAECAw=="),
             """{"inlineData":{"mimeType":"video/mp4","data":"AAECAw=="}}"""
         },
         {
@@ -126,6 +126,7 @@ public sealed class VideoMetadataTests
         string? url = null,
         string? originalUrl = null,
         byte[]? data = null,
+        string? base64 = null,
         IReadOnlyDictionary<string, string>? reference = null)
     {
         return new GoogleFileUserPart("video/mp4", kind)
@@ -133,6 +134,7 @@ public sealed class VideoMetadataTests
             Url = url,
             OriginalUrl = originalUrl,
             Data = data,
+            Base64 = base64,
             Reference = reference,
         };
     }

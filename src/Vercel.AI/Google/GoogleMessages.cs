@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -146,6 +147,9 @@ public sealed class GoogleFileUserPart : GoogleUserPart
 
     /// <summary>Inline bytes.</summary>
     public byte[]? Data { get; set; }
+
+    /// <summary>Inline base64 data.</summary>
+    public string? Base64 { get; set; }
 
     /// <summary>Inline text source.</summary>
     public string? Text { get; set; }
@@ -589,7 +593,9 @@ public static class GoogleMessages
                 result = Inline(FullOrPlain(file.MediaType), Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
                 break;
             default:
-                result = Inline(ResolveMediaType(file.MediaType, file.Data), file.Data ?? Array.Empty<byte>());
+                result = file.Base64 != null
+                    ? Inline(ResolveMediaType(file.MediaType, file.Base64), file.Base64)
+                    : Inline(ResolveMediaType(file.MediaType, file.Data), file.Data ?? Array.Empty<byte>());
                 break;
         }
 
@@ -961,6 +967,14 @@ public static class GoogleMessages
         };
     }
 
+    private static JsonObject Inline(string mediaType, string base64)
+    {
+        return new JsonObject
+        {
+            ["inlineData"] = new JsonObject { ["mimeType"] = mediaType, ["data"] = base64 },
+        };
+    }
+
     private static string ResolveMediaType(string mediaType, byte[]? data)
     {
         if (mediaType != null && mediaType.Contains("/"))
@@ -979,6 +993,11 @@ public static class GoogleMessages
         }
 
         return string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType + "/octet-stream";
+    }
+
+    private static string ResolveMediaType(string mediaType, string base64)
+    {
+        return MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", mediaType) { Base64 = base64 });
     }
 
     private static string FullOrPlain(string? mediaType)
