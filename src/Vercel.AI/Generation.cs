@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.GenerateObject;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
@@ -196,7 +197,7 @@ internal static class Generation
             }
 
             timeouts?.EndStep();
-            var result = ToResult(steps, responseMessages, options);
+            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -628,7 +629,7 @@ internal static class Generation
             }
 
             timeouts?.EndStep();
-            var result = ToResult(steps, responseMessages, options);
+            var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
             if (telemetry != null && scope != null)
             {
                 telemetry.OnUsage(scope, result.Usage);
@@ -1682,7 +1683,11 @@ internal static class Generation
         }
     }
 
-    private static GenerateTextResult ToResult(List<StepResult> steps, List<ModelMessage> responseMessages, GenerateTextOptions options)
+    private static async Task<GenerateTextResult> ToResultAsync(
+        List<StepResult> steps,
+        List<ModelMessage> responseMessages,
+        GenerateTextOptions options,
+        CancellationToken cancellationToken)
     {
         var last = steps.Count == 0
             ? new StepResult(string.Empty, null, Array.Empty<GeneratedToolCall>(), Array.Empty<ExecutedTool>(), FinishReason.Other, LanguageModelUsage.Empty, Array.Empty<GeneratedSource>())
@@ -1699,10 +1704,69 @@ internal static class Generation
         // is explicit, so it is parsed (and rejected) instead of falling back to the step text.
         var outputText = options.Output?.Schema != null ? last.StructuredOutputText ?? last.Text : last.Text;
         JsonElement? output = null;
-        if (options.Output?.Schema != null && (last.StructuredOutputText != null || !string.IsNullOrWhiteSpace(last.Text)))
+        if (options.Output?.Schema is { } outputSchema)
         {
-            using var document = JsonDocument.Parse(outputText);
-            output = document.RootElement.Clone();
+            if (options.GenerateObjectMode && !last.Content.OfType<GeneratedText>().Any())
+            {
+                throw new NoObjectGeneratedException(
+                    "No object generated: the model did not return a response.",
+                    null,
+                    null,
+                    last.Response,
+                    last.Usage,
+                    last.FinishReason);
+            }
+
+            if (!options.GenerateObjectMode
+                && last.FinishReason != FinishReason.Stop
+                && (last.FinishReason == FinishReason.ToolCalls || last.Text.Length == 0))
+            {
+                return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, null, sources, last.ProviderMetadata) { ResponseMessages = responseMessages.ToArray() };
+            }
+
+            try
+            {
+                output = ProviderUtils.JsonParsing.Parse(outputText, JsonNode.Parse(outputSchema.GetRawText()));
+            }
+            catch (Exception error) when (error is ProviderUtils.JsonParseException or ProviderUtils.TypeValidationException)
+            {
+                var initialError = new NoObjectGeneratedException(
+                    error is ProviderUtils.TypeValidationException
+                        ? "No object generated: response did not match schema."
+                        : "No object generated: could not parse the response.",
+                    error,
+                    outputText,
+                    last.Response,
+                    last.Usage,
+                    last.FinishReason);
+                if (options.RepairOutput == null)
+                {
+                    throw initialError;
+                }
+
+                var repairedText = await options.RepairOutput(outputText, error, cancellationToken).ConfigureAwait(false);
+                if (repairedText == null)
+                {
+                    throw initialError;
+                }
+
+                try
+                {
+                    output = ProviderUtils.JsonParsing.Parse(repairedText, JsonNode.Parse(outputSchema.GetRawText()));
+                }
+                catch (Exception repairedError) when (repairedError is ProviderUtils.JsonParseException or ProviderUtils.TypeValidationException)
+                {
+                    throw new NoObjectGeneratedException(
+                        repairedError is ProviderUtils.TypeValidationException
+                            ? "No object generated: response did not match schema."
+                            : "No object generated: could not parse the response.",
+                        repairedError,
+                        repairedText,
+                        last.Response,
+                        last.Usage,
+                        last.FinishReason);
+                }
+            }
         }
 
         return new GenerateTextResult(last.Text, last.ReasoningText, steps, last.FinishReason, usage, output, sources, last.ProviderMetadata) { ResponseMessages = responseMessages.ToArray() };
