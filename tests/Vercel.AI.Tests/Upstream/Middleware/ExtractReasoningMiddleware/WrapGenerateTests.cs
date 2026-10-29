@@ -42,8 +42,7 @@ public sealed class WrapGenerateTests
 
     [Theory]
     [MemberData(nameof(StructuredCases))]
-    [UpstreamTest(Id + "should extract $name from structured output text without losing other content", Coverage = UpstreamCoverage.Partial,
-        Note = "OutputSpec.Object with a schema stands in for Output.json().")]
+    [UpstreamTest(Id + "should extract $name from structured output text without losing other content", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_extract_name_from_structured_output_text_without_losing_other_content(string name)
     {
         var (middleware, input, text, reasoning) = name switch

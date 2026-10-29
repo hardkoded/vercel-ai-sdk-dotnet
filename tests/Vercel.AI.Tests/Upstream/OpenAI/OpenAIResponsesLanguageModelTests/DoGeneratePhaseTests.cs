@@ -154,12 +154,13 @@ public sealed class DoGeneratePhaseTests
         Assert.Equal(testCase.StructuredOutputText, result.StructuredOutputText);
     }
 
-    [Fact]
-    [UpstreamTest(
-        Id + "should preserve all content and response details while selecting structured output for %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Covers the openai provider. The port reports provider metadata under openai for Azure too, and does not report logprobs in the response provider metadata.")]
-    public void Should_preserve_all_content_and_response_details_while_selecting_structured_output_for_openai()
+    [Theory]
+    [InlineData("openai", "openai")]
+    [InlineData("azure.responses", "azure")]
+    [UpstreamTest(Id + "should preserve all content and response details while selecting structured output for %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_preserve_all_content_and_response_details_while_selecting_structured_output_for_provider(
+        string provider,
+        string providerMetadataKey)
     {
         var annotations = new JsonArray(new JsonObject
         {
@@ -168,6 +169,18 @@ public sealed class DoGeneratePhaseTests
             ["end_index"] = 5,
             ["url"] = "https://example.com/draft",
             ["title"] = "Draft source",
+        });
+        var draftLogprobs = new JsonArray(new JsonObject
+        {
+            ["token"] = "Draft",
+            ["logprob"] = -0.1,
+            ["top_logprobs"] = new JsonArray(),
+        });
+        var finalLogprobs = new JsonArray(new JsonObject
+        {
+            ["token"] = "{",
+            ["logprob"] = -0.2,
+            ["top_logprobs"] = new JsonArray(),
         });
         var body = new JsonObject
         {
@@ -186,6 +199,7 @@ public sealed class DoGeneratePhaseTests
                         ["type"] = "output_text",
                         ["text"] = "Draft.",
                         ["annotations"] = annotations.DeepClone(),
+                        ["logprobs"] = draftLogprobs.DeepClone(),
                     }),
                 },
                 new JsonObject
@@ -211,7 +225,13 @@ public sealed class DoGeneratePhaseTests
                     ["status"] = "completed",
                     ["phase"] = "final_answer",
                     ["content"] = new JsonArray(
-                        new JsonObject { ["type"] = "output_text", ["text"] = "{\"items\":", ["annotations"] = new JsonArray() },
+                        new JsonObject
+                        {
+                            ["type"] = "output_text",
+                            ["text"] = "{\"items\":",
+                            ["annotations"] = new JsonArray(),
+                            ["logprobs"] = finalLogprobs.DeepClone(),
+                        },
                         new JsonObject { ["type"] = "output_text", ["text"] = "[\"result\"]}", ["annotations"] = new JsonArray() }),
                 }),
             ["usage"] = new JsonObject
@@ -225,6 +245,8 @@ public sealed class DoGeneratePhaseTests
         var raw = body.ToJsonString();
         using var document = JsonDocument.Parse(raw);
         var next = 0;
+        var expectedProviderMetadataKey = provider.Contains("azure", StringComparison.Ordinal) ? "azure" : "openai";
+        Assert.Equal(expectedProviderMetadataKey, providerMetadataKey);
 
         var result = OpenAIResponsesLanguageModel.Parse(
             document.RootElement,
@@ -233,7 +255,9 @@ public sealed class DoGeneratePhaseTests
             new Dictionary<string, string>(),
             () => "id-" + next++,
             OpenAIParallelToolCall.FunctionToolNames(OpenAIResponsesSupport.TestTools),
-            jsonResponse: true);
+            jsonResponse: true,
+            providerOptionsName: providerMetadataKey,
+            collectLogprobs: true);
 
         Assert.Collection(
             result.Content,
@@ -247,7 +271,7 @@ public sealed class DoGeneratePhaseTests
                 Assert.Equal("https://example.com/draft", Assert.IsType<GeneratedSource>(citation.Source).Url);
                 JsonAssert.Equal(
                     ((OpenAIText)text).ProviderMetadata,
-                    new JsonObject { ["openai"] = new JsonObject { ["itemId"] = "draft", ["phase"] = "commentary", ["annotations"] = annotations.DeepClone() } }.ToJsonString());
+                    new JsonObject { [providerMetadataKey] = new JsonObject { ["itemId"] = "draft", ["phase"] = "commentary", ["annotations"] = annotations.DeepClone() } }.ToJsonString());
             },
             part =>
             {
@@ -260,7 +284,9 @@ public sealed class DoGeneratePhaseTests
             {
                 var reasoning = Assert.IsType<GeneratedReasoning>(part);
                 Assert.Equal("Thinking.", reasoning.Text);
-                JsonAssert.Equal(reasoning.ProviderMetadata!.Value, """{"openai":{"itemId":"reasoning","reasoningEncryptedContent":"encrypted"}}""");
+                JsonAssert.Equal(
+                    reasoning.ProviderMetadata!.Value,
+                    new JsonObject { [providerMetadataKey] = new JsonObject { ["itemId"] = "reasoning", ["reasoningEncryptedContent"] = "encrypted" } }.ToJsonString());
             },
             part =>
             {
@@ -268,11 +294,16 @@ public sealed class DoGeneratePhaseTests
                 Assert.Equal("call", call.ToolCallId);
                 Assert.Equal("weather", call.ToolName);
                 Assert.Equal("{\"location\":\"Paris\"}", call.ArgumentsJson);
-                JsonAssert.Equal(call.ProviderMetadata!.Value, """{"openai":{"itemId":"function"}}""");
+                JsonAssert.Equal(
+                    call.ProviderMetadata!.Value,
+                    new JsonObject { [providerMetadataKey] = new JsonObject { ["itemId"] = "function" } }.ToJsonString());
             },
-            part => AssertFinalText(part, "{\"items\":"),
-            part => AssertFinalText(part, "[\"result\"]}"));
+            part => AssertFinalText(part, "{\"items\":", providerMetadataKey),
+            part => AssertFinalText(part, "[\"result\"]}", providerMetadataKey));
         Assert.Equal("{\"items\":[\"result\"]}", result.StructuredOutputText);
+        JsonAssert.Equal(
+            result.ProviderMetadata!.Value.GetProperty(providerMetadataKey).GetProperty("logprobs"),
+            new JsonArray(draftLogprobs.DeepClone(), finalLogprobs.DeepClone()).ToJsonString());
         Assert.Equal(FinishReason.ToolCalls, result.FinishReason);
         Assert.Null(result.RawFinishReason);
         Assert.Equal(13, result.Usage.InputTokens);
@@ -284,10 +315,12 @@ public sealed class DoGeneratePhaseTests
         Assert.Equal(body.ToJsonString(), result.RawResponse);
     }
 
-    private static void AssertFinalText(GeneratedContent part, string expected)
+    private static void AssertFinalText(GeneratedContent part, string expected, string providerMetadataKey)
     {
         var text = Assert.IsAssignableFrom<GeneratedText>(part);
         Assert.Equal(expected, text.Text);
-        JsonAssert.Equal(((OpenAIText)text).ProviderMetadata, """{"openai":{"itemId":"final","phase":"final_answer"}}""");
+        JsonAssert.Equal(
+            ((OpenAIText)text).ProviderMetadata,
+            new JsonObject { [providerMetadataKey] = new JsonObject { ["itemId"] = "final", ["phase"] = "final_answer" } }.ToJsonString());
     }
 }
