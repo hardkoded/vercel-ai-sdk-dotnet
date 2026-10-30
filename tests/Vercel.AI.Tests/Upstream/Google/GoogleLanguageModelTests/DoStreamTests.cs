@@ -14,6 +14,32 @@ namespace Vercel.AI.Tests.GoogleLanguageModelTests;
 public sealed class DoStreamTests
 {
     [Fact]
+    [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream::should send videoMetadata on video file parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_videoMetadata_on_video_file_parts()
+    {
+        var handler = new RecordingHandler
+        {
+            MediaType = "text/event-stream",
+            ResponseText = "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"done\"}]},\"finishReason\":\"STOP\"}]}\n\n",
+        };
+        var model = GoogleUpstream.Client(handler).LanguageModel("gemini-2.5-flash");
+        var file = new FileContentPart("video/mp4", "https://www.youtube.com/watch?v=example", null, null)
+        {
+            ProviderOptions = GoogleUpstream.ProviderOptions(
+                """{"google":{"videoMetadata":{"startOffset":"0s","endOffset":"10.5s","fps":0.5}}}"""),
+        };
+
+        await GoogleUpstream.Collect(await model.DoStreamAsync(
+            GoogleUpstream.Prompt(new UserModelMessage(new UserContentPart[] { file })),
+            CancellationToken.None));
+
+        using var body = JsonDocument.Parse(handler.Body);
+        GoogleUpstream.JsonEqual(
+            body.RootElement.GetProperty("contents"),
+            """[{"role":"user","parts":[{"fileData":{"mimeType":"video/mp4","fileUri":"https://www.youtube.com/watch?v=example"},"videoMetadata":{"startOffset":"0s","endOffset":"10.5s","fps":0.5}}]}]""");
+    }
+
+    [Fact]
     [UpstreamTest("packages/google/src/google-language-model.test.ts::doStream::should only pass valid provider options with AUDIO responseModalities", Coverage = UpstreamCoverage.Covered)]
     public void Should_only_pass_valid_provider_options_with_AUDIO_responseModalities()
     {

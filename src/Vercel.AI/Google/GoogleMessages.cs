@@ -5,10 +5,32 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Google;
+
+/// <summary>Metadata for preprocessing video file parts.</summary>
+public sealed class GoogleVideoMetadata
+{
+    /// <summary>Start offset as a duration in seconds, for example <c>3.5s</c>.</summary>
+    [JsonPropertyName("startOffset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StartOffset { get; set; }
+
+    /// <summary>End offset as a duration in seconds, for example <c>10s</c>.</summary>
+    [JsonPropertyName("endOffset")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? EndOffset { get; set; }
+
+    /// <summary>Frames per second in the range (0, 24]. Defaults to 1.</summary>
+    [JsonPropertyName("fps")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public double? Fps { get; set; }
+}
 
 /// <summary>Settings for converting a prompt into Gemini <c>contents</c>.</summary>
 public sealed class GoogleMessageOptions
@@ -126,11 +148,17 @@ public sealed class GoogleFileUserPart : GoogleUserPart
     /// <summary>Inline bytes.</summary>
     public byte[]? Data { get; set; }
 
+    /// <summary>Inline base64 data.</summary>
+    public string? Base64 { get; set; }
+
     /// <summary>Inline text source.</summary>
     public string? Text { get; set; }
 
     /// <summary>Map from provider name to an uploaded file id. The <c>google</c> entry is the file URI.</summary>
     public IReadOnlyDictionary<string, string>? Reference { get; set; }
+
+    /// <summary>Provider-specific options for this file part, including <c>videoMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
 /// <summary>An assistant turn.</summary>
@@ -357,7 +385,7 @@ public static class GoogleMessages
                     }
                     else if (part is GoogleFileUserPart file)
                     {
-                        parts.Add(UserFile(file, vertexLike));
+                        parts.Add(UserFile(file, names, vertexLike));
                     }
                 }
 
@@ -469,7 +497,13 @@ public static class GoogleMessages
                     else if (part is FileContentPart file)
                     {
                         var kind = file.ProviderReference != null ? "reference" : file.Data != null ? "data" : "url";
-                        parts.Add(new GoogleFileUserPart(file.MediaType, kind) { Data = file.Data, Url = file.Url, Reference = file.ProviderReference });
+                        parts.Add(new GoogleFileUserPart(file.MediaType, kind)
+                        {
+                            Data = file.Data,
+                            Url = file.Url,
+                            Reference = file.ProviderReference,
+                            ProviderOptions = file.ProviderOptions,
+                        });
                     }
                 }
 
@@ -522,8 +556,10 @@ public static class GoogleMessages
         return turns;
     }
 
-    private static JsonObject UserFile(GoogleFileUserPart file, bool vertexLike)
+    private static JsonObject UserFile(GoogleFileUserPart file, IReadOnlyList<string> names, bool vertexLike)
     {
+        var videoMetadata = VideoMetadata(ReadOptions(file.ProviderOptions, names, vertexLike));
+        JsonObject result;
         switch (file.Kind)
         {
             case "url":
@@ -533,17 +569,18 @@ public static class GoogleMessages
                     uri = file.OriginalUrl!;
                 }
 
-                return new JsonObject
+                result = new JsonObject
                 {
                     ["fileData"] = new JsonObject { ["mimeType"] = MediaTypes.ResolveFullMediaType(file.MediaType, null), ["fileUri"] = uri },
                 };
+                break;
             case "reference":
                 if (vertexLike)
                 {
                     throw new InvalidOperationException("file parts with provider references");
                 }
 
-                return new JsonObject
+                result = new JsonObject
                 {
                     ["fileData"] = new JsonObject
                     {
@@ -551,11 +588,23 @@ public static class GoogleMessages
                         ["fileUri"] = ResolveReference(file.Reference),
                     },
                 };
+                break;
             case "text":
-                return Inline(FullOrPlain(file.MediaType), Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
+                result = Inline(FullOrPlain(file.MediaType), Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
+                break;
             default:
-                return Inline(ResolveMediaType(file.MediaType, file.Data), file.Data ?? Array.Empty<byte>());
+                result = file.Base64 != null
+                    ? Inline(ResolveMediaType(file.MediaType, file.Base64), file.Base64)
+                    : Inline(ResolveMediaType(file.MediaType, file.Data), file.Data ?? Array.Empty<byte>());
+                break;
         }
+
+        if (videoMetadata != null)
+        {
+            result["videoMetadata"] = videoMetadata;
+        }
+
+        return result;
     }
 
     private static JsonObject? AssistantPart(
@@ -918,6 +967,14 @@ public static class GoogleMessages
         };
     }
 
+    private static JsonObject Inline(string mediaType, string base64)
+    {
+        return new JsonObject
+        {
+            ["inlineData"] = new JsonObject { ["mimeType"] = mediaType, ["data"] = base64 },
+        };
+    }
+
     private static string ResolveMediaType(string mediaType, byte[]? data)
     {
         if (mediaType != null && mediaType.Contains("/"))
@@ -936,6 +993,11 @@ public static class GoogleMessages
         }
 
         return string.IsNullOrEmpty(mediaType) ? "application/octet-stream" : mediaType + "/octet-stream";
+    }
+
+    private static string ResolveMediaType(string mediaType, string base64)
+    {
+        return MediaTypes.ResolveFullMediaType(new LanguageModelFilePart("data", mediaType) { Base64 = base64 });
     }
 
     private static string FullOrPlain(string? mediaType)
@@ -1002,23 +1064,30 @@ public static class GoogleMessages
             {
                 if (options.TryGetValue(names[i], out var value))
                 {
-                    return value;
+                    if (value.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
+                    {
+                        return value;
+                    }
                 }
             }
 
-            if (vertexLike && options.TryGetValue("google", out var google))
+            if (vertexLike
+                && options.TryGetValue("google", out var google)
+                && google.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
             {
                 return google;
             }
 
             if (!vertexLike)
             {
-                if (options.TryGetValue("googleVertex", out var vertex))
+                if (options.TryGetValue("googleVertex", out var vertex)
+                    && vertex.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
                 {
                     return vertex;
                 }
 
-                if (options.TryGetValue("vertex", out var legacy))
+                if (options.TryGetValue("vertex", out var legacy)
+                    && legacy.ValueKind is not JsonValueKind.Null and not JsonValueKind.Undefined)
                 {
                     return legacy;
                 }
@@ -1026,6 +1095,65 @@ public static class GoogleMessages
         }
 
         return default;
+    }
+
+    private static JsonObject? VideoMetadata(JsonElement options)
+    {
+        if (options.ValueKind != JsonValueKind.Object
+            || !options.TryGetProperty("videoMetadata", out var metadata)
+            || metadata.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (metadata.ValueKind != JsonValueKind.Object)
+        {
+            throw InvalidVideoMetadata(metadata);
+        }
+
+        var result = new JsonObject();
+        AddOptionalString(metadata, result, "startOffset");
+        AddOptionalString(metadata, result, "endOffset");
+        if (metadata.TryGetProperty("fps", out var fps))
+        {
+            if (fps.ValueKind != JsonValueKind.Number)
+            {
+                throw InvalidVideoMetadata(metadata);
+            }
+
+            var value = fps.GetDouble();
+            if (!(value > 0 && value <= 24))
+            {
+                throw InvalidVideoMetadata(metadata);
+            }
+
+            result["fps"] = value;
+        }
+
+        return result;
+    }
+
+    private static void AddOptionalString(JsonElement metadata, JsonObject result, string name)
+    {
+        if (!metadata.TryGetProperty(name, out var value))
+        {
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            throw InvalidVideoMetadata(metadata);
+        }
+
+        result[name] = value.GetString();
+    }
+
+    private static InvalidArgumentException InvalidVideoMetadata(JsonElement metadata)
+    {
+        return new InvalidArgumentException(
+            "providerOptions",
+            metadata.GetRawText(),
+            "videoMetadata must contain optional string startOffset and endOffset values and an fps number in the range (0, 24].");
     }
 
     private static string? Signature(JsonElement options)
