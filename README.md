@@ -176,9 +176,10 @@ Every code block in this README comes from a project in [examples](examples). Ea
 | [Providers](examples/Providers) | Call a model through the Gateway and through a provider directly. |
 | [StreamText](examples/StreamText) | Stream text as the model writes it. |
 | [Tools](examples/Tools) | Let the model call a tool and read its result. |
+| [McpImageContent](examples/McpImageContent) | Convert an MCP image tool result into a model file part. |
 | [UIMessageStream](examples/UIMessageStream) | Stream a UI message response from ASP.NET Core to a JavaScript `useChat` client. |
 
-Run an example with `dotnet run --project examples/GenerateText`. The examples call the AI Gateway when `AI_GATEWAY_API_KEY` is set. Without the key, they print a message and exit. `Providers` also calls Anthropic directly when `ANTHROPIC_API_KEY` is set. `UIMessageStream` listens on `http://127.0.0.1:43123` and uses a scripted model when no key is set.
+Run an example with `dotnet run --project examples/GenerateText`. The examples call the AI Gateway when `AI_GATEWAY_API_KEY` is set. Without the key, they print a message and exit. `Providers` also calls Anthropic directly when `ANTHROPIC_API_KEY` is set. `McpImageContent` starts its bundled Node.js MCP server and needs no model key. `UIMessageStream` listens on `http://127.0.0.1:43123` and uses a scripted model when no key is set.
 
 This port has no UI packages. `ToUIMessageStreamResult` writes the AI SDK UI message stream (`text/event-stream`) that a JavaScript `useChat` client already reads.
 

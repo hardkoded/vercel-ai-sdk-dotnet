@@ -131,15 +131,27 @@ public static class McpClient
         var parts = new List<ToolModelContentPart>();
         foreach (var part in content.EnumerateArray())
         {
+            JsonElement type = default;
+            var hasType = part.ValueKind == JsonValueKind.Object
+                && part.TryGetProperty("type", out type)
+                && type.ValueKind == JsonValueKind.String;
             if (part.ValueKind == JsonValueKind.Object
-                && part.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "text"
+                && hasType && type.GetString() == "text"
                 && part.TryGetProperty("text", out var textValue) && textValue.ValueKind == JsonValueKind.String)
             {
                 parts.Add(new ToolModelContentPart("text", textValue.GetString()!));
             }
+            else if (part.ValueKind == JsonValueKind.Object
+                && hasType && type.GetString() == "image"
+                && part.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.String
+                && part.TryGetProperty("mimeType", out var mimeType) && mimeType.ValueKind == JsonValueKind.String)
+            {
+                parts.Add(new FileToolModelContentPart(
+                    mimeType.GetString()!,
+                    data.GetString()!));
+            }
             else
             {
-                // Upstream turns an image part into a file part. The port's content part is text only, so it keeps the JSON of the part.
                 parts.Add(new ToolModelContentPart("text", part.GetRawText()));
             }
         }

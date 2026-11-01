@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateObject;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 
@@ -136,11 +137,10 @@ public sealed class ProviderSelectedStructuredOutputTests
     [InlineData("{\"value\":")]
     [UpstreamTest(
         Id + "should reject invalid selected text %j without falling back to valid content",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no NoObjectGeneratedError, so the rejection is the JsonException of the selected text. It does not carry the text or the cause.")]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_reject_invalid_selected_text_without_falling_back_to_valid_content(string structuredOutputText)
     {
-        await Assert.ThrowsAnyAsync<JsonException>(() => Client().GenerateTextAsync(new GenerateTextOptions
+        var error = await Assert.ThrowsAsync<NoObjectGeneratedException>(() => Client().GenerateTextAsync(new GenerateTextOptions
         {
             Model = new TestLanguageModel
             {
@@ -149,6 +149,9 @@ public sealed class ProviderSelectedStructuredOutputTests
             Prompt = "prompt",
             Output = OutputSpec.Object(ValueSchema),
         }));
+        Assert.Equal("AI_NoObjectGeneratedError", error.ErrorName);
+        Assert.Equal(structuredOutputText, error.Text);
+        Assert.IsType<Vercel.AI.ProviderUtils.JsonParseException>(error.Cause);
     }
 
     [Theory]

@@ -32,7 +32,7 @@ internal static class OpenAIResponsesOutput
     private static readonly JsonSerializerOptions JsonOptions = new() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>The source an annotation points at: a URL source for <c>url_citation</c>, else a document source.</summary>
-    public static GeneratedContent AnnotationSource(JsonElement annotation, string id)
+    public static GeneratedContent AnnotationSource(JsonElement annotation, string id, string providerName = "openai")
     {
         var type = OpenAIJson.String(annotation, "type");
         if (type == "url_citation")
@@ -57,7 +57,7 @@ internal static class OpenAIResponsesOutput
             type == "file_path" ? "application/octet-stream" : "text/plain",
             filename,
             filename,
-            OpenAIJson.ProviderMetadata(metadata));
+            OpenAIJson.ProviderMetadata(metadata, providerName));
     }
 
     /// <summary>The citations for a text block. A <c>file_path</c> annotation is a generated file, not a citation.</summary>
@@ -95,11 +95,11 @@ internal static class OpenAIResponsesOutput
         new JsonObject { ["result"] = OpenAIJson.String(item, "result"), ["status"] = OpenAIJson.String(item, "status") }.ToJsonString(JsonOptions);
 
     /// <summary>Provider metadata that carries only the output item id.</summary>
-    public static JsonElement ItemMetadata(JsonElement item) =>
-        OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") });
+    public static JsonElement ItemMetadata(JsonElement item, string providerName = "openai") =>
+        OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") }, providerName);
 
     /// <summary>Provider metadata for a text block.</summary>
-    public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations, string? phase = null)
+    public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations, string? phase = null, string providerName = "openai")
     {
         var metadata = new JsonObject { ["itemId"] = itemId };
         if (phase != null)
@@ -118,7 +118,7 @@ internal static class OpenAIResponsesOutput
             metadata["annotations"] = array;
         }
 
-        return OpenAIJson.ProviderMetadata(metadata);
+        return OpenAIJson.ProviderMetadata(metadata, providerName);
     }
 
     /// <summary>The URL sources of a <c>web_search_call</c> search action.</summary>
@@ -230,8 +230,8 @@ internal static class OpenAIResponsesOutput
     }
 
     /// <summary>Provider metadata of a retrieved file source.</summary>
-    public static JsonElement FileSearchMetadata(string fileId) =>
-        OpenAIJson.ProviderMetadata(new JsonObject { ["type"] = "file_search", ["fileId"] = fileId });
+    public static JsonElement FileSearchMetadata(string fileId, string providerName = "openai") =>
+        OpenAIJson.ProviderMetadata(new JsonObject { ["type"] = "file_search", ["fileId"] = fileId }, providerName);
 
     public static bool HasResults(JsonElement item) =>
         item.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array && results.GetArrayLength() > 0;

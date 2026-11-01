@@ -610,7 +610,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _headers(options.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        return Parse(document.RootElement, prepared.Warnings, response.Body, response.Headers, null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), options.JsonResponse || options.JsonSchema != null);
+        var namedOptions = options.ProviderOptions != null && options.ProviderOptions.TryGetValue(_providerOptionsName, out var providerOptions)
+            ? providerOptions
+            : (JsonElement?)null;
+        var collectLogprobs = OpenAIJson.Bool(namedOptions, "logprobs") == true
+            || OpenAIJson.Int(namedOptions, "logprobs") is not null and not 0;
+        return Parse(
+            document.RootElement,
+            prepared.Warnings,
+            response.Body,
+            response.Headers,
+            null,
+            OpenAIParallelToolCall.FunctionToolNames(options.Tools),
+            CreateToolNameMapping(options.Tools),
+            options.JsonResponse || options.JsonSchema != null,
+            _providerOptionsName,
+            collectLogprobs);
     }
 
     /// <inheritdoc />
@@ -622,14 +637,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         OpenAIResponsesPreparedRequest prepared,
         IAsyncEnumerable<string> events,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
-        var state = new OpenAIResponsesStream(null, OpenAIParallelToolCall.FunctionToolNames(options.Tools), CreateToolNameMapping(options.Tools), prepared.Body["store"]?.GetValue<bool>() == true);
+        var state = new OpenAIResponsesStream(
+            null,
+            OpenAIParallelToolCall.FunctionToolNames(options.Tools),
+            CreateToolNameMapping(options.Tools),
+            prepared.Body["store"]?.GetValue<bool>() == true,
+            _providerOptionsName);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonObject? node = null;
@@ -675,7 +695,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         Func<string>? generateId = null,
         IReadOnlyCollection<string>? functionToolNames = null,
         ToolNameMapping? toolNameMapping = null,
-        bool jsonResponse = false)
+        bool jsonResponse = false,
+        string providerOptionsName = "openai",
+        bool collectLogprobs = false)
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -716,6 +738,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         string? structuredOutputText = null;
+        var logprobs = new JsonArray();
         var retrievedFileIds = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in output.EnumerateArray())
         {
@@ -748,7 +771,13 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             content.Add(new OpenAIText(
                                 value!,
                                 OpenAIResponsesOutput.Citations(annotations),
-                                OpenAIResponsesOutput.TextMetadata(itemId, annotations, phase)));
+                                OpenAIResponsesOutput.TextMetadata(itemId, annotations, phase, providerOptionsName)));
+                            if (collectLogprobs
+                                && part.TryGetProperty("logprobs", out var partLogprobs)
+                                && partLogprobs.ValueKind != JsonValueKind.Null)
+                            {
+                                logprobs.Add(JsonNode.Parse(partLogprobs.GetRawText()));
+                            }
 
                             // Citation-derived sources are only used when retrieval data is unavailable.
                             foreach (var annotation in annotations)
@@ -760,7 +789,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                                     continue;
                                 }
 
-                                content.Add(OpenAIResponsesOutput.AnnotationSource(annotation, generateId()));
+                                content.Add(OpenAIResponsesOutput.AnnotationSource(annotation, generateId(), providerOptionsName));
                             }
                         }
                     }
@@ -783,7 +812,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 {
                     if (retrievedFileIds.Add(fileId))
                     {
-                        content.Add(new GeneratedDocumentSource(generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId)));
+                        content.Add(new GeneratedDocumentSource(generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId, providerOptionsName)));
                     }
                 }
             }
@@ -797,14 +826,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var arguments = item.TryGetProperty("arguments", out var args) && args.ValueKind == JsonValueKind.String
                     ? args.GetString() ?? "{}"
                     : "{}";
-                var expanded = OpenAIParallelToolCall.Expand(id, name, arguments, functionToolNames, OpenAIJson.String(item, "id") ?? string.Empty);
+                var expanded = OpenAIParallelToolCall.Expand(id, name, arguments, functionToolNames, OpenAIJson.String(item, "id") ?? string.Empty, providerOptionsName);
                 if (expanded != null)
                 {
                     content.AddRange(expanded.Select(call => new GeneratedToolCall(call.ToolCallId, call.ToolName, call.Input, call.ProviderMetadata)));
                     continue;
                 }
 
-                var metadata = OpenAIParallelToolCall.CallMetadata(item);
+                var metadata = OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName);
                 content.Add(new GeneratedToolCall(id, name, arguments, metadata));
             }
             else if (type == "program")
@@ -813,7 +842,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     OpenAIJson.String(item, "call_id") ?? "call",
                     ProgrammaticToolName(toolNameMapping),
                     OpenAIResponsesOutput.ProgramInput(item),
-                    OpenAIResponsesOutput.ItemMetadata(item))
+                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName))
                 {
                     ProviderExecuted = true,
                 });
@@ -825,7 +854,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     ProgrammaticToolName(toolNameMapping),
                     OpenAIResponsesOutput.ProgramOutputResult(item))
                 {
-                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName),
                 });
             }
             else if (type == "custom_tool_call")
@@ -834,7 +863,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var id = OpenAIJson.String(item, "call_id") ?? "call";
                 var name = OpenAIJson.String(item, "name") ?? string.Empty;
                 var input = OpenAIJson.String(item, "input") ?? string.Empty;
-                content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item)));
+                content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)));
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {
@@ -852,7 +881,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     reasoningValues["reasoningEncryptedContent"] = encryptedElement.GetString();
                 }
 
-                JsonElement? reasoningMetadata = reasoningValues.Count > 0 ? OpenAIJson.ProviderMetadata(reasoningValues) : null;
+                JsonElement? reasoningMetadata = reasoningValues.Count > 0 ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName) : null;
                 if (summary.GetArrayLength() == 0)
                 {
                     content.Add(new GeneratedReasoning(string.Empty, reasoningMetadata));
@@ -881,6 +910,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var responseId = root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
         var responseModel = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == JsonValueKind.String ? modelValue.GetString() : null;
+        var providerMetadata = new JsonObject();
+        if (logprobs.Count > 0)
+        {
+            providerMetadata["logprobs"] = logprobs;
+        }
+
         return new LanguageModelGenerateResult(
             content,
             finish,
@@ -888,7 +923,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             incompleteReason,
             ToCallWarnings(warnings),
             string.IsNullOrEmpty(responseId) ? null : responseId,
-            OpenAIJson.ProviderMetadata(new JsonObject()),
+            OpenAIJson.ProviderMetadata(providerMetadata, providerOptionsName),
             raw,
             string.IsNullOrEmpty(responseModel) ? null : responseModel,
             OpenAIJson.UnixSeconds(OpenAIJson.Unix(root, "created_at")),

@@ -5,8 +5,10 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateObject;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 using ImageModelFile = Vercel.AI.Operations.ImageModelFile;
 
 namespace Vercel.AI;
@@ -32,6 +34,9 @@ public interface IAiClient
 {
     /// <summary>Generates text and runs tools. Maps to <c>generateText</c>.</summary>
     Task<GenerateTextResult> GenerateTextAsync(GenerateTextOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>Generates a typed object. Maps to the deprecated <c>generateObject</c>.</summary>
+    Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(GenerateObjectOptions<T> options, CancellationToken cancellationToken = default);
 
     /// <summary>Streams text and runs tools. Maps to <c>streamText</c>.</summary>
     StreamTextResult StreamTextAsync(StreamTextOptions options, CancellationToken cancellationToken = default);
@@ -92,6 +97,119 @@ public sealed class AiClient : IAiClient
         }
 
         return Generation.GenerateAsync(ResolveLanguage(options.Model, options.ModelId), options, _telemetry, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(GenerateObjectOptions<T> options, CancellationToken cancellationToken = default)
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        LogWarnings.Log(new LogWarningsOptions(
+            new ModelWarning[] { new DeprecatedWarning("generateObject", "Use generateText with an output setting instead.") }));
+
+        var model = ResolveLanguage(options.Model, options.ModelId);
+        var callId = ProviderUtils.JsonValues.GenerateId("aiobj-");
+        if (options.OnStart != null)
+        {
+            await NotifyCallbackAsync(
+                () => options.OnStart(new GenerateObjectStartEvent(callId, model.Provider, model.ModelId, options.Prompt, options.Messages), cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        if (options.OnStepStart != null)
+        {
+            await NotifyCallbackAsync(
+                () => options.OnStepStart(new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId), cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        var generateOptions = new GenerateTextOptions
+        {
+            Model = options.Model,
+            ModelId = options.ModelId,
+            System = options.System,
+            Instructions = options.Instructions,
+            Prompt = options.Prompt,
+            Messages = options.Messages,
+            Output = OutputSpec.Object(options.Schema, options.SchemaName, options.SchemaDescription),
+            MaxOutputTokens = options.MaxOutputTokens,
+            Temperature = options.Temperature,
+            TopP = options.TopP,
+            TopK = options.TopK,
+            PresencePenalty = options.PresencePenalty,
+            FrequencyPenalty = options.FrequencyPenalty,
+            Seed = options.Seed,
+            Reasoning = options.Reasoning,
+            MaxRetries = options.MaxRetries,
+            Timeout = options.Timeout,
+            Headers = options.Headers,
+            ProviderOptions = options.ProviderOptions,
+            RepairOutput = options.RepairText == null
+                ? null
+                : (text, error, token) => options.RepairText(new GenerateObjectRepairContext(text, error), token),
+            GenerateObjectMode = true,
+        };
+        if (options.OnStepEnd != null)
+        {
+            generateOptions.OnStepEnd = (step, token) =>
+                NotifyCallbackAsync(() => options.OnStepEnd(new GenerateObjectStepEndEvent(callId, model.Provider, model.ModelId, step), token), token);
+        }
+
+        var generated = await Generation.GenerateAsync(
+            model,
+            generateOptions,
+            _telemetry,
+            cancellationToken).ConfigureAwait(false);
+        T? value;
+        try
+        {
+            value = JsonSerializer.Deserialize<T>(generated.Output!.Value.GetRawText(), options.SerializerOptions);
+        }
+        catch (Exception error) when (error is JsonException or NotSupportedException)
+        {
+            throw new NoObjectGeneratedException(
+                "No object generated: response did not match schema.",
+                error,
+                generated.FinalStep.StructuredOutputText ?? generated.Text,
+                generated.Response,
+                generated.Usage,
+                generated.FinishReason);
+        }
+
+        if (value is null)
+        {
+            throw new NoObjectGeneratedException(
+                "No object generated: response did not match schema.",
+                null,
+                generated.FinalStep.StructuredOutputText ?? generated.Text,
+                generated.Response,
+                generated.Usage,
+                generated.FinishReason);
+        }
+
+        var result = new GenerateObjectResult<T>(value, generated);
+        if (options.OnFinish != null)
+        {
+            await NotifyCallbackAsync(
+                () => options.OnFinish(new GenerateObjectEndEvent<T>(callId, model.Provider, model.ModelId, result), cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    private static async Task NotifyCallbackAsync(Func<Task> callback, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await callback().ConfigureAwait(false);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+        }
     }
 
     /// <inheritdoc />

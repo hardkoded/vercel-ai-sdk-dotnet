@@ -14,6 +14,55 @@ public sealed class DoGenerateToolCallsTests
 {
     [Fact]
     [UpstreamTest(
+        "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate > tool calls::should normalize tuple tool schemas to prefixItems on the wire",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_normalize_tuple_tool_schemas_to_prefixItems_on_the_wire()
+    {
+        var capture = new UpstreamCapture();
+        var provider = MoonshotProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture);
+        var options = UpstreamChat.Prompt();
+        options.Tools =
+        [
+            new LanguageModelTool(
+                "probe",
+                "probe",
+                UpstreamChat.Json(
+                    """
+                    {
+                      "type": "object",
+                      "properties": {
+                        "a": {
+                          "type": "array",
+                          "items": [{ "type": "number" }, { "type": "number" }]
+                        }
+                      },
+                      "required": ["a"]
+                    }
+                    """)),
+        ];
+
+        await ((OpenAICompatibleLanguageModel)provider.LanguageModel("kimi-k3")).DoGenerateAsync(options, CancellationToken.None);
+
+        var parameters = JsonNode.Parse(capture.Requests[0].Body)!["tools"]![0]!["function"]!["parameters"];
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse(
+                """
+                {
+                  "type": "object",
+                  "properties": {
+                    "a": {
+                      "type": "array",
+                      "prefixItems": [{ "type": "number" }, { "type": "number" }]
+                    }
+                  },
+                  "required": ["a"]
+                }
+                """),
+            parameters));
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate > tool calls::should send root unions of objects with type object on the wire",
         Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_root_unions_of_objects_with_type_object_on_the_wire()

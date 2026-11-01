@@ -112,6 +112,9 @@ public sealed class ExtractReasoningMiddlewareTests
     [Theory]
     [InlineData("", "<channel|>")]
     [InlineData("<|channel>thought\n", "")]
+    [UpstreamTest(
+        "packages/ai/src/middleware/extract-reasoning-middleware.test.ts::extractReasoningMiddleware > custom delimiters::rejects empty delimiters: %j",
+        Coverage = UpstreamCoverage.Covered)]
     public void RejectsEmptyDelimiters(string opening, string closing)
     {
         var error = Assert.Throws<InvalidArgumentError>(() => new global::Vercel.AI.ExtractReasoningMiddleware((opening, closing)));

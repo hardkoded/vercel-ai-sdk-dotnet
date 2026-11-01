@@ -2,7 +2,7 @@
 
 Upstream parity target: [vercel/ai](https://github.com/vercel/ai) commit `0c2a9de5de76570cc2ad0281382aa90cbd199d43` (`feat: add maxOutputTokens and reasoning to decide (#23590)`), recorded on 2026-10-20.
 
-This port targets AI SDK 7 / Language Model specification **V4**. Names are C# versions of the JavaScript API: `generateText` is `GenerateTextAsync`, `streamText` is `StreamTextAsync` (it returns `StreamTextResult`, not a task), `AbortSignal` is `CancellationToken`, and option properties are PascalCase.
+This port targets AI SDK 7 / Language Model specification **V4**. Names are C# versions of the JavaScript API: `generateText` is `GenerateTextAsync`, deprecated `generateObject` is the generic `GenerateObjectAsync<T>`, `streamText` is `StreamTextAsync` (it returns `StreamTextResult`, not a task), `NoObjectGeneratedError` is `NoObjectGeneratedException`, `AbortSignal` is `CancellationToken`, and option properties are PascalCase.
 
 The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by that step still run. `Agent` stops after 10 steps unless you set another condition.
 

@@ -263,9 +263,9 @@ internal static class OpenAIJson
             textTokens: completion ?? 0);
     }
 
-    public static JsonElement ProviderMetadata(JsonObject openai)
+    public static JsonElement ProviderMetadata(JsonObject metadata, string providerName = "openai")
     {
-        var root = new JsonObject { ["openai"] = openai };
+        var root = new JsonObject { [providerName] = metadata };
         return Element(root);
     }
 

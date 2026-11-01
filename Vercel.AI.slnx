@@ -6,6 +6,7 @@
     <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
+    <Project Path="examples/McpImageContent/McpImageContent.csproj" />
     <Project Path="examples/Providers/Providers.csproj" />
     <Project Path="examples/StreamText/StreamText.csproj" />
     <Project Path="examples/Tools/Tools.csproj" />

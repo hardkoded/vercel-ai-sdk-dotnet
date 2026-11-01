@@ -21,10 +21,12 @@ internal sealed class OpenAIResponsesStream
     private static readonly JsonSerializerOptions TextInputOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     private readonly Func<string> _generateId;
+    private readonly string _providerOptionsName;
     private readonly List<JsonElement> _annotations = new();
     private readonly List<JsonElement> _fallbackAnnotations = new();
     private readonly HashSet<string> _retrievedFileIds = new(StringComparer.Ordinal);
     private string? _openTextId;
+    private string? _openTextPhase;
     private bool _hasWebSearchActionSources;
     private bool _hasFileSearchResults;
     private string? _incompleteReason;
@@ -46,9 +48,15 @@ internal sealed class OpenAIResponsesStream
     // Compatible providers can rotate item ids between events. The output index stays the same for the life of an item.
     private readonly Dictionary<int, string> _activeOutputItemIds = new();
 
-    public OpenAIResponsesStream(Func<string>? generateId = null, IReadOnlyCollection<string>? functionToolNames = null, ToolNameMapping? toolNameMapping = null, bool store = false)
+    public OpenAIResponsesStream(
+        Func<string>? generateId = null,
+        IReadOnlyCollection<string>? functionToolNames = null,
+        ToolNameMapping? toolNameMapping = null,
+        bool store = false,
+        string providerOptionsName = "openai")
     {
         _store = store;
+        _providerOptionsName = providerOptionsName;
         _toolNameMapping = toolNameMapping;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
         _generateId = generateId ?? (() => Vercel.AI.ProviderUtils.JsonValues.GenerateId("source_"));
@@ -120,7 +128,7 @@ internal sealed class OpenAIResponsesStream
                 else if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
                 {
                     _annotations.Clear();
-                    OpenText(parts, added["id"]?.GetValue<string>() ?? "text");
+                    OpenText(parts, added["id"]?.GetValue<string>() ?? "text", added["phase"]?.GetValue<string>());
                 }
 
                 break;
@@ -204,7 +212,7 @@ internal sealed class OpenAIResponsesStream
                     }
                     else
                     {
-                        parts.Add(ToSourcePart(OpenAIResponsesOutput.AnnotationSource(element, _generateId())));
+                        parts.Add(ToSourcePart(OpenAIResponsesOutput.AnnotationSource(element, _generateId(), _providerOptionsName)));
                     }
                 }
 
@@ -390,8 +398,11 @@ internal sealed class OpenAIResponsesStream
         var parts = new List<LanguageModelStreamPart>();
         if (_openTextId != null)
         {
-            parts.Add(new TextEndStreamPart(_openTextId));
+            parts.Add(new TextEndStreamPart(
+                _openTextId,
+                providerMetadata: OpenAIResponsesOutput.TextMetadata(_openTextId, Array.Empty<JsonElement>(), _openTextPhase, _providerOptionsName)));
             _openTextId = null;
+            _openTextPhase = null;
         }
 
         foreach (var annotation in _fallbackAnnotations)
@@ -403,7 +414,7 @@ internal sealed class OpenAIResponsesStream
                 continue;
             }
 
-            parts.Add(ToSourcePart(OpenAIResponsesOutput.AnnotationSource(annotation, _generateId())));
+            parts.Add(ToSourcePart(OpenAIResponsesOutput.AnnotationSource(annotation, _generateId(), _providerOptionsName)));
         }
 
         _fallbackAnnotations.Clear();
@@ -418,24 +429,30 @@ internal sealed class OpenAIResponsesStream
             finish,
             _usage,
             failedFinish ? _failedRaw : _incompleteReason,
-            OpenAIJson.ProviderMetadata(new JsonObject { ["responseId"] = _responseId })));
+            OpenAIJson.ProviderMetadata(new JsonObject { ["responseId"] = _responseId }, _providerOptionsName)));
         return parts;
     }
 
-    private void OpenText(List<LanguageModelStreamPart> parts, string id)
+    private void OpenText(List<LanguageModelStreamPart> parts, string id, string? phase = null)
     {
         if (_openTextId == id)
         {
+            _openTextPhase ??= phase;
             return;
         }
 
         if (_openTextId != null)
         {
-            parts.Add(new TextEndStreamPart(_openTextId));
+            parts.Add(new TextEndStreamPart(
+                _openTextId,
+                providerMetadata: OpenAIResponsesOutput.TextMetadata(_openTextId, Array.Empty<JsonElement>(), _openTextPhase, _providerOptionsName)));
         }
 
         _openTextId = id;
-        parts.Add(new TextStartStreamPart(id, OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id })));
+        _openTextPhase = phase;
+        parts.Add(new TextStartStreamPart(
+            id,
+            OpenAIResponsesOutput.TextMetadata(id, Array.Empty<JsonElement>(), phase, _providerOptionsName)));
     }
 
     private static int? OutputIndex(JsonObject node) =>
@@ -450,7 +467,7 @@ internal sealed class OpenAIResponsesStream
     private static string ReasoningPartId(string itemId, int summaryIndex) => itemId + ":" + summaryIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     // The start and end parts carry the encrypted content, null when there is none. Deltas carry only the item id.
-    private static JsonElement ReasoningMetadata(string itemId, string? encryptedContent, bool includeEncrypted = false)
+    private JsonElement ReasoningMetadata(string itemId, string? encryptedContent, bool includeEncrypted = false)
     {
         var values = new JsonObject { ["itemId"] = itemId };
         if (includeEncrypted)
@@ -458,7 +475,7 @@ internal sealed class OpenAIResponsesStream
             values["reasoningEncryptedContent"] = encryptedContent;
         }
 
-        return OpenAIJson.ProviderMetadata(values);
+        return OpenAIJson.ProviderMetadata(values, _providerOptionsName);
     }
 
     private enum ReasoningPartState
@@ -520,7 +537,7 @@ internal sealed class OpenAIResponsesStream
             callId,
             OpenAIJson.String(item, "name") ?? string.Empty,
             JsonSerializer.Serialize(OpenAIJson.String(item, "input"), TextInputOptions),
-            OpenAIJson.ProviderMetadata(metadata)));
+            OpenAIJson.ProviderMetadata(metadata, _providerOptionsName)));
     }
 
     private void FunctionCallDone(List<LanguageModelStreamPart> parts, JsonElement item, OngoingFunctionCall? ongoing)
@@ -533,7 +550,7 @@ internal sealed class OpenAIResponsesStream
         var suppress = ongoing?.SuppressInputStreaming ?? OpenAIParallelToolCall.IsUndeclared(name, _functionToolNames);
 
         if (suppress
-            && OpenAIParallelToolCall.Expand(callId, name, input, _functionToolNames, itemId) is { } expanded)
+            && OpenAIParallelToolCall.Expand(callId, name, input, _functionToolNames, itemId, _providerOptionsName) is { } expanded)
         {
             foreach (var call in expanded)
             {
@@ -563,10 +580,10 @@ internal sealed class OpenAIResponsesStream
         }
 
         JsonElement? endMetadata = OpenAIJson.String(item, "namespace") is { } ns
-            ? OpenAIJson.ProviderMetadata(new JsonObject { ["namespace"] = ns })
+            ? OpenAIJson.ProviderMetadata(new JsonObject { ["namespace"] = ns }, _providerOptionsName)
             : null;
         parts.Add(new ToolInputEndStreamPart(callId, endMetadata));
-        parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async)));
+        parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async, _providerOptionsName)));
     }
 
     private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item)
@@ -575,11 +592,13 @@ internal sealed class OpenAIResponsesStream
         if (itemType == "message")
         {
             var id = OpenAIJson.String(item, "id") ?? _openTextId ?? "text";
+            var phase = OpenAIJson.String(item, "phase") ?? _openTextPhase;
             _openTextId = null;
+            _openTextPhase = null;
             parts.Add(new TextEndStreamPart(
                 id,
                 OpenAIResponsesOutput.Citations(_annotations),
-                OpenAIResponsesOutput.TextMetadata(id, _annotations)));
+                OpenAIResponsesOutput.TextMetadata(id, _annotations, phase, _providerOptionsName)));
             _annotations.Clear();
         }
         else if (itemType == "program")
@@ -588,7 +607,7 @@ internal sealed class OpenAIResponsesStream
                 OpenAIJson.String(item, "call_id") ?? "call",
                 OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
                 OpenAIResponsesOutput.ProgramInput(item),
-                OpenAIResponsesOutput.ItemMetadata(item))
+                OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName))
             {
                 ProviderExecuted = true,
             });
@@ -600,7 +619,7 @@ internal sealed class OpenAIResponsesStream
                 OpenAIResponsesLanguageModel.ProgrammaticToolName(_toolNameMapping),
                 JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.ProgramOutputResult(item)))
             {
-                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item),
+                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName),
             });
         }
         else if (itemType == "web_search_call")
@@ -626,7 +645,7 @@ internal sealed class OpenAIResponsesStream
                 _hasFileSearchResults = true;
                 if (_retrievedFileIds.Add(fileId))
                 {
-                    parts.Add(new DocumentSourceStreamPart(_generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId)));
+                    parts.Add(new DocumentSourceStreamPart(_generateId(), "text/plain", filename, filename, OpenAIResponsesOutput.FileSearchMetadata(fileId, _providerOptionsName)));
                 }
             }
         }

@@ -79,6 +79,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
         }
         options.IncludeUsage = true;
         options.NormalizeRequestSchema = MoonshotJsonSchema.NormalizeJsonSchemaForMFJS;
+        options.NormalizeResponseSchema = MoonshotJsonSchema.NormalizeResponseSchema;
         return options;
     }
 }

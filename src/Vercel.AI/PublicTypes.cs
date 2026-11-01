@@ -217,6 +217,9 @@ public sealed class ExecutedTool
 
     /// <summary>The output sent to the model, such as an error message. Null means <see cref="OutputJson"/>.</summary>
     internal string? ModelOutput { get; init; }
+
+    /// <summary>Typed text and file parts sent to the model for a content output.</summary>
+    internal IReadOnlyList<UserContentPart>? ModelOutputContent { get; init; }
 }
 
 /// <summary>One language-model step, including any tool results from that step.</summary>
@@ -741,6 +744,10 @@ public class GenerateTextOptions
 
     /// <summary>Called when generation fails. Maps to <c>onError</c>.</summary>
     public Func<Exception, CancellationToken, Task>? OnError { get; set; }
+
+    internal Func<string, Exception, CancellationToken, Task<string?>>? RepairOutput { get; set; }
+
+    internal bool GenerateObjectMode { get; set; }
 
     /// <summary>Approves a tool call before it runs. A false result records an error tool result.</summary>
     public Func<ToolApprovalRequest, CancellationToken, Task<bool>>? ApproveTool { get; set; }

@@ -11,6 +11,57 @@ namespace Vercel.AI.Tests.MoonshotChatLanguageModelTests;
 /// <summary>Port of <c>moonshotai-chat-language-model.test.ts</c> &gt; <c>doGenerate &gt; structured outputs</c>.</summary>
 public sealed class DoGenerateStructuredOutputsTests
 {
+    [Fact]
+    [UpstreamTest(
+        "packages/moonshotai/src/moonshotai-chat-language-model.test.ts::doGenerate > structured outputs::should normalize json schemas and enable strict validation by default",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_normalize_json_schemas_and_enable_strict_validation_by_default()
+    {
+        var capture = new UpstreamCapture();
+        var provider = MoonshotProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture);
+        var options = UpstreamChat.Prompt();
+        options.JsonSchemaName = "recipe";
+        options.JsonSchemaDescription = "A recipe response.";
+        options.JsonSchema = UpstreamChat.Json(
+            """
+            {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "ingredients": {
+                  "type": "array",
+                  "items": [{ "type": "string" }, { "type": "number" }]
+                }
+              }
+            }
+            """);
+
+        await ((OpenAICompatibleLanguageModel)provider.LanguageModel("kimi-k3")).DoGenerateAsync(options, CancellationToken.None);
+
+        var format = JsonNode.Parse(capture.Requests[0].Body)!["response_format"];
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse(
+                """
+                {
+                  "type": "json_schema",
+                  "json_schema": {
+                    "name": "recipe",
+                    "strict": true,
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "ingredients": {
+                          "type": "array",
+                          "prefixItems": [{ "type": "string" }, { "type": "number" }]
+                        }
+                      }
+                    }
+                  }
+                }
+                """),
+            format));
+    }
+
     [Theory]
     [InlineData("custom-model-id")]
     [InlineData("moonshot-v2")]
