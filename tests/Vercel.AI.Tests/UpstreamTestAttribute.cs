@@ -21,6 +21,9 @@ public sealed class UpstreamTestAttribute : Attribute
     public UpstreamCoverage Coverage { get; set; } = UpstreamCoverage.Partial;
 
     public string? Note { get; set; }
+
+    /// <summary>Upstream commit containing this test when it is newer than the parity catalog.</summary>
+    public string? Commit { get; set; }
 }
 
 public enum UpstreamCoverage

@@ -26,13 +26,17 @@ ATTR = re.compile(
     re.S,
 )
 STRING = r'"(?:\\.|[^"\\])*"'
-TERM = rf'(?:{STRING}|[A-Za-z_][A-Za-z0-9_]*)'
+# Allow Type.Member so Prefix = WebFetchToolFixture.FilePath + "..." resolves.
+IDENT = r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*"
+TERM = rf"(?:{STRING}|{IDENT})"
 CONST_RE = re.compile(rf'const\s+string\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*({TERM}(?:\s*\+\s*{TERM})*)\s*;')
-TERM_RE = re.compile(rf'({STRING})|([A-Za-z_][A-Za-z0-9_]*)')
+TERM_RE = re.compile(rf"({STRING})|({IDENT})")
 CLASS_RE = re.compile(r"\bclass\s+(\w+)")
 METHOD_RE = re.compile(r"public\s+(?:async\s+)?(?:Task|void)\s+(\w+)\s*\(")
 COVERAGE_RE = re.compile(r"Coverage\s*=\s*UpstreamCoverage\.(Covered|Partial)")
 NOTE_RE = re.compile(r'Note\s*=\s*"((?:\\.|[^"\\])*)"')
+COMMIT_ARGUMENT_RE = re.compile(rf"Commit\s*=\s*(?P<value>{TERM})")
+COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
 def unescape(value: str) -> str:
@@ -49,16 +53,18 @@ def constant_resolver(paths: list[Path]) -> Callable[[Path, str], str]:
     resolved: dict[tuple[Path, str], str] = {}
 
     def resolve(path: Path, name: str, stack: tuple[tuple[Path, str], ...] = ()) -> str:
-        owner = path if name in raw[path] else next((p for p in paths if name in raw[p]), None)
+        # Type.Member references look up Member in this folder (own file first).
+        simple = name.rsplit(".", 1)[-1]
+        owner = path if simple in raw[path] else next((p for p in paths if simple in raw[p]), None)
         if owner is None:
             raise SystemExit(f"Unknown string constant {name} in {path}")
-        key = (owner, name)
+        key = (owner, simple)
         if key in stack:
             raise SystemExit(f"Circular string constant {name} in {owner}")
         if key not in resolved:
             resolved[key] = "".join(
                 unescape(literal[1:-1]) if literal else resolve(owner, ident, stack + (key,))
-                for literal, ident in TERM_RE.findall(raw[owner][name])
+                for literal, ident in TERM_RE.findall(raw[owner][simple])
             )
         return resolved[key]
 
@@ -89,6 +95,7 @@ def load_links() -> list[dict[str, str]]:
             rest = match.group("rest")
             coverage = COVERAGE_RE.search(rest)
             note = NOTE_RE.search(rest)
+            commit = COMMIT_ARGUMENT_RE.search(rest)
             upstream_id = unescape(match.group("id"))
             prefix_name = match.group("prefix")
             if prefix_name:
@@ -100,6 +107,13 @@ def load_links() -> list[dict[str, str]]:
             }
             if note:
                 link["note"] = unescape(note.group(1))
+            if commit:
+                value = commit.group("value")
+                link["commit"] = (
+                    unescape(value[1:-1])
+                    if value.startswith('"')
+                    else resolve_constant(path, value)
+                )
             links.append(link)
             cursor = match.end()
     seen: dict[str, str] = {}
@@ -264,10 +278,18 @@ def main() -> None:
     rows, manifest = load_catalog()
     links = load_links()
     known = {str(row["id"]) for row in rows}
-    missing_ids = [link["upstreamId"] for link in links if link["upstreamId"] not in known]
+    missing_ids = [
+        link["upstreamId"]
+        for link in links
+        if link["upstreamId"] not in known
+        and not COMMIT_SHA_RE.fullmatch(link.get("commit", ""))
+    ]
     if missing_ids:
         raise SystemExit("Unknown upstream ids:\n" + "\n".join(missing_ids))
-    summary = summarize(rows, links, str(manifest["upstreamCommit"]))
+    # Catalog-new Commit links are validated by UpstreamParityTests / check-commit-ports
+    # against their named SHA; keep the snapshot summary on the pinned catalog only.
+    catalog_links = [link for link in links if link["upstreamId"] in known]
+    summary = summarize(rows, catalog_links, str(manifest["upstreamCommit"]))
     GENERATED.mkdir(exist_ok=True)
     (GENERATED / "coverage-summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n",
