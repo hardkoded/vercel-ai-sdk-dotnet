@@ -52,7 +52,7 @@ public sealed class DoStreamToolCallStreamingTests
             """
             {"type":"response.output_item.done","item":{"type":"web_search_call","id":"ws_action","name":"web_search","call_id":"","status":"completed",
               "action":{"type":"search","query":"latest AI news","sources":[{"type":"url","url":"https://example.com/a"}]}},"output_index":0}
-            """.Replace("\n", string.Empty),
+            """.ReplaceLineEndings(string.Empty),
             Done);
 
         var parts = await Collect(Model(capture), WithTools(ProviderTool("xai.web_search", "web_search")));
@@ -190,7 +190,7 @@ public sealed class DoStreamToolCallStreamingTests
             """
             {"type":"response.output_item.done","item":{"type":"file_search_call","id":"fs_stream_123","status":"completed","queries":["search query"],
               "results":[{"file_id":"file_abc","filename":"doc.txt","score":0.9,"text":"Found text content"}]},"output_index":0}
-            """.Replace("\n", string.Empty),
+            """.ReplaceLineEndings(string.Empty),
             Done);
 
         var parts = ToJson(await Collect(Model(capture), WithTools(ProviderTool("xai.file_search", "file_search", """{"vectorStoreIds":["collection_123"]}"""))));
