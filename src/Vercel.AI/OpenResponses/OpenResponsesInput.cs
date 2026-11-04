@@ -401,8 +401,46 @@ internal static class OpenResponsesInput
         {
             ["type"] = "function_call_output",
             ["call_id"] = tool.ToolCallId,
-            ["output"] = ToolOutput(tool),
+            ["output"] = tool.OutputContent != null
+                ? ToolContentOutput(tool.OutputContent, warnings, providerOptionsName)
+                : ToolOutput(tool),
         });
+    }
+
+    private static JsonArray ToolContentOutput(IReadOnlyList<UserContentPart> content, List<CallWarning> warnings, string providerOptionsName)
+    {
+        var output = new JsonArray();
+        foreach (var item in content)
+        {
+            switch (item)
+            {
+                case TextContentPart text:
+                    output.Add(new JsonObject { ["type"] = "input_text", ["text"] = text.Text });
+                    break;
+                case FileContentPart file:
+                    var isImage = MediaTypes.GetTopLevelMediaType(file.MediaType) == "image";
+                    if (file.ProviderReference != null)
+                    {
+                        warnings.Add(new CallWarning("other", "unsupported tool content part type: file with data type: reference"));
+                    }
+                    else if (file.Url != null)
+                    {
+                        output.Add(isImage
+                            ? new JsonObject { ["type"] = "input_image", ["image_url"] = file.Url, ["detail"] = ImageDetail(file.ProviderOptions, providerOptionsName) }
+                            : new JsonObject { ["type"] = "input_file", ["file_url"] = file.Url });
+                    }
+                    else
+                    {
+                        output.Add(isImage
+                            ? new JsonObject { ["type"] = "input_image", ["image_url"] = DataUrl(file), ["detail"] = ImageDetail(file.ProviderOptions, providerOptionsName) }
+                            : new JsonObject { ["type"] = "input_file", ["filename"] = file.FileName ?? "data", ["file_data"] = DataUrl(file) });
+                    }
+
+                    break;
+            }
+        }
+
+        return output;
     }
 
     /// <summary>
