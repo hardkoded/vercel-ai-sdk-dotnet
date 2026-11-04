@@ -595,7 +595,8 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
     {
         try
         {
-            return await ProviderExchange.GetResponseUrlAsync(_provider._httpClient, uri.AbsoluteUri, trustedOrigin, Download.ValidateDownloadUrl, ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers), cancellationToken, ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers);
+            return await ProviderExchange.GetResponseUrlAsync(_provider._httpClient, uri.AbsoluteUri, trustedOrigin, Download.ValidateDownloadUrl, headers, cancellationToken, ProviderExchange.DownloadClient(_provider.Options), ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
         }
         catch (ApiException exception) when (ErrorMessage(exception.ResponseBody) is { } message)
         {

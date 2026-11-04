@@ -254,6 +254,18 @@ internal static class ProviderExchange
         return "ai-sdk/" + provider + "/" + AiSdkVersion.Version;
     }
 
+    /// <summary>The headers a hop off the provider origin may carry: only <c>User-Agent</c>, as upstream <c>getFromApi</c> keeps it when it drops the rest.</summary>
+    public static Dictionary<string, string?> UserAgentOnly(IReadOnlyDictionary<string, string?>? headers)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (headers != null && headers.TryGetValue("User-Agent", out var userAgent))
+        {
+            result["User-Agent"] = userAgent;
+        }
+
+        return result;
+    }
+
     /// <summary>Adds the SDK user agent when the caller did not set one.</summary>
     public static void AddUserAgent(IDictionary<string, string?> headers, string provider)
     {
