@@ -18,6 +18,7 @@ Native wire protocols have their own request mappers:
 - OpenAI Responses reports each `function_call` as a `GeneratedToolCall` (a `ToolCallStreamPart` when streaming, after `tool-input-start`, `tool-input-delta`, and `tool-input-end` parts). Its `openai` provider metadata carries `itemId`, plus `async`, `namespace`, and `caller` when the output item has them. A `program` caller becomes `{ type: "program", callerId }`. Other callers pass through unchanged. A streamed `tool-input-end` carries `namespace` too. When the model calls an internal `parallel` wrapper (`tool_uses` with `functions.<name>` recipients) and you have not declared a tool named `parallel`, each nested call whose tool you declared becomes its own tool call with the id `{callId}_{index}` and an `openai.parallelToolCall` metadata object (`itemId`, `toolCallId`, `toolName`, `input`, `index`, `count`). If any recipient is undeclared, the wrapper is returned as a plain `parallel` call. A streamed wrapper buffers its input and emits the expanded calls when the item completes.
 - OpenAI Responses reports a `program` output item (programmatic tool calling) as a provider-executed `GeneratedToolCall` (`ProviderExecuted = true`; a `ToolCallStreamPart` when streaming, on `response.output_item.done`). The tool name is the name you gave `OpenAITools.ProgrammaticToolCalling()` (or `LanguageModelTool.ProviderDefined("openai.programmatic_tool_calling", name, args)`). Its input is `{"code","fingerprint"}`. A `program_output` item becomes a `GeneratedToolResult` (a `ToolResultStreamPart` when streaming) with `{"result","status"}` (`completed` or `incomplete`). Both carry `openai.itemId` in provider metadata. Function calls the program makes carry `openai.caller` as described above. When you send these parts back, a program call becomes an `item_reference` (with `store`) or a `program` item, its result becomes an `item_reference` or a `program_output` item, and a function call or its result that has an `openai.caller` keeps it as `caller`.
 - OpenAI Responses reads a `custom_tool_call` as a `GeneratedToolCall` whose `ArgumentsJson` is the JSON-encoded input string and whose finish reason is `ToolCalls`, and streams it as a `ToolInputStartStreamPart` with `InputEncoding = ToolInputEncoding.Text`, one `ToolInputDeltaStreamPart` per `response.custom_tool_call_input.delta` event (the raw text, not JSON-escaped), a `ToolInputEndStreamPart`, and a `ToolCallStreamPart` with the same `ArgumentsJson`. Its `openai` provider metadata carries `itemId`, plus `async` when present.
+- A streamed OpenAI Responses call reports the `responseId` of the `response.created` event in the finish part's provider metadata, plus `serviceTier` and `reasoningContext` when the completed response has them. Providers that rotate item ids between events keep one id per output item: the text parts and the reasoning parts use the id the item had when it was added, found by `output_index`.
 - `LanguageModelGenerateResult.StructuredOutputText` is the text a JSON `Output` parses when it differs from the concatenation of all text parts (null by default; an empty string is an explicit selection and is not replaced by the text parts). `GenerateText` parses it instead of `Text` for the final step only, while `Text`, `Content`, `ResponseMessages`, and usage keep the whole response. OpenAI and Azure Responses set it for a JSON call (`LanguageModelCallOptions.JsonResponse`) to the text of the last message with `phase: "final_answer"`, so commentary or repeated final answers are not joined into invalid JSON. Every message stays in `Content`, and the message `phase` is reported in the text part provider metadata as `openai.phase` for OpenAI and `azure.phase` for Azure, including streamed `TextStartStreamPart` and `TextEndStreamPart` values. Requested response logprobs are reported under the same provider key in `LanguageModelGenerateResult.ProviderMetadata`. A text part with an empty string is kept. `ExtractJsonMiddleware` and `ExtractReasoningMiddleware` apply their transform to it too.
 - OpenAI Responses also reads these provider options:
   - `reasoningMode` (`standard` or `pro`) is sent as `reasoning.mode`, and `reasoningContext` (`auto`, `current_turn`, or `all_turns`) as `reasoning.context`. Both warn on non-reasoning models. `reasoningMode: "pro"`, `contextManagement`, and `truncation: "auto"` do not allow `reasoningEffortUpdate`.
@@ -114,15 +115,46 @@ var acme = OpenResponsesProvider.Create(new OpenResponsesOptions
 });
 ```
 
+Some Responses-compatible implementations document non-namespaced extension discriminators, such as `web_search`, `web_search_call`, or `response.custom_tool_call_input.delta`. These are not portable Open Responses types. Register each exact value through the dedicated bare fields to opt in:
+
+```csharp
+var webSearch = new OpenResponsesExtension
+{
+    Id = "acme.web_search",
+    AllowBareTypes = true,
+    BareToolType = "web_search",
+    BareItemTypes = new[] { "web_search_call" },
+    BareEventTypes = new[] { "response.web_search_call.completed" },
+    EncodeTool = context => new JsonObject
+    {
+        ["name"] = context.Name,
+        ["search_context_size"] = context.Args.GetProperty("searchContextSize").GetString(),
+    },
+    DecodeItem = context => new GeneratedContent[]
+    {
+        new GeneratedToolCall(
+            (string)context.Item["call_id"]!,
+            (string)context.Item["name"]!,
+            new JsonObject { ["query"] = context.Item["query"]!.DeepClone() }.ToJsonString())
+        {
+            ProviderExecuted = true,
+        },
+    },
+    DecodeEvent = _ => null,
+};
+```
+
+Set `AllowBareTypes = true` when using `BareToolType`, `BareItemTypes`, or `BareEventTypes`, and only then. These fields accept only non-namespaced values. They do not enable unknown JSON passthrough: a bare discriminator is handled only when it exactly matches a registered value. Core Open Responses discriminators and duplicate registrations are rejected, and `ToolType` and `BareToolType` cannot be set together. Use the normal namespaced fields whenever the implementation supports them.
+
 Set `ProviderExecuted` on each decoded tool call or `ToolInputStartStreamPart`. It can vary by item or event. An extension can define:
 
 - `EncodeTool`: encodes a provider tool from `OpenResponsesToolContext` (`Name`, `Args`). Returning `null` omits the tool with an `unsupported` warning. A tool choice that selects the omitted tool is omitted too.
-- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the `type`.
+- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the registered `ToolType` or `BareToolType`.
 - `DecodeItem`: maps a completed item (`OpenResponsesDecodeItemContext.Item`, plus `Mode` of `Generate` or `Stream`) to content parts.
-- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a registered namespaced `type`.
+- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a `type` registered through `ItemTypes` or `BareItemTypes`.
 - `DecodeEvent`: maps a streaming event to stream parts. `OpenResponsesDecodeEventContext.State` lasts for one response stream.
 
-Tool, item, and event capabilities are independent. Capability fields must be provided in pairs.
+Tool, item, and event capabilities are independent. An item-only extension, for example, sets `ItemTypes` (or `BareItemTypes`) and `DecodeItem` without a tool type or `EncodeTool`. Capability fields must be provided in pairs.
 
 Each decoded item adds a `GeneratedCustom` part of kind `open-responses.extension-replay` (a `CustomStreamPart` when streaming). It stores the original item in provider metadata, and the other decoded parts reference it by `itemId`. Pass the result back with `AssistantModelMessage.FromGeneratedContent(result.Content)` to replay the original item once, opaque fields included. This also preserves items that decode only to source parts.
 

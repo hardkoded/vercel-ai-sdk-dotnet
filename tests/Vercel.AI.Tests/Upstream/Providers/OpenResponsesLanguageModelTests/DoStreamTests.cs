@@ -141,6 +141,31 @@ public sealed class DoStreamTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should decode explicitly registered bare extension events and completed items", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_decode_explicitly_registered_bare_extension_events_and_completed_items()
+    {
+        const string receiptJson = "{\"id\":\"search_stream_1\",\"type\":\"web_search_call\",\"status\":\"completed\",\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"streamed query\"},\"result\":{\"documents\":[\"doc_1\"]}}";
+        var capture = new UpstreamCapture();
+        PrepareStreamChunks(
+            capture,
+            Obj("{\"type\":\"response.unregistered.delta\",\"sequence_number\":0,\"call_id\":\"ignored_call\",\"name\":\"ignoredTool\",\"delta\":\"ignored\"}"),
+            Obj("{\"type\":\"response.custom_tool_call_input.delta\",\"sequence_number\":1,\"call_id\":\"call_stream_1\",\"name\":\"documentSearch\",\"delta\":\"{\\\"text\\\":\\\"streamed query\\\"}\"}"),
+            Obj("{\"type\":\"response.output_item.done\",\"sequence_number\":2,\"output_index\":0,\"item\":" + receiptJson + "}"),
+            Obj("{\"type\":\"response.completed\",\"sequence_number\":3,\"response\":{\"id\":\"response_stream_1\",\"object\":\"response\",\"created_at\":0,\"status\":\"completed\",\"model\":\"test-model\",\"output\":[" + receiptJson + "],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}"));
+
+        var parts = await UpstreamChat.Read(
+            (await CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension()).DoStreamAsync(TestPrompt(), CancellationToken.None)));
+
+        var delta = Assert.Single(parts.OfType<ToolInputDeltaStreamPart>());
+        Assert.Equal(("call_stream_1", "{\"text\":\"streamed query\"}"), (delta.Id, delta.Delta));
+        var call = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal(("call_stream_1", "documentSearch", "{\"text\":\"streamed query\"}", true), (call.ToolCallId, call.ToolName, call.ArgumentsJson, call.ProviderExecuted));
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_stream_1\"}}}", call.ProviderMetadata);
+        var finish = Assert.IsType<FinishStreamPart>(parts[parts.Count - 1]);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "preserves $expectedType stream errors", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_expectedType_stream_errors()
     {

@@ -136,20 +136,63 @@ public sealed class DoStreamReasoningTests
     }
 
     [Fact]
-    public async Task Correlates_rotated_item_ids_by_output_index()
+    [UpstreamTest(Prefix + "should correlate rotated item ids by output index", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_correlate_rotated_item_ids_by_output_index()
     {
-        var parts = await Run(
-            "{}",
-            Added(0, Rs), SummaryAdded("rotated", 0, 0), SummaryDelta("rotated", 0, "x", 0), SummaryDone("rotated", 0, 0), Done(0, "rotated"));
+        // Captured from GitHub Copilot's Responses API with gpt-5.3-codex on 2026-08-06.
+        var handler = new SseStreamHandler(SseStreamHandler.FixtureChunks("github-copilot-id-rotation.1", done: false));
+        var options = OpenAIUpstream.Hello();
+        options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffort":"low","reasoningSummary":"detailed","store":false}""");
+        var model = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ResponsesModel("gpt-5.3-codex");
 
+        var streamParts = await OpenAIUpstream.Read(await model.DoStreamAsync(options, CancellationToken.None));
+
+        Assert.Empty(streamParts.OfType<ErrorStreamPart>());
+        var reasoningPartIds = streamParts.SelectMany(part => part switch
+        {
+            ReasoningStartStreamPart start => new[] { start.Id },
+            ReasoningDeltaStreamPart delta => new[] { delta.Id },
+            ReasoningEndStreamPart end => new[] { end.Id },
+            _ => Array.Empty<string>(),
+        });
+        var textPartIds = streamParts.SelectMany(part => part switch
+        {
+            TextStartStreamPart start => new[] { start.Id },
+            TextDeltaStreamPart delta => new[] { delta.Id },
+            TextEndStreamPart end => new[] { end.Id },
+            _ => Array.Empty<string>(),
+        });
+
+        Assert.Equal(new HashSet<string> { "capture-id-3:0" }, new HashSet<string>(reasoningPartIds));
+        Assert.Equal(new HashSet<string> { "capture-id-9" }, new HashSet<string>(textPartIds));
         Assert.Equal(
-            new[]
-            {
-                $"reasoning-start {Rs}:0 item={Rs} enc=null",
-                $"reasoning-delta {Rs}:0 item={Rs} x",
-                $"reasoning-end {Rs}:0 item={Rs} enc=null",
-            },
-            parts);
+            "There are **3** letter **“r”**s in **“strawberry.”**\n\n" +
+            "Breakdown: **s t r a w b e r r y**  \n" +
+            "You can see **r** at positions **3, 8, and 9**.",
+            string.Concat(streamParts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should stream with encrypted content include reasoning-delta part", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_stream_with_encrypted_content_include_reasoning_delta_part()
+    {
+        var handler = new SseStreamHandler(SseStreamHandler.FixtureChunks("openai-reasoning-encrypted-content.1", done: false));
+        var options = OpenAIUpstream.Hello();
+        options.Tools = new[]
+        {
+            OpenAIUpstream.Tool(
+                "calculator",
+                null,
+                null,
+                """{"type":"object","properties":{"a":{"type":"number"},"b":{"type":"number"},"op":{"type":"string"}},"required":["a","b"],"additionalProperties":false}"""),
+        };
+        options.ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+            """{"reasoningEffort":"high","maxCompletionTokens":32000,"store":false,"include":["reasoning.encrypted_content"],"reasoningSummary":"auto","forceReasoning":true}""");
+        var model = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, handler).ResponsesModel("gpt-5.1-codex-max");
+
+        var parts = await OpenAIUpstream.Read(await model.DoStreamAsync(options, CancellationToken.None));
+
+        OpenAIResponsesSupport.AssertStreamSnapshot(parts, "openai-reasoning-encrypted-content.1");
     }
 
     private static JsonObject Added(int index, string id, string? encrypted = null) => Item("response.output_item.added", index, id, encrypted);

@@ -342,8 +342,7 @@ internal static class Generation
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
                 var textBlocks = new List<TextBlock>();
-                var reasoning = new StringBuilder();
-                var reasoningMetadata = new List<JsonElement?>();
+                var reasoningBlocks = new List<ReasoningBlock>();
                 var toolCalls = new List<GeneratedToolCall>();
                 var toolContent = new List<GeneratedContent>();
                 var sources = new List<GeneratedSource>();
@@ -469,14 +468,16 @@ internal static class Generation
                                     documentSource.ProviderMetadata));
                                 break;
                             case ReasoningStartStreamPart reasoningStart:
-                                reasoningMetadata.Add(reasoningStart.ProviderMetadata);
+                                ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id).ProviderMetadata = reasoningStart.ProviderMetadata;
                                 break;
                             case ReasoningEndStreamPart reasoningEnd:
-                                reasoningMetadata.Add(reasoningEnd.ProviderMetadata);
+                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id);
+                                endedReasoning.ProviderMetadata = reasoningEnd.ProviderMetadata ?? endedReasoning.ProviderMetadata;
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
-                                reasoning.Append(reasoningDelta.Delta);
-                                reasoningMetadata.Add(reasoningDelta.ProviderMetadata);
+                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id);
+                                activeReasoning.Text.Append(reasoningDelta.Delta);
+                                activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata ?? activeReasoning.ProviderMetadata;
                                 outputChunkTimes.Add(ElapsedMs());
                                 buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
                                 break;
@@ -616,7 +617,7 @@ internal static class Generation
                 }
 
                 var generated = new LanguageModelGenerateResult(
-                    BuildContent(textBlocks, reasoning.ToString(), MergeProviderMetadata(reasoningMetadata), toolContent, sources, documentSources),
+                    BuildContent(textBlocks, reasoningBlocks, toolContent, sources, documentSources),
                     finish ?? FinishReason.Other,
                     usage,
                     rawFinish,
@@ -800,16 +801,15 @@ internal static class Generation
 
     private static List<GeneratedContent> BuildContent(
         List<TextBlock> textBlocks,
-        string reasoning,
-        JsonElement? reasoningMetadata,
+        List<ReasoningBlock> reasoningBlocks,
         List<GeneratedContent> toolContent,
         List<GeneratedSource> sources,
         List<GeneratedDocumentSource> documentSources)
     {
         var content = new List<GeneratedContent>();
-        if (reasoning.Length > 0)
+        foreach (var block in reasoningBlocks)
         {
-            content.Add(new GeneratedReasoning(reasoning, reasoningMetadata));
+            content.Add(new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata));
         }
 
         foreach (var block in textBlocks)
@@ -851,6 +851,42 @@ internal static class Generation
 
         // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here.
         public static TextBlock Find(List<TextBlock> blocks, string id)
+        {
+            for (var i = blocks.Count - 1; i >= 0; i--)
+            {
+                if (blocks[i].Id == id)
+                {
+                    return blocks[i];
+                }
+            }
+
+            return Start(blocks, id);
+        }
+    }
+
+    // One streamed reasoning block. The latest provider metadata of its start, delta, and end parts wins, as upstream.
+    private sealed class ReasoningBlock
+    {
+        private ReasoningBlock(string id)
+        {
+            Id = id;
+        }
+
+        public string Id { get; }
+
+        public StringBuilder Text { get; } = new();
+
+        public JsonElement? ProviderMetadata { get; set; }
+
+        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id)
+        {
+            var block = new ReasoningBlock(id);
+            blocks.Add(block);
+            return block;
+        }
+
+        // Deltas and ends belong to the latest block with their id. Providers that skip reasoning-start get one here.
+        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id)
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {

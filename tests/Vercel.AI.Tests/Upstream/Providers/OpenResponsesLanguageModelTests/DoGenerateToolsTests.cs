@@ -81,6 +81,24 @@ public sealed class DoGenerateToolsTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should encode explicitly registered bare provider tools and tool choices", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_encode_explicitly_registered_bare_provider_tools_and_tool_choices()
+    {
+        var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
+        var options = TestPrompt();
+        options.Tools = new[] { LanguageModelTool.ProviderDefined("acme.document_search", "documentSearch", UpstreamChat.Json("{\"index\":\"docs\"}")) };
+        options.ToolChoice = ToolChoice.Tool("documentSearch");
+
+        var result = await CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension()).DoGenerateAsync(options, CancellationToken.None);
+
+        var requestBody = RequestBody(capture, capture.Requests.Count - 1);
+        AssertJson(Arr("[{\"type\":\"web_search\",\"name\":\"documentSearch\",\"index\":\"docs\"}]"), requestBody["tools"]);
+        AssertJson(Obj("{\"type\":\"web_search\",\"name\":\"documentSearch\"}"), requestBody["tool_choice"]);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should warn and omit a registered provider tool and its selected choice when it cannot be encoded", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_warn_and_omit_a_registered_provider_tool_and_its_selected_choice_when_it_cannot_be_encoded()
     {

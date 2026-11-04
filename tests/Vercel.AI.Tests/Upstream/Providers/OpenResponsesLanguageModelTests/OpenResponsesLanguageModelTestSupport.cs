@@ -214,4 +214,53 @@ internal static class OpenResponsesLanguageModelTestSupport
             },
         };
     }
+
+    public static OpenResponsesExtension CreateBareDocumentSearchExtension()
+    {
+        var extension = CreateDocumentSearchExtension(providerExecuted: true);
+        extension.ToolType = null;
+        extension.ItemTypes = null;
+        extension.EventTypes = null;
+        extension.AllowBareTypes = true;
+        extension.BareToolType = "web_search";
+        extension.BareItemTypes = new[] { "web_search_call", "custom_tool_call", "custom_tool_call_output" };
+        extension.BareEventTypes = new[] { "response.custom_tool_call_input.delta" };
+        extension.EncodeInputItem = context =>
+        {
+            if (context.Part is AssistantToolCallPart call)
+            {
+                return new[]
+                {
+                    new JsonObject
+                    {
+                        ["type"] = "custom_tool_call",
+                        ["id"] = "call_item_" + call.ToolCall.ToolCallId,
+                        ["status"] = "completed",
+                        ["call_id"] = call.ToolCall.ToolCallId,
+                        ["name"] = call.ToolCall.ToolName,
+                        ["input"] = JsonNode.Parse(call.ToolCall.ArgumentsJson),
+                    },
+                };
+            }
+
+            var result = (AssistantToolResultPart)context.Part;
+            return new[]
+            {
+                new JsonObject
+                {
+                    ["type"] = "custom_tool_call_output",
+                    ["id"] = "result_item_" + result.ToolCallId,
+                    ["status"] = "completed",
+                    ["call_id"] = result.ToolCallId,
+                    ["name"] = result.ToolName,
+                    ["output"] = new JsonObject
+                    {
+                        ["type"] = result.Output.OutputType,
+                        ["value"] = JsonNode.Parse(result.Output.OutputJson),
+                    },
+                },
+            };
+        };
+        return extension;
+    }
 }
