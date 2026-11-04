@@ -357,7 +357,38 @@ internal static class Generation
                 // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
                 // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
                 var withholdToolParts = callOptions.ToolChoice?.Type == "none";
-                var streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                LanguageModelStreamResult streamResult;
+                try
+                {
+                    streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+                {
+                    buffer.Add(new ErrorPart(exception.Message));
+                    if (options.OnError != null)
+                    {
+                        await options.OnError(exception, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (steps.Count == 0)
+                    {
+                        var noOutput = new NoOutputGeneratedException("No output generated. Check the stream for errors.");
+                        if (!abort.TryFinish())
+                        {
+                            throw abort.Error!;
+                        }
+
+                        buffer.Complete();
+                        textSource.TrySetException(noOutput);
+                        finishSource.TrySetException(noOutput);
+                        usageSource.TrySetException(noOutput);
+                        stepsSource.TrySetException(noOutput);
+                        return;
+                    }
+
+                    break;
+                }
+
                 var stepRequest = new LanguageModelRequestMetadata
                 {
                     Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
@@ -539,7 +570,12 @@ internal static class Generation
                                 break;
                             case ErrorStreamPart error:
                                 buffer.Add(new ErrorPart(error.Message));
-                                throw new AiSdkException(error.Message);
+                                if (options.OnError != null)
+                                {
+                                    await options.OnError(new AiSdkException(error.Message), cancellationToken).ConfigureAwait(false);
+                                }
+
+                                break;
                             case ResponseMetadataStreamPart responseMetadata:
                                 stepResponseId = responseMetadata.Id ?? stepResponseId;
                                 stepResponseTimestamp = responseMetadata.Timestamp ?? stepResponseTimestamp;
@@ -642,7 +678,6 @@ internal static class Generation
             }
 
             buffer.Add(new FinishPart(result.FinishReason, result.Usage));
-            buffer.Complete();
             textSource.TrySetResult(result.Text);
             finishSource.TrySetResult(result.FinishReason);
             usageSource.TrySetResult(result.Usage);
@@ -651,6 +686,8 @@ internal static class Generation
             {
                 await options.OnFinish(result, cancellationToken).ConfigureAwait(false);
             }
+
+            buffer.Complete();
         }
         catch (Exception exception)
         {
@@ -672,11 +709,11 @@ internal static class Generation
                 return;
             }
 
-            buffer.Fail(exception);
             textSource.TrySetException(exception);
             finishSource.TrySetException(exception);
             usageSource.TrySetException(exception);
             stepsSource.TrySetException(exception);
+            var streamError = exception;
             if (options.OnError != null)
             {
                 try
@@ -685,9 +722,11 @@ internal static class Generation
                 }
                 catch (Exception callback)
                 {
-                    buffer.Fail(callback);
+                    streamError = callback;
                 }
             }
+
+            buffer.Fail(streamError);
         }
         finally
         {
