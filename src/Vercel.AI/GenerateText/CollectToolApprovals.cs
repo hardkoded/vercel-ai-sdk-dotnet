@@ -40,6 +40,9 @@ public sealed class ApprovalToolCallPart : ApprovalHistoryPart
 
     /// <summary>Tool input.</summary>
     public JsonElement Input { get; }
+
+    /// <summary>True when the provider runs the tool. Maps to the call's <c>providerExecuted</c>.</summary>
+    public bool ProviderExecuted { get; init; }
 }
 
 /// <summary>A request that a tool call be approved.</summary>
@@ -58,6 +61,15 @@ public sealed class ApprovalRequestPart : ApprovalHistoryPart
 
     /// <summary>Tool call id.</summary>
     public string ToolCallId { get; }
+
+    /// <summary>HMAC-SHA256 signature that binds this request to its tool call, when the request was signed.</summary>
+    public string? Signature { get; init; }
+
+    /// <summary>Why the call needed approval, when a reason was given.</summary>
+    public string? Reason { get; init; }
+
+    /// <summary>The input of the call before the input schema transformed it, when it differs from the call's input. Maps to <c>inputSchemaInput</c>.</summary>
+    public JsonElement? InputSchemaInput { get; init; }
 }
 
 /// <summary>The caller's decision for an approval request.</summary>
