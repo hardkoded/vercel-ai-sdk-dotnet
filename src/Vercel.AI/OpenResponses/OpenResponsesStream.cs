@@ -195,9 +195,8 @@ internal sealed class OpenResponsesStream
         var item = OpenAIJson.Child(chunk, "item");
         var itemType = OpenAIJson.String(item, "type");
         var itemId = OpenAIJson.String(item, "id") ?? string.Empty;
-        if (type != null && type.Contains(':'))
+        if (type != null && AcceptExtensionEvent(type, chunk, parts))
         {
-            AcceptExtensionEvent(type, chunk, parts);
             return;
         }
 
@@ -227,7 +226,7 @@ internal sealed class OpenResponsesStream
                 _hasToolCalls = true;
                 _toolCallsByItemId.Remove(itemId);
                 break;
-            case "response.output_item.done" when itemType != null && itemType.Contains(':'):
+            case "response.output_item.done" when itemType != null && _registry.ByItemType.ContainsKey(itemType):
                 AcceptExtensionItem(item!.Value, parts);
                 break;
             case "response.output_item.added" when itemType == "reasoning":
@@ -323,14 +322,14 @@ internal sealed class OpenResponsesStream
             : null;
     }
 
-    private void AcceptExtensionEvent(string type, JsonElement chunk, List<LanguageModelStreamPart> parts)
+    private bool AcceptExtensionEvent(string type, JsonElement chunk, List<LanguageModelStreamPart> parts)
     {
         if (OpenAIJson.Node(chunk) is not JsonObject @event
             || !OpenResponsesJson.IsExtensionEvent(@event)
             || !_registry.ByEventType.TryGetValue(type, out var extension)
             || extension.DecodeEvent == null)
         {
-            return;
+            return false;
         }
 
         IReadOnlyList<LanguageModelStreamPart>? decoded;
@@ -342,7 +341,7 @@ internal sealed class OpenResponsesStream
         {
             _finishReason = FinishReason.Error;
             parts.Add(new ErrorStreamPart(exception.Message));
-            return;
+            return true;
         }
 
         foreach (var part in decoded ?? Array.Empty<LanguageModelStreamPart>())
@@ -350,6 +349,8 @@ internal sealed class OpenResponsesStream
             parts.Add(part);
             _hasToolCalls |= part is ToolCallStreamPart || part is ToolInputStartStreamPart;
         }
+
+        return true;
     }
 
     private void AcceptExtensionItem(JsonElement item, List<LanguageModelStreamPart> parts)

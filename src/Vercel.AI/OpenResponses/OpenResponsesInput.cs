@@ -426,14 +426,15 @@ internal static class OpenResponsesInput
         }
 
         List<JsonObject>? encoded = null;
-        if (extension.EncodeInputItem != null && extension.ItemTypes != null)
+        var itemTypes = OpenResponsesExtensions.GetOpenResponsesExtensionItemTypes(extension);
+        if (extension.EncodeInputItem != null && itemTypes.Count > 0)
         {
             try
             {
                 var items = extension.EncodeInputItem(new OpenResponsesEncodeInputItemContext(part, providerTool));
                 if (items != null
                     && items.Count > 0
-                    && items.All(item => item != null && OpenResponsesJson.IsExtensionItem(item) && extension.ItemTypes.Contains((string)item["type"]!)))
+                    && items.All(item => item != null && OpenResponsesJson.IsExtensionItem(item) && itemTypes.Contains((string)item["type"]!)))
                 {
                     encoded = items.Select(item => item.DeepClone().AsObject()).ToList();
                 }
@@ -484,8 +485,7 @@ internal static class OpenResponsesInput
         if (Child(extensionData, "item") is { ValueKind: JsonValueKind.Object } itemElement
             && JsonNode.Parse(itemElement.GetRawText()) is JsonObject item
             && OpenResponsesJson.IsExtensionItem(item)
-            && extension.ItemTypes != null
-            && extension.ItemTypes.Contains((string)item["type"]!))
+            && OpenResponsesExtensions.GetOpenResponsesExtensionItemTypes(extension).Contains((string)item["type"]!))
         {
             return new ExtensionReplay(item);
         }
@@ -538,14 +538,9 @@ internal static class OpenResponsesInput
 /// <summary>JSON shape checks for Open Responses extension records.</summary>
 internal static class OpenResponsesJson
 {
-    public static bool IsNamespacedType(JsonNode? node)
-    {
-        return node is JsonValue value && value.TryGetValue<string>(out var text) && text.Contains(':');
-    }
-
     public static bool IsExtensionRecord(JsonObject value)
     {
-        return IsNamespacedType(value["type"]);
+        return IsString(value["type"]);
     }
 
     public static bool IsExtensionItem(JsonObject value)

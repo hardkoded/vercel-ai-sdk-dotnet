@@ -95,13 +95,31 @@ public sealed class OpenResponsesExtension
     /// <summary>Extension id in <c>implementor.extension</c> form.</summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>Namespaced tool type. Required together with <see cref="EncodeTool"/>.</summary>
+    /// <summary>Namespaced tool type. Required together with <see cref="EncodeTool"/>, unless <see cref="BareToolType"/> is used.</summary>
     public string? ToolType { get; set; }
 
-    /// <summary>Namespaced item types. Required together with <see cref="DecodeItem"/>.</summary>
+    /// <summary>
+    /// Explicitly enables non-portable bare discriminator registration for this extension. It must be true exactly when
+    /// <see cref="BareToolType"/>, <see cref="BareItemTypes"/>, or <see cref="BareEventTypes"/> is set.
+    /// </summary>
+    public bool AllowBareTypes { get; set; }
+
+    /// <summary>
+    /// Exact non-namespaced tool type used by a documented implementation extension. Must be provided together with
+    /// <see cref="EncodeTool"/> and cannot be used together with <see cref="ToolType"/>.
+    /// </summary>
+    public string? BareToolType { get; set; }
+
+    /// <summary>Exact non-namespaced item types decoded by a documented implementation extension. Must be provided together with <see cref="DecodeItem"/>.</summary>
+    public IReadOnlyList<string>? BareItemTypes { get; set; }
+
+    /// <summary>Exact non-namespaced streaming event types decoded by this extension. Must be provided together with <see cref="DecodeEvent"/>.</summary>
+    public IReadOnlyList<string>? BareEventTypes { get; set; }
+
+    /// <summary>Namespaced item types. Required together with <see cref="DecodeItem"/>, unless <see cref="BareItemTypes"/> is used.</summary>
     public IReadOnlyList<string>? ItemTypes { get; set; }
 
-    /// <summary>Namespaced event types. Required together with <see cref="DecodeEvent"/>.</summary>
+    /// <summary>Namespaced event types. Required together with <see cref="DecodeEvent"/>, unless <see cref="BareEventTypes"/> is used.</summary>
     public IReadOnlyList<string>? EventTypes { get; set; }
 
     /// <summary>Encodes a provider tool. Return null when its arguments cannot be encoded. The model adds <see cref="ToolType"/> and omits a tool choice that selects the omitted tool. Present or absent together with <see cref="ToolType"/>.</summary>
@@ -152,6 +170,46 @@ public sealed class OpenResponsesExtensionRegistry
 /// <summary>Builds an <see cref="OpenResponsesExtensionRegistry"/>.</summary>
 public static class OpenResponsesExtensions
 {
+    private static readonly HashSet<string> CoreToolTypes = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "allowed_tools",
+        "function",
+    };
+
+    private static readonly HashSet<string> CoreItemTypes = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "function_call",
+        "function_call_output",
+        "item_reference",
+        "message",
+        "reasoning",
+    };
+
+    private static readonly HashSet<string> CoreEventTypes = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "error",
+        "response.completed",
+        "response.content_part.added",
+        "response.content_part.done",
+        "response.created",
+        "response.failed",
+        "response.function_call_arguments.delta",
+        "response.function_call_arguments.done",
+        "response.in_progress",
+        "response.incomplete",
+        "response.output_item.added",
+        "response.output_item.done",
+        "response.output_text.delta",
+        "response.output_text.done",
+        "response.reasoning_summary_part.added",
+        "response.reasoning_summary_part.done",
+        "response.reasoning_summary_text.delta",
+        "response.reasoning_summary_text.done",
+        "response.reasoning_text.delta",
+        "response.refusal.delta",
+        "response.refusal.done",
+    };
+
     /// <summary>Indexes <paramref name="extensions"/> and rejects incomplete or colliding registrations.</summary>
     public static OpenResponsesExtensionRegistry CreateRegistry(IReadOnlyList<OpenResponsesExtension>? extensions)
     {
@@ -178,75 +236,110 @@ public static class OpenResponsesExtensions
             var ns = extension.Id!.Substring(0, separator);
             Register(registry.ByExtensionId, extension.Id, extension, "id");
 
-            var hasToolType = extension.ToolType != null;
+            var hasBareTypes = extension.BareToolType != null || extension.BareItemTypes != null || extension.BareEventTypes != null;
+            if (hasBareTypes != extension.AllowBareTypes)
+            {
+                throw new InvalidOperationException(
+                    "Open Responses extension " + extension.Id + " must set allowBareTypes to true exactly when registering bare types.");
+            }
+
+            if (extension.ToolType != null && extension.BareToolType != null)
+            {
+                throw new InvalidOperationException(
+                    "Open Responses extension " + extension.Id + " cannot provide toolType and bareToolType together.");
+            }
+
+            var toolType = GetOpenResponsesExtensionToolType(extension);
+            var hasToolType = toolType != null;
             var hasToolEncoder = extension.EncodeTool != null;
             if (hasToolType != hasToolEncoder)
             {
+                var typeField = extension.BareToolType != null ? "bareToolType" : "toolType";
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide toolType and encodeTool together.");
+                    "Open Responses extension " + extension.Id + " must provide " + typeField + " and encodeTool together.");
             }
 
             if (extension.EncodeToolChoice != null && !hasToolEncoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " cannot provide encodeToolChoice without toolType and encodeTool.");
+                    "Open Responses extension " + extension.Id + " cannot provide encodeToolChoice without a tool type and encodeTool.");
             }
 
             if (hasToolType && hasToolEncoder)
             {
-                AssertNamespaced(extension.Id, ns, extension.ToolType!, "toolType");
+                if (extension.ToolType != null)
+                {
+                    AssertNamespaced(extension.Id, ns, extension.ToolType, "toolType");
+                }
+                else
+                {
+                    AssertBare(CoreToolTypes, extension.Id, extension.BareToolType!, "bareToolType");
+                }
+
                 Register(registry.ByProviderToolId, extension.Id, extension, "provider-tool id");
-                Register(registry.ByToolType, extension.ToolType!, extension, "toolType");
+                Register(registry.ByToolType, toolType!, extension, "tool type");
             }
 
-            var hasItemTypes = extension.ItemTypes != null;
+            var hasItemTypes = extension.ItemTypes != null || extension.BareItemTypes != null;
             var hasItemDecoder = extension.DecodeItem != null;
             if (hasItemTypes != hasItemDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide itemTypes and decodeItem together.");
+                    "Open Responses extension " + extension.Id + " must provide itemTypes or bareItemTypes together with decodeItem.");
             }
 
             if (extension.EncodeInputItem != null && !hasItemDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " cannot provide encodeInputItem without itemTypes and decodeItem.");
+                    "Open Responses extension " + extension.Id + " cannot provide encodeInputItem without itemTypes or bareItemTypes and decodeItem.");
             }
 
             if (hasItemTypes && hasItemDecoder)
             {
-                if (extension.ItemTypes!.Count == 0)
+                if (GetOpenResponsesExtensionItemTypes(extension).Count == 0)
                 {
                     throw new InvalidOperationException(
                         "Open Responses extension " + extension.Id + " must register at least one item type.");
                 }
 
-                foreach (var itemType in extension.ItemTypes)
+                foreach (var itemType in extension.ItemTypes ?? Array.Empty<string>())
                 {
                     AssertNamespaced(extension.Id, ns, itemType, "itemTypes");
                     Register(registry.ByItemType, itemType, extension, "item type");
                 }
+
+                foreach (var itemType in extension.BareItemTypes ?? Array.Empty<string>())
+                {
+                    AssertBare(CoreItemTypes, extension.Id, itemType, "bareItemTypes");
+                    Register(registry.ByItemType, itemType, extension, "item type");
+                }
             }
 
-            var hasEventTypes = extension.EventTypes != null;
+            var hasEventTypes = extension.EventTypes != null || extension.BareEventTypes != null;
             var hasEventDecoder = extension.DecodeEvent != null;
             if (hasEventTypes != hasEventDecoder)
             {
                 throw new InvalidOperationException(
-                    "Open Responses extension " + extension.Id + " must provide eventTypes and decodeEvent together.");
+                    "Open Responses extension " + extension.Id + " must provide eventTypes or bareEventTypes together with decodeEvent.");
             }
 
             if (hasEventTypes && hasEventDecoder)
             {
-                if (extension.EventTypes!.Count == 0)
+                if ((extension.EventTypes?.Count ?? 0) + (extension.BareEventTypes?.Count ?? 0) == 0)
                 {
                     throw new InvalidOperationException(
                         "Open Responses extension " + extension.Id + " must register at least one event type.");
                 }
 
-                foreach (var eventType in extension.EventTypes)
+                foreach (var eventType in extension.EventTypes ?? Array.Empty<string>())
                 {
                     AssertNamespaced(extension.Id, ns, eventType, "eventTypes");
+                    Register(registry.ByEventType, eventType, extension, "event type");
+                }
+
+                foreach (var eventType in extension.BareEventTypes ?? Array.Empty<string>())
+                {
+                    AssertBare(CoreEventTypes, extension.Id, eventType, "bareEventTypes");
                     Register(registry.ByEventType, eventType, extension, "event type");
                 }
             }
@@ -261,13 +354,38 @@ public static class OpenResponsesExtensions
         return registry;
     }
 
+    internal static IReadOnlyList<string> GetOpenResponsesExtensionItemTypes(OpenResponsesExtension extension)
+    {
+        return (extension.ItemTypes ?? Array.Empty<string>()).Concat(extension.BareItemTypes ?? Array.Empty<string>()).ToList();
+    }
+
+    internal static string? GetOpenResponsesExtensionToolType(OpenResponsesExtension extension)
+    {
+        return extension.ToolType ?? extension.BareToolType;
+    }
+
     private static void AssertNamespaced(string extensionId, string ns, string type, string field)
     {
         var colon = type == null ? -1 : type.IndexOf(':');
-        if (colon < 0 || type!.Substring(0, colon) != ns)
+        if (colon <= 0 || type!.Substring(0, colon) != ns)
         {
             throw new InvalidOperationException(
                 "Open Responses extension " + extensionId + " has invalid " + field + " value " + type + ". Extension wire types must use the " + ns + ": namespace.");
+        }
+    }
+
+    private static void AssertBare(HashSet<string> coreTypes, string extensionId, string type, string field)
+    {
+        if (string.IsNullOrEmpty(type) || type.IndexOf(':') >= 0)
+        {
+            throw new InvalidOperationException(
+                "Open Responses extension " + extensionId + " has invalid " + field + " value " + type + ". Bare extension wire types must be non-empty and must not contain a colon.");
+        }
+
+        if (coreTypes.Contains(type))
+        {
+            throw new InvalidOperationException(
+                "Open Responses extension " + extensionId + " cannot register core " + field + " value " + type + ".");
         }
     }
 
