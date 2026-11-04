@@ -1938,7 +1938,7 @@ internal static class Generation
         };
     }
 
-    private static IReadOnlyList<UserContentPart> ToUserContent(IReadOnlyList<ToolModelContentPart> content)
+    internal static IReadOnlyList<UserContentPart> ToUserContent(IReadOnlyList<ToolModelContentPart> content)
     {
         var parts = new List<UserContentPart>(content.Count);
         foreach (var part in content)

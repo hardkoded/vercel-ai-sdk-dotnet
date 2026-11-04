@@ -27,7 +27,6 @@ public static class UIMessageConversion
     /// <summary>
     /// Converts UI messages from a chat UI into model messages that can be used with the AI functions.
     /// A tool message upstream holds several parts. Here its parts are consecutive tool messages.
-    /// Assistant file and reasoning-file parts are dropped, as assistant messages here cannot hold files.
     /// </summary>
     /// <param name="messages">The UI messages to convert.</param>
     /// <param name="options">Conversion options.</param>
@@ -40,6 +39,8 @@ public static class UIMessageConversion
         }
 
         var modelMessages = new List<ModelMessage>();
+
+        UIMessageRawInputWarning.WarnIfUIMessageHasDeprecatedRawInput(messages);
 
         // A later user message supersedes unresolved approval requests. Keeping
         // those requests would leave unmatched tool calls at the user boundary.
@@ -158,6 +159,13 @@ public static class UIMessageConversion
             : new FileContentPart(file.MediaType, file.Url, null, file.Filename) { ProviderOptions = file.ProviderMetadata };
     }
 
+    private static AssistantFilePart ToAssistantFilePart(FileUIPart file)
+    {
+        return file.ProviderReference != null
+            ? AssistantFilePart.FromProviderReference(file.MediaType, file.ProviderReference, file.Filename, file.ProviderMetadata)
+            : new AssistantFilePart(file.MediaType, file.Url, null, file.Filename, file.ProviderMetadata);
+    }
+
     private static void ConvertAssistant(IReadOnlyList<UIMessagePart> parts, ConvertToModelMessagesOptions? options, List<ModelMessage> modelMessages)
     {
         var block = new List<UIMessagePart>();
@@ -197,6 +205,12 @@ public static class UIMessageConversion
                 case CustomContentUIPart custom:
                     content.Add(new AssistantCustomPart(custom.Kind, custom.ProviderMetadata));
                     break;
+                case FileUIPart file:
+                    content.Add(ToAssistantFilePart(file));
+                    break;
+                case ReasoningFileUIPart reasoningFile:
+                    content.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, reasoningFile.Url, null, reasoningFile.ProviderMetadata));
+                    break;
                 case ReasoningUIPart reasoning:
                     content.Add(new AssistantReasoningPart(reasoning.Text, reasoning.ProviderMetadata));
                     break;
@@ -234,8 +248,18 @@ public static class UIMessageConversion
         var callProviderMetadata = tool.CallProviderMetadata
             ?? (tool.State == ToolUIPartState.OutputError ? tool.ResultProviderMetadata : null);
 
-        var input = tool.State == ToolUIPartState.OutputError ? tool.Input ?? tool.RawInput : tool.Input;
-        var call = new GeneratedToolCall(tool.ToolCallId, tool.ToolName, input?.GetRawText() ?? "{}")
+        string? arguments;
+        if (tool.State == ToolUIPartState.OutputError && !HasValue(tool.Input))
+        {
+            // The deprecated rawInput fallback. A string is the tool-call input itself, not JSON-quoted text.
+            arguments = tool.RawInput is { ValueKind: JsonValueKind.String } rawText ? rawText.GetString() : tool.RawInput?.GetRawText();
+        }
+        else
+        {
+            arguments = tool.Input?.GetRawText();
+        }
+
+        var call = new GeneratedToolCall(tool.ToolCallId, tool.ToolName, arguments ?? "{}")
         {
             ProviderExecuted = tool.ProviderExecuted == true,
             Dynamic = tool.IsDynamic && tool.Dynamic != false,
@@ -244,7 +268,12 @@ public static class UIMessageConversion
 
         if (tool.Approval != null)
         {
-            content.Add(new AssistantToolApprovalRequestPart(tool.Approval.Id, tool.ToolCallId, tool.Approval.IsAutomatic));
+            content.Add(new AssistantToolApprovalRequestPart(tool.Approval.Id, tool.ToolCallId, tool.Approval.IsAutomatic)
+            {
+                Reason = tool.Approval.RequestReason,
+                InputSchemaInput = tool.Approval.InputSchemaInput,
+                Signature = tool.Approval.Signature,
+            });
         }
 
         if (tool.ProviderExecuted == true
@@ -321,6 +350,11 @@ public static class UIMessageConversion
         string value;
         switch (output)
         {
+            case ContentToolModelOutput content:
+                return new ToolModelMessage(tool.ToolCallId, tool.ToolName, Generation.ToUserContent(content.Value))
+                {
+                    ProviderOptions = providerOptions,
+                };
             case TextToolModelOutput text:
                 value = text.Value;
                 break;
@@ -353,8 +387,17 @@ public static class UIMessageConversion
             return new TextToolModelOutput("Tool output omitted because the tool is no longer available.");
         }
 
+        // Tool.ToModelOutput receives the JSON text of the output, as the loop passes it.
+        Func<ToolModelOutputCall, ToolModelOutput>? toModelOutput = definition?.ToModelOutput is { } convert
+            ? call => convert(new ToolModelOutputCall(call.ToolCallId, call.Input, output?.GetRawText()))
+            : null;
         object? value = output is { } element ? JsonElementValue(element) : null;
-        return ToolOutputs.CreateToolModelOutput(tool.ToolCallId, tool.Input, value, output != null, null, errorMode);
+        return ToolOutputs.CreateToolModelOutput(tool.ToolCallId, tool.Input, value, output != null, toModelOutput, errorMode);
+    }
+
+    private static bool HasValue(JsonElement? element)
+    {
+        return element is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) };
     }
 
     private static object? JsonElementValue(JsonElement element)

@@ -297,6 +297,15 @@ public sealed class ToolUIApproval
 
     /// <summary>Whether the approval was decided automatically.</summary>
     public bool? IsAutomatic { get; init; }
+
+    /// <summary>A descriptor of the approval, as the UI keeps it. Maps to <c>descriptor</c>.</summary>
+    public JsonElement? Descriptor { get; init; }
+
+    /// <summary>HMAC-SHA256 signature that binds the approval request to its tool call. Maps to <c>signature</c>.</summary>
+    public string? Signature { get; init; }
+
+    /// <summary>The input of the call before its input schema transformed it. Maps to <c>inputSchemaInput</c>.</summary>
+    public JsonElement? InputSchemaInput { get; init; }
 }
 
 /// <summary>
