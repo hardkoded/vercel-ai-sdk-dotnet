@@ -855,6 +855,25 @@ public class AssistantFilePart : AssistantContentPart
     {
     }
 
+    /// <summary>
+    /// Creates a file part that refers to an uploaded file. Maps to <c>data: { type: "reference", reference }</c>.
+    /// </summary>
+    /// <param name="mediaType">IANA media type.</param>
+    /// <param name="providerReference">Map from provider name to the provider's file id.</param>
+    /// <param name="fileName">Optional file name.</param>
+    /// <param name="providerOptions">Provider-specific options for this part.</param>
+    public static AssistantFilePart FromProviderReference(
+        string mediaType,
+        IReadOnlyDictionary<string, string> providerReference,
+        string? fileName = null,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    {
+        return new AssistantFilePart("file", mediaType, null, null, fileName, providerOptions)
+        {
+            ProviderReference = providerReference ?? throw new ArgumentNullException(nameof(providerReference)),
+        };
+    }
+
     private protected AssistantFilePart(
         string type,
         string mediaType,
@@ -881,6 +900,9 @@ public class AssistantFilePart : AssistantContentPart
 
     /// <summary>Optional file name.</summary>
     public string? FileName { get; }
+
+    /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
+    public IReadOnlyDictionary<string, string>? ProviderReference { get; private init; }
 }
 
 /// <summary>A file the model produced as part of its reasoning. Maps to the assistant <c>reasoning-file</c> part.</summary>
@@ -957,6 +979,9 @@ public sealed class AssistantToolApprovalRequestPart : AssistantContentPart
 
     /// <summary>HMAC-SHA256 signature that binds this request to its tool call, when the request was signed.</summary>
     public string? Signature { get; init; }
+
+    /// <summary>The input of the call before its input schema transformed it. Maps to <c>inputSchemaInput</c>.</summary>
+    public JsonElement? InputSchemaInput { get; init; }
 }
 
 /// <summary>An assistant message.</summary>

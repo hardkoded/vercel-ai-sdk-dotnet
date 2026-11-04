@@ -130,7 +130,12 @@ var messages = Ai.ConvertToModelMessages(
 - `IgnoreIncompleteToolCalls`: drops tool parts that have no final result.
 - `ConvertDataPart`: turns a `DataUIPart` into a text or file part. Return `null` to ignore the part.
 
-A step-start part ends a block. Each block becomes an assistant message, followed by the approval responses and tool results of its tools, each as its own tool message. Assistant `FileUIPart` and `ReasoningFileUIPart` parts are dropped, and the approval request keeps only its id, tool call id, and `IsAutomatic` ([#575](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/575)).
+A step-start part ends a block. Each block becomes an assistant message, followed by the approval responses and tool results of its tools, each as its own tool message.
+
+- Assistant `FileUIPart` parts become `AssistantFilePart` (a `ProviderReference`, when set, replaces the URL, as for user files) and `ReasoningFileUIPart` parts become `AssistantReasoningFilePart`.
+- The approval request keeps its id, tool call id, and `IsAutomatic`. It also gets `Reason` from `ToolUIApproval.RequestReason`, `Signature` from `ToolUIApproval.Signature`, and `InputSchemaInput` from `ToolUIApproval.InputSchemaInput` when they are set. `ToolUIApproval.Descriptor` is kept on the UI part and is not copied.
+- When a tool in `Tools` sets `Tool.ToModelOutput`, it converts the output of a finished call (it receives the output as JSON text). Failed calls and calls whose tool is missing do not use it.
+- A failed call (`output-error`) with no `Input` falls back to `RawInput`. A string `RawInput` is the tool-call input as it is, not JSON-quoted text. This fallback is deprecated: the conversion logs a `DeprecatedWarning` (`AISDK_DEP_UI_MESSAGE_RAW_INPUT`) when it sees a `RawInput` on such a part.
 
 ## Tool errors
 
