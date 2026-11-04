@@ -572,13 +572,13 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
         var requestJson = GoogleJson.Write(body);
-        using var post = await _provider.Http.SendJsonAsync(
+        var post = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
             requestJson,
             headers,
             cancellationToken).ConfigureAwait(false);
-        var response = JsonNode.Parse(post.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
+        var response = (string.IsNullOrWhiteSpace(post.Body) ? null : JsonNode.Parse(post.Body)) as JsonObject ?? new JsonObject();
         var id = (string?)response["id"];
         if (string.IsNullOrEmpty(id))
         {
@@ -587,9 +587,10 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
         var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId);
         var request = LanguageModelStreamRequest.FromJson(requestJson);
+        var postResponse = new LanguageModelStreamResponse(post.Headers);
         if (GoogleInteractionsPolling.IsTerminal((string?)response["status"]))
         {
-            return new LanguageModelStreamResult(ToAsync(transform.Replay(response)), request);
+            return new LanguageModelStreamResult(ToAsync(transform.Replay(response)), request, postResponse);
         }
 
         var events = GoogleInteractionsStreaming.StreamEvents(
@@ -600,7 +601,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             GoogleInteractionsStreaming.DefaultMaxRetries,
             GoogleInteractionsStreaming.DefaultRetryDelay,
             cancellationToken);
-        return new LanguageModelStreamResult(transform.Pipe(events, cancellationToken), request);
+        return new LanguageModelStreamResult(transform.Pipe(events, cancellationToken), request, postResponse);
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> ToAsync(IEnumerable<LanguageModelStreamPart> parts)
