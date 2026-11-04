@@ -2123,10 +2123,18 @@ public sealed class StreamTextResult
         Steps = steps;
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
+        ResponseMessages = AllResponseMessages(steps);
 
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = ResponseMessages.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(Task<IReadOnlyList<StepResult>> steps)
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return completed.SelectMany(step => step.Response.Messages).ToArray();
     }
 
     private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
@@ -2174,4 +2182,10 @@ public sealed class StreamTextResult
 
     /// <summary>Additional response information of the last step, with the messages that step added. Completes when the stream finishes. Maps to <c>response</c>.</summary>
     public Task<StepResponse> Response { get; }
+
+    /// <summary>
+    /// Messages this call added to the conversation: the assistant message of each step, with any tool approval request, and the
+    /// tool results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
+    /// </summary>
+    public Task<IReadOnlyList<ModelMessage>> ResponseMessages { get; }
 }
