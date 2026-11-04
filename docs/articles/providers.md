@@ -114,15 +114,46 @@ var acme = OpenResponsesProvider.Create(new OpenResponsesOptions
 });
 ```
 
+Some Responses-compatible implementations document non-namespaced extension discriminators, such as `web_search`, `web_search_call`, or `response.custom_tool_call_input.delta`. These are not portable Open Responses types. Register each exact value through the dedicated bare fields to opt in:
+
+```csharp
+var webSearch = new OpenResponsesExtension
+{
+    Id = "acme.web_search",
+    AllowBareTypes = true,
+    BareToolType = "web_search",
+    BareItemTypes = new[] { "web_search_call" },
+    BareEventTypes = new[] { "response.web_search_call.completed" },
+    EncodeTool = context => new JsonObject
+    {
+        ["name"] = context.Name,
+        ["search_context_size"] = context.Args.GetProperty("searchContextSize").GetString(),
+    },
+    DecodeItem = context => new GeneratedContent[]
+    {
+        new GeneratedToolCall(
+            (string)context.Item["call_id"]!,
+            (string)context.Item["name"]!,
+            new JsonObject { ["query"] = context.Item["query"]!.DeepClone() }.ToJsonString())
+        {
+            ProviderExecuted = true,
+        },
+    },
+    DecodeEvent = _ => null,
+};
+```
+
+Set `AllowBareTypes = true` when using `BareToolType`, `BareItemTypes`, or `BareEventTypes`, and only then. These fields accept only non-namespaced values. They do not enable unknown JSON passthrough: a bare discriminator is handled only when it exactly matches a registered value. Core Open Responses discriminators and duplicate registrations are rejected, and `ToolType` and `BareToolType` cannot be set together. Use the normal namespaced fields whenever the implementation supports them.
+
 Set `ProviderExecuted` on each decoded tool call or `ToolInputStartStreamPart`. It can vary by item or event. An extension can define:
 
 - `EncodeTool`: encodes a provider tool from `OpenResponsesToolContext` (`Name`, `Args`). Returning `null` omits the tool with an `unsupported` warning. A tool choice that selects the omitted tool is omitted too.
-- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the `type`.
+- `EncodeToolChoice`: encodes a specific tool choice. The default is an object with only the registered `ToolType` or `BareToolType`.
 - `DecodeItem`: maps a completed item (`OpenResponsesDecodeItemContext.Item`, plus `Mode` of `Generate` or `Stream`) to content parts.
-- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a registered namespaced `type`.
+- `EncodeInputItem`: encodes a tool call or tool result in history (`AssistantToolCallPart` or `AssistantToolResultPart`) when the original wire item is unavailable. Every returned item needs `id`, `status`, and a `type` registered through `ItemTypes` or `BareItemTypes`.
 - `DecodeEvent`: maps a streaming event to stream parts. `OpenResponsesDecodeEventContext.State` lasts for one response stream.
 
-Tool, item, and event capabilities are independent. Capability fields must be provided in pairs.
+Tool, item, and event capabilities are independent. An item-only extension, for example, sets `ItemTypes` (or `BareItemTypes`) and `DecodeItem` without a tool type or `EncodeTool`. Capability fields must be provided in pairs.
 
 Each decoded item adds a `GeneratedCustom` part of kind `open-responses.extension-replay` (a `CustomStreamPart` when streaming). It stores the original item in provider metadata, and the other decoded parts reference it by `itemId`. Pass the result back with `AssistantModelMessage.FromGeneratedContent(result.Content)` to replay the original item once, opaque fields included. This also preserves items that decode only to source parts.
 

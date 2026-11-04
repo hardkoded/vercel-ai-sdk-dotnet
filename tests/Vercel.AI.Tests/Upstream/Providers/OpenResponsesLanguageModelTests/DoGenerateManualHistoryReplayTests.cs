@@ -166,6 +166,45 @@ public sealed class DoGenerateManualHistoryReplayTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should decode and losslessly replay an explicitly registered bare item", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_decode_and_losslessly_replay_an_explicitly_registered_bare_item()
+    {
+        const string receiptJson = "{\"id\":\"search_1\",\"type\":\"web_search_call\",\"status\":\"completed\",\"call_id\":\"call_1\",\"name\":\"documentSearch\",\"query\":{\"text\":\"climate\"},\"result\":{\"documents\":[\"doc_1\"]},\"opaque_receipt\":{\"trace_id\":\"trace_1\"}}";
+        var capture = new UpstreamCapture();
+        PrepareOutputResponse(
+            capture,
+            Obj("{\"id\":\"unknown_1\",\"type\":\"unregistered_call\",\"status\":\"completed\"}"),
+            Obj(receiptJson));
+
+        var model = CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension());
+        var first = await model.DoGenerateAsync(TestPrompt(), CancellationToken.None);
+
+        var call = Assert.Single(first.Content.OfType<GeneratedToolCall>());
+        Assert.Equal("call_1", call.ToolCallId);
+        Assert.Equal("documentSearch", call.ToolName);
+        Assert.Equal("{\"text\":\"climate\"}", call.ArgumentsJson);
+        Assert.True(call.ProviderExecuted);
+        AssertMetadata("{\"lmstudio\":{\"openResponsesExtension\":{\"id\":\"acme.document_search\",\"itemId\":\"search_1\"}}}", call.ProviderMetadata);
+
+        var replay = Assert.IsType<GeneratedCustom>(first.Content[0]);
+        Assert.Equal("open-responses.extension-replay", replay.Kind);
+        await model.DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[]
+                {
+                    new AssistantModelMessage(new AssistantContentPart[]
+                    {
+                        new AssistantCustomPart("open-responses.extension-replay", Options(replay.ProviderMetadata)),
+                    }),
+                },
+            },
+            CancellationToken.None);
+
+        AssertJson(Arr("[" + receiptJson + "]"), RequestBody(capture, 1)["input"]);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should replay a source-only extension item through response history", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_replay_a_source_only_extension_item_through_response_history()
     {
@@ -206,6 +245,36 @@ public sealed class DoGenerateManualHistoryReplayTests
             CancellationToken.None);
 
         AssertJson(Arr("[" + sourceItem + "]"), RequestBody(capture, 1)["input"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should encode bare extension history when original wire metadata is unavailable", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_encode_bare_extension_history_when_original_wire_metadata_is_unavailable()
+    {
+        var capture = new UpstreamCapture();
+        PrepareJsonFixtureResponse(capture, "lmstudio-basic.1");
+
+        await CreateModel(capture, "gemma-7b-it", CreateBareDocumentSearchExtension()).DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[]
+                {
+                    new AssistantModelMessage(new AssistantContentPart[]
+                    {
+                        new AssistantToolCallPart(new GeneratedToolCall("call_client", "documentSearch", "{\"text\":\"weather\"}")),
+                    }),
+                    new ToolModelMessage("call_client", "documentSearch", "{\"documents\":[\"forecast\"]}", false, "json"),
+                },
+                Tools = new[]
+                {
+                    LanguageModelTool.ProviderDefined("acme.document_search", "documentSearch", JsonDocumentElement("{}")),
+                },
+            },
+            CancellationToken.None);
+
+        AssertJson(
+            Arr("[{\"type\":\"custom_tool_call\",\"id\":\"call_item_call_client\",\"status\":\"completed\",\"call_id\":\"call_client\",\"name\":\"documentSearch\",\"input\":{\"text\":\"weather\"}},{\"type\":\"custom_tool_call_output\",\"id\":\"result_item_call_client\",\"status\":\"completed\",\"call_id\":\"call_client\",\"name\":\"documentSearch\",\"output\":{\"type\":\"json\",\"value\":{\"documents\":[\"forecast\"]}}}]"),
+            RequestBody(capture, 0)["input"]);
     }
 
     [Fact]

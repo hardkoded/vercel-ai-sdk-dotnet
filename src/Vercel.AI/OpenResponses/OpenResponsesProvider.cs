@@ -347,7 +347,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                     {
                         if (extension.EncodeTool!(new OpenResponsesToolContext(tool.Name, tool.Args)) is { } fields)
                         {
-                            encoded = WithType(fields, extension.ToolType!);
+                            encoded = WithType(fields, OpenResponsesExtensions.GetOpenResponsesExtensionToolType(extension)!);
                         }
                     }
                     catch (Exception)
@@ -428,7 +428,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             }
         }
 
-        return WithType(fields!, extension.ToolType!);
+        return WithType(fields!, OpenResponsesExtensions.GetOpenResponsesExtensionToolType(extension)!);
     }
 
     private static JsonObject WithType(JsonObject fields, string type)
