@@ -37,6 +37,8 @@ internal sealed class OpenAIResponsesStream
     private string? _failedRaw;
     private LanguageModelUsage _usage = LanguageModelUsage.Empty;
     private string? _responseId;
+    private string? _serviceTier;
+    private string? _reasoningContext;
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
@@ -128,12 +130,18 @@ internal sealed class OpenAIResponsesStream
                 else if (node["item"] is JsonObject added && added["type"]?.GetValue<string>() == "message")
                 {
                     _annotations.Clear();
-                    OpenText(parts, added["id"]?.GetValue<string>() ?? "text", added["phase"]?.GetValue<string>());
+                    var messageId = added["id"]?.GetValue<string>() ?? "text";
+                    if (OutputIndex(node) is { } messageIndex)
+                    {
+                        _activeOutputItemIds[messageIndex] = messageId;
+                    }
+
+                    OpenText(parts, messageId, added["phase"]?.GetValue<string>());
                 }
 
                 break;
             case "response.output_text.delta":
-                var itemId = node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text";
+                var itemId = ResolveOutputItemId(node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text", node);
                 OpenText(parts, itemId);
                 var delta = node["delta"]?.GetValue<string>();
                 if (!string.IsNullOrEmpty(delta))
@@ -291,7 +299,11 @@ internal sealed class OpenAIResponsesStream
                 }
                 else if (node["item"] is JsonObject done)
                 {
-                    ItemDone(parts, JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()));
+                    ItemDone(parts, JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()), done["id"]?.GetValue<string>() is { } doneId ? ResolveOutputItemId(doneId, node) : null);
+                    if (done["type"]?.GetValue<string>() == "message" && OutputIndex(node) is { } messageDoneIndex)
+                    {
+                        _activeOutputItemIds.Remove(messageDoneIndex);
+                    }
                 }
 
                 break;
@@ -300,8 +312,13 @@ internal sealed class OpenAIResponsesStream
                 _finished = true;
                 if (node["response"] is JsonObject response)
                 {
-                    _responseId = response["id"]?.GetValue<string>() ?? _responseId;
                     _incompleteReason = response["incomplete_details"]?["reason"]?.GetValue<string>();
+                    if (response["service_tier"] is JsonValue serviceTier && serviceTier.TryGetValue<string>(out var serviceTierValue))
+                    {
+                        _serviceTier = serviceTierValue;
+                    }
+
+                    _reasoningContext = ReasoningContext(response) ?? _reasoningContext;
                     if (response["output"] is JsonArray output)
                     {
                         foreach (var item in output)
@@ -321,6 +338,7 @@ internal sealed class OpenAIResponsesStream
                 if (node["response"] is JsonObject failed)
                 {
                     var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
+                    _reasoningContext = ReasoningContext(failed) ?? _reasoningContext;
                     _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall) : FinishReason.Error;
                     _failedRaw = failedReason ?? "error";
                     if (failed["error"] is JsonNode failedError && !_streamError)
@@ -429,9 +447,28 @@ internal sealed class OpenAIResponsesStream
             finish,
             _usage,
             failedFinish ? _failedRaw : _incompleteReason,
-            OpenAIJson.ProviderMetadata(new JsonObject { ["responseId"] = _responseId }, _providerOptionsName)));
+            OpenAIJson.ProviderMetadata(FinishMetadata(), _providerOptionsName)));
         return parts;
     }
+
+    private JsonObject FinishMetadata()
+    {
+        var metadata = new JsonObject { ["responseId"] = _responseId };
+        if (_serviceTier != null)
+        {
+            metadata["serviceTier"] = _serviceTier;
+        }
+
+        if (_reasoningContext != null)
+        {
+            metadata["reasoningContext"] = _reasoningContext;
+        }
+
+        return metadata;
+    }
+
+    private static string? ReasoningContext(JsonObject response) =>
+        response["reasoning"]?["context"] is JsonValue context && context.TryGetValue<string>(out var value) ? value : null;
 
     private void OpenText(List<LanguageModelStreamPart> parts, string id, string? phase = null)
     {
@@ -586,12 +623,12 @@ internal sealed class OpenAIResponsesStream
         parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async, _providerOptionsName)));
     }
 
-    private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item)
+    private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item, string? resolvedId = null)
     {
         var itemType = OpenAIJson.String(item, "type");
         if (itemType == "message")
         {
-            var id = OpenAIJson.String(item, "id") ?? _openTextId ?? "text";
+            var id = resolvedId ?? _openTextId ?? "text";
             var phase = OpenAIJson.String(item, "phase") ?? _openTextPhase;
             _openTextId = null;
             _openTextPhase = null;
