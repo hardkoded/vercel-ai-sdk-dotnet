@@ -62,6 +62,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         // with CONTINUATION. Resend the same request with the continuation token and combine the content of all requests.
         // Usage is summed across requests. The first request's prompt token count is kept for context window checks.
         var content = new List<GeneratedContent>();
+        var groundingPerRequest = new List<JsonElement?>();
         JsonElement? usage = null;
         int? firstPromptTokenCount = null;
         var isContinued = false;
@@ -74,6 +75,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
             using var document = JsonDocument.Parse(last?.ToJsonString() ?? "{}");
             var root = document.RootElement;
             var candidate = FirstCandidate(root);
+            groundingPerRequest.Add(candidate is { } grounded && grounded.TryGetProperty("groundingMetadata", out var groundingValue) && groundingValue.ValueKind != JsonValueKind.Null ? groundingValue.Clone() : null);
             candidateToken = candidate is { } found ? GoogleJson.String(found, "continuationToken") : null;
             var hopUsage = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("usageMetadata", out var usageValue) ? usageValue.Clone() : (JsonElement?)null;
             if (!isContinued && hopUsage is { ValueKind: JsonValueKind.Object } first && first.TryGetProperty("promptTokenCount", out var promptCount) && promptCount.TryGetInt32(out var promptTokens))
@@ -109,7 +111,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
         using var lastDocument = JsonDocument.Parse(last?.ToJsonString() ?? "{}");
         var result = GoogleResponse.Parse(lastDocument.RootElement, context);
         content.AddRange(result.Content);
-        var metadata = GoogleResponse.WithLongDecode(result.ProviderMetadata, candidateToken, isContinued ? firstPromptTokenCount : null, null);
+        var metadata = GoogleResponse.WithLongDecode(result.ProviderMetadata, candidateToken, isContinued ? firstPromptTokenCount : null, null, isContinued ? groundingPerRequest : null);
         return new LanguageModelGenerateResult(
             content,
             result.FinishReason,
