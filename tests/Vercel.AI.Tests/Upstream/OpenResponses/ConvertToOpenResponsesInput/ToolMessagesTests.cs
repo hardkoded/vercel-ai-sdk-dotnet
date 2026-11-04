@@ -9,7 +9,6 @@ namespace Vercel.AI.Tests.Upstream.OpenResponses.ConvertToOpenResponsesInput;
 
 /// <summary>
 /// Port of <c>convert-to-open-responses-input.test.ts</c> &gt; <c>convertToOpenResponsesInput &gt; tool messages</c>.
-/// A tool result has no <c>content</c> output type, so the three content-output cases are not ported (issue #327).
 /// </summary>
 public sealed class ToolMessagesTests
 {
@@ -60,12 +59,69 @@ public sealed class ToolMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should convert tool message with multiple tool results", Coverage = UpstreamCoverage.Covered, Note = "A tool message holds one result, so the two results are two tool messages.")]
-    public void Should_convert_tool_message_with_multiple_tool_results()
+    [UpstreamTest(Prefix + "should convert tool message with content output containing text", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_tool_message_with_content_output_containing_text()
+    {
+        var result = Convert(new ToolModelMessage("call_content", "multi_output", new UserContentPart[]
+        {
+            new TextContentPart("First result"),
+            new TextContentPart("Second result"),
+        }));
+
+        JsonAssert.Equal(result.Input, """
+            [{"call_id":"call_content","output":[{"text":"First result","type":"input_text"},{"text":"Second result","type":"input_text"}],"type":"function_call_output"}]
+            """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should convert tool message with content output containing image-url", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_tool_message_with_content_output_containing_image_url()
+    {
+        var result = Convert(new ToolModelMessage("call_image", "screenshot", new UserContentPart[]
+        {
+            UrlFile("image/png", "https://example.com/image.png"),
+        }));
+
+        JsonAssert.Equal(result.Input, """
+            [{"call_id":"call_image","output":[{"detail":"auto","image_url":"https://example.com/image.png","type":"input_image"}],"type":"function_call_output"}]
+            """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should preserve image detail provider options in tool output", Coverage = UpstreamCoverage.Covered)]
+    public void Should_preserve_image_detail_provider_options_in_tool_output()
     {
         var result = Convert(
+            "test-provider",
+            new ToolModelMessage("call_image", "screenshot", new UserContentPart[]
+            {
+                File("image/png", "ZmFrZS1kYXRh", providerOptions: """{"imageDetail":"low"}"""),
+                UrlFile("image/png", "https://example.com/image.png", """{"imageDetail":"high"}"""),
+            }));
+
+        JsonAssert.Equal(result.Input, """
+            [
+              {
+                "type":"function_call_output",
+                "call_id":"call_image",
+                "output":[
+                  {"type":"input_image","image_url":"data:image/png;base64,ZmFrZS1kYXRh","detail":"low"},
+                  {"type":"input_image","image_url":"https://example.com/image.png","detail":"high"}
+                ]
+              }
+            ]
+            """);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should convert tool message with multiple tool results", Coverage = UpstreamCoverage.Covered)]
+    public void Should_convert_tool_message_with_multiple_tool_results()
+    {
+        var result = Convert(new ToolModelMessage(new[]
+        {
             new ToolModelMessage("call_001", "get_weather", """{"temp":72}""", false, "json"),
-            new ToolModelMessage("call_002", "get_time", "3:00 PM", false, "text"));
+            new ToolModelMessage("call_002", "get_time", "3:00 PM", false, "text"),
+        }));
 
         JsonAssert.Equal(result.Input, """
             [

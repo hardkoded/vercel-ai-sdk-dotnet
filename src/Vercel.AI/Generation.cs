@@ -2159,7 +2159,7 @@ public sealed class StreamTextResult
         Steps = steps;
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
-        ResponseMessages = FromSteps<IReadOnlyList<ModelMessage>>(steps, completed => completed.SelectMany(step => step.Response.Messages).ToArray());
+        ResponseMessages = AllResponseMessages(steps);
 
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
@@ -2167,15 +2167,16 @@ public sealed class StreamTextResult
         _ = ResponseMessages.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
+    private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(Task<IReadOnlyList<StepResult>> steps)
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return completed.SelectMany(step => step.Response.Messages).ToArray();
+    }
+
     private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
     {
         var completed = await steps.ConfigureAwait(false);
         return select(completed[completed.Count - 1]);
-    }
-
-    private static async Task<T> FromSteps<T>(Task<IReadOnlyList<StepResult>> steps, Func<IReadOnlyList<StepResult>, T> select)
-    {
-        return select(await steps.ConfigureAwait(false));
     }
 
     /// <summary>Text deltas only.</summary>
@@ -2219,8 +2220,8 @@ public sealed class StreamTextResult
     public Task<StepResponse> Response { get; }
 
     /// <summary>
-    /// The response messages of all steps that were generated during the call: the assistant message of each step and the
-    /// tool messages with the results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
+    /// Messages this call added to the conversation: the assistant message of each step, with any tool approval request, and the
+    /// tool results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
     /// </summary>
     public Task<IReadOnlyList<ModelMessage>> ResponseMessages { get; }
 }
