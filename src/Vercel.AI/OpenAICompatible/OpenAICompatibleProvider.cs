@@ -918,7 +918,8 @@ public sealed class OpenAICompatibleImageModel : IImageModel
                 Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
                 headers,
                 cancellationToken,
-                ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+                ProviderExchange.DownloadClient(_provider.Options),
+                ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
             var mediaType = MediaTypes.DetectMediaType(download.Bytes, "image") ?? "image/png";
             return new GeneratedImage(mediaType, download.Bytes, item.Url);
         })).ConfigureAwait(false);

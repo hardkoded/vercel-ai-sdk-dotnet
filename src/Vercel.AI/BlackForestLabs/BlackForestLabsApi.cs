@@ -127,16 +127,8 @@ internal static class BlackForestLabsApi
         return root.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number ? value.Clone() : null;
     }
 
-    internal static Dictionary<string, string?> UserAgentOnly(IReadOnlyDictionary<string, string?> headers)
-    {
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        if (headers.TryGetValue("User-Agent", out var userAgent))
-        {
-            result["User-Agent"] = userAgent;
-        }
-
-        return result;
-    }
+    internal static Dictionary<string, string?> UserAgentOnly(IReadOnlyDictionary<string, string?> headers) =>
+        ProviderExchange.UserAgentOnly(headers);
 
     /// <summary>Adds <c>id=</c> to a polling URL that lacks one.</summary>
     internal static Uri WithRequestId(string pollUrl, string requestId)

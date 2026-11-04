@@ -76,7 +76,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     internal Task<ProviderExchangeResult> GetResponseUrlAsync(string url, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
         var outgoing = headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
-        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken, ProviderExchange.DownloadClient(Options));
+        return ProviderExchange.GetResponseUrlAsync(_httpClient, url, Options.BaseUrl, DownloadUrls.ValidateDownloadUrl, outgoing, cancellationToken, ProviderExchange.DownloadClient(Options), ProviderExchange.UserAgentOnly(CreateHeaders()));
     }
 }
 
