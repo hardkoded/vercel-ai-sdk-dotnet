@@ -68,7 +68,7 @@ The option controls the tool calls that the SDK runs itself. It does not limit h
 
 A provider-executed tool, such as an MCP tool, can ask for approval before the provider runs it. The model returns a `GeneratedToolApprovalRequest` (`tool-approval-request`) next to the tool call. The step keeps it in `Content` with its `ToolCall` filled in, and `StreamText` emits a `ToolApprovalRequestPart`. The step ends there, because there is no client tool call to run, and the finish reason stays `tool-calls`.
 
-`GenerateTextResult.ResponseMessages` holds the messages the call added. The assistant message keeps an `AssistantToolApprovalRequestPart` after the tool call. To continue, send the history back with a `ToolApprovalResponseModelMessage` that has `ProviderExecuted = true`:
+`GenerateTextResult.ResponseMessages` holds the messages the call added. `StreamTextResult.ResponseMessages` is the same list as a task that completes when the stream finishes. The assistant message keeps an `AssistantToolApprovalRequestPart` after the tool call. To continue, send the history back with a `ToolApprovalResponseModelMessage` that has `ProviderExecuted = true`:
 
 ```csharp
 new ToolApprovalResponseModelMessage("mcp-approval-1", approved: false, reason: "User denied the request", providerExecuted: true)
