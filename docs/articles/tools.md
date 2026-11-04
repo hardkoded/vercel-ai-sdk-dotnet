@@ -36,9 +36,29 @@ The default stop condition is one step. That step’s tool calls still run, and 
 
 Set `AgentOptions.PrepareCall` to change the options of each `Agent.GenerateAsync` and `Agent.Stream` call. It receives the options the agent would use, including the default `StopWhen`, and returns replacement options (or null to keep them). Returning them unchanged keeps the default warning; setting `StopWhen` replaces the default limit and silences it.
 
-A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated. The same holds for a tool with `NeedsApproval = true` when `ApproveTool` is not set: the call is not executed and no warning is logged. When `ApproveTool` is set, it decides instead.
+A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated. A call that waits for approval (see below) also ends the loop, and no warning is logged.
 
-Set `ApproveTool` to veto a call before it runs. A denied call is stored as an error tool result.
+## Tool approval
+
+Breaking change: `GenerateTextOptions.ApproveTool` and the `ToolApprovalRequest` class are removed. Use `ToolApproval`, which maps to upstream `toolApproval`. This applies to `GenerateTextAsync` only. `StreamTextAsync` and `Agent` do not run the local approval flow yet.
+
+A tool needs approval when its `NeedsApproval` is true or its `NeedsApprovalFunction` returns true. The function receives the parsed input and a `ToolNeedsApprovalOptions` (`ToolCallId`, `Messages`). `GenerateTextOptions.ToolApproval` overrides the tool's own setting. It is a `ToolApprovalConfiguration`, which takes either a generic `GenericToolApprovalFunction` or a per-tool map:
+
+```csharp
+ToolApproval = new ToolApprovalConfiguration
+{
+    { "deleteFile", "user-approval" },
+    { "readFile", "approved" },
+    { "runQuery", (input, options) => Task.FromResult<ToolApprovalStatus?>(
+        input.GetProperty("write").GetBoolean() ? "user-approval" : "approved") },
+},
+```
+
+A `ToolApprovalStatus` is `not-applicable`, `approved`, `denied` or `user-approval`, each with an optional `Reason`. A null result means `not-applicable`, so the tool's own setting decides. Precedence: the generic function, then the per-tool entry, then `NeedsApprovalFunction`, then `NeedsApproval`.
+
+With `user-approval`, the step content holds a `GeneratedToolApprovalRequest` and the tool call does not run. The loop stops. To continue, send the result messages back with a `ToolApprovalResponseModelMessage` (`approvalId`, `approved`, optional `Reason`). `GenerateTextAsync` collects the responses, re-validates each approved call (signature, input schema, and the approval policy again), runs the approved calls, and gives denied calls an execution-denied result. An approved call with an invalid input becomes an error result instead. With `approved` or `denied`, the step content holds the request (`IsAutomatic = true`) and a `GeneratedToolApprovalResponse`, and the loop goes on when every client call is settled.
+
+Set `ExperimentalToolApprovalSecret` (or `ExperimentalToolApprovalSecretBytes`) to sign each approval request with an HMAC. A response whose signature is missing or wrong throws `InvalidToolApprovalSignatureError`. Without a secret, signatures are ignored.
 
 ## Tool choice none
 

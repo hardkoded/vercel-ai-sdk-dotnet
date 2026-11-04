@@ -272,6 +272,48 @@ public sealed class GeneratedToolApprovalRequest : GeneratedContent
 
     /// <summary>The tool call that needs approval, once the generation loop resolved it.</summary>
     public GeneratedToolCall? ToolCall { get; init; }
+
+    /// <summary>Why the tool call needs approval. It can be shown to the approver.</summary>
+    public string? Reason { get; init; }
+
+    /// <summary>True when the request was approved or denied automatically, so nobody needs to answer it.</summary>
+    public bool IsAutomatic { get; init; }
+
+    /// <summary>HMAC-SHA256 signature that binds this request to its tool call, when an approval secret is set.</summary>
+    public string? Signature { get; init; }
+}
+
+/// <summary>
+/// The answer to a tool approval request that the generation loop produced itself, such as an automatic approval or denial.
+/// Maps to the <c>tool-approval-response</c> output part.
+/// </summary>
+public sealed class GeneratedToolApprovalResponse : GeneratedContent
+{
+    /// <summary>Creates an approval response.</summary>
+    public GeneratedToolApprovalResponse(string approvalId, GeneratedToolCall toolCall, bool approved, string? reason = null, bool providerExecuted = false)
+        : base("tool-approval-response")
+    {
+        ApprovalId = approvalId ?? throw new ArgumentNullException(nameof(approvalId));
+        ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
+        Approved = approved;
+        Reason = reason;
+        ProviderExecuted = providerExecuted;
+    }
+
+    /// <summary>Id of the approval request this answers.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>The tool call the response is for.</summary>
+    public GeneratedToolCall ToolCall { get; }
+
+    /// <summary>Whether the approval was granted or denied.</summary>
+    public bool Approved { get; }
+
+    /// <summary>Reason for the approval or denial.</summary>
+    public string? Reason { get; }
+
+    /// <summary>True when the tool call is provider-executed.</summary>
+    public bool ProviderExecuted { get; }
 }
 
 /// <summary>Reasoning text kept separate from the answer.</summary>
@@ -909,6 +951,12 @@ public sealed class AssistantToolApprovalRequestPart : AssistantContentPart
 
     /// <summary>Whether the approval was decided automatically, when known.</summary>
     public bool? IsAutomatic { get; }
+
+    /// <summary>Why the call needs approval, when a reason was given.</summary>
+    public string? Reason { get; init; }
+
+    /// <summary>HMAC-SHA256 signature that binds this request to its tool call, when the request was signed.</summary>
+    public string? Signature { get; init; }
 }
 
 /// <summary>An assistant message.</summary>

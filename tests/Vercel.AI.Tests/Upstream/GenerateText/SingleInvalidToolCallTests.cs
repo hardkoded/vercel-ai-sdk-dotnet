@@ -98,11 +98,9 @@ public sealed class SingleInvalidToolCallTests
                     {
                         executeCalls++;
                         return Task.FromResult("null");
-                    })
-                {
-                    NeedsApproval = true,
-                },
+                    }),
             },
+            ToolApproval = new Vercel.AI.GenerateText.ToolApprovalConfiguration { { "cityAttractions", "user-approval" } },
             Prompt = "What are the tourist attractions in San Francisco?",
         });
         return (result, executeCalls);

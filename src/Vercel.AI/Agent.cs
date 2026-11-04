@@ -84,7 +84,9 @@ public sealed class Agent
             OnStepEnd = prepared.OnStepEnd,
             OnFinish = prepared.OnFinish,
             OnError = prepared.OnError,
-            ApproveTool = prepared.ApproveTool,
+            ToolApproval = prepared.ToolApproval,
+            ExperimentalToolApprovalSecret = prepared.ExperimentalToolApprovalSecret,
+            ExperimentalToolApprovalSecretBytes = prepared.ExperimentalToolApprovalSecretBytes,
 #pragma warning disable CS0618
             RepairToolCall = prepared.RepairToolCall ?? prepared.ExperimentalRepairToolCall,
 #pragma warning restore CS0618

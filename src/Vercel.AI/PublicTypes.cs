@@ -60,10 +60,17 @@ public sealed class Tool
     public Func<ToolModelOutputCall, ToolModelOutput>? ToModelOutput { get; set; }
 
     /// <summary>
-    /// When true, a call to this tool is not executed. The loop ends at that step and the call is left for the caller,
-    /// unless <see cref="GenerateTextOptions.ApproveTool"/> is set, which then decides. Maps to <c>needsApproval</c>.
+    /// When true, a call to this tool needs approval before it runs. The step then holds a <see cref="GeneratedToolApprovalRequest"/>
+    /// and the loop ends there, until the caller sends a response. <see cref="GenerateTextOptions.ToolApproval"/> takes precedence.
+    /// Maps to <c>needsApproval: true</c>.
     /// </summary>
     public bool NeedsApproval { get; set; }
+
+    /// <summary>
+    /// Decides for each call, from its input, whether it needs approval. When it is set, it is used instead of
+    /// <see cref="NeedsApproval"/>. Maps to the function form of <c>needsApproval</c>.
+    /// </summary>
+    public Func<JsonElement, ToolNeedsApprovalOptions, Task<bool>>? NeedsApprovalFunction { get; set; }
 
     /// <summary>
     /// Provider options of the tool, keyed by provider name, such as <c>{ "openai": { "omitFromRequestTools": true } }</c>.
@@ -144,27 +151,6 @@ public sealed class ToolExecutionOptions
 
     /// <summary>Cancellation signal of the call.</summary>
     public CancellationToken AbortSignal { get; }
-}
-
-/// <summary>A tool call the caller may approve before it runs.</summary>
-public sealed class ToolApprovalRequest
-{
-    /// <summary>Creates an approval request.</summary>
-    public ToolApprovalRequest(string toolCallId, string toolName, string argumentsJson)
-    {
-        ToolCallId = toolCallId;
-        ToolName = toolName;
-        ArgumentsJson = argumentsJson;
-    }
-
-    /// <summary>Tool call id.</summary>
-    public string ToolCallId { get; }
-
-    /// <summary>Tool name.</summary>
-    public string ToolName { get; }
-
-    /// <summary>JSON arguments.</summary>
-    public string ArgumentsJson { get; }
 }
 
 /// <summary>The result of executing a tool.</summary>
@@ -749,8 +735,26 @@ public class GenerateTextOptions
 
     internal bool GenerateObjectMode { get; set; }
 
-    /// <summary>Approves a tool call before it runs. A false result records an error tool result.</summary>
-    public Func<ToolApprovalRequest, CancellationToken, Task<bool>>? ApproveTool { get; set; }
+    /// <summary>
+    /// Configures whether tools require approval before they run: a generic function for all tool calls, or a status
+    /// (or a function) for each tool. It takes precedence over <see cref="Tool.NeedsApproval"/>. Maps to <c>toolApproval</c>.
+    /// </summary>
+    public ToolApprovalConfiguration? ToolApproval { get; set; }
+
+    /// <summary>
+    /// Secret for HMAC-signing tool approval requests. When it is set, each approval request is signed when it is issued, and
+    /// the signature is verified when the approval is sent back, which prevents forged approvals.
+    /// Maps to <c>experimental_toolApprovalSecret</c> given as a string. See also <see cref="ExperimentalToolApprovalSecretBytes"/>.
+    /// </summary>
+    public string? ExperimentalToolApprovalSecret { get; set; }
+
+    /// <summary>
+    /// The same secret as <see cref="ExperimentalToolApprovalSecret"/>, given as bytes. Maps to
+    /// <c>experimental_toolApprovalSecret</c> given as a <c>Uint8Array</c>. It is used when the string secret is not set.
+    /// </summary>
+    public byte[]? ExperimentalToolApprovalSecretBytes { get; set; }
+
+    internal Func<string>? GenerateId { get; set; }
 
     /// <summary>
     /// Repairs a tool call whose tool is unknown or whose input is invalid, before the call is reported or executed.

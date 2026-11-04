@@ -137,6 +137,7 @@ internal static class Generation
             var instructionCount = InstructionMessages(instructions).Count;
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
+            await ProcessInitialApprovalsAsync(options, messages, instructionCount, responseMessages, options.NowMs ?? DefaultNowMs, cancellationToken).ConfigureAwait(false);
             var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
@@ -183,14 +184,14 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse)).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse)).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasUnsettledToolCall(step) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -640,7 +641,7 @@ internal static class Generation
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
-                var step = await FinishStepAsync(generated, options, messages, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null).ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -658,7 +659,7 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasToolCallWithoutExecute(step, options) || stop.ShouldStop(steps))
+                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasUnsettledToolCall(step) || stop.ShouldStop(steps))
                 {
                     break;
                 }
@@ -993,6 +994,7 @@ internal static class Generation
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
         List<ModelMessage> messages,
+        int instructionCount,
         List<ModelMessage> responseMessages,
         ILanguageModel model,
         CancellationToken cancellationToken,
@@ -1068,10 +1070,26 @@ internal static class Generation
         }
 
         var stepInputMessages = messages.ToArray();
+
+        // Each valid call to a known tool gets its approval status. A call that needs a user decision waits for it, and
+        // an automatic denial settles the call without running it.
+        var (approvalRequests, approvalResponses, blockedToolCallIds) = await ResolveStepApprovalsAsync(options, toolCalls, stepInputMessages.Skip(instructionCount).ToArray()).ConfigureAwait(false);
+        foreach (var request in approvalRequests)
+        {
+            assistantParts.Add(new AssistantToolApprovalRequestPart(request.ApprovalId, request.ToolCallId, request.IsAutomatic ? true : null) { Reason = request.Reason, Signature = request.Signature });
+        }
+
         var stepResponseStart = responseMessages.Count;
         var assistantMessage = new AssistantModelMessage(generated.Text, toolCalls, reasoning, ToProviderOptions(MergeProviderMetadata(reasoningMetadata)), assistantParts);
         messages.Add(assistantMessage);
         responseMessages.Add(assistantMessage);
+        foreach (var approvalResponse in approvalResponses)
+        {
+            var responseMessage = new ToolApprovalResponseModelMessage(approvalResponse.ApprovalId, approvalResponse.Approved, approvalResponse.Reason, approvalResponse.ProviderExecuted);
+            messages.Add(responseMessage);
+            responseMessages.Add(responseMessage);
+        }
+
         if (ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason))
         {
             var toolMessages = new List<ToolModelMessage>();
@@ -1094,7 +1112,7 @@ internal static class Generation
                 var tool = FindTool(options, call.ToolName);
 
                 // A tool without execute is for the caller to run: the step has the call and no result.
-                if (call.ProviderExecuted || IsAwaitingApproval(tool, options) || (tool != null && !HasExecutor(tool)))
+                if (call.ProviderExecuted || blockedToolCallIds.Contains(call.ToolCallId) || (tool != null && !HasExecutor(tool)))
                 {
                     continue;
                 }
@@ -1121,21 +1139,54 @@ internal static class Generation
                     : new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
             }
 
-            // Upstream sends the results of one step as a single tool message.
+            // A denied call has no result to wait for, so it is answered with an execution-denied result. A provider-executed
+            // call gets it from the prompt preparation, which names the approval for the provider.
+            foreach (var approvalResponse in approvalResponses)
+            {
+                if (!approvalResponse.Approved && !approvalResponse.ProviderExecuted)
+                {
+                    toolMessages.Add(new ToolModelMessage(approvalResponse.ToolCall.ToolCallId, approvalResponse.ToolCall.ToolName, approvalResponse.Reason, false, "execution-denied"));
+                }
+            }
+
+            // Upstream sends the results of one step as a single tool message, in the order of the calls.
             if (toolMessages.Count > 0)
             {
-                var toolMessage = toolMessages.Count == 1 ? toolMessages[0] : new ToolModelMessage(toolMessages);
+                var order = new Dictionary<string, int>(StringComparer.Ordinal);
+                for (var index = 0; index < toolCalls.Count; index++)
+                {
+                    order[toolCalls[index].ToolCallId] = index;
+                }
+
+                var sorted = toolMessages
+                    .Select((message, index) => (Message: message, Index: index))
+                    .OrderBy(entry => order.TryGetValue(entry.Message.ToolCallId, out var position) ? position : int.MaxValue)
+                    .ThenBy(entry => entry.Index)
+                    .Select(entry => entry.Message)
+                    .ToList();
+                var toolMessage = sorted.Count == 1 ? sorted[0] : new ToolModelMessage(sorted);
                 messages.Add(toolMessage);
                 responseMessages.Add(toolMessage);
             }
         }
 
-        // The results of the tools this loop ran follow the model's own content, as upstream lists them.
-        foreach (var executed in toolResults)
+        // The results of the tools this loop ran follow the model's own content, as upstream lists them: first the results of
+        // calls without an approval response, then the approval requests and responses, then the results of the others.
+        var answeredToolCallIds = new HashSet<string>(approvalResponses.Select(response => response.ToolCall.ToolCallId), StringComparer.Ordinal);
+        foreach (var answered in new[] { false, true })
         {
-            if (!executed.ProviderExecuted)
+            foreach (var executed in toolResults)
             {
-                content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Error = executed.Error, Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
+                if (!executed.ProviderExecuted && answeredToolCallIds.Contains(executed.ToolCallId) == answered)
+                {
+                    content.Add(new GeneratedToolResult(executed.ToolCallId, executed.ToolName, executed.IsError && executed.ModelOutput != null ? JsonSerializer.Serialize(executed.ModelOutput) : executed.OutputJson, executed.IsError) { Error = executed.Error, Dynamic = executed.Dynamic, ToolMetadata = executed.ToolMetadata });
+                }
+            }
+
+            if (!answered)
+            {
+                content.AddRange(approvalRequests);
+                content.AddRange(approvalResponses);
             }
         }
 
@@ -1532,12 +1583,6 @@ internal static class Generation
         return null;
     }
 
-    // A tool that needs approval, with nobody to ask, leaves its call for the caller.
-    private static bool IsAwaitingApproval(Tool? tool, GenerateTextOptions options)
-    {
-        return tool != null && tool.NeedsApproval && options.ApproveTool == null;
-    }
-
     // A provider-executed call is already done, so only the calls the caller must run keep the loop going.
     private static bool HasClientToolCall(StepResult step)
     {
@@ -1552,10 +1597,202 @@ internal static class Generation
         return false;
     }
 
+    // The approval responses at the end of the history settle the calls they answer before the first step: the approved calls
+    // run, the denied calls get an execution-denied result, and an approved call whose input no longer validates gets its error.
+    // The results are appended to the history and to the response messages as one tool message.
+    private static async Task ProcessInitialApprovalsAsync(
+        GenerateTextOptions options,
+        List<ModelMessage> messages,
+        int instructionCount,
+        List<ModelMessage> responseMessages,
+        Func<double> now,
+        CancellationToken cancellationToken)
+    {
+        var history = messages.Skip(instructionCount).ToArray();
+        var collected = ToolApprovalCollection.CollectToolApprovals(ToApprovalHistory(history));
+
+        // A provider-executed call is answered by the provider, with the response in the prompt.
+        var approvedToolApprovals = collected.ApprovedToolApprovals.Where(approval => !approval.ToolCall.ProviderExecuted).ToList();
+        var validated = await ToolApprovalValidation.ValidateApprovedToolApprovalsAsync(
+            new ValidateApprovedToolApprovalsOptions(approvedToolApprovals)
+            {
+                Tools = options.Tools,
+                ToolApproval = options.ToolApproval,
+                Messages = history,
+                ToolApprovalSecret = options.ExperimentalToolApprovalSecret,
+                ToolApprovalSecretBytes = options.ExperimentalToolApprovalSecretBytes,
+                RefineToolInput = options.RefineToolInput,
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        var deniedWithoutResults = collected.DeniedToolApprovals
+            .Concat(validated.DeniedToolApprovals)
+            .Where(approval => approval.ExistingToolResult == null && !approval.ToolCall.ProviderExecuted)
+            .ToList();
+        if (deniedWithoutResults.Count == 0 && validated.ApprovedToolApprovals.Count == 0 && validated.InvalidToolApprovals.Count == 0)
+        {
+            return;
+        }
+
+        var stepMessages = messages.ToArray();
+        var executions = await ToolCallConcurrencyScheduler.MapWithConcurrency(
+            validated.ApprovedToolApprovals,
+            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency),
+            async (approval, _) =>
+            {
+                var call = new GeneratedToolCall(approval.ToolCall.ToolCallId, approval.ToolCall.ToolName, approval.ToolCall.Input.GetRawText());
+                var (executed, _) = await ExecuteToolAsync(call, options, stepMessages, now, cancellationToken).ConfigureAwait(false);
+                return executed;
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        var toolMessages = new List<ToolModelMessage>();
+        foreach (var executed in executions)
+        {
+            toolMessages.Add(executed.ModelOutputContent != null
+                ? new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutputContent)
+                : new ToolModelMessage(executed.ToolCallId, executed.ToolName, executed.ModelOutput ?? executed.OutputJson, executed.IsError, executed.ModelOutputType));
+        }
+
+        // Repairing the input after approval would change the operation that was approved, so the model gets the error.
+        foreach (var invalid in validated.InvalidToolApprovals)
+        {
+            toolMessages.Add(new ToolModelMessage(invalid.Approval.ToolCall.ToolCallId, invalid.Approval.ToolCall.ToolName, ErrorMessage.ToErrorString(invalid.Error), true, "error-text"));
+        }
+
+        foreach (var denied in deniedWithoutResults)
+        {
+            toolMessages.Add(new ToolModelMessage(denied.ToolCall.ToolCallId, denied.ToolCall.ToolName, denied.ApprovalResponse.Reason, false, "execution-denied"));
+        }
+
+        var toolMessage = toolMessages.Count == 1 ? toolMessages[0] : new ToolModelMessage(toolMessages);
+        messages.Add(toolMessage);
+        responseMessages.Add(toolMessage);
+    }
+
+    // The history in the shape that collectToolApprovals reads. Only the trailing tool messages count as the last tool message.
+    private static IReadOnlyList<ApprovalHistoryMessage> ToApprovalHistory(IReadOnlyList<ModelMessage> history)
+    {
+        var trailingStart = history.Count;
+        while (trailingStart > 0 && string.Equals(history[trailingStart - 1].Role, "tool", StringComparison.Ordinal))
+        {
+            trailingStart--;
+        }
+
+        var result = new List<ApprovalHistoryMessage>();
+        var trailingParts = new List<ApprovalHistoryPart>();
+        for (var index = 0; index < history.Count; index++)
+        {
+            switch (history[index])
+            {
+                case AssistantModelMessage assistant:
+                    var parts = new List<ApprovalHistoryPart>();
+                    foreach (var part in assistant.Parts)
+                    {
+                        if (part is AssistantToolCallPart call)
+                        {
+                            using var input = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ToolCall.ArgumentsJson) ? "{}" : call.ToolCall.ArgumentsJson);
+                            parts.Add(new ApprovalToolCallPart(call.ToolCall.ToolCallId, call.ToolCall.ToolName, input.RootElement.Clone()) { ProviderExecuted = call.ToolCall.ProviderExecuted });
+                        }
+                        else if (part is AssistantToolApprovalRequestPart request)
+                        {
+                            parts.Add(new ApprovalRequestPart(request.ApprovalId, request.ToolCallId) { Signature = request.Signature, Reason = request.Reason });
+                        }
+                    }
+
+                    result.Add(new ApprovalHistoryMessage("assistant", null, parts));
+                    break;
+                case ToolApprovalResponseModelMessage response when index >= trailingStart:
+                    trailingParts.Add(new ApprovalResponsePart(response.ApprovalId, response.Approved, response.Reason));
+                    break;
+                case ToolModelMessage tool when index >= trailingStart:
+                    foreach (var toolResult in tool.Results)
+                    {
+                        var isDenied = string.Equals(toolResult.OutputType, "execution-denied", StringComparison.Ordinal);
+                        trailingParts.Add(new ApprovalToolResultPart(toolResult.ToolCallId, toolResult.ToolName, toolResult.OutputType, null, isDenied ? toolResult.OutputJson : null));
+                    }
+
+                    break;
+                case ModelMessage other when index < trailingStart:
+                    result.Add(new ApprovalHistoryMessage(other.Role));
+                    break;
+            }
+        }
+
+        if (history.Count > trailingStart)
+        {
+            result.Add(new ApprovalHistoryMessage("tool", null, trailingParts));
+        }
+
+        return result;
+    }
+
+    private static string NewApprovalId(GenerateTextOptions options) => options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId(string.Empty);
+
+    private static string? SignApproval(GenerateTextOptions options, string approvalId, GeneratedToolCall call)
+    {
+        if (options.ExperimentalToolApprovalSecret == null && options.ExperimentalToolApprovalSecretBytes == null)
+        {
+            return null;
+        }
+
+        using var input = JsonDocument.Parse(string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson);
+        return options.ExperimentalToolApprovalSecret != null
+            ? ToolApprovalSignatures.SignToolApproval(options.ExperimentalToolApprovalSecret, approvalId, call.ToolCallId, call.ToolName, input.RootElement)
+            : ToolApprovalSignatures.SignToolApproval(options.ExperimentalToolApprovalSecretBytes!, approvalId, call.ToolCallId, call.ToolName, input.RootElement);
+    }
+
+    // Resolves the approval of each valid call to a known tool. A call that does not need approval does not use an approval id.
+    private static async Task<(List<GeneratedToolApprovalRequest> Requests, List<GeneratedToolApprovalResponse> Responses, HashSet<string> Blocked)> ResolveStepApprovalsAsync(
+        GenerateTextOptions options,
+        IReadOnlyList<GeneratedToolCall> toolCalls,
+        IReadOnlyList<ModelMessage> messages)
+    {
+        var requests = new List<GeneratedToolApprovalRequest>();
+        var responses = new List<GeneratedToolApprovalResponse>();
+        var blocked = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var call in toolCalls)
+        {
+            if (call.Invalid || FindTool(options, call.ToolName) == null)
+            {
+                continue;
+            }
+
+            var status = await ToolApprovalResolution.ResolveToolApprovalAsync(options.Tools, call, options.ToolApproval, messages).ConfigureAwait(false);
+            if (status.Type == ToolApprovalStatus.NotApplicableType)
+            {
+                continue;
+            }
+
+            var approvalId = NewApprovalId(options);
+            var signature = SignApproval(options, approvalId, call);
+            switch (status.Type)
+            {
+                case ToolApprovalStatus.UserApprovalType:
+                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, Reason = status.Reason, Signature = signature });
+                    blocked.Add(call.ToolCallId);
+                    break;
+                case ToolApprovalStatus.ApprovedType:
+                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, IsAutomatic = true, Signature = signature });
+                    responses.Add(new GeneratedToolApprovalResponse(approvalId, call, true, status.Reason, call.ProviderExecuted));
+                    break;
+                case ToolApprovalStatus.DeniedType:
+                    requests.Add(new GeneratedToolApprovalRequest(approvalId, call.ToolCallId) { ToolCall = call, IsAutomatic = true, Signature = signature });
+                    responses.Add(new GeneratedToolApprovalResponse(approvalId, call, false, status.Reason, call.ProviderExecuted));
+                    blocked.Add(call.ToolCallId);
+                    break;
+            }
+        }
+
+        return (requests, responses, blocked);
+    }
+
     // A tool without an execute function, or one awaiting approval, leaves its call for the caller, so the loop ends without asking the stop condition.
     private static bool HasExecutor(Tool? tool) => tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null);
 
-    private static bool HasToolCallWithoutExecute(StepResult step, GenerateTextOptions options)
+    // A call is settled when the step answers it: with a tool result, or with an automatic denial. Like upstream, the loop goes on
+    // only when every client call is settled.
+    private static bool HasUnsettledToolCall(StepResult step)
     {
         foreach (var call in step.ToolCalls)
         {
@@ -1564,8 +1801,26 @@ internal static class Generation
                 continue;
             }
 
-            var tool = FindTool(options, call.ToolName);
-            if ((tool != null && !HasExecutor(tool)) || IsAwaitingApproval(tool, options))
+            var settled = false;
+            foreach (var result in step.ToolResults)
+            {
+                if (string.Equals(result.ToolCallId, call.ToolCallId, StringComparison.Ordinal))
+                {
+                    settled = true;
+                    break;
+                }
+            }
+
+            foreach (var part in step.Content)
+            {
+                if (part is GeneratedToolApprovalResponse { Approved: false } response && string.Equals(response.ToolCall.ToolCallId, call.ToolCallId, StringComparison.Ordinal))
+                {
+                    settled = true;
+                    break;
+                }
+            }
+
+            if (!settled)
             {
                 return true;
             }
@@ -1581,15 +1836,6 @@ internal static class Generation
         if (tool == null || !HasExecutor(tool))
         {
             return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool has no execute function.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "error-text", ModelOutput = "Tool has no execute function." }, 0);
-        }
-
-        if (options.ApproveTool != null)
-        {
-            var approved = await options.ApproveTool(new ToolApprovalRequest(call.ToolCallId, call.ToolName, call.ArgumentsJson), cancellationToken).ConfigureAwait(false);
-            if (!approved)
-            {
-                return (new ExecutedTool(call.ToolCallId, call.ToolName, "{\"error\":\"Tool call was not approved.\"}", true) { InputJson = call.ArgumentsJson, Dynamic = call.Dynamic, Title = call.Title, ToolMetadata = call.ToolMetadata, ModelOutputType = "execution-denied", ModelOutput = "Tool call was not approved." }, 0);
-            }
         }
 
         if (options.OnToolExecutionStart != null)
