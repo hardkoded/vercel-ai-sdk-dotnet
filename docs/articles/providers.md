@@ -632,7 +632,7 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 
 ## MiniMax
 
-`MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. MiniMax video models are not ported ([#650](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/658)).
+`MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. `Video(id)` and `VideoModel(id)` create a `MiniMaxVideoModel`; see [Video models](#video-models).
 
 ```csharp
 using Vercel.AI.MiniMax;
@@ -686,6 +686,14 @@ The output token budget covers the reasoning and the answer, so higher effort ma
 For M3.1 and later ids, `LanguageModelCallOptions.Reasoning` maps to the effort instead of an Anthropic thinking budget: `low`, `medium`, `high`, `xhigh`, and `max` map to the same effort, `minimal` maps to `low` with a `compatibility` warning, and `none` also maps to `low` with a `compatibility` `reasoning` warning, because Flash always reasons. `provider-default` or no `Reasoning` leaves the server default. An explicit `minimax.effort` or `anthropic.effort` wins over `Reasoning`. Older ids keep the Anthropic mapping.
 
 `MiniMaxChatLanguageModel.Serialize()` returns the model id and config for a workflow boundary (provider id, base URL, and headers). It leaves out the API key and any header whose name contains `authorization`, `key`, `token`, `secret`, or `cookie`. `MiniMaxChatLanguageModel.Deserialize(serialized, apiKey)` restores the model; without `apiKey` it reads `MINIMAX_API_KEY`.
+
+### Video models
+
+`MiniMaxProvider.Video(id)` and `VideoModel(id)` return a `MiniMaxVideoModel` with the provider id `minimax.video`. Video calls use their own base URL: `MiniMaxOptions.VideoBaseUrl`, default `https://api.minimax.io`. It has no version suffix and is never derived from `BaseUrl`. A trailing slash is removed. Video calls send `Authorization: Bearer <key>` (the same `ApiKey` or `MINIMAX_API_KEY`), your `Headers`, and the user agent `ai-sdk-minimax/<version>`. They do not send `x-api-key` or `anthropic-version`. The model uses the `HttpClient` you gave the provider.
+
+`MiniMaxVideoModelOptions` lists the provider options under `minimax`: **resolution** (`480P`, `768P`, `2K`), **ratio** (`adaptive`, `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, `9:16`), **referenceAudioUrls**, **aigcWatermark**, **pollIntervalMs** (default 10000), and **pollTimeoutMs** (default 600000).
+
+Request building, polling, and error handling are not ported yet, so every `MiniMaxVideoModel` operation throws `NotSupportedException` for now.
 
 ## xAI Responses
 

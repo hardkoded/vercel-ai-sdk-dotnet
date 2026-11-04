@@ -5,6 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.MiniMax;
 
@@ -16,6 +17,12 @@ public sealed class MiniMaxOptions
 
     /// <summary>Base URL for the API calls. Defaults to MiniMax's Anthropic-compatible endpoint (<c>https://api.minimax.io/anthropic/v1</c>).</summary>
     public string BaseUrl { get; set; } = MiniMaxProvider.DefaultBaseUrl;
+
+    /// <summary>
+    /// Use a different URL prefix for video generation API calls. The default prefix is <c>https://api.minimax.io</c>.
+    /// It has no version suffix and is never derived from <see cref="BaseUrl"/>.
+    /// </summary>
+    public string? VideoBaseUrl { get; set; }
 
     /// <summary>Headers merged into every request.</summary>
     public Dictionary<string, string?> Headers { get; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -30,15 +37,20 @@ public sealed class MiniMaxProvider : ProviderBase
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.minimax.io/anthropic/v1";
 
+    /// <summary>Default API origin for video generation. It has no version suffix.</summary>
+    public const string DefaultVideoBaseUrl = "https://api.minimax.io";
+
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "MINIMAX_API_KEY";
 
     private readonly MiniMaxMessagesProvider _messages;
+    private readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
     public MiniMaxProvider(HttpClient httpClient, MiniMaxOptions? options = null)
         : base(ProviderId)
     {
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         Options = options ?? new MiniMaxOptions();
         var anthropic = new AnthropicOptions
         {
@@ -75,6 +87,29 @@ public sealed class MiniMaxProvider : ProviderBase
     public MiniMaxChatLanguageModel Chat(string modelId)
     {
         return new MiniMaxChatLanguageModel(_messages, modelId);
+    }
+
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId)
+    {
+        return Video(modelId);
+    }
+
+    /// <summary>Creates a MiniMax video model for video generation.</summary>
+    public MiniMaxVideoModel Video(string modelId)
+    {
+        var baseUrl = ProviderValues.WithoutTrailingSlash(string.IsNullOrWhiteSpace(Options.VideoBaseUrl) ? DefaultVideoBaseUrl : Options.VideoBaseUrl)!;
+        return new MiniMaxVideoModel(modelId, new MiniMaxVideoModelConfig("minimax.video", baseUrl, CreateVideoHeaders, _httpClient));
+    }
+
+    private Dictionary<string, string> CreateVideoHeaders()
+    {
+        var headers = new List<KeyValuePair<string, string?>>
+        {
+            new KeyValuePair<string, string?>("Authorization", "Bearer " + ApiKeys.Require(Options.ApiKey, ApiKeyVariable)),
+        };
+        headers.AddRange(Options.Headers);
+        return ProviderValues.WithUserAgentSuffix(headers, "ai-sdk-minimax/" + Operations.AiSdkVersion.Version);
     }
 }
 
