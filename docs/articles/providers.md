@@ -178,6 +178,12 @@ var message = new UserModelMessage(new UserContentPart[]
 
 The minimum content length for a cache block is 1,024 tokens. Alibaba allows 4 cache breakpoints per request. A fifth marker adds an `other` warning, `Max breakpoint limit exceeded. Only the last 4 cache markers will take effect.`, and is still sent.
 
+## Baseten
+
+### DeepSeek V4 Pro structured output
+
+On Baseten Model APIs, `deepseek-ai/DeepSeek-V4-Pro-0813` can return an empty answer when JSON mode and reasoning are combined. When reasoning is enabled (the default), `BasetenProvider` puts JSON instructions and your schema in a system message and omits `response_format`. It emits a `compatibility` warning for `responseFormat` because the server does not constrain the output; the SDK still validates the result. Set reasoning to `none` to use native JSON Schema enforcement instead. Dedicated deployments (`ModelUrl`) are not affected.
+
 ## HeyGen
 
 The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It supports video generation only. HeyGen's avatar, voice, translation, and video editing APIs are not included.
