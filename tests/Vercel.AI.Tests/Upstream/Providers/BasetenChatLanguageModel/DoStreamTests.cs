@@ -6,14 +6,12 @@ using Vercel.AI.Tests.Upstream;
 
 namespace Vercel.AI.Tests.BasetenChatLanguageModel;
 
-/// <summary>Port of <c>baseten-chat-language-model.test.ts</c> &gt; <c>doStream</c>.</summary>
+/// <summary>Port of <c>baseten-chat-language-model.test.ts</c> &gt; <c>doStream</c> (the <c>describe.each</c> run for streaming). The ids are linked from <see cref="DoGenerateTests"/>.</summary>
 public sealed class DoStreamTests
 {
     private const bool Stream = true;
-    private const string P = "packages/baseten/src/baseten-chat-language-model.test.ts::%s::";
 
     [Fact]
-    [UpstreamTest(P + "should use the schema in the prompt without JSON mode when reasoning is enabled", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_use_the_schema_in_the_prompt_without_JSON_mode_when_reasoning_is_enabled()
     {
         var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options());
@@ -33,7 +31,6 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(P + "should omit JSON mode without a schema when reasoning uses its default", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_omit_JSON_mode_without_a_schema_when_reasoning_uses_its_default()
     {
         var (body, _) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(schema: false, reasoning: null));
@@ -49,7 +46,6 @@ public sealed class DoStreamTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
-    [UpstreamTest(P + "should retain JSON Schema when reasoning is disabled with %j", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_retain_JSON_Schema_when_reasoning_is_disabled(int variant)
     {
         var options = BasetenChatCalls.Options(reasoning: variant == 0 ? "none" : null);
@@ -71,7 +67,6 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(P + "should leave text requests unchanged", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_leave_text_requests_unchanged()
     {
         var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(json: false));
@@ -82,7 +77,6 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(P + "should retain JSON Schema for other models", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_retain_JSON_Schema_for_other_models()
     {
         var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(), id: "zai-org/GLM-4.7");
@@ -93,7 +87,6 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(P + "should leave dedicated deployments unchanged", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_leave_dedicated_deployments_unchanged()
     {
         var (body, warnings) = await BasetenChatCalls.Call(Stream, BasetenChatCalls.Options(), dedicated: true);
