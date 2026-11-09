@@ -25,7 +25,7 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"application\":\"example\",\"safety_identifier\":\"opaque_user_123\"}")]
-    [UpstreamTest(Prefix + "forwards labels %j on streaming requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "forwards labels %j on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
     public async Task Forwards_labels_on_streaming_requests(string labels)
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
@@ -41,7 +41,7 @@ public sealed class DoStreamTests
     [Theory]
     [InlineData("undefined")]
     [InlineData("null")]
-    [UpstreamTest(Prefix + "omits labels set to %j on streaming requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "omits labels set to %j on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
     public async Task Omits_labels_set_to_on_streaming_requests(string labels)
     {
         var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");

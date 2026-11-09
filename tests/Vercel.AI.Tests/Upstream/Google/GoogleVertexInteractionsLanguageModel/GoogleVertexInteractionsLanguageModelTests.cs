@@ -70,7 +70,7 @@ public sealed class GoogleVertexInteractionsLanguageModelTests
     [InlineData("null")]
     [InlineData("{}")]
     [InlineData("{\"application\":\"example\",\"safety_identifier\":\"opaque_user_123\"}")]
-    [UpstreamTest(Prefix + "generate)::preserves $name labels and other options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "generate)::preserves $name labels and other options", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
     public async Task Generate_preserves_labels_and_other_options(string? labels)
     {
         Check(await Send("generate", labels), labels);
@@ -81,7 +81,7 @@ public sealed class GoogleVertexInteractionsLanguageModelTests
     [InlineData("null")]
     [InlineData("{}")]
     [InlineData("{\"application\":\"example\",\"safety_identifier\":\"opaque_user_123\"}")]
-    [UpstreamTest(Prefix + "stream)::preserves $name labels and other options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "stream)::preserves $name labels and other options", Coverage = UpstreamCoverage.Covered, Commit = "a210a29f9b1be06d87e9e880840419defecbee2b")]
     public async Task Stream_preserves_labels_and_other_options(string? labels)
     {
         Check(await Send("stream", labels), labels);
