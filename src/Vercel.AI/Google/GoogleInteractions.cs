@@ -322,6 +322,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
         var previousInteractionId = StringOption(options, "previousInteractionId");
         var store = Store(options);
+        var labels = LabelsOption(options);
 
         if (!_isAgent)
         {
@@ -363,6 +364,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         }
 
         input[_isAgent ? "agent" : "model"] = ModelId;
+        GoogleJson.Set(input, "labels", labels);
         GoogleJson.Set(input, "response_format", responseFormat);
         GoogleJson.Set(input, "previous_interaction_id", previousInteractionId);
         GoogleJson.Set(input, "service_tier", serviceTier);
@@ -438,6 +440,33 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         return GoogleOption(options, name) is { } value
             ? value.ValueKind == JsonValueKind.String ? value.GetString() : throw new AiSdkException("providerOptions.google." + name + " must be a string.")
             : null;
+    }
+
+    // `labels` is a record of string values. A null or missing value omits it, and a non-string value fails before any request.
+    private static JsonObject? LabelsOption(LanguageModelCallOptions options)
+    {
+        if (GoogleOption(options, "labels") is not { } value)
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiSdkException("providerOptions.google.labels must be an object of string values.");
+        }
+
+        var labels = new JsonObject();
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                throw new AiSdkException("providerOptions.google.labels." + property.Name + " must be a string.");
+            }
+
+            labels[property.Name] = property.Value.GetString();
+        }
+
+        return labels;
     }
 
     private static string? EnumOption(LanguageModelCallOptions options, string name, params string[] allowed)
