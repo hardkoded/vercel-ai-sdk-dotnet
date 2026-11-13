@@ -260,15 +260,40 @@ public sealed class GoogleToolsUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should use NONE mode for combined tools with toolChoice none on Gemini 3", Coverage = UpstreamCoverage.Covered)]
-    public void Uses_none_mode_for_combined_none()
+    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit provider tools with toolChoice none on Gemini 3", Coverage = UpstreamCoverage.Covered)]
+    public void Omits_provider_tools_with_none_on_Gemini_3()
     {
         var prepared = GoogleTools.Prepare(
             new[] { GoogleUpstream.Function("testFunction", "{\"type\":\"object\",\"properties\":{}}", "A test function") },
             new[] { GoogleUpstream.Tool("google.google_search", "{}") },
             ToolChoice.None, "gemini-3-flash-preview", false);
-        GoogleUpstream.JsonEqual(prepared.ToolConfig, "{\"functionCallingConfig\":{\"mode\":\"NONE\"},\"includeServerSideToolInvocations\":true}");
+        GoogleUpstream.JsonEqual(prepared.Tools, "[{\"functionDeclarations\":[{\"name\":\"testFunction\",\"description\":\"A test function\",\"parametersJsonSchema\":{\"type\":\"object\",\"properties\":{}}}]}]");
+        GoogleUpstream.JsonEqual(prepared.ToolConfig, "{\"functionCallingConfig\":{\"mode\":\"NONE\"}}");
         Assert.Empty(prepared.Warnings);
+    }
+
+    [Theory]
+    [InlineData("google.google_search")]
+    [InlineData("google.enterprise_web_search")]
+    [InlineData("google.url_context")]
+    [InlineData("google.code_execution")]
+    [InlineData("google.file_search")]
+    [InlineData("google.vertex_rag_store")]
+    [InlineData("google.google_maps")]
+    [InlineData("google.unknown")]
+    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit %s when toolChoice is none", Coverage = UpstreamCoverage.Covered)]
+    public void Omits_provider_tool_when_toolChoice_is_none(string id)
+    {
+        foreach (var modelId in new[] { "gemini-2.5-flash", "gemini-3-flash-preview" })
+        {
+            foreach (var isVertexProvider in new[] { false, true })
+            {
+                var prepared = GoogleTools.Prepare(null, new[] { GoogleUpstream.Tool(id, "{}", "disabled") }, ToolChoice.None, modelId, isVertexProvider);
+                Assert.Null(prepared.Tools);
+                Assert.Null(prepared.ToolConfig);
+                Assert.Empty(prepared.Warnings);
+            }
+        }
     }
 
     [Fact]
