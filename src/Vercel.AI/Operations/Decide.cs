@@ -490,6 +490,13 @@ public sealed class DecideRequest : OperationRequest
     /// </summary>
     public string? Reasoning { get; set; }
 
+    /// <summary>
+    /// Download function required for URL-backed file state. Maps to <c>experimental_download</c>. Use
+    /// <see cref="Download.CreateDownload"/> with a DNS-protected transport for untrusted URLs. The model's fetch is not used.
+    /// Without it a URL file throws <see cref="DownloadError"/>.
+    /// </summary>
+    public Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? Download { get; set; }
+
     /// <summary>Called when the decision begins. Receives the full runtime context.</summary>
     public Func<DecideEvent, Task>? OnStart { get; set; }
 
@@ -545,7 +552,7 @@ public static class Decide
 
         try
         {
-            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token).ConfigureAwait(false);
+            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, request.Download, token).ConfigureAwait(false);
             var modelEvent = new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
             if (enabled)
             {
@@ -608,10 +615,7 @@ public static class Decide
     /// <summary>Validates state and questions before any model call.</summary>
     public static void ValidateInput(DecisionState? state, IReadOnlyDictionary<string, DecisionQuestion>? questions)
     {
-        if (state == null || (state.Parts != null && state.Parts.Any(part => part == null)))
-        {
-            throw new InvalidArgumentException("state", state, DecisionState.InvalidMessage);
-        }
+        ValidateDecisionState(state);
 
         if (questions == null || questions.Count == 0)
         {
@@ -661,6 +665,15 @@ public static class Decide
                 default:
                     throw new InvalidArgumentException(parameter, question, "question type must be choice, score, boolean, or box");
             }
+        }
+    }
+
+    /// <summary>Validates state before any model call. Maps to <c>validateDecisionState</c>. Extraction shares it.</summary>
+    public static void ValidateDecisionState(DecisionState? state)
+    {
+        if (state == null || (state.Parts != null && state.Parts.Any(part => part == null)))
+        {
+            throw new InvalidArgumentException("state", state, DecisionState.InvalidMessage);
         }
     }
 

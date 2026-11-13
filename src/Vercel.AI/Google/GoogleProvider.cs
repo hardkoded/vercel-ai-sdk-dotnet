@@ -104,6 +104,13 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
         return new Operations.DecisionLanguageModel(LanguageModel(modelId), provider);
     }
 
+    /// <summary>Experimental typed field extraction model that uses Gemini structured output. The provider id is <c>google.extraction</c>.</summary>
+    public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
+    {
+        var provider = System.Text.RegularExpressions.Regex.Replace(ModelProvider, @"\.generative-ai$", string.Empty) + ".extraction";
+        return new Operations.ExtractionLanguageModel(LanguageModel(modelId), provider);
+    }
+
     /// <summary>Language model that posts to the Interactions API.</summary>
     public virtual ILanguageModel Interactions(string modelId)
     {

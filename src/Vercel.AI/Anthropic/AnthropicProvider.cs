@@ -206,6 +206,15 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return new Operations.DecisionLanguageModel(LanguageModel(modelId), "anthropic.decision");
     }
 
+    /// <summary>
+    /// Experimental typed field extraction model that uses Messages. Anthropic caps structured output at 16 union parameters, so
+    /// field maps larger than 16 are sent as parallel calls of up to 16 fields. The provider id is <c>anthropic.extraction</c>.
+    /// </summary>
+    public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
+    {
+        return new Operations.ExtractionLanguageModel(LanguageModel(modelId), "anthropic.extraction", maxFieldsPerCall: 16);
+    }
+
     Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
     {
         return DecisionModel(modelId);

@@ -206,6 +206,28 @@ public static class Download
     /// <summary>User-Agent suffix sent on download requests.</summary>
     public static string? UserAgent { get; set; } = "ai-sdk/dotnet";
 
+    /// <summary>
+    /// Creates a download function with configurable options. Maps to <c>createDownload</c>. Pass it as the <c>Download</c> option of
+    /// <see cref="Operations.DecideRequest"/> and <see cref="Operations.ExtractRequest"/>. A URL the model supports is passed through
+    /// (a null result). All others are downloaded with <paramref name="fetch"/>.
+    /// </summary>
+    /// <param name="maxBytes">Maximum allowed download size in bytes. Default: 2 GiB.</param>
+    /// <param name="fetch">Fetch transport, for example one that validates DNS at connection time.</param>
+    public static Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> CreateDownload(long? maxBytes = null, DownloadFetch? fetch = null)
+    {
+        return async delegate (IReadOnlyList<DownloadRequestItem> requested)
+        {
+            var tasks = new Task<DownloadResult>[requested.Count];
+            for (var i = 0; i < requested.Count; i++)
+            {
+                var item = requested[i];
+                tasks[i] = item.IsUrlSupportedByModel ? Task.FromResult<DownloadResult>(null!) : GetAsync(item.Url, maxBytes, item.AbortSignal, fetch);
+            }
+
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+        };
+    }
+
     /// <summary>Downloads <paramref name="url"/>.</summary>
     public static Task<DownloadResult> GetAsync(Uri url, long? maxBytes = null, CancellationToken abortSignal = default, DownloadFetch? fetch = null)
     {
@@ -842,6 +864,9 @@ public sealed class DownloadRequestItem
 
     /// <summary>URL to download or pass through.</summary>
     public Uri Url { get; }
+
+    /// <summary>Signal for cancellation and timeouts of the enclosing call.</summary>
+    public CancellationToken AbortSignal { get; init; }
 
     /// <summary>When true, the model accepts the URL and the download function returns null.</summary>
     public bool IsUrlSupportedByModel { get; }
