@@ -10,7 +10,7 @@ namespace Vercel.AI.Tests.MiniMaxProvider;
 public sealed class ImageTests
 {
     [Fact]
-    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > image::should construct an image model through both factory methods", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > image::should construct an image model through both factory methods", Coverage = UpstreamCoverage.Covered, Commit = "c4c8523cc3a8c00cede2e068901cbb136162f3fb")]
     public void Should_construct_an_image_model_through_both_factory_methods()
     {
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create();
