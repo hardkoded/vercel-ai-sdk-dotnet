@@ -205,6 +205,11 @@ public sealed class UIMessageStreamResult : IResult
         string? reasoningId = null;
         var providerExecutedIds = new HashSet<string>(StringComparer.Ordinal);
         var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
+
+        // streamText follows each invalid tool call with a tool-error part so the model receives a tool result. The
+        // tool-input-error chunk already reports the failure, so that tool-error is skipped to avoid a second onError call.
+        // TODO AI SDK 8: remove once invalid tool calls no longer inject tool-error parts.
+        var invalidToolCallIds = new HashSet<string>(StringComparer.Ordinal);
         onError ??= _ => "An error occurred.";
 
         yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
@@ -286,6 +291,11 @@ public sealed class UIMessageStreamResult : IResult
                     });
                     break;
                 case ToolCallPart call:
+                    if (call.ToolCall.Invalid)
+                    {
+                        invalidToolCallIds.Add(call.ToolCall.ToolCallId);
+                    }
+
                     var toolInput = new JsonObject
                     {
                         ["type"] = call.ToolCall.Invalid ? "tool-input-error" : "tool-input-available",
@@ -336,6 +346,9 @@ public sealed class UIMessageStreamResult : IResult
                         ["approvalId"] = approvalRequest.ApprovalId,
                         ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
                     });
+                    break;
+                case ToolErrorPart toolError when !providerExecutedIds.Contains(toolError.Result.ToolCallId)
+                    && invalidToolCallIds.Remove(toolError.Result.ToolCallId):
                     break;
                 case ToolErrorPart toolError:
                     var providerError = providerExecutedIds.Contains(toolError.Result.ToolCallId);
