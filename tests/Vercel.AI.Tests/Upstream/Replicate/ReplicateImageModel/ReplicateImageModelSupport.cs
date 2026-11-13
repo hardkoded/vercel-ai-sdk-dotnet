@@ -8,9 +8,9 @@ using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Replicate;
-using ReplicateApiProvider = Vercel.AI.Replicate.ReplicateProvider;
 using Vercel.AI.Tests.MoreProviders;
 using ImageModel = Vercel.AI.Replicate.ReplicateImageModel;
+using ReplicateApiProvider = Vercel.AI.Replicate.ReplicateProvider;
 
 namespace Vercel.AI.Tests.Upstream.Replicate.ReplicateImageModel;
 

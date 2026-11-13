@@ -3,16 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using Vercel.AI.OpenAICompatible;
 using System.Text.Json.Nodes;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Replicate;
-using ReplicateApiProvider = Vercel.AI.Replicate.ReplicateProvider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
-using ImageModel = Vercel.AI.Replicate.ReplicateImageModel;
 using static Vercel.AI.Tests.Upstream.Replicate.ReplicateImageModel.ReplicateImageModelSupport;
+using ImageModel = Vercel.AI.Replicate.ReplicateImageModel;
+using ReplicateApiProvider = Vercel.AI.Replicate.ReplicateProvider;
 
 namespace Vercel.AI.Tests.Upstream.Replicate.ReplicateImageModel;
 

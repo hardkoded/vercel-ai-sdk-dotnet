@@ -9,8 +9,8 @@ using Vercel.AI.Provider;
 using Vercel.AI.Replicate;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
-using ImageModel = Vercel.AI.Replicate.ReplicateImageModel;
 using static Vercel.AI.Tests.Upstream.Replicate.ReplicateImageModel.ReplicateImageModelSupport;
+using ImageModel = Vercel.AI.Replicate.ReplicateImageModel;
 
 namespace Vercel.AI.Tests.Upstream.Replicate.ReplicateImageModel;
 
