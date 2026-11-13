@@ -489,19 +489,9 @@ public static class Download
 
     private static async Task<DownloadResponse> DefaultFetchCoreAsync(string url, DownloadRequest request)
     {
-#if NET5_0_OR_GREATER
-        // The pinned handler resolves, validates, and connects to the validated address. A developer-configured origin keeps
-        // the plain handler, because it may legitimately resolve to a private address.
-        using (var handler = request.IsTrustedOrigin ? (HttpMessageHandler)new HttpClientHandler { AllowAutoRedirect = false } : SafeLookup.CreatePinnedHandler())
-#else
-        // This target cannot pin a connection. Validate the resolved addresses just before the request instead.
-        if (!request.IsTrustedOrigin)
-        {
-            await SafeLookup.ResolveValidatedAsync(new Uri(url).DnsSafeHost, SafeLookup.SystemResolveAsync, request.AbortSignal).ConfigureAwait(false);
-        }
-
+        // The default fetch uses the runtime transport. It does not validate resolved DNS addresses or pin connections. An
+        // application that downloads untrusted URLs passes a DNS-validating fetch (the equivalent of guarded-fetch) instead.
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
-#endif
         using (var client = new HttpClient(handler))
         using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {

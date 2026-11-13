@@ -8,7 +8,11 @@ The SDK:
 - **Re-validates every inspectable redirect hop.** A URL that passes but then redirects to an internal address is blocked. An opaque redirect, whose destination the SDK cannot read, is blocked too, unless a browser-style runtime opts in to following it natively. In that case the SDK cannot validate the destination.
 - **Rejects HTTPS downgrades on server-side downloads.** A redirect from HTTPS to HTTP is blocked with a `DownloadError` before the SDK requests the insecure target, even when that target matches `trustedOrigin`. Initial HTTP URLs, HTTP-to-HTTP redirects, and HTTP-to-HTTPS upgrades remain supported.
 
-- **Validates resolved addresses in the default fetch.** On `net10.0`, the default fetch resolves the hostname itself, rejects it with a `DownloadError` when any returned address is private or reserved, and connects to the validated address. The connection is pinned, so DNS rebinding cannot introduce a second lookup. On `netstandard2.0` the default fetch validates the resolved addresses just before the request but cannot pin the connection. The default fetch does not use a proxy, because the pinned connection must reach the validated address itself. Name resolution is bounded to 30 seconds. A custom fetch must do its own validation. A `trustedOrigin` skips the check.
+## What the SDK does not check
+
+The default fetch does not validate resolved DNS addresses and does not pin connections. A hostname that passes URL validation but resolves to a private address, or a DNS rebinding attack, is not blocked by the SDK. This is a deliberate change: DNS protection is opt-in.
+
+Applications that download untrusted URLs must pass a DNS-validating fetch (a `DownloadFetch` that resolves the host, rejects private and reserved addresses, and connects to the validated address) wherever the SDK accepts one, such as `Download.Fetch`, the `fetch` argument of `Download.GetAsync`, or `WebFetchTools.Fetch`. Otherwise enforce equivalent outbound network restrictions. A `trustedOrigin` skips URL validation for a developer-configured origin.
 
 The `.internal` rule is defense in depth. It does not replace network-level protection.
 
