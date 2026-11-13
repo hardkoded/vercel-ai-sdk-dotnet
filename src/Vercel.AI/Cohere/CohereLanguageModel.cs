@@ -384,7 +384,8 @@ public sealed class CohereLanguageModel : ILanguageModel
             cacheRead = cached.ValueKind == JsonValueKind.Number ? cached.GetInt32() : throw new TypeValidationException("Cohere usage.cached_tokens must be a number.", usage.Clone());
         }
 
-        return new LanguageModelUsage(input, output, null, cacheRead, raw: usage.Clone());
+        var noCache = input is not null && cacheRead is not null ? input - cacheRead : input;
+        return new LanguageModelUsage(input, output, null, cacheRead, raw: usage.Clone(), noCacheInputTokens: noCache, textTokens: output);
     }
 
     private static int? Count(JsonElement owner, string name, JsonElement usage)
