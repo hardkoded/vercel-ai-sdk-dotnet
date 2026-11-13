@@ -22,6 +22,13 @@ public sealed class SystemMessagesTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should convert a single system message into an anthropic system message", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_convert_a_single_system_message_into_an_anthropic_system_message()
+    {
+        await AnthropicCases.Run(Prefix + "should convert a single system message into an anthropic system message").ConfigureAwait(false);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should emit tool definitions for tools added by value and prefer the inline tools beta", Coverage = UpstreamCoverage.Covered,
         Commit = "457dc40d069f65ef489e9b4002d2e6d799ac46d8")]
     public void Should_emit_tool_definitions_for_tools_added_by_value_and_prefer_the_inline_tools_beta()
