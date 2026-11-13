@@ -517,6 +517,11 @@ public class AnthropicLanguageModel : ILanguageModel
         var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
+        foreach (var pair in prepared.ToolNames)
+        {
+            context.ToolNames[pair.Key] = pair.Value;
+        }
+
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
 

@@ -76,18 +76,19 @@ public static class AnthropicToolPreparer
         bool supportsStructuredOutput = false,
         bool supportsStrictTools = false,
         bool defaultEagerInputStreaming = false,
-        bool rejectsForcedToolUse = false)
+        bool rejectsForcedToolUse = false,
+        bool hasInlineTools = false)
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
         var validator = cacheControl ?? new AnthropicCacheControlValidator();
-        if (tools == null || tools.Count == 0)
+        if ((tools == null || tools.Count == 0) && !hasInlineTools)
         {
             return new AnthropicPreparedTools(null, null, warnings, betas);
         }
 
         var prepared = new JsonArray();
-        foreach (var tool in tools)
+        foreach (var tool in tools ?? Array.Empty<AnthropicToolDefinition>())
         {
             if (tool.Type == "provider")
             {
@@ -173,6 +174,9 @@ public static class AnthropicToolPreparer
             }
         }
 
+        // When the caller passed no tools (they exist only in tool changes inside the messages),
+        // omit `tools` instead of sending an empty array.
+        JsonArray? declared = tools == null || tools.Count == 0 ? null : prepared;
         if (toolChoiceType == null)
         {
             JsonObject? choice = null;
@@ -181,13 +185,13 @@ public static class AnthropicToolPreparer
                 choice = Choice("auto", null, disableParallelToolUse);
             }
 
-            return new AnthropicPreparedTools(prepared, choice, warnings, betas);
+            return new AnthropicPreparedTools(declared, choice, warnings, betas);
         }
 
         switch (toolChoiceType)
         {
             case "auto":
-                return new AnthropicPreparedTools(prepared, Choice("auto", null, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(declared, Choice("auto", null, disableParallelToolUse), warnings, betas);
             case "required":
                 if (rejectsForcedToolUse)
                 {
@@ -195,12 +199,12 @@ public static class AnthropicToolPreparer
                         "unsupported",
                         "toolChoice",
                         "toolChoice 'required' is not supported with this model or thinking configuration. Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."));
-                    return new AnthropicPreparedTools(prepared, Choice("auto", null, disableParallelToolUse), warnings, betas);
+                    return new AnthropicPreparedTools(declared, Choice("auto", null, disableParallelToolUse), warnings, betas);
                 }
 
-                return new AnthropicPreparedTools(prepared, Choice("any", null, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(declared, Choice("any", null, disableParallelToolUse), warnings, betas);
             case "none":
-                return new AnthropicPreparedTools(prepared, Choice("none", null, null), warnings, betas);
+                return new AnthropicPreparedTools(declared, Choice("none", null, null), warnings, betas);
             case "tool":
                 if (rejectsForcedToolUse)
                 {
@@ -208,19 +212,19 @@ public static class AnthropicToolPreparer
                         "unsupported",
                         "toolChoice",
                         "toolChoice 'tool' is not supported with this model or thinking configuration. Only the '" + toolName + "' tool is sent with 'auto' tool choice. Instruct the model to use the tool in the prompt and verify that a tool call was made."));
-                    var filtered = new JsonArray();
-                    foreach (var item in prepared)
+                    var filtered = declared == null ? null : new JsonArray();
+                    foreach (var item in declared ?? new JsonArray())
                     {
                         if (item is JsonObject obj && obj["name"]?.GetValue<string>() == toolName)
                         {
-                            filtered.Add(obj.DeepClone());
+                            filtered!.Add(obj.DeepClone());
                         }
                     }
 
                     return new AnthropicPreparedTools(filtered, Choice("auto", null, disableParallelToolUse), warnings, betas);
                 }
 
-                return new AnthropicPreparedTools(prepared, Choice("tool", toolName, disableParallelToolUse), warnings, betas);
+                return new AnthropicPreparedTools(declared, Choice("tool", toolName, disableParallelToolUse), warnings, betas);
             default:
                 throw new Vercel.AI.Provider.AiSdkException("Unsupported tool choice type: " + toolChoiceType);
         }
