@@ -406,13 +406,6 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0527()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message").ConfigureAwait(false);
-    }
-
-    [Fact]
     [UpstreamTest("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::user messages::should add image parts for URL images", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0535()
     {

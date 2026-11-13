@@ -32,6 +32,32 @@ public sealed class MidConversationToolChangesTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "should send tool change blocks and the beta header", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_tool_change_blocks_and_the_beta_header()
+    {
+        var handler = AnthropicParity.Ok();
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage("Say OK."),
+                ToolChange("[{\"type\":\"tool_removal\",\"toolName\":\"get_weather\"}]"),
+            },
+            Tools = new[]
+            {
+                new LanguageModelTool("get_weather", "Get weather", AnthropicParity.Json("{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}")),
+            },
+        };
+
+        await AnthropicParity.Generate(AnthropicParity.Client(handler), "claude-opus-4-8", options);
+
+        var body = JsonNode.Parse(handler.Body)!;
+        var expected = JsonNode.Parse("{\"role\":\"system\",\"content\":[{\"type\":\"tool_removal\",\"tool\":{\"type\":\"tool_reference\",\"name\":\"get_weather\"}}]}");
+        Assert.Contains(body["messages"]!.AsArray(), message => JsonNode.DeepEquals(expected, message));
+        Assert.Contains("mid-conversation-tool-changes-2026-07-01", handler.Headers["anthropic-beta"]);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "should send tools added by value as tool definitions with the inline tools beta", Coverage = UpstreamCoverage.Covered,
         Commit = "457dc40d069f65ef489e9b4002d2e6d799ac46d8")]
     public async Task Should_send_tools_added_by_value_as_tool_definitions_with_the_inline_tools_beta()
@@ -219,5 +245,37 @@ public sealed class MidConversationToolChangesTests
         var body = JsonNode.Parse(handler.Body)!;
         Assert.Null(body["tool_choice"]);
         Assert.Null(body["tools"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should send separate effort updates and turn-scoped reminders with their beta headers", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_send_separate_effort_updates_and_turn_scoped_reminders_with_their_beta_headers()
+    {
+        var handler = AnthropicParity.Ok();
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
+            {
+                new UserModelMessage("Draft an answer."),
+                new AssistantModelMessage("Draft.", null, null),
+                new SystemModelMessage(string.Empty, Options("{\"anthropic\":{\"effort\":\"xhigh\"}}")),
+                new UserModelMessage("Now finalize it."),
+                new SystemModelMessage("Verify every claim in this answer.", Options("{\"anthropic\":{\"clearAt\":\"next_user_message\"}}")),
+            },
+        };
+
+        await AnthropicParity.Generate(AnthropicParity.Client(handler), "claude-fable-5-1", options);
+
+        var body = JsonNode.Parse(handler.Body)!;
+        var expected = JsonNode.Parse(
+            "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Draft an answer.\"}]},"
+            + "{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Draft.\"}]},"
+            + "{\"role\":\"system\",\"content\":[],\"output_config\":{\"effort\":\"xhigh\"}},"
+            + "{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Now finalize it.\"}]},"
+            + "{\"role\":\"system\",\"content\":[{\"type\":\"text\",\"text\":\"Verify every claim in this answer.\"}],\"clear_at\":\"next_user_message\"}]");
+        Assert.True(JsonNode.DeepEquals(expected, body["messages"]), body["messages"]!.ToJsonString());
+        var betas = handler.Headers["anthropic-beta"];
+        Assert.Contains("mid-conversation-system-clear-at-2026-08-21", betas);
+        Assert.Contains("mid-conversation-output-config-2026-07-01", betas);
     }
 }
