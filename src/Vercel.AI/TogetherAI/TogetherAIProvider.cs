@@ -23,8 +23,21 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     /// <summary>Environment variable for the API key.</summary>
     public const string PreferredApiKeyVariable = "TOGETHER_API_KEY";
 
-    /// <summary>The only chat model that receives structured outputs.</summary>
-    public const string StructuredOutputModelId = "deepseek-ai/DeepSeek-V4-Flash-0731";
+
+    // Chat models verified to honor response_format json_schema. Every other model id gets
+    // json_object and the schema is dropped, so probe a model with a schema-only enum value
+    // before adding it here.
+    private static readonly HashSet<string> s_jsonSchemaModelIds =
+    [
+        "deepseek-ai/DeepSeek-V4-Flash-0731",
+        "deepseek-ai/DeepSeek-V4.1-Flash",
+        "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        "openai/gpt-oss-120b",
+        "zai-org/GLM-5.2",
+        "zai-org/GLM-5.3-Flash",
+        "moonshotai/Kimi-K3",
+        "MiniMaxAI/MiniMax-M3.1-Flash",
+    ];
 
     /// <summary>Set when the key was read from <see cref="ApiKeyVariable"/>.</summary>
     public string? ApiKeyDeprecationWarning { get; private set; }
@@ -38,7 +51,7 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     /// <summary>Whether <paramref name="modelId"/> should send JSON schema responses.</summary>
     public static bool SupportsStructuredOutputs(string modelId)
     {
-        return modelId == StructuredOutputModelId;
+        return s_jsonSchemaModelIds.Contains(modelId);
     }
 
     /// <inheritdoc />

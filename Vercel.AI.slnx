@@ -8,6 +8,7 @@
     <Project Path="examples/ExtractGoogleBasic/ExtractGoogleBasic.csproj" />
     <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
     <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
+    <Project Path="examples/DecidePerplexityWebGrounding/DecidePerplexityWebGrounding.csproj" />
     <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
     <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />

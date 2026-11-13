@@ -458,6 +458,59 @@ public sealed class PerplexityDecisionModelTests
         Assert.False(body.ContainsKey("reasoning_effort"));
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "forwards grounding options and preserves evidence and exact tool counts", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
+    public async Task Forwards_grounding_options_and_preserves_evidence_and_exact_tool_counts()
+    {
+        var searchResults = JsonNode.Parse("""[{"title":"Webb launch","url":"https://example.com/webb","snippet":"Launched in December 2021.","date":"2021-12-25","last_updated":"2026-11-01"}]""")!;
+        var fetchedResults = JsonNode.Parse("""[{"title":"Webb","url":"https://example.com/page","snippet":"Page text."}]""")!;
+        var toolCalls = JsonNode.Parse("""{"search_web":{"invocation":2},"fetch_url":{"invocation":1}}""")!;
+        var body = Fixture();
+        body["search_results"] = searchResults.DeepClone();
+        body["fetched_results"] = fetchedResults.DeepClone();
+        ((JsonObject)body["usage"]!)["tool_calls_details"] = toolCalls.DeepClone();
+        var (model, capture) = Setup(body);
+        var result = await model.DoDecideAsync(Call(providerOptions: "{\"perplexity\":{\"mode\":\"web_grounding\",\"maxStaleness\":0}}"));
+        var request = RequestBody(capture);
+        Assert.Equal("web_grounding", (string?)request["mode"]);
+        Assert.Equal(0, (int?)request["max_staleness"]);
+        Assert.Empty(result.Warnings);
+        var metadata = result.ProviderMetadata!.Value.GetProperty("perplexity");
+        JsonAssert.Equal(metadata.GetProperty("searchResults"), searchResults.ToJsonString());
+        JsonAssert.Equal(metadata.GetProperty("fetchedResults"), fetchedResults.ToJsonString());
+        JsonAssert.Equal(metadata.GetProperty("toolCalls"), toolCalls.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("{\"mode\":\"invalid\"}")]
+    [InlineData("{\"maxStaleness\":-1}")]
+    [InlineData("{\"maxStaleness\":0.5}")]
+    [UpstreamTest(Prefix + "rejects invalid grounding options %j before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
+    public async Task Rejects_invalid_grounding_options_before_sending_a_request(string perplexity)
+    {
+        var (model, capture) = Setup();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoDecideAsync(Call(providerOptions: "{\"perplexity\":" + perplexity + "}")));
+        Assert.Empty(capture.Body ?? string.Empty);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    [UpstreamTest(Prefix + "preserves completed grounding counts of %s on HTTP errors", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
+    public async Task Preserves_completed_grounding_counts_on_HTTP_errors(string count)
+    {
+        var error = JsonNode.Parse("""{"error":{"message":"Context limit exceeded","type":"invalid_request","code":"400"}}""");
+        var (provider, capture) = SetupProvider(error, HttpStatusCode.BadRequest);
+        capture.ResponseHeaders["x-perplexity-search-queries"] = count;
+        capture.ResponseHeaders["x-perplexity-fetched-urls"] = count;
+        var exception = await Assert.ThrowsAnyAsync<ApiException>(() =>
+            provider.DecisionModel("pplx-decider-latest").DoDecideAsync(Call(providerOptions: "{\"perplexity\":{\"mode\":\"web_grounding\"}}")));
+        Assert.Equal(400, exception.StatusCode);
+        Assert.Equal(count, exception.ResponseHeaders!["x-perplexity-search-queries"]);
+        Assert.Equal(count, exception.ResponseHeaders["x-perplexity-fetched-urls"]);
+        Assert.False(exception.IsRetryable);
+    }
+
     private sealed class CancellingHandler : HttpMessageHandler
     {
         private readonly CancellationTokenSource _source;

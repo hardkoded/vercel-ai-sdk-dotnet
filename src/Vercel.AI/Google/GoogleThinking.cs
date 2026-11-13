@@ -11,6 +11,8 @@ namespace Vercel.AI.Google;
 /// <summary>Maps the shared reasoning option onto Gemini thinking configuration.</summary>
 public static class GoogleThinking
 {
+    private static readonly string[] ReasoningLevels = ["minimal", "low", "medium", "high", "xhigh", "max"];
+    private static readonly Regex Hydrogen = new(@"(^|[/.])gemini-4-hydrogen(?:-|\z)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     private static readonly Regex ModelName = new(@"(?:^|[/.])(gemini-[^/]*)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     private static readonly Regex Gemini3Pro = new(@"^gemini-([0-9]+)(?:\.[0-9]+)?-pro(?:\z|-)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     private static readonly Regex Gemini3Flash = new(@"^gemini-([0-9]+)\.([0-9]+)-flash(?:\z|-(?!lite(?:-|\z)))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
@@ -44,29 +46,38 @@ public static class GoogleThinking
 
     private static string? Gemini3Level(string reasoning, string modelId, IList<GoogleWarning> warnings)
     {
-        var minimum = MinimumLevel(modelId);
-        if (reasoning == "none")
+        var levels = ThinkingLevels(modelId);
+        var index = Array.IndexOf(ReasoningLevels, reasoning);
+        if (index < 0 && reasoning != "none")
         {
-            return minimum;
+            warnings.Add(GoogleWarning.Unsupported("reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
+            return null;
         }
 
-        string? mapped = reasoning switch
+        // Nearest supported level: the level itself, then lower ones, then higher ones. "none" maps to the lowest level.
+        var candidates = new List<string>();
+        if (index >= 0)
         {
-            "minimal" => minimum,
-            "low" => "low",
-            "medium" => "medium",
-            "high" => "high",
-            "xhigh" => "high",
-            "max" => "high",
-            _ => null,
-        };
+            candidates.Add(reasoning);
+            for (var i = index - 1; i >= 0; i--)
+            {
+                candidates.Add(ReasoningLevels[i]);
+            }
+        }
+
+        for (var i = index + 1; i < ReasoningLevels.Length; i++)
+        {
+            candidates.Add(ReasoningLevels[i]);
+        }
+
+        var mapped = candidates.FirstOrDefault(levels.Contains);
         if (mapped == null)
         {
             warnings.Add(GoogleWarning.Unsupported("reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
             return null;
         }
 
-        if (mapped != reasoning)
+        if (reasoning != "none" && mapped != reasoning)
         {
             warnings.Add(GoogleWarning.Compatibility("reasoning", "reasoning \"" + reasoning + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
         }
@@ -74,8 +85,39 @@ public static class GoogleThinking
         return mapped;
     }
 
+    // Maps to the reasoning efforts of the model catalog entry.
+    private static List<string> ThinkingLevels(string modelId)
+    {
+        var minimum = MinimumLevel(modelId);
+        var levels = new List<string>();
+        if (minimum == "minimal")
+        {
+            levels.Add("minimal");
+        }
+
+        levels.Add("low");
+        levels.Add("medium");
+        levels.Add("high");
+        if (IsHydrogen(modelId))
+        {
+            levels.Add("xhigh");
+        }
+
+        return levels;
+    }
+
+    private static bool IsHydrogen(string modelId)
+    {
+        return Hydrogen.IsMatch(modelId ?? string.Empty);
+    }
+
     private static string MinimumLevel(string modelId)
     {
+        if (IsHydrogen(modelId))
+        {
+            return "low";
+        }
+
         var nameMatch = ModelName.Match(modelId ?? string.Empty);
         var name = nameMatch.Success ? nameMatch.Groups[1].Value : modelId ?? string.Empty;
 

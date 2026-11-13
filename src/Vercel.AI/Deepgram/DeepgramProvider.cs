@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -20,6 +21,9 @@ public class DeepgramOptions : OpenAICompatibleOptions
 {
     /// <summary>Clock used for response timestamps. Defaults to UTC now.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
+
+    /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
 }
 
 /// <summary>Parsed Deepgram error body.</summary>
@@ -284,7 +288,10 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         return new DeepgramTranscriptionModel(this, modelId).TranscribeAsync(audio, request, cancellationToken);
     }
 
-    private DateTimeOffset Now()
+    /// <summary>The WebSocket factory for streaming transcription.</summary>
+    internal WebSocketFactory? WebSocket => (Options as DeepgramOptions)?.WebSocket;
+
+    internal DateTimeOffset Now()
     {
         var clock = (Options as DeepgramOptions)?.Clock;
         return clock != null ? clock() : DateTimeOffset.UtcNow;
@@ -721,7 +728,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Deepgram pre-recorded transcription model.</summary>
-    public sealed class DeepgramTranscriptionModel : ITranscriptionModel
+    public sealed class DeepgramTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
     {
         private static readonly (string Option, string Query)[] QueryOptions =
         {
@@ -761,10 +768,52 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
+        public string SpecificationVersion => "v4";
+
+        /// <inheritdoc />
+        public bool CanStream => true;
+
+        /// <inheritdoc />
+        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        {
+            return GenerateAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        {
+            return StreamAsync(call ?? throw new ArgumentNullException(nameof(call)));
+        }
+
+        /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
             var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
+        }
+
+        private async Task<TranscriptionStreamStart?> StreamAsync(TranscriptionStreamCall call)
+        {
+            return await DeepgramStreamingTranscription.StreamAsync(ModelId, _provider, call).ConfigureAwait(false);
+        }
+
+        private async Task<TranscriptionModelResult> GenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        {
+            var request = new DeepgramTranscriptionRequest { ProviderOptions = call.ProviderOptions, Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value) };
+            var result = await TranscribeAsync(new AudioInput(call.Audio, call.MediaType, null), request, cancellationToken).ConfigureAwait(false);
+            var warnings = new List<OperationWarning>();
+            if (DeepgramObject(call.ProviderOptions) is { } options && Child(options, "streaming") is not null)
+            {
+                warnings.Add(OperationWarning.Unsupported("providerOptions.deepgram.streaming", "Deepgram batch transcription does not support streaming options."));
+            }
+
+            return new TranscriptionModelResult(
+                result.Text,
+                result.Segments,
+                result.Language,
+                result.DurationInSeconds,
+                warnings,
+                response: new ProviderResponse(result.Response.Headers, result.Response.Body, timestamp: result.Response.Timestamp.UtcDateTime, modelId: ModelId));
         }
 
         /// <summary>Posts raw audio to <c>/v1/listen</c>. Provider options become query parameters.</summary>

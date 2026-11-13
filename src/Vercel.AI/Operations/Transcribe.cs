@@ -93,7 +93,7 @@ public sealed class TranscriptionModelResult
 public sealed class TranscriptionStreamCall
 {
     /// <summary>Creates a stream call.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, string inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -107,7 +107,7 @@ public sealed class TranscriptionStreamCall
     public AudioChunkStream Audio { get; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; }
+    public AudioFormat InputAudioFormat { get; }
 
     /// <summary>Provider options.</summary>
     public JsonElement ProviderOptions { get; }
@@ -126,11 +126,15 @@ public sealed class TranscriptionStreamCall
 public sealed class TranscriptionStreamStart
 {
     /// <summary>Creates a start payload.</summary>
-    public TranscriptionStreamStart(ModelPartStream stream, ProviderResponse? response = null)
+    public TranscriptionStreamStart(ModelPartStream stream, ProviderResponse? response = null, ProviderRequest? request = null)
     {
         Stream = stream;
         Response = response;
+        Request = request;
     }
+
+    /// <summary>Request metadata. <see cref="ProviderRequest.Body"/> never carries credentials.</summary>
+    public ProviderRequest? Request { get; }
 
     /// <summary>Model parts.</summary>
     public ModelPartStream Stream { get; }
@@ -237,7 +241,7 @@ public sealed class StreamTranscribeRequest : OperationRequest
     public AudioChunkStream? Audio { get; set; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; set; } = string.Empty;
+    public AudioFormat InputAudioFormat { get; set; } = new AudioFormat(string.Empty);
 
     /// <summary>Requests raw provider chunks.</summary>
     public bool? IncludeRawChunks { get; set; }
