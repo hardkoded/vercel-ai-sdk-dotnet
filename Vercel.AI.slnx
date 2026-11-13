@@ -4,6 +4,8 @@
     <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
     <Project Path="examples/DecidePerplexityCriteriaOnly/DecidePerplexityCriteriaOnly.csproj" />
     <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
+    <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
+    <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />
