@@ -19,7 +19,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should extract a refusal as text content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should extract a refusal as text content", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_extract_a_refusal_as_text_content()
     {
         var result = await Generate(
@@ -32,7 +32,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should extract a refusal from a real response as text content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should extract a refusal from a real response as text content", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_extract_a_refusal_from_a_real_response_as_text_content()
     {
         var result = await Generate(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "openai-chat-refusal.json")));
@@ -44,7 +44,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should extract content and refusal as text content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should extract content and refusal as text content", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_extract_content_and_refusal_as_text_content()
     {
         var result = await Generate(
@@ -59,7 +59,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should keep the tool call finish reason when a refusal is present", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should keep the tool call finish reason when a refusal is present", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_keep_the_tool_call_finish_reason_when_a_refusal_is_present()
     {
         var result = await Generate(

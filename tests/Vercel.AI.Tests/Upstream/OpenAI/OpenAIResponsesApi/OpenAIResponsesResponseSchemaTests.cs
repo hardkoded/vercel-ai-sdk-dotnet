@@ -15,7 +15,7 @@ public sealed class OpenAIResponsesResponseSchemaTests
     private static bool IsValid(string json) => OpenAIResponsesSchema.IsValidResponse(OpenAIUpstream.Json(json));
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts refusal content parts in message output items", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "accepts refusal content parts in message output items", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Accepts_refusal_content_parts_in_message_output_items()
     {
         Assert.True(IsValid("""
@@ -34,7 +34,7 @@ public sealed class OpenAIResponsesResponseSchemaTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts text and refusal content parts in the same message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "accepts text and refusal content parts in the same message", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Accepts_text_and_refusal_content_parts_in_the_same_message()
     {
         Assert.True(IsValid("""

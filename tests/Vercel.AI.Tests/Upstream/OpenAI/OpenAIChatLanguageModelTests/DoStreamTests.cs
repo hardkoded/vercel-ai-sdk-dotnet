@@ -105,7 +105,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream a refusal as text deltas", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should stream a refusal as text deltas", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_stream_a_refusal_as_text_deltas()
     {
         var parts = await Stream(
@@ -123,7 +123,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream a refusal from a real response as text deltas", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should stream a refusal from a real response as text deltas", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_stream_a_refusal_from_a_real_response_as_text_deltas()
     {
         var chunks = File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "openai-chat-refusal.chunks.txt"))
@@ -147,7 +147,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should append refusal deltas to streamed content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "should append refusal deltas to streamed content", Coverage = UpstreamCoverage.Covered, Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_append_refusal_deltas_to_streamed_content()
     {
         var parts = await Stream(
@@ -164,7 +164,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should forward error stream parts after a refusal has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.")]
+    [UpstreamTest(Prefix + "should forward error stream parts after a refusal has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.", Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
     public async Task Should_forward_error_stream_parts_after_a_refusal_has_started()
     {
         var parts = await Stream(

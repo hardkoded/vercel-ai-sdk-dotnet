@@ -115,7 +115,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalGenerate + "should surface a refusal content part as text and map the finish reason to content-filter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalGenerate + "should surface a refusal content part as text and map the finish reason to content-filter", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Should_surface_a_refusal_content_part_as_text_and_map_the_finish_reason_to_content_filter()
     {
         var result = OpenAIResponsesSupport.Generate(OpenAIResponsesSupport.FixtureBody("openai-refusal.1.json"), jsonResponse: true);
@@ -129,7 +129,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalGenerate + "should surface output_text and refusal parts from the same message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalGenerate + "should surface output_text and refusal parts from the same message", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Should_surface_output_text_and_refusal_parts_from_the_same_message()
     {
         var result = OpenAIResponsesSupport.Generate(MessageResponse(
@@ -155,7 +155,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalGenerate + "should keep two message items as separate text parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalGenerate + "should keep two message items as separate text parts", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Should_keep_two_message_items_as_separate_text_parts()
     {
         var result = OpenAIResponsesSupport.Generate(MessageResponse(
@@ -182,7 +182,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalGenerate + "should include a refusal in structuredOutputText for a final answer", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalGenerate + "should include a refusal in structuredOutputText for a final answer", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Should_include_a_refusal_in_structuredOutputText_for_a_final_answer()
     {
         var result = OpenAIResponsesSupport.Generate(
@@ -197,7 +197,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalGenerate + "should prefer tool-calls over content-filter when a refusal is accompanied by a function call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalGenerate + "should prefer tool-calls over content-filter when a refusal is accompanied by a function call", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public void Should_prefer_tool_calls_over_content_filter_when_a_refusal_is_accompanied_by_a_function_call()
     {
         var result = OpenAIResponsesSupport.Generate(

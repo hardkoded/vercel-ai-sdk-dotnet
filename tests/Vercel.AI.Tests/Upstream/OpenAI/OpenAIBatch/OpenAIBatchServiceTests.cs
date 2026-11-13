@@ -403,7 +403,7 @@ public sealed class OpenAIBatchServiceTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves refusal content parts and maps the finish reason to content-filter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "preserves refusal content parts and maps the finish reason to content-filter", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public async Task Preserves_refusal_content_parts_and_maps_the_finish_reason_to_content_filter()
     {
         var refusal = System.Text.Json.Nodes.JsonNode.Parse("""

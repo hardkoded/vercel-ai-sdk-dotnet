@@ -344,7 +344,7 @@ public sealed class DoStreamTests
     private const string RefusalStream = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::";
 
     [Fact]
-    [UpstreamTest(RefusalStream + "should stream refusal content parts as text and map the finish reason to content-filter", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalStream + "should stream refusal content parts as text and map the finish reason to content-filter", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public async Task Should_stream_refusal_content_parts_as_text_and_map_the_finish_reason_to_content_filter()
     {
         var events = OpenAIResponsesSupport.Fixture("openai-refusal.1.chunks.txt")
@@ -357,7 +357,7 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(RefusalStream + "should prefer tool-calls over content-filter when a refusal is streamed with a function call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(RefusalStream + "should prefer tool-calls over content-filter when a refusal is streamed with a function call", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
     public async Task Should_prefer_tool_calls_over_content_filter_when_a_refusal_is_streamed_with_a_function_call()
     {
         var messageItem = JsonNode.Parse("""{"id":"msg_refusal_function_call","type":"message","status":"completed","role":"assistant","content":[{"type":"refusal","refusal":"I can't do that, but I can check the weather."}]}""")!;
