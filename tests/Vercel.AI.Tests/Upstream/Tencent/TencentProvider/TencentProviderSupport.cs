@@ -5,8 +5,8 @@
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
-using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tencent;
+using Vercel.AI.Tests.MoreProviders;
 using TencentProviderType = Vercel.AI.Tencent.TencentProvider;
 
 namespace Vercel.AI.Tests.Upstream.Tencent.TencentProvider;
