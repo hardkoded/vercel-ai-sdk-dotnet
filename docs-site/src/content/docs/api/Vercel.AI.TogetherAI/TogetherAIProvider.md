@@ -115,22 +115,6 @@ Provider id.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L15)
 
-<a id="Vercel_AI_TogetherAI_TogetherAIProvider_StructuredOutputModelId"></a>
-
-### StructuredOutputModelId
-
-
-```csharp
-public const string StructuredOutputModelId = "deepseek-ai/DeepSeek-V4-Flash-0731"
-```
-
-
-The only chat model that receives structured outputs.
-
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L27)
-
 ## Properties
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_ApiKeyDeprecationWarning_"></a>
