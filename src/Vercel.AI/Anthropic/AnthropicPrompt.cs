@@ -271,19 +271,26 @@ public static class AnthropicPrompt
                     message: "tool changes on the initial system message are not supported by Anthropic. Configure the initial tool set via the tools option instead. The tool changes have been ignored."));
             }
 
-            if (hasInlineOptions)
-            {
-                warnings.Add(new AnthropicWarning(
-                    "other",
-                    message: "clearAt and effort on the initial system message are not supported by Anthropic. These options have been ignored."));
-            }
-
             var parts = system ?? new JsonArray();
             foreach (var message in converted)
             {
-                if (message["content"] is JsonArray content)
+                // Effort-only messages stay in the messages array.
+                var contentParts = message["content"] as JsonArray;
+                if ((contentParts?.Count ?? 0) == 0 && message["clear_at"] == null && message["output_config"] != null)
                 {
-                    foreach (var part in content)
+                    messages.Add(new JsonObject { ["role"] = "system", ["content"] = new JsonArray(), ["output_config"] = message["output_config"]!.DeepClone() });
+                    AddBeta(betas, "mid-conversation-output-config-2026-07-01");
+                }
+                else if (message["clear_at"] != null || message["output_config"] != null)
+                {
+                    warnings.Add(new AnthropicWarning(
+                        "other",
+                        message: "clearAt and effort on this initial system message are not supported by Anthropic. Use a separate effort-only system message with empty content to set effort. These options have been ignored."));
+                }
+
+                if (contentParts != null)
+                {
+                    foreach (var part in contentParts)
                     {
                         if (part is JsonObject obj && obj["type"]?.GetValue<string>() == "text")
                         {
@@ -293,7 +300,7 @@ public static class AnthropicPrompt
                 }
             }
 
-            system = parts.Count == 0 ? system : parts;
+            system = parts;
             return;
         }
 

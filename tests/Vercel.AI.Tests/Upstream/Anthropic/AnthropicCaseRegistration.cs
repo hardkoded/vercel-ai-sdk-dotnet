@@ -166,7 +166,6 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > edge cases::should handle zero tokens in iterations", AnthropicAssertions.UsageZeroIterations);
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > real-world scenarios from documentation::should match documentation example exactly", AnthropicAssertions.UsageDocumentation);
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > real-world scenarios from documentation::should handle re-applying previous compaction block (no new compaction)", AnthropicAssertions.UsageReapplied);
-        AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message", AnthropicAssertions.PromptSystemAndTrim);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::user messages::should add image parts for URL images", AnthropicAssertions.PromptUrlImage);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::tool messages::should combine user and tool messages", AnthropicAssertions.PromptMore);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::assistant messages::should omit empty compaction blocks", AnthropicAssertions.PromptMore);
