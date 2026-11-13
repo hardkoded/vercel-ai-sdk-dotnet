@@ -516,7 +516,8 @@ public sealed class CohereLanguageModel : ILanguageModel
                     {
                         var arguments = _toolArguments.ToString().Trim();
                         var input = SecureJson.Parse(arguments.Length == 0 ? "{}" : arguments);
-                        parts.Add(new ToolCallStreamPart(_toolCallId ?? string.Empty, _toolName ?? string.Empty, JsonSerializer.Serialize(input)));
+                        // Cohere returns "null" arguments for tools that take no arguments.
+                        parts.Add(new ToolCallStreamPart(_toolCallId ?? string.Empty, _toolName ?? string.Empty, input.ValueKind == JsonValueKind.Null ? "{}" : JsonSerializer.Serialize(input)));
                         _toolArguments = null;
                     }
 
