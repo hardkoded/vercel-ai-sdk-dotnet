@@ -452,7 +452,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         var created = OpenAIJson.Unix(root, "created");
         return new LanguageModelGenerateResult(
             content,
-            MapFinishReason(rawReason, hasRefusal),
+            MapOpenAIFinishReason(rawReason, hasRefusal),
             OpenAIJson.ChatUsage(root.TryGetProperty("usage", out var usageElement) ? usageElement : (JsonElement?)null),
             rawReason,
             ToCallWarnings(warnings),
@@ -660,7 +660,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     }
 
     // OpenAI reports a completed response for refusals, so the refusal is the reason the response ended.
-    private static FinishReason MapFinishReason(string? raw, bool hasRefusal)
+    private static FinishReason MapOpenAIFinishReason(string? raw, bool hasRefusal)
     {
         return hasRefusal && raw == "stop" ? FinishReason.ContentFilter : FinishReasons.Parse(raw);
     }
@@ -818,7 +818,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
                 {
                     _rawFinish = finish.GetString();
-                    _finish = MapFinishReason(_rawFinish, _hasRefusal);
+                    _finish = MapOpenAIFinishReason(_rawFinish, _hasRefusal);
                 }
 
                 if (choice.TryGetProperty("logprobs", out var logprobs)

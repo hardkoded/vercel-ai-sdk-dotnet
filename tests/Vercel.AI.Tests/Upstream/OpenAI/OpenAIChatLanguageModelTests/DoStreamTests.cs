@@ -165,7 +165,7 @@ public sealed class DoStreamTests
 
     [Fact]
     [UpstreamTest(Prefix + "should forward error stream parts after a refusal has started", Coverage = UpstreamCoverage.Partial, Note = "The error part carries the message string. Upstream wraps a structured error object.", Commit = "f6dbf04b5dd06561ce8c6cf223e86a287cd7c4d3")]
-    public async Task Should_forward_error_stream_parts_after_a_refusal_has_started()
+    public async Task Should_forward_error_message_after_a_refusal_has_started()
     {
         var parts = await Stream(
             Chunk("chatcmpl-refusal-error", "{\"role\":\"assistant\",\"content\":null,\"refusal\":\"I'm sorry\"}", null, 1702657020),
