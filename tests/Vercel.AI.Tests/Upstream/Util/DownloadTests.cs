@@ -67,7 +67,7 @@ public sealed class DownloadTests
         var calls = 0;
         var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var headers = new HeaderCollection();
-        headers.Add("location", "http://169.254.169.254/latest/meta-data/");
+        headers.Add("location", "https://169.254.169.254/latest/meta-data/");
         var response = new DownloadResponse(302, "Found", headers, EncodingBytes("redirecting"))
         {
             OnCancel = delegate { cancelled.TrySetResult(true); },
@@ -93,7 +93,7 @@ public sealed class DownloadTests
         var calls = 0;
         var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var headers = new HeaderCollection();
-        headers.Add("location", "http://localhost:8080/admin");
+        headers.Add("location", "https://localhost:8080/admin");
         var response = new DownloadResponse(307, "Temporary Redirect", headers, EncodingBytes("redirecting"))
         {
             OnCancel = delegate { cancelled.TrySetResult(true); },

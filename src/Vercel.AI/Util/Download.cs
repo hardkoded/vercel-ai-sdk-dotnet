@@ -404,6 +404,12 @@ public static class Download
                 // pending must not hold up the redirect.
                 _ = Task.Run(response.Cancel);
                 var next = new Uri(new Uri(currentUrl), location);
+                if (string.Equals(new Uri(currentUrl).Scheme, "https", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(next.Scheme, "http", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new DownloadError(url, "Redirect from HTTPS to HTTP was blocked");
+                }
+
                 if (currentHeaders != null && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl))
                 {
                     var userAgent = currentHeaders.Get("user-agent");
