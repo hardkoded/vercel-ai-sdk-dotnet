@@ -93,8 +93,8 @@ public sealed class SingleInvalidToolCallTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should add tool call and result error parts to the ui message stream", Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_add_tool_call_and_result_error_parts_to_the_ui_message_stream()
+    [UpstreamTest(Prefix + "should add a tool input error part to the ui message stream", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_add_a_tool_input_error_part_to_the_ui_message_stream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
 
@@ -114,7 +114,6 @@ public sealed class SingleInvalidToolCallTests
                 "toolName": "cityAttractions",
                 "type": "tool-input-error"
               },
-              { "errorText": "An error occurred.", "toolCallId": "call-1", "type": "tool-output-error" },
               { "type": "finish-step" },
               { "finishReason": "stop", "type": "finish" }
             ]
