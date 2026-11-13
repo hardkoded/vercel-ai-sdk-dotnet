@@ -33,7 +33,37 @@ public sealed class AnthropicPromptResult
 
     /// <summary>Warnings produced while converting.</summary>
     public IReadOnlyList<AnthropicWarning> Warnings { get; }
+
+    /// <summary>The by-value tool definitions that ended up in <see cref="Messages"/>.</summary>
+    internal IReadOnlyList<JsonObject> InlineToolDefinitions { get; set; } = Array.Empty<JsonObject>();
 }
+
+/// <summary>The Anthropic form of a tool that a mid-conversation tool change defines by value.</summary>
+public sealed class AnthropicInlineToolResult
+{
+    /// <summary>Creates a converted inline tool.</summary>
+    public AnthropicInlineToolResult(JsonObject? definition, IReadOnlyList<AnthropicWarning>? warnings = null, IReadOnlyList<string>? betas = null)
+    {
+        Definition = definition;
+        Warnings = warnings ?? Array.Empty<AnthropicWarning>();
+        Betas = betas ?? Array.Empty<string>();
+    }
+
+    /// <summary>The tool definition. Null when the tool is dropped.</summary>
+    public JsonObject? Definition { get; }
+
+    /// <summary>Warnings from converting the tool.</summary>
+    public IReadOnlyList<AnthropicWarning> Warnings { get; }
+
+    /// <summary>Betas the tool requires.</summary>
+    public IReadOnlyList<string> Betas { get; }
+}
+
+/// <summary>
+/// Converts a tool that a mid-conversation tool change adds by value (a <c>function</c> or <c>provider</c>
+/// tool object) into its Anthropic definition. Maps to <c>AnthropicInlineToolConverter</c>.
+/// </summary>
+public delegate AnthropicInlineToolResult AnthropicInlineToolConverter(JsonElement tool);
 
 /// <summary>Converts SDK prompt messages into Anthropic message blocks.</summary>
 public static class AnthropicPrompt
@@ -45,14 +75,15 @@ public static class AnthropicPrompt
         AnthropicCacheControlValidator? cacheControl = null,
         IReadOnlyDictionary<string, string>? providerToolNames = null,
         IReadOnlyDictionary<string, string>? toolsetNames = null,
-        AnthropicMediaPartConverter? convertMediaPart = null)
+        AnthropicMediaPartConverter? convertMediaPart = null,
+        AnthropicInlineToolConverter? convertInlineTool = null)
     {
         if (prompt == null)
         {
             throw new ArgumentNullException(nameof(prompt));
         }
 
-        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames, convertMediaPart);
+        return ConvertJson(ToJson(prompt), sendReasoning, cacheControl, providerToolNames, toolsetNames, convertMediaPart, convertInlineTool);
     }
 
     /// <summary>Converts a prompt JSON array that uses the SDK message shape.</summary>
@@ -62,7 +93,8 @@ public static class AnthropicPrompt
         AnthropicCacheControlValidator? cacheControl = null,
         IReadOnlyDictionary<string, string>? providerToolNames = null,
         IReadOnlyDictionary<string, string>? toolsetNames = null,
-        AnthropicMediaPartConverter? convertMediaPart = null)
+        AnthropicMediaPartConverter? convertMediaPart = null,
+        AnthropicInlineToolConverter? convertInlineTool = null)
     {
         var warnings = new List<AnthropicWarning>();
         var betas = new List<string>();
@@ -73,6 +105,7 @@ public static class AnthropicPrompt
         var blocks = Group(prompt);
         JsonArray? system = null;
         var messages = new JsonArray();
+        var emittedInlineDefinitions = new List<JsonObject>();
 
         for (var i = 0; i < blocks.Count; i++)
         {
@@ -80,7 +113,7 @@ public static class AnthropicPrompt
             var isLast = i == blocks.Count - 1;
             if (block.Role == "system")
             {
-                ConvertSystem(block, i == 0, ref system, messages, warnings, betas, validator, names);
+                ConvertSystem(block, i == 0, ref system, messages, warnings, betas, validator, names, convertInlineTool, emittedInlineDefinitions);
             }
             else if (block.Role == "user")
             {
@@ -104,7 +137,7 @@ public static class AnthropicPrompt
             }
         }
 
-        return new AnthropicPromptResult(system, messages, betas, warnings);
+        return new AnthropicPromptResult(system, messages, betas, warnings) { InlineToolDefinitions = emittedInlineDefinitions };
     }
 
     private static void ConvertSystem(
@@ -115,9 +148,12 @@ public static class AnthropicPrompt
         List<AnthropicWarning> warnings,
         List<string> betas,
         AnthropicCacheControlValidator validator,
-        IReadOnlyDictionary<string, string> names)
+        IReadOnlyDictionary<string, string> names,
+        AnthropicInlineToolConverter? convertInlineTool,
+        List<JsonObject> emittedInlineDefinitions)
     {
         var converted = new List<JsonObject>();
+        var inlineDefinitions = new Dictionary<JsonObject, List<JsonObject>>();
         var toolChangeCount = 0;
         var hasInlineOptions = false;
         foreach (var message in block.Messages)
@@ -130,11 +166,6 @@ public static class AnthropicPrompt
             var clearAt = options == null ? null : AnthropicJson.String(options.Value, "clearAt");
             var effort = options == null ? null : AnthropicJson.String(options.Value, "effort");
             var changes = toolChanges != null && toolChanges.Value.ValueKind == JsonValueKind.Array ? toolChanges.Value.GetArrayLength() : 0;
-            toolChangeCount += changes;
-            if (clearAt != null || effort != null)
-            {
-                hasInlineOptions = true;
-            }
 
             var content = new JsonArray();
             if (text.Length > 0 || (changes == 0 && clearAt == null && effort == null))
@@ -144,17 +175,71 @@ public static class AnthropicPrompt
                 content.Add(part);
             }
 
+            var messageDefinitions = new List<JsonObject>();
+            var messageChangeCount = 0;
             if (toolChanges != null && toolChanges.Value.ValueKind == JsonValueKind.Array)
             {
                 foreach (var change in toolChanges.Value.EnumerateArray())
                 {
+                    if (change.ValueKind == JsonValueKind.Object && change.TryGetProperty("tool", out var inlineTool))
+                    {
+                        if (convertInlineTool == null)
+                        {
+                            throw new UnsupportedFunctionalityException(
+                                "tool additions by value in mid-conversation tool changes",
+                                "'tool additions by value in mid-conversation tool changes' functionality not supported.");
+                        }
+
+                        if (IsComputerTool(inlineTool))
+                        {
+                            warnings.Add(new AnthropicWarning(
+                                "other",
+                                message: "The tool '" + (AnthropicJson.String(inlineTool, "name") ?? string.Empty) + "' cannot be added by value in a tool change. Declare it in the tools option and add it by reference with toolName. The tool change has been ignored."));
+                            continue;
+                        }
+
+                        var inline = convertInlineTool(inlineTool);
+                        warnings.AddRange(inline.Warnings);
+                        foreach (var beta in inline.Betas)
+                        {
+                            AddBeta(betas, beta);
+                        }
+
+                        if (inline.Definition == null)
+                        {
+                            continue;
+                        }
+
+                        content.Add(new JsonObject
+                        {
+                            ["type"] = "tool_addition",
+                            ["tool"] = new JsonObject { ["type"] = "tool_definition", ["definition"] = inline.Definition },
+                        });
+                        messageDefinitions.Add(inline.Definition);
+                        messageChangeCount++;
+                        continue;
+                    }
+
                     var toolName = AnthropicJson.String(change, "toolName") ?? string.Empty;
                     content.Add(new JsonObject
                     {
                         ["type"] = AnthropicJson.String(change, "type"),
                         ["tool"] = new JsonObject { ["type"] = "tool_reference", ["name"] = ToProviderName(names, toolName) },
                     });
+                    messageChangeCount++;
                 }
+            }
+
+            // Every change was ignored and nothing else is left to send.
+            if (content.Count == 0 && clearAt == null && effort == null)
+            {
+                continue;
+            }
+
+            toolChangeCount += messageChangeCount;
+            if (clearAt != null || effort != null)
+            {
+                hasInlineOptions = true;
             }
 
             var node = new JsonObject { ["content"] = content };
@@ -165,6 +250,10 @@ public static class AnthropicPrompt
             }
 
             converted.Add(node);
+            if (messageDefinitions.Count > 0)
+            {
+                inlineDefinitions[node] = messageDefinitions;
+            }
         }
 
         var shouldHoist = hoist && toolChangeCount == 0 && !hasInlineOptions;
@@ -225,7 +314,13 @@ public static class AnthropicPrompt
             }
 
             messages.Add(inline);
-            if (message["content"] is JsonArray content)
+            if (inlineDefinitions.TryGetValue(message, out var definitions))
+            {
+                // The inline tools beta also covers changes by reference.
+                emittedInlineDefinitions.AddRange(definitions);
+                AddBeta(betas, "inline-tools-2026-09-15");
+            }
+            else if (message["content"] is JsonArray content)
             {
                 foreach (var part in content)
                 {
@@ -238,6 +333,58 @@ public static class AnthropicPrompt
                 }
             }
         }
+    }
+
+    private static bool IsComputerTool(JsonElement tool)
+    {
+        // The computer use tools cannot be defined in a message (the API rejects
+        // them), they must be declared in `tools` and added by reference.
+        return AnthropicJson.String(tool, "type") == "provider"
+            && (AnthropicJson.String(tool, "id") ?? string.Empty).StartsWith("anthropic.computer_", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Collects the tools that mid-conversation tool changes add by value, so they can take part in
+    /// tool name mapping. Tools that cannot be added by value are left out. Maps to <c>getInlineToolsFromPrompt</c>.
+    /// </summary>
+    internal static IReadOnlyList<JsonElement> GetInlineTools(JsonElement prompt)
+    {
+        var tools = new List<JsonElement>();
+        if (prompt.ValueKind != JsonValueKind.Array)
+        {
+            return tools;
+        }
+
+        foreach (var message in prompt.EnumerateArray())
+        {
+            if (message.ValueKind != JsonValueKind.Object || AnthropicJson.String(message, "role") != "system")
+            {
+                continue;
+            }
+
+            var options = Provider(message);
+            var changes = options == null ? default : AnthropicJson.Property(options.Value, "toolChanges");
+            if (changes == null || changes.Value.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var change in changes.Value.EnumerateArray())
+            {
+                if (change.ValueKind == JsonValueKind.Object && change.TryGetProperty("tool", out var tool) && !IsComputerTool(tool))
+                {
+                    tools.Add(tool);
+                }
+            }
+        }
+
+        return tools;
+    }
+
+    /// <summary>Converts SDK prompt messages to the JSON prompt shape.</summary>
+    internal static JsonElement PromptJson(IReadOnlyList<ModelMessage> prompt)
+    {
+        return ToJson(prompt);
     }
 
     private static bool IsInitial(bool firstBlock, JsonArray? system, int toolChanges, bool inlineOptions)

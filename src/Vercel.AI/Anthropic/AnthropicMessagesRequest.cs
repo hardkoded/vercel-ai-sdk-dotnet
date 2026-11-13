@@ -64,6 +64,9 @@ public sealed class AnthropicPreparedRequest
     /// <summary>True when a custom provider-options key was present.</summary>
     public bool UsedCustomProviderKey { get; }
 
+    /// <summary>Maps API names of provider tools back to the caller's tool names.</summary>
+    internal IReadOnlyDictionary<string, string> ToolNames { get; set; } = new Dictionary<string, string>();
+
     /// <summary>
     /// True when a web tool that dynamic filtering runs through code execution is sent without the code execution tool.
     /// The API then allows <c>code_execution</c> calls implicitly, so the response marks them dynamic.
@@ -201,7 +204,11 @@ public static class AnthropicMessagesRequest
             settings?.CacheControlProviderOptionsName ?? "anthropic",
             hasThread && AnthropicCacheControlValidator.Read(anthropic == null ? null : Wrap(anthropic.Value)) != null ? 1 : 0);
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
-        var toolNames = ProviderToolNames(options);
+        var promptJson = PromptOverride(options) ?? AnthropicPrompt.PromptJson(options.Prompt);
+
+        // Tools that tool changes add by value are only known from the prompt.
+        var inlineTools = AnthropicPrompt.GetInlineTools(promptJson);
+        var toolNames = ProviderToolNames(options, inlineTools);
         var toolsets = ToolsetNames(options);
         foreach (var definition in ToTools(options))
         {
@@ -211,9 +218,34 @@ public static class AnthropicMessagesRequest
             }
         }
 
-        var converted = PromptOverride(options) is { } promptJson
-            ? AnthropicPrompt.ConvertJson(promptJson, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart)
-            : AnthropicPrompt.Convert(options.Prompt, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart);
+        var inlineToolDefinitions = new List<KeyValuePair<string, JsonObject>>();
+        var converted = AnthropicPrompt.ConvertJson(
+            promptJson,
+            sendReasoning,
+            validator,
+            toolNames,
+            toolsets,
+            settings?.ConvertMediaPart,
+            inlineTool =>
+            {
+                var prepared = AnthropicToolPreparer.Prepare(
+                    new[] { ToDefinition(inlineTool) },
+                    null,
+                    null,
+                    null,
+                    validator,
+                    usesJsonTool ? false : supportsStructured,
+                    supportsStrictTools && capabilities.SupportsStructuredOutput);
+                // No stream-dependent defaults (eager input streaming): the definition is replayed on
+                // every request and has to stay identical between streaming and non-streaming calls to keep the cache.
+                var definition = prepared.Tools != null && prepared.Tools.Count > 0 ? prepared.Tools[0]?.DeepClone() as JsonObject : null;
+                if (definition != null)
+                {
+                    inlineToolDefinitions.Add(new KeyValuePair<string, JsonObject>(AnthropicJson.String(inlineTool, "name") ?? string.Empty, definition));
+                }
+
+                return new AnthropicInlineToolResult(definition, prepared.Warnings, prepared.Betas);
+            });
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
@@ -379,9 +411,17 @@ public static class AnthropicMessagesRequest
             maxTokens = capabilities.MaxOutputTokens;
         }
 
+        var declaredTools = tools.ToList();
+        var toolsToPrepare = tools;
         if (usesJsonTool)
         {
-            tools.Add(new AnthropicToolDefinition
+            // The JSON-tool fallback limits which application tools are available:
+            // `none` sends only the JSON response tool, a named choice only that application tool.
+            var jsonChoice = options.ToolChoice;
+            toolsToPrepare = tools
+                .Where(tool => jsonChoice?.Type != "none" && (!(jsonChoice is ToolChoice.NamedChoice selected) || tool.Name == selected.ToolName))
+                .ToList();
+            toolsToPrepare.Add(new AnthropicToolDefinition
             {
                 Name = "json",
                 Description = "Respond with a JSON object.",
@@ -394,7 +434,7 @@ public static class AnthropicMessagesRequest
         var disableParallel = usesJsonTool ? true : Bool(anthropic, "disableParallelToolUse");
         var eagerDefault = stream && (Bool(anthropic, "toolStreaming") ?? true);
         var preparedTools = AnthropicToolPreparer.Prepare(
-            tools,
+            toolsToPrepare,
             choiceType,
             choiceName,
             disableParallel,
@@ -402,9 +442,12 @@ public static class AnthropicMessagesRequest
             usesJsonTool ? false : supportsStructured,
             supportsStrictTools && capabilities.SupportsStructuredOutput,
             eagerDefault,
-            capabilities.RejectsForcedToolUse || thinkingType == "enabled");
+            capabilities.RejectsForcedToolUse || thinkingType == "enabled",
+            // tool changes can add tools when `tools` is empty, so the tool choice and parallel tool use settings still apply
+            inlineTools.Count > 0);
         warnings.AddRange(preparedTools.Warnings);
         betas.AddRange(preparedTools.Betas);
+        EnsureInlineToolsRespectChoice(options.ToolChoice, usesJsonTool, preparedTools, declaredTools, toolNames, inlineToolDefinitions, converted.InlineToolDefinitions);
         warnings.AddRange(validator.Warnings);
 
         var hasCompaction = anthropic != null && anthropic.Value.TryGetProperty("compaction", out var compactionOption) && compactionOption.ValueKind == JsonValueKind.Object;
@@ -639,7 +682,122 @@ public static class AnthropicMessagesRequest
             body["stream"] = true;
         }
 
-        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools));
+        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools)) { ToolNames = ResponseToolNames(options, inlineTools) };
+    }
+
+    // Forced-choice and JSON-tool fallbacks restrict the declared tools. Inline definitions, including those
+    // replayed from history, must not restore other tools before the provider executes the request.
+    private static void EnsureInlineToolsRespectChoice(
+        ToolChoice? toolChoice,
+        bool usesJsonTool,
+        AnthropicPreparedTools preparedTools,
+        IReadOnlyList<AnthropicToolDefinition> declaredTools,
+        IReadOnlyDictionary<string, string> toolNames,
+        IReadOnlyList<KeyValuePair<string, JsonObject>> inlineToolDefinitions,
+        IReadOnlyList<JsonObject> emittedDefinitions)
+    {
+        if (toolChoice == null || inlineToolDefinitions.Count == 0)
+        {
+            return;
+        }
+
+        var named = toolChoice as ToolChoice.NamedChoice;
+        var fallsBack = (named != null && (preparedTools.ToolChoice?["type"]?.GetValue<string>() == "auto" || usesJsonTool))
+            || (toolChoice.Type == "none" && usesJsonTool);
+        if (!fallsBack)
+        {
+            return;
+        }
+
+        // Initial system tool changes are ignored by the prompt converter.
+        // Validate only definitions that remain in the outgoing messages.
+        var selectedSdkName = named?.ToolName;
+        var selectedTool = declaredTools.FirstOrDefault(tool => tool.Name == selectedSdkName);
+        var selectedProviderName = usesJsonTool && selectedSdkName != null && selectedTool?.Type != "function"
+            ? (toolNames.TryGetValue(selectedSdkName, out var mapped) ? mapped : selectedSdkName)
+            : selectedSdkName;
+        foreach (var pair in inlineToolDefinitions)
+        {
+            var definition = pair.Value;
+            if (!emittedDefinitions.Contains(definition))
+            {
+                continue;
+            }
+
+            var definitionName = definition["name"]?.GetValue<string>();
+            // The JSON-tool path filters application tools by SDK name before conversion;
+            // the forced-choice fallback filters by provider name.
+            var conflicts = toolChoice.Type == "none"
+                || (usesJsonTool && pair.Key != selectedSdkName)
+                || definitionName == null
+                || definitionName != selectedProviderName;
+            if (!conflicts)
+            {
+                continue;
+            }
+
+            var toolName = definitionName ?? definition["type"]?.GetValue<string>() ?? string.Empty;
+            var choice = named != null ? "named tool choice '" + named.ToolName + "'" : "tool choice 'none'";
+            throw new InvalidArgumentException(
+                "toolChoice",
+                null,
+                "Inline tool '" + toolName + "' conflicts with " + choice + ". Inline definitions must respect the tool choice when forced tool use falls back or the JSON response tool is used.");
+        }
+    }
+
+    // Maps API names of provider tools back to the caller's tool names. Declared tools go last so that an
+    // inline tool cannot take over their mapping.
+    private static Dictionary<string, string> ResponseToolNames(LanguageModelCallOptions options, IReadOnlyList<JsonElement> inlineTools)
+    {
+        var names = new Dictionary<string, string>();
+        foreach (var tool in inlineTools.Concat(DeclaredProviderTools(options)))
+        {
+            var name = AnthropicJson.String(tool, "name");
+            var api = ApiName(AnthropicJson.String(tool, "id"));
+            if (name != null && api != null)
+            {
+                names[api] = name;
+            }
+        }
+
+        return names;
+    }
+
+    private static JsonElement ProviderToolJson(LanguageModelTool tool)
+    {
+        var node = new JsonObject
+        {
+            ["type"] = "provider",
+            ["id"] = tool.ProviderToolId,
+            ["name"] = tool.Name,
+            ["args"] = tool.Args.ValueKind == JsonValueKind.Object ? AnthropicJson.Node(tool.Args) : new JsonObject(),
+        };
+        using var document = JsonDocument.Parse(node.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static IEnumerable<JsonElement> ProviderOptionTools(LanguageModelCallOptions options)
+    {
+        var provider = ReadProvider(options, "anthropic");
+        if (provider != null && provider.Value.TryGetProperty("providerTools", out var tools) && tools.ValueKind == JsonValueKind.Array)
+        {
+            return tools.EnumerateArray().ToList();
+        }
+
+        return Array.Empty<JsonElement>();
+    }
+
+    // Provider tools come from the tools option (LanguageModelTool.ProviderDefined) and from providerOptions.anthropic.providerTools.
+    private static IEnumerable<JsonElement> DeclaredProviderTools(LanguageModelCallOptions options)
+    {
+        var declared = new List<JsonElement>();
+        if (options.Tools != null)
+        {
+            declared.AddRange(options.Tools.Where(tool => tool.ProviderToolId != null).Select(ProviderToolJson));
+        }
+
+        declared.AddRange(ProviderOptionTools(options));
+        return declared;
     }
 
     private static string? ComputerToolsetName(IReadOnlyList<AnthropicToolDefinition> tools)
@@ -979,43 +1137,38 @@ public static class AnthropicMessagesRequest
             }
         }
 
-        var provider = ReadProvider(options, "anthropic");
-        if (provider != null && provider.Value.TryGetProperty("providerTools", out var extra) && extra.ValueKind == JsonValueKind.Array)
+        foreach (var tool in ProviderOptionTools(options))
         {
-            foreach (var tool in extra.EnumerateArray())
-            {
-                tools.Add(new AnthropicToolDefinition
-                {
-                    Type = AnthropicJson.String(tool, "type") ?? "provider",
-                    Name = AnthropicJson.String(tool, "name") ?? string.Empty,
-                    Description = AnthropicJson.String(tool, "description"),
-                    Id = AnthropicJson.String(tool, "id"),
-                    InputSchema = tool.TryGetProperty("inputSchema", out var schema) ? schema : null,
-                    Args = tool.TryGetProperty("args", out var args) ? args : null,
-                    ProviderOptions = tool.TryGetProperty("providerOptions", out var providerOptions) ? providerOptions : null,
-                    Strict = AnthropicJson.Bool(tool, "strict"),
-                    InputExamples = tool.TryGetProperty("inputExamples", out var examples) ? examples : null,
-                });
-            }
+            tools.Add(ToDefinition(tool));
         }
 
         return tools;
     }
 
-    private static Dictionary<string, string> ProviderToolNames(LanguageModelCallOptions options)
+    private static AnthropicToolDefinition ToDefinition(JsonElement tool)
     {
-        var names = new Dictionary<string, string>();
-        var provider = ReadProvider(options, "anthropic");
-        if (provider == null || !provider.Value.TryGetProperty("providerTools", out var tools) || tools.ValueKind != JsonValueKind.Array)
+        return new AnthropicToolDefinition
         {
-            return names;
-        }
+            Type = AnthropicJson.String(tool, "type") ?? "provider",
+            Name = AnthropicJson.String(tool, "name") ?? string.Empty,
+            Description = AnthropicJson.String(tool, "description"),
+            Id = AnthropicJson.String(tool, "id"),
+            InputSchema = tool.TryGetProperty("inputSchema", out var schema) ? schema : null,
+            Args = tool.TryGetProperty("args", out var args) ? args : null,
+            ProviderOptions = tool.TryGetProperty("providerOptions", out var providerOptions) ? providerOptions : null,
+            Strict = AnthropicJson.Bool(tool, "strict"),
+            InputExamples = tool.TryGetProperty("inputExamples", out var examples) ? examples : null,
+        };
+    }
 
-        foreach (var tool in tools.EnumerateArray())
+    private static Dictionary<string, string> ProviderToolNames(LanguageModelCallOptions options, IReadOnlyList<JsonElement> inlineTools)
+    {
+        // Declared tools win when provider tool names collide, so an inline tool cannot take over their mapping.
+        var names = new Dictionary<string, string>();
+        foreach (var tool in DeclaredProviderTools(options).Concat(inlineTools))
         {
-            var id = AnthropicJson.String(tool, "id");
             var name = AnthropicJson.String(tool, "name");
-            var api = ApiName(id);
+            var api = ApiName(AnthropicJson.String(tool, "id"));
             if (name != null && api != null && !names.ContainsKey(name))
             {
                 names[name] = api;
@@ -1028,13 +1181,7 @@ public static class AnthropicMessagesRequest
     private static Dictionary<string, string> ToolsetNames(LanguageModelCallOptions options)
     {
         var names = new Dictionary<string, string>();
-        var provider = ReadProvider(options, "anthropic");
-        if (provider == null || !provider.Value.TryGetProperty("providerTools", out var tools))
-        {
-            return names;
-        }
-
-        foreach (var tool in tools.EnumerateArray())
+        foreach (var tool in DeclaredProviderTools(options))
         {
             if (AnthropicJson.String(tool, "id") == "anthropic.computer_toolset_20260801")
             {

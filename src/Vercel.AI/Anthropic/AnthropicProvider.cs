@@ -530,6 +530,11 @@ public class AnthropicLanguageModel : ILanguageModel
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
         };
+        foreach (var pair in prepared.ToolNames)
+        {
+            context.ToolNames[pair.Key] = pair.Value;
+        }
+
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
 
@@ -550,7 +555,7 @@ public class AnthropicLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey)
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, prepared.ToolNames)
         {
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
@@ -614,7 +619,10 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.UsedCustomProviderKey,
             prepared.MarkCodeExecutionDynamic,
             prepared.PreparedTools,
-            prepared.ComputerToolsetName);
+            prepared.ComputerToolsetName)
+        {
+            ToolNames = prepared.ToolNames,
+        };
     }
 
     private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)
