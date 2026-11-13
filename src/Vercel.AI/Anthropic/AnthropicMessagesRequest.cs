@@ -20,8 +20,14 @@ public sealed class AnthropicPreparedRequest
         IReadOnlyList<string> betas,
         bool usesJsonResponseTool,
         string providerOptionsName,
-        bool usedCustomProviderKey)
+        bool usedCustomProviderKey,
+        bool markCodeExecutionDynamic = false,
+        JsonArray? preparedTools = null,
+        string? computerToolsetName = null)
     {
+        MarkCodeExecutionDynamic = markCodeExecutionDynamic;
+        PreparedTools = preparedTools;
+        ComputerToolsetName = computerToolsetName;
         Body = body;
         Warnings = warnings;
         Betas = betas;
@@ -32,6 +38,15 @@ public sealed class AnthropicPreparedRequest
 
     /// <summary>JSON body.</summary>
     public JsonObject Body { get; }
+
+    /// <summary>
+    /// The effective prepared tool definitions, kept when the body omits them (message thread continuation).
+    /// Computer toolset member calls are checked against them.
+    /// </summary>
+    public JsonArray? PreparedTools { get; }
+
+    /// <summary>The caller's name for the declared computer toolset, or null when none is declared.</summary>
+    public string? ComputerToolsetName { get; }
 
     /// <summary>Preparation warnings.</summary>
     public IReadOnlyList<AnthropicWarning> Warnings { get; }
@@ -50,6 +65,12 @@ public sealed class AnthropicPreparedRequest
 
     /// <summary>Maps API names of provider tools back to the caller's tool names.</summary>
     internal IReadOnlyDictionary<string, string> ToolNames { get; set; } = new Dictionary<string, string>();
+
+    /// <summary>
+    /// True when a web tool that dynamic filtering runs through code execution is sent without the code execution tool.
+    /// The API then allows <c>code_execution</c> calls implicitly, so the response marks them dynamic.
+    /// </summary>
+    public bool MarkCodeExecutionDynamic { get; }
 }
 
 /// <summary>Builds an Anthropic Messages request from SDK call options.</summary>
@@ -163,7 +184,12 @@ public static class AnthropicMessagesRequest
                 "The model \"" + modelId + "\" is unknown. The max output tokens have been limited to " + capabilities.MaxOutputTokens + ". Set maxOutputTokens explicitly to override this limit."));
         }
 
-        var validator = settings?.CacheControlProviderOptionsName == null ? new AnthropicCacheControlValidator() : new AnthropicCacheControlValidator(settings.CacheControlProviderOptionsName);
+        var thread = ReadThread(anthropic, providerName, settings);
+        var hasThread = thread != null;
+        var continuesThread = thread?.PreviousMessageId != null;
+        var validator = new AnthropicCacheControlValidator(
+            settings?.CacheControlProviderOptionsName ?? "anthropic",
+            hasThread && AnthropicCacheControlValidator.Read(anthropic == null ? null : Wrap(anthropic.Value)) != null ? 1 : 0);
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
         var promptJson = PromptOverride(options) ?? AnthropicPrompt.PromptJson(options.Prompt);
 
@@ -171,6 +197,14 @@ public static class AnthropicMessagesRequest
         var inlineTools = AnthropicPrompt.GetInlineTools(promptJson);
         var toolNames = ProviderToolNames(options, inlineTools);
         var toolsets = ToolsetNames(options);
+        foreach (var definition in ToTools(options))
+        {
+            if (definition.Id == "anthropic.computer_toolset_20260801" && !string.IsNullOrEmpty(definition.Name))
+            {
+                toolsets[definition.Name] = "computer";
+            }
+        }
+
         var inlineToolDefinitions = new List<KeyValuePair<string, JsonObject>>();
         var converted = AnthropicPrompt.ConvertJson(
             promptJson,
@@ -201,6 +235,40 @@ public static class AnthropicMessagesRequest
             });
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
+
+        var explicitBetas = new HashSet<string>(HeaderBetas(options), StringComparer.Ordinal);
+        var tools = ToTools(options);
+        if (hasThread)
+        {
+            var pinned = new HashSet<string>(explicitBetas, StringComparer.Ordinal);
+            if (anthropic != null && anthropic.Value.TryGetProperty("anthropicBeta", out var pinnedBetas) && pinnedBetas.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var pinnedBeta in pinnedBetas.EnumerateArray())
+                {
+                    if (pinnedBeta.ValueKind == JsonValueKind.String)
+                    {
+                        pinned.Add(pinnedBeta.GetString()!);
+                    }
+                }
+            }
+
+            var unpinned = betas.Where(beta => !pinned.Contains(beta)).Distinct().ToList();
+            if (unpinned.Count > 0)
+            {
+                warnings.Add(new AnthropicWarning(
+                    "compatibility",
+                    "providerOptions.anthropic.thread",
+                    "Message content enabled beta headers: " + string.Join(", ", unpinned) + ". Thread requests require the same beta set on every turn. Pin these values with anthropicBeta on every request, or start a new thread when the set changes."));
+            }
+
+            if (continuesThread && ((converted.System != null && converted.System.Count > 0) || tools.Count > 0))
+            {
+                warnings.Add(new AnthropicWarning(
+                    "compatibility",
+                    "providerOptions.anthropic.thread",
+                    "Continuation uses the system prompt and tool definitions stored by the create request; supplied definitions are omitted from the wire request. Supply identical tools for local tool handling and fixed request settings. To change system instructions or tools, start a new thread."));
+            }
+        }
 
         string? thinkingType = null;
         int? budget = null;
@@ -330,7 +398,6 @@ public static class AnthropicMessagesRequest
             maxTokens = capabilities.MaxOutputTokens;
         }
 
-        var tools = ToTools(options);
         var declaredTools = tools.ToList();
         var toolsToPrepare = tools;
         if (usesJsonTool)
@@ -426,7 +493,7 @@ public static class AnthropicMessagesRequest
             betas.Add("server-side-fallback-2026-06-01");
         }
 
-        foreach (var beta in HeaderBetas(options))
+        foreach (var beta in explicitBetas)
         {
             if (!betas.Contains(beta))
             {
@@ -444,6 +511,11 @@ public static class AnthropicMessagesRequest
                     betas.Add(name);
                 }
             }
+        }
+
+        if (hasThread)
+        {
+            betas.Insert(0, ThreadBeta);
         }
 
         var body = new JsonObject
@@ -544,9 +616,20 @@ public static class AnthropicMessagesRequest
             body["container"] = MapContainer(container);
         }
 
-        if (converted.System != null && converted.System.Count > 0)
+        if (!continuesThread && converted.System != null && converted.System.Count > 0)
         {
             body["system"] = converted.System;
+        }
+
+        if (thread != null)
+        {
+            var threadBody = new JsonObject { ["type"] = thread.PreviousMessageId == null ? "create" : "continue" };
+            if (thread.PreviousMessageId != null)
+            {
+                threadBody["previous_message_id"] = thread.PreviousMessageId;
+            }
+
+            body["thread"] = threadBody;
         }
 
         if (anthropic != null && anthropic.Value.TryGetProperty("safeguards", out var safeguardValue) && safeguardValue.ValueKind == JsonValueKind.Array && safeguardValue.GetArrayLength() > 0)
@@ -571,7 +654,7 @@ public static class AnthropicMessagesRequest
             body["context_management"] = MapContext(context, warnings);
         }
 
-        if (preparedTools.Tools != null)
+        if (preparedTools.Tools != null && !continuesThread)
         {
             body["tools"] = preparedTools.Tools;
         }
@@ -586,7 +669,7 @@ public static class AnthropicMessagesRequest
             body["stream"] = true;
         }
 
-        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom) { ToolNames = ResponseToolNames(options, inlineTools) };
+        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools)) { ToolNames = ResponseToolNames(options, inlineTools) };
     }
 
     // Forced-choice and JSON-tool fallbacks restrict the declared tools. Inline definitions, including those
@@ -702,6 +785,99 @@ public static class AnthropicMessagesRequest
 
         declared.AddRange(ProviderOptionTools(options));
         return declared;
+    }
+
+    private static string? ComputerToolsetName(IReadOnlyList<AnthropicToolDefinition> tools)
+    {
+        foreach (var tool in tools)
+        {
+            if (tool.Id == "anthropic.computer_toolset_20260801")
+            {
+                return string.IsNullOrEmpty(tool.Name) ? "computer" : tool.Name;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool HasDynamicFilteringWebToolWithoutCodeExecution(IReadOnlyList<AnthropicToolDefinition> tools)
+    {
+        var hasDynamicFilteringWebTool = false;
+        foreach (var tool in tools)
+        {
+            switch (tool.Id)
+            {
+                case "anthropic.web_fetch_20260209":
+                case "anthropic.web_fetch_20260318":
+                case "anthropic.web_search_20260209":
+                case "anthropic.web_search_20260318":
+                    hasDynamicFilteringWebTool = true;
+                    break;
+                case "anthropic.code_execution_20250522":
+                case "anthropic.code_execution_20250825":
+                case "anthropic.code_execution_20260120":
+                    return false;
+            }
+        }
+
+        return hasDynamicFilteringWebTool;
+    }
+
+    private const string ThreadBeta = "message-threads-2026-08-12";
+
+    private sealed class ThreadOption
+    {
+        public string? PreviousMessageId { get; init; }
+    }
+
+    private static ThreadOption? ReadThread(JsonElement? anthropic, string providerName, AnthropicModelSettings? settings)
+    {
+        if (anthropic == null || !anthropic.Value.TryGetProperty("thread", out var thread) || thread.ValueKind == JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        var type = thread.ValueKind == JsonValueKind.Object ? AnthropicJson.String(thread, "type") : null;
+        var previous = type == "continue" ? AnthropicJson.String(thread, "previousMessageId") : null;
+        if ((type != "create" && type != "continue") || (type == "continue" && string.IsNullOrEmpty(previous)))
+        {
+            throw new InvalidArgumentException(
+                "providerOptions.anthropic.thread",
+                thread.GetRawText(),
+                "thread must be { type: 'create' } or { type: 'continue', previousMessageId: string }.");
+        }
+
+        if (settings?.SupportsMessageThreads != true)
+        {
+            throw new UnsupportedFunctionalityException(
+                "Anthropic message threads",
+                providerName + " does not support Anthropic message threads.");
+        }
+
+        var hasCompaction = anthropic.Value.TryGetProperty("compaction", out var compaction) && compaction.ValueKind == JsonValueKind.Object;
+        var unsupportedEdit = false;
+        if (anthropic.Value.TryGetProperty("contextManagement", out var context) && context.ValueKind == JsonValueKind.Object
+            && context.TryGetProperty("edits", out var edits) && edits.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var edit in edits.EnumerateArray())
+            {
+                if (AnthropicJson.String(edit, "type") != "clear_thinking_20251015" || edit.ValueKind != JsonValueKind.Object
+                    || !edit.TryGetProperty("keep", out var keep) || keep.ValueKind != JsonValueKind.String || keep.GetString() != "all")
+                {
+                    unsupportedEdit = true;
+                }
+            }
+        }
+
+        if (hasCompaction || unsupportedEdit)
+        {
+            throw new InvalidArgumentException(
+                "providerOptions.anthropic.thread",
+                null,
+                "Anthropic message threads do not support compaction or context editing, except clear_thinking_20251015 with keep: \"all\".");
+        }
+
+        return new ThreadOption { PreviousMessageId = previous };
     }
 
     private static void AddContextBetas(JsonElement? anthropic, List<string> betas, List<AnthropicWarning> warnings)
@@ -925,9 +1101,16 @@ public static class AnthropicMessagesRequest
         {
             foreach (var tool in options.Tools)
             {
-                if (tool.ProviderToolId != null)
+                if (tool.IsProviderDefined)
                 {
-                    tools.Add(ToDefinition(ProviderToolJson(tool)));
+                    tools.Add(new AnthropicToolDefinition
+                    {
+                        Type = "provider",
+                        Name = tool.Name,
+                        Id = tool.ProviderToolId,
+                        Args = tool.Args.ValueKind == JsonValueKind.Undefined ? null : tool.Args,
+                        ProviderOptions = tool.ProviderOptions,
+                    });
                     continue;
                 }
 

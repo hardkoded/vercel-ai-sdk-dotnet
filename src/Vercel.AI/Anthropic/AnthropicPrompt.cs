@@ -117,7 +117,7 @@ public static class AnthropicPrompt
             }
             else if (block.Role == "user")
             {
-                messages.Add(new JsonObject { ["role"] = "user", ["content"] = ConvertUser(block, warnings, betas, validator, convertMediaPart) });
+                messages.Add(new JsonObject { ["role"] = "user", ["content"] = ConvertUser(block, warnings, betas, validator, convertMediaPart, toolsets) });
             }
             else
             {
@@ -397,7 +397,7 @@ public static class AnthropicPrompt
         return system == null && toolChanges == 0 && !inlineOptions;
     }
 
-    private static JsonArray ConvertUser(PromptBlock block, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, AnthropicMediaPartConverter? convertMediaPart)
+    private static JsonArray ConvertUser(PromptBlock block, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, AnthropicMediaPartConverter? convertMediaPart, IReadOnlyDictionary<string, string> toolsets)
     {
         var content = new JsonArray();
         foreach (var message in block.Messages)
@@ -405,7 +405,7 @@ public static class AnthropicPrompt
             var role = AnthropicJson.String(message, "role") ?? "user";
             if (role == "tool")
             {
-                AppendToolResults(message, content, warnings, betas, validator);
+                AppendToolResults(message, content, warnings, betas, validator, toolsets);
                 continue;
             }
 
@@ -447,7 +447,7 @@ public static class AnthropicPrompt
         return content;
     }
 
-    private static void AppendToolResults(JsonElement message, JsonArray content, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator)
+    private static void AppendToolResults(JsonElement message, JsonArray content, List<AnthropicWarning> warnings, List<string> betas, AnthropicCacheControlValidator validator, IReadOnlyDictionary<string, string> toolsets)
     {
         if (!message.TryGetProperty("content", out var parts) || parts.ValueKind != JsonValueKind.Array)
         {
@@ -491,6 +491,12 @@ public static class AnthropicPrompt
                 ["type"] = "tool_result",
                 ["tool_use_id"] = AnthropicJson.String(part, "toolCallId") ?? string.Empty,
             };
+            var resultToolset = ToolsetName(part, toolsets);
+            if (resultToolset != null)
+            {
+                result["toolset_name"] = resultToolset;
+            }
+
             if (part.TryGetProperty("output", out var body))
             {
                 var outputType = AnthropicJson.String(body, "type");
@@ -783,29 +789,24 @@ public static class AnthropicPrompt
         var id = AnthropicJson.String(part, "toolCallId") ?? string.Empty;
         var input = ToToolInput(part);
         var metadata = Provider(part);
-        var toolset = metadata == null ? null : AnthropicJson.String(metadata.Value, "toolsetName");
-        if (toolset == null && toolsets.TryGetValue(toolName, out var mappedToolset))
+        var toolset = ToolsetName(part, toolsets);
+        if (toolset != null)
         {
-            toolset = mappedToolset;
-        }
-
-        if (toolset != null && input is JsonObject member)
-        {
-            var action = member["action"]?.GetValue<string>();
-            if (string.IsNullOrEmpty(action))
+            // The member call keeps its input as is. The `action` is the member tool name.
+            var rawInput = input as JsonObject ?? new JsonObject();
+            var action = rawInput["action"] is JsonValue actionValue && actionValue.TryGetValue<string>(out var actionText) ? actionText : null;
+            if (action == null)
             {
                 warnings.Add(new AnthropicWarning("other", message: "toolset tool call for tool " + toolName + " is missing the action"));
-                return new JsonObject { ["type"] = "text", ["text"] = string.Empty };
             }
 
-            member.Remove("action");
             var toolsetCall = new JsonObject
             {
                 ["type"] = "tool_use",
                 ["id"] = id,
-                ["name"] = action,
+                ["name"] = action ?? toolset,
                 ["toolset_name"] = toolset,
-                ["input"] = member,
+                ["input"] = rawInput,
             };
             AnthropicJson.Set(toolsetCall, "cache_control", cache);
             return toolsetCall;
@@ -980,6 +981,18 @@ public static class AnthropicPrompt
         {
             return data;
         }
+    }
+
+    private static string? ToolsetName(JsonElement part, IReadOnlyDictionary<string, string> toolsets)
+    {
+        var toolName = AnthropicJson.String(part, "toolName") ?? string.Empty;
+        if (toolsets.TryGetValue(toolName, out var mapped))
+        {
+            return mapped;
+        }
+
+        var metadata = Provider(part);
+        return metadata == null ? null : AnthropicJson.String(metadata.Value, "toolsetName");
     }
 
     private static JsonElement? Provider(JsonElement element)

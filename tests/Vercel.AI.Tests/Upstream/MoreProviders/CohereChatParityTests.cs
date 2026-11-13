@@ -805,7 +805,7 @@ public sealed class CohereChatParityTests
         Assert.Equal(input, usage.InputTokens);
         Assert.Equal(output, usage.OutputTokens);
         Assert.Equal(input + output, usage.TotalTokens);
-        Assert.Null(usage.CacheReadTokens);
+        Assert.Equal(JsonNode.Parse(raw)!["cached_tokens"]?.GetValue<int>(), usage.CacheReadTokens);
         Assert.Null(usage.CacheWriteTokens);
         Assert.Null(usage.ReasoningTokens);
         JsonAssert.Equal(usage.Raw!.Value, raw);

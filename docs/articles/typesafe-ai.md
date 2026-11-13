@@ -32,16 +32,17 @@ var result = await Decide.DecideAsync(new DecideRequest
 `TypeSafeAiDecisionModel` posts the model id, the state, and every question to `{BaseUrl}/systemone` in one request. It supports `choice`, `score`, `boolean`, and `box` questions. A `boolean` question is sent as TypeSafe's `noul` type, and the `noul` answer comes back as a `boolean` answer with a `Probability`.
 
 - Scores and probabilities are returned unchanged. `Rounding` declares two decimals for both.
-- Per-answer `confidence` values are in `ProviderMetadata` under `typesafe.confidence`, keyed by question id.
+- Per-answer `confidence` values are in `ProviderMetadata` under `typesafe.confidence`, keyed by question id. A `score` answer's legend is under `typesafe.legend`, keyed by question id. It maps zero-based level indices to their descriptions and keeps structured JSON objects and arrays. A missing or null legend is left out.
 - `Usage` holds `input_tokens` and `output_tokens`. A missing or null `usage` leaves them null.
 - `Response.ModelId` is the model id the API reported, or the requested id when the API sent none.
-- The state goes as a string, a JSON object, or a list, like the Gateway model. See [Images](#images) for file parts.
-- A `choice` question accepts at most 255 options and a `score` question at most 10 levels. A larger question throws `InvalidArgumentError` before any request.
+- The state goes as a string, a JSON object, or a list, like the Gateway model. A single string, object, or array JSON state part is sent as its native value. A primitive JSON part (`null`, a boolean, or a number) is sent as JSON text. See [Images](#images) for file parts.
+- Instructions may be omitted or null for every question type. A `boolean` question without instructions still needs a non-null `true` or `false` description. Boolean criteria may be null: set `HasCriteria` on the question to send an explicit `null`.
+- A `choice` question needs 1 to 255 options and a `score` question 1 to 10 non-null levels. A single level returns score `0` with probability `1`. Any other question throws `InvalidArgumentError` before any request.
 - `providerOptions.typesafe.longContext` is the only `typesafe` provider option that is sent. Every other one is reported as an `unsupported` warning (`providerOptions.typesafe.<name>`) and is not sent.
 
 ## Box questions
 
-A `box` question locates one target in an image and takes no criteria:
+A `box` question locates one target in an image and takes no criteria. Its instructions are optional and may be null. Include them to name the target when the state does not make it clear:
 
 ```csharp
 var questions = new Dictionary<string, DecisionQuestion>

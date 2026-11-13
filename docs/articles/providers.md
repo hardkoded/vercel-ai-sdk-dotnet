@@ -243,6 +243,47 @@ var message = new UserModelMessage(new UserContentPart[]
 
 The minimum content length for a cache block is 1,024 tokens. Alibaba allows 4 cache breakpoints per request. A fifth marker adds an `other` warning, `Max breakpoint limit exceeded. Only the last 4 cache markers will take effect.`, and is still sent.
 
+## Cohere sources
+
+Ground a Cohere response in documents by adding text files to the prompt as `FileContentPart` values. When the model cites one of these documents, the provider returns the cited text span as a source.
+
+With `GenerateText`, the cited documents are available in the result sources. With `StreamText`, the same citations arrive as `DocumentSourceStreamPart` values:
+
+```csharp
+var model = CohereProvider.Create(new CohereOptions { ApiKey = apiKey }).LanguageModel("command-a-03-2025");
+var options = new LanguageModelCallOptions
+{
+    Prompt = new ModelMessage[]
+    {
+        new UserModelMessage(new UserContentPart[]
+        {
+            new TextContentPart("What is the capital of Zephyria?"),
+            new FileContentPart("text/plain", null, File.ReadAllBytes("data/zephyria.txt"), "zephyria.txt"),
+        }),
+    },
+};
+
+await foreach (var part in await model.DoStreamAsync(options, cancellationToken))
+{
+    if (part is DocumentSourceStreamPart source)
+    {
+        Console.WriteLine(source.Title); // zephyria.txt
+        Console.WriteLine(source.ProviderMetadata); // { "cohere": { ... } }
+    }
+}
+```
+
+Each source has the media type `text/plain`, the document title (`Document` when Cohere does not return one), and the citation details in `ProviderMetadata` under `cohere`:
+
+- `start` and `end`: character offsets of the cited text in the response.
+- `text`: the cited text.
+- `sources`: the raw Cohere sources, including each document's `id`, `text`, and `title`.
+- `citationType`: the Cohere citation type, such as `TEXT_CONTENT`.
+
+Keys that Cohere omits are absent from the metadata. Citations that only reference tool output have no document to cite and are not emitted as sources. A response with partial citations, an untitled document, or no `usage` or token counts is accepted. Token counts come from `usage.tokens`. Billed units are a different measure, so they are kept in the raw usage and never reported as token counts.
+
+Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `generateId`).
+
 ## Baseten
 
 ### DeepSeek V4 Pro structured output
@@ -622,6 +663,7 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 - Legacy: `AspectRatio` wins over `Size`. A `Size` adds an `unsupported` `size` warning, and its width and height are sent unless the `width` and `height` provider options are set. Files are sent as `input_image`, `input_image_2`, and so on (`image` for `flux-pro-1.0-fill`), and the mask as `mask`.
 - FLUX 3 and latest: files are sent in `images` (URLs as is, bytes as base64), at most 10 (more throws `AiSdkException`). A mask throws `UnsupportedFunctionalityException`. The aspect ratio comes from `AspectRatio` or from `Size`; `7:3` and `3:7` are sent as `21:9` and `9:21`, and a ratio the endpoint does not take is left out with an `unsupported` `aspectRatio` warning. FLUX 3 adds an `unsupported` `seed` warning for a `Seed`. The latest API sends `Seed`, and its `Size` becomes `width` and `height` (the `width` and `height` provider options win); with dimensions set, no aspect ratio or resolution is sent.
 - Provider options are read from `blackForestLabs` and validated before the request (`InvalidArgumentException`). An option the model does not support is dropped with an `unsupported` `blackForestLabs.<name>` warning. Ranges: `safetyTolerance` 0 to 6 (legacy) or 0 to 7, `width` and `height` 256 to 1920 (legacy) or 64 to 6256 together with at most 16,822,272 pixels (latest), `steps` 1 to 16 (latest), and `resolution` one of `768sq`, `1k`, `1.5k`, `2k`, `4k`.
+- The `webhookUrl` option (legacy models) is sent as `webhook_url`, with `webhookSecret` as `webhook_secret`. When it is set, Black Forest Labs answers the submit request without a `polling_url`. The webhook is delivered as configured, and the call still waits for completion (bounded by `pollTimeoutMillis`) by polling the `get_result` endpoint of the configured base URL by request id. This fallback is best effort: the task must become visible on `get_result` before the poll timeout. An HTTP 404 or `Task not found` answer is treated as pending for up to 20 attempts (about 10 s at the default interval). A task that never appears throws `AiSdkException` ("Black Forest Labs task <id> was not found via get_result before timing out"). A 404 whose body is not `Task not found` is not retried.
 
 `GenerateImage` returns `providerMetadata.blackForestLabs.images[0]` with `seed`, `start_time`, `end_time`, `duration`, `cost`, `inputMegapixels`, and `outputMegapixels` when the API sent them, and the response `Timestamp`, `ModelId`, and `Headers` of the download.
 
@@ -841,6 +883,58 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 `PrepareStepUpdate.ProviderOptions` is deep-merged onto the call's provider options for that step.
 
 `PrepareStepContext` also exposes `Messages`, the prompt plus the responses of the earlier steps, and `Model`, the model the step is about to use. `Messages` does not hold the instructions. `Instructions` is what the step is about to send, `InitialInstructions` and `InitialMessages` are what the call started with, and `ResponseMessages` are the messages the earlier steps added. Return `PrepareStepUpdate.Instructions` to replace the instructions, or `PrepareStepUpdate.Messages` to replace the messages. Each override carries forward to later steps, and replacing one keeps the other. Like upstream, the results of all tool calls in one step are a single `ToolModelMessage`; read them from `ToolModelMessage.Results` (a single-result message lists itself).
+
+## Anthropic message threads
+
+[Anthropic message threads](https://platform.claude.com/docs/en/build-with-claude/message-threads) reduce request upload size and time to first token in long conversations. The first request sends the full conversation, and later requests send only the new messages. Token usage, pricing, and rate limits stay the same. Prompt caching is separate.
+
+Set `thread` in the `anthropic` provider options. `{ "type": "create" }` starts a thread. `{ "type": "continue", "previousMessageId": "..." }` continues it. `previousMessageId` is sent as `previous_message_id`, and the `message-threads-2026-08-12` beta header is added for you. `AnthropicProvider` and `AnthropicAwsProvider` support threads. A thread option on `AmazonBedrockAnthropicProvider`, `GoogleVertexAnthropicProvider`, or another Messages-compatible provider throws `UnsupportedFunctionalityException`, and a `thread` that is neither of the two shapes above throws `InvalidArgumentException`. Both throw before any request is sent. With SigV4 on `AnthropicAwsProvider`, sign every request of a thread with the same IAM role or IAM user.
+
+```csharp
+var model = anthropic.LanguageModel("claude-sonnet-4-6");
+
+var first = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    System = "Keep replies brief.",
+    Prompt = "Remember that my favorite color is cobalt blue.",
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["anthropic"] = JsonSerializer.SerializeToElement(new { thread = new { type = "create" } }),
+    },
+});
+
+var second = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Prompt = "What is my favorite color?",
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["anthropic"] = JsonSerializer.SerializeToElement(new
+        {
+            thread = new { type = "continue", previousMessageId = first.Response.Id },
+        }),
+    },
+});
+```
+
+On a continuation the request omits `system` and the tool definitions, even when you pass them, because Anthropic keeps them from the create request. Keep passing identical tools so tool names, tool choice, and tool beta headers still work. The request keeps `tool_choice` and the other per-request settings. A `compatibility` warning on `providerOptions.anthropic.thread` says that supplied instructions or tools were left out. To change them, start a new thread.
+
+### Computer toolset members
+
+`anthropic.computer_toolset_20260801` (`LanguageModelTool.ProviderDefined("anthropic.computer_toolset_20260801", name, args)`) returns each action as its own `tool_use` block with `toolset_name: "computer"`. The provider maps every action to one tool call named like your tool, with the member name as `action`, and keeps that returned member name as `action` even when the member input carries a different `action`.
+
+It rejects a member before it emits any tool call, in `DoGenerateAsync` and `DoStreamAsync`, with `InvalidResponseDataException` when the toolset name is not `computer`, the member is unknown, the toolset is not among the prepared tools, or `configs` disables the member with `enabled: false`. On a thread continuation the check uses the tool definitions you pass, even though the request omits them. Streamed member input must be a JSON object; malformed JSON or a non-object value also throws `InvalidResponseDataException`.
+
+Conversation management is yours. The provider keeps no history, does not remove earlier messages, and does not replay a request. Keep the full conversation locally. Pass only the new messages on a continuation (after a tool call, only the new tool results). Passing the whole history can duplicate messages or fail. Setting `thread` on an agent does not continue its thread by itself. Use `PrepareStep` to set the latest response id and to pick only the new messages.
+
+Content-dependent beta headers, such as the one for PDFs, must be the same on every turn of a thread. Pin them with `anthropicBeta` on the create request and on every continuation, including text-only ones. When message content enables a beta that you did not pin (through `anthropicBeta` or an `anthropic-beta` header), the request adds a `compatibility` warning that lists it.
+
+A thread expires five minutes after its last request and can become unavailable earlier. Read `error_code` from the failed response body with `AnthropicErrorData.Parse(exception.ResponseBody).ErrorCode`. On `thread_not_found`, `thread_already_continued`, or `thread_continue_in_flight`, replay the full conversation once with `{ "type": "create" }`, including the original system prompt and tools, and remove cache breakpoints from older replayed messages. Do not treat every 404 as an expired thread. `AnthropicErrorData.Details` keeps `error_code` and `unsupported`, drops unknown fields, and ignores a `details` value of an unknown shape, so a new Anthropic detail shape never hides the error message. Continue only from the latest response id, which can be continued once. With a streamed call, read the whole stream and check that the finish reason is not `FinishReason.Interrupted` before you continue.
+
+Start a new thread with the full history to change the system prompt, tools, model, thinking, tool choice, output format, context management, top-level `cacheControl`, or beta headers, and after a fallback model answered or a refusal. Other fixed fields must keep the same values on every request. Send MCP configuration and container ids on each request that needs them. Top-level `cacheControl` counts toward the four cache breakpoints. Threads do not support `compaction` or `contextManagement`, except a `clear_thinking_20251015` edit with `keep: "all"`; anything else throws `InvalidArgumentException`. An empty continuation prompt is accepted, which resumes a `pause_turn` response at the provider level. Message Batches do not accept threads, but this port has no batch submission yet.
+
+Web tools that run through code execution (`web_search_20260209`, `web_search_20260318`, `web_fetch_20260209`, `web_fetch_20260318`) can return `code_execution` calls even when you did not pass the code execution tool. These calls are marked `Dynamic`, also on a thread continuation that left the tool definitions out.
 
 ## Decision state
 
