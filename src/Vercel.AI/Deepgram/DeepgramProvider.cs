@@ -360,12 +360,31 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         }
 
         /// <summary>Synthesizes speech with <c>/v1/speak</c>.</summary>
+        /// <remarks>
+        /// <c>providerOptions.deepgram.callback</c> is rejected with an <see cref="Vercel.AI.Operations.InvalidArgumentException"/>: with a callback URL
+        /// Deepgram answers with a JSON acknowledgement instead of audio. <c>callbackMethod</c> is ignored with an unsupported warning.
+        /// </remarks>
         public async Task<DeepgramSpeechResult> GenerateAsync(DeepgramSpeechRequest request, CancellationToken cancellationToken)
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
             var warnings = new List<ModelWarning>();
             var deepgram = DeepgramObject(request.ProviderOptions);
+
+            // With a `callback` URL Deepgram processes the request asynchronously and answers with a JSON
+            // acknowledgement ({"request_id": "..."}) instead of audio, so the audio can never be returned.
+            if (deepgram != null && Child(deepgram.Value, "callback") is { ValueKind: not JsonValueKind.Null } callback)
+            {
+                throw new Vercel.AI.Operations.InvalidArgumentException(
+                    "providerOptions.deepgram.callback",
+                    callback.ValueKind == JsonValueKind.String ? callback.GetString() : callback.ToString(),
+                    "Deepgram processes speech requests with a `callback` URL asynchronously: it returns a JSON acknowledgement instead of audio and delivers the audio to the callback URL. `generateSpeech` requires the audio response, so `providerOptions.deepgram.callback` is not supported. Remove the option to receive the audio, or call the Deepgram REST API directly when you need asynchronous callback delivery.");
+            }
+
+            if (deepgram != null && Child(deepgram.Value, "callbackMethod") is { ValueKind: not JsonValueKind.Null })
+            {
+                warnings.Add(new UnsupportedWarning("providerOptions.deepgram.callbackMethod", "providerOptions.deepgram.callbackMethod is only used together with `callback`, which is not supported by the AI SDK. Callback method was ignored."));
+            }
 
             // Deepgram embeds voice and language in the model id (aura-2-thalia-en). Family ids compose it from the call.
             var upstreamModelId = ModelId;
@@ -615,16 +634,6 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 {
                     query["bit_rate"] = text;
                 }
-            }
-
-            if (Child(deepgram, "callback")?.GetString() is { Length: > 0 } callback)
-            {
-                query["callback"] = callback;
-            }
-
-            if (Child(deepgram, "callbackMethod")?.GetString() is { Length: > 0 } callbackMethod)
-            {
-                query["callback_method"] = callbackMethod;
             }
 
             if (Child(deepgram, "mipOptOut") is { } mipOptOut)
