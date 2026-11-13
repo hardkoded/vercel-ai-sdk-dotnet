@@ -680,6 +680,19 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 - Provider options are read from `blackForestLabs` and validated before the request (`InvalidArgumentException`): `resolution`, `aspectRatio`, `keyframes`, `safetyTolerance` (0 to 4), `draft`, `draftCache`, and `version` (only `latest`). `keyframes` holds 1 to 10 image URLs or base64 strings, or `[seconds, image]` pairs in chronological order (0 to 20 seconds). It wins over `Image` and `FrameImages`, with a warning. Three or more untimed keyframes need a `Duration` (`InvalidArgumentException` otherwise).
 - Draft mode: `draft` renders a fast preview and reports `draftCache` in the provider metadata. Passing that URL or its base64 bundle as `draftCache` replays it at full quality. The bundle pins everything else, so the request sends only `mode`, `draft_cache`, and `safety_tolerance`, and every other input is reported as an `unsupported` warning.
 
+## Replicate image models
+
+`ReplicateProvider.ImageModel(id)` creates a prediction, polls it until it reaches a terminal status (the `pollIntervalMillis` and `maxPollAttempts` provider options set the interval and the attempt limit), and downloads each output image.
+
+### Cancellation
+
+A prediction keeps running, and billing, on Replicate until it reaches a terminal status. When an image generation call is abandoned after its prediction has been created, the model stops waiting and sends a best-effort cancel request to `POST /predictions/{prediction_id}/cancel`:
+
+- the call's `CancellationToken` is cancelled while polling, or
+- polling gives up because `maxPollAttempts` was reached.
+
+Cancellation applies only while the model polls for a result, which happens after the create request has returned. It is not attempted during the initial create request, because no prediction id is available yet. The cancel URL is built from the configured `BaseUrl` (never from the prediction response), and the request carries only the provider's configured headers. It is not retried, does not receive the cancelled token, and failures are ignored, so it never replaces the cancellation or timeout error.
+
 ## fal image models
 
 `FalImageModel.SupportsFileInputs` and `SupportsMaskInputs` report what the model id accepts. `SupportsFileInputs` is `true` for the known image-to-image and edit models (for example `fal-ai/flux-2/edit` and `fal-ai/flux-pro/kontext`), `false` for known text-to-image models (for example `fal-ai/recraft/v3/text-to-image`), and `null` for any other id. `SupportsMaskInputs` is `true` for `fal-ai/flux-general/inpainting` and `fal-ai/flux-lora/inpainting`, `false` for the other known ids, and `null` when `SupportsFileInputs` is `null`.

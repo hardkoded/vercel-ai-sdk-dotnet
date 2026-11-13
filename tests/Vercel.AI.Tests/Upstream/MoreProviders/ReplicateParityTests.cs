@@ -52,7 +52,7 @@ public sealed class ReplicateParityTests
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-token" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
         var model = ReplicateProvider.Create(options, handler).ImageModel("black-forest-labs/flux-schnell");
-        await ((ReplicateImageModel)model).DoGenerateAsync(Call(headers: new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" }), CancellationToken.None);
+        await ((Vercel.AI.Replicate.ReplicateImageModel)model).DoGenerateAsync(Call(headers: new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" }), CancellationToken.None);
         var call = handler.Calls[0];
         Assert.Equal("Bearer test-api-token", call.Header("Authorization"));
         Assert.Equal("application/json", call.Header("Content-Type"));
@@ -178,7 +178,9 @@ public sealed class ReplicateParityTests
         var handler = Server(Pending("processing", "null", PollUrl));
         var error = await Assert.ThrowsAsync<AiSdkException>(() => Generate(handler, Call(providerOptions: "{\"replicate\":{\"pollIntervalMillis\":1,\"maxPollAttempts\":2}}")));
         Assert.Equal("Replicate image generation did not complete after 2 polling attempts.", error.Message);
-        Assert.Equal(3, handler.Calls.Count);
+        await WaitFor(() => handler.Calls.Count == 4);
+        Assert.Equal(HttpMethod.Post, handler.Calls[3].Method);
+        Assert.Equal("https://api.replicate.com/v1/predictions/pending-prediction/cancel", handler.Calls[3].Uri.AbsoluteUri);
     }
 
     [Fact]
@@ -371,14 +373,22 @@ public sealed class ReplicateParityTests
     [UpstreamTest(ProviderPrefix + "creates an image model instance", Coverage = UpstreamCoverage.Covered)]
     public void Provider_image_models_are_replicate_image_models()
     {
-        Assert.IsType<ReplicateImageModel>(ReplicateProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-token" }).ImageModel("black-forest-labs/flux-schnell"));
+        Assert.IsType<Vercel.AI.Replicate.ReplicateImageModel>(ReplicateProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-token" }).ImageModel("black-forest-labs/flux-schnell"));
     }
 
     private static string Prediction(string output)
     {
         return "{\"id\":\"s7x1e3dcmhrmc0cm8rbatcneec\",\"model\":\"black-forest-labs/flux-schnell\",\"version\":\"dp-4d0bcc010b3049749a251855f12800be\",\"input\":{\"num_outputs\":1,\"prompt\":\"The Loch Ness Monster getting a manicure\"},"
             + "\"logs\":\"\",\"output\":" + output + ",\"data_removed\":false,\"error\":null,\"status\":\"processing\",\"created_at\":\"2025-01-08T13:24:38.692Z\","
-            + "\"urls\":{\"cancel\":\"https://api.replicate.com/v1/predictions/s7x1e3dcmhrmc0cm8rbatcneec/cancel\",\"get\":\"https://api.replicate.com/v1/predictions/s7x1e3dcmhrmc0cm8rbatcneec\",\"stream\":\"https://stream.replicate.com/v1/files/bcwr-3okdfv3o2wehstv5f2okyftwxy57hhypqsi6osiim5iaq5k7u24a\"}}";
+            + "\"urls\":{\"get\":\"https://api.replicate.com/v1/predictions/s7x1e3dcmhrmc0cm8rbatcneec\",\"stream\":\"https://stream.replicate.com/v1/files/bcwr-3okdfv3o2wehstv5f2okyftwxy57hhypqsi6osiim5iaq5k7u24a\"}}";
+    }
+
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(25);
+        }
     }
 
     private static string Pending(string status, string output, string getUrl)
@@ -392,7 +402,7 @@ public sealed class ReplicateParityTests
         return new ParityHandler(call => call.Uri.AbsoluteUri == OutputUrl ? ParityHandler.Bytes(ImageBytes, "image/webp") : ParityHandler.Json(body));
     }
 
-    private static ReplicateImageModel Model(ParityHandler handler, string modelId, Func<DateTime>? clock = null, string? baseUrl = null)
+    private static Vercel.AI.Replicate.ReplicateImageModel Model(ParityHandler handler, string modelId, Func<DateTime>? clock = null, string? baseUrl = null)
     {
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-token" };
         if (baseUrl != null)
@@ -400,7 +410,7 @@ public sealed class ReplicateParityTests
             options.BaseUrl = baseUrl;
         }
 
-        return new ReplicateImageModel(ReplicateProvider.Create(options, handler), modelId, clock);
+        return new Vercel.AI.Replicate.ReplicateImageModel(ReplicateProvider.Create(options, handler), modelId, clock);
     }
 
     private static Task<ImageModelResult> Generate(ParityHandler handler, ImageModelCall call, Func<DateTime>? clock = null, string? baseUrl = null, string modelId = "black-forest-labs/flux-schnell")
