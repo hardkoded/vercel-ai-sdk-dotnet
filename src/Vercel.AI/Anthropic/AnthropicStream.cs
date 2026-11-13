@@ -26,6 +26,12 @@ public sealed class AnthropicStream
     private string? _stopSequence;
     private JsonNode? _container;
     private bool _jsonTool;
+
+    /// <summary>
+    /// Marks <c>code_execution</c> server tool calls as dynamic. Set when a web tool that dynamic filtering runs through code execution
+    /// is sent without the code execution tool, which the API then allows implicitly.
+    /// </summary>
+    public bool MarkCodeExecutionDynamic { get; init; }
     private bool _hasOutput;
     private bool _failed;
     private FinishStreamPart? _lastFinish;
@@ -272,6 +278,7 @@ public sealed class AnthropicStream
                 ToolName = Text(block["name"]) ?? string.Empty,
                 Input = new StringBuilder(initial),
                 HasInitialInput = initial.Length > 0,
+                IsServerTool = type == "server_tool_use",
             };
             if (!(_usesJsonTool && Text(block["name"]) == "json"))
             {
@@ -367,9 +374,17 @@ public sealed class AnthropicStream
             {
                 _hasOutput = true;
                 yield return new ToolInputEndStreamPart(block.ToolCallId);
-                yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments);
+                yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments)
+                {
+                    Dynamic = MarkCodeExecutionDynamic && block.IsServerTool && IsCodeExecution(block.ToolName),
+                };
             }
         }
+    }
+
+    private static bool IsCodeExecution(string name)
+    {
+        return name == "code_execution" || name == "bash_code_execution" || name == "text_editor_code_execution";
     }
 
     private void MessageDelta(JsonObject node)
@@ -522,6 +537,8 @@ public sealed class AnthropicStream
         public bool HasInitialInput { get; set; }
 
         public bool SawDelta { get; set; }
+
+        public bool IsServerTool { get; set; }
 
         public List<JsonElement> Citations { get; } = new();
     }

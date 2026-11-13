@@ -171,7 +171,7 @@ internal static class AnthropicAssertions
         Assert.True(parsed.Success);
         Assert.Equal("overloaded_error", parsed.ErrorType);
         Assert.Equal("Overloaded", parsed.Message);
-        Assert.DoesNotContain("details", parsed.Value()!.ToJsonString());
+        Assert.Contains("\"details\":null", parsed.Value()!.ToJsonString());
         Assert.Equal(500, AnthropicStreamError.StatusCode("api_error"));
         Assert.Equal(529, AnthropicStreamError.StatusCode("overloaded_error"));
         Assert.True(AnthropicStreamError.IsRetryable("overloaded_error"));
