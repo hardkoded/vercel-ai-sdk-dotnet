@@ -183,6 +183,12 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
         }
         catch (Exception) when (failure != null)
         {
+            // A caller cancel reaches the calls through the linked source. Surface it with the caller's token.
+            if (failure.SourceException is OperationCanceledException)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
             failure.Throw();
             throw;
         }
@@ -235,6 +241,12 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
             description["instructions"] = field.Instructions.ToNode();
         }
 
+        // Same key order as ExtractionModelV4Field: type, instructions, items, unit, integer, decimals.
+        if (field.Items != null)
+        {
+            description["items"] = field.Items;
+        }
+
         if (field.Unit != null)
         {
             description["unit"] = field.Unit;
@@ -248,11 +260,6 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
         if (field.Decimals != null)
         {
             description["decimals"] = field.Decimals;
-        }
-
-        if (field.Items != null)
-        {
-            description["items"] = field.Items;
         }
 
         return description;
