@@ -39,6 +39,13 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2", Coverage = UpstreamCoverage.Covered, Commit = "84208104a4eac2dcc84ef0973ac47d4f9c84088c")]
+    public async Task Case_0633()
+    {
+        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2").ConfigureAwait(false);
+    }
+
+    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-7", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0384()
     {

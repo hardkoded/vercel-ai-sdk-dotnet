@@ -194,6 +194,11 @@ internal static class AnthropicAssertions
         AnthropicParity.AssertCapability("claude-fable-5-1", 128000, true, true, true, true, true, false, true, true, true);
     }
 
+    public static void Fable52()
+    {
+        AnthropicParity.AssertCapability("claude-fable-5-2", 128000, true, true, true, true, true, false, true, true, true);
+    }
+
     public static void Opus47()
     {
         AnthropicParity.AssertCapability("claude-opus-4-7", 128000, true, true, true, true, true, false, false, false, false);

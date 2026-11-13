@@ -11,14 +11,17 @@ namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockPrepareTools;
 public sealed class PrepareToolsTests
 {
     [Theory]
-    [InlineData("anthropic.claude-opus-4-7")]
-    [InlineData("anthropic.claude-opus-4-8")]
-    [InlineData("anthropic.claude-opus-5")]
-    [InlineData("anthropic.claude-fable-5")]
-    [InlineData("anthropic.claude-sonnet-5-5")]
-    [InlineData("anthropic.claude-haiku-5-5")]
     [InlineData("us.anthropic.claude-opus-6-v1:0")]
     [InlineData("global.anthropic.claude-future-v1:0")]
+    [InlineData("us.anthropic.claude-opus-4-7")]
+    [InlineData("anthropic.claude-opus-4-8")]
+    [InlineData("eu.anthropic.claude-fable-5")]
+    [InlineData("anthropic.claude-fable-5-1")]
+    [InlineData("anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-fable-5-1")]
+    [InlineData("us.anthropic.claude-fable-5-2")]
+    [InlineData("global.anthropic.claude-fable-5-1")]
+    [InlineData("global.anthropic.claude-fable-5-2")]
     [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should warn when strict is omitted for %s", Coverage = UpstreamCoverage.Covered)]
     public void Should_warn_when_strict_is_omitted_for(string modelId)
     {

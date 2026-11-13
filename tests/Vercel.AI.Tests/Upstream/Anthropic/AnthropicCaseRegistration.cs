@@ -115,6 +115,7 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-8", AnthropicAssertions.Opus48);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5", AnthropicAssertions.Fable5);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-1", AnthropicAssertions.Fable51);
+        AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2", AnthropicAssertions.Fable52);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-7", AnthropicAssertions.Opus47);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-sonnet-5", AnthropicAssertions.Sonnet5);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-6", AnthropicAssertions.Opus46);

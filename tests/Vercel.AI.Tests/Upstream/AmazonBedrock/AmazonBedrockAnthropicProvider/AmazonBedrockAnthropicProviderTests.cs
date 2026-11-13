@@ -187,6 +187,64 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
         Assert.Contains("ai-sdk-amazon-bedrock/", headers["user-agent"]);
     }
 
+    [Theory]
+    [InlineData("anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("us.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("eu.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("global.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("us.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("eu.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("global.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("anthropic.claude-opus-4-7")]
+    [InlineData("us.anthropic.claude-opus-4-7")]
+    [InlineData("eu.anthropic.claude-opus-4-7")]
+    [InlineData("anthropic.claude-opus-4-8")]
+    [InlineData("us.anthropic.claude-opus-4-8")]
+    [InlineData("eu.anthropic.claude-opus-4-8")]
+    [InlineData("anthropic.claude-fable-5")]
+    [InlineData("us.anthropic.claude-fable-5")]
+    [InlineData("eu.anthropic.claude-fable-5")]
+    [InlineData("anthropic.claude-fable-5-1")]
+    [InlineData("anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-fable-5-1")]
+    [InlineData("us.anthropic.claude-fable-5-2")]
+    [InlineData("global.anthropic.claude-fable-5-1")]
+    [InlineData("global.anthropic.claude-fable-5-2")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable native structured output for %s", Coverage = UpstreamCoverage.Partial, Note = "Rows for unknown future models (claude-opus-6, claude-future) are not ported: the port's Bedrock Anthropic model allowlist does not default unknown models.")]
+    public void Should_disable_native_structured_output_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(provider.LanguageModel(modelId));
+
+        Assert.False(model.CreateInnerProvider().SupportsNativeStructuredOutput);
+    }
+
+    [Theory]
+    [InlineData("anthropic.claude-opus-4-7")]
+    [InlineData("us.anthropic.claude-opus-4-7")]
+    [InlineData("eu.anthropic.claude-opus-4-7")]
+    [InlineData("anthropic.claude-opus-4-8")]
+    [InlineData("us.anthropic.claude-opus-4-8")]
+    [InlineData("eu.anthropic.claude-opus-4-8")]
+    [InlineData("anthropic.claude-fable-5")]
+    [InlineData("us.anthropic.claude-fable-5")]
+    [InlineData("eu.anthropic.claude-fable-5")]
+    [InlineData("anthropic.claude-fable-5-1")]
+    [InlineData("anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-fable-5-1")]
+    [InlineData("us.anthropic.claude-fable-5-2")]
+    [InlineData("global.anthropic.claude-fable-5-1")]
+    [InlineData("global.anthropic.claude-fable-5-2")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable strict tools for %s (Bedrock rejects tools[].strict)", Coverage = UpstreamCoverage.Partial, Note = "Rows for unknown future models (claude-opus-6, claude-future) are not ported: the port's Bedrock Anthropic model allowlist does not default unknown models.")]
+    public void Should_disable_strict_tools_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(provider.LanguageModel(modelId));
+
+        Assert.False(model.CreateInnerProvider().SupportsStrictTools);
+    }
+
     [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should map old tool versions to Bedrock-supported versions", Coverage = UpstreamCoverage.Covered)]
     public void Should_map_old_tool_versions_to_Bedrock_supported_versions()
