@@ -10,8 +10,8 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.PerplexityLanguageModelTests;
 
-/// <summary>Port of <c>perplexity-language-model.test.ts</c> &gt; <c>%s tool choice</c> (doGenerate and doStream).</summary>
-public sealed class ToolChoiceTests
+/// <summary>Port of <c>perplexity-language-model.test.ts</c> &gt; <c>%s tool choice</c> &gt; <c>model %s</c> (doGenerate and doStream).</summary>
+public sealed class ToolChoiceModelTests
 {
     private const string AgentResponse =
         "{\"id\":\"resp-123\",\"created_at\":1784292159,\"model\":\"openai/gpt-5.1\",\"object\":\"response\",\"output\":[{\"id\":\"msg-123\",\"type\":\"message\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hello from Perplexity.\",\"annotations\":[]}]}],\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}";
@@ -54,7 +54,7 @@ public sealed class ToolChoiceTests
 
     [Theory]
     [MemberData(nameof(NoneCombinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice::disables all tools with none and max_tool_calls %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables all tools with none and max_tool_calls %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Disables_all_tools_with_none_and_max_tool_calls(string method, string modelId, int? maxToolCalls)
     {
         var capture = Capture(method);
@@ -75,7 +75,7 @@ public sealed class ToolChoiceTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice::disables preset tools even without explicit tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables preset tools even without explicit tools", Coverage = UpstreamCoverage.Covered)]
     public async Task Disables_preset_tools_even_without_explicit_tools(string method, string modelId)
     {
         var capture = Capture(method);
@@ -91,7 +91,7 @@ public sealed class ToolChoiceTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice::omits disabled provider-defined tools without unsupported warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::omits disabled provider-defined tools without unsupported warnings", Coverage = UpstreamCoverage.Covered)]
     public async Task Omits_disabled_provider_defined_tools_without_unsupported_warnings(string method, string modelId)
     {
         var capture = Capture(method);
@@ -112,7 +112,7 @@ public sealed class ToolChoiceTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice::keeps prior tool calls and results while disabling new tool use", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::keeps prior tool calls and results while disabling new tool use", Coverage = UpstreamCoverage.Covered)]
     public async Task Keeps_prior_tool_calls_and_results_while_disabling_new_tool_use(string method, string modelId)
     {
         var capture = Capture(method);
@@ -140,7 +140,7 @@ public sealed class ToolChoiceTests
 
     [Theory]
     [MemberData(nameof(AutoCombinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice::preserves tools and limits with tool choice %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::preserves tools and limits with tool choice %s", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_tools_and_limits_with_tool_choice(string method, string modelId, string choice)
     {
         var capture = Capture(method);
