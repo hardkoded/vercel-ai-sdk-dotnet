@@ -239,6 +239,47 @@ var message = new UserModelMessage(new UserContentPart[]
 
 The minimum content length for a cache block is 1,024 tokens. Alibaba allows 4 cache breakpoints per request. A fifth marker adds an `other` warning, `Max breakpoint limit exceeded. Only the last 4 cache markers will take effect.`, and is still sent.
 
+## Cohere sources
+
+Ground a Cohere response in documents by adding text files to the prompt as `FileContentPart` values. When the model cites one of these documents, the provider returns the cited text span as a source.
+
+With `GenerateText`, the cited documents are available in the result sources. With `StreamText`, the same citations arrive as `DocumentSourceStreamPart` values:
+
+```csharp
+var model = CohereProvider.Create(new CohereOptions { ApiKey = apiKey }).LanguageModel("command-a-03-2025");
+var options = new LanguageModelCallOptions
+{
+    Prompt = new ModelMessage[]
+    {
+        new UserModelMessage(new UserContentPart[]
+        {
+            new TextContentPart("What is the capital of Zephyria?"),
+            new FileContentPart("text/plain", null, File.ReadAllBytes("data/zephyria.txt"), "zephyria.txt"),
+        }),
+    },
+};
+
+await foreach (var part in await model.DoStreamAsync(options, cancellationToken))
+{
+    if (part is DocumentSourceStreamPart source)
+    {
+        Console.WriteLine(source.Title); // zephyria.txt
+        Console.WriteLine(source.ProviderMetadata); // { "cohere": { ... } }
+    }
+}
+```
+
+Each source has the media type `text/plain`, the document title (`Document` when Cohere does not return one), and the citation details in `ProviderMetadata` under `cohere`:
+
+- `start` and `end`: character offsets of the cited text in the response.
+- `text`: the cited text.
+- `sources`: the raw Cohere sources, including each document's `id`, `text`, and `title`.
+- `citationType`: the Cohere citation type, such as `TEXT_CONTENT`.
+
+Keys that Cohere omits are absent from the metadata. Citations that only reference tool output have no document to cite and are not emitted as sources. A response with partial citations, an untitled document, or no `usage` or token counts is accepted. Token counts come from `usage.tokens`. Billed units are a different measure, so they are kept in the raw usage and never reported as token counts.
+
+Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `generateId`).
+
 ## Baseten
 
 ### DeepSeek V4 Pro structured output
