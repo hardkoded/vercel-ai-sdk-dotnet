@@ -31,6 +31,8 @@ The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by t
 
 `@ai-sdk/typesafe-ai` is `Vercel.AI.TypeSafeAi`. It provides the experimental TypeSafe decision model. See [TypeSafe](docs/articles/typesafe-ai.md). The [TypeSafe.AI.Sdk](https://github.com/hardkoded/typesafe-sdk-dotnet) package remains available as a standalone client.
 
+`@ai-sdk/scaledown` is `Vercel.AI.ScaleDown`. It provides the experimental ScaleDown decision model. Its extraction model is not ported yet, because `experimental_extract` is not ported (#923). See [ScaleDown](docs/articles/scaledown.md).
+
 ## Not ported
 
 These JavaScript packages are Node or browser products, not the model SDK:
