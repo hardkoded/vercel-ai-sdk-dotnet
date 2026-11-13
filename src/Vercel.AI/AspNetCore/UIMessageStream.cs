@@ -28,19 +28,28 @@ public static class UIMessageStreamExtensions
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="onError">
-    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. Errors of provider-executed tools are not masked.
+    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when
+    /// <c>redactToolErrors</c> is enabled, which is the default when this callback is provided. Errors of provider-executed tools are not masked.
+    /// </param>
+    /// <param name="redactToolErrors">
+    /// Replaces the error text of failed tool calls (tool execution errors and invalid tool calls) with the result of <c>onError</c>.
+    /// By default, the client receives the same error text as the model. The UI messages are sent back to the model on the next request,
+    /// so a different text changes the message history that the model's reasoning and answers are based on. Some models reject such a history,
+    /// for example Anthropic models with preserved thinking. To keep error details away from the model and the client, throw a safe error from the tool.
+    /// Defaults to <c>true</c> when <c>onError</c> is provided, so that an existing <c>onError</c> keeps handling tool errors, and to <c>false</c> otherwise.
     /// </param>
     public static IResult ToUIMessageStreamResult(
         this StreamTextResult result,
         int? keepAliveMs = null,
-        Func<string, string>? onError = null)
+        Func<string, string>? onError = null,
+        bool? redactToolErrors = null)
     {
         if (result is null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        return new UIMessageStreamResult(result, keepAliveMs, onError);
+        return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors);
     }
 }
 
@@ -54,17 +63,20 @@ public sealed class UIMessageStreamResult : IResult
     private readonly StreamTextResult _result;
     private readonly int? _keepAliveMs;
     private readonly Func<string, string>? _onError;
+    private readonly bool? _redactToolErrors;
 
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null)
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
+    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null, bool? redactToolErrors = null)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
         _keepAliveMs = keepAliveMs;
         _onError = onError;
+        _redactToolErrors = redactToolErrors;
     }
 
     /// <inheritdoc />
@@ -76,7 +88,7 @@ public sealed class UIMessageStreamResult : IResult
         }
 
         ApplyProtocolHeaders(httpContext.Response);
-        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError).ConfigureAwait(false);
+        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError, _redactToolErrors).ConfigureAwait(false);
     }
 
     /// <summary>Writes the UI message stream to <paramref name="destination"/>.</summary>
@@ -87,13 +99,15 @@ public sealed class UIMessageStreamResult : IResult
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
         int? keepAliveMs = null,
         CancellationToken cancellationToken = default,
-        Func<string, string>? onError = null)
+        Func<string, string>? onError = null,
+        bool? redactToolErrors = null)
     {
         if (result is null)
         {
@@ -110,7 +124,7 @@ public sealed class UIMessageStreamResult : IResult
         // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
         // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
         var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, cancellationToken), keepAliveMs, cancellationToken);
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -197,8 +211,11 @@ public sealed class UIMessageStreamResult : IResult
     private static async IAsyncEnumerable<string> ReadSseChunks(
         StreamTextResult result,
         Func<string, string>? onError,
+        bool? redactToolErrorsOption,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        // an existing `onError` keeps handling tool errors, as it did before tool errors stopped being redacted by default
+        var redactToolErrors = redactToolErrorsOption ?? onError != null;
         var messageId = JsonValues.GenerateId("msg_");
         var stepOpen = false;
         string? textId = null;
@@ -212,6 +229,13 @@ public sealed class UIMessageStreamResult : IResult
         var invalidToolCallIds = new HashSet<string>(StringComparer.Ordinal);
         onError ??= _ => "An error occurred.";
 
+        // When tool errors are redacted, a failed tool call has two error texts: the model receives the error text with the next step,
+        // and the UI receives the onError result. Reasoning from a later step was produced after the model read its text, so UI messages
+        // that contain both no longer reproduce the history that this reasoning belongs to.
+        string? mismatchedToolCallIdInCurrentStep = null;
+        string? mismatchedToolCallIdInEarlierStep = null;
+        var hasWarnedAboutToolErrorMismatch = false;
+
         yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
 
         await foreach (var part in result.Stream(cancellationToken).ConfigureAwait(false))
@@ -220,6 +244,10 @@ public sealed class UIMessageStreamResult : IResult
             {
                 yield return Frame(new JsonObject { ["type"] = "start-step" });
                 stepOpen = true;
+
+                // the model receives the tool errors of a step with the next step
+                mismatchedToolCallIdInEarlierStep ??= mismatchedToolCallIdInCurrentStep;
+                mismatchedToolCallIdInCurrentStep = null;
             }
 
             switch (part)
@@ -237,6 +265,12 @@ public sealed class UIMessageStreamResult : IResult
                     if (reasoningId == null)
                     {
                         reasoningId = "reasoning";
+                        if (mismatchedToolCallIdInEarlierStep != null && !hasWarnedAboutToolErrorMismatch)
+                        {
+                            hasWarnedAboutToolErrorMismatch = true;
+                            LogToolErrorMismatchWarning(mismatchedToolCallIdInEarlierStep);
+                        }
+
                         yield return Frame(new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningId });
                     }
 
@@ -329,7 +363,14 @@ public sealed class UIMessageStreamResult : IResult
 
                     if (call.ToolCall.Invalid)
                     {
-                        toolInput["errorText"] = onError(ErrorMessage.ToErrorString(call.ToolCall.Error!));
+                        // streamText sends the model a tool result for an invalid tool call only when the tool is not provider-executed
+                        var invalidModelText = ErrorMessage.ToErrorString(call.ToolCall.Error!);
+                        var invalidErrorText = call.ToolCall.ProviderExecuted ? onError(invalidModelText) : ToolErrorText(invalidModelText, invalidModelText, redactToolErrors, onError);
+                        toolInput["errorText"] = invalidErrorText;
+                        if (!call.ToolCall.ProviderExecuted && invalidErrorText != invalidModelText)
+                        {
+                            mismatchedToolCallIdInCurrentStep ??= call.ToolCall.ToolCallId;
+                        }
                     }
 
                     if (call.ToolCall.Title != null)
@@ -352,13 +393,22 @@ public sealed class UIMessageStreamResult : IResult
                     break;
                 case ToolErrorPart toolError:
                     var providerError = providerExecutedIds.Contains(toolError.Result.ToolCallId);
+                    var modelErrorText = toolError.Result.ModelOutput ?? toolError.Result.Error?.Message ?? toolError.Result.OutputJson;
+                    var toolErrorText = providerError
+                        ? null
+                        : ToolErrorText(modelErrorText, toolError.Result.Error?.Message ?? modelErrorText, redactToolErrors, onError);
+                    if (!providerError && toolErrorText != modelErrorText)
+                    {
+                        mismatchedToolCallIdInCurrentStep ??= toolError.Result.ToolCallId;
+                    }
+
                     var errorOutput = new JsonObject
                     {
                         ["type"] = "tool-output-error",
                         ["toolCallId"] = toolError.Result.ToolCallId,
                         ["errorText"] = providerError
                             ? ProviderErrorText(toolError.Result.OutputJson)
-                            : onError(toolError.Result.Error?.Message ?? toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
+                            : toolErrorText,
                     };
                     if (providerError)
                     {
@@ -621,6 +671,22 @@ public sealed class UIMessageStreamResult : IResult
             payload["providerMetadata"] = node;
         }
     }
+
+    // The error text of a failed tool call is not altered by default. The UI message is the record that ConvertToModelMessages sends back
+    // to the model on the next request, so a replaced text changes the history after the model has received the original.
+    private static string ToolErrorText(string modelErrorText, string onErrorInput, bool redactToolErrors, Func<string, string> onError)
+        => redactToolErrors ? onError(onErrorInput) : modelErrorText;
+
+    private static void LogToolErrorMismatchWarning(string toolCallId)
+        => LogWarnings.Log(new LogWarningsOptions(new ModelWarning[]
+        {
+            new OtherWarning(
+                $"The error text sent to the UI for tool call \"{toolCallId}\" differs from the error text the model received, " +
+                "and reasoning from a later step was sent to the UI. " +
+                "Converting these UI messages back to model messages changes the tool result. " +
+                "Models that bind reasoning to the preceding messages (for example Anthropic models with preserved thinking) reject that history. " +
+                "See https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-tool-usage#tool-error-text-and-message-history"),
+        }));
 
     // A provider-executed error keeps its structure: a string stays text and any other value is its JSON.
     private static string ProviderErrorText(string outputJson)
