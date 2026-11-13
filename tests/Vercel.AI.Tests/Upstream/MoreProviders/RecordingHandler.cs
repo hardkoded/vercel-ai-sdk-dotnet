@@ -92,6 +92,7 @@ internal sealed class ParityHandler : HttpMessageHandler
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var body = request.Content == null
             ? Array.Empty<byte>()
             : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
