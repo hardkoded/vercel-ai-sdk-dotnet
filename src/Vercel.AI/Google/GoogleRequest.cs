@@ -132,7 +132,10 @@ public static class GoogleRequest
             toolChoice = JsonResponseTools.ChoiceFor(options.ToolChoice, responseTool.Name);
         }
 
-        var tools = GoogleTools.Prepare(callTools, providerTools, toolChoice, modelId ?? string.Empty, vertex);
+        // Enforce the caller's tool choice before the JSON response fallback replaces it with a forced call to the
+        // synthetic response tool.
+        var enabledProviderTools = options.ToolChoice?.Type == "none" ? new List<GoogleProviderTool>() : providerTools;
+        var tools = GoogleTools.Prepare(callTools, enabledProviderTools, toolChoice, modelId ?? string.Empty, vertex);
         warnings.AddRange(tools.Warnings);
 
         JsonObject? thinking;
