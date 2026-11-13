@@ -40,6 +40,7 @@ internal sealed class OpenAIResponsesStream
     private string? _responseId;
     private string? _serviceTier;
     private string? _reasoningContext;
+    private JsonObject? _promptCacheDiagnostics;
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
@@ -329,6 +330,7 @@ internal sealed class OpenAIResponsesStream
                     }
 
                     _reasoningContext = ReasoningContext(response) ?? _reasoningContext;
+                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(response["prompt_cache_diagnostics"]);
                     if (response["output"] is JsonArray output)
                     {
                         foreach (var item in output)
@@ -349,6 +351,7 @@ internal sealed class OpenAIResponsesStream
                 {
                     var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
                     _reasoningContext = ReasoningContext(failed) ?? _reasoningContext;
+                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(failed["prompt_cache_diagnostics"]);
                     _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall, _hasRefusal) : FinishReason.Error;
                     _failedRaw = failedReason ?? "error";
                     if (failed["error"] is JsonNode failedError && !_streamError)
@@ -472,6 +475,11 @@ internal sealed class OpenAIResponsesStream
         if (_reasoningContext != null)
         {
             metadata["reasoningContext"] = _reasoningContext;
+        }
+
+        if (_promptCacheDiagnostics != null)
+        {
+            metadata["promptCacheDiagnostics"] = _promptCacheDiagnostics;
         }
 
         return metadata;

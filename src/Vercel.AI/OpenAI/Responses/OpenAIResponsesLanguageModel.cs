@@ -173,10 +173,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var mode = OpenAIJson.String(value, "mode");
         var ttl = OpenAIJson.String(value, "ttl");
         var prewarm = OpenAIJson.Child(value, "prewarm");
+        var comparisonResponseId = OpenAIJson.Child(value, "comparisonResponseId");
         if (value.ValueKind != JsonValueKind.Object
             || OpenAIJson.Child(value, "mode") != null && mode != "implicit" && mode != "explicit"
             || OpenAIJson.Child(value, "ttl") != null && ttl != "30m" && ttl != "12h"
-            || prewarm is { } rawPrewarm && rawPrewarm.ValueKind != JsonValueKind.True && rawPrewarm.ValueKind != JsonValueKind.False)
+            || prewarm is { } rawPrewarm && rawPrewarm.ValueKind != JsonValueKind.True && rawPrewarm.ValueKind != JsonValueKind.False
+            || comparisonResponseId is { } rawComparison && rawComparison.ValueKind != JsonValueKind.String)
         {
             throw new InvalidArgumentException("providerOptions", value.GetRawText(), "invalid openai provider options");
         }
@@ -195,6 +197,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         if (prewarm is { } flag)
         {
             parsed["prewarm"] = flag.GetBoolean();
+        }
+
+        if (comparisonResponseId is { } comparison)
+        {
+            parsed["comparison_response_id"] = comparison.GetString();
         }
 
         return parsed;
@@ -307,7 +314,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         {
             if (item is JsonObject { } update && update["type"]?.GetValue<string>() == "configuration_update")
             {
-                var reason = UpdateEffortUnsupportedReason(update["reasoning"]!["effort"]!.GetValue<string>());
+                var reason = UpdateEffortUnsupportedReason(update["reasoning"]?["effort"]?.GetValue<string>());
                 if (reason != null)
                 {
                     throw new UnsupportedFunctionalityException("Message-level reasoningEffortUpdate", reason);
@@ -327,7 +334,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             else if (!(converted.Input.Count > 0
                 && converted.Input[0] is JsonObject { } first
                 && first["type"]?.GetValue<string>() == "configuration_update"
-                && first["reasoning"]!["effort"]!.GetValue<string>() == effortUpdate))
+                && first["reasoning"]?["effort"]?.GetValue<string>() == effortUpdate))
             {
                 // An identical first item would otherwise leave two adjacent updates, which OpenAI rejects.
                 converted.Input.Insert(0, ConfigurationUpdate(effortUpdate));
@@ -339,8 +346,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             if (IsConfigurationUpdate(converted.Input[i - 1]) && IsConfigurationUpdate(converted.Input[i]))
             {
                 throw new UnsupportedFunctionalityException(
-                    "Adjacent reasoning effort configuration updates",
-                    "Adjacent reasoning effort configuration updates are not supported.");
+                    "Adjacent configuration updates",
+                    "Configuration updates cannot be consecutive. Set reasoningEffortUpdate and textFormatUpdate in the same empty system message, and omit request-level reasoningEffortUpdate when using message-level updates.");
             }
         }
         // A compaction trigger is a request control and must be the final input item.
@@ -367,6 +374,44 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         if (options.MaxOutputTokens is { } maxOutput)
         {
             body["max_output_tokens"] = maxOutput;
+        }
+
+        var textBody = new JsonObject();
+        if (OpenAIJson.Child(openai, "textFormat") is { } textFormat)
+        {
+            textBody["format"] = OpenAIResponsesTextFormat.Normalize(textFormat, warnings);
+        }
+        else if (options.JsonSchema is { } responseSchema)
+        {
+            var normalizedSchema = OpenAIJsonSchema.Normalize(responseSchema);
+            warnings.AddRange(normalizedSchema.Warnings);
+            var responseFormat = new JsonObject
+            {
+                ["type"] = "json_schema",
+                ["strict"] = OpenAIJson.Bool(openai, "strictJsonSchema") ?? true,
+                ["name"] = string.IsNullOrEmpty(options.JsonSchemaName) ? "response" : options.JsonSchemaName,
+            };
+            if (options.JsonSchemaDescription != null)
+            {
+                responseFormat["description"] = options.JsonSchemaDescription;
+            }
+
+            responseFormat["schema"] = normalizedSchema.Schema;
+            textBody["format"] = responseFormat;
+        }
+        else if (options.JsonResponse)
+        {
+            textBody["format"] = new JsonObject { ["type"] = "json_object" };
+        }
+
+        if (OpenAIJson.String(openai, "textVerbosity") is { Length: > 0 } verbosity)
+        {
+            textBody["verbosity"] = verbosity;
+        }
+
+        if (textBody.Count > 0)
+        {
+            body["text"] = textBody;
         }
 
         if (OpenAIJson.Int(openai, "maxToolCalls") is { } maxToolCalls)
@@ -532,7 +577,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             {
                 if (IsConfigurationUpdate(item))
                 {
-                    effectiveEffort = item!["reasoning"]!["effort"]!.GetValue<string>();
+                    effectiveEffort = item!["reasoning"]?["effort"]?.GetValue<string>() ?? effectiveEffort;
                 }
             }
 
@@ -927,6 +972,11 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             providerMetadata["logprobs"] = logprobs;
         }
 
+        if (PromptCacheDiagnostics(root) is { } promptCacheDiagnostics)
+        {
+            providerMetadata["promptCacheDiagnostics"] = promptCacheDiagnostics;
+        }
+
         return new LanguageModelGenerateResult(
             content,
             finish,
@@ -973,14 +1023,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     {
         if (!capabilities.SupportsConfigurationUpdate)
         {
-            return "reasoningEffortUpdate is only supported by GPT-6 and later models";
+            return "Configuration updates are only supported by GPT-6 and later models";
         }
 
         if (OpenAIJson.String(openai, "reasoningMode") == "pro"
             || OpenAIJson.Child(openai, "contextManagement") != null
             || OpenAIJson.String(openai, "truncation") == "auto")
         {
-            return "reasoningEffortUpdate requires standard reasoning mode without automatic compaction or automatic truncation";
+            return "Configuration updates require standard reasoning mode without automatic compaction or automatic truncation";
         }
 
         return null;
@@ -994,11 +1044,47 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
     }
 
-    private static JsonObject ConfigurationUpdate(string effort) => new()
+    private static JsonObject ConfigurationUpdate(string? effort, JsonObject? textFormat = null)
     {
-        ["type"] = "configuration_update",
-        ["reasoning"] = new JsonObject { ["effort"] = effort },
-    };
+        var update = new JsonObject { ["type"] = "configuration_update" };
+        if (effort != null)
+        {
+            update["reasoning"] = new JsonObject { ["effort"] = effort };
+        }
+
+        if (textFormat != null)
+        {
+            update["text"] = new JsonObject { ["format"] = textFormat };
+        }
+
+        return update;
+    }
+
+    private static JsonObject? PromptCacheDiagnostics(JsonElement response) =>
+        response.ValueKind == JsonValueKind.Object
+        && response.TryGetProperty("prompt_cache_diagnostics", out var diagnostics)
+            ? PromptCacheDiagnostics(JsonNode.Parse(diagnostics.GetRawText()))
+            : null;
+
+    /// <summary>Returns the known <c>prompt_cache_diagnostics</c> fields, or <c>null</c> when absent or without a string <c>type</c>.</summary>
+    internal static JsonObject? PromptCacheDiagnostics(JsonNode? diagnostics)
+    {
+        if (diagnostics is not JsonObject { } source || source["type"] is not JsonValue type || !type.TryGetValue<string>(out _))
+        {
+            return null;
+        }
+
+        var result = new JsonObject();
+        foreach (var key in new[] { "type", "reason", "cache_missed_tokens", "comparison_reusable_tokens" })
+        {
+            if (source.ContainsKey(key))
+            {
+                result[key] = source[key]?.DeepClone();
+            }
+        }
+
+        return result;
+    }
 
     private static bool IsConfigurationUpdate(JsonNode? item) =>
         item is JsonObject obj && obj["type"]?.GetValue<string>() == "configuration_update";
@@ -1045,20 +1131,28 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             switch (message)
             {
                 case SystemModelMessage system:
-                    var messageEffort = OpenAIJson.String(ProviderOptionsFor(system.ProviderOptions, providerOptionsName), "reasoningEffortUpdate");
-                    if (messageEffort != null)
+                    var systemOptions = ProviderOptionsFor(system.ProviderOptions, providerOptionsName);
+                    var messageEffort = OpenAIJson.String(systemOptions, "reasoningEffortUpdate");
+                    var messageTextFormat = OpenAIJson.Child(systemOptions, "textFormatUpdate");
+                    if (messageEffort != null || messageTextFormat != null)
                     {
-                        ValidateUpdateEffort(messageEffort);
+                        if (messageEffort != null)
+                        {
+                            ValidateUpdateEffort(messageEffort);
+                        }
+
+                        var normalizedFormat = messageTextFormat is { } rawFormat ? OpenAIResponsesTextFormat.Normalize(rawFormat, warnings) : null;
+                        var feature = messageEffort != null ? "reasoningEffortUpdate" : "textFormatUpdate";
                         var reason = system.Content != string.Empty
-                            ? "Message-level reasoningEffortUpdate requires empty system message content."
+                            ? "Message-level " + feature + " requires empty system message content."
                             : configurationUpdateUnsupportedReason;
                         if (reason != null)
                         {
-                            throw new UnsupportedFunctionalityException("Message-level reasoningEffortUpdate", reason);
+                            throw new UnsupportedFunctionalityException("Message-level " + feature, reason);
                         }
 
                         // The control is independent of systemMessageMode's text handling.
-                        input.Add(ConfigurationUpdate(messageEffort));
+                        input.Add(ConfigurationUpdate(messageEffort, normalizedFormat));
                         break;
                     }
 

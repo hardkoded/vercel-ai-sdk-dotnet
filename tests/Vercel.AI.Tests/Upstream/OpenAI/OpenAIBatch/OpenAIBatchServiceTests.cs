@@ -339,7 +339,14 @@ public sealed class OpenAIBatchServiceTests
     [UpstreamTest(Prefix + "incrementally parses Responses results across chunk boundaries", Coverage = UpstreamCoverage.Covered)]
     public async Task Incrementally_parses_Responses_results_across_chunk_boundaries()
     {
-        var first = ResultLine("france", ResponsesResultBody("Paris"));
+        var firstBody = ResponsesResultBody("Paris");
+        firstBody["prompt_cache_diagnostics"] = new System.Text.Json.Nodes.JsonObject
+        {
+            ["type"] = "cache_miss",
+            ["reason"] = "input_changed",
+            ["cache_missed_tokens"] = 1200,
+        };
+        var first = ResultLine("france", firstBody);
         var second = ResultLine("germany", ResponsesResultBody("Berlin"));
         var handler = new ChunkedHandler()
             .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
@@ -366,6 +373,10 @@ public sealed class OpenAIBatchServiceTests
         var openai = text.ProviderMetadata!.Value.GetProperty("openai");
         Assert.Equal("resp_123", openai.GetProperty("responseId").GetString());
         Assert.Equal("default", openai.GetProperty("serviceTier").GetString());
+        var diagnostics = openai.GetProperty("promptCacheDiagnostics");
+        Assert.Equal("cache_miss", diagnostics.GetProperty("type").GetString());
+        Assert.Equal("input_changed", diagnostics.GetProperty("reason").GetString());
+        Assert.Equal(1200, diagnostics.GetProperty("cache_missed_tokens").GetInt32());
         Assert.Equal("germany", results[1].Id);
         Assert.Equal("succeeded", results[1].Status);
         Assert.Equal("Berlin", Assert.Single(results[1].Text!.Content).Text);
