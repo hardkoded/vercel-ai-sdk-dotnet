@@ -15,7 +15,7 @@ internal static class OpenAIResponsesSupport
     internal static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
     // Parses a Responses body with predictable source ids: id-0, id-1, and so on.
-    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null)
+    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null, bool jsonResponse = false)
     {
         var raw = body.ToJsonString();
         using var document = JsonDocument.Parse(raw);
@@ -26,7 +26,8 @@ internal static class OpenAIResponsesSupport
             raw,
             new Dictionary<string, string>(),
             () => "id-" + next++,
-            OpenAIParallelToolCall.FunctionToolNames(tools));
+            OpenAIParallelToolCall.FunctionToolNames(tools),
+            jsonResponse: jsonResponse);
     }
 
     internal static JsonNode FixtureBody(string name) => JsonNode.Parse(Fixture(name))!;

@@ -482,6 +482,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         var content = new List<BatchContentPart>();
         var logprobs = new JsonArray();
         var hasFunctionCall = false;
+        var hasRefusal = false;
         foreach (var entry in output.EnumerateArray())
         {
             var type = Str(entry, "type");
@@ -511,6 +512,13 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
                 case "message":
                     foreach (var part in entry.GetProperty("content").EnumerateArray())
                     {
+                        if (Str(part, "type") == "refusal")
+                        {
+                            hasRefusal = true;
+                            content.Add(new BatchContentPart("text") { Text = Str(part, "refusal") ?? string.Empty });
+                            continue;
+                        }
+
                         content.Add(new BatchContentPart("text") { Text = Str(part, "text") ?? string.Empty });
                         if (part.TryGetProperty("logprobs", out var partLogprobs) && partLogprobs.ValueKind != JsonValueKind.Null)
                         {
@@ -629,7 +637,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             Content = content,
             FinishReason = incompleteReason switch
             {
-                null => hasFunctionCall ? "tool-calls" : "stop",
+                null => hasFunctionCall ? "tool-calls" : hasRefusal ? "content-filter" : "stop",
                 "max_output_tokens" => "length",
                 "content_filter" => "content-filter",
                 _ => hasFunctionCall ? "tool-calls" : "other",

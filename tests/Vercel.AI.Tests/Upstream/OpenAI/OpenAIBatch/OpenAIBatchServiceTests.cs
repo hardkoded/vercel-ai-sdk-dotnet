@@ -403,6 +403,34 @@ public sealed class OpenAIBatchServiceTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "preserves refusal content parts and maps the finish reason to content-filter", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_refusal_content_parts_and_maps_the_finish_reason_to_content_filter()
+    {
+        var refusal = System.Text.Json.Nodes.JsonNode.Parse("""
+            {
+              "type": "message",
+              "role": "assistant",
+              "id": "msg_123",
+              "phase": null,
+              "content": [{ "type": "refusal", "refusal": "I'm sorry, I can't assist with that." }]
+            }
+            """)!;
+        var handler = new RoutedHandler()
+            .Add(BatchUrl, BatchResponse(outputFileId: "file-output"))
+            .Add(OutputUrl, ResultLine("refusal", WithOutput(ResponsesResultBody("unused"), refusal)));
+
+        var item = Assert.Single(await GetResultsAsync(handler));
+
+        Assert.Equal("refusal", item.Id);
+        Assert.Equal("succeeded", item.Status);
+        var content = Assert.Single(item.Text!.Content);
+        Assert.Equal("text", content.Type);
+        Assert.Equal("I'm sorry, I can't assist with that.", content.Text);
+        Assert.Equal("content-filter", item.Text.FinishReason);
+        Assert.Null(item.Text.RawFinishReason);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "forwards the abort signal when retrieving results", Coverage = UpstreamCoverage.Covered)]
     public async Task Forwards_the_abort_signal_when_retrieving_results()
     {
