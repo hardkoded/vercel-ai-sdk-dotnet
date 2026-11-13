@@ -19,7 +19,6 @@ public sealed class CohereChatParityTests
     private const string Chat = "packages/cohere/src/cohere-chat-language-model.test.ts::";
     private const string Prompt = "packages/cohere/src/convert-to-cohere-chat-prompt.test.ts::convert to cohere chat prompt > ";
     private const string Tools = "packages/cohere/src/cohere-prepare-tools.test.ts::";
-    private const string UsageNote = "NoCacheInputTokens and TextTokens stay null because Cohere reports no cache-write or reasoning counts. Upstream reports them equal to the totals.";
     private const string Messages = "[{\"role\":\"system\",\"content\":\"you are a friendly bot!\"},{\"role\":\"user\",\"content\":\"Hello\"}]";
     private const string TestToolSchema = "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
     private const string TextUsage = "{\"billed_units\":{\"input_tokens\":12,\"output_tokens\":7},\"tokens\":{\"input_tokens\":507,\"output_tokens\":10},\"cached_tokens\":448}";
@@ -27,7 +26,7 @@ public sealed class CohereChatParityTests
     private const string ExtraUsage = "{\"billed_units\":{\"input_tokens\":12,\"output_tokens\":7,\"billing_tier\":\"standard\"},\"tokens\":{\"input_tokens\":507,\"output_tokens\":10,\"tokenizer\":\"command\"},\"cached_tokens\":448,\"provider_usage_id\":\"usage-123\"}";
 
     [Fact]
-    [UpstreamTest(Chat + "doGenerate > text::should extract text response", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doGenerate > text::should extract text response", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_extracts_text()
     {
         var result = await Generate(JsonFixture("cohere-text"), TestPrompt()).ConfigureAwait(false);
@@ -52,7 +51,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doGenerate > tool call::should extract tool calls", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doGenerate > tool call::should extract tool calls", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_extracts_tool_calls()
     {
         var options = TestPrompt();
@@ -102,7 +101,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doGenerate > reasoning::should extract reasoning from response", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doGenerate > reasoning::should extract reasoning from response", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_extracts_reasoning()
     {
         var result = await Generate(JsonFixture("cohere-reasoning"), TestPrompt()).ConfigureAwait(false);
@@ -301,7 +300,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doGenerate > request::should extract usage", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doGenerate > request::should extract usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_extracts_usage()
     {
         var result = await Generate(JsonFixture("cohere-text"), TestPrompt()).ConfigureAwait(false);
@@ -309,7 +308,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doGenerate > request::should preserve extra top-level and nested fields in raw usage", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doGenerate > request::should preserve extra top-level and nested fields in raw usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Generate_keeps_unknown_usage_fields_in_raw_usage()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json("{\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]},\"finish_reason\":\"COMPLETE\",\"usage\":" + ExtraUsage + "}"));
@@ -336,7 +335,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > text::should stream text deltas", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doStream > text::should stream text deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task Stream_emits_text_deltas()
     {
         var parts = await Stream(ChunksFixture("cohere-text"), TestPrompt()).ConfigureAwait(false);
@@ -370,7 +369,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > text::should preserve extra top-level and nested fields in raw usage", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doStream > text::should preserve extra top-level and nested fields in raw usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Stream_keeps_unknown_usage_fields_in_raw_usage()
     {
         var parts = await Stream(ChunkLines("{\"type\":\"message-end\",\"delta\":{\"finish_reason\":\"COMPLETE\",\"usage\":" + ExtraUsage + "}}"), TestPrompt()).ConfigureAwait(false);
@@ -381,7 +380,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > text::should finish successfully when billed units are absent", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doStream > text::should finish successfully when billed units are absent", Coverage = UpstreamCoverage.Covered)]
     public async Task Stream_finishes_without_billed_units()
     {
         const string usage = "{\"tokens\":{\"input_tokens\":507,\"output_tokens\":10}}";
@@ -403,7 +402,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > reasoning::should stream reasoning deltas", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
+    [UpstreamTest(Chat + "doStream > reasoning::should stream reasoning deltas", Coverage = UpstreamCoverage.Covered)]
     public async Task Stream_emits_reasoning_then_text()
     {
         var parts = await Stream(ChunksFixture("cohere-reasoning"), TestPrompt()).ConfigureAwait(false);
@@ -421,7 +420,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > tool call::should stream tool deltas", Coverage = UpstreamCoverage.Partial, Note = "No tool-input-start, tool-input-delta, or tool-input-end parts. " + UsageNote)]
+    [UpstreamTest(Chat + "doStream > tool call::should stream tool deltas", Coverage = UpstreamCoverage.Partial, Note = "No tool-input-start, tool-input-delta, or tool-input-end parts.")]
     public async Task Stream_emits_completed_tool_calls()
     {
         var options = TestPrompt();
@@ -454,7 +453,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > empty tool call::should handle empty tool call arguments", Coverage = UpstreamCoverage.Partial, Note = "No tool-input-start or tool-input-end parts. " + UsageNote)]
+    [UpstreamTest(Chat + "doStream > empty tool call::should handle empty tool call arguments", Coverage = UpstreamCoverage.Partial, Note = "No tool-input-start or tool-input-end parts.")]
     public async Task Stream_turns_empty_tool_arguments_into_an_empty_object()
     {
         var options = TestPrompt();
@@ -827,6 +826,8 @@ public sealed class CohereChatParityTests
         Assert.Equal(output, usage.OutputTokens);
         Assert.Equal(input + output, usage.TotalTokens);
         Assert.Equal(JsonNode.Parse(raw)!["cached_tokens"]?.GetValue<int>(), usage.CacheReadTokens);
+        Assert.Equal(input - (usage.CacheReadTokens ?? 0), usage.NoCacheInputTokens);
+        Assert.Equal(output, usage.TextTokens);
         Assert.Null(usage.CacheWriteTokens);
         Assert.Null(usage.ReasoningTokens);
         JsonAssert.Equal(usage.Raw!.Value, raw);
