@@ -29,6 +29,7 @@ public sealed class AnthropicStream
     private bool _hasOutput;
     private bool _failed;
     private FinishStreamPart? _lastFinish;
+    private readonly IReadOnlyDictionary<string, string> _toolNames;
 
     /// <summary>Creates a stream reader.</summary>
     public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool)
@@ -37,12 +38,18 @@ public sealed class AnthropicStream
     }
 
     /// <summary>Creates a stream reader that mirrors the finish metadata under a custom provider key.</summary>
-    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey)
+    public AnthropicStream(bool includeRawChunks, bool usesJsonResponseTool, string providerOptionsName, bool usedCustomProviderKey, IReadOnlyDictionary<string, string>? toolNames = null)
     {
+        _toolNames = toolNames ?? new Dictionary<string, string>();
         _includeRaw = includeRawChunks;
         _usesJsonTool = usesJsonResponseTool;
         _providerOptionsName = providerOptionsName;
         _usedCustomProviderKey = usedCustomProviderKey;
+    }
+
+    private string CustomName(string apiName)
+    {
+        return _toolNames.TryGetValue(apiName, out var mapped) ? mapped : apiName;
     }
 
     /// <summary>Reads one SSE data payload.</summary>
@@ -205,12 +212,12 @@ public sealed class AnthropicStream
                     var toolName = Text(part["name"]) ?? string.Empty;
                     var input = (part["input"] ?? new JsonObject()).ToJsonString();
                     _hasOutput = true;
-                    yield return new ToolInputStartStreamPart(toolCallId, toolName);
+                    yield return new ToolInputStartStreamPart(toolCallId, CustomName(toolName));
                     yield return new ToolInputDeltaStreamPart(toolCallId, input);
                     yield return new ToolInputEndStreamPart(toolCallId);
                     yield return new ToolCallStreamPart(
                         toolCallId,
-                        toolName,
+                        CustomName(toolName),
                         input);
                 }
             }
@@ -277,7 +284,7 @@ public sealed class AnthropicStream
             {
                 yield return new ToolInputStartStreamPart(
                     Text(block["id"]) ?? string.Empty,
-                    Text(block["name"]) ?? string.Empty);
+                    CustomName(Text(block["name"]) ?? string.Empty));
             }
         }
     }
@@ -367,7 +374,7 @@ public sealed class AnthropicStream
             {
                 _hasOutput = true;
                 yield return new ToolInputEndStreamPart(block.ToolCallId);
-                yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments);
+                yield return new ToolCallStreamPart(block.ToolCallId, CustomName(block.ToolName), arguments);
             }
         }
     }

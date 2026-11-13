@@ -47,7 +47,13 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
         }
     }
 
-    private static LanguageModelCallOptions Options(IReadOnlyList<ModelMessage> prompt, string providerToolsJson, LanguageModelTool[] tools, string choice, bool useThinking)
+    private static LanguageModelTool ProviderDefined(string toolJson)
+    {
+        var node = JsonNode.Parse(toolJson)!;
+        return LanguageModelTool.ProviderDefined(node["id"]!.GetValue<string>(), node["name"]!.GetValue<string>(), AnthropicParity.Json("{}"));
+    }
+
+    private static LanguageModelCallOptions Options(IReadOnlyList<ModelMessage> prompt, LanguageModelTool[] tools, string choice, bool useThinking)
     {
         return new LanguageModelCallOptions
         {
@@ -61,7 +67,6 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
                 ["anthropic"] = AnthropicParity.Json(
                     "{\"structuredOutputMode\":\"jsonTool\""
                     + (useThinking ? ",\"thinking\":{\"type\":\"enabled\",\"budgetTokens\":1024}" : string.Empty)
-                    + (providerToolsJson.Length > 0 ? ",\"providerTools\":[" + providerToolsJson + "]" : string.Empty)
                     + "}"),
             },
         };
@@ -83,8 +88,7 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
         var prompt = new ModelMessage[] { new UserModelMessage("Hello"), InlineToolHarness.ToolChange(inlineTool.ToJsonString()) };
         var options = Options(
             prompt,
-            providerAlias ? ProviderTool : string.Empty,
-            providerAlias ? Array.Empty<LanguageModelTool>() : new[] { InlineToolHarness.SelectedTool() },
+            new[] { providerAlias ? ProviderDefined(ProviderTool) : InlineToolHarness.SelectedTool() },
             choice,
             useThinking);
 
@@ -115,8 +119,10 @@ public sealed class NamedToolChoiceWithInlineToolsJsonResponseToolThinkingTests
             ? "{\"type\":\"provider\",\"id\":\"anthropic.web_search_20250305\",\"name\":\"selected\",\"args\":{}}"
             : InlineToolHarness.Function(choice == "tool" ? "selected" : "other");
         var prompt = new ModelMessage[] { new UserModelMessage("Hello"), InlineToolHarness.ToolChange(inlineTool) };
-        var tools = inlineOnly || providerAlias ? Array.Empty<LanguageModelTool>() : new[] { InlineToolHarness.SelectedTool() };
-        var options = Options(prompt, !inlineOnly && providerAlias ? inlineTool : string.Empty, tools, choice, useThinking);
+        var tools = inlineOnly
+            ? Array.Empty<LanguageModelTool>()
+            : new[] { providerAlias ? ProviderDefined(inlineTool) : InlineToolHarness.SelectedTool() };
+        var options = Options(prompt, tools, choice, useThinking);
 
         var (handler, _) = await InlineToolHarness.Run(method, "claude-opus-4-8", options, jsonTool: true);
 

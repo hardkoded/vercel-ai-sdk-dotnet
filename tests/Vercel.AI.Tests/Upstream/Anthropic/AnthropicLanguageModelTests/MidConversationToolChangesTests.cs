@@ -131,16 +131,15 @@ public sealed class MidConversationToolChangesTests
         var handler = AnthropicParity.Ok(ToolUseResponse(
             "{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"left_click\",\"input\":{\"coordinate\":[1,2]},\"toolset_name\":\"computer\"}",
             "tool_use"));
-        var options = AnthropicParity.WithProvider(
-            "{\"providerTools\":[{\"type\":\"provider\",\"id\":\"anthropic.computer_toolset_20260801\",\"name\":\"myComputer\",\"args\":{}}]}",
-            new LanguageModelCallOptions
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
             {
-                Prompt = new ModelMessage[]
-                {
-                    new UserModelMessage("Click."),
-                    ToolChange("[{\"type\":\"tool_addition\",\"tool\":{\"type\":\"provider\",\"id\":\"anthropic.computer_20251124\",\"name\":\"otherComputer\",\"args\":{\"displayWidthPx\":1024,\"displayHeightPx\":768}}}]"),
-                },
-            });
+                new UserModelMessage("Click."),
+                ToolChange("[{\"type\":\"tool_addition\",\"tool\":{\"type\":\"provider\",\"id\":\"anthropic.computer_20251124\",\"name\":\"otherComputer\",\"args\":{\"displayWidthPx\":1024,\"displayHeightPx\":768}}}]"),
+            },
+            Tools = new[] { LanguageModelTool.ProviderDefined("anthropic.computer_toolset_20260801", "myComputer", AnthropicParity.Json("{}")) },
+        };
 
         var result = await AnthropicParity.Generate(AnthropicParity.Client(handler), "claude-opus-4-8", options);
 
@@ -156,16 +155,15 @@ public sealed class MidConversationToolChangesTests
         var handler = AnthropicParity.Ok(ToolUseResponse(
             "{\"type\":\"server_tool_use\",\"id\":\"srvtoolu_1\",\"name\":\"web_search\",\"input\":{\"query\":\"weather\"}}",
             "pause_turn"));
-        var options = AnthropicParity.WithProvider(
-            "{\"providerTools\":[{\"type\":\"provider\",\"id\":\"anthropic.web_search_20260209\",\"name\":\"declaredSearch\",\"args\":{}}]}",
-            new LanguageModelCallOptions
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[]
             {
-                Prompt = new ModelMessage[]
-                {
-                    new UserModelMessage("Search."),
-                    ToolChange("[{\"type\":\"tool_addition\",\"tool\":{\"type\":\"provider\",\"id\":\"anthropic.web_search_20260209\",\"name\":\"inlineSearch\",\"args\":{}}}]"),
-                },
-            });
+                new UserModelMessage("Search."),
+                ToolChange("[{\"type\":\"tool_addition\",\"tool\":{\"type\":\"provider\",\"id\":\"anthropic.web_search_20260209\",\"name\":\"inlineSearch\",\"args\":{}}}]"),
+            },
+            Tools = new[] { LanguageModelTool.ProviderDefined("anthropic.web_search_20260209", "declaredSearch", AnthropicParity.Json("{}")) },
+        };
 
         var result = await AnthropicParity.Generate(AnthropicParity.Client(handler), "claude-opus-4-8", options);
 

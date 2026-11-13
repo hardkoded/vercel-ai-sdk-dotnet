@@ -542,7 +542,7 @@ public class AnthropicLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey);
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, prepared.ToolNames);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))
@@ -598,7 +598,10 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.Betas,
             prepared.UsesJsonResponseTool,
             prepared.ProviderOptionsName,
-            prepared.UsedCustomProviderKey);
+            prepared.UsedCustomProviderKey)
+        {
+            ToolNames = prepared.ToolNames,
+        };
     }
 
     private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)

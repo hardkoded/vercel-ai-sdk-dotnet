@@ -667,7 +667,20 @@ public static class AnthropicMessagesRequest
         return names;
     }
 
-    private static IEnumerable<JsonElement> DeclaredProviderTools(LanguageModelCallOptions options)
+    private static JsonElement ProviderToolJson(LanguageModelTool tool)
+    {
+        var node = new JsonObject
+        {
+            ["type"] = "provider",
+            ["id"] = tool.ProviderToolId,
+            ["name"] = tool.Name,
+            ["args"] = tool.Args.ValueKind == JsonValueKind.Object ? AnthropicJson.Node(tool.Args) : new JsonObject(),
+        };
+        using var document = JsonDocument.Parse(node.ToJsonString());
+        return document.RootElement.Clone();
+    }
+
+    private static IEnumerable<JsonElement> ProviderOptionTools(LanguageModelCallOptions options)
     {
         var provider = ReadProvider(options, "anthropic");
         if (provider != null && provider.Value.TryGetProperty("providerTools", out var tools) && tools.ValueKind == JsonValueKind.Array)
@@ -676,6 +689,19 @@ public static class AnthropicMessagesRequest
         }
 
         return Array.Empty<JsonElement>();
+    }
+
+    // Provider tools come from the tools option (LanguageModelTool.ProviderDefined) and from providerOptions.anthropic.providerTools.
+    private static IEnumerable<JsonElement> DeclaredProviderTools(LanguageModelCallOptions options)
+    {
+        var declared = new List<JsonElement>();
+        if (options.Tools != null)
+        {
+            declared.AddRange(options.Tools.Where(tool => tool.ProviderToolId != null).Select(ProviderToolJson));
+        }
+
+        declared.AddRange(ProviderOptionTools(options));
+        return declared;
     }
 
     private static void AddContextBetas(JsonElement? anthropic, List<string> betas, List<AnthropicWarning> warnings)
@@ -899,6 +925,12 @@ public static class AnthropicMessagesRequest
         {
             foreach (var tool in options.Tools)
             {
+                if (tool.ProviderToolId != null)
+                {
+                    tools.Add(ToDefinition(ProviderToolJson(tool)));
+                    continue;
+                }
+
                 tools.Add(new AnthropicToolDefinition
                 {
                     Name = tool.Name,
@@ -909,7 +941,7 @@ public static class AnthropicMessagesRequest
             }
         }
 
-        foreach (var tool in DeclaredProviderTools(options))
+        foreach (var tool in ProviderOptionTools(options))
         {
             tools.Add(ToDefinition(tool));
         }
@@ -953,13 +985,7 @@ public static class AnthropicMessagesRequest
     private static Dictionary<string, string> ToolsetNames(LanguageModelCallOptions options)
     {
         var names = new Dictionary<string, string>();
-        var provider = ReadProvider(options, "anthropic");
-        if (provider == null || !provider.Value.TryGetProperty("providerTools", out var tools))
-        {
-            return names;
-        }
-
-        foreach (var tool in tools.EnumerateArray())
+        foreach (var tool in DeclaredProviderTools(options))
         {
             if (AnthropicJson.String(tool, "id") == "anthropic.computer_toolset_20260801")
             {
