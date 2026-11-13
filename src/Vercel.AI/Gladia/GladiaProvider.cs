@@ -419,7 +419,12 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                     var status = ReadString(document.RootElement, "status");
                     if (string.Equals(status, "error", StringComparison.Ordinal))
                     {
-                        throw new AiSdkException("Transcription job failed.");
+                        var errorCode = document.RootElement.TryGetProperty("error_code", out var code) && code.ValueKind == JsonValueKind.Number && code.TryGetInt32(out var number)
+                            ? number
+                            : (int?)null;
+                        throw new AiSdkException(errorCode is null
+                            ? "Transcription job failed."
+                            : "Transcription job failed with error code " + errorCode.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
                     }
 
                     if (string.Equals(status, "done", StringComparison.Ordinal) || string.IsNullOrEmpty(status))
