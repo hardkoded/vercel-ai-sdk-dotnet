@@ -81,7 +81,7 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
-    [UpstreamTest(Chat + "doStream > tool call::should handle string \"null\" tool call arguments", Coverage = UpstreamCoverage.Covered, Commit = "27c4487")]
+    [UpstreamTest(Chat + "doStream > tool call::should handle string \"null\" tool call arguments", Coverage = UpstreamCoverage.Covered, Commit = "27c44878c26e05cb5c872484d4b22441f692af31")]
     public async Task Stream_turns_null_tool_arguments_into_an_empty_object()
     {
         var options = new LanguageModelCallOptions
