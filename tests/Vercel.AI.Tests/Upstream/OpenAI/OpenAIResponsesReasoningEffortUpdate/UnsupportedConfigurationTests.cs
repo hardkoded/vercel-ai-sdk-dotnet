@@ -60,6 +60,6 @@ public sealed class UnsupportedConfigurationTests
         var (body, warnings) = await Request(method, new ModelMessage[] { User() }, options, model);
 
         OpenAIUpstream.Equal(body["input"], "[" + WireUser + "]");
-        Assert.Single(warnings, w => w.Type == "unsupported" && w.Message.StartsWith("reasoningEffortUpdate", StringComparison.Ordinal));
+        Assert.Single(warnings, w => w.Type == "unsupported" && w.Message.StartsWith("Configuration updates", StringComparison.Ordinal));
     }
 }

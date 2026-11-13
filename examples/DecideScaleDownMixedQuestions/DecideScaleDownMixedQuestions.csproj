@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Answers a choice, a boolean, and a score question with a ScaleDown decision model.</Description>
+  </PropertyGroup>
+</Project>

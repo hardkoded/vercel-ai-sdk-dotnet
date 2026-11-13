@@ -631,6 +631,12 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             openai["reasoningContext"] = Node(reasoningContext);
         }
 
+        if (body.TryGetProperty("prompt_cache_diagnostics", out var cacheDiagnostics)
+            && OpenAIResponsesLanguageModel.PromptCacheDiagnostics(Node(cacheDiagnostics)) is { } promptCacheDiagnostics)
+        {
+            openai["promptCacheDiagnostics"] = promptCacheDiagnostics;
+        }
+
         var item = new BatchItem("text", id, "succeeded");
         item.Text = new BatchTextGeneration
         {

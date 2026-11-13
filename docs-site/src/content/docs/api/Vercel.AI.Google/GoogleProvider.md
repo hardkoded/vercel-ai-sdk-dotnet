@@ -196,11 +196,11 @@ Creates a provider.
 
 
 ```csharp
-public DecisionLanguageModel DecisionModel(string modelId)
+public GoogleDecisionModel DecisionModel(string modelId)
 ```
 
 
-Experimental Choice/Score/Boolean decision model that uses Gemini structured output.
+Experimental decision model that uses the Gemini Decisions API (`POST /decisions`).
 The provider id is `google.decision`.
 
 **Parameters**
@@ -209,7 +209,7 @@ The provider id is `google.decision`.
 | --- | --- | --- |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-**Returns:** [DecisionLanguageModel](/api/Vercel.AI.Operations/DecisionLanguageModel/)
+**Returns:** [GoogleDecisionModel](/api/Vercel.AI.Google/GoogleDecisionModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L101)
 
@@ -236,6 +236,34 @@ Returns an embedding model.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L127)
 
+<a id="Vercel_AI_Google_GoogleProvider_EvaluationModel_"></a>
+<a id="Vercel_AI_Google_GoogleProvider_EvaluationModel_System_String_"></a>
+
+### EvaluationModel(string)
+
+
+```csharp
+[Obsolete("Use DecisionModel instead.")]
+public GoogleDecisionModel EvaluationModel(string modelId)
+```
+
+
+Deprecated alias of [DecisionModel(string)](#Vercel_AI_Google_GoogleProvider_DecisionModel_System_String_). Maps to `evaluationModel`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [GoogleDecisionModel](/api/Vercel.AI.Google/GoogleDecisionModel/)
+
+:::caution[Obsolete]
+This API is obsolete.
+:::
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L108)
+
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch"></a>
 
@@ -252,29 +280,6 @@ Gemini Batch API. Downloads batch results.
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L70)
-
-<a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_"></a>
-<a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_System_String_"></a>
-
-### ExtractionModel(string)
-
-
-```csharp
-public ExtractionLanguageModel ExtractionModel(string modelId)
-```
-
-
-Experimental typed field extraction model that uses Gemini structured output. The provider id is `google.extraction`.
-
-**Parameters**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-
-**Returns:** [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L108)
 
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_System_String_"></a>
