@@ -362,6 +362,19 @@ public class DecisionUnsupportedQuestionTypeException : AiSdkException, IErrorMa
     }
 }
 
+/// <summary>Request metadata returned by a provider call.</summary>
+public sealed class ProviderRequest
+{
+    /// <summary>Creates request metadata.</summary>
+    public ProviderRequest(string? body = null)
+    {
+        Body = body;
+    }
+
+    /// <summary>Request body, or the request URL for a WebSocket call.</summary>
+    public string? Body { get; }
+}
+
 /// <summary>Headers and body returned by one provider call.</summary>
 public sealed class ProviderResponse
 {
@@ -399,12 +412,13 @@ public sealed class ProviderResponse
 public sealed class OperationUsage
 {
     /// <summary>Creates usage. Unset counts stay null.</summary>
-    public OperationUsage(int? inputTokens = null, int? outputTokens = null, int? totalTokens = null, double? tokens = null)
+    public OperationUsage(int? inputTokens = null, int? outputTokens = null, int? totalTokens = null, double? tokens = null, double? seconds = null)
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
         TotalTokens = totalTokens;
         Tokens = tokens;
+        Seconds = seconds;
     }
 
     /// <summary>Prompt tokens.</summary>
@@ -418,6 +432,9 @@ public sealed class OperationUsage
 
     /// <summary>Embedding token count. <see cref="double.NaN"/> when the provider omitted usage.</summary>
     public double? Tokens { get; }
+
+    /// <summary>Seconds of audio processed. Reported by streaming transcription.</summary>
+    public double? Seconds { get; }
 
     /// <summary>Adds two image usage values. A missing count stays missing until one side reports it.</summary>
     public static OperationUsage AddImage(OperationUsage left, OperationUsage right)

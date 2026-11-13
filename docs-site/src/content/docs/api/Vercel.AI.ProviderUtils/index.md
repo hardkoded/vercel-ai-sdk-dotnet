@@ -19,6 +19,8 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [BatchResultDownloads](/api/Vercel.AI.ProviderUtils/BatchResultDownloads/) | Settings for downloading JSON Lines batch results. |
 | [BatchResultsApiBase](/api/Vercel.AI.ProviderUtils/BatchResultsApiBase/) | Batch API that downloads results. Start, status, cancel, and list throw unless a provider overrides them. |
 | [ByteEncoding](/api/Vercel.AI.ProviderUtils/ByteEncoding/) | Base64 conversions for inline file bytes. |
+| [ConnectToWebSocket](/api/Vercel.AI.ProviderUtils/ConnectToWebSocket/) | Opens a WebSocket for a provider model, owning the transport-generic layer: factory resolution, header hygiene, abort wiring, and message decoding. Maps to connectToWebSocket. |
+| [ConnectToWebSocketOptions](/api/Vercel.AI.ProviderUtils/ConnectToWebSocketOptions/) | Options for Connect(ConnectToWebSocketOptions). |
 | [Delay](/api/Vercel.AI.ProviderUtils/Delay/) | Waits for a duration, or completes immediately when the duration is null. Negative durations wait zero. |
 | [DelayAbortedException](/api/Vercel.AI.ProviderUtils/DelayAbortedException/) | Raised when Delay is cancelled. Name is AbortError. |
 | [DelayedPromise&lt;T&gt;](/api/Vercel.AI.ProviderUtils/DelayedPromise-1/) | A task that is completed from outside. Maps to DelayedPromise. |
@@ -46,12 +48,14 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [NoSuchProviderReferenceError](/api/Vercel.AI.ProviderUtils/NoSuchProviderReferenceError/) | A provider reference has no entry for the requested provider. Maps to NoSuchProviderReferenceError. |
 | [PathSegments](/api/Vercel.AI.ProviderUtils/PathSegments/) | Encodes provider-returned identifiers for URL paths. |
 | [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/) | Sends JSON and SSE requests with the SDK retry policy. |
+| [ProviderOptionsResolver](/api/Vercel.AI.ProviderUtils/ProviderOptionsResolver/) | Resolves options that a model accepts under more than one providerOptions namespace. |
 | [ProviderReferences](/api/Vercel.AI.ProviderUtils/ProviderReferences/) | Helpers for provider references: maps from provider name to a provider-specific id. |
 | [ProviderTextResponse](/api/Vercel.AI.ProviderUtils/ProviderTextResponse/) | A successful JSON response body and its headers. |
 | [ProviderValues](/api/Vercel.AI.ProviderUtils/ProviderValues/) | Small collection, header, text, and media helpers shared by providers. |
 | [ProviderValues.BatchRequestCounts](/api/Vercel.AI.ProviderUtils/ProviderValues.BatchRequestCounts/) | Complete batch request counts. |
 | [ProviderValues.RuntimeProbe](/api/Vercel.AI.ProviderUtils/ProviderValues.RuntimeProbe/) | Inputs for GetRuntimeEnvironmentUserAgent(RuntimeProbe). |
 | [ReasoningMap](/api/Vercel.AI.ProviderUtils/ReasoningMap/) | Maps reasoning levels onto provider effort and token budgets. |
+| [ResolvedProviderOptions&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ResolvedProviderOptions-1/) | Result of Func%7b%60%600%2c%60%600%2c%60%600%7d). |
 | [ResponseBodies](/api/Vercel.AI.ProviderUtils/ResponseBodies/) | Reads and releases HTTP response bodies. |
 | [ResponseHandlerResult&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ResponseHandlerResult-1/) | A handled response value with the response headers. |
 | [ResponseHandlers](/api/Vercel.AI.ProviderUtils/ResponseHandlers/) | Response handlers for binary, event stream, and error responses. Maps to createBinaryResponseHandler, createBinaryStreamResponseHandler, createEventSourceResponseHandler, createJsonErrorResponseHandler, and createStatusCodeErrorResponseHandler. |
@@ -68,6 +72,9 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [ToolNames](/api/Vercel.AI.ProviderUtils/ToolNames/) | Builds tool name maps. Maps to createToolNameMapping. |
 | [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/) | A value did not match a JSON Schema. |
 | [UrlSupport](/api/Vercel.AI.ProviderUtils/UrlSupport/) | Checks whether a model can read a URL natively. Maps to isUrlSupported. |
+| [WebSocketCloseEvent](/api/Vercel.AI.ProviderUtils/WebSocketCloseEvent/) | Close diagnostics carried by OnClose. |
+| [WebSocketConnection](/api/Vercel.AI.ProviderUtils/WebSocketConnection/) | A WebSocket opened by ConnectToWebSocket. |
+| [WebSocketUtils](/api/Vercel.AI.ProviderUtils/WebSocketUtils/) | WebSocket helpers. Maps to provider-utils/src/websocket.ts. |
 
 ## Structs
 
@@ -75,8 +82,21 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | --- | --- |
 | [ProviderValues.OptionalHeader](/api/Vercel.AI.ProviderUtils/ProviderValues.OptionalHeader/) | Header values that may be omitted. |
 
+## Interfaces
+
+| Type | Summary |
+| --- | --- |
+| [IWebSocketLike](/api/Vercel.AI.ProviderUtils/IWebSocketLike/) | The WebSocket surface used by providers. Maps to WebSocketLike. |
+
 ## Enums
 
 | Type | Summary |
 | --- | --- |
+| [ProviderOptionsResolution](/api/Vercel.AI.ProviderUtils/ProviderOptionsResolution/) | How options found under several providerOptions namespaces are combined. Maps to ProviderOptionsResolution. |
 | [RetryErrorReason](/api/Vercel.AI.ProviderUtils/RetryErrorReason/) | Why RetryException was thrown. |
+
+## Delegates
+
+| Type | Summary |
+| --- | --- |
+| [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/) | Creates a socket. Maps to WebSocketConstructor. |

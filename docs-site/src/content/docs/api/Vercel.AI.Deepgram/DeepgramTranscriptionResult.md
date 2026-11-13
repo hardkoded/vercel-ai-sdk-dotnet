@@ -23,7 +23,7 @@ Deepgram transcription with word timings and response metadata.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L203)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a transcription result.
 | `warnings` | [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `response` | [DeepgramResponse](/api/Vercel.AI.Deepgram/DeepgramResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L206)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Audio duration from the response metadata.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L226)
 
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Language_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Language"></a>
@@ -87,7 +87,7 @@ Detected language, when language detection ran.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L223)
 
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Response_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Response"></a>
@@ -104,7 +104,7 @@ Response metadata.
 
 **Value:** [DeepgramResponse](/api/Vercel.AI.Deepgram/DeepgramResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L232)
 
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Segments_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Segments"></a>
@@ -121,7 +121,7 @@ One segment per word.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L220)
 
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Text_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Text"></a>
@@ -138,7 +138,7 @@ Transcript of the first channel.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L217)
 
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Warnings_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramTranscriptionResult_Warnings"></a>
@@ -155,4 +155,4 @@ Warnings for ignored settings.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L229)

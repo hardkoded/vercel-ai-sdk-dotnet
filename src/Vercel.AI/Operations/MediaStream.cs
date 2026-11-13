@@ -27,6 +27,29 @@ public sealed class TranscriptSegment
     public double EndSecond { get; }
 }
 
+/// <summary>The format of raw input audio. Maps to <c>SharedV4AudioFormat</c>.</summary>
+public sealed class AudioFormat
+{
+    /// <summary>Creates an audio format.</summary>
+    public AudioFormat(string type, int? rate = null)
+    {
+        Type = type ?? throw new ArgumentNullException(nameof(type));
+        Rate = rate;
+    }
+
+    /// <summary>Media type of the audio, such as <c>audio/pcm</c>.</summary>
+    public string Type { get; }
+
+    /// <summary>Sample rate in Hz, when the format needs one.</summary>
+    public int? Rate { get; }
+
+    /// <summary>Creates a format with no sample rate.</summary>
+    public static implicit operator AudioFormat(string type)
+    {
+        return new AudioFormat(type);
+    }
+}
+
 /// <summary>A part emitted by a transcription or translation model stream.</summary>
 public sealed class ModelStreamPart
 {
@@ -83,11 +106,35 @@ public sealed class ModelStreamPart
 
     /// <summary>Usage on <c>finish</c>.</summary>
     public OperationUsage? Usage { get; set; }
+
+    /// <summary>Start of a <c>transcript-partial</c> or <c>transcript-final</c> part, in seconds.</summary>
+    public double? StartSecond { get; set; }
+
+    /// <summary>End of a <c>transcript-final</c> part, in seconds.</summary>
+    public double? EndSecond { get; set; }
+
+    /// <summary>Audio channel of a <c>transcript-partial</c> or <c>transcript-final</c> part.</summary>
+    public int? ChannelIndex { get; set; }
 }
 
-/// <summary>Audio the model may take ownership of.</summary>
+/// <summary>
+/// Audio the model may take ownership of. Chunks are written with <see cref="Write(byte[])"/> or
+/// <see cref="Write(string)"/> (base64) and read through <see cref="GetReader"/>.
+/// </summary>
 public sealed class AudioChunkStream
 {
+    private readonly PartQueue<object> _chunks = new PartQueue<object>();
+    private readonly Action<Exception?>? _onCancel;
+    private readonly object _gate = new object();
+    private bool _cancelled;
+    private bool _completed;
+
+    /// <summary>Creates an audio stream. <paramref name="onCancel"/> runs once when the stream or its reader is cancelled.</summary>
+    public AudioChunkStream(Action<Exception?>? onCancel = null)
+    {
+        _onCancel = onCancel;
+    }
+
     /// <summary>True after the model takes a reader.</summary>
     public bool Locked { get; private set; }
 
@@ -100,8 +147,37 @@ public sealed class AudioChunkStream
         Locked = true;
     }
 
+    /// <summary>Writes a binary chunk.</summary>
+    public void Write(byte[] chunk)
+    {
+        _chunks.Enqueue(chunk ?? throw new ArgumentNullException(nameof(chunk)));
+    }
+
+    /// <summary>Writes a base64 chunk.</summary>
+    public void Write(string base64Chunk)
+    {
+        _chunks.Enqueue(base64Chunk ?? throw new ArgumentNullException(nameof(base64Chunk)));
+    }
+
+    /// <summary>Ends the stream after the written chunks.</summary>
+    public void Complete()
+    {
+        lock (_gate)
+        {
+            _completed = true;
+        }
+
+        _chunks.Complete(null);
+    }
+
+    /// <summary>Fails the stream after the written chunks.</summary>
+    public void Fail(Exception error)
+    {
+        _chunks.Complete(error ?? throw new ArgumentNullException(nameof(error)));
+    }
+
     /// <summary>Cancels an unowned stream. A locked stream throws.</summary>
-    public void Cancel(Exception error)
+    public void Cancel(Exception? error = null)
     {
         if (Locked)
         {
@@ -109,6 +185,102 @@ public sealed class AudioChunkStream
         }
 
         CancelError = error;
+        CancelCore(error);
+    }
+
+    /// <summary>Locks the stream and returns its only reader.</summary>
+    public AudioChunkReader GetReader()
+    {
+        if (Locked)
+        {
+            throw new InvalidOperationException("The audio stream is locked.");
+        }
+
+        Locked = true;
+        return new AudioChunkReader(this);
+    }
+
+    internal void CancelCore(Exception? error)
+    {
+        lock (_gate)
+        {
+            if (_cancelled || _completed)
+            {
+                _cancelled = true;
+                return;
+            }
+
+            _cancelled = true;
+        }
+
+        _chunks.Complete(null);
+        _onCancel?.Invoke(error);
+    }
+
+    internal PartQueue<object> Chunks
+    {
+        get { return _chunks; }
+    }
+
+    internal bool IsCancelled
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _cancelled;
+            }
+        }
+    }
+
+    internal void Release()
+    {
+        Locked = false;
+    }
+}
+
+/// <summary>The reader of an <see cref="AudioChunkStream"/>.</summary>
+public sealed class AudioChunkReader
+{
+    private readonly AudioChunkStream _stream;
+    private readonly CancellationTokenSource _cancelled = new CancellationTokenSource();
+
+    internal AudioChunkReader(AudioChunkStream stream)
+    {
+        _stream = stream;
+    }
+
+    /// <summary>Reads the next chunk. Returns null when the stream ends or the reader is cancelled. Base64 chunks are decoded.</summary>
+    public async Task<byte[]?> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancelled.Token);
+        try
+        {
+            if (_stream.IsCancelled || !await _stream.Chunks.WaitAsync(linked.Token).ConfigureAwait(false) || _stream.IsCancelled)
+            {
+                return null;
+            }
+        }
+        catch (OperationCanceledException) when (_cancelled.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+
+        var chunk = _stream.Chunks.Dequeue();
+        return chunk is string base64 ? Convert.FromBase64String(base64) : (byte[])chunk;
+    }
+
+    /// <summary>Cancels the underlying stream and any pending read.</summary>
+    public void Cancel()
+    {
+        _cancelled.Cancel();
+        _stream.CancelCore(null);
+    }
+
+    /// <summary>Releases the lock so the stream can be cancelled directly.</summary>
+    public void ReleaseLock()
+    {
+        _stream.Release();
     }
 }
 
@@ -117,6 +289,8 @@ public sealed class ModelPartStream
 {
     private readonly IReadOnlyList<ModelStreamPart> _parts;
     private readonly TaskCompletionSource<bool> _done = new TaskCompletionSource<bool>();
+    private readonly PartQueue<ModelStreamPart>? _live;
+    private readonly Action? _onCancel;
 
     /// <summary>Creates a scripted stream.</summary>
     public ModelPartStream(IReadOnlyList<ModelStreamPart> parts, bool completes = true, Exception? failure = null)
@@ -124,6 +298,15 @@ public sealed class ModelPartStream
         _parts = parts ?? Array.Empty<ModelStreamPart>();
         Completes = completes;
         Failure = failure;
+    }
+
+    /// <summary>Creates a live stream. Parts are read from <paramref name="queue"/> until it completes. <paramref name="onCancel"/> runs on <see cref="Cancel"/>.</summary>
+    public ModelPartStream(PartQueue<ModelStreamPart> queue, Action? onCancel = null)
+    {
+        _live = queue ?? throw new ArgumentNullException(nameof(queue));
+        _onCancel = onCancel;
+        _parts = Array.Empty<ModelStreamPart>();
+        Completes = true;
     }
 
     /// <summary>True when the stream ends after <see cref="Parts"/>.</summary>
@@ -146,11 +329,22 @@ public sealed class ModelPartStream
     {
         Cancelled = true;
         _done.TrySetResult(true);
+        _onCancel?.Invoke();
     }
 
     /// <summary>Reads the scripted parts, then waits when the stream stays open.</summary>
     public async IAsyncEnumerable<ModelStreamPart> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (_live is not null)
+        {
+            while (await _live.WaitAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return _live.Dequeue();
+            }
+
+            yield break;
+        }
+
         foreach (var part in _parts)
         {
             cancellationToken.ThrowIfCancellationRequested();

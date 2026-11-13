@@ -1399,3 +1399,38 @@ These values are available under `gladia`:
 Each add-on reports `success`, `is_empty`, `exec_time`, and `error` next to its `results`. Check them before you read the results. `audio_to_llm` items keep their own `success`, `is_empty`, `exec_time`, and `error`.
 
 When Gladia reports `status: "error"`, `TranscribeAsync` throws `AiSdkException`. If the response has `error_code` (the HTTP status code of the failed request), the message is `Transcription job failed with error code <code>.`, otherwise `Transcription job failed.`
+
+## Deepgram streaming transcription
+
+`DeepgramProvider.TranscriptionModel(id)` also streams live audio over Deepgram's [`/v1/listen` WebSocket API](https://developers.deepgram.com/reference/speech-to-text/listen-streaming). Pass the model to `StreamTranscribe.Start`. Nova models stream. Flux models use a separate `/v2/listen` protocol, and `DeepgramModelCatalog.GetDeepgramTranscriptionModelEntry(id).Streaming` is `false` for them, so streaming one throws `UnsupportedFunctionalityException`.
+
+```csharp
+var provider = DeepgramProvider.Create(new DeepgramOptions { ApiKey = key });
+var audio = new AudioChunkStream();
+var result = StreamTranscribe.Start(new StreamTranscribeRequest
+{
+    Model = (ITranscriptionCaller)provider.TranscriptionModel("nova-3"),
+    Audio = audio,
+    InputAudioFormat = new AudioFormat("audio/pcm", 16000),
+    ProviderOptions = OperationJson.Parse(@"{""deepgram"":{""language"":""en"",""streaming"":{""interimResults"":true,""endpointing"":300}}}"),
+});
+
+audio.Write(pcmBytes); // or audio.Write(base64String)
+audio.Complete();      // flushes the remaining transcript
+
+await foreach (var part in result.FullStream)
+{
+    if (part.Type is "transcript-partial" or "transcript-final")
+    {
+        Console.WriteLine(part.Type + " " + part.Text);
+    }
+}
+
+Console.WriteLine(await result.Text);
+```
+
+- **Input audio.** `AudioFormat` maps to `SharedV4AudioFormat`: a media type and a sample rate. Chunks are raw 16-bit little-endian PCM (`audio/pcm`), G.711 μ-law (`audio/pcmu`), or G.711 A-law (`audio/pcma`). `Rate` must be a positive integer. A string given to `AudioChunkStream.Write` is base64 audio. Empty chunks are skipped. Completing the stream flushes the remaining transcript before the result finishes. Idle connections send keepalive messages, and cancellation closes the socket and cancels the audio source (`AudioChunkStream(onCancel)`). Reading pauses while more than 1 MiB is queued on the socket.
+- **Authentication.** The provider sends the API key as WebSocket subprotocols (`token`, key), so no custom header is needed. Never put a key in the URL. To use a short-lived token, set an `Authorization: Bearer <token>` header on the provider or on the call. Any other scheme throws `InvalidArgumentException`. `TranscriptionStreamStart.Request.Body` holds the URL without credentials.
+- **Custom WebSocket.** `DeepgramOptions.WebSocket` takes a `WebSocketFactory` that returns an `IWebSocketLike`. It defaults to `ClientWebSocket`. `ConnectToWebSocket.Connect`, `WebSocketUtils.ToWebSocketUrl`, and `WebSocketUtils.WaitForWebSocketBufferDrainAsync` are the shared transport helpers that providers build on.
+- **Options.** Live transcription supports `language`, `smartFormat`, `punctuate`, `diarize`, `fillerWords`, `redact`, `replace`, `search`, and `keyterm`. Batch-only options produce `unsupported` warnings, unless they are `false`. The `providerOptions.deepgram.streaming` object accepts `interimResults` (bool), `endpointing` (a number of milliseconds, or `false`), `channels` (integer), `multichannel` (bool), `vadEvents` (bool), and `utteranceEndMs` (integer, at least 1000). Batch calls (`DoGenerateAsync`) warn about `streaming`.
+- **Parts.** Revisable results are `transcript-partial` parts (`StartSecond`, `DurationInSeconds`, `ChannelIndex`). Finalized results are `transcript-final` parts (`StartSecond`, `EndSecond`, `ChannelIndex`). Both carry `ProviderMetadata.deepgram.speechFinal`. `finish` joins the finalized text and word timings in chronological order across channels, reports Deepgram's duration as `DurationInSeconds`, and reports `Usage.Seconds` when Deepgram sends `Metadata.duration`. With `IncludeRawChunks`, every provider event is also emitted as a `raw` part.

@@ -23,7 +23,7 @@ Deepgram settings.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L20)
 
 ## Properties
 
@@ -42,4 +42,21 @@ Clock used for response timestamps. Defaults to UTC now.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L23)
+
+<a id="Vercel_AI_Deepgram_DeepgramOptions_WebSocket_"></a>
+<a id="Vercel_AI_Deepgram_DeepgramOptions_WebSocket"></a>
+
+### WebSocket
+
+
+```csharp
+public WebSocketFactory? WebSocket { get; set; }
+```
+
+
+Custom WebSocket implementation for streaming transcription. Defaults to `ClientWebSocket`.
+
+**Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L26)
