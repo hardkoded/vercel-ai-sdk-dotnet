@@ -13,10 +13,11 @@ namespace Vercel.AI.Tests.CancelPrediction;
 /// <summary>Port of <c>cancel-prediction.test.ts</c> &gt; <c>cancelReplicatePrediction</c>.</summary>
 public sealed class CancelReplicatePredictionTests
 {
+    private const string UpstreamCommit = "0d47a6cf8e46f8e3a0271a162de90b5175236cc2";
     private const string Id = "packages/replicate/src/cancel-prediction.test.ts::cancelReplicatePrediction::";
 
     [Fact]
-    [UpstreamTest(Id + "posts to the prediction cancel endpoint with the configured headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "posts to the prediction cancel endpoint with the configured headers", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Posts_to_the_prediction_cancel_endpoint_with_the_configured_headers()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json("{\"status\":\"canceled\"}"));
@@ -33,7 +34,7 @@ public sealed class CancelReplicatePredictionTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "encodes the prediction id in the URL path", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "encodes the prediction id in the URL path", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Encodes_the_prediction_id_in_the_URL_path()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json("{\"status\":\"canceled\"}"));
@@ -47,7 +48,7 @@ public sealed class CancelReplicatePredictionTests
     [Theory]
     [InlineData("the network request fails")]
     [InlineData("the API responds with an error status")]
-    [UpstreamTest(Id + "swallows the error when $name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "swallows the error when $name", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Swallows_the_error_when_name(string name)
     {
         var handler = new ParityHandler(_ => name == "the network request fails"
@@ -61,7 +62,7 @@ public sealed class CancelReplicatePredictionTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "swallows errors while resolving the headers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "swallows errors while resolving the headers", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Swallows_errors_while_resolving_the_headers()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json("{\"status\":\"canceled\"}"));

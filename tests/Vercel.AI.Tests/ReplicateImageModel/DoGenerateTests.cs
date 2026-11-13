@@ -16,11 +16,12 @@ namespace Vercel.AI.Tests.ReplicateImageModel;
 /// <summary>Port of the cancellation tests of <c>replicate-image-model.test.ts</c> &gt; <c>doGenerate</c>.</summary>
 public sealed class DoGenerateTests
 {
+    private const string UpstreamCommit = "0d47a6cf8e46f8e3a0271a162de90b5175236cc2";
     private const string Id = "packages/replicate/src/replicate-image-model.test.ts::doGenerate::";
     private const string Prompt = "The Loch Ness monster getting a manicure";
 
     [Fact]
-    [UpstreamTest(Id + "should cancel the prediction and rethrow the abort error when the caller aborts while polling", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should cancel the prediction and rethrow the abort error when the caller aborts while polling", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Should_cancel_the_prediction_and_rethrow_the_abort_error_when_the_caller_aborts_while_polling()
     {
         using var controller = new CancellationTokenSource();
@@ -55,7 +56,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should cancel the prediction and rethrow the timeout error when the maximum polling attempts are reached", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should cancel the prediction and rethrow the timeout error when the maximum polling attempts are reached", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Should_cancel_the_prediction_and_rethrow_the_timeout_error_when_the_maximum_polling_attempts_are_reached()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json(Prediction("timed-out-prediction", "processing", "null", "https://api.replicate.com/v1/predictions/timed-out-prediction")));
@@ -76,7 +77,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should not send a cancel request when the prediction completes", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should not send a cancel request when the prediction completes", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Should_not_send_a_cancel_request_when_the_prediction_completes()
     {
         var completed = Prediction("completed-prediction", "succeeded", "[\"https://replicate.delivery/xezq/abc/out-0.webp\"]", "https://api.replicate.com/v1/predictions/completed-prediction");
