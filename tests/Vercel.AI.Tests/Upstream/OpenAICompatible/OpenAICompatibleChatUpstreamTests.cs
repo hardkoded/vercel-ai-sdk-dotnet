@@ -152,7 +152,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::user messages::should convert inline text file parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::user messages::should convert inline text file parts", Coverage = UpstreamCoverage.Covered, Commit = "5f19ea5c61310c2a929cbbeb1e565c5344392209")]
     public async Task Inline_text_file_parts_are_converted()
     {
         var capture = new UpstreamCapture();
