@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Anthropic;
 
@@ -128,8 +129,20 @@ public static class AnthropicMessagesRequest
 
         var providerOptionsName = ProviderOptionsName(providerName);
         var canonical = ReadProvider(options, "anthropic");
-        var custom = providerOptionsName == "anthropic" ? null : ReadProvider(options, providerOptionsName);
-        var usedCustom = custom != null;
+        // The custom key and its legacy aliases are alternatives: the first present one is used.
+        var customNamespaces = providerOptionsName == "anthropic"
+            ? Array.Empty<string>()
+            : LegacyProviderOptionsNames.TryGetValue(providerOptionsName, out var legacy)
+                ? new[] { providerOptionsName }.Concat(legacy).ToArray()
+                : new[] { providerOptionsName };
+        var resolvedCustom = ProviderOptionsResolver.Resolve<JsonElement>(
+            ObjectProviderOptions(options),
+            customNamespaces,
+            ProviderOptionsResolution.First,
+            element => element);
+        JsonElement? custom = resolvedCustom.Namespaces.Count == 0 ? null : resolvedCustom.Options;
+        // Provider metadata is written under the custom key only when that key itself was used.
+        var usedCustom = resolvedCustom.Namespaces.Count > 0 && resolvedCustom.Namespaces[0] == providerOptionsName;
         var anthropic = Merge(canonical, custom);
         var mode = String(anthropic, "structuredOutputMode") ?? "auto";
         var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
@@ -1125,6 +1138,23 @@ public static class AnthropicMessagesRequest
     {
         var dot = provider.IndexOf('.');
         return dot < 0 ? provider : provider.Substring(0, dot);
+    }
+
+    /// <summary>
+    /// Legacy names of custom providerOptions keys, read when the current key is absent. The Google Vertex
+    /// Anthropic provider was renamed from <c>vertex</c> to <c>googleVertex</c>, which silently changed its
+    /// custom providerOptions key.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string[]> LegacyProviderOptionsNames = new Dictionary<string, string[]>
+    {
+        ["googleVertex"] = new[] { "vertex" },
+    };
+
+    private static IReadOnlyDictionary<string, JsonElement>? ObjectProviderOptions(LanguageModelCallOptions options)
+    {
+        return options.ProviderOptions?
+            .Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
 
     private static JsonElement? ReadProvider(LanguageModelCallOptions options, string name)

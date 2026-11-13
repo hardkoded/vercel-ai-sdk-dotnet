@@ -31,7 +31,11 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
 {
     private readonly ProviderHttp _http;
     private readonly string _providerName;
+    private static readonly string[] OpenAIProviderOptionsNames = { "openai" };
+    private static readonly string[] AzureProviderOptionsNames = { "openai", "azure" };
+
     private readonly string? _requestModelId;
+    private readonly string[] _providerOptionsNames = OpenAIProviderOptionsNames;
     private readonly Func<Uri> _url;
     private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
@@ -63,6 +67,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         }
 
         _requestModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
+        // `openai` and `azure` are merged; `azure` wins, like it does for Azure completion models.
+        _providerOptionsNames = AzureProviderOptionsNames;
         ModelId = settings?.ModelId ?? deploymentId;
         _http = provider.Http;
         _providerName = provider.Name;
@@ -91,9 +97,22 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// </summary>
     public static OpenAIChatPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, string? requestModelId)
     {
+        return Prepare(modelId, options, requestModelId, OpenAIProviderOptionsNames);
+    }
+
+    /// <summary>
+    /// Builds the Chat Completions body. The options under <paramref name="providerOptionsNames"/> are merged in
+    /// order and later names win, so an Azure model passes <c>openai</c> then <c>azure</c>.
+    /// </summary>
+    public static OpenAIChatPreparedRequest Prepare(
+        string modelId,
+        LanguageModelCallOptions options,
+        string? requestModelId,
+        IReadOnlyList<string> providerOptionsNames)
+    {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
-        var openai = OpenAIJson.Provider(options.ProviderOptions);
+        var openai = OpenAIJson.MergedProvider(options.ProviderOptions, providerOptionsNames.ToArray());
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
         var effort = ResolveEffort(openai, options.Reasoning, capabilities, modelId, warnings);
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
@@ -275,7 +294,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, _requestModelId);
+        var prepared = Prepare(ModelId, options, _requestModelId, _providerOptionsNames);
         var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
             _url(),
@@ -289,7 +308,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, _requestModelId);
+        var prepared = Prepare(ModelId, options, _requestModelId, _providerOptionsNames);
         var body = prepared.Body;
         body["stream"] = true;
         body["stream_options"] = new JsonObject { ["include_usage"] = true };
