@@ -87,6 +87,22 @@ public sealed class DoGenerateStatefulChainingTests
         Assert.Equal("auto", (string?)generationConfig["thinking_summaries"]);
     }
 
+    [Theory]
+    [InlineData("gemini-4-hydrogen")]
+    [InlineData("gemini-4-hydrogen-eap")]
+    [UpstreamTest(Prefix + "passes the xhigh thinking level for %s", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
+    public async Task Passes_the_xhigh_thinking_level_for_model_id(string modelId)
+    {
+        var handler = Basic();
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, modelId).DoGenerateAsync(Options("{\"google\":{\"thinkingLevel\":\"xhigh\"}}"), CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!;
+        Assert.Equal(modelId, (string?)body["model"]);
+        Assert.Equal("xhigh", (string?)body["generation_config"]!["thinking_level"]);
+        Assert.Empty(result.Warnings);
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "forwards topK and warns for unsupported penalties", Coverage = UpstreamCoverage.Covered)]
     public async Task Forwards_topK_and_warns_for_unsupported_penalties()
