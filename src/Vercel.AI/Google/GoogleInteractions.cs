@@ -317,7 +317,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(LanguageModelCallOptions options)
     {
         var warnings = new List<CallWarning>();
-        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high");
+        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high", "xhigh");
         var thinkingSummaries = EnumOption(options, "thinkingSummaries", "auto", "none");
         var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
         var previousInteractionId = StringOption(options, "previousInteractionId");
