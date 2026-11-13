@@ -215,7 +215,13 @@ internal static class TypesafeAiDecisionModelSupport
                 return value.Select(ToObject).ToList();
             default:
                 var element = node.GetValue<JsonElement>();
-                return element.ValueKind == JsonValueKind.String ? element.GetString() : (object)element.GetDouble();
+                return element.ValueKind switch
+                {
+                    JsonValueKind.String => element.GetString(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => (object)element.GetDouble(),
+                };
         }
     }
 }

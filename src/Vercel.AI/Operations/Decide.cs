@@ -15,8 +15,8 @@ public class DecisionQuestion
     /// <summary>Creates a question.</summary>
     /// <param name="type"><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</param>
     /// <param name="instructions">
-    /// Instructions as a string, JSON object, or JSON array. A box question requires them. The other types may leave them null
-    /// when the provider supports it and the criteria define the judgment.
+    /// Instructions as a string, JSON object, or JSON array. Every question type may leave them null
+    /// when the provider supports it.
     /// </param>
     /// <param name="criteria">
     /// <see cref="DecisionChoiceCriteria"/> for a choice, <see cref="DecisionScoreCriteria"/> for a score, and an optional
@@ -28,12 +28,13 @@ public class DecisionQuestion
         Instructions = instructions;
         HasInstructions = instructions != null;
         Criteria = criteria;
+        HasCriteria = criteria != null;
     }
 
     /// <summary><c>choice</c>, <c>score</c>, <c>boolean</c>, or <c>box</c>.</summary>
     public string Type { get; }
 
-    /// <summary>Instructions. A string, JSON object, or JSON array. May be null for choice, score, and boolean questions.</summary>
+    /// <summary>Instructions. A string, JSON object, or JSON array. May be null for every question type.</summary>
     public DecisionInput? Instructions { get; }
 
     /// <summary>
@@ -45,6 +46,13 @@ public class DecisionQuestion
 
     /// <summary>Choice options, ordered score levels, or optional boolean descriptions. A box question has no criteria.</summary>
     public DecisionCriteria? Criteria { get; }
+
+    /// <summary>
+    /// True when <c>criteria</c> is present. It is true whenever <see cref="Criteria"/> is set. Set it to true with null criteria to
+    /// send an explicit <c>null</c>, as upstream does for a boolean question with <c>criteria: null</c>. A question that leaves it
+    /// false omits the field.
+    /// </summary>
+    public bool HasCriteria { get; init; }
 }
 
 /// <summary>One model answer. Numbers are returned unchanged.</summary>
@@ -614,9 +622,9 @@ public static class Decide
         {
             var parameter = "questions." + pair.Key;
             var question = pair.Value;
-            if (question == null || (question.Type == "box" && question.Instructions == null))
+            if (question == null)
             {
-                throw new InvalidArgumentException(parameter, question, "instructions must be a JSON-compatible string, object, or array");
+                throw new InvalidArgumentException(parameter, question, "question must not be null");
             }
 
             var criteria = question.Criteria;
