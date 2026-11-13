@@ -22,7 +22,7 @@ public sealed class CreateTencentTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "throws NoSuchModelError for embedding and image models", Coverage = UpstreamCoverage.Covered, Commit = Commit, Note = "The port has no textEmbeddingModel alias.")]
+    [UpstreamTest(Prefix + "throws NoSuchModelError for embedding and image models", Coverage = UpstreamCoverage.Partial, Commit = Commit, Note = "The port has no textEmbeddingModel alias, so that check is not ported.")]
     public void Throws_NoSuchModelError_for_embedding_and_image_models()
     {
         var provider = TencentProviderType.Create();

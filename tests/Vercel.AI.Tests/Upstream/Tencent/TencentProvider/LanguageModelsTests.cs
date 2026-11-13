@@ -74,7 +74,7 @@ public sealed class LanguageModelsTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "throws when the API key is missing", Coverage = UpstreamCoverage.Covered, Commit = Commit, Note = "The port throws AiSdkException; it has no LoadAPIKeyError.")]
+    [UpstreamTest(Prefix + "throws when the API key is missing", Coverage = UpstreamCoverage.Partial, Commit = Commit, Note = "The port throws AiSdkException; it has no LoadAPIKeyError, so the error type is not asserted.")]
     public async Task Throws_when_the_API_key_is_missing()
     {
         var error = await Assert.ThrowsAsync<AiSdkException>(() => Create(new TencentOptions(), Server()).LanguageModel("hy4").DoGenerateAsync(ChatPrompt(), CancellationToken.None));
