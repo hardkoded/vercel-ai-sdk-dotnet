@@ -917,6 +917,12 @@ var second = await client.GenerateTextAsync(new GenerateTextOptions
 
 On a continuation the request omits `system` and the tool definitions, even when you pass them, because Anthropic keeps them from the create request. Keep passing identical tools so tool names, tool choice, and tool beta headers still work. The request keeps `tool_choice` and the other per-request settings. A `compatibility` warning on `providerOptions.anthropic.thread` says that supplied instructions or tools were left out. To change them, start a new thread.
 
+### Computer toolset members
+
+`anthropic.computer_toolset_20260801` (`LanguageModelTool.ProviderDefined("anthropic.computer_toolset_20260801", name, args)`) returns each action as its own `tool_use` block with `toolset_name: "computer"`. The provider maps every action to one tool call named like your tool, with the member name as `action`, and keeps that returned member name as `action` even when the member input carries a different `action`.
+
+It rejects a member before it emits any tool call, in `DoGenerateAsync` and `DoStreamAsync`, with `InvalidResponseDataException` when the toolset name is not `computer`, the member is unknown, the toolset is not among the prepared tools, or `configs` disables the member with `enabled: false`. On a thread continuation the check uses the tool definitions you pass, even though the request omits them. Streamed member input must be a JSON object; malformed JSON or a non-object value also throws `InvalidResponseDataException`.
+
 Conversation management is yours. The provider keeps no history, does not remove earlier messages, and does not replay a request. Keep the full conversation locally. Pass only the new messages on a continuation (after a tool call, only the new tool results). Passing the whole history can duplicate messages or fail. Setting `thread` on an agent does not continue its thread by itself. Use `PrepareStep` to set the latest response id and to pick only the new messages.
 
 Content-dependent beta headers, such as the one for PDFs, must be the same on every turn of a thread. Pin them with `anthropicBeta` on the create request and on every continuation, including text-only ones. When message content enables a beta that you did not pin (through `anthropicBeta` or an `anthropic-beta` header), the request adds a `compatibility` warning that lists it.

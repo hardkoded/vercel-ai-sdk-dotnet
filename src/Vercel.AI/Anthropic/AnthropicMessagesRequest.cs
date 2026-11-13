@@ -21,9 +21,13 @@ public sealed class AnthropicPreparedRequest
         bool usesJsonResponseTool,
         string providerOptionsName,
         bool usedCustomProviderKey,
-        bool markCodeExecutionDynamic = false)
+        bool markCodeExecutionDynamic = false,
+        JsonArray? preparedTools = null,
+        string? computerToolsetName = null)
     {
         MarkCodeExecutionDynamic = markCodeExecutionDynamic;
+        PreparedTools = preparedTools;
+        ComputerToolsetName = computerToolsetName;
         Body = body;
         Warnings = warnings;
         Betas = betas;
@@ -34,6 +38,15 @@ public sealed class AnthropicPreparedRequest
 
     /// <summary>JSON body.</summary>
     public JsonObject Body { get; }
+
+    /// <summary>
+    /// The effective prepared tool definitions, kept when the body omits them (message thread continuation).
+    /// Computer toolset member calls are checked against them.
+    /// </summary>
+    public JsonArray? PreparedTools { get; }
+
+    /// <summary>The caller's name for the declared computer toolset, or null when none is declared.</summary>
+    public string? ComputerToolsetName { get; }
 
     /// <summary>Preparation warnings.</summary>
     public IReadOnlyList<AnthropicWarning> Warnings { get; }
@@ -177,6 +190,14 @@ public static class AnthropicMessagesRequest
         var sendReasoning = Bool(anthropic, "sendReasoning") ?? true;
         var toolNames = ProviderToolNames(options);
         var toolsets = ToolsetNames(options);
+        foreach (var definition in ToTools(options))
+        {
+            if (definition.Id == "anthropic.computer_toolset_20260801" && !string.IsNullOrEmpty(definition.Name))
+            {
+                toolsets[definition.Name] = "computer";
+            }
+        }
+
         var converted = PromptOverride(options) is { } promptJson
             ? AnthropicPrompt.ConvertJson(promptJson, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart)
             : AnthropicPrompt.Convert(options.Prompt, sendReasoning, validator, toolNames, toolsets, settings?.ConvertMediaPart);
@@ -605,7 +626,20 @@ public static class AnthropicMessagesRequest
             body["stream"] = true;
         }
 
-        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools));
+        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools));
+    }
+
+    private static string? ComputerToolsetName(IReadOnlyList<AnthropicToolDefinition> tools)
+    {
+        foreach (var tool in tools)
+        {
+            if (tool.Id == "anthropic.computer_toolset_20260801")
+            {
+                return string.IsNullOrEmpty(tool.Name) ? "computer" : tool.Name;
+            }
+        }
+
+        return null;
     }
 
     private static bool HasDynamicFilteringWebToolWithoutCodeExecution(IReadOnlyList<AnthropicToolDefinition> tools)

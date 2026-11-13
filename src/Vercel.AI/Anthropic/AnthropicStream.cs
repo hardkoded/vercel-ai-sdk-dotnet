@@ -32,6 +32,13 @@ public sealed class AnthropicStream
     /// is sent without the code execution tool, which the API then allows implicitly.
     /// </summary>
     public bool MarkCodeExecutionDynamic { get; init; }
+
+    /// <summary>The effective prepared tool definitions that computer toolset member calls are checked against.</summary>
+    public JsonArray? PreparedTools { get; init; }
+
+    /// <summary>The caller's name for the declared computer toolset. Defaults to <c>computer</c>.</summary>
+    public string? ComputerToolsetName { get; init; }
+
     private bool _hasOutput;
     private bool _failed;
     private FinishStreamPart? _lastFinish;
@@ -263,6 +270,37 @@ public sealed class AnthropicStream
             _blocks[index] = new Block("reasoning", id);
             yield return new ReasoningStartStreamPart(id);
         }
+        else if (type == "tool_use" && Text(block["toolset_name"]) is { } toolsetName)
+        {
+            var memberName = Text(block["name"]) ?? string.Empty;
+            AnthropicToolset.Validate(toolsetName, memberName, PreparedTools);
+            var customName = ComputerToolsetName ?? toolsetName;
+            var toolInput = block["input"] as JsonObject;
+            var hasInput = toolInput != null && toolInput.Count > 0;
+            var metadata = new JsonObject { ["toolsetName"] = toolsetName };
+            if (block["caller"] is JsonObject caller)
+            {
+                var info = new JsonObject { ["type"] = caller["type"]?.DeepClone() };
+                if (caller["tool_id"] != null)
+                {
+                    info["toolId"] = caller["tool_id"]!.DeepClone();
+                }
+
+                metadata["caller"] = info;
+            }
+
+            // Toolset member input is accumulated and emitted when the block completes.
+            _blocks[index] = new Block("tool", id)
+            {
+                ToolCallId = Text(block["id"]) ?? string.Empty,
+                ToolName = customName,
+                Input = new StringBuilder(hasInput ? toolInput!.ToJsonString() : string.Empty),
+                HasInitialInput = hasInput,
+                ToolsetMember = memberName,
+                ToolsetMetadata = metadata,
+            };
+            yield return new ToolInputStartStreamPart(Text(block["id"]) ?? string.Empty, customName);
+        }
         else if (type == "tool_use" || type == "server_tool_use")
         {
             var input = block["input"];
@@ -334,7 +372,7 @@ public sealed class AnthropicStream
             var partial = Text(delta["partial_json"]) ?? string.Empty;
             _hasOutput |= partial.Length > 0;
             block.Input.Append(partial);
-            if (partial.Length > 0 && !(_usesJsonTool && block.ToolName == "json"))
+            if (partial.Length > 0 && block.ToolsetMember == null && !(_usesJsonTool && block.ToolName == "json"))
             {
                 yield return new ToolInputDeltaStreamPart(block.ToolCallId, partial);
             }
@@ -364,7 +402,15 @@ public sealed class AnthropicStream
         else if (block.Kind == "tool" && !_invalid)
         {
             var arguments = block.Input.Length == 0 ? "{}" : block.Input.ToString();
-            if (_usesJsonTool && block.ToolName == "json")
+            if (block.ToolsetMember != null)
+            {
+                arguments = AnthropicToolset.MemberInput(block.ToolsetMember, AnthropicToolset.ParseStreamedInput(block.Input.ToString()));
+                _hasOutput = true;
+                yield return new ToolInputDeltaStreamPart(block.ToolCallId, arguments);
+                yield return new ToolInputEndStreamPart(block.ToolCallId);
+                yield return new ToolCallStreamPart(block.ToolCallId, block.ToolName, arguments, ParseElement(new JsonObject { ["anthropic"] = block.ToolsetMetadata!.DeepClone() }.ToJsonString()));
+            }
+            else if (_usesJsonTool && block.ToolName == "json")
             {
                 _jsonTool = true;
                 _hasOutput = true;
@@ -539,6 +585,10 @@ public sealed class AnthropicStream
         public bool SawDelta { get; set; }
 
         public bool IsServerTool { get; set; }
+
+        public string? ToolsetMember { get; set; }
+
+        public JsonObject? ToolsetMetadata { get; set; }
 
         public List<JsonElement> Citations { get; } = new();
     }

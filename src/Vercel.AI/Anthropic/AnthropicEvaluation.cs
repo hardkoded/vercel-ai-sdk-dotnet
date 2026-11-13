@@ -160,7 +160,10 @@ public sealed class AnthropicEvaluationModel : IRubricModel
                 prepared.Betas,
                 prepared.UsesJsonResponseTool,
                 prepared.ProviderOptionsName,
-                prepared.UsedCustomProviderKey);
+                prepared.UsedCustomProviderKey,
+                prepared.MarkCodeExecutionDynamic,
+                prepared.PreparedTools,
+                prepared.ComputerToolsetName);
         }
 
         var headers = _provider.CreateHeaders(prepared.Betas, call.Headers);
