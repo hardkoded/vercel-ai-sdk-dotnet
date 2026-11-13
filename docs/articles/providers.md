@@ -839,6 +839,52 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 `PrepareStepContext` also exposes `Messages`, the prompt plus the responses of the earlier steps, and `Model`, the model the step is about to use. `Messages` does not hold the instructions. `Instructions` is what the step is about to send, `InitialInstructions` and `InitialMessages` are what the call started with, and `ResponseMessages` are the messages the earlier steps added. Return `PrepareStepUpdate.Instructions` to replace the instructions, or `PrepareStepUpdate.Messages` to replace the messages. Each override carries forward to later steps, and replacing one keeps the other. Like upstream, the results of all tool calls in one step are a single `ToolModelMessage`; read them from `ToolModelMessage.Results` (a single-result message lists itself).
 
+## Anthropic message threads
+
+[Anthropic message threads](https://platform.claude.com/docs/en/build-with-claude/message-threads) reduce request upload size and time to first token in long conversations. The first request sends the full conversation, and later requests send only the new messages. Token usage, pricing, and rate limits stay the same. Prompt caching is separate.
+
+Set `thread` in the `anthropic` provider options. `{ "type": "create" }` starts a thread. `{ "type": "continue", "previousMessageId": "..." }` continues it. `previousMessageId` is sent as `previous_message_id`, and the `message-threads-2026-08-12` beta header is added for you. `AnthropicProvider` and `AnthropicAwsProvider` support threads. A thread option on `AmazonBedrockAnthropicProvider`, `GoogleVertexAnthropicProvider`, or another Messages-compatible provider throws `UnsupportedFunctionalityException`, and a `thread` that is neither of the two shapes above throws `InvalidArgumentException`. Both throw before any request is sent. With SigV4 on `AnthropicAwsProvider`, sign every request of a thread with the same IAM role or IAM user.
+
+```csharp
+var model = anthropic.LanguageModel("claude-sonnet-4-6");
+
+var first = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    System = "Keep replies brief.",
+    Prompt = "Remember that my favorite color is cobalt blue.",
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["anthropic"] = JsonSerializer.SerializeToElement(new { thread = new { type = "create" } }),
+    },
+});
+
+var second = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Prompt = "What is my favorite color?",
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["anthropic"] = JsonSerializer.SerializeToElement(new
+        {
+            thread = new { type = "continue", previousMessageId = first.Response.Id },
+        }),
+    },
+});
+```
+
+On a continuation the request omits `system` and the tool definitions, even when you pass them, because Anthropic keeps them from the create request. Keep passing identical tools so tool names, tool choice, and tool beta headers still work. The request keeps `tool_choice` and the other per-request settings. A `compatibility` warning on `providerOptions.anthropic.thread` says that supplied instructions or tools were left out. To change them, start a new thread.
+
+Conversation management is yours. The provider keeps no history, does not remove earlier messages, and does not replay a request. Keep the full conversation locally. Pass only the new messages on a continuation (after a tool call, only the new tool results). Passing the whole history can duplicate messages or fail. Setting `thread` on an agent does not continue its thread by itself. Use `PrepareStep` to set the latest response id and to pick only the new messages.
+
+Content-dependent beta headers, such as the one for PDFs, must be the same on every turn of a thread. Pin them with `anthropicBeta` on the create request and on every continuation, including text-only ones. When message content enables a beta that you did not pin (through `anthropicBeta` or an `anthropic-beta` header), the request adds a `compatibility` warning that lists it.
+
+A thread expires five minutes after its last request and can become unavailable earlier. Read `error_code` from the failed response body with `AnthropicErrorData.Parse(exception.ResponseBody).ErrorCode`. On `thread_not_found`, `thread_already_continued`, or `thread_continue_in_flight`, replay the full conversation once with `{ "type": "create" }`, including the original system prompt and tools, and remove cache breakpoints from older replayed messages. Do not treat every 404 as an expired thread. `AnthropicErrorData.Details` keeps `error_code` and `unsupported`, drops unknown fields, and ignores a `details` value of an unknown shape, so a new Anthropic detail shape never hides the error message. Continue only from the latest response id, which can be continued once. With a streamed call, read the whole stream and check that the finish reason is not `FinishReason.Interrupted` before you continue.
+
+Start a new thread with the full history to change the system prompt, tools, model, thinking, tool choice, output format, context management, top-level `cacheControl`, or beta headers, and after a fallback model answered or a refusal. Other fixed fields must keep the same values on every request. Send MCP configuration and container ids on each request that needs them. Top-level `cacheControl` counts toward the four cache breakpoints. Threads do not support `compaction` or `contextManagement`, except a `clear_thinking_20251015` edit with `keep: "all"`; anything else throws `InvalidArgumentException`. An empty continuation prompt is accepted, which resumes a `pause_turn` response at the provider level. Message Batches do not accept threads, but this port has no batch submission yet.
+
+Web tools that run through code execution (`web_search_20260209`, `web_search_20260318`, `web_fetch_20260209`, `web_fetch_20260318`) can return `code_execution` calls even when you did not pass the code execution tool. These calls are marked `Dynamic`, also on a thread continuation that left the tool definitions out.
+
 ## Decision state
 
 `DecideRequest.State` is a `DecisionState`: a string, a JSON object, or a list of parts. A string converts to it implicitly. `DecisionState.FromJson(element)` takes a JSON object, and a raw JSON array is not state. Wrap it in an object or in a `DecisionJsonPart`. A list of parts is an array of `DecisionTextPart`, `DecisionJsonPart`, and `DecisionFilePart` (media type, `FilePartInput` data, optional `FileName` and `ProviderOptions`). `Decide.DecideAsync` normalizes the state with `DecisionState.PrepareDecisionStateAsync` before the model call. A string becomes one text part, an object becomes one json part, and a file part gets a full media type. A URL file is downloaded. A failed download throws `DownloadError` before any model call. `DecisionModelCall.State` and `DecisionModelEvent.State` hold the normalized parts as `DecisionModelTextPart`, `DecisionModelJsonPart`, and `DecisionModelFilePart`. `DecideEvent.State` keeps the public value. `OpenAIDecisionModel` sends text as `input_text`. A JSON object or a nonempty array of objects is sent as native `input_json` when it fits the API limits: 32 container levels, 10,000 values, and 256 KiB of compact UTF-8 JSON. Larger JSON state and other JSON values are serialized as JSON `input_text`. Inline PNG, JPEG, WebP, or GIF files are sent as `input_image`; other files throw `UnsupportedFunctionalityException`. `GatewayDecisionModel` posts `{ stateParts, questions, providerOptions }` to `/decision-model`. `stateParts` holds the ordered text, json, and file parts. File bytes go out as base64, and a file with URL, reference, or text data throws `UnsupportedFunctionalityException` before any request. `providerOptions` is sent whenever the call has it, even when it is empty.

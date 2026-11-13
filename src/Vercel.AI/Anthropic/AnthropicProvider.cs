@@ -171,8 +171,10 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             ResolveRegion();
         }
 
-        return new AnthropicLanguageModel(this, modelId);
+        return new AnthropicLanguageModel(this, modelId, ThreadSettings);
     }
+
+    private static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings { SupportsMessageThreads = true };
 
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
@@ -371,6 +373,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         {
             foreach (var pair in callHeaders)
             {
+                // The call's anthropic-beta header is already part of betas, so it must not replace the merged set.
+                if (betas != null && betas.Count > 0 && pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 headers[pair.Key] = pair.Value;
             }
         }
@@ -516,7 +524,10 @@ public class AnthropicLanguageModel : ILanguageModel
         var body = prepared.Body.ToJsonString();
         var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
-        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
+        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared))
+        {
+            MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+        };
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
 
@@ -537,7 +548,10 @@ public class AnthropicLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey);
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey)
+        {
+            MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+        };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))
@@ -593,7 +607,8 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.Betas,
             prepared.UsesJsonResponseTool,
             prepared.ProviderOptionsName,
-            prepared.UsedCustomProviderKey);
+            prepared.UsedCustomProviderKey,
+            prepared.MarkCodeExecutionDynamic);
     }
 
     private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)

@@ -37,6 +37,12 @@ public sealed class AnthropicParseContext
     /// <summary>Maps an API tool name back to the caller's tool name.</summary>
     public Dictionary<string, string> ToolNames { get; }
 
+    /// <summary>
+    /// Marks <c>code_execution</c> server tool calls as dynamic. Set when a web tool that dynamic filtering runs through code execution
+    /// is sent without the code execution tool, which the API then allows implicitly.
+    /// </summary>
+    public bool MarkCodeExecutionDynamic { get; init; }
+
     /// <summary>Id factory for citation sources. Defaults to <c>source-n</c>.</summary>
     public Func<string>? GenerateId { get; set; }
 }
@@ -291,7 +297,10 @@ public static class AnthropicResponse
             return;
         }
 
-        content.Add(new GeneratedToolCall(id, CustomName(context, toolName), input.ToJsonString(), CallerMetadata(part)));
+        content.Add(new GeneratedToolCall(id, CustomName(context, toolName), input.ToJsonString(), CallerMetadata(part))
+        {
+            Dynamic = context.MarkCodeExecutionDynamic && (name == "code_execution" || name == "text_editor_code_execution" || name == "bash_code_execution"),
+        });
     }
 
     private static void MapMcpUse(JsonElement part, List<GeneratedContent> content, Dictionary<string, string> mcpNames)
