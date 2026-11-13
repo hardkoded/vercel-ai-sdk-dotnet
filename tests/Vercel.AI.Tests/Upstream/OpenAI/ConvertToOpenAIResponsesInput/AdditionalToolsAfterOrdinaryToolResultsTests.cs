@@ -13,6 +13,8 @@ namespace Vercel.AI.Tests.ConvertToOpenAIResponsesInput;
 public sealed class AdditionalToolsAfterOrdinaryToolResultsTests
 {
     private const string Definition = "{\"type\":\"function\",\"name\":\"list_issues\",\"description\":\"List issues\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false},\"strict\":true}";
+    private const string CustomDefinition = "{\"type\":\"custom\",\"name\":\"apply_patch\",\"description\":\"Apply a patch\",\"format\":{\"type\":\"grammar\",\"syntax\":\"lark\",\"definition\":\"start: \\\"x\\\"\"}}";
+    private const string NamespaceDefinition = "{\"type\":\"namespace\",\"name\":\"linear\",\"description\":\"Linear tools\",\"tools\":[{\"type\":\"function\",\"name\":\"get_issue\",\"parameters\":{\"type\":\"object\",\"properties\":{}},\"defer_loading\":true}]}";
     private const string Output = "[{\"connection\":\"linear\"},{\"connection\":\"github\",\"error\":\"Not authorized\"}]";
 
     private static JsonArray Convert(IReadOnlyList<ModelMessage> prompt, string providerOptionsName = "openai") =>
@@ -86,5 +88,29 @@ public sealed class AdditionalToolsAfterOrdinaryToolResultsTests
     public void Rejects_malformed_definitions(string additionalTools)
     {
         Assert.ThrowsAny<Exception>(() => Convert(new ModelMessage[] { Result(additionalTools) }));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::reads openai options when using another provider name", Coverage = UpstreamCoverage.Covered)]
+    public void Reads_openai_options_when_using_another_provider_name()
+    {
+        var input = Convert(new ModelMessage[] { Result("[" + Definition + "]", "openai") }, "azure");
+
+        AssertJson(
+            "[{\"type\":\"function_call_output\",\"call_id\":\"search-call\",\"output\":" + JsonSerializer.Serialize(Output) + "},"
+            + "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[" + Definition + "]}]",
+            input);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::accepts custom and namespace definitions", Coverage = UpstreamCoverage.Covered)]
+    public void Accepts_custom_and_namespace_definitions()
+    {
+        var tools = "[" + CustomDefinition + "," + NamespaceDefinition + "]";
+
+        AssertJson(
+            "[{\"type\":\"function_call_output\",\"call_id\":\"search-call\",\"output\":" + JsonSerializer.Serialize(Output) + "},"
+            + "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":" + tools + "}]",
+            Convert(new ModelMessage[] { Result(tools) }));
     }
 }
