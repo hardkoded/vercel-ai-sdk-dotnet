@@ -600,7 +600,7 @@ public static class OperationRetry
                     errors);
             }
 
-            var retryable = error is RetryableCallException call && call.IsRetryable;
+            var retryable = (error is RetryableCallException call && call.IsRetryable) || (error is ApiCallError api && api.IsRetryable);
             if (!retryable && additionalRetryable != null)
             {
                 retryable = additionalRetryable(error);
@@ -648,7 +648,7 @@ public static class OperationRetry
 
     private static int DelayFor(Exception error, int exponentialBackoffDelay)
     {
-        var headers = (error as RetryableCallException)?.ResponseHeaders;
+        var headers = (error as RetryableCallException)?.ResponseHeaders ?? (error as ApiCallError)?.ResponseHeaders;
         if (headers == null)
         {
             return exponentialBackoffDelay;

@@ -208,8 +208,14 @@ public static class ValidateExtraction
         };
     }
 
-    private static bool IsValue(ExtractionField field, string value)
+    private static bool IsValue(ExtractionField field, string? value)
     {
+        // A null list entry is not a string, so it is never a valid text, date, time, or datetime value.
+        if (value is null)
+        {
+            return false;
+        }
+
         try
         {
             return field.Type switch
