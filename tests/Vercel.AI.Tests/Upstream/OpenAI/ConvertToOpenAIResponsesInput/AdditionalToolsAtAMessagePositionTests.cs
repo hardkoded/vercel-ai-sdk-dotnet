@@ -29,7 +29,7 @@ public sealed class AdditionalToolsAtAMessagePositionTests
     [Theory]
     [InlineData("openai")]
     [InlineData("azure")]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::emits the item where the control message is for %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::emits the item where the control message is for %s", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Emits_the_item_where_the_control_message_is_for_provider(string provider)
     {
         var tools = "[" + Definition + "," + CustomDefinition + "," + NamespaceDefinition + "]";
@@ -50,7 +50,7 @@ public sealed class AdditionalToolsAtAMessagePositionTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::emits a configuration update before tools from the same message", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::emits a configuration update before tools from the same message", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Emits_a_configuration_update_before_tools_from_the_same_message()
     {
         var input = Convert(new ModelMessage[] { Control("{\"reasoningEffortUpdate\":\"low\",\"additionalTools\":[" + Definition + "]}") });
@@ -62,7 +62,7 @@ public sealed class AdditionalToolsAtAMessagePositionTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::does not need configuration update support", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::does not need configuration update support", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Does_not_need_configuration_update_support()
     {
         var input = Convert(
@@ -73,14 +73,14 @@ public sealed class AdditionalToolsAtAMessagePositionTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::does not emit an item for an empty list", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::does not emit an item for an empty list", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Does_not_emit_an_item_for_an_empty_list()
     {
         AssertJson("[]", Convert(new ModelMessage[] { Control("{\"additionalTools\":[]}") }));
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::requires empty system message content", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::requires empty system message content", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Requires_empty_system_message_content()
     {
         var exception = Assert.Throws<UnsupportedFunctionalityException>(() =>
@@ -94,7 +94,7 @@ public sealed class AdditionalToolsAtAMessagePositionTests
     [InlineData("[{\"type\":\"namespace\",\"name\":\"ns\",\"description\":\"d\",\"tools\":[]}]")]
     [InlineData("[{\"type\":\"custom\",\"name\":\"c\",\"format\":{\"type\":\"grammar\"}}]")]
     [InlineData("[{\"type\":\"web_search\"}]")]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::rejects malformed definitions: $additionalTools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools at a message position::rejects malformed definitions: $additionalTools", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Rejects_malformed_definitions(string additionalTools)
     {
         Assert.ThrowsAny<Exception>(() => Convert(new ModelMessage[] { Control("{\"additionalTools\":" + additionalTools + "}") }));

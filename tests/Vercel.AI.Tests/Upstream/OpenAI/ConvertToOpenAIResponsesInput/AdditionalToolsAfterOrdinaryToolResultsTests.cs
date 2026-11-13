@@ -91,7 +91,7 @@ public sealed class AdditionalToolsAfterOrdinaryToolResultsTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::reads openai options when using another provider name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::reads openai options when using another provider name", Coverage = UpstreamCoverage.Covered, Commit = "a279e869252270b0c7ee9eff0fd263b7c17463b3")]
     public void Reads_openai_options_when_using_another_provider_name()
     {
         var input = Convert(new ModelMessage[] { Result("[" + Definition + "]", "openai") }, "azure");
@@ -103,7 +103,7 @@ public sealed class AdditionalToolsAfterOrdinaryToolResultsTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::accepts custom and namespace definitions", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::accepts custom and namespace definitions", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Accepts_custom_and_namespace_definitions()
     {
         var tools = "[" + CustomDefinition + "," + NamespaceDefinition + "]";
