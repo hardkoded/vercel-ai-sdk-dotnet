@@ -552,7 +552,7 @@ public static class Decide
 
         try
         {
-            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, request.Download, token).ConfigureAwait(false);
+            var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token, request.Download).ConfigureAwait(false);
             var modelEvent = new DecisionModelEvent(callId, "ai.decide.doDecide", model.Provider, model.ModelId, preparedState, questions, recordInputs: telemetry?.RecordInputs, recordOutputs: telemetry?.RecordOutputs, functionId: telemetry?.FunctionId);
             if (enabled)
             {

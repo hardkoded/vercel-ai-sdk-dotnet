@@ -209,7 +209,7 @@ public sealed class DecisionState
     /// <see cref="DownloadError"/>. Inline bytes, base64 content, and data URLs do not need it.
     /// File media types are resolved to a full type.
     /// </summary>
-    public static async Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(DecisionState state, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download = null, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(DecisionState state, CancellationToken cancellationToken = default, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download = null)
     {
         if (state is null)
         {
@@ -257,6 +257,10 @@ public sealed class DecisionState
             }
 
             downloads = await download(requested).ConfigureAwait(false);
+            if (downloads is null || downloads.Count != requested.Count || downloads.Any(item => item is null))
+            {
+                throw new DownloadError(requested[0].Url.ToString(), "The download function must return one result for every requested URL.");
+            }
         }
 
         var prepared = new List<DecisionModelStatePart>(converted.Count);

@@ -98,7 +98,7 @@ public static class Extract
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, request.Download, token).ConfigureAwait(false);
+        var preparedState = await DecisionState.PrepareDecisionStateAsync(request.State!, token, request.Download).ConfigureAwait(false);
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
         {
