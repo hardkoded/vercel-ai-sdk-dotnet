@@ -335,6 +335,149 @@ public sealed class DoGenerateTests
         Assert.Equal(3, pollCalls.Count());
     }
 
+    private const string WebhookSubmit = "{\"id\":\"req-webhook\",\"status\":\"processing\",\"webhook_url\":\"https://example.com/webhook\"}";
+    private const string TaskNotFoundBody = "{\"id\":\"req-webhook\",\"status\":\"Task not found\"}";
+    private const string GetResult = "https://api.example.com/v1/get_result";
+    private const string ReadyBody = "{\"id\":\"req-webhook\",\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}";
+
+    private static Task<HttpResponseMessage> Reply(int status, string body)
+    {
+        return Task.FromResult(new HttpResponseMessage((HttpStatusCode)status) { Content = new StringContent(body, Encoding.UTF8, "application/json") });
+    }
+
+    private static int GetResultCalls(BlackForestLabsServer server)
+    {
+        lock (server.Calls)
+        {
+            return server.Calls.Count(call => call.Method == HttpMethod.Get && call.Url.StartsWith(GetResult, StringComparison.Ordinal));
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "polls get_result by id when the submit response has no polling_url", Coverage = UpstreamCoverage.Covered)]
+    public async Task PollsGetResultByIdWhenTheSubmitResponseHasNoPollingUrl()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        server.Json(GetResult, "{\"id\":\"req-webhook\",\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\",\"seed\":42}}");
+
+        var result = await CreateBasicModel(server).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None);
+
+        Assert.Single(result.Images);
+        Assert.Equal(HttpMethod.Get, server.Calls[1].Method);
+        Assert.Equal("https://api.example.com/v1/get_result?id=req-webhook", server.Calls[1].Url);
+        Assert.Equal("test-key", server.Calls[1].Headers["x-key"]);
+        Assert.Equal(42, (int)Metadata(result)!["seed"]!);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "retries get_result while a webhook job is not yet registered", Coverage = UpstreamCoverage.Covered)]
+    public async Task RetriesGetResultWhileAWebhookJobIsNotYetRegistered()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        var attempts = 0;
+        server.Urls[GetResult] = _ =>
+        {
+            attempts += 1;
+            return attempts <= 2 ? Reply(404, TaskNotFoundBody) : Reply(200, ReadyBody);
+        };
+
+        var result = await CreateBasicModel(server, pollIntervalMillis: 10, pollTimeoutMillis: 1000).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None);
+
+        Assert.Single(result.Images);
+        Assert.Equal(3, attempts);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "retries get_result when the poll response status is Task not found", Coverage = UpstreamCoverage.Covered)]
+    public async Task RetriesGetResultWhenThePollResponseStatusIsTaskNotFound()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        var attempts = 0;
+        server.Urls[GetResult] = _ =>
+        {
+            attempts += 1;
+            return attempts == 1 ? Reply(200, TaskNotFoundBody) : Reply(200, ReadyBody);
+        };
+
+        var result = await CreateBasicModel(server, pollIntervalMillis: 10, pollTimeoutMillis: 1000).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None);
+
+        Assert.Single(result.Images);
+        Assert.Equal(2, attempts);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "fails with a clear error when get_result keeps answering 404 Task not found", Coverage = UpstreamCoverage.Covered)]
+    public async Task FailsWithAClearErrorWhenGetResultKeepsAnswering404TaskNotFound()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        server.Respond(GetResult, 404, TaskNotFoundBody);
+
+        var exception = await Assert.ThrowsAsync<AiSdkException>(() =>
+            CreateBasicModel(server, pollIntervalMillis: 10, pollTimeoutMillis: 100).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None));
+
+        Assert.Contains("Black Forest Labs task req-webhook was not found via get_result before timing out", exception.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "gives up on Task not found without waiting for the overall poll timeout", Coverage = UpstreamCoverage.Covered)]
+    public async Task GivesUpOnTaskNotFoundWithoutWaitingForTheOverallPollTimeout()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        server.Respond(GetResult, 404, TaskNotFoundBody);
+
+        // The not-found grace period must end long before this timeout, so the test fails on its 2s deadline if the cap is not enforced.
+        var exception = await Assert.ThrowsAsync<AiSdkException>(() =>
+            CreateBasicModel(server, pollIntervalMillis: 5, pollTimeoutMillis: 5000).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None)
+                .WaitAsync(TimeSpan.FromSeconds(2)));
+
+        Assert.Contains("Black Forest Labs task req-webhook was not found via get_result before timing out", exception.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "does not retry get_result 404 responses that are not Task not found", Coverage = UpstreamCoverage.Covered)]
+    public async Task DoesNotRetryGetResult404ResponsesThatAreNotTaskNotFound()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        server.Respond(GetResult, 404, "{\"message\":\"Unknown request id\"}");
+
+        var exception = await Assert.ThrowsAsync<ApiException>(() =>
+            CreateBasicModel(server, pollIntervalMillis: 10, pollTimeoutMillis: 1000).DoGenerateAsync(Call(aspectRatio: "1:1"), CancellationToken.None));
+
+        Assert.Equal("Unknown request id", exception.Message);
+        Assert.Equal(404, exception.StatusCode);
+        Assert.Equal(1, GetResultCalls(server));
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "rejects with AbortError when aborted during the not-found retry delay", Coverage = UpstreamCoverage.Covered)]
+    public async Task RejectsWithAbortErrorWhenAbortedDuringTheNotFoundRetryDelay()
+    {
+        var server = new BlackForestLabsServer();
+        server.Json("https://api.example.com/v1/flux-2-pro", WebhookSubmit);
+        server.Respond(GetResult, 404, TaskNotFoundBody);
+        using var abort = new CancellationTokenSource();
+
+        var pending = CreateBasicModel(server, pollIntervalMillis: 500, pollTimeoutMillis: 5000).DoGenerateAsync(Call(aspectRatio: "1:1"), abort.Token);
+
+        // Abort once the not-found retry delay is in progress.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (GetResultCalls(server) < 1 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(5);
+        }
+
+        Assert.Equal(1, GetResultCalls(server));
+        abort.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+    }
+
     [Fact]
     [UpstreamTest(Id + "enforces pollTimeoutMillis while a polling request is pending", Coverage = UpstreamCoverage.Covered)]
     public async Task EnforcesPollTimeoutMillisWhileAPollingRequestIsPending()
