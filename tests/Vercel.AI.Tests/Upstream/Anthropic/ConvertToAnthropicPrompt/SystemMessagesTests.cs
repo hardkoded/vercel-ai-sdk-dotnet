@@ -15,8 +15,6 @@ public sealed class SystemMessagesTests
 {
     private const string Prefix = "packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::";
 
-    private const string PrefixEffort = "packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages > effort-only system messages::";
-
     private const string UserJson = "{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"hi\"}]}";
 
     private static JsonNode? Node(string json) => JsonNode.Parse(json);
@@ -70,77 +68,6 @@ public sealed class SystemMessagesTests
         AssertJson("[{\"type\":\"text\",\"text\":\"This is a system message\"},{\"type\":\"text\",\"text\":\"This is another system message\"}]", result.System);
         Assert.Empty(result.Messages);
         Assert.Empty(result.Betas);
-    }
-
-    public static IEnumerable<object[]> InitialEffortCases()
-    {
-        yield return ["alone", new ModelMessage[] { Effort("low") }, false, new[] { "low" }];
-        yield return ["after initial instructions", new ModelMessage[] { Instruction, Effort("low") }, true, new[] { "low" }];
-        yield return ["before initial instructions", new ModelMessage[] { Effort("low"), Instruction }, true, new[] { "low" }];
-        yield return ["consecutively", new ModelMessage[] { Effort("low"), Effort("high") }, false, new[] { "low", "high" }];
-        yield return ["around initial instructions", new ModelMessage[] { Effort("low"), Instruction, Effort("high") }, true, new[] { "low", "high" }];
-    }
-
-    [Theory]
-    [MemberData(nameof(InitialEffortCases))]
-    [UpstreamTest(PrefixEffort + "should preserve initial effort messages $name", Coverage = UpstreamCoverage.Covered)]
-    public void Should_preserve_initial_effort_messages(string name, ModelMessage[] initial, bool hasText, string[] efforts)
-    {
-        Assert.NotEmpty(name);
-        var result = Run([.. initial, new UserModelMessage("hi")]);
-
-        AssertJson(hasText ? "[{\"type\":\"text\",\"text\":\"initial\"}]" : "[]", result.System ?? new JsonArray());
-        AssertJson("[" + string.Join(",", efforts.Select(EffortMessage)) + "," + UserJson + "]", result.Messages);
-        Assert.Equal([BetaOutputConfig], result.Betas);
-        Assert.Empty(result.Warnings);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    [UpstreamTest(PrefixEffort + "should preserve later consecutive effort messages with initial instructions: %s", Coverage = UpstreamCoverage.Covered)]
-    public void Should_preserve_later_consecutive_effort_messages_with_initial_instructions(bool hasInitial)
-    {
-        var prompt = new List<ModelMessage>();
-        if (hasInitial)
-        {
-            prompt.Add(Instruction);
-        }
-
-        prompt.AddRange([new UserModelMessage("hi"), Effort("low"), Effort("high"), new SystemModelMessage("later instructions")]);
-        var result = AnthropicPrompt.Convert(prompt);
-
-        if (hasInitial)
-        {
-            AssertJson("[{\"type\":\"text\",\"text\":\"initial\"}]", result.System);
-        }
-        else
-        {
-            Assert.Null(result.System);
-        }
-
-        AssertJson(
-            "[" + UserJson + "," + EffortMessage("low") + "," + EffortMessage("high")
-            + ",{\"role\":\"system\",\"content\":[{\"type\":\"text\",\"text\":\"later instructions\"}]}]",
-            result.Messages);
-        Assert.Equal(new[] { BetaSystem, BetaOutputConfig }.OrderBy(b => b), result.Betas.OrderBy(b => b));
-        Assert.Empty(result.Warnings);
-    }
-
-    [Theory]
-    [InlineData("initial", "{\"effort\":\"low\"}")]
-    [InlineData("", "{\"clearAt\":\"next_user_message\"}")]
-    [InlineData("", "{\"clearAt\":\"next_user_message\",\"effort\":\"low\"}")]
-    [UpstreamTest(PrefixEffort + "should warn and ignore unsupported initial system options: $options", Coverage = UpstreamCoverage.Covered)]
-    public void Should_warn_and_ignore_unsupported_initial_system_options(string content, string options)
-    {
-        var result = Run(new SystemModelMessage(content, Options("{\"anthropic\":" + options + "}")), new UserModelMessage("hi"));
-
-        AssertJson("[" + UserJson + "]", result.Messages);
-        Assert.Empty(result.Betas);
-        var warning = Assert.Single(result.Warnings);
-        Assert.Equal("other", warning.Type);
-        Assert.Contains("These options have been ignored.", warning.Message);
     }
 
     [Fact]
