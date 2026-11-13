@@ -70,7 +70,7 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes developer-only configuration through as camelCase args", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "passes developer-only configuration through as camelCase args", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Passes_developer_only_configuration_through_as_camelCase_args()
     {
         var config = new GatewayTakoSearchConfig
@@ -101,7 +101,7 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps developer-only fields out of the input schema", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "keeps developer-only fields out of the input schema", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Keeps_developer_only_fields_out_of_the_input_schema()
     {
         var serializedSchema = GatewayTakoSearch.Create().InputSchema.GetRawText();
@@ -123,14 +123,14 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts a variable-cost response with placeholder cards", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "accepts a variable-cost response with placeholder cards", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Accepts_a_variable_cost_response_with_placeholder_cards()
     {
         Assert.Empty(ValidateOutput(VariableCostResponse()));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves additive fields on usage, pricing and placeholders", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "preserves additive fields on usage, pricing and placeholders", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Preserves_additive_fields_on_usage_pricing_and_placeholders()
     {
         var value = VariableCostResponse();
@@ -146,7 +146,7 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "still accepts and preserves the deprecated free_rows field", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "still accepts and preserves the deprecated free_rows field", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Still_accepts_and_preserves_the_deprecated_free_rows_field()
     {
         var value = VariableCostResponse();
@@ -158,7 +158,7 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "exports the result content schema for reuse", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "exports the result content schema for reuse", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Exports_the_result_content_schema_for_reuse()
     {
         var content = VariableCostResponse()["cards"]![0]!["content"]!.DeepClone();
@@ -171,7 +171,7 @@ public sealed class TakoSearchTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "declares relevance_score but not citation_number in the output schema", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "declares relevance_score but not citation_number in the output schema", Coverage = UpstreamCoverage.Covered, Commit = "0e869b40fabd6891ed58030754de6d2e7c0ea68d")]
     public void Declares_relevance_score_but_not_citation_number_in_the_output_schema()
     {
         var serializedSchema = GatewayTakoSearch.OutputSchema.GetRawText();
