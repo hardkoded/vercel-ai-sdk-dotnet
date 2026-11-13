@@ -527,6 +527,8 @@ public class AnthropicLanguageModel : ILanguageModel
         var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared))
         {
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+            PreparedTools = prepared.PreparedTools,
+            ComputerToolsetName = prepared.ComputerToolsetName,
         };
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
@@ -551,6 +553,8 @@ public class AnthropicLanguageModel : ILanguageModel
         var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey)
         {
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+            PreparedTools = prepared.PreparedTools,
+            ComputerToolsetName = prepared.ComputerToolsetName,
         };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -608,7 +612,9 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.UsesJsonResponseTool,
             prepared.ProviderOptionsName,
             prepared.UsedCustomProviderKey,
-            prepared.MarkCodeExecutionDynamic);
+            prepared.MarkCodeExecutionDynamic,
+            prepared.PreparedTools,
+            prepared.ComputerToolsetName);
     }
 
     private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)
