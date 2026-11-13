@@ -550,6 +550,7 @@ internal static class OpenAIResponsesPrepareTools
                 result["require_approval"] = requireApproval;
                 Set(result, "server_description", Arg("serverDescription"));
                 Set(result, "server_url", Arg("serverUrl"));
+                Set(result, "tunnel_id", Arg("tunnelId"));
                 return result;
             case "openai.custom":
                 result["type"] = "custom";

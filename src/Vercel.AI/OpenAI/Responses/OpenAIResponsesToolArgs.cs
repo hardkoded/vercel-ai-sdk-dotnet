@@ -77,7 +77,8 @@ internal static class OpenAIResponsesToolArgs
             {"enum":["always","never"]},
             {"type":"object","properties":{"never":{"type":"object","properties":{"toolNames":{"type":"array","items":{"type":"string"}}}}}}]},
           "serverDescription":{"type":"string"},
-          "serverUrl":{"type":"string"}},
+          "serverUrl":{"type":"string"},
+          "tunnelId":{"type":"string"}},
          "required":["serverLabel"]}
         """)!;
 
@@ -201,9 +202,14 @@ internal static class OpenAIResponsesToolArgs
 
                 break;
             case "openai.mcp":
-                if (validated["serverUrl"] == null && validated["connectorId"] == null)
+                if (validated["serverUrl"] == null && validated["connectorId"] == null && validated["tunnelId"] == null)
                 {
-                    throw new TypeValidationException("One of serverUrl or connectorId must be provided.", value);
+                    throw new TypeValidationException("One of serverUrl, connectorId, or tunnelId must be provided.", value);
+                }
+
+                if (validated["tunnelId"] != null && (validated["serverUrl"] != null || validated["connectorId"] != null))
+                {
+                    throw new TypeValidationException("tunnelId cannot be combined with serverUrl or connectorId.", value);
                 }
 
                 break;
