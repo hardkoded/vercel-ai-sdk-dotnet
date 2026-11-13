@@ -2,8 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.Operations;
 using Vercel.AI.Anthropic;
+using Vercel.AI.Operations;
 
 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")))
 {

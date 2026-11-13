@@ -2,8 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.Operations;
 using Vercel.AI.Google;
+using Vercel.AI.Operations;
 
 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GOOGLE_GENERATIVE_AI_API_KEY")))
 {
