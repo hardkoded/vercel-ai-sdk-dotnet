@@ -1124,9 +1124,15 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     /// <summary>Reads provider options from <c>amazonBedrock</c>, then <c>bedrock</c>, then <c>amazon-bedrock</c>.</summary>
     private static JsonElement? ReadBedrockOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
-        return ReadProviderOptions(providerOptions, "amazonBedrock")
-            ?? ReadProviderOptions(providerOptions, "bedrock")
-            ?? ReadProviderOptions(providerOptions, "amazon-bedrock");
+        // The keys are aliases: the first present one wins as a whole.
+        var resolved = ProviderOptionsResolver.Resolve<JsonElement>(
+            providerOptions?
+                .Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
+                .ToDictionary(pair => pair.Key, pair => pair.Value),
+            new[] { "amazonBedrock", "bedrock", "amazon-bedrock" },
+            ProviderOptionsResolution.First,
+            element => element);
+        return resolved.Namespaces.Count == 0 ? null : resolved.Options;
     }
 
     private static JsonElement? ReadProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
