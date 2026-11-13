@@ -651,6 +651,155 @@ Motion control: `kling-v3.0-motion-control`, `kling-v2.6-motion-control`.
 
 Any other model id with one of the three suffixes is also accepted.
 
+## Tencent Cloud
+
+The Tencent Cloud provider (`Vercel.AI.Tencent`) supports two Tencent Cloud services:
+
+- [TokenHub](https://www.tencentcloud.com/products/tokenhub), Tencent's model platform, for language models (such as Hunyuan) over an OpenAI-compatible API and for Kling video models.
+- [Video on Demand (VOD)](https://www.tencentcloud.com/products/vod) AIGC, for video models such as Seedance (`VS`), Kling, Hailuo, and Vidu.
+
+The two services use different credentials. TokenHub uses an API key. VOD uses a Tencent Cloud API key pair (SecretId and SecretKey) and a VOD application ID.
+
+```csharp
+using Vercel.AI.Tencent;
+
+var tencent = TencentProvider.Create(new TencentOptions { ApiKey = Environment.GetEnvironmentVariable("TENCENT_TOKENHUB_API_KEY") });
+```
+
+`TencentOptions` extends `OpenAICompatibleOptions`. The settings are:
+
+- **ApiKey** _string_: The TokenHub API key (`sk-...`), used by language models and TokenHub Kling video models. Defaults to the `TENCENT_TOKENHUB_API_KEY` environment variable.
+- **BaseUrl** _string_: The TokenHub base URL. Defaults to `https://tokenhub-intl.tencentcloudmaas.com/v1`.
+- **SecretId** _string_: The Tencent Cloud API SecretId, used by VOD video models. Defaults to the `TENCENTCLOUD_SECRET_ID` environment variable.
+- **SecretKey** _string_: The Tencent Cloud API SecretKey, used by VOD video models. Defaults to the `TENCENTCLOUD_SECRET_KEY` environment variable.
+- **SessionToken** _string_: The session token for temporary Tencent Cloud credentials, sent as `X-TC-Token`. Not needed with a long-term key pair. Defaults to the `TENCENTCLOUD_SESSION_TOKEN` environment variable.
+- **SubAppId** _string_: The VOD application ID (`SubAppId`), used by VOD video models. It must be a positive integer. Defaults to the `TENCENTCLOUD_VOD_SUB_APP_ID` environment variable.
+- **Region** _string_: The Tencent Cloud region sent as `X-TC-Region` on VOD requests. VOD AIGC requests do not require a region.
+- **VodBaseUrl** _string_: The VOD API base URL. Defaults to `https://vod.intl.tencentcloudapi.com`.
+- **Headers** _Dictionary&lt;string, string&gt;_: Custom headers to include in the requests.
+
+`AddTencent` registers the provider with dependency injection. `EmbeddingModel` and `ImageModel` throw a `NoSuchModelError`. The credentials are read when a request is sent, so a missing key fails then and not when the provider is created. TokenHub-only use needs no VOD credentials.
+
+### Language models
+
+`tencent.LanguageModel("hy4")` or `tencent.Chat("hy4")` creates a TokenHub language model (provider id `tencent.chat`). It uses the OpenAI-compatible chat completions API and always asks for usage. Options under `ProviderOptions["tencent"]` that the OpenAI-compatible provider does not handle, such as `thinking`, are sent in the request body unchanged. See the [TokenHub model list](https://www.tencentcloud.com/document/product/1300/78934) for available models.
+
+### Video models
+
+Create a video model with `tencent.VideoModel(id)` or its alias `tencent.Video(id)` (provider id `tencent.video`). `TencentVideoModel` implements `IVideoCaller`, so pass it as the `Model` of `GenerateVideoRequest`.
+
+- TokenHub Kling models use their TokenHub model id, for example `kling-video-v3`.
+- VOD AIGC models use `vod/<ModelName>/<ModelVersion>`, for example `vod/VS/2.0` or `vod/Kling/3.0`.
+
+Any other id throws a `NoSuchModelError` when the model is created. Video generation is asynchronous: the model submits a task and `GenerateVideo` polls for the result. Tencent video tasks do not accept a per-request callback URL, so `WebhookUrl` is ignored with a warning and `CanWebhook` is false.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)tencent.Video("kling-video-v3"),
+    Prompt = new VideoPrompt("A chicken flying into the sunset in the style of 90s anime."),
+    AspectRatio = "16:9",
+    Duration = 5,
+});
+```
+
+#### TokenHub Kling
+
+A TokenHub Kling model picks the endpoint from the inputs:
+
+- No image: text-to-video.
+- A first frame (`Image` or `FrameImages`), optionally with a last frame: image-to-video.
+- Reference images or videos (`InputReferences`) or voices: omni video generation. `kling-video-v3-omni` always uses omni generation. `kling-video-v4` uses it when references are present.
+- `kling-video-motion-control-*` models: motion control, with the character image from `Image` (or the first image reference) and the motion from the first video reference.
+
+Reference images and videos are numbered in the order you pass them and can be referenced in the prompt as `@image_1`, `@video_1`, and so on.
+
+Top-level options map as follows:
+
+- `Resolution` maps to the `720p`, `1080p`, and `4k` tiers by its shorter side.
+- `AspectRatio` applies to text-to-video and omni generation. Image-to-video and motion control output follows the input media.
+- `Duration` applies to all modes except motion control, whose output length follows the motion video.
+- `GenerateAudio` maps to native audio or no audio. Without it, `kling-video-v3` output is silent. For motion control, `false` removes the motion video's audio, and otherwise the original audio is kept. `kling-video-v3-turbo` and `kling-video-v4` do not accept an audio setting and always include audio.
+- `Seed`, `Fps`, and `N` greater than 1 are not supported.
+
+Unsupported options are ignored with an `Unsupported` warning.
+
+For multi-shot output, set `multiShot: true` and describe each shot in the prompt as `shot <n>, <seconds>, <prompt>;`. The shot durations must add up to `Duration`:
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)tencent.Video("kling-video-v3"),
+    Prompt = new VideoPrompt("shot 1, 3, a wide shot of a lighthouse at dawn; shot 2, 3, a close-up of the lighthouse lamp turning;"),
+    Duration = 6,
+    ProviderOptions = OperationJson.Parse("""{ "tencent": { "multiShot": true } }"""),
+});
+```
+
+A response with a non-zero `code` is an error even when the HTTP status is 2xx. It throws an `ApiException` that is not retryable.
+
+#### VOD
+
+VOD models use the `CreateAigcVideoTask` API. Seedance is available as `vod/VS/2.5`, `vod/VS/2.0`, `vod/VS/2.0-fast`, and `vod/VS/2.0-mini`.
+
+Inputs map to VOD file inputs: `Image` or a first frame becomes the first frame, a last frame becomes the last frame, and `InputReferences` become references whose category (image, video, or audio) follows their media type. Inputs are sent as URLs or Base64 data. Base64 inputs must stay under the VOD request size limit.
+
+Top-level options map as follows:
+
+- `Resolution` maps to the `480P`, `720P`, `1080P`, `2K`, and `4K` tiers by its shorter side.
+- `AspectRatio` also accepts `adaptive`, which follows the input image.
+- `Duration` and `Seed` are passed through. Seedance does not guarantee identical output for the same seed.
+- `GenerateAudio` maps to `AudioGeneration`. Seedance includes audio when `GenerateAudio` is not set.
+- `Fps` and `N` greater than 1 are not supported.
+
+Images that show real people may be rejected unless they are first registered as VOD assets (`CreateAigcMaterial`) in your Tencent Cloud account. Pass registered assets by their `asset://` URL with the `assets` provider option. `InputReferences` only accepts `http(s)` URLs and file data.
+
+VOD requests are signed with TC3-HMAC-SHA256. VOD reports API errors inside a successful HTTP response. The model raises them as an `ApiException` (a subclass for the status, such as `BadRequestException`) with a status code derived from the Tencent Cloud error code. For example, `AuthFailure` becomes 401, `InvalidParameterValue` becomes 400, and `RequestLimitExceeded` becomes 429 and is retryable. `TencentCloudApi` exposes `Sha256Hex`, `BuildTc3CanonicalRequest`, `CreateTc3Authorization`, and `GetTencentCloudErrorStatusCode`.
+
+#### Video provider options
+
+Set the options under the `tencent` key of `ProviderOptions`. `TencentVideoModelOptions.Parse` reads them, and an option of the wrong type or with an unknown enum value throws an `InvalidArgumentException`. Options that do not apply to the selected model are ignored with an `Unsupported` warning.
+
+Options for both services:
+
+- **resolution** _string_: The output resolution tier, sent as is. Takes precedence over the top-level `Resolution`.
+- **watermark** _boolean_: Whether to add a visible label that marks the video as AI-generated.
+- **referenceVideoType** _`feature` | `base`_: How reference videos are used: as a feature reference (default) or as a video to edit.
+
+TokenHub Kling options:
+
+- **audio** _`native` | `original` | `off`_: The audio mode. `original` keeps the audio of a reference video. Takes precedence over `GenerateAudio`.
+- **multiShot** _boolean_: Whether a multi-shot prompt produces multi-shot output (`kling-video-v3` and `kling-video-v3-omni`).
+- **characterOrientation** _`image` | `video`_: Motion control only. Whether the character orientation follows the image or the motion video. Required by motion control models.
+- **elements** _array of `{ elementId, id? }`_: Custom elements created through the TokenHub element API. Motion control requires `id`.
+- **voices** _array of `{ voiceId, id }`_: Omni voices, referenced in the prompt as `@id`.
+- **externalTaskId** _string_: A custom task id, unique within the account.
+
+VOD options:
+
+- **negativePrompt** _string_: What the model should avoid.
+- **enhancePrompt** _boolean_: Whether to optimize the prompt automatically.
+- **inputRegion** _`Oversea` | `OverseaUSWest` | `Mainland`_: Where input files are stored. Tencent defaults to `Mainland`.
+- **sceneType** _string_: The scenario type, for example `motion_control` for Kling.
+- **personGeneration** _`AllowAdult` | `Disallowed`_: Whether people and faces may be generated.
+- **inputComplianceCheck**, **outputComplianceCheck** _boolean_: Whether to run compliance checks on the input or output.
+- **enhanceSwitch** _boolean_: Whether to upscale output with video enhancement.
+- **offPeak** _boolean_: Whether to run the task in off-peak mode.
+- **sessionId**, **sessionContext** _string_: A deduplication identifier and pass-through context.
+- **tasksPriority** _integer_: The task priority from -10 to 10.
+- **extInfo** _string_: A reserved field for model-specific parameters, sent as is. For example, `{"AdditionalParameters":"{\"return_last_frame\":true}"}` asks Seedance to also return the last frame as an image, reported in `providerMetadata.tencent.lastFrameUrl`.
+- **assets** _array of `{ url, usage?, category? }`_: Registered VOD assets, referenced by their `asset://` URL. `usage` is `FirstFrame`, `LastFrame`, or `Reference` (the default). `category` is `Image` (the default), `Video`, or `Audio`. Assets are sent after the other file inputs. VOD accepts one first frame and one last frame, so a `FirstFrame` or `LastFrame` asset is ignored with a warning when that frame is already set.
+
+#### Provider metadata
+
+A completed video result has `providerMetadata.tencent` with the `taskId`, the `videos` (URL, duration, and `fileId` when VOD stores the file), and usage: `usage.totalTokens` for TokenHub Kling models, and for VOD models `usage.outputSeconds`, `usage.inputSeconds` (reference video length), `usage.totalSeconds`, and `usage.specificationUsages` (the billed specification, such as `SV2.0_720P`). VOD results also have the resolved output `resolution` (for example `720P`) and, when requested, the `lastFrameUrl`.
+
+#### Model ids
+
+Language models: `hy4`, `hy4-preview`, `hy3`, `hy-mt2-pro`, `hy-mt2-plus`, `hy-mt2-lite`, `deepseek-v4-pro-0813`, `deepseek-v4.1-flash`, `glm-5.3`, `glm-5.3-flash`, `glm-5.2`, `mimo-v2.6-pro`, `mimo-v2.6-flash`, `step-5-preview`. Other ids are accepted.
+
+Video models (`TencentModelCatalog.TencentVideoModelIds`): `kling-video-v4`, `kling-video-v3`, `kling-video-v3-turbo`, `kling-video-v3-omni`, `kling-video-motion-control-v3.0`, `kling-video-motion-control-v2.6`, `vod/VS/2.5`, `vod/VS/2.0`, `vod/VS/2.0-fast`, `vod/VS/2.0-mini`, `vod/Kling/3.0`, `vod/Kling/3.0-Omni`, `vod/Kling/3.0-turbo`, `vod/Kling/2.6`, `vod/Hailuo/2.3`, `vod/Vidu/q3-pro`. Any id that starts with `kling-video-` or has the form `vod/<ModelName>/<ModelVersion>` is accepted.
+
 ## Black Forest Labs
 
 The Black Forest Labs provider (`Vercel.AI.BlackForestLabs`) generates images with `ImageModel(id)` or `Image(id)` (provider id `black-forest-labs.image`) and videos with `VideoModel(id)` or `Video(id)` (provider id `black-forest-labs.video`, see [Black Forest Labs video models](#black-forest-labs-video-models)). It reads `BFL_API_KEY` and sends it as `x-key`. `LanguageModel` and `EmbeddingModel` throw `NoSuchModelError`.
