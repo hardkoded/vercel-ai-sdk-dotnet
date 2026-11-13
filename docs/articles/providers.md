@@ -698,7 +698,7 @@ Cancellation applies only while the model polls for a result, which happens afte
 
 ## MiniMax
 
-`MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. `Video(id)` and `VideoModel(id)` create a `MiniMaxVideoModel`; see [Video models](#video-models).
+`MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding models throw `AiSdkException`. `Video(id)` and `VideoModel(id)` create a `MiniMaxVideoModel`; see [Video models](#video-models). `Image(id)` and `ImageModel(id)` create a `MiniMaxImageModel`; see [Image models](#image-models).
 
 ```csharp
 using Vercel.AI.MiniMax;
@@ -760,6 +760,16 @@ For M3.1 and later ids, `LanguageModelCallOptions.Reasoning` maps to the effort 
 `MiniMaxVideoModelOptions` lists the provider options under `minimax`: **resolution** (`480P`, `768P`, `2K`), **ratio** (`adaptive`, `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, `9:16`), **referenceAudioUrls**, **aigcWatermark**, **pollIntervalMs** (default 10000), and **pollTimeoutMs** (default 600000).
 
 Request building, polling, and error handling are not ported yet, so every `MiniMaxVideoModel` operation throws `NotSupportedException` for now.
+
+### Image models
+
+`MiniMaxProvider.Image(id)` and `ImageModel(id)` return a `MiniMaxImageModel` with the provider id `minimax.image`, for `MiniMax-H3-Image` and `MiniMax-H3-Image-Highspeed`. Image calls use their own base URL: `MiniMaxOptions.ImageBaseUrl`, default `https://api.minimax.io/v1`. A trailing slash is removed. They send the same headers as video calls (`Authorization: Bearer <key>`, your `Headers`, and the user agent `ai-sdk-minimax/<version>`).
+
+Without input images the model posts to `{ImageBaseUrl}/images/generations`. With `Files` it posts to `/images/edits` and sends each file as a data URI, or as the URL for a URL file. It asks MiniMax for URL output and downloads each image; the download carries no API key. One call returns up to 10 images (`MaxImagesPerCall`). The model accepts input images (`SupportsFileInputs`) but not masks (`SupportsMaskInputs`): a `Mask` throws `UnsupportedFunctionalityException` before any request. `Seed` is not supported and adds an `unsupported` `seed` warning.
+
+`MiniMaxImageModelOptions` lists the provider options under `minimax`: **area** (`1K`, `2K`, `4K`; use it without a pixel size, default 4K), **outputFormat** (`jpeg`, `jpg`, `png`, `webp`; default JPEG), **outputCompression** (0 to 100, for JPEG and WebP), and **disablePromptEnhanced** (text-to-image only; an edit ignores it and adds an `unsupported` warning).
+
+If MiniMax fails one image of a batch, the other images are returned and a warning `Image N failed: <message>` names the failed one. Usage is returned as the call usage, and `providerMetadata.minimax.images` has one entry per returned image with `size`, `revisedPrompt`, and, when MiniMax reports them, `outputFormat` and `requestId`. The first entry also carries the raw request `usage`. A provider error keeps MiniMax's message.
 
 ## xAI Responses
 

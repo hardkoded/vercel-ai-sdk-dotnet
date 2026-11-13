@@ -24,6 +24,9 @@ public sealed class MiniMaxOptions
     /// </summary>
     public string? VideoBaseUrl { get; set; }
 
+    /// <summary>Image generation endpoint. Defaults to <c>https://api.minimax.io/v1</c>.</summary>
+    public string? ImageBaseUrl { get; set; }
+
     /// <summary>Headers merged into every request.</summary>
     public Dictionary<string, string?> Headers { get; } = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 }
@@ -39,6 +42,9 @@ public sealed class MiniMaxProvider : ProviderBase
 
     /// <summary>Default API origin for video generation. It has no version suffix.</summary>
     public const string DefaultVideoBaseUrl = "https://api.minimax.io";
+
+    /// <summary>Default API origin for image generation.</summary>
+    public const string DefaultImageBaseUrl = "https://api.minimax.io/v1";
 
     /// <summary>Environment variable for the API key.</summary>
     public const string ApiKeyVariable = "MINIMAX_API_KEY";
@@ -99,10 +105,23 @@ public sealed class MiniMaxProvider : ProviderBase
     public MiniMaxVideoModel Video(string modelId)
     {
         var baseUrl = ProviderValues.WithoutTrailingSlash(string.IsNullOrWhiteSpace(Options.VideoBaseUrl) ? DefaultVideoBaseUrl : Options.VideoBaseUrl)!;
-        return new MiniMaxVideoModel(modelId, new MiniMaxVideoModelConfig("minimax.video", baseUrl, CreateVideoHeaders, _httpClient));
+        return new MiniMaxVideoModel(modelId, new MiniMaxVideoModelConfig("minimax.video", baseUrl, CreateMediaHeaders, _httpClient));
     }
 
-    private Dictionary<string, string> CreateVideoHeaders()
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        return Image(modelId);
+    }
+
+    /// <summary>Creates a MiniMax image model for image generation and editing.</summary>
+    public MiniMaxImageModel Image(string modelId)
+    {
+        var baseUrl = ProviderValues.WithoutTrailingSlash(string.IsNullOrWhiteSpace(Options.ImageBaseUrl) ? DefaultImageBaseUrl : Options.ImageBaseUrl)!;
+        return new MiniMaxImageModel(modelId, new MiniMaxImageModelConfig("minimax.image", baseUrl, CreateMediaHeaders, _httpClient));
+    }
+
+    private Dictionary<string, string> CreateMediaHeaders()
     {
         var headers = new List<KeyValuePair<string, string?>>
         {
