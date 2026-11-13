@@ -93,7 +93,10 @@ public sealed class SingleInvalidToolCallTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should add a tool input error part to the ui message stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should add a tool input error part to the ui message stream",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The errorText is checked by its prefix, because the .NET schema validator words the validation message differently from zod.")]
     public async Task Should_add_a_tool_input_error_part_to_the_ui_message_stream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run());
@@ -108,7 +111,6 @@ public sealed class SingleInvalidToolCallTests
               { "toolCallId": "call-1", "toolName": "cityAttractions", "type": "tool-input-start" },
               { "inputTextDelta": "{ \"cities\": \"San Francisco\" }", "toolCallId": "call-1", "type": "tool-input-delta" },
               {
-                "errorText": "An error occurred.",
                 "input": { "cities": "San Francisco" },
                 "toolCallId": "call-1",
                 "toolName": "cityAttractions",
@@ -118,6 +120,9 @@ public sealed class SingleInvalidToolCallTests
               { "finishReason": "stop", "type": "finish" }
             ]
             """);
+        var inputError = chunks.Single(chunk => (string?)chunk!["type"] == "tool-input-error")!.AsObject();
+        Assert.StartsWith(ErrorStart, (string?)inputError["errorText"], StringComparison.Ordinal);
+        inputError.Remove("errorText");
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
