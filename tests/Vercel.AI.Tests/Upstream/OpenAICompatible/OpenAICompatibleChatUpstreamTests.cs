@@ -303,7 +303,7 @@ public sealed class OpenAICompatibleChatUpstreamTests
     public async Task Generate_rejects_a_response_without_choices()
     {
         var capture = new UpstreamCapture { ResponseBody = "{\"choices\":[]}" };
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => UpstreamChat.Model(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None));
+        var error = await Assert.ThrowsAsync<Vercel.AI.Operations.InvalidResponseDataException>(() => UpstreamChat.Model(capture).DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None));
         Assert.Equal("Response did not contain any choices.", error.Message);
     }
 
