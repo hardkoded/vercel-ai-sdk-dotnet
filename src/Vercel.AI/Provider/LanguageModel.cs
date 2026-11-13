@@ -749,8 +749,32 @@ public sealed class FileContentPart : UserContentPart
         return new FileContentPart(mediaType, providerReference, fileName, providerOptions);
     }
 
+    /// <summary>
+    /// Creates a file part with inline text. Maps to <c>data: { type: "text", text }</c>.
+    /// </summary>
+    /// <param name="mediaType">IANA media type.</param>
+    /// <param name="text">The inline text content.</param>
+    /// <param name="fileName">Optional file name.</param>
+    /// <param name="providerOptions">Provider-specific options for this part.</param>
+    public static FileContentPart FromText(
+        string mediaType,
+        string text,
+        string? fileName = null,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    {
+        if (text == null)
+        {
+            throw new ArgumentNullException(nameof(text));
+        }
+
+        return new FileContentPart(mediaType, null, null, fileName) { Text = text, ProviderOptions = providerOptions };
+    }
+
     /// <summary>Map from provider name to an uploaded file id, used when there is no URL or inline data.</summary>
     public IReadOnlyDictionary<string, string>? ProviderReference { get; }
+
+    /// <summary>Inline text, set when the file data is <c>{ type: "text", text }</c>.</summary>
+    public string? Text { get; private init; }
 
     /// <summary>Provider-specific options for this part, such as the xAI <c>imageDetail</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }

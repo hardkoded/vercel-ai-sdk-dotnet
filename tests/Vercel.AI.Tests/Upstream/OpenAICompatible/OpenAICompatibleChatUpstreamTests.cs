@@ -152,6 +152,24 @@ public sealed class OpenAICompatibleChatUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::user messages::should convert inline text file parts", Coverage = UpstreamCoverage.Covered)]
+    public async Task Inline_text_file_parts_are_converted()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        var providerOptions = new Dictionary<string, JsonElement>
+        {
+            ["openaiCompatible"] = JsonDocument.Parse("{\"cache_control\":{\"type\":\"ephemeral\"}}").RootElement.Clone(),
+        };
+        options.Prompt = new ModelMessage[] { new UserModelMessage(new UserContentPart[] { FileContentPart.FromText("text/plain", "Résumé: café, 日本語", null, providerOptions) }) };
+        await UpstreamChat.Model(capture).DoGenerateAsync(options, CancellationToken.None);
+        var part = UpstreamChat.Body(capture)["messages"]![0]!["content"]![0]!;
+        Assert.Equal("text", part["type"]!.GetValue<string>());
+        Assert.Equal("Résumé: café, 日本語", part["text"]!.GetValue<string>());
+        Assert.Equal("ephemeral", part["cache_control"]!["type"]!.GetValue<string>());
+    }
+
+    [Fact]
     [UpstreamTest("packages/openai-compatible/src/chat/convert-to-openai-compatible-chat-messages.test.ts::user messages::should convert messages with text/plain parts from Uint8Array", Coverage = UpstreamCoverage.Covered)]
     public async Task Text_file_bytes_are_decoded()
     {

@@ -958,6 +958,8 @@ var part = FileContentPart.FromProviderReference(
 
 The provider does not upload the file. Which media types are accepted depends on the destination model.
 
+An OpenAI-compatible chat model also accepts inline text file data. `FileContentPart.FromText("text/plain", "Résumé: café, 日本語")` is sent as a `{ "type": "text", "text": ... }` part, the same as text supplied as bytes. Properties from the part's `openaiCompatible` provider options, such as `cache_control`, are copied onto it. Inline text with a media type that is not `text/*` throws `UnsupportedFunctionalityException`.
+
 Anthropic and Google read the same reference. Anthropic sends the `anthropic` entry as a Files API `file_id`. Google sends the `google` entry as the `fileUri`. `AnthropicSkills.UploadSkillAsync` returns its skill id as `ProviderReference["anthropic"]`.
 
 ## Anthropic container forwarding
