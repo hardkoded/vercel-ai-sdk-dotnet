@@ -459,7 +459,7 @@ public sealed class PerplexityDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards grounding options and preserves evidence and exact tool counts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "forwards grounding options and preserves evidence and exact tool counts", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
     public async Task Forwards_grounding_options_and_preserves_evidence_and_exact_tool_counts()
     {
         var searchResults = JsonNode.Parse("""[{"title":"Webb launch","url":"https://example.com/webb","snippet":"Launched in December 2021.","date":"2021-12-25","last_updated":"2026-11-01"}]""")!;
@@ -485,7 +485,7 @@ public sealed class PerplexityDecisionModelTests
     [InlineData("{\"mode\":\"invalid\"}")]
     [InlineData("{\"maxStaleness\":-1}")]
     [InlineData("{\"maxStaleness\":0.5}")]
-    [UpstreamTest(Prefix + "rejects invalid grounding options %j before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects invalid grounding options %j before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
     public async Task Rejects_invalid_grounding_options_before_sending_a_request(string perplexity)
     {
         var (model, capture) = Setup();
@@ -496,7 +496,7 @@ public sealed class PerplexityDecisionModelTests
     [Theory]
     [InlineData("0")]
     [InlineData("1")]
-    [UpstreamTest(Prefix + "preserves completed grounding counts of %s on HTTP errors", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "preserves completed grounding counts of %s on HTTP errors", Coverage = UpstreamCoverage.Covered, Commit = "d5440b3311127a4a889e4de46de98f5baec6b125")]
     public async Task Preserves_completed_grounding_counts_on_HTTP_errors(string count)
     {
         var error = JsonNode.Parse("""{"error":{"message":"Context limit exceeded","type":"invalid_request","code":"400"}}""");
