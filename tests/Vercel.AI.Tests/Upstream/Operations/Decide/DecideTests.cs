@@ -21,6 +21,8 @@ public sealed class DownloadFetchCollection
 [Collection("DownloadFetch")]
 public sealed class DecideTests
 {
+    private const string UpstreamCommit = "c70adf670be399319e6d06633501aab39e033600";
+
     [Fact]
     [UpstreamTest("packages/ai/src/decide/decide.test.ts::decides answers to mixed questions in one call and preserves distributions and metadata", Coverage = UpstreamCoverage.Covered)]
     public async Task Decides_answers_to_mixed_questions_in_one_call_and_preserves_distributions_and_metadata()
@@ -441,6 +443,25 @@ public sealed class DecideTests
         Assert.Equal(0.82, answer.Box.Bottom);
         Assert.Equal(0.44, answer.Box.Left);
         Assert.Equal(0.84, answer.Box.Right);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"instructions\":undefined}")]
+    [InlineData("{\"instructions\":null}")]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::forwards optional Box instructions: %j", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Forwards_optional_Box_instructions(string instructionFields)
+    {
+        var model = BoxModel(ValidBox());
+        var question = instructionFields == "{\"instructions\":null}"
+            ? new DecisionQuestion("box", null) { HasInstructions = true }
+            : new DecisionQuestion("box", null);
+        var questions = new Dictionary<string, DecisionQuestion> { ["target"] = question };
+        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = string.Empty, Questions = questions });
+        Assert.Same(questions, model.Calls[0].Questions);
+        var answer = result.Answers["target"];
+        Assert.Equal("box", answer.Type);
+        Assert.Equal((0.25, 0.82, 0.44, 0.84), (answer.Box!.Top, answer.Box.Bottom, answer.Box.Left, answer.Box.Right));
     }
 
     public static IEnumerable<object?[]> MalformedBoxes()
