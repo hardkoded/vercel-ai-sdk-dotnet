@@ -10,6 +10,70 @@ namespace Vercel.AI.Tests.GoogleJsonAccumulatorTests;
 public sealed class ArrayIndexBoundsTests
 {
     [Fact]
+    [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should skip dotted indexes that leave a gap in an existing array", Coverage = UpstreamCoverage.Covered)]
+    public void Should_skip_dotted_indexes_that_leave_a_gap_in_an_existing_array()
+    {
+        var (finalJson, text) = Accumulate(
+            Str("$.items[0]", "a"),
+            Str("$.items.3", "ignored"),
+            Str("$.items[1]", "b"));
+        Assert.Equal("{\"items\":[\"a\",\"b\"]}", finalJson);
+        Assert.Equal(finalJson, text);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should skip dotted indexes that leave a gap in nested arrays", Coverage = UpstreamCoverage.Covered)]
+    public void Should_skip_dotted_indexes_that_leave_a_gap_in_nested_arrays()
+    {
+        var (finalJson, text) = Accumulate(
+            Number("$.rows[0][0]", 1),
+            Number("$.rows.0.3", 2),
+            Str("$.rows.3.name", "ignored"),
+            Number("$.rows[0][1]", 3));
+        Assert.Equal("{\"rows\":[[1,3]]}", finalJson);
+        Assert.Equal(finalJson, text);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should skip dotted indexes that leave a gap in an empty array", Coverage = UpstreamCoverage.Covered)]
+    public void Should_skip_dotted_indexes_that_leave_a_gap_in_an_empty_array()
+    {
+        var (finalJson, text) = Accumulate(
+            new GooglePartialArgument { JsonPath = "$.items[]" },
+            new GooglePartialArgument { JsonPath = "$.items.2" },
+            Number("$.items[0]", 1));
+        Assert.Equal("{\"items\":[1]}", finalJson);
+        Assert.Equal(finalJson, text);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should stream contiguous dotted indexes in existing arrays", Coverage = UpstreamCoverage.Covered)]
+    public void Should_stream_contiguous_dotted_indexes_in_existing_arrays()
+    {
+        var (finalJson, text) = Accumulate(
+            new GooglePartialArgument { JsonPath = "$.rows[0][0]", StringValue = "a", HasString = true, WillContinue = true },
+            Str("$.rows.0.0", "b"),
+            Str("$.rows.0.1", "c"),
+            Str("$.rows.1[0]", "d"));
+        Assert.Equal("{\"rows\":[[\"ab\",\"c\"],[\"d\"]]}", finalJson);
+        Assert.Equal(finalJson, text);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("3")]
+    [InlineData("01")]
+    [InlineData("-0")]
+    [InlineData("1e0")]
+    [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should preserve dotted object key %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_preserve_dotted_object_key(string key)
+    {
+        var (finalJson, text) = Accumulate(Str($"$.items.{key}.name", "a"));
+        Assert.Equal($"{{\"items\":{{\"{key}\":{{\"name\":\"a\"}}}}}}", finalJson);
+        Assert.Equal(finalJson, text);
+    }
+
+    [Fact]
     [UpstreamTest("packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > array index bounds::should skip an index that does not start a new array", Coverage = UpstreamCoverage.Covered)]
     public void Should_skip_an_index_that_does_not_start_a_new_array()
     {

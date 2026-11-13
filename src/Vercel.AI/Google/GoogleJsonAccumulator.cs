@@ -129,7 +129,7 @@ public sealed class GoogleJsonAccumulator
             return string.Empty;
         }
 
-        if (!HasContiguousIndexes(_root, segments))
+        if (!NormalizeAndCheckIndexes(_root, segments))
         {
             return string.Empty;
         }
@@ -373,16 +373,28 @@ public sealed class GoogleJsonAccumulator
         return current;
     }
 
-    // Every array index on the path must be an existing element or the next one. Arrays are
-    // streamed in order, and a sparse index would make Write emit one null per hole, so a tiny
-    // response could allocate without bound. A missing or null parent is replaced by a new array,
-    // so it starts at 0.
-    private static bool HasContiguousIndexes(Bag root, IReadOnlyList<Segment> segments)
+    // Dotted numeric segments on an existing array are normalized to indexes in place, then every
+    // array index on the path must be an existing element or the next one. Arrays are streamed in
+    // order, and a sparse index would make Write emit one null per hole, so a tiny response could
+    // allocate without bound. A missing or null parent is replaced by a new array, so it starts at 0.
+    private static bool NormalizeAndCheckIndexes(Bag root, List<Segment> segments)
     {
         Bag? current = root;
         for (var i = 0; i < segments.Count; i++)
         {
             var segment = segments[i];
+            if (current is { Kind: BagKind.Array } && segment.Name != null && TryCanonicalIndex(segment.Name, out var canonical))
+            {
+                if (canonical < 0)
+                {
+                    // Canonical array index too large to ever be contiguous.
+                    return false;
+                }
+
+                segment = Segment.At(canonical);
+                segments[i] = segment;
+            }
+
             if (segment.Index is { } index)
             {
                 int? length = current == null || current.Kind == BagKind.Null
@@ -397,6 +409,36 @@ public sealed class GoogleJsonAccumulator
             current = current?.Child(segment);
         }
 
+        return true;
+    }
+
+    // Only canonical array-index keys (no sign, no leading zeros, below 2^32 - 1) affect an array's
+    // length; every other key stays a string. A canonical index above int.MaxValue yields -1.
+    private static bool TryCanonicalIndex(string name, out int index)
+    {
+        index = 0;
+        if (name.Length == 0 || name.Length > 10 || (name.Length > 1 && name[0] == '0'))
+        {
+            return false;
+        }
+
+        long value = 0;
+        foreach (var c in name)
+        {
+            if (c < '0' || c > '9')
+            {
+                return false;
+            }
+
+            value = (value * 10) + (c - '0');
+        }
+
+        if (value >= uint.MaxValue)
+        {
+            return false;
+        }
+
+        index = value > int.MaxValue ? -1 : (int)value;
         return true;
     }
 
