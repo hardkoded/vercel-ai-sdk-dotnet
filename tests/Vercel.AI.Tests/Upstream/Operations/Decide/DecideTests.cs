@@ -292,18 +292,24 @@ public sealed class DecideTests
         var model = new DecideModel();
         var bytes = new byte[] { 0x89, 0x50, 0x4e, 0x47 };
         var fetches = 0;
+        var globalFetches = 0;
         var previous = Download.Fetch;
         try
         {
             Download.Fetch = (url, request) =>
             {
-                fetches++;
-                return Task.FromResult(DownloadResponse.Bytes(bytes, "image/png"));
+                globalFetches++;
+                return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
             await DecideOperation.DecideAsync(new DecideRequest
             {
                 Model = model,
                 Questions = SampleQuestions(),
+                Download = Download.CreateDownload(fetch: (url, request) =>
+                {
+                    fetches++;
+                    return Task.FromResult(DownloadResponse.Bytes(bytes, "image/png"));
+                }),
                 State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image", ["data"] = new Uri("https://example.com/package.png") } }),
             });
         }
@@ -313,6 +319,7 @@ public sealed class DecideTests
         }
 
         Assert.Equal(1, fetches);
+        Assert.Equal(0, globalFetches);
         Assert.Equal(J(new List<object?> { FilePart("image/png", bytes, null) }), J(Canon(model.Calls[0].State)));
     }
 
@@ -329,15 +336,51 @@ public sealed class DecideTests
             {
                 Model = model,
                 Questions = SampleQuestions(),
+                Download = Download.CreateDownload(),
                 State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://example.com/missing.png") } }),
             }));
             Assert.Equal("AI_DownloadError", error.ErrorName);
+            Assert.Equal((int?)404, error.StatusCode);
         }
         finally
         {
             Download.Fetch = previous;
         }
 
+        Assert.Empty(model.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::rejects remote file state without a download hook", Coverage = UpstreamCoverage.Covered, Commit = "79d2004947f309c01033a92d9c8bfe67a3e0eead")]
+    public async Task Rejects_remote_file_state_without_a_download_hook()
+    {
+        var model = new DecideModel();
+        var fetches = 0;
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = (url, request) =>
+            {
+                fetches++;
+                return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
+            };
+            var error = await Assert.ThrowsAsync<DownloadError>(() => DecideOperation.DecideAsync(new DecideRequest
+            {
+                Model = model,
+                Questions = SampleQuestions(),
+                State = S(new List<object?> { new Dictionary<string, object?> { ["type"] = "file", ["mediaType"] = "image/png", ["data"] = new Uri("https://attacker.example/package.png") } }),
+            }));
+            Assert.Equal("AI_DownloadError", error.ErrorName);
+
+            // Upstream checks for `experimental_download`; the port names that option `Download`.
+            Assert.Contains("requires Download", error.Message);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Equal(0, fetches);
         Assert.Empty(model.Calls);
     }
 

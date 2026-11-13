@@ -369,6 +369,34 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             body["max_output_tokens"] = maxOutput;
         }
 
+        // responseFormat: { type: 'json' } maps to text.format, and textVerbosity to text.verbosity.
+        var textVerbosity = OpenAIJson.String(openai, "textVerbosity");
+        if (options.JsonResponse || options.JsonSchema != null || textVerbosity != null)
+        {
+            var text = new JsonObject();
+            if (options.JsonSchema is { } responseSchema)
+            {
+                var normalized = OpenAIJsonSchema.Normalize(responseSchema);
+                warnings.AddRange(normalized.Warnings);
+                var format = new JsonObject
+                {
+                    ["type"] = "json_schema",
+                    ["strict"] = OpenAIJson.Bool(openai, "strictJsonSchema") ?? true,
+                    ["name"] = options.JsonSchemaName ?? "response",
+                };
+                Copy(format, "description", options.JsonSchemaDescription);
+                format["schema"] = normalized.Schema;
+                text["format"] = format;
+            }
+            else if (options.JsonResponse)
+            {
+                text["format"] = new JsonObject { ["type"] = "json_object" };
+            }
+
+            Copy(text, "verbosity", textVerbosity);
+            body["text"] = text;
+        }
+
         if (OpenAIJson.Int(openai, "maxToolCalls") is { } maxToolCalls)
         {
             body["max_tool_calls"] = maxToolCalls;
