@@ -234,7 +234,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L127)
 
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ExperimentalBatch"></a>
@@ -252,6 +252,29 @@ Gemini Batch API. Downloads batch results.
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L70)
+
+<a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_"></a>
+<a id="Vercel_AI_Google_GoogleProvider_ExtractionModel_System_String_"></a>
+
+### ExtractionModel(string)
+
+
+```csharp
+public ExtractionLanguageModel ExtractionModel(string modelId)
+```
+
+
+Experimental typed field extraction model that uses Gemini structured output. The provider id is `google.extraction`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L108)
 
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_ImageModel_System_String_"></a>
@@ -274,7 +297,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L133)
 
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_System_String_"></a>
@@ -297,7 +320,7 @@ Language model that posts to the Interactions API.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L115)
 
 <a id="Vercel_AI_Google_GoogleProvider_Interactions_Vercel_AI_Google_GoogleInteractionsAgent_"></a>
 
@@ -319,7 +342,7 @@ Language model that calls an agent through the Interactions API. The request sen
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L121)
 
 <a id="Vercel_AI_Google_GoogleProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_LanguageModel_System_String_"></a>
@@ -365,7 +388,7 @@ Returns a realtime model.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L151)
 
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_System_String_"></a>
@@ -388,7 +411,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L139)
 
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_System_String_"></a>
@@ -411,4 +434,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L145)

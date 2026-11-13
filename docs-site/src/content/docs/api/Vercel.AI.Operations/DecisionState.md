@@ -151,29 +151,32 @@ Creates state from a JSON object. Any other JSON value throws [InvalidArgumentEx
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L176)
 
 <a id="Vercel_AI_Operations_DecisionState_PrepareDecisionStateAsync_"></a>
-<a id="Vercel_AI_Operations_DecisionState_PrepareDecisionStateAsync_Vercel_AI_Operations_DecisionState_System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Operations_DecisionState_PrepareDecisionStateAsync_Vercel_AI_Operations_DecisionState_System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadRequestItem__System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadResult____System_Threading_CancellationToken_"></a>
 
-### PrepareDecisionStateAsync(DecisionState, CancellationToken)
+### `PrepareDecisionStateAsync(DecisionState, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>?, CancellationToken)`
 
 
 ```csharp
-public static Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(DecisionState state, CancellationToken cancellationToken = default)
+public static Task<IReadOnlyList<DecisionModelStatePart>> PrepareDecisionStateAsync(DecisionState state, Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download = null, CancellationToken cancellationToken = default)
 ```
 
 
 Turns public state into the list of parts the model receives.
-URL files are downloaded. File media types are resolved to a full type.
+URL files are downloaded with &lt;code class="paramref"&gt;download&lt;/code&gt;, which is required for them. Without it a URL file throws
+[DownloadError](/api/Vercel.AI.Util/DownloadError/). Inline bytes, base64 content, and data URLs do not need it.
+File media types are resolved to a full type.
 
 **Parameters**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | `state` | [DecisionState](./) |  |
+| `download` | [Func&lt;IReadOnlyList&lt;DownloadRequestItem&gt;, Task&lt;IReadOnlyList&lt;DownloadResult&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
 **Returns:** [Task&lt;IReadOnlyList&lt;DecisionModelStatePart&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionState.cs#L212)
 
 ## Operators
 

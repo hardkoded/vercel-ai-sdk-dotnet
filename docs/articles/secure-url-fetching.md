@@ -37,3 +37,17 @@ var response = await Download.FetchWithValidatedEndpointAsync(
     "https://auth.example.com/token",
     new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
 ```
+
+## Decision and extraction state downloads
+
+`DecideRequest.Download` and `ExtractRequest.Download` (`experimental_download` upstream) are the only way URL files in `state` are downloaded. Without the hook, a URL file throws `DownloadError` before any download or model call. Inline bytes, base64 content, and data URLs need no hook. For untrusted URLs, pass `Download.CreateDownload(fetch: ...)` with a `DownloadFetch` that validates DNS at connection time and pins the connection to the validated addresses. A model's own transport does not cover these downloads. `Download.CreateDownload()` without a `fetch` explicitly opts into the default fetch.
+
+```csharp
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    Model = openai.ExtractionModel("gpt-6-luna"),
+    State = new DecisionStatePart[] { new DecisionFilePart("application/pdf", FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))) },
+    Fields = fields,
+    Download = Download.CreateDownload(fetch: guardedFetch),
+});
+```

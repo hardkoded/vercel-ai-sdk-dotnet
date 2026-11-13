@@ -41,10 +41,13 @@ Errors, downloads, warnings, and helpers.
 | [DownloadResult](/api/Vercel.AI.Util/DownloadResult/) | Bytes and media type returned by Download.GetAsync. |
 | [ErrorMarkerBag](/api/Vercel.AI.Util/ErrorMarkerBag/) | Plain marker bag used to recognize an error shape copied across packages. |
 | [EvaluationUnsupportedQuestionTypeError](/api/Vercel.AI.Util/EvaluationUnsupportedQuestionTypeError/) | Deprecated alias of DecisionUnsupportedQuestionTypeError. It carries the decision error marker. |
+| [ExtractionRefusalError](/api/Vercel.AI.Util/ExtractionRefusalError/) | An extraction model declined to extract one or more fields. |
+| [ExtractionUnsupportedFieldTypeError](/api/Vercel.AI.Util/ExtractionUnsupportedFieldTypeError/) | An extraction model does not support the type of a requested field. |
 | [FixJson](/api/Vercel.AI.Util/FixJson/) | Repairs truncated JSON by scanning once and closing open strings, literals, arrays, and objects. |
 | [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/) | Case-insensitive header list that preserves repeated values such as Set-Cookie. |
 | [IdMap&lt;T&gt;](/api/Vercel.AI.Util/IdMap-1/) | String-keyed map with no inherited members. Missing keys, including proto, return the default value. |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | An argument failed validation. Message format matches the TypeScript SDK. |
+| [InvalidToolApprovalSignatureError](/api/Vercel.AI.Util/InvalidToolApprovalSignatureError/) | The signature of a tool approval request is missing or does not match. Maps to InvalidToolApprovalSignatureError. |
 | [InvalidToolInputError](/api/Vercel.AI.Util/InvalidToolInputError/) | The input of a tool call does not match the tool's input schema. Maps to InvalidToolInputError. |
 | [JsUndefined](/api/Vercel.AI.Util/JsUndefined/) | Sentinel for a JavaScript undefined value. Distinct from null. |
 | [LanguageModelCallOptionsInput](/api/Vercel.AI.Util/LanguageModelCallOptionsInput/) | Model call options validated by LanguageModelCallPreparation. |

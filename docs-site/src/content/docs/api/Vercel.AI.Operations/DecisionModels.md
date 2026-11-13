@@ -106,3 +106,26 @@ Resolves a decision model. &lt;code class="paramref"&gt;model&lt;/code&gt; wins 
 **Returns:** [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L32)
+
+<a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_"></a>
+<a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_"></a>
+
+### ResolveExtractionModel(IExtractionCaller?)
+
+
+```csharp
+public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+```
+
+
+Maps to `resolveExtractionModel`. Only model instances are accepted. A model that is not `v4` throws.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `model` | [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/) |  |
+
+**Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L83)
