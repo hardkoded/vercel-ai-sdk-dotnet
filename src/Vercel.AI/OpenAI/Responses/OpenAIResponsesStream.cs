@@ -31,6 +31,7 @@ internal sealed class OpenAIResponsesStream
     private bool _hasFileSearchResults;
     private string? _incompleteReason;
     private bool _hasFunctionCall;
+    private bool _hasRefusal;
     private bool _finished;
     private bool _streamError;
     private FinishReason? _failedFinish;
@@ -149,6 +150,15 @@ internal sealed class OpenAIResponsesStream
                     parts.Add(new TextDeltaStreamPart(itemId, delta!));
                 }
 
+                break;
+            case "response.refusal.delta":
+                _hasRefusal = true;
+                var refusalItemId = ResolveOutputItemId(node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text", node);
+                OpenText(parts, refusalItemId);
+                parts.Add(new TextDeltaStreamPart(refusalItemId, node["delta"]?.GetValue<string>() ?? string.Empty));
+                break;
+            case "response.refusal.done":
+                _hasRefusal = true;
                 break;
             case "response.reasoning_summary_part.added":
                 if (node["item_id"]?.GetValue<string>() is { } partItem)
@@ -339,7 +349,7 @@ internal sealed class OpenAIResponsesStream
                 {
                     var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
                     _reasoningContext = ReasoningContext(failed) ?? _reasoningContext;
-                    _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall) : FinishReason.Error;
+                    _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall, _hasRefusal) : FinishReason.Error;
                     _failedRaw = failedReason ?? "error";
                     if (failed["error"] is JsonNode failedError && !_streamError)
                     {
@@ -441,7 +451,7 @@ internal sealed class OpenAIResponsesStream
         var finish = failedFinish
             ? _failedFinish!.Value
             : _finished
-                ? OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall)
+                ? OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall, _hasRefusal)
                 : FinishReason.Interrupted;
         parts.Add(new FinishStreamPart(
             finish,

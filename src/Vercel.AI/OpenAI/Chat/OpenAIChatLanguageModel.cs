@@ -373,6 +373,18 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             content.Add(new GeneratedText(text!));
         }
 
+        // When the model refuses to answer, the API returns the refusal in `refusal` and sets `content` to null.
+        // Content and refusal are both returned when the model refuses after answering, so keep both.
+        var hasRefusal = false;
+        if (message.ValueKind == JsonValueKind.Object
+            && message.TryGetProperty("refusal", out var refusalElement)
+            && refusalElement.ValueKind == JsonValueKind.String
+            && !string.IsNullOrEmpty(refusalElement.GetString()))
+        {
+            hasRefusal = true;
+            content.Add(new GeneratedText(refusalElement.GetString()!));
+        }
+
         if (message.ValueKind == JsonValueKind.Object && message.TryGetProperty("tool_calls", out var toolCalls) && toolCalls.ValueKind == JsonValueKind.Array)
         {
             foreach (var call in toolCalls.EnumerateArray())
@@ -440,7 +452,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         var created = OpenAIJson.Unix(root, "created");
         return new LanguageModelGenerateResult(
             content,
-            FinishReasons.Parse(rawReason),
+            MapOpenAIFinishReason(rawReason, hasRefusal),
             OpenAIJson.ChatUsage(root.TryGetProperty("usage", out var usageElement) ? usageElement : (JsonElement?)null),
             rawReason,
             ToCallWarnings(warnings),
@@ -647,6 +659,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         }
     }
 
+    // OpenAI reports a completed response for refusals, so the refusal is the reason the response ended.
+    private static FinishReason MapOpenAIFinishReason(string? raw, bool hasRefusal)
+    {
+        return hasRefusal && raw == "stop" ? FinishReason.ContentFilter : FinishReasons.Parse(raw);
+    }
+
     private static bool IsOutputChunk(string data)
     {
         if (!IsJsonObject(data))
@@ -674,6 +692,11 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             }
 
             if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String && (content.GetString() ?? string.Empty).Length > 0)
+            {
+                return true;
+            }
+
+            if (delta.TryGetProperty("refusal", out var refusal) && refusal.ValueKind == JsonValueKind.String && (refusal.GetString() ?? string.Empty).Length > 0)
             {
                 return true;
             }
@@ -710,6 +733,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         private readonly StreamingToolCallTracker _tools = new StreamingToolCallTracker();
         private bool _metadata;
         private bool _text;
+        private bool _hasRefusal;
         private FinishReason _finish = FinishReason.Interrupted; // A clean end without the provider's completion signal is interrupted.
         private string? _rawFinish;
         private LanguageModelUsage? _usage;
@@ -794,7 +818,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 if (choice.TryGetProperty("finish_reason", out var finish) && finish.ValueKind == JsonValueKind.String)
                 {
                     _rawFinish = finish.GetString();
-                    _finish = FinishReasons.Parse(_rawFinish);
+                    _finish = MapOpenAIFinishReason(_rawFinish, _hasRefusal);
                 }
 
                 if (choice.TryGetProperty("logprobs", out var logprobs)
@@ -810,9 +834,28 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                     yield break;
                 }
 
-                if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
+                // When the model refuses to answer, the API streams the refusal in `refusal` instead of `content`.
+                // Content and refusal deltas can both occur, so append each to the same text part.
+                var textDeltas = new List<string>();
+                if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String && (content.GetString() ?? string.Empty).Length > 0)
                 {
-                    var text = content.GetString() ?? string.Empty;
+                    textDeltas.Add(content.GetString()!);
+                }
+
+                if (delta.TryGetProperty("refusal", out var refusal) && refusal.ValueKind == JsonValueKind.String && (refusal.GetString() ?? string.Empty).Length > 0)
+                {
+                    _hasRefusal = true;
+                    textDeltas.Add(refusal.GetString()!);
+                }
+
+                // Empty `content: ""` deltas keep their previous behavior.
+                if (textDeltas.Count == 0 && content.ValueKind == JsonValueKind.String)
+                {
+                    textDeltas.Add(string.Empty);
+                }
+
+                foreach (var text in textDeltas)
+                {
                     if (!_text)
                     {
                         _text = true;

@@ -1,0 +1,122 @@
+[
+  {
+    "type": "stream-start",
+    "warnings": []
+  },
+  {
+    "id": "resp_0c23285ace96282b006aebf3a5d14487d0a7209e6699450427",
+    "modelId": "gpt-4o-2024-08-06",
+    "timestamp": "2026-11-05T03:10:29.000Z",
+    "type": "response-metadata"
+  },
+  {
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "providerMetadata": {
+      "openai": {
+        "itemId": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948"
+      }
+    },
+    "type": "text-start"
+  },
+  {
+    "delta": "I'm",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " very",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " sorry",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": ",",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " but",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " I",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " can't",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " assist",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " with",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": " that",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "delta": ".",
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "type": "text-delta"
+  },
+  {
+    "id": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948",
+    "providerMetadata": {
+      "openai": {
+        "itemId": "msg_0c23285ace96282b006aebf3a6877887d095e452766dc4c948"
+      }
+    },
+    "type": "text-end"
+  },
+  {
+    "finishReason": {
+      "unified": "content-filter"
+    },
+    "providerMetadata": {
+      "openai": {
+        "responseId": "resp_0c23285ace96282b006aebf3a5d14487d0a7209e6699450427",
+        "serviceTier": "default"
+      }
+    },
+    "type": "finish",
+    "usage": {
+      "inputTokens": {
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "noCache": 55,
+        "total": 55
+      },
+      "outputTokens": {
+        "reasoning": 0,
+        "text": 13,
+        "total": 13
+      },
+      "raw": {
+        "input_tokens": 55,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 13,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 68
+      }
+    }
+  }
+]

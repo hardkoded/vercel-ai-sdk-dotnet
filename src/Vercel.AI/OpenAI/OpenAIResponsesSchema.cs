@@ -64,11 +64,13 @@ internal static class OpenAIResponsesSchema
             ("role", Literal("assistant")),
             ("id", String),
             ("phase", Nullish(Enum("commentary", "final_answer"))),
-            ("content", Array(Object(
-                ("type", Literal("output_text")),
-                ("text", String),
-                ("logprobs", Nullish(Array(Logprob))),
-                ("annotations", Array(Annotation))))))),
+            // The API returns either text or a refusal as content parts.
+            ("content", Array(Union(
+                ("output_text", Object(
+                    ("text", String),
+                    ("logprobs", Nullish(Array(Logprob))),
+                    ("annotations", Array(Annotation)))),
+                ("refusal", Object(("refusal", String)))))))),
         ("web_search_call", Object(
             ("id", String),
             ("status", String),

@@ -340,4 +340,67 @@ public sealed class DoStreamTests
         Assert.Equal("""{"location":"Berlin"}""", toolCall.ArgumentsJson);
         JsonAssert.Equal(toolCall.ProviderMetadata!.Value, """{"openai":{"itemId":"fc_async","async":true}}""");
     }
+
+    private const string RefusalStream = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::";
+
+    [Fact]
+    [UpstreamTest(RefusalStream + "should stream refusal content parts as text and map the finish reason to content-filter", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    public async Task Should_stream_refusal_content_parts_as_text_and_map_the_finish_reason_to_content_filter()
+    {
+        var events = OpenAIResponsesSupport.Fixture("openai-refusal.1.chunks.txt")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonNode.Parse(line)!);
+
+        var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(events));
+
+        OpenAIResponsesSupport.AssertStreamSnapshot(parts, "openai-refusal.1");
+    }
+
+    [Fact]
+    [UpstreamTest(RefusalStream + "should prefer tool-calls over content-filter when a refusal is streamed with a function call", Coverage = UpstreamCoverage.Covered, Commit = "6b97088662a270e9bb556c78d43b955869e7d9fc")]
+    public async Task Should_prefer_tool_calls_over_content_filter_when_a_refusal_is_streamed_with_a_function_call()
+    {
+        var messageItem = JsonNode.Parse("""{"id":"msg_refusal_function_call","type":"message","status":"completed","role":"assistant","content":[{"type":"refusal","refusal":"I can't do that, but I can check the weather."}]}""")!;
+        var inProgressMessage = JsonNode.Parse("""{"id":"msg_refusal_function_call","type":"message","status":"in_progress","role":"assistant","content":[]}""")!;
+        var functionCallItem = JsonNode.Parse("""{"id":"fc_1","type":"function_call","name":"weather","call_id":"call_1","arguments":"{\"location\":\"Paris\"}","status":"completed"}""")!;
+        var inProgressCall = JsonNode.Parse("""{"id":"fc_1","type":"function_call","name":"weather","call_id":"call_1","arguments":"","status":"in_progress"}""")!;
+        const string refusal = "I can't do that, but I can check the weather.";
+
+        var events = new List<JsonNode>
+        {
+            new JsonObject { ["type"] = "response.created", ["response"] = new JsonObject { ["id"] = "r1", ["created_at"] = 1, ["model"] = "gpt-4o" } },
+            new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 0, ["item"] = inProgressMessage },
+            new JsonObject { ["type"] = "response.refusal.delta", ["item_id"] = "msg_refusal_function_call", ["output_index"] = 0, ["content_index"] = 0, ["delta"] = refusal },
+            new JsonObject { ["type"] = "response.refusal.done", ["item_id"] = "msg_refusal_function_call", ["output_index"] = 0, ["content_index"] = 0, ["refusal"] = refusal },
+            new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 0, ["item"] = messageItem.DeepClone() },
+            new JsonObject { ["type"] = "response.output_item.added", ["output_index"] = 1, ["item"] = inProgressCall },
+            new JsonObject { ["type"] = "response.function_call_arguments.delta", ["item_id"] = "fc_1", ["output_index"] = 1, ["delta"] = "{\"location\":\"Paris\"}" },
+            new JsonObject { ["type"] = "response.function_call_arguments.done", ["item_id"] = "fc_1", ["output_index"] = 1, ["arguments"] = "{\"location\":\"Paris\"}" },
+            new JsonObject { ["type"] = "response.output_item.done", ["output_index"] = 1, ["item"] = functionCallItem.DeepClone() },
+            new JsonObject
+            {
+                ["type"] = "response.completed",
+                ["response"] = new JsonObject
+                {
+                    ["incomplete_details"] = null,
+                    ["output"] = new JsonArray(messageItem.DeepClone(), functionCallItem.DeepClone()),
+                    ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 2 },
+                },
+            },
+        };
+
+        var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(events), OpenAIResponsesSupport.TestTools);
+
+        Assert.Equal(
+            new[]
+            {
+                "stream-start", "response-metadata", "text-start", "text-delta", "text-end",
+                "tool-input-start", "tool-input-delta", "tool-input-end", "tool-call", "finish",
+            },
+            parts.Select(part => part.Type));
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.ToolCalls, finish.FinishReason);
+        Assert.Null(finish.RawFinishReason);
+        Assert.Equal(refusal, string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
+    }
 }

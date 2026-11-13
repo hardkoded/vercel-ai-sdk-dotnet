@@ -728,6 +728,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
         var content = new List<GeneratedContent>();
         var hasFunctionCall = false;
+        var hasRefusal = false;
         var hasWebSearchActionSources = false;
         var hasFileSearchResults = false;
         foreach (var item in output.EnumerateArray())
@@ -752,11 +753,21 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 if (jsonResponse && phase == "final_answer")
                 {
                     structuredOutputText = string.Concat(parts.EnumerateArray()
-                        .Select(contentPart => OpenAIJson.String(contentPart, "text")));
+                        .Select(contentPart => OpenAIJson.String(contentPart, OpenAIJson.String(contentPart, "type") == "refusal" ? "refusal" : "text")));
                 }
 
                 foreach (var part in parts.EnumerateArray())
                 {
+                    if (OpenAIJson.String(part, "type") == "refusal")
+                    {
+                        hasRefusal = true;
+                        content.Add(new OpenAIText(
+                            OpenAIJson.String(part, "refusal") ?? string.Empty,
+                            null,
+                            OpenAIResponsesOutput.TextMetadata(itemId, Array.Empty<JsonElement>(), phase, providerOptionsName)));
+                        continue;
+                    }
+
                     if (part.TryGetProperty("text", out var text) && text.ValueKind == JsonValueKind.String)
                     {
                         var value = text.GetString();
@@ -906,7 +917,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             incompleteReason = reasonElement.GetString();
         }
 
-        var finish = MapFinishReason(incompleteReason, hasFunctionCall);
+        var finish = MapFinishReason(incompleteReason, hasFunctionCall, hasRefusal);
 
         var responseId = root.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
         var responseModel = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == JsonValueKind.String ? modelValue.GetString() : null;
@@ -934,12 +945,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     internal static string ProgrammaticToolName(ToolNameMapping? toolNameMapping) =>
         toolNameMapping?.ToCustomToolName("programmatic_tool_calling") ?? "programmatic_tool_calling";
 
-    internal static FinishReason MapFinishReason(string? incompleteReason, bool hasFunctionCall)
+    internal static FinishReason MapFinishReason(string? incompleteReason, bool hasFunctionCall, bool hasRefusal = false)
     {
         switch (incompleteReason)
         {
             case null:
-                return hasFunctionCall ? FinishReason.ToolCalls : FinishReason.Stop;
+                // A client-side function call must win over a refusal so that the tools are still executed.
+                // The refusal text remains part of the content.
+                if (hasFunctionCall)
+                {
+                    return FinishReason.ToolCalls;
+                }
+
+                return hasRefusal ? FinishReason.ContentFilter : FinishReason.Stop;
             case "max_output_tokens":
                 return FinishReason.Length;
             case "content_filter":
