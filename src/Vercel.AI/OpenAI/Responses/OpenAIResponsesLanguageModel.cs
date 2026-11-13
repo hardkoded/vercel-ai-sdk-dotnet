@@ -1134,25 +1134,38 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     var systemOptions = ProviderOptionsFor(system.ProviderOptions, providerOptionsName);
                     var messageEffort = OpenAIJson.String(systemOptions, "reasoningEffortUpdate");
                     var messageTextFormat = OpenAIJson.Child(systemOptions, "textFormatUpdate");
-                    if (messageEffort != null || messageTextFormat != null)
+                    var messageAdditionalTools = AdditionalToolsList(systemOptions);
+                    if (messageEffort != null || messageTextFormat != null || messageAdditionalTools != null)
                     {
+                        var hasConfigurationUpdate = messageEffort != null || messageTextFormat != null;
                         if (messageEffort != null)
                         {
                             ValidateUpdateEffort(messageEffort);
                         }
 
-                        var normalizedFormat = messageTextFormat is { } rawFormat ? OpenAIResponsesTextFormat.Normalize(rawFormat, warnings) : null;
-                        var feature = messageEffort != null ? "reasoningEffortUpdate" : "textFormatUpdate";
+                        var feature = messageEffort != null
+                            ? "reasoningEffortUpdate"
+                            : messageTextFormat != null ? "textFormatUpdate" : "additionalTools";
                         var reason = system.Content != string.Empty
                             ? "Message-level " + feature + " requires empty system message content."
-                            : configurationUpdateUnsupportedReason;
+                            : hasConfigurationUpdate ? configurationUpdateUnsupportedReason : null;
                         if (reason != null)
                         {
                             throw new UnsupportedFunctionalityException("Message-level " + feature, reason);
                         }
 
-                        // The control is independent of systemMessageMode's text handling.
-                        input.Add(ConfigurationUpdate(messageEffort, normalizedFormat));
+                        // The controls are independent of systemMessageMode's text handling.
+                        if (hasConfigurationUpdate)
+                        {
+                            var normalizedFormat = messageTextFormat is { } rawFormat ? OpenAIResponsesTextFormat.Normalize(rawFormat, warnings) : null;
+                            input.Add(ConfigurationUpdate(messageEffort, normalizedFormat));
+                        }
+
+                        if (messageAdditionalTools is { Count: > 0 })
+                        {
+                            input.Add(AdditionalToolsItem(messageAdditionalTools));
+                        }
+
                         break;
                     }
 
@@ -1386,15 +1399,10 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     input.Add(toolResultItem);
 
-                    var additionalTools = AdditionalTools(tool.ProviderMetadata, providerOptionsName);
-                    if (additionalTools != null)
+                    var additionalTools = ToolResultAdditionalTools(tool.ProviderMetadata, providerOptionsName);
+                    if (additionalTools is { Count: > 0 })
                     {
-                        input.Add(new JsonObject
-                        {
-                            ["type"] = "additional_tools",
-                            ["role"] = "developer",
-                            ["tools"] = additionalTools,
-                        });
+                        input.Add(AdditionalToolsItem(additionalTools));
                     }
 
                     break;
@@ -1861,28 +1869,43 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         });
     }
 
-    // Function definitions loaded immediately after an ordinary tool result. A malformed list is an error.
-    private static JsonArray? AdditionalTools(JsonElement? toolResultOptions, string providerOptionsName)
+    private static JsonObject AdditionalToolsItem(JsonArray tools) => new()
+    {
+        ["type"] = "additional_tools",
+        ["role"] = "developer",
+        ["tools"] = tools,
+    };
+
+    // Tool definitions loaded immediately after an ordinary tool result. Options under the provider name win,
+    // then the "openai" ones. A malformed list is an error.
+    private static JsonArray? ToolResultAdditionalTools(JsonElement? toolResultOptions, string providerOptionsName)
     {
         if (toolResultOptions is not { ValueKind: JsonValueKind.Object } root)
         {
             return null;
         }
 
-        JsonElement options;
-        if (!root.TryGetProperty(providerOptionsName, out options) && !(providerOptionsName != "openai" && root.TryGetProperty("openai", out options)))
+        if (root.TryGetProperty(providerOptionsName, out var named) && AdditionalToolsList(named) is { } list)
         {
-            return null;
+            return list;
         }
 
-        if (options.ValueKind != JsonValueKind.Object || !options.TryGetProperty("additionalTools", out var list))
+        return providerOptionsName != "openai" && root.TryGetProperty("openai", out var openai)
+            ? AdditionalToolsList(openai)
+            : null;
+    }
+
+    // The validated additionalTools of a provider options object, or null when it has none.
+    private static JsonArray? AdditionalToolsList(JsonElement? options)
+    {
+        if (options is not { ValueKind: JsonValueKind.Object } root || !root.TryGetProperty("additionalTools", out var list))
         {
             return null;
         }
 
         if (list.ValueKind != JsonValueKind.Array)
         {
-            throw new AiSdkException("Invalid additionalTools: expected an array of function definitions.");
+            throw new AiSdkException("Invalid additionalTools: expected an array of tool definitions.");
         }
 
         var tools = new JsonArray();
@@ -1891,25 +1914,47 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             tools.Add(ValidateAdditionalTool(definition));
         }
 
-        return tools.Count == 0 ? null : tools;
+        return tools;
     }
 
     private static JsonNode ValidateAdditionalTool(JsonElement definition)
     {
-        if (definition.ValueKind != JsonValueKind.Object)
+        if (definition.ValueKind != JsonValueKind.Object
+            || !definition.TryGetProperty("type", out var type)
+            || type.ValueKind != JsonValueKind.String)
         {
-            throw new AiSdkException("Invalid additionalTools: each definition must be an object.");
+            throw new AiSdkException("Invalid additionalTools: each definition must be an object with a type.");
         }
 
+        switch (type.GetString())
+        {
+            case "function":
+                ValidateFunctionDefinition(definition);
+                break;
+            case "custom":
+                ValidateCustomDefinition(definition);
+                break;
+            case "namespace":
+                ValidateNamespaceDefinition(definition);
+                break;
+            default:
+                throw new AiSdkException("Invalid additionalTools: unsupported type '" + type.GetString() + "'.");
+        }
+
+        return JsonNode.Parse(definition.GetRawText())!;
+    }
+
+    private static void ValidateFunctionDefinition(JsonElement definition)
+    {
         var hasName = false;
         var hasParameters = false;
         foreach (var property in definition.EnumerateObject())
         {
             switch (property.Name)
             {
-                case "type" when property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() == "function":
+                case "type":
                     break;
-                case "name" when property.Value.ValueKind == JsonValueKind.String && property.Value.GetString()!.Length > 0:
+                case "name" when IsNonEmptyString(property.Value):
                     hasName = true;
                     break;
                 case "description" when property.Value.ValueKind == JsonValueKind.String:
@@ -1917,20 +1962,131 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 case "parameters" when property.Value.ValueKind == JsonValueKind.Object:
                     hasParameters = true;
                     break;
-                case "strict" when property.Value.ValueKind == JsonValueKind.True || property.Value.ValueKind == JsonValueKind.False:
+                case "strict" or "defer_loading" when property.Value.ValueKind is JsonValueKind.True or JsonValueKind.False:
                     break;
                 default:
                     throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
             }
         }
 
-        if (!hasName || !hasParameters || !definition.TryGetProperty("type", out _))
+        if (!hasName || !hasParameters)
         {
             throw new AiSdkException("Invalid additionalTools: a function definition needs type, name and parameters.");
         }
-
-        return JsonNode.Parse(definition.GetRawText())!;
     }
+
+    private static void ValidateCustomDefinition(JsonElement definition)
+    {
+        var hasName = false;
+        foreach (var property in definition.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type":
+                    break;
+                case "name" when IsNonEmptyString(property.Value):
+                    hasName = true;
+                    break;
+                case "description" when property.Value.ValueKind == JsonValueKind.String:
+                    break;
+                case "format" when property.Value.ValueKind == JsonValueKind.Object:
+                    ValidateCustomFormat(property.Value);
+                    break;
+                default:
+                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+            }
+        }
+
+        if (!hasName)
+        {
+            throw new AiSdkException("Invalid additionalTools: a custom definition needs type and name.");
+        }
+    }
+
+    private static void ValidateCustomFormat(JsonElement format)
+    {
+        if (!format.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String)
+        {
+            throw new AiSdkException("Invalid additionalTools: a custom format needs a type.");
+        }
+
+        var isGrammar = type.GetString() == "grammar";
+        if (!isGrammar && type.GetString() != "text")
+        {
+            throw new AiSdkException("Invalid additionalTools: unsupported custom format type '" + type.GetString() + "'.");
+        }
+
+        var hasSyntax = false;
+        var hasDefinition = false;
+        foreach (var property in format.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type":
+                    break;
+                case "syntax" when isGrammar && property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() is "regex" or "lark":
+                    hasSyntax = true;
+                    break;
+                case "definition" when isGrammar && property.Value.ValueKind == JsonValueKind.String:
+                    hasDefinition = true;
+                    break;
+                default:
+                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+            }
+        }
+
+        if (isGrammar && (!hasSyntax || !hasDefinition))
+        {
+            throw new AiSdkException("Invalid additionalTools: a grammar format needs syntax and definition.");
+        }
+    }
+
+    private static void ValidateNamespaceDefinition(JsonElement definition)
+    {
+        var hasName = false;
+        var hasDescription = false;
+        var hasTools = false;
+        foreach (var property in definition.EnumerateObject())
+        {
+            switch (property.Name)
+            {
+                case "type":
+                    break;
+                case "name" when IsNonEmptyString(property.Value):
+                    hasName = true;
+                    break;
+                case "description" when property.Value.ValueKind == JsonValueKind.String:
+                    hasDescription = true;
+                    break;
+                case "tools" when property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0:
+                    foreach (var nested in property.Value.EnumerateArray())
+                    {
+                        if (nested.ValueKind != JsonValueKind.Object
+                            || !nested.TryGetProperty("type", out var nestedType)
+                            || nestedType.ValueKind != JsonValueKind.String
+                            || nestedType.GetString() != "function")
+                        {
+                            throw new AiSdkException("Invalid additionalTools: a namespace holds function definitions.");
+                        }
+
+                        ValidateFunctionDefinition(nested);
+                    }
+
+                    hasTools = true;
+                    break;
+                default:
+                    throw new AiSdkException("Invalid additionalTools: unexpected or malformed '" + property.Name + "'.");
+            }
+        }
+
+        if (!hasName || !hasDescription || !hasTools)
+        {
+            throw new AiSdkException("Invalid additionalTools: a namespace definition needs type, name, description and a non-empty tools list.");
+        }
+    }
+
+    private static bool IsNonEmptyString(JsonElement value) =>
+        value.ValueKind == JsonValueKind.String && value.GetString()!.Length > 0;
 
     // The input of a custom tool call is text. A string input is sent as is and any other input as JSON.
     private static string CustomToolCallInput(string argumentsJson)
