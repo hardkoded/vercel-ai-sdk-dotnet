@@ -54,7 +54,7 @@ public sealed class ToolChoiceModelTests
 
     [Theory]
     [MemberData(nameof(NoneCombinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables all tools with none and max_tool_calls %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables all tools with none and max_tool_calls %s", Coverage = UpstreamCoverage.Covered, Commit = "7772d0ca0f7abc2cb2a0ad61b0272a72655d780d")]
     public async Task Disables_all_tools_with_none_and_max_tool_calls(string method, string modelId, int? maxToolCalls)
     {
         var capture = Capture(method);
@@ -75,7 +75,7 @@ public sealed class ToolChoiceModelTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables preset tools even without explicit tools", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::disables preset tools even without explicit tools", Coverage = UpstreamCoverage.Covered, Commit = "7772d0ca0f7abc2cb2a0ad61b0272a72655d780d")]
     public async Task Disables_preset_tools_even_without_explicit_tools(string method, string modelId)
     {
         var capture = Capture(method);
@@ -91,7 +91,7 @@ public sealed class ToolChoiceModelTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::omits disabled provider-defined tools without unsupported warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::omits disabled provider-defined tools without unsupported warnings", Coverage = UpstreamCoverage.Covered, Commit = "7772d0ca0f7abc2cb2a0ad61b0272a72655d780d")]
     public async Task Omits_disabled_provider_defined_tools_without_unsupported_warnings(string method, string modelId)
     {
         var capture = Capture(method);
@@ -112,7 +112,7 @@ public sealed class ToolChoiceModelTests
 
     [Theory]
     [MemberData(nameof(Combinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::keeps prior tool calls and results while disabling new tool use", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::keeps prior tool calls and results while disabling new tool use", Coverage = UpstreamCoverage.Covered, Commit = "7772d0ca0f7abc2cb2a0ad61b0272a72655d780d")]
     public async Task Keeps_prior_tool_calls_and_results_while_disabling_new_tool_use(string method, string modelId)
     {
         var capture = Capture(method);
@@ -140,7 +140,7 @@ public sealed class ToolChoiceModelTests
 
     [Theory]
     [MemberData(nameof(AutoCombinations))]
-    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::preserves tools and limits with tool choice %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/perplexity/src/perplexity-language-model.test.ts::%s tool choice > model %s::preserves tools and limits with tool choice %s", Coverage = UpstreamCoverage.Covered, Commit = "7772d0ca0f7abc2cb2a0ad61b0272a72655d780d")]
     public async Task Preserves_tools_and_limits_with_tool_choice(string method, string modelId, string choice)
     {
         var capture = Capture(method);
