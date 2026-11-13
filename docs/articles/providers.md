@@ -1184,3 +1184,18 @@ The deprecated factory `IEvaluationProvider.EvaluationModel(id)` and the depreca
 
 These names replace the old rubric names, because `EvaluationModel` now means the deprecated decision accessor. `IEvaluationModel`, `EvaluationResult`, `EvaluateOptions.EvaluationModel`, and `CustomProvider.AddEvaluationModel(id, IEvaluationModel)` still compile and are marked `[Obsolete]`. `RubricModels.FromLegacy(model)` wraps an `IEvaluationModel` as an `IRubricModel`. `ProviderBase.EvaluationModel` is gone; override `RubricModel` instead. `AnthropicProvider.EvaluationModel(id)` now returns the decision model; call `RubricModel(id)` for the rubric model.
 - Provider options namespaces: `ProviderOptionsResolver.Resolve` (maps to `resolveProviderOptions`) reads options that a model accepts under several `providerOptions` keys. With `ProviderOptionsResolution.First` the keys are aliases and the first present one wins as a whole (for example `amazonBedrock` then `bedrock`, or `googleVertex` then `vertex`). With `ProviderOptionsResolution.Merge` every present key is parsed and merged in order, so later keys win key by key (for example `openai` then `azure` for Azure chat). A key that is missing or `null` is skipped, duplicate keys are read once, and the `parse` callback you pass validates each present key and throws for an invalid one. The result carries the options and the keys that contributed. Claude on Google Vertex (`GoogleVertexAnthropicProvider`) reads the legacy `vertex` key at request level when `googleVertex` is absent. `googleVertex` wins when both are set, and provider metadata is written under `googleVertex` only when that key was used.
+
+## Gladia transcription metadata
+
+`GladiaProvider.Transcription().TranscribeAsync` returns the parsed Gladia response on `GladiaTranscriptionResult.ProviderMetadata` under `gladia`. The port reads only what it needs for the result (`result.metadata.audio_duration`, and `result.transcription.full_transcript`, `languages`, and `utterances` with `start`, `end`, and `text`). Everything else in the response passes through as Gladia returns it, so an unexpected add-on payload never fails a successful transcription.
+
+These values are available under `gladia`:
+
+- `status`: `done`. A failed job throws instead.
+- `result.metadata`: `audio_duration`, `number_of_distinct_channels`, `billing_time`, and `transcription_time`.
+- `result.transcription`: `full_transcript`, `languages`, and `utterances`, plus `sentences` and `subtitles` when the matching option is enabled.
+- `result.translation`, `result.summarization`, `result.named_entity_recognition`, `result.sentiment_analysis`, `result.audio_to_llm`, and `result.sentences`: the add-on results, when the matching option is enabled. Gladia deprecated `result.sentences`. The same content is in `result.transcription.sentences`.
+
+Each add-on reports `success`, `is_empty`, `exec_time`, and `error` next to its `results`. Check them before you read the results. `audio_to_llm` items keep their own `success`, `is_empty`, `exec_time`, and `error`.
+
+When Gladia reports `status: "error"`, `TranscribeAsync` throws `AiSdkException`. If the response has `error_code` (the HTTP status code of the failed request), the message is `Transcription job failed with error code <code>.`, otherwise `Transcription job failed.`

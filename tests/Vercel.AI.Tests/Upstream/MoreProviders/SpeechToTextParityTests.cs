@@ -10,6 +10,7 @@ using Vercel.AI.Hume;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.RevAI;
+using Vercel.AI.Tests.GladiaTranscriptionModel;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Util;
 
@@ -385,99 +386,10 @@ public sealed class SpeechToTextParityTests
     }
 
     [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass audio_url to pre-recorded endpoint", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_posts_the_uploaded_audio_url()
-    {
-        var handler = GladiaHandler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
-        using var body = JsonDocument.Parse(handler.Calls[1].Text);
-        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", body.RootElement.GetProperty("audio_url").GetString());
-        Assert.Equal("https://api.gladia.io/v2/pre-recorded", handler.Calls[1].Uri.AbsoluteUri);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send the API key when the result URL is on a foreign origin", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_strips_the_api_key_for_a_foreign_result_url()
-    {
-        var handler = GladiaHandler(foreign: true);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
-        var poll = handler.Calls.Single(call => call.Uri.Host == "cdn.evil.example");
-        Assert.Null(poll.Header("x-gladia-key"));
-        Assert.Null(poll.Header("Authorization"));
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass headers", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_sends_the_api_key_custom_headers_and_user_agent()
-    {
-        var handler = GladiaHandler();
-        var options = new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask };
-        options.Headers["Custom-Provider-Header"] = "provider-header-value";
-        var provider = GladiaProvider.Create(options, handler);
-        var request = new GladiaTranscriptionRequest { Headers = new Dictionary<string, string> { ["Custom-Request-Header"] = "request-header-value" } };
-        await provider.Transcription().TranscribeAsync(Audio(), request, CancellationToken.None);
-        var call = handler.Calls[1];
-        Assert.Equal("test-api-key", call.Header("x-gladia-key"));
-        Assert.Equal("application/json", call.Header("Content-Type"));
-        Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
-        Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains("ai-sdk/gladia/" + AiSdkVersion.Version, handler.Calls[0].Header("User-Agent"), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should extract the transcription text", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_returns_the_full_transcript()
-    {
-        var handler = GladiaHandler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
-        Assert.Equal(GladiaText, result.Text);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should preserve utterance metadata in provider metadata", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_keeps_utterance_metadata_on_the_raw_result()
-    {
-        var handler = GladiaHandler(metadata: true);
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
-        var utterances = result.ProviderMetadata.GetProperty("gladia").GetProperty("result").GetProperty("transcription").GetProperty("utterances");
-        Assert.Equal(0, utterances[0].GetProperty("speaker").GetInt32());
-        Assert.Equal(0.91, utterances[0].GetProperty("confidence").GetDouble(), 2);
-        Assert.Equal("en", utterances[0].GetProperty("language").GetString());
-        Assert.Equal("Galileo", utterances[0].GetProperty("words")[0].GetProperty("word").GetString());
-        Assert.Equal("speaker-1", utterances[1].GetProperty("speaker").GetString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should generate full response", Coverage = UpstreamCoverage.Covered)]
-    public async Task Gladia_returns_the_full_transcription_response()
-    {
-        var handler = GladiaHandler();
-        var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", Clock = () => DateTimeOffset.UnixEpoch, PollDelay = _ => Task.CompletedTask }, handler);
-        var result = await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
-        Assert.Equal(GladiaText, result.Text);
-        Assert.Equal("en", result.Language);
-        Assert.Equal(36.74, result.DurationInSeconds!.Value, 2);
-        Assert.Empty(result.Warnings);
-        Assert.Equal(11, result.Segments.Count);
-        Assert.Equal(0.14, result.Segments[0].StartSecond, 2);
-        Assert.Equal(5.341, result.Segments[0].EndSecond, 3);
-        Assert.StartsWith("Galileo was an American robotic space program", result.Segments[0].Text, StringComparison.Ordinal);
-        Assert.Equal("and became the first spacecraft to orbit Jupiter.", result.Segments[10].Text);
-        Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
-        Assert.Equal("default", result.Response.ModelId);
-        Assert.Contains("application/json", Header(result.Response.Headers, "content-type"), StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(JsonValueKind.Object, result.ProviderMetadata.ValueKind);
-    }
-
-    [Fact]
     [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > response headers::should include response headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Gladia_includes_the_result_timestamp_model_and_content_type()
     {
-        var handler = GladiaHandler();
+        var handler = GladiaFixtures.Handler();
         var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", Clock = () => DateTimeOffset.UnixEpoch, PollDelay = _ => Task.CompletedTask }, handler);
         var result = await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
@@ -489,7 +401,7 @@ public sealed class SpeechToTextParityTests
     [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > response metadata::should include timestamp and modelId", Coverage = UpstreamCoverage.Covered)]
     public async Task Gladia_includes_the_timestamp_and_model_id()
     {
-        var handler = GladiaHandler();
+        var handler = GladiaFixtures.Handler();
         var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", Clock = () => DateTimeOffset.UnixEpoch, PollDelay = _ => Task.CompletedTask }, handler);
         var result = await provider.Transcription().TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
@@ -702,47 +614,6 @@ public sealed class SpeechToTextParityTests
             }
 
             return ParityHandler.Json("{\"id\":\"test-id\",\"status\":\"in_progress\",\"language\":\"en\"}", headers);
-        });
-    }
-
-    private const string GladiaText = "Galileo was an American robotic space program that studied the planet Jupiter and its moons, as well as several other solar system bodies. Named after the Italian astronomer Galileo Galilei, the Galileo spacecraft consisted of an orbiter and an atmospheric entry probe. It was delivered into Earth orbit on October 18, 1989, by Space Shuttle Atlantis on the STS-34 mission. and arrived at Jupiter on December 7, 1995, after gravity-assist flybys of Venus and Earth, and became the first spacecraft to orbit Jupiter.";
-
-    private static string GladiaResult(bool metadata)
-    {
-        var speaker = metadata ? "\"speaker\":\"speaker-1\"" : "\"speaker\":1";
-        return "{\"status\":\"done\",\"result\":{\"metadata\":{\"audio_duration\":36.74},\"transcription\":{\"full_transcript\":" + JsonSerializer.Serialize(GladiaText) + ",\"languages\":[\"en\"],\"utterances\":["
-            + "{\"text\":\"Galileo was an American robotic space program that studied the planet Jupiter and its moons,\",\"start\":0.14,\"end\":5.341,\"speaker\":0,\"confidence\":0.91,\"language\":\"en\",\"words\":[{\"word\":\"Galileo\"}]},"
-            + "{\"text\":\"as well as several other solar system bodies.\",\"start\":5.662,\"end\":8.099," + speaker + "},"
-            + "{\"text\":\"Named after the Italian astronomer Galileo Galilei,\",\"start\":9.138,\"end\":12.122},"
-            + "{\"text\":\"the Galileo spacecraft consisted of an orbiter and an atmospheric entry probe.\",\"start\":12.419,\"end\":17.248},"
-            + "{\"text\":\"It was delivered into Earth orbit on October 18,\",\"start\":18.185,\"end\":20.919},"
-            + "{\"text\":\"1989,\",\"start\":20.92,\"end\":22.498},"
-            + "{\"text\":\"by Space Shuttle Atlantis on the STS-34 mission.\",\"start\":22.499,\"end\":25.966},"
-            + "{\"text\":\"and arrived at Jupiter on December 7,\",\"start\":26.4,\"end\":28.525},"
-            + "{\"text\":\"1995,\",\"start\":28.526,\"end\":29.847},"
-            + "{\"text\":\"after gravity-assist flybys of Venus and Earth,\",\"start\":30.247,\"end\":32.851},"
-            + "{\"text\":\"and became the first spacecraft to orbit Jupiter.\",\"start\":33.132,\"end\":35.816}"
-            + "]}}}";
-    }
-
-    private static ParityHandler GladiaHandler(bool foreign = false, bool metadata = false)
-    {
-        var resultUrl = foreign
-            ? "https://cdn.evil.example/v2/pre-recorded/result"
-            : "https://api.gladia.io/v2/pre-recorded/7b0137fd-5fd6-4d08-b9bf-4cdf9876797d";
-        return new ParityHandler(call =>
-        {
-            if (call.Uri.AbsolutePath.EndsWith("/upload", StringComparison.Ordinal))
-            {
-                return ParityHandler.Json("{\"audio_url\":\"https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6\"}");
-            }
-
-            if (call.Method == HttpMethod.Post)
-            {
-                return ParityHandler.Json("{\"id\":\"7b0137fd-5fd6-4d08-b9bf-4cdf9876797d\",\"result_url\":\"" + resultUrl + "\"}");
-            }
-
-            return ParityHandler.Json(GladiaResult(metadata));
         });
     }
 
