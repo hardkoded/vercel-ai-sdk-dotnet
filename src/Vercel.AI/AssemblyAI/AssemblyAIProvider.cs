@@ -24,10 +24,19 @@ public class AssemblyAIOptions : OpenAICompatibleOptions
     public Func<CancellationToken, Task>? PollDelay { get; set; }
 }
 
-/// <summary>Parsed AssemblyAI <c>error</c> object.</summary>
+/// <summary>
+/// Parsed AssemblyAI error. AssemblyAI documents a flat <c>{ "error": "Invalid API key" }</c> body for 4xx and 5xx responses.
+/// The nested <c>{ "error": { "message": "...", "code": 429 } }</c> body is still read.
+/// </summary>
 public sealed class AssemblyAIErrorData
 {
-    /// <summary>Creates parsed error data.</summary>
+    /// <summary>Creates parsed error data from the flat shape. <see cref="Code"/> is null.</summary>
+    public AssemblyAIErrorData(string message)
+    {
+        Message = message ?? string.Empty;
+    }
+
+    /// <summary>Creates parsed error data from the nested shape.</summary>
     public AssemblyAIErrorData(string message, int code)
     {
         Message = message ?? string.Empty;
@@ -37,8 +46,8 @@ public sealed class AssemblyAIErrorData
     /// <summary>Provider message. Nested JSON is left as text.</summary>
     public string Message { get; }
 
-    /// <summary>Provider error code.</summary>
-    public int Code { get; }
+    /// <summary>Provider error code. Null for the flat shape, which has none.</summary>
+    public int? Code { get; }
 }
 
 /// <summary>Result of parsing an AssemblyAI error body.</summary>
@@ -52,10 +61,10 @@ public sealed class AssemblyAIErrorParseResult
         RawValue = value;
     }
 
-    /// <summary>True when <c>error.message</c> and <c>error.code</c> were present.</summary>
+    /// <summary>True when the body had a flat <c>error</c> string, or a nested <c>error.message</c> and <c>error.code</c>.</summary>
     public bool Success { get; }
 
-    /// <summary>Parsed error.</summary>
+    /// <summary>Parsed error. Keys other than <c>error</c>, such as <c>status</c>, are dropped.</summary>
     public AssemblyAIErrorData? Value { get; }
 
     /// <summary>Same payload as <see cref="Value"/>.</summary>
@@ -65,15 +74,82 @@ public sealed class AssemblyAIErrorParseResult
 /// <summary>Parses AssemblyAI error JSON.</summary>
 public static class AssemblyAIError
 {
-    /// <summary>Parses a resource error body.</summary>
-    public static AssemblyAIErrorParseResult Parse(string json)
+    /// <summary>Parses an error body in the flat or the nested shape.</summary>
+    public static AssemblyAIErrorParseResult Parse(string? json)
     {
+        if (json == null)
+        {
+            return new AssemblyAIErrorParseResult(false, null);
+        }
+
+        try
+        {
+            using (var document = JsonDocument.Parse(json))
+            {
+                if (document.RootElement.ValueKind == JsonValueKind.Object
+                    && document.RootElement.TryGetProperty("error", out var error)
+                    && error.ValueKind == JsonValueKind.String)
+                {
+                    return new AssemblyAIErrorParseResult(true, new AssemblyAIErrorData(error.GetString() ?? string.Empty));
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return new AssemblyAIErrorParseResult(false, null);
+        }
+
         if (ProviderExchange.TryParseError(json, out var message, out var code))
         {
             return new AssemblyAIErrorParseResult(true, new AssemblyAIErrorData(message, code));
         }
 
         return new AssemblyAIErrorParseResult(false, null);
+    }
+
+    /// <summary>Maps parsed error data to the most informative message: the flat <c>error</c> string, or the nested <c>error.message</c>.</summary>
+    public static string ToMessage(AssemblyAIErrorData data)
+    {
+        if (data == null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
+        return data.Message;
+    }
+}
+
+/// <summary>Creates .NET API exceptions from AssemblyAI failed JSON responses.</summary>
+public static class AssemblyAIFailedResponseHandler
+{
+    /// <summary>
+    /// Parses an AssemblyAI error response and preserves the parsed body on <see cref="ApiException.ErrorData"/>.
+    /// A body that is not recognized falls back to <paramref name="statusText"/>, then to the body.
+    /// </summary>
+    public static ApiException Handle(
+        string responseBody,
+        int statusCode,
+        string url,
+        object? requestBodyValues,
+        IReadOnlyDictionary<string, string>? responseHeaders = null,
+        string? statusText = null)
+    {
+        var data = AssemblyAIError.Parse(responseBody).Value;
+        var message = data != null
+            ? AssemblyAIError.ToMessage(data)
+            : !string.IsNullOrEmpty(statusText) ? statusText! : JsonValues.ExtractErrorMessage(responseBody, statusCode);
+
+        return statusCode switch
+        {
+            400 => new BadRequestException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            401 => new AuthenticationException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            403 => new PermissionDeniedException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            404 => new NotFoundException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            422 => new UnprocessableEntityException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            429 => new RateLimitException(message, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            >= 500 and <= 599 => new InternalServerException(message, statusCode, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+            _ => new ApiException(message, statusCode, responseBody) { Url = url, RequestBodyValues = requestBodyValues, ResponseHeaders = responseHeaders, ErrorData = data },
+        };
     }
 }
 
@@ -301,7 +377,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers);
             var uploadContent = new ByteArrayContent(audio.Data);
             uploadContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-            var uploaded = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"), uploadContent, headers, cancellationToken).ConfigureAwait(false);
+            var uploaded = await SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/upload"), uploadContent, headers, null, cancellationToken).ConfigureAwait(false);
             string uploadUrl;
             using (var uploadDocument = JsonDocument.Parse(uploaded.Body))
             {
@@ -311,7 +387,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             var warnings = new List<ModelWarning>();
             var body = Body(AssemblyAIObject(request?.ProviderOptions), warnings);
             body["audio_url"] = uploadUrl;
-            var submitted = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), ProviderExchange.Json(body.ToJsonString()), headers, cancellationToken).ConfigureAwait(false);
+            var submitted = await SendAsync(HttpMethod.Post, ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript"), ProviderExchange.Json(body.ToJsonString()), headers, body, cancellationToken).ConfigureAwait(false);
             string transcriptId;
             using (var submitDocument = JsonDocument.Parse(submitted.Body))
             {
@@ -348,12 +424,24 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             }
         }
 
+        private async Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string?> headers, object? requestBodyValues, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await ProviderExchange.SendAsync(_provider._httpClient, method, uri, content, headers, cancellationToken).ConfigureAwait(false);
+            }
+            catch (ApiException exception) when (AssemblyAIError.Parse(exception.ResponseBody).Success)
+            {
+                throw AssemblyAIFailedResponseHandler.Handle(exception.ResponseBody!, exception.StatusCode, uri.ToString(), requestBodyValues, exception.ResponseHeaders);
+            }
+        }
+
         private async Task<ProviderExchangeResult> WaitForCompletionAsync(string transcriptId, IReadOnlyDictionary<string, string?> headers, AssemblyAIOptions? options, CancellationToken cancellationToken)
         {
             var url = ApiKeys.Combine(_provider.Options.BaseUrl, "/v2/transcript/" + Uri.EscapeDataString(transcriptId));
             while (true)
             {
-                var response = await ProviderExchange.SendAsync(_provider._httpClient, HttpMethod.Get, url, null, headers, cancellationToken).ConfigureAwait(false);
+                var response = await SendAsync(HttpMethod.Get, url, null, headers, null, cancellationToken).ConfigureAwait(false);
                 using (var document = JsonDocument.Parse(response.Body))
                 {
                     var status = ReadString(document.RootElement, "status");

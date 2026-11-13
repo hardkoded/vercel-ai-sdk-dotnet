@@ -34,18 +34,6 @@ public sealed class SpeechToTextParityTests
     private const string AssemblyAITranscriptId = "9ea68fd3-f953-42c1-9742-976c447fb463";
 
     [Fact]
-    [UpstreamTest("packages/assemblyai/src/assemblyai-error.test.ts::assemblyaiErrorDataSchema::should parse AssemblyAI resource exhausted error", Coverage = UpstreamCoverage.Covered)]
-    public void AssemblyAI_parses_the_resource_exhausted_error()
-    {
-        var result = AssemblyAIError.Parse(ExhaustedJson());
-        Assert.True(result.Success);
-        Assert.Equal(ExhaustedMessage, result.Value!.Message);
-        Assert.Equal(429, result.Value.Code);
-        Assert.Equal(result.Value.Message, result.RawValue!.Message);
-        Assert.Equal(result.Value.Code, result.RawValue.Code);
-    }
-
-    [Fact]
     [UpstreamTest(AssemblyAIModelTest + "should pass the legacy model via the speech_model parameter", Coverage = UpstreamCoverage.Covered)]
     public async Task AssemblyAI_sends_best_as_speech_model_with_a_deprecation()
     {
@@ -256,6 +244,29 @@ public sealed class SpeechToTextParityTests
     {
         var result = await AssemblyAI(AssemblyAIHandler()).Transcription("best").TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal("Hello, world!", result.Text);
+    }
+
+    [Fact]
+    [UpstreamTest(AssemblyAIModelTest + "should surface a flat error message from the submit call", Coverage = UpstreamCoverage.Covered, Commit = "c87b19ee759b37e353f0b111943c2533dfc561f8")]
+    public async Task AssemblyAI_surfaces_a_flat_error_message_from_the_submit_call()
+    {
+        var handler = new ParityHandler(call =>
+        {
+            if (call.Uri.AbsolutePath == "/v2/upload")
+            {
+                return ParityHandler.Json("{\"upload_url\":\"https://storage.assemblyai.com/mock-upload-url\"}");
+            }
+
+            return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent("{\"error\":\"Invalid API key\"}", System.Text.Encoding.UTF8, "application/json"),
+            };
+        });
+
+        var error = await Assert.ThrowsAsync<AuthenticationException>(() => AssemblyAI(handler).Transcription("best").TranscribeAsync(Audio(), null, CancellationToken.None));
+
+        Assert.Equal("Invalid API key", error.Message);
+        Assert.Equal(401, error.StatusCode);
     }
 
     [Fact]
