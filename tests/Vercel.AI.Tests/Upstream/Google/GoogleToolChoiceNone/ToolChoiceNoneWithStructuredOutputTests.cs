@@ -27,7 +27,7 @@ public sealed class ToolChoiceNoneWithStructuredOutputTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/google/src/google-tool-choice-none.test.ts::toolChoice none with structured output::$mode with $provider on $modelId", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/google/src/google-tool-choice-none.test.ts::toolChoice none with structured output::$mode with $provider on $modelId", Coverage = UpstreamCoverage.Covered, Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98")]
     public async Task Mode_with_provider_on_model(string provider, string modelId, string mode)
     {
         var usesResponseTool = modelId == "gemini-2.5-flash";

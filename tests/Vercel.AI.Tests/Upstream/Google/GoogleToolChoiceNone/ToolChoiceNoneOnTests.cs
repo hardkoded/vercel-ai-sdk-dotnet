@@ -33,7 +33,7 @@ public sealed class ToolChoiceNoneOnTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest("packages/google/src/google-tool-choice-none.test.ts::toolChoice none on %s::$mode with $provider, mixed=$mixed and toolChoice=$toolChoice", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/google/src/google-tool-choice-none.test.ts::toolChoice none on %s::$mode with $provider, mixed=$mixed and toolChoice=$toolChoice", Coverage = UpstreamCoverage.Covered, Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98")]
     public async Task Mode_with_provider_mixed_and_toolChoice(string modelId, string provider, bool mixed, string mode, string toolChoice)
     {
         var handler = GoogleToolChoiceNoneSupport.Handler(mode, new JsonArray { new JsonObject { ["text"] = "Hello." } });

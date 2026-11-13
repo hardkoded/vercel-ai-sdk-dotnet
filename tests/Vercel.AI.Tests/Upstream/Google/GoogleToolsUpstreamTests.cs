@@ -260,7 +260,7 @@ public sealed class GoogleToolsUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit provider tools with toolChoice none on Gemini 3", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit provider tools with toolChoice none on Gemini 3", Coverage = UpstreamCoverage.Covered, Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98")]
     public void Omits_provider_tools_with_none_on_Gemini_3()
     {
         var prepared = GoogleTools.Prepare(
@@ -281,7 +281,7 @@ public sealed class GoogleToolsUpstreamTests
     [InlineData("google.vertex_rag_store")]
     [InlineData("google.google_maps")]
     [InlineData("google.unknown")]
-    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit %s when toolChoice is none", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/google/src/google-prepare-tools.test.ts::should omit %s when toolChoice is none", Coverage = UpstreamCoverage.Covered, Commit = "32dc1d2d173f21bc1fda20f750400627fa5abb98")]
     public void Omits_provider_tool_when_toolChoice_is_none(string id)
     {
         foreach (var modelId in new[] { "gemini-2.5-flash", "gemini-3-flash-preview" })
