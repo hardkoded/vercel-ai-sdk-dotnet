@@ -36,6 +36,8 @@ public sealed class CohereLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    private Func<string> GenerateId => _provider.Options.GenerateId ?? (() => JsonValues.GenerateId(string.Empty));
+
     private Uri ChatUri => ApiKeys.Combine(_provider.Options.BaseUrl, "chat");
 
     /// <inheritdoc />
@@ -61,6 +63,23 @@ public sealed class CohereLanguageModel : ILanguageModel
                     else if (type == "thinking" && String(part, "thinking") is { Length: > 0 } thinking)
                     {
                         content.Add(new GeneratedReasoning(thinking));
+                    }
+                }
+            }
+
+            // Tool-sourced citations have no document to point at, so they are not emitted as sources.
+            if (message.TryGetProperty("citations", out var citations) && citations.ValueKind != JsonValueKind.Null)
+            {
+                if (citations.ValueKind != JsonValueKind.Array)
+                {
+                    throw new TypeValidationException("Cohere message citations must be an array.", citations.Clone());
+                }
+
+                foreach (var citation in citations.EnumerateArray())
+                {
+                    if (CohereCitation.Parse(citation).ToSource(GenerateId) is { } source)
+                    {
+                        content.Add(source);
                     }
                 }
             }
@@ -99,13 +118,14 @@ public sealed class CohereLanguageModel : ILanguageModel
         body["stream"] = true;
         var json = body.ToJsonString();
         var sse = await _provider.Http.OpenSseResponseAsync(ChatUri, json, _provider.Headers(options.Headers), cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, warnings, sse.Events, cancellationToken), json);
+        return sse.ToStreamResult(StreamAsync(options, warnings, sse.Events, GenerateId, cancellationToken), json);
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         List<CallWarning> warnings,
         IAsyncEnumerable<string> source,
+        Func<string> generateId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var events = source.GetAsyncEnumerator(cancellationToken);
@@ -113,7 +133,7 @@ public sealed class CohereLanguageModel : ILanguageModel
         {
             var hasEvent = await events.MoveNextAsync().ConfigureAwait(false);
             yield return new StreamStartStreamPart(warnings);
-            var state = new StreamState(options.IncludeRawChunks);
+            var state = new StreamState(options.IncludeRawChunks, generateId);
             while (hasEvent)
             {
                 foreach (var part in state.Read(events.Current))
@@ -330,38 +350,56 @@ public sealed class CohereLanguageModel : ILanguageModel
         };
     }
 
-    // Input and output come from usage.tokens. The usage object is kept unchanged as raw usage.
+    // Input and output come from usage.tokens, which Cohere may leave out. Billed units are a different measure
+    // than tokens, so they are only validated and kept in the raw usage. The usage object is kept unchanged as raw usage.
     private static LanguageModelUsage Usage(JsonElement usage)
     {
-        if (usage.ValueKind != JsonValueKind.Object || !usage.TryGetProperty("tokens", out var tokens))
+        if (usage.ValueKind == JsonValueKind.Null)
         {
-            throw new TypeValidationException("Cohere usage must contain tokens.", usage.Clone());
+            return new LanguageModelUsage(null, null, null);
         }
 
-        var input = Count(tokens, "input_tokens", usage);
-        var output = Count(tokens, "output_tokens", usage);
+        if (usage.ValueKind != JsonValueKind.Object)
+        {
+            throw new TypeValidationException("Cohere usage must be an object.", usage.Clone());
+        }
+
+        int? input = null;
+        int? output = null;
+        if (usage.TryGetProperty("tokens", out var tokens) && tokens.ValueKind != JsonValueKind.Null)
+        {
+            input = Count(tokens, "input_tokens", usage);
+            output = Count(tokens, "output_tokens", usage);
+        }
+
         if (usage.TryGetProperty("billed_units", out var billed) && billed.ValueKind != JsonValueKind.Null)
         {
             Count(billed, "input_tokens", usage);
             Count(billed, "output_tokens", usage);
         }
 
-        if (usage.TryGetProperty("cached_tokens", out var cached) && cached.ValueKind is not (JsonValueKind.Null or JsonValueKind.Number))
+        int? cacheRead = null;
+        if (usage.TryGetProperty("cached_tokens", out var cached) && cached.ValueKind != JsonValueKind.Null)
         {
-            throw new TypeValidationException("Cohere usage.cached_tokens must be a number.", usage.Clone());
+            cacheRead = cached.ValueKind == JsonValueKind.Number ? cached.GetInt32() : throw new TypeValidationException("Cohere usage.cached_tokens must be a number.", usage.Clone());
         }
 
-        return new LanguageModelUsage(input, output, null, raw: usage.Clone());
+        return new LanguageModelUsage(input, output, null, cacheRead, raw: usage.Clone());
     }
 
-    private static int Count(JsonElement owner, string name, JsonElement usage)
+    private static int? Count(JsonElement owner, string name, JsonElement usage)
     {
-        if (owner.ValueKind != JsonValueKind.Object || !owner.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number)
+        if (owner.ValueKind != JsonValueKind.Object)
         {
             throw new TypeValidationException("Cohere usage " + name + " must be a number.", usage.Clone());
         }
 
-        return value.GetInt32();
+        if (!owner.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        return value.ValueKind == JsonValueKind.Number ? value.GetInt32() : throw new TypeValidationException("Cohere usage " + name + " must be a number.", usage.Clone());
     }
 
     private static string? String(JsonElement element, string name)
@@ -374,14 +412,16 @@ public sealed class CohereLanguageModel : ILanguageModel
     private sealed class StreamState
     {
         private readonly bool _includeRawChunks;
+        private readonly Func<string> _generateId;
         private string? _toolCallId;
         private string? _toolName;
         private StringBuilder? _toolArguments;
         private bool _reasoningOpen;
 
-        public StreamState(bool includeRawChunks)
+        public StreamState(bool includeRawChunks, Func<string> generateId)
         {
             _includeRawChunks = includeRawChunks;
+            _generateId = generateId;
         }
 
         public FinishReason FinishReason { get; private set; } = FinishReason.Interrupted;
@@ -440,6 +480,28 @@ public sealed class CohereLanguageModel : ILanguageModel
                     parts.Add(_reasoningOpen ? new ReasoningEndStreamPart(id) : new TextEndStreamPart(id));
                     _reasoningOpen = false;
                     break;
+                case "citation-start":
+                    // The event can arrive without citations, and a single citation may be sent instead of an array.
+                    // Tool-only citations have no document, so they are not emitted as sources (matching DoGenerate).
+                    try
+                    {
+                        if (CitationsOf(chunk) is { } citationValue)
+                        {
+                            foreach (var citation in CohereCitation.ParseMany(citationValue))
+                            {
+                                if (citation.ToSource(_generateId) is { } source)
+                                {
+                                    parts.Add(new DocumentSourceStreamPart(source.Id, source.MediaType, source.Title, source.Filename, source.ProviderMetadata));
+                                }
+                            }
+                        }
+                    }
+                    catch (TypeValidationException error)
+                    {
+                        Fail(parts, error);
+                    }
+
+                    break;
                 case "tool-call-start":
                     var call = ToolCall(chunk);
                     _toolCallId = String(call, "id");
@@ -479,6 +541,18 @@ public sealed class CohereLanguageModel : ILanguageModel
             }
 
             return parts;
+        }
+
+        private static JsonElement? CitationsOf(JsonElement chunk)
+        {
+            if (!chunk.TryGetProperty("delta", out var delta) || delta.ValueKind != JsonValueKind.Object
+                || !delta.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object
+                || !message.TryGetProperty("citations", out var citations) || citations.ValueKind == JsonValueKind.Null)
+            {
+                return null;
+            }
+
+            return citations;
         }
 
         private static JsonElement Content(JsonElement chunk)
