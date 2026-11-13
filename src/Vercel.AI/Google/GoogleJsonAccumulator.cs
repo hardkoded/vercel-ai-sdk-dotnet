@@ -129,6 +129,11 @@ public sealed class GoogleJsonAccumulator
             return string.Empty;
         }
 
+        if (!HasContiguousIndexes(_root, segments))
+        {
+            return string.Empty;
+        }
+
         var existing = Get(_root, segments);
         if (arg.HasString && existing is { Kind: BagKind.String })
         {
@@ -368,6 +373,33 @@ public sealed class GoogleJsonAccumulator
         return current;
     }
 
+    // Every array index on the path must be an existing element or the next one. Arrays are
+    // streamed in order, and a sparse index would make Write emit one null per hole, so a tiny
+    // response could allocate without bound. A missing or null parent is replaced by a new array,
+    // so it starts at 0.
+    private static bool HasContiguousIndexes(Bag root, IReadOnlyList<Segment> segments)
+    {
+        Bag? current = root;
+        for (var i = 0; i < segments.Count; i++)
+        {
+            var segment = segments[i];
+            if (segment.Index is { } index)
+            {
+                int? length = current == null || current.Kind == BagKind.Null
+                    ? 0
+                    : current.Kind == BagKind.Array ? current.ItemCount : null;
+                if (length is { } known && index > known)
+                {
+                    return false;
+                }
+            }
+
+            current = current?.Child(segment);
+        }
+
+        return true;
+    }
+
     private static void Set(Bag root, IReadOnlyList<Segment> segments, Bag value)
     {
         var current = root;
@@ -449,6 +481,8 @@ public sealed class GoogleJsonAccumulator
         {
             return new Bag { Kind = BagKind.Null };
         }
+
+        public int ItemCount => _items.Count;
 
         public Bag? Child(Segment segment)
         {
