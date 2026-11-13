@@ -90,7 +90,7 @@ public sealed class DoGenerateStatefulChainingTests
     [Theory]
     [InlineData("gemini-4-hydrogen")]
     [InlineData("gemini-4-hydrogen-eap")]
-    [UpstreamTest(Prefix + "passes the xhigh thinking level for %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "passes the xhigh thinking level for %s", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
     public async Task Passes_the_xhigh_thinking_level_for_model_id(string modelId)
     {
         var handler = Basic();

@@ -18,7 +18,7 @@ public sealed class DoGenerateTopLevelReasoningOptionGemini4HydrogenTests
     [InlineData("medium")]
     [InlineData("high")]
     [InlineData("xhigh")]
-    [UpstreamTest(Prefix + "passes reasoning \"%s\" without a compatibility warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "passes reasoning \"%s\" without a compatibility warning", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
     public void Passes_reasoning_without_a_compatibility_warning(string reasoning)
     {
         var options = Hello();
@@ -31,7 +31,7 @@ public sealed class DoGenerateTopLevelReasoningOptionGemini4HydrogenTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes an explicit xhigh thinking level instead of portable reasoning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "passes an explicit xhigh thinking level instead of portable reasoning", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
     public void Passes_an_explicit_xhigh_thinking_level_instead_of_portable_reasoning()
     {
         var options = Hello();
@@ -45,7 +45,7 @@ public sealed class DoGenerateTopLevelReasoningOptionGemini4HydrogenTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "leaves the thinking level unset for the API default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "leaves the thinking level unset for the API default", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
     public void Leaves_the_thinking_level_unset_for_the_API_default()
     {
         var prepared = GoogleRequest.Prepare("gemini-4-hydrogen", "google.generative-ai", Hello(), false);
