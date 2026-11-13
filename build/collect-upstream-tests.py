@@ -81,6 +81,7 @@ DOTNET_PROJECTS = {
     "quiverai": "Vercel.AI.QuiverAI",
     "replicate": "Vercel.AI.Replicate",
     "revai": "Vercel.AI.RevAI",
+    "scaledown": "Vercel.AI.ScaleDown",
     "tencent": "Vercel.AI.Tencent",
     "togetherai": "Vercel.AI.TogetherAI",
     "typesafe-ai": "Vercel.AI.TypeSafeAi",

@@ -58,6 +58,14 @@ const pages = [
         target: "/typesafe-ai/",
     },
     {
+        source: "docs/articles/scaledown.md",
+        output: "scaledown.md",
+        title: "ScaleDown",
+        label: "ScaleDown",
+        legacy: "articles/scaledown.html",
+        target: "/scaledown/",
+    },
+    {
         source: "docs/articles/compatibility.md",
         output: "compatibility.md",
         title: "Compatibility",
