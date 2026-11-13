@@ -38,6 +38,44 @@ public sealed class DoGenerateBasicTextResponseTests
 
     [Fact]
     [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should omit reasoning effort updates for models before GPT-6",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_omit_reasoning_effort_updates_for_models_before_GPT_6()
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-5.6", new LanguageModelCallOptions
+        {
+            Prompt = OpenAIUpstream.Hello().Prompt,
+            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffortUpdate":"high"}"""),
+        }, false);
+
+        OpenAIUpstream.Equal(prepared.Body["input"], """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]""");
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("reasoningEffortUpdate", warning.Feature);
+        Assert.Equal("Configuration updates are only supported by GPT-6 and later models", warning.Details);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should omit reasoning effort updates with incompatible automatic context management",
+        Coverage = UpstreamCoverage.Covered)]
+    public void Should_omit_reasoning_effort_updates_with_incompatible_automatic_context_management()
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare("gpt-6-astra", new LanguageModelCallOptions
+        {
+            Prompt = OpenAIUpstream.Hello().Prompt,
+            ProviderOptions = OpenAIUpstream.OpenAIOptionsJson("""{"reasoningEffortUpdate":"high","contextManagement":[{"type":"compaction","compactThreshold":1000}]}"""),
+        }, false);
+
+        OpenAIUpstream.Equal(prepared.Body["input"], """[{ "role": "user", "content": [{ "type": "input_text", "text": "Hello" }] }]""");
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("reasoningEffortUpdate", warning.Feature);
+        Assert.Equal("Configuration updates require standard reasoning mode without automatic compaction or automatic truncation", warning.Details);
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should send a 12h promptCacheOptions ttl and prewarm",
         Coverage = UpstreamCoverage.Covered)]
     public void Should_send_a_12h_promptCacheOptions_ttl_and_prewarm()
