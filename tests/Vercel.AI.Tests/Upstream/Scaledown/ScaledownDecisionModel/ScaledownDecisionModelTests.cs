@@ -16,9 +16,10 @@ namespace Vercel.AI.Tests.Upstream.Scaledown.ScaledownDecisionModel;
 public sealed class ScaledownDecisionModelTests
 {
     private const string Prefix = "packages/scaledown/src/scaledown-decision-model.test.ts::";
+    private const string UpstreamCommit = "c6db7181764bdfe0b6a9d8a161755873299e3105";
 
     [Fact]
-    [UpstreamTest(Prefix + "maps all three question types, native results, usage, and metadata", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "maps all three question types, native results, usage, and metadata", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Maps_all_three_question_types_native_results_usage_and_metadata()
     {
         var server = new ScaleDownServer();
@@ -52,7 +53,7 @@ public sealed class ScaledownDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves JSON state, structured rubrics, and boolean criteria as text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "preserves JSON state, structured rubrics, and boolean criteria as text", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Preserves_JSON_state_structured_rubrics_and_boolean_criteria_as_text()
     {
         var server = new ScaleDownServer();
@@ -73,7 +74,7 @@ public sealed class ScaledownDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "encodes document input alongside text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "encodes document input alongside text", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Encodes_document_input_alongside_text()
     {
         var server = new ScaleDownServer();
@@ -90,6 +91,7 @@ public sealed class ScaledownDecisionModelTests
     [UpstreamTest(
         Prefix + "passes custom settings, call headers, abort signal, and model ID",
         Coverage = UpstreamCoverage.Partial,
+        Commit = UpstreamCommit,
         Note = "HttpClient links the cancellation token, so the test cannot assert that the same token reaches the handler. It asserts that a canceled token stops the call.")]
     public async Task Passes_custom_settings_call_headers_abort_signal_and_model_ID()
     {
@@ -119,6 +121,7 @@ public sealed class ScaledownDecisionModelTests
     [UpstreamTest(
         Prefix + "restores workflow configuration and falls back to environment authentication",
         Coverage = UpstreamCoverage.Partial,
+        Commit = UpstreamCommit,
         Note = "The default provider (scaledown and its scaleDown alias) is ScaleDownProvider.Default, which cannot take a test handler, so the environment fallback is asserted on a provider created without an API key.")]
     public async Task Restores_workflow_configuration_and_falls_back_to_environment_authentication()
     {
@@ -153,7 +156,7 @@ public sealed class ScaledownDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns about unsupported generation settings and provider options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "warns about unsupported generation settings and provider options", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Warns_about_unsupported_generation_settings_and_provider_options()
     {
         var server = new ScaleDownServer();
@@ -176,7 +179,7 @@ public sealed class ScaledownDecisionModelTests
 
     [Theory]
     [MemberData(nameof(UnsupportedScoreCriteria))]
-    [UpstreamTest(Prefix + "rejects unsupported score criteria %j before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects unsupported score criteria %j before sending a request", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Rejects_unsupported_score_criteria_before_sending_a_request(List<object?> criteria)
     {
         var server = new ScaleDownServer();
@@ -187,7 +190,7 @@ public sealed class ScaledownDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects unsupported questions and files before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects unsupported questions and files before sending a request", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Rejects_unsupported_questions_and_files_before_sending_a_request()
     {
         var server = new ScaleDownServer();
@@ -207,7 +210,7 @@ public sealed class ScaledownDecisionModelTests
     [Theory]
     [InlineData("""{"detail":"Insufficient credits"}""", "Insufficient credits")]
     [InlineData("""{"detail":[{"msg":"Invalid model"}]}""", "Invalid model")]
-    [UpstreamTest(Prefix + "surfaces API errors: %j", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "surfaces API errors: %j", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Surfaces_API_errors(string body, string message)
     {
         var server = new ScaleDownServer { Status = HttpStatusCode.UnprocessableEntity, ResponseBody = body };
@@ -217,7 +220,7 @@ public sealed class ScaledownDecisionModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects a malformed successful response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects a malformed successful response", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task Rejects_a_malformed_successful_response()
     {
         var server = new ScaleDownServer { ResponseBody = """{"answers":{"category":{"type":"choice"}}}""" };
