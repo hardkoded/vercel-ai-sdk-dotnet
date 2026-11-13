@@ -825,6 +825,64 @@ Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool
 
 Tool results whose output is content with images (`input_image` in `function_call_output`) are not sent, because `ToolModelMessage` has no multipart content ([#327](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/327)).
 
+## DeepSeek Responses API
+
+`DeepSeekProvider.ResponsesModel(modelId)` creates a language model for DeepSeek's [Responses API](https://api-docs.deepseek.com/guides/responses_api) (`POST {base}/responses`), like `deepSeek.responses(modelId)` upstream. The provider id is `deepseek.responses`. `LanguageModel(modelId)` still returns the Chat Completions model. The Responses model supports `deepseek-flash` and `deepseek-v4-pro`, streaming, function tools, `JsonSchema` structured output (`JsonSchemaName` is the schema name, `response` when not set) and `JsonResponse`, `ToolChoice` modes, and DeepSeek's server-side web search.
+
+```csharp
+using Vercel.AI.DeepSeek;
+using Vercel.AI.OpenAICompatible;
+
+var deepSeek = DeepSeekProvider.Create(new OpenAICompatibleOptions { ApiKey = Environment.GetEnvironmentVariable("DEEPSEEK_API_KEY") });
+var model = deepSeek.ResponsesModel("deepseek-v4-pro");
+```
+
+The Responses API is stateless. A request sends the full conversation history, including reasoning and previous web search calls, on every call.
+
+### Provider options
+
+Pass these under the `deepseek` key of `ProviderOptions`.
+
+- **thinking** _object_: set `type` to `disabled` to turn off thinking mode. It is sent as `reasoning.effort: "none"`. `type` is `enabled` or `disabled`; thinking is on by default.
+- **reasoningEffort** _string_: `low`, `high`, or `max`. It controls the thinking strength when thinking is on. The top-level `Reasoning` option maps to the same values: `minimal` and `low` become `low`, `medium` and `high` become `high`, and `xhigh` and `max` become `max`. `none` is sent as `none`. A level that changes adds a `compatibility` warning. A `reasoningEffort` option wins and adds no warning.
+- **topLogprobs** _number_: the number of most likely tokens to return at each token position (0 to 20). The log probabilities come back in `providerMetadata.deepseek.logprobs`.
+- **userId** _string_: an opaque end-user identifier, sent as `user`. It must match `^[a-zA-Z0-9_-]+$` and has at most 512 characters.
+
+An invalid option throws an `InvalidArgumentError`.
+
+An image file part accepts the provider option `deepseek.imageDetail` (`low`, `high`, `original`, or `auto`) as `FileContentPart.ProviderOptions`. A file part with a provider reference sends `file_id`. The `fileData` option is not supported with the Responses API and throws an `UnsupportedFunctionalityException`. Image URLs are at most 8192 characters. Inline images must be JPEG, PNG, GIF, or WebP. A user file part that is not an image is left out with an `unsupported` warning (`user message part type: file`).
+
+The Responses API does not support `StopSequences`, `FrequencyPenalty`, `PresencePenalty`, `TopK`, `Seed`, or strict function tools. The provider omits them and adds an `unsupported` warning.
+
+DeepSeek rejects `ToolChoice.Required` and forced tool choices while thinking is on, which is the default. Set `thinking.type` to `disabled` to use them. `ToolChoice.Auto` and `ToolChoice.None` work in both modes.
+
+### Web search
+
+DeepSeek can search the web and read pages on the server while it generates a response. Add `DeepSeekTools.WebSearch()` (`deepseek.web_search`) to a `deepseek-v4-pro` Responses model. DeepSeek ignores the tool on `deepseek-flash`.
+
+```csharp
+var result = await AiClient.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = deepSeek.ResponsesModel("deepseek-v4-pro"),
+    Prompt = "What is the official Python website?",
+    Tools = new[] { DeepSeekTools.WebSearch() },
+});
+
+Console.WriteLine(result.Text);
+```
+
+`DeepSeekTools.WebSearch(name)` takes the name the tool goes by in the call and its result. It defaults to `web_search`.
+
+Each server-side search comes back as a `GeneratedToolCall` with `ProviderExecuted` set and a `GeneratedToolResult` named after the tool. The result is `{ status, action }`, where `action` is the search DeepSeek ran, such as `{ type: "search", queries: [...] }`. The raw DeepSeek `web_search_call` item stays in the tool call's provider metadata (`deepseek.webSearchCall`). A later turn sends it back, so DeepSeek restores its search results. A client tool that happens to be named `web_search` is still sent as a function call. A provider-executed call without that metadata is left out of the next request. Another provider-defined tool id is left out with an `unsupported` warning (`provider-defined tool <id>`). A `ToolChoice.Tool(name)` that selects a provider-defined tool is not sent and adds an `unsupported` warning (`toolChoice for provider-defined tool <id>`).
+
+DeepSeek bills successful searches and page reads per operation. The counts are in `providerMetadata.deepseek.serverToolUse` (`toolSearch` and `toolFetch`) and in `Usage.Raw` (`server_tool_use`). See [DeepSeek pricing](https://api-docs.deepseek.com/quick_start/pricing) for the rates.
+
+### Provider metadata
+
+`providerMetadata.deepseek` holds `responseId`, `serverToolUse` when a server-side tool ran, and `logprobs` when `topLogprobs` is set. A reasoning part carries the DeepSeek reasoning item id in `providerMetadata.deepseek.itemId`. The stream sends it on `reasoning-start` and `reasoning-end`.
+
+A failed response (`status: "failed"` or an `error` object) throws an `ApiException` with the DeepSeek message. Its status code comes from the error code: `rate_limit_exceeded` and `rate_limit_error` are 429 and retryable, `insufficient_quota` is 429, `authentication_error` and `invalid_api_key` are 401, `permission_error` is 403, `bad_request`, `context_length_exceeded`, and `invalid_request_error` are 400, `timeout` and `timeout_error` are 504 and retryable, and every other code is 500 and retryable. A stream reports the same failure as an `error` part and ends with the `error` finish reason.
+
 ## QuiverAI reference images
 
 The SVG edit provider option `quiverai.referenceImages` takes up to four `{ "url" }` or `{ "base64" }` objects. URL references must use HTTP or HTTPS. Base64 references must decode to PNG, JPEG, WebP, GIF, or SVG data. Use `QuiverAIImageReference.Prepare` to convert binary, data URL, or URL inputs into this shape. It returns a `QuiverAIImageReference` with exactly one of `Url` and `Base64` set, and it serializes to the JSON shape above.

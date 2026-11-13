@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [DeepSeekProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L45)
 
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_FileStore_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekProvider_FileStore"></a>
@@ -140,4 +140,28 @@ Returns a file store.
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L39)
+
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_ResponsesModel_"></a>
+<a id="Vercel_AI_DeepSeek_DeepSeekProvider_ResponsesModel_System_String_"></a>
+
+### ResponsesModel(string)
+
+
+```csharp
+public DeepSeekResponsesLanguageModel ResponsesModel(string modelId)
+```
+
+
+Creates a model that uses the Responses API. It supports server-side tools such as [WebSearch(string)](/api/Vercel.AI.DeepSeek/DeepSeekTools/#Vercel_AI_DeepSeek_DeepSeekTools_WebSearch_System_String_).
+The provider id is `deepseek.responses`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [DeepSeekResponsesLanguageModel](/api/Vercel.AI.DeepSeek/DeepSeekResponsesLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekProvider.cs#L33)
