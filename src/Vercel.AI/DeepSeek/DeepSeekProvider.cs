@@ -26,6 +26,15 @@ public sealed class DeepSeekProvider : OpenAICompatibleProvider
     {
     }
 
+    /// <summary>
+    /// Creates a model that uses the Responses API. It supports server-side tools such as <see cref="DeepSeekTools.WebSearch"/>.
+    /// The provider id is <c>deepseek.responses</c>.
+    /// </summary>
+    public DeepSeekResponsesLanguageModel ResponsesModel(string modelId)
+    {
+        return new DeepSeekResponsesLanguageModel(this, modelId);
+    }
+
     /// <inheritdoc />
     public override IFileStore FileStore()
     {

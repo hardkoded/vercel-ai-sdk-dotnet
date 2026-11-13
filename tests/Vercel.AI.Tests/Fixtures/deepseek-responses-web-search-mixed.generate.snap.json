@@ -1,0 +1,195 @@
+{
+ "content": [
+  {
+   "providerMetadata": {
+    "deepseek": {
+     "itemId": "rs_1"
+    }
+   },
+   "text": "Let me search.",
+   "type": "reasoning"
+  },
+  {
+   "input": "{}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "deepseek": {
+     "webSearchCall": {
+      "action": {
+       "queries": [
+        "python official website",
+        "ws_call_id=ws_1"
+       ],
+       "type": "search"
+      },
+      "id": "ws_1",
+      "status": "completed",
+      "type": "web_search_call"
+     }
+    }
+   },
+   "toolCallId": "ws_1",
+   "toolName": "web_search",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "action": {
+     "queries": [
+      "python official website",
+      "ws_call_id=ws_1"
+     ],
+     "type": "search"
+    },
+    "status": "completed"
+   },
+   "toolCallId": "ws_1",
+   "toolName": "web_search",
+   "type": "tool-result"
+  },
+  {
+   "text": "https://python.org",
+   "type": "text"
+  },
+  {
+   "input": "{\"q\":\"x\"}",
+   "toolCallId": "call_1",
+   "toolName": "lookup",
+   "type": "tool-call"
+  }
+ ],
+ "finishReason": {
+  "raw": "completed",
+  "unified": "tool-calls"
+ },
+ "providerMetadata": {
+  "deepseek": {
+   "responseId": "resp_1",
+   "serverToolUse": {
+    "toolFetch": 2,
+    "toolSearch": 1
+   }
+  }
+ },
+ "request": {
+  "body": {
+   "input": [
+    {
+     "content": [
+      {
+       "text": "Hello",
+       "type": "input_text"
+      }
+     ],
+     "role": "user"
+    }
+   ],
+   "model": "deepseek-v4-pro",
+   "tools": [
+    {
+     "type": "web_search"
+    }
+   ]
+  }
+ },
+ "response": {
+  "body": {
+   "created_at": 1793084842,
+   "id": "resp_1",
+   "model": "deepseek-flash",
+   "object": "response",
+   "output": [
+    {
+     "content": [
+      {
+       "text": "Let me search.",
+       "type": "reasoning_text"
+      }
+     ],
+     "id": "rs_1",
+     "type": "reasoning"
+    },
+    {
+     "action": {
+      "queries": [
+       "python official website",
+       "ws_call_id=ws_1"
+      ],
+      "type": "search"
+     },
+     "id": "ws_1",
+     "status": "completed",
+     "type": "web_search_call"
+    },
+    {
+     "content": [
+      {
+       "text": "https://python.org",
+       "type": "output_text"
+      }
+     ],
+     "id": "msg_1",
+     "type": "message"
+    },
+    {
+     "arguments": "{\"q\":\"x\"}",
+     "call_id": "call_1",
+     "id": "fc_1",
+     "name": "lookup",
+     "type": "function_call"
+    }
+   ],
+   "status": "completed",
+   "usage": {
+    "input_tokens": 3475,
+    "input_tokens_details": {
+     "cached_tokens": 512
+    },
+    "output_tokens": 54,
+    "output_tokens_details": {
+     "reasoning_tokens": 10
+    },
+    "server_tool_use": {
+     "tool_fetch": 2,
+     "tool_search": 1
+    },
+    "total_tokens": 3529
+   }
+  },
+  "headers": {
+   "content-length": "762",
+   "content-type": "application/json"
+  },
+  "id": "resp_1",
+  "modelId": "deepseek-flash",
+  "timestamp": "2026-10-27T07:07:22.000Z"
+ },
+ "usage": {
+  "inputTokens": {
+   "cacheRead": 512,
+   "noCache": 2963,
+   "total": 3475
+  },
+  "outputTokens": {
+   "reasoning": 10,
+   "text": 44,
+   "total": 54
+  },
+  "raw": {
+   "input_tokens": 3475,
+   "input_tokens_details": {
+    "cached_tokens": 512
+   },
+   "output_tokens": 54,
+   "output_tokens_details": {
+    "reasoning_tokens": 10
+   },
+   "server_tool_use": {
+    "tool_fetch": 2,
+    "tool_search": 1
+   },
+   "total_tokens": 3529
+  }
+ },
+ "warnings": []
+}

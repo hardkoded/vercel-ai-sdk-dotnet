@@ -1,0 +1,273 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "8ee252be-c361-4eb3-9972-2cc047e95a35",
+  "modelId": "deepseek-flash",
+  "timestamp": "2026-11-09T22:25:09.000Z",
+  "type": "response-metadata"
+ },
+ {
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "providerMetadata": {
+   "deepseek": {
+    "itemId": "d232e805-7826-4712-94ce-8f48657e4ffe"
+   }
+  },
+  "type": "reasoning-start"
+ },
+ {
+  "delta": "We",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " need",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " answer",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " one",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " sentence",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Need",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " explain",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Rayleigh",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " scattering",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Conc",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": "ise",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " Ensure",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " one",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " sentence",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": " only",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "delta": ".",
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "type": "reasoning-delta"
+ },
+ {
+  "id": "d232e805-7826-4712-94ce-8f48657e4ffe",
+  "providerMetadata": {
+   "deepseek": {
+    "itemId": "d232e805-7826-4712-94ce-8f48657e4ffe"
+   }
+  },
+  "type": "reasoning-end"
+ },
+ {
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-start"
+ },
+ {
+  "delta": "The",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " sky",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " appears",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " blue",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " because",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " air",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " molecules",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " scatter",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " shorter",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " blue",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " wavelengths",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " of",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " sunlight",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " much",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " more",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " strongly",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " than",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " longer",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " red",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": " wavelengths",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "delta": ".",
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-delta"
+ },
+ {
+  "id": "81776cdd-5ccf-4437-b08d-ca348047754b",
+  "type": "text-end"
+ },
+ {
+  "finishReason": {
+   "raw": "completed",
+   "unified": "stop"
+  },
+  "providerMetadata": {
+   "deepseek": {
+    "responseId": "8ee252be-c361-4eb3-9972-2cc047e95a35"
+   }
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "noCache": 41,
+    "total": 41
+   },
+   "outputTokens": {
+    "reasoning": 19,
+    "text": 22,
+    "total": 41
+   },
+   "raw": {
+    "input_tokens": 41,
+    "input_tokens_details": {
+     "cached_tokens": 0
+    },
+    "output_tokens": 41,
+    "output_tokens_details": {
+     "reasoning_tokens": 19
+    },
+    "total_tokens": 82
+   }
+  }
+ }
+]
