@@ -249,8 +249,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         if (options is GladiaOptions gladia)
         {
-            ValidatePollSetting("PollIntervalMs", gladia.PollIntervalMs);
-            ValidatePollSetting("PollTimeoutMs", gladia.PollTimeoutMs);
+            ValidatePollingSettings(gladia.PollIntervalMs, gladia.PollTimeoutMs);
         }
 
         options.ProviderName = ProviderId;
@@ -262,6 +261,12 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options.ApiKeyHeaderName = "x-gladia-key";
         options.UserAgent = ProviderExchange.UserAgent("gladia");
         return options;
+    }
+
+    private static void ValidatePollingSettings(int? pollIntervalMs, int? pollTimeoutMs)
+    {
+        ValidatePollSetting("PollIntervalMs", pollIntervalMs);
+        ValidatePollSetting("PollTimeoutMs", pollTimeoutMs);
     }
 
     private static void ValidatePollSetting(string parameter, int? value)
@@ -309,8 +314,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
 
             var options = _provider.Options as GladiaOptions;
-            ValidatePollSetting("PollIntervalMs", request?.PollIntervalMs);
-            ValidatePollSetting("PollTimeoutMs", request?.PollTimeoutMs);
+            ValidatePollingSettings(request?.PollIntervalMs, request?.PollTimeoutMs);
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = Headers(request, includeKey: true);
             var form = new MultipartFormDataContent();

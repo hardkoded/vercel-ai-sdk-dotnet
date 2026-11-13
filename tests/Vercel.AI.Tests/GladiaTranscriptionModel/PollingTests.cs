@@ -105,7 +105,7 @@ public sealed class PollingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves polling settings from providerOptions.gladia before provider settings", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(Prefix + "resolves polling settings from providerOptions.gladia before provider settings", Coverage = UpstreamCoverage.Partial, Note = "The port passes the per-call settings as GladiaTranscriptionRequest properties; it has no providerOptions bag.", Commit = Commit)]
     public async Task Resolves_polling_settings_from_providerOptions_gladia_before_provider_settings()
     {
         var now = 0;
@@ -140,7 +140,7 @@ public sealed class PollingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "stops before the first poll when the signal is already aborted", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(Prefix + "stops before the first poll when the signal is already aborted", Coverage = UpstreamCoverage.Partial, Note = "A custom abort reason (rejects.toBe(reason)) has no .NET equivalent; the test checks the cancelled token instead.", Commit = Commit)]
     public async Task Stops_before_the_first_poll_when_the_signal_is_already_aborted()
     {
         using var source = new CancellationTokenSource();
