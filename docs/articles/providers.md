@@ -685,6 +685,17 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 
 `FalImageModel.SupportsFileInputs` and `SupportsMaskInputs` report what the model id accepts. `SupportsFileInputs` is `true` for the known image-to-image and edit models (for example `fal-ai/flux-2/edit` and `fal-ai/flux-pro/kontext`), `false` for known text-to-image models (for example `fal-ai/recraft/v3/text-to-image`), and `null` for any other id. `SupportsMaskInputs` is `true` for `fal-ai/flux-general/inpainting` and `fal-ai/flux-lora/inpainting`, `false` for the other known ids, and `null` when `SupportsFileInputs` is `null`.
 
+## Replicate image models
+
+### Cancellation
+
+A prediction keeps running, and billing, on Replicate until it reaches a terminal status. When an image generation call is abandoned after its prediction has been created, `ReplicateImageModel` stops waiting and sends a best-effort cancel request to `POST /predictions/{prediction_id}/cancel`:
+
+- the call's `CancellationToken` is cancelled while the model polls, or
+- polling gives up because `maxPollAttempts` was reached.
+
+Cancellation applies only while the model polls for a result, which happens after the create request has returned. It is not attempted during the initial create request, because no prediction ID is available yet. The cancel URL is built from the configured `BaseUrl` (never from the prediction response), and the request carries only the provider's configured headers. It is not retried, does not receive the cancelled token, and failures are ignored, so it never replaces the cancellation or timeout error.
+
 ## MiniMax
 
 `MiniMaxProvider` (`Vercel.AI.MiniMax`) speaks MiniMax's Anthropic-compatible protocol, so the default base URL is `https://api.minimax.io/anthropic/v1`, not the OpenAI-compatible `https://api.minimax.io/v1`. Model calls post to `{base}/messages` with the provider id `minimax.messages`, which makes `minimax` the provider-options namespace. `MiniMaxOptions` sets `ApiKey` (default: the `MINIMAX_API_KEY` environment variable, sent in the `x-api-key` header), `BaseUrl`, and `Headers`. `LanguageModel(id)` and `Chat(id)` return a `MiniMaxChatLanguageModel`. Embedding and image models throw `AiSdkException`. `Video(id)` and `VideoModel(id)` create a `MiniMaxVideoModel`; see [Video models](#video-models).
