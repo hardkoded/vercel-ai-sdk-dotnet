@@ -10,7 +10,7 @@ namespace Vercel.AI.Operations;
 public sealed class TranslationStreamCall
 {
     /// <summary>Creates a translation call.</summary>
-    public TranslationStreamCall(AudioChunkStream audio, string inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -27,7 +27,7 @@ public sealed class TranslationStreamCall
     public AudioChunkStream Audio { get; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; }
+    public AudioFormat InputAudioFormat { get; }
 
     /// <summary>Target language.</summary>
     public string TargetLanguage { get; }
@@ -104,7 +104,7 @@ public sealed class StreamTranslateRequest : OperationRequest
     public AudioChunkStream? Audio { get; set; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; set; } = string.Empty;
+    public AudioFormat InputAudioFormat { get; set; } = new AudioFormat(string.Empty);
 
     /// <summary>Target language.</summary>
     public string TargetLanguage { get; set; } = string.Empty;

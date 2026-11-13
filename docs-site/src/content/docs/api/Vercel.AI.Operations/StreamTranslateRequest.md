@@ -68,13 +68,13 @@ Requests raw provider chunks.
 
 
 ```csharp
-public string InputAudioFormat { get; set; }
+public AudioFormat InputAudioFormat { get; set; }
 ```
 
 
 Input audio format.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L107)
 
