@@ -81,6 +81,27 @@ public sealed class CohereChatParityTests
     }
 
     [Fact]
+    [UpstreamTest(Chat + "doStream > tool call::should handle string \"null\" tool call arguments", Coverage = UpstreamCoverage.Covered, Commit = "27c4487")]
+    public async Task Stream_turns_null_tool_arguments_into_an_empty_object()
+    {
+        var options = new LanguageModelCallOptions
+        {
+            Prompt = TestPrompt().Prompt,
+            Tools = new[] { Tool("currentTime", "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}") },
+        };
+        var parts = await Stream(
+            ChunkLines(
+                "{\"type\":\"tool-call-start\",\"index\":0,\"delta\":{\"message\":{\"tool_calls\":{\"id\":\"test-tool-call\",\"type\":\"function\",\"function\":{\"name\":\"currentTime\",\"arguments\":\"\"}}}}}",
+                "{\"type\":\"tool-call-delta\",\"index\":0,\"delta\":{\"message\":{\"tool_calls\":{\"function\":{\"arguments\":\"null\"}}}}}",
+                "{\"type\":\"tool-call-end\",\"index\":0}"),
+            options).ConfigureAwait(false);
+        var call = Assert.IsType<ToolCallStreamPart>(Assert.Single(parts, part => part is ToolCallStreamPart));
+        Assert.Equal("test-tool-call", call.ToolCallId);
+        Assert.Equal("currentTime", call.ToolName);
+        Assert.Equal("{}", call.ArgumentsJson);
+    }
+
+    [Fact]
     [UpstreamTest(Chat + "doGenerate > reasoning::should extract reasoning from response", Coverage = UpstreamCoverage.Partial, Note = UsageNote)]
     public async Task Generate_extracts_reasoning()
     {
