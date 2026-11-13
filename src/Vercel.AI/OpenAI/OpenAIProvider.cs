@@ -142,6 +142,12 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         return new OpenAIDecisionModel(this, modelId);
     }
 
+    /// <summary>Experimental typed field extraction model that uses the Responses API. The provider id is <c>openai.extraction</c>.</summary>
+    public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
+    {
+        return new Operations.ExtractionLanguageModel(ResponsesModel(modelId), "openai.extraction");
+    }
+
     /// <summary>Deprecated alias of <see cref="DecisionModel"/>. Maps to <c>evaluationModel</c>.</summary>
     [Obsolete("Use DecisionModel instead.")]
     public OpenAIDecisionModel EvaluationModel(string modelId)

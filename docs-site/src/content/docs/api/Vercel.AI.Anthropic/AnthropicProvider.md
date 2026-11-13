@@ -189,7 +189,7 @@ URL patterns that models of this provider accept for images and PDFs.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L275)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L286)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_SupportsNativeStructuredOutput_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_SupportsNativeStructuredOutput"></a>
@@ -206,7 +206,7 @@ False when the host does not accept the native output format. Structured output 
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L269)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L280)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_SupportsStrictTools_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_SupportsStrictTools"></a>
@@ -223,7 +223,7 @@ False when the host does not accept `strict` on tool definitions.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L272)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L283)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Tools_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Tools"></a>
@@ -290,7 +290,7 @@ Headers for a Messages call that already has an API key or auth token.
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L316)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_CreateHeadersAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_CreateHeadersAsync_System_Collections_Generic_IReadOnlyList_System_String__System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_String_System_Threading_CancellationToken_"></a>
@@ -316,7 +316,7 @@ Headers for a Messages call. Signs the body when AWS credentials are used.
 
 **Returns:** [Task&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L322)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_DecisionModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_DecisionModel_System_String_"></a>
@@ -339,7 +339,7 @@ Decision model. Wraps the Messages language model with structured output. The pr
 
 **Returns:** [DecisionLanguageModel](/api/Vercel.AI.Operations/DecisionLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L204)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_EmbeddingModel_System_String_"></a>
@@ -362,7 +362,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L186)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_EvaluationModel_System_String_"></a>
@@ -390,7 +390,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_Anthropic_AnthropicProvid
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L224)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_ExperimentalBatch"></a>
@@ -407,7 +407,31 @@ Message Batches API. Downloads batch results.
 
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L238)
+
+<a id="Vercel_AI_Anthropic_AnthropicProvider_ExtractionModel_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicProvider_ExtractionModel_System_String_"></a>
+
+### ExtractionModel(string)
+
+
+```csharp
+public ExtractionLanguageModel ExtractionModel(string modelId)
+```
+
+
+Experimental typed field extraction model that uses Messages. Anthropic caps structured output at 16 union parameters, so
+field maps larger than 16 are sent as parallel calls of up to 16 fields. The provider id is `anthropic.extraction`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L213)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Files_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Files"></a>
@@ -424,7 +448,7 @@ Files API client.
 
 **Returns:** [AnthropicFiles](/api/Vercel.AI.Anthropic/AnthropicFiles/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L244)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_ImageModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_ImageModel_System_String_"></a>
@@ -447,7 +471,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L192)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_LanguageModel_System_String_"></a>
@@ -487,7 +511,7 @@ Messages URL for the resolved base.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L256)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_New_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_New_System_String_"></a>
@@ -510,7 +534,7 @@ Throws because the JavaScript provider function rejects `new`.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L180)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_NormalizedBase_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_NormalizedBase"></a>
@@ -527,7 +551,7 @@ Resolved API origin, including `/v1` when the host is the public Anthropic API o
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L282)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L293)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_RequestUri_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_RequestUri_System_String_System_Boolean_"></a>
@@ -551,7 +575,7 @@ URL for one model call. Defaults to [MessagesUri()](#Vercel_AI_Anthropic_Anthrop
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L257)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L268)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_RubricModel_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_RubricModel_System_String_"></a>
@@ -574,7 +598,7 @@ Returns a model that scores a candidate against a rubric.
 
 **Returns:** [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L198)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Skills_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_Skills"></a>
@@ -591,7 +615,7 @@ Skills API client.
 
 **Returns:** [AnthropicSkills](/api/Vercel.AI.Anthropic/AnthropicSkills/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L250)
 
 <a id="Vercel_AI_Anthropic_AnthropicProvider_TransformRequestBody_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicProvider_TransformRequestBody_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IReadOnlyList_System_String__"></a>
@@ -615,4 +639,4 @@ Rewrites the Messages body just before it is sent. Defaults to [TransformRequest
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicProvider.cs#L274)

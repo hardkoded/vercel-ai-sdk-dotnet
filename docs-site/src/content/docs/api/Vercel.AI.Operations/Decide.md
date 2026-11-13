@@ -23,7 +23,7 @@ Decides typed questions. Maps to `experimental_decide`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L496)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L511)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Decides every question in one model call.
 
 **Returns:** [Task&lt;DecisionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L501)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L516)
 
 <a id="Vercel_AI_Operations_Decide_ValidateAnswers_"></a>
 <a id="Vercel_AI_Operations_Decide_ValidateAnswers_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionQuestion__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionAnswer__Vercel_AI_Operations_DecisionRounding_"></a>
@@ -72,7 +72,28 @@ Validates answers without rewriting provider numbers.
 | `answers` | [IReadOnlyDictionary&lt;string, DecisionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `rounding` | [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L660)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L681)
+
+<a id="Vercel_AI_Operations_Decide_ValidateDecisionState_"></a>
+<a id="Vercel_AI_Operations_Decide_ValidateDecisionState_Vercel_AI_Operations_DecisionState_"></a>
+
+### ValidateDecisionState(DecisionState?)
+
+
+```csharp
+public static void ValidateDecisionState(DecisionState? state)
+```
+
+
+Validates state before any model call. Maps to `validateDecisionState`. Extraction shares it.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `state` | [DecisionState](/api/Vercel.AI.Operations/DecisionState/) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L672)
 
 <a id="Vercel_AI_Operations_Decide_ValidateInput_"></a>
 <a id="Vercel_AI_Operations_Decide_ValidateInput_Vercel_AI_Operations_DecisionState_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionQuestion__"></a>
@@ -94,4 +115,4 @@ Validates state and questions before any model call.
 | `state` | [DecisionState](/api/Vercel.AI.Operations/DecisionState/) |  |
 | `questions` | [IReadOnlyDictionary&lt;string, DecisionQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L601)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L616)
