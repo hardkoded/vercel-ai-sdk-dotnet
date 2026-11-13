@@ -43,7 +43,7 @@ public sealed class ExtractionLanguageModelTests
     };
 
     [Fact]
-    [UpstreamTest(Prefix + "maps internal keys back to caller field ids in one call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "maps internal keys back to caller field ids in one call", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Maps_internal_keys_back_to_caller_field_ids_in_one_call()
     {
         var (model, language, _) = Setup();
@@ -79,7 +79,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "sends a nullable schema per field, the field options, and the state", Coverage = UpstreamCoverage.Covered, Note = "Undefined headers and provider options are empty maps here, and an undefined abort signal is CancellationToken.None.")]
+    [UpstreamTest(Prefix + "sends a nullable schema per field, the field options, and the state", Coverage = UpstreamCoverage.Covered, Note = "Undefined headers and provider options are empty maps here, and an undefined abort signal is CancellationToken.None.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Sends_a_nullable_schema_per_field_the_field_options_and_the_state()
     {
         var (model, language, _) = Setup();
@@ -125,7 +125,7 @@ public sealed class ExtractionLanguageModelTests
 
     [Theory]
     [MemberData(nameof(NullableOutputs))]
-    [UpstreamTest(Prefix + "rejects nullable output with %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects nullable output with %s", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_nullable_output_with(string name, string text)
     {
         _ = name;
@@ -135,7 +135,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "treats empty strings and lists as no value", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "treats empty strings and lists as no value", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Treats_empty_strings_and_lists_as_no_value()
     {
         var values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(Values)!;
@@ -152,7 +152,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rounds numbers, durations, and number list items to decimals", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rounds numbers, durations, and number list items to decimals", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rounds_numbers_durations_and_number_list_items_to_decimals()
     {
         var (model, _, _) = Setup(Text("{\"f0\":1250.004,\"f1\":0.30000000000000004,\"f2\":[1.256,2]}"));
@@ -171,7 +171,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns refusals for the fields of a refused call", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "returns refusals for the fields of a refused call", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Returns_refusals_for_the_fields_of_a_refused_call()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 1);
@@ -194,7 +194,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits the reference date from the prompt when unset", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "omits the reference date from the prompt when unset", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Omits_the_reference_date_from_the_prompt_when_unset()
     {
         var (model, language, _) = Setup();
@@ -206,7 +206,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects with the abort reason without calling an aborted model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects with the abort reason without calling an aborted model", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_with_the_abort_reason_without_calling_an_aborted_model()
     {
         var (model, language, _) = Setup();
@@ -220,7 +220,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects with the abort reason when aborted while the model responds", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects with the abort reason when aborted while the model responds", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_with_the_abort_reason_when_aborted_while_the_model_responds()
     {
         var (model, language, result) = Setup();
@@ -237,7 +237,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes reasoning, limits, headers, and provider options through", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "passes reasoning, limits, headers, and provider options through", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Passes_reasoning_limits_headers_and_provider_options_through()
     {
         var (model, language, _) = Setup();
@@ -263,7 +263,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects invalid JSON", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects invalid JSON", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_invalid_JSON()
     {
         var (model, _, _) = Setup(Text("not json"));
@@ -272,7 +272,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects incomplete generations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects incomplete generations", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_incomplete_generations()
     {
         var (model, _, _) = Setup(finishReason: FinishReason.Length);
@@ -281,7 +281,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects unsupported file media types before calling the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects unsupported file media types before calling the model", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_unsupported_file_media_types_before_calling_the_model()
     {
         var (model, language, _) = Setup();
@@ -300,7 +300,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects an empty field map before calling the model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects an empty field map before calling the model", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Rejects_an_empty_field_map_before_calling_the_model()
     {
         var (model, language, _) = Setup();
@@ -311,14 +311,14 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects non-v4 language models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "rejects non-v4 language models", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public void Rejects_non_v4_language_models()
     {
         Assert.Throws<InvalidArgumentException>(() => new ExtractionLanguageModel(new V3LanguageModel()));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "round-trips through workflow serialization", Coverage = UpstreamCoverage.Covered, Note = "maxFieldsPerCall Infinity is null here.")]
+    [UpstreamTest(Prefix + "round-trips through workflow serialization", Coverage = UpstreamCoverage.Covered, Note = "maxFieldsPerCall Infinity is null here.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public void Round_trips_through_workflow_serialization()
     {
         var (model, language, _) = Setup();

@@ -19,7 +19,7 @@ public sealed class MaxFieldsPerCallTests
     public static TheoryData<int> InvalidMaxFieldsPerCall => new() { 0, -1 };
 
     [Fact]
-    [UpstreamTest(Describe + "sends every field in one call by default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Describe + "sends every field in one call by default", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Sends_every_field_in_one_call_by_default()
     {
         var (model, language, _) = Setup();
@@ -33,7 +33,7 @@ public sealed class MaxFieldsPerCallTests
     }
 
     [Fact]
-    [UpstreamTest(Describe + "splits fields into parallel nullable calls and merges the answers", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Describe + "splits fields into parallel nullable calls and merges the answers", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Splits_fields_into_parallel_nullable_calls_and_merges_the_answers()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 16);
@@ -65,7 +65,7 @@ public sealed class MaxFieldsPerCallTests
     }
 
     [Fact]
-    [UpstreamTest(Describe + "keeps field ids that match object prototype properties when merging", Coverage = UpstreamCoverage.Partial, Note = "C# dictionaries have no prototype, so the Object.getPrototypeOf check has no counterpart. The merged ids and their order are checked.")]
+    [UpstreamTest(Describe + "keeps field ids that match object prototype properties when merging", Coverage = UpstreamCoverage.Partial, Note = "C# dictionaries have no prototype, so the Object.getPrototypeOf check has no counterpart. The merged ids and their order are checked.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Keeps_field_ids_that_match_object_prototype_properties_when_merging()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 1);
@@ -81,7 +81,7 @@ public sealed class MaxFieldsPerCallTests
     }
 
     [Fact]
-    [UpstreamTest(Describe + "reports unknown usage when any call does not report it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Describe + "reports unknown usage when any call does not report it", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Reports_unknown_usage_when_any_call_does_not_report_it()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 16);
@@ -104,7 +104,7 @@ public sealed class MaxFieldsPerCallTests
     }
 
     [Fact]
-    [UpstreamTest(Describe + "fails the whole call and aborts sibling calls when one call fails", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Describe + "fails the whole call and aborts sibling calls when one call fails", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Fails_the_whole_call_and_aborts_sibling_calls_when_one_call_fails()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 1);
@@ -126,7 +126,7 @@ public sealed class MaxFieldsPerCallTests
     }
 
     [Fact]
-    [UpstreamTest(Describe + "forwards a caller abort to every call and removes its listener", Coverage = UpstreamCoverage.Partial, Note = "The listener is the linked CancellationTokenSource registration, released by its disposal. A CancellationToken does not expose its registrations, so the removal is not checked.")]
+    [UpstreamTest(Describe + "forwards a caller abort to every call and removes its listener", Coverage = UpstreamCoverage.Partial, Note = "The listener is the linked CancellationTokenSource registration, released by its disposal. A CancellationToken does not expose its registrations, so the removal is not checked.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public async Task Forwards_a_caller_abort_to_every_call_and_removes_its_listener()
     {
         var (model, language, _) = Setup(maxFieldsPerCall: 1);
@@ -154,7 +154,7 @@ public sealed class MaxFieldsPerCallTests
 
     [Theory]
     [MemberData(nameof(InvalidMaxFieldsPerCall))]
-    [UpstreamTest(Describe + "rejects maxFieldsPerCall %s", Coverage = UpstreamCoverage.Partial, Note = "maxFieldsPerCall is an int?, so the 1.5 and NaN cases cannot be expressed. 0 and -1 are checked.")]
+    [UpstreamTest(Describe + "rejects maxFieldsPerCall %s", Coverage = UpstreamCoverage.Partial, Note = "maxFieldsPerCall is an int?, so the 1.5 and NaN cases cannot be expressed. 0 and -1 are checked.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public void Rejects_maxFieldsPerCall(int maxFieldsPerCall)
     {
         Assert.Throws<InvalidArgumentException>(() => Setup(maxFieldsPerCall: maxFieldsPerCall));
