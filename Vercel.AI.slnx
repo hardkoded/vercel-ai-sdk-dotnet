@@ -4,6 +4,10 @@
     <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
     <Project Path="examples/DecidePerplexityCriteriaOnly/DecidePerplexityCriteriaOnly.csproj" />
     <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
+    <Project Path="examples/ExtractAnthropicBasic/ExtractAnthropicBasic.csproj" />
+    <Project Path="examples/ExtractGoogleBasic/ExtractGoogleBasic.csproj" />
+    <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
+    <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />
