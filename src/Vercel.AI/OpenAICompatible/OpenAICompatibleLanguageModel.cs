@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -61,6 +62,44 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
     /// <summary>When set, chat calls use this URL instead of the provider chat route.</summary>
     public Uri? Endpoint { get; set; }
 
+    /// <summary>
+    /// Builds the body and warnings <see cref="DoGenerateAsync"/> would send, without a network call or <c>stream</c>
+    /// fields. Call headers and the cancellation token are not applied.
+    /// </summary>
+    /// <remarks>Maps to <c>prepareRequest</c>.</remarks>
+    public OpenAICompatiblePreparedRequest PrepareRequest(LanguageModelCallOptions options)
+    {
+        var prepared = Prepare(options ?? new LanguageModelCallOptions(), stream: false);
+        return new OpenAICompatiblePreparedRequest(prepared.Body, prepared.Warnings);
+    }
+
+    /// <summary>
+    /// Converts a Chat Completions response body into a generate result, without a network call. The result has no
+    /// warnings, raw response or response headers. Throws <see cref="TypeValidationException"/> when the body is not a
+    /// response object and <see cref="InvalidResponseDataException"/> when it has no choices.
+    /// </summary>
+    /// <param name="body">The unvalidated response body.</param>
+    /// <param name="providerOptions">The request's provider options, so the provider metadata key matches <see cref="DoGenerateAsync"/>. Null uses the provider name.</param>
+    /// <remarks>Maps to <c>convertResponse</c>.</remarks>
+    public LanguageModelGenerateResult ConvertResponse(JsonElement body, IReadOnlyDictionary<string, JsonElement>? providerOptions = null)
+    {
+        if (body.ValueKind != JsonValueKind.Object
+            || !body.TryGetProperty("choices", out var choices)
+            || choices.ValueKind != JsonValueKind.Array)
+        {
+            throw new TypeValidationException("Type validation failed: the response body is not a valid chat completion.", body);
+        }
+
+        return ConvertGenerateResponse(
+            body,
+            OpenAICompatibleChat.ResolveProviderOptionsKey(ProviderOptionsName, providerOptions),
+            null,
+            false,
+            Array.Empty<CallWarning>(),
+            null,
+            null);
+    }
+
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
@@ -68,16 +107,34 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         var prepared = Prepare(options, stream: false);
         var response = await _provider.PostJsonAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
-        var root = document.RootElement;
+        return ConvertGenerateResponse(
+            document.RootElement,
+            prepared.MetadataKey,
+            prepared.JsonResponseToolName,
+            prepared.JsonTextOverridesToolCalls,
+            prepared.Warnings,
+            response.Body,
+            response.Headers);
+    }
+
+    private LanguageModelGenerateResult ConvertGenerateResponse(
+        JsonElement root,
+        string metadataKey,
+        string? jsonResponseToolName,
+        bool jsonTextOverridesToolCalls,
+        IReadOnlyList<CallWarning> warnings,
+        string? rawResponse,
+        IReadOnlyDictionary<string, string>? responseHeaders)
+    {
         if (!root.TryGetProperty("choices", out var choices) || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0)
         {
-            throw new AiSdkException("Response did not contain any choices.");
+            throw new InvalidResponseDataException(root.Clone(), "Response did not contain any choices.");
         }
 
         var choice = choices[0];
         if (!choice.TryGetProperty("message", out var message) || message.ValueKind != JsonValueKind.Object)
         {
-            throw new AiSdkException("Response did not contain any choices.");
+            throw new InvalidResponseDataException(root.Clone(), "Response did not contain any choices.");
         }
 
         var content = new List<GeneratedContent>();
@@ -91,7 +148,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         {
             foreach (var part in OpenAICompatibleChat.ConvertContent(contentElement))
             {
-                if (prepared.JsonResponseToolName != null && !part.Reasoning)
+                if (jsonResponseToolName != null && !part.Reasoning)
                 {
                     // The response tool supplies the output. Omit conversational text.
                     continue;
@@ -122,7 +179,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 var toolArguments = function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String
                     ? arguments.GetString() ?? "{}"
                     : "{}";
-                if (toolName == prepared.JsonResponseToolName)
+                if (toolName == jsonResponseToolName)
                 {
                     content.Add(new GeneratedText(toolArguments));
                     continue;
@@ -131,7 +188,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
                 var signature = ReadWireSignature(call);
                 JsonElement? metadata = string.IsNullOrEmpty(signature)
                     ? null
-                    : OpenAICompatibleChat.ThoughtSignatureMetadata(prepared.MetadataKey, signature!);
+                    : OpenAICompatibleChat.ThoughtSignatureMetadata(metadataKey, signature!);
                 content.Add(new GeneratedToolCall(id!, toolName, toolArguments, metadata));
             }
         }
@@ -142,9 +199,9 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         var usage = root.TryGetProperty("usage", out var usageElement)
             ? OpenAICompatibleChat.ConvertUsage(usageElement)
             : OpenAICompatibleUsage.Missing;
-        var metadataElement = OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
+        var metadataElement = OpenAICompatibleChat.ProviderMetadata(metadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
         var finishReason = MapFinish(raw);
-        if (prepared.JsonResponseToolName != null
+        if (jsonResponseToolName != null
             && raw == "tool_calls"
             && content.Any(part => part is GeneratedText)
             && !content.Any(part => part is GeneratedToolCall))
@@ -152,7 +209,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             finishReason = FinishReason.Stop;
         }
 
-        if (prepared.JsonTextOverridesToolCalls && raw == "tool_calls" && content.Any(part => part is GeneratedText { Text.Length: > 0 }))
+        if (jsonTextOverridesToolCalls && raw == "tool_calls" && content.Any(part => part is GeneratedText { Text.Length: > 0 }))
         {
             // The model can repeat a tool call after valid JSON text. The text is the final answer.
             content.RemoveAll(part => part is GeneratedToolCall);
@@ -164,13 +221,13 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
             finishReason,
             ModelUsage(usageElement, usage),
             raw,
-            prepared.Warnings,
+            warnings,
             ResponseString(root, "id"),
             metadataElement,
-            response.Body,
+            rawResponse,
             ResponseString(root, "model"),
             ResponseTimestamp(root),
-            response.Headers);
+            responseHeaders);
     }
 
     /// <inheritdoc />
@@ -584,7 +641,7 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         return new PreparedRequest(
-            body.ToJsonString(),
+            body,
             _provider.CreateHeaders(options.Headers),
             warnings,
             metadataKey,
@@ -1124,15 +1181,18 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
     private sealed class PreparedRequest
     {
-        public PreparedRequest(string json, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls, string? jsonResponseToolName)
+        public PreparedRequest(JsonObject body, Dictionary<string, string?> headers, List<CallWarning> warnings, string metadataKey, bool jsonTextOverridesToolCalls, string? jsonResponseToolName)
         {
             JsonResponseToolName = jsonResponseToolName;
-            Json = json;
+            Body = body;
+            Json = body.ToJsonString();
             Headers = headers;
             Warnings = warnings;
             MetadataKey = metadataKey;
             JsonTextOverridesToolCalls = jsonTextOverridesToolCalls;
         }
+
+        public JsonObject Body { get; }
 
         public string Json { get; }
 
@@ -1146,4 +1206,21 @@ public sealed class OpenAICompatibleLanguageModel : ILanguageModel
 
         public string? JsonResponseToolName { get; }
     }
+}
+
+/// <summary>The request body and warnings <see cref="OpenAICompatibleLanguageModel.PrepareRequest"/> builds.</summary>
+public sealed class OpenAICompatiblePreparedRequest
+{
+    /// <summary>Creates a prepared request.</summary>
+    public OpenAICompatiblePreparedRequest(JsonObject body, IReadOnlyList<CallWarning> warnings)
+    {
+        Body = body ?? throw new ArgumentNullException(nameof(body));
+        Warnings = warnings ?? Array.Empty<CallWarning>();
+    }
+
+    /// <summary>The Chat Completions body, with the request body transform applied.</summary>
+    public JsonObject Body { get; }
+
+    /// <summary>Warnings raised while building the body.</summary>
+    public IReadOnlyList<CallWarning> Warnings { get; }
 }
