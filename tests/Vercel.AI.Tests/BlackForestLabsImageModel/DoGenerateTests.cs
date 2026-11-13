@@ -335,6 +335,7 @@ public sealed class DoGenerateTests
         Assert.Equal(3, pollCalls.Count());
     }
 
+    private const string UpstreamCommit = "eded4b8ed0b581d54d6631eef82d945d6d06e74a";
     private const string WebhookSubmit = "{\"id\":\"req-webhook\",\"status\":\"processing\",\"webhook_url\":\"https://example.com/webhook\"}";
     private const string TaskNotFoundBody = "{\"id\":\"req-webhook\",\"status\":\"Task not found\"}";
     private const string GetResult = "https://api.example.com/v1/get_result";
@@ -354,7 +355,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "polls get_result by id when the submit response has no polling_url", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "polls get_result by id when the submit response has no polling_url", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task PollsGetResultByIdWhenTheSubmitResponseHasNoPollingUrl()
     {
         var server = new BlackForestLabsServer();
@@ -371,7 +372,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "retries get_result while a webhook job is not yet registered", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "retries get_result while a webhook job is not yet registered", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task RetriesGetResultWhileAWebhookJobIsNotYetRegistered()
     {
         var server = new BlackForestLabsServer();
@@ -390,7 +391,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "retries get_result when the poll response status is Task not found", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "retries get_result when the poll response status is Task not found", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task RetriesGetResultWhenThePollResponseStatusIsTaskNotFound()
     {
         var server = new BlackForestLabsServer();
@@ -409,7 +410,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "fails with a clear error when get_result keeps answering 404 Task not found", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "fails with a clear error when get_result keeps answering 404 Task not found", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task FailsWithAClearErrorWhenGetResultKeepsAnswering404TaskNotFound()
     {
         var server = new BlackForestLabsServer();
@@ -423,7 +424,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "gives up on Task not found without waiting for the overall poll timeout", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "gives up on Task not found without waiting for the overall poll timeout", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task GivesUpOnTaskNotFoundWithoutWaitingForTheOverallPollTimeout()
     {
         var server = new BlackForestLabsServer();
@@ -439,7 +440,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "does not retry get_result 404 responses that are not Task not found", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "does not retry get_result 404 responses that are not Task not found", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task DoesNotRetryGetResult404ResponsesThatAreNotTaskNotFound()
     {
         var server = new BlackForestLabsServer();
@@ -455,7 +456,7 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "rejects with AbortError when aborted during the not-found retry delay", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "rejects with AbortError when aborted during the not-found retry delay", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
     public async Task RejectsWithAbortErrorWhenAbortedDuringTheNotFoundRetryDelay()
     {
         var server = new BlackForestLabsServer();
