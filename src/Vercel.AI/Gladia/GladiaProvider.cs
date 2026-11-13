@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -9,17 +10,31 @@ using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Gladia;
 
 /// <summary>Gladia settings.</summary>
 public class GladiaOptions : OpenAICompatibleOptions
 {
-    /// <summary>Clock used for response timestamps.</summary>
+    /// <summary>Clock used for response timestamps and to measure the polling budget.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
 
-    /// <summary>Wait between result polls. Defaults to one second.</summary>
+    /// <summary>Wait between result polls. Defaults to <see cref="PollIntervalMs"/>.</summary>
     public Func<CancellationToken, Task>? PollDelay { get; set; }
+
+    /// <summary>
+    /// Interval in milliseconds between transcription job status checks. Defaults to 1000 (1 second).
+    /// Must be a positive integer. A per-call <see cref="GladiaTranscriptionRequest.PollIntervalMs"/> overrides it.
+    /// </summary>
+    public int? PollIntervalMs { get; set; }
+
+    /// <summary>
+    /// Maximum time in milliseconds to wait for an asynchronous transcription job to finish before throwing
+    /// a <c>TranscriptionJobPollingTimedOut</c> error. Defaults to 600000 (10 minutes). Must be a positive integer.
+    /// A per-call <see cref="GladiaTranscriptionRequest.PollTimeoutMs"/> overrides it.
+    /// </summary>
+    public int? PollTimeoutMs { get; set; }
 }
 
 /// <summary>Parsed Gladia error payload.</summary>
@@ -83,6 +98,18 @@ public sealed class GladiaTranscriptionRequest
 
     /// <summary>Extra JSON fields sent with <c>audio_url</c>.</summary>
     public JsonObject? Body { get; set; }
+
+    /// <summary>
+    /// Interval in milliseconds between job status checks for this call. Overrides
+    /// <see cref="GladiaOptions.PollIntervalMs"/>. Must be a positive integer. Not sent to the Gladia API.
+    /// </summary>
+    public int? PollIntervalMs { get; set; }
+
+    /// <summary>
+    /// Maximum time in milliseconds to wait for the job to finish for this call. Overrides
+    /// <see cref="GladiaOptions.PollTimeoutMs"/>. Must be a positive integer. Not sent to the Gladia API.
+    /// </summary>
+    public int? PollTimeoutMs { get; set; }
 }
 
 /// <summary>One Gladia utterance mapped to a segment.</summary>
@@ -180,6 +207,9 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.gladia.io";
 
+    private const int DefaultPollIntervalMs = 1000;
+    private const int DefaultPollTimeoutMs = 10 * 60 * 1000;
+
     private readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
@@ -217,6 +247,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
+        if (options is GladiaOptions gladia)
+        {
+            ValidatePollingSettings(gladia.PollIntervalMs, gladia.PollTimeoutMs);
+        }
+
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "GLADIA_API_KEY";
@@ -226,6 +261,20 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options.ApiKeyHeaderName = "x-gladia-key";
         options.UserAgent = ProviderExchange.UserAgent("gladia");
         return options;
+    }
+
+    private static void ValidatePollingSettings(int? pollIntervalMs, int? pollTimeoutMs)
+    {
+        ValidatePollSetting("PollIntervalMs", pollIntervalMs);
+        ValidatePollSetting("PollTimeoutMs", pollTimeoutMs);
+    }
+
+    private static void ValidatePollSetting(string parameter, int? value)
+    {
+        if (value is int milliseconds && milliseconds <= 0)
+        {
+            throw new InvalidArgumentError(parameter, value, parameter + " must be a positive integer number of milliseconds");
+        }
     }
 
     /// <summary>Uploads audio, starts a pre-recorded job, and reads the result.</summary>
@@ -265,6 +314,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
 
             var options = _provider.Options as GladiaOptions;
+            ValidatePollingSettings(request?.PollIntervalMs, request?.PollTimeoutMs);
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = Headers(request, includeKey: true);
             var form = new MultipartFormDataContent();
@@ -315,7 +365,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         throw new AiSdkException("Gladia did not return a result URL.");
                     }
 
-                    var result = await PollAsync(resultUrl!, headers, cancellationToken).ConfigureAwait(false);
+                    var result = await PollAsync(resultUrl!, headers, request, cancellationToken).ConfigureAwait(false);
                     return Parse(result.Body, result.Headers, started);
                 }
             }
@@ -376,7 +426,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
         }
 
-        private async Task<ProviderExchangeResult> PollAsync(string resultUrl, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+        private async Task<ProviderExchangeResult> PollAsync(string resultUrl, IReadOnlyDictionary<string, string?> headers, GladiaTranscriptionRequest? request, CancellationToken cancellationToken)
         {
             var options = _provider.Options as GladiaOptions;
             var origin = new Uri(_provider.Options.BaseUrl, UriKind.Absolute);
@@ -399,12 +449,19 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 callHeaders = stripped;
             }
 
-            var started = DateTime.UtcNow;
+            var timeoutMs = request?.PollTimeoutMs ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
+            var intervalMs = request?.PollIntervalMs ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
+            var started = Now(options);
             while (true)
             {
-                if (DateTime.UtcNow - started > TimeSpan.FromSeconds(60))
+                // Stop before polling again when the caller cancelled the request.
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if ((Now(options) - started).TotalMilliseconds > timeoutMs)
                 {
-                    throw new AiSdkException("Transcription job polling timed out.");
+                    throw new AiSdkError(
+                        "TranscriptionJobPollingTimedOut",
+                        "Transcription job polling timed out after " + timeoutMs.ToString(CultureInfo.InvariantCulture) + " ms");
                 }
 
                 var response = await ProviderExchange.SendAsync(
@@ -439,9 +496,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 }
                 else
                 {
-                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(intervalMs, cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        private static DateTimeOffset Now(GladiaOptions? options)
+        {
+            return options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
         }
 
         private Dictionary<string, string?> Headers(GladiaTranscriptionRequest? request, bool includeKey)

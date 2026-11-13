@@ -884,6 +884,30 @@ DeepSeek bills successful searches and page reads per operation. The counts are 
 
 A failed response (`status: "failed"` or an `error` object) throws an `ApiException` with the DeepSeek message. Its status code comes from the error code: `rate_limit_exceeded` and `rate_limit_error` are 429 and retryable, `insufficient_quota` is 429, `authentication_error` and `invalid_api_key` are 401, `permission_error` is 403, `bad_request`, `context_length_exceeded`, and `invalid_request_error` are 400, `timeout` and `timeout_error` are 504 and retryable, and every other code is 500 and retryable. A stream reports the same failure as an `error` part and ends with the `error` finish reason.
 
+## Gladia transcription polling
+
+`GladiaProvider.Transcription()` uploads the audio, starts a pre-recorded job, and polls its result URL until the job reports `done`. The polling budget defaults to 10 minutes (`600000` ms) and the interval between status checks to 1 second (`1000` ms). Long audio files and audio intelligence add-ons can need more than a minute, so raise the budget when you need to.
+
+```csharp
+var provider = GladiaProvider.Create(new GladiaOptions
+{
+    ApiKey = apiKey,
+    PollIntervalMs = 2000,
+    PollTimeoutMs = 20 * 60 * 1000,
+});
+
+// Per-call values win over the provider settings.
+var result = await provider.Transcription().TranscribeAsync(
+    audio,
+    new GladiaTranscriptionRequest { PollTimeoutMs = 30 * 60 * 1000 },
+    cancellationToken);
+```
+
+- `GladiaOptions.PollIntervalMs` and `GladiaOptions.PollTimeoutMs` set the provider defaults. `GladiaTranscriptionRequest.PollIntervalMs` and `GladiaTranscriptionRequest.PollTimeoutMs` override them for one call. They are never sent to the Gladia API.
+- Each value must be a positive integer. Anything else throws `InvalidArgumentError`: the provider settings when the provider is created, the per-call values when the call starts.
+- When the budget runs out, the call throws an `AiSdkError` named `TranscriptionJobPollingTimedOut` with the message `Transcription job polling timed out after <timeout> ms`.
+- The `CancellationToken` stops the loop before the next poll and cancels the wait between polls. A cancel surfaces as an `OperationCanceledException`.
+
 ## QuiverAI reference images
 
 The SVG edit provider option `quiverai.referenceImages` takes up to four `{ "url" }` or `{ "base64" }` objects. URL references must use HTTP or HTTPS. Base64 references must decode to PNG, JPEG, WebP, GIF, or SVG data. Use `QuiverAIImageReference.Prepare` to convert binary, data URL, or URL inputs into this shape. It returns a `QuiverAIImageReference` with exactly one of `Url` and `Base64` set, and it serializes to the JSON shape above.
