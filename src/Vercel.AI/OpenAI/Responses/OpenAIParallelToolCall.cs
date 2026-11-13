@@ -71,18 +71,22 @@ internal static class OpenAIParallelToolCall
                 return null;
             }
 
-            var metadata = OpenAIJson.ProviderMetadata(new JsonObject
+            var wrapper = new JsonObject
             {
-                ["parallelToolCall"] = new JsonObject
-                {
-                    ["itemId"] = itemId,
-                    ["toolCallId"] = toolCallId,
-                    ["toolName"] = toolName,
-                    ["input"] = input,
-                    ["index"] = index,
-                    ["count"] = toolUses.Count,
-                },
-            }, providerName);
+                ["itemId"] = itemId,
+                ["toolCallId"] = toolCallId,
+                ["toolName"] = toolName,
+            };
+
+            // Retained only on the first child; siblings keep the wrapper identity, index and count.
+            if (index == 0)
+            {
+                wrapper["input"] = input;
+            }
+
+            wrapper["index"] = index;
+            wrapper["count"] = toolUses.Count;
+            var metadata = OpenAIJson.ProviderMetadata(new JsonObject { ["parallelToolCall"] = wrapper }, providerName);
             expanded.Add(new OpenAIExpandedToolCall(
                 toolCallId + "_" + index.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 name,
