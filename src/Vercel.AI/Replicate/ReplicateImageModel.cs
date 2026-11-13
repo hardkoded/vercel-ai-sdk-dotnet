@@ -198,6 +198,7 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
     }
 
     // Polls the prediction's get URL until it has output, succeeds, or fails.
+    // When the caller cancels while polling, or polling gives up, the prediction is cancelled on Replicate.
     private async Task<JsonElement> PollAsync(JsonElement prediction, IReadOnlyDictionary<string, string> headers, int pollIntervalMillis, int maxPollAttempts, CancellationToken cancellationToken)
     {
         var current = prediction;
@@ -208,12 +209,21 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
                 return current;
             }
 
-            var url = current.GetProperty("urls").GetProperty("get").GetString()!;
-            var response = await _provider.GetResponseUrlAsync(url, headers, cancellationToken).ConfigureAwait(false);
-            current = ParsePrediction(response.Body);
-            if (attempt < maxPollAttempts - 1)
+            try
             {
-                await Task.Delay(pollIntervalMillis, cancellationToken).ConfigureAwait(false);
+                var url = current.GetProperty("urls").GetProperty("get").GetString()!;
+                var response = await _provider.GetResponseUrlAsync(url, headers, cancellationToken).ConfigureAwait(false);
+                current = ParsePrediction(response.Body);
+                if (attempt < maxPollAttempts - 1)
+                {
+                    await Task.Delay(pollIntervalMillis, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch when (cancellationToken.IsCancellationRequested)
+            {
+                // The caller cancelled: stop the prediction so it does not keep running (and billing) on Replicate.
+                CancelPrediction(current);
+                throw;
             }
         }
 
@@ -222,7 +232,15 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
             return current;
         }
 
+        // Polling gave up: cancel the prediction instead of leaving it running.
+        CancelPrediction(current);
         throw new AiSdkException("Replicate image generation did not complete after " + maxPollAttempts + " polling attempts.");
+    }
+
+    // Fire-and-forget: cancellation must never mask, replace, or delay the cancellation or timeout error that is about to be thrown.
+    private void CancelPrediction(JsonElement prediction)
+    {
+        _ = _provider.CancelPredictionAsync(prediction.GetProperty("id").GetString()!);
     }
 
     private static bool IsComplete(JsonElement prediction)
@@ -240,7 +258,13 @@ public sealed class ReplicateImageModel : IImageModel, IImageCaller
     private static JsonElement ParsePrediction(string body)
     {
         using var document = JsonDocument.Parse(body);
-        return document.RootElement.Clone();
+        var prediction = document.RootElement.Clone();
+        if (prediction.ValueKind != JsonValueKind.Object || !prediction.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidResponseDataException(prediction, "Replicate prediction response has no id.");
+        }
+
+        return prediction;
     }
 
     private static JsonElement? ReplicateOptions(JsonElement? providerOptions)

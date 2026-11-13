@@ -19,6 +19,8 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.replicate.com/v1";
 
+    private static readonly TimeSpan CancelTimeout = TimeSpan.FromSeconds(30);
+
     private readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
@@ -67,6 +69,26 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     internal Task<ProviderExchangeResult> SendAsync(HttpMethod method, Uri uri, HttpContent? content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
         return ProviderExchange.SendAsync(_httpClient, method, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken);
+    }
+
+    /// <summary>
+    /// Best-effort request to cancel a running prediction. The URL is built from the configured base URL and the prediction id,
+    /// so the provider credentials only go to the provider origin; no response data such as <c>urls.cancel</c> is used as a request target.
+    /// It sends the provider headers only (no per-call headers, no idempotency key), gets no caller token, is not retried, and never throws.
+    /// </summary>
+    internal async Task CancelPredictionAsync(string predictionId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var uri = ApiKeys.Combine(Options.BaseUrl, "/predictions/" + Uri.EscapeDataString(predictionId) + "/cancel");
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(CancelTimeout);
+            await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, null, CreateHeaders(), timeout.Token).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort only: the original cancellation or timeout error wins.
+        }
     }
 
     /// <summary>
