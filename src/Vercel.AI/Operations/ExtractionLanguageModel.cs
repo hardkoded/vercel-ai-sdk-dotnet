@@ -402,6 +402,14 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
                     {
                         content.Add(new FileContentPart(file.MediaType, file.Data.Url?.ToString(), null, file.FileName) { ProviderOptions = file.ProviderOptions });
                     }
+                    else if (file.Data.DataType == "reference")
+                    {
+                        content.Add(FileContentPart.FromProviderReference(file.MediaType, file.Data.Reference!, file.FileName, file.ProviderOptions));
+                    }
+                    else if (file.Data.DataType == "text")
+                    {
+                        content.Add(FileContentPart.FromText(file.MediaType, file.Data.Text!, file.FileName, file.ProviderOptions));
+                    }
                     else
                     {
                         content.Add(new FileContentPart(file.MediaType, null, file.Data.Bytes ?? Convert.FromBase64String(file.Data.Base64!), file.FileName) { ProviderOptions = file.ProviderOptions });
