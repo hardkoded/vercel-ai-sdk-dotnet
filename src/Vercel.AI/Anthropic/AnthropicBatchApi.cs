@@ -88,7 +88,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
                     "Anthropic Message Batches cannot decode the JSON-tool structured-output fallback (request \"" + request.Id + "\") because batch results are retrieved independently of the start call. Use a model that supports native output_format structured outputs.");
             }
 
-            var aliasedProviderTool = AliasedProviderToolName(options, result.ToolNames);
+            var aliasedProviderTool = AliasedProviderToolName(result.ToolNames);
             if (aliasedProviderTool != null)
             {
                 throw new UnsupportedFunctionalityException(
@@ -135,8 +135,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     /// <inheritdoc />
     public override async Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
-        var uri = BatchUri("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel");
-        var headers = await BatchHeadersAsync(call, "{}", uri, cancellationToken).ConfigureAwait(false);
+        var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel");
+        var headers = await BatchHeadersAsync(call, "POST", "{}", uri, cancellationToken).ConfigureAwait(false);
         await SendBatchAsync(HttpMethod.Post, uri, "{}", headers, cancellationToken).ConfigureAwait(false);
         return new BatchCancelResult();
     }
@@ -155,13 +155,13 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
             query.Add("after_id=" + Uri.EscapeDataString(call.Cursor));
         }
 
-        var uri = BatchUri(string.Empty);
+        var uri = GetBatchUrl(string.Empty);
         if (query.Count > 0)
         {
             uri = new Uri(uri.AbsoluteUri + "?" + string.Join("&", query));
         }
 
-        var headers = await BatchHeadersAsync(call, null, null, cancellationToken).ConfigureAwait(false);
+        var headers = await BatchHeadersAsync(call, "GET", null, uri, cancellationToken).ConfigureAwait(false);
         JsonElement page;
         using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false))
         {
@@ -230,33 +230,27 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         return target;
     }
 
-    private static string? AliasedProviderToolName(JsonElement options, IReadOnlyDictionary<string, string> toolNames)
+    // ToolNames maps the API name of every provider tool the request declares (tools or providerOptions.anthropic.providerTools) to the caller's name, so a pair that differs is an alias.
+    private static string? AliasedProviderToolName(IReadOnlyDictionary<string, string> toolNames)
     {
-        if (options.ValueKind != JsonValueKind.Object || !options.TryGetProperty("tools", out var tools) || tools.ValueKind != JsonValueKind.Array)
+        foreach (var pair in toolNames)
         {
-            return null;
-        }
-
-        // ToolNames maps the API name of a provider tool to the caller's name, so a pair that differs is an alias.
-        foreach (var tool in tools.EnumerateArray())
-        {
-            var name = Str(tool, "name");
-            if (Str(tool, "type") == "provider" && name != null && toolNames.Any(pair => pair.Value == name && pair.Key != name))
+            if (pair.Key != pair.Value)
             {
-                return name;
+                return pair.Value;
             }
         }
 
         return null;
     }
 
-    private Uri BatchUri(string path) => new Uri(_provider.NormalizedBase().TrimEnd('/') + "/messages/batches" + path);
+    private Uri GetBatchUrl(string path) => new Uri(_provider.NormalizedBase().TrimEnd('/') + "/messages/batches" + path);
 
-    private Task<Dictionary<string, string?>> BatchHeadersAsync(BatchOperationCall call, string? body, Uri? signingUri, CancellationToken cancellationToken)
+    private Task<Dictionary<string, string?>> BatchHeadersAsync(BatchOperationCall call, string method, string? body, Uri signingUri, CancellationToken cancellationToken)
     {
         var callHeaders = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
-        return signingUri != null && _provider.UsesAws
-            ? _provider.CreateSignedHeadersAsync(Array.Empty<string>(), callHeaders, body, signingUri, cancellationToken)
+        return _provider.UsesAws
+            ? _provider.CreateSignedHeadersAsync(Array.Empty<string>(), callHeaders, body, signingUri, cancellationToken, method)
             : _provider.CreateHeadersAsync(Array.Empty<string>(), callHeaders, body, cancellationToken);
     }
 
@@ -268,8 +262,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
 
     private async Task<JsonElement> RetrieveBatchAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
-        var uri = BatchUri("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty));
-        var headers = await BatchHeadersAsync(call, null, null, cancellationToken).ConfigureAwait(false);
+        var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty));
+        var headers = await BatchHeadersAsync(call, "GET", null, uri, cancellationToken).ConfigureAwait(false);
         return await SendBatchAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false);
     }
 
@@ -316,9 +310,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
-        var headers = await BatchHeadersAsync(call, null, null, cancellationToken).ConfigureAwait(false);
         var baseUrl = _provider.NormalizedBase().TrimEnd('/');
-        var batch = await SendBatchAsync(HttpMethod.Get, BatchUri("/" + Uri.EscapeDataString(batchId)), null, headers, cancellationToken).ConfigureAwait(false);
+        var batch = await RetrieveBatchAsync(call, cancellationToken).ConfigureAwait(false);
 
         if (AnthropicBatch.ResultsUnavailable(batch))
         {
@@ -335,6 +328,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         {
             throw new AiSdkException("Anthropic batch \"" + batchId + "\" completed without batch output.");
         }
+
+        var headers = await BatchHeadersAsync(call, "GET", null, new Uri(url), cancellationToken).ConfigureAwait(false);
 
         // The results URL comes from the response. Off the provider origin it must pass download validation and gets no credentials.
         if (!ProviderValues.IsSameOrigin(url, baseUrl))

@@ -423,7 +423,7 @@ public sealed class AnthropicBatchTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::cancels a batch", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::cancels a batch", Coverage = UpstreamCoverage.Partial, Note = "Checks that the caller token reaches the HTTP call, not the identity of the JS abort signal.")]
     public async Task Cancels_a_batch()
     {
         var handler = new RecordingHandler().Respond(BatchResponse(("processing_status", "canceling")));
@@ -445,7 +445,7 @@ public sealed class AnthropicBatchTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::lists and normalizes a page of batches", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::lists and normalizes a page of batches", Coverage = UpstreamCoverage.Partial, Note = "Checks that the caller token reaches the HTTP call, not the identity of the JS abort signal.")]
     public async Task Lists_and_normalizes_a_page_of_batches()
     {
         var page = new JsonObject
@@ -505,6 +505,38 @@ public sealed class AnthropicBatchTests
 
         Assert.Equal("batchId", error.Parameter);
         Assert.EndsWith("Anthropic batch \"msgbatch_123\" results are no longer available.", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::forwards operation headers and the abort signal while retrieving results", Coverage = UpstreamCoverage.Partial, Note = "Checks that the caller token reaches both HTTP calls, not the identity of the JS abort signal.")]
+    public async Task Forwards_operation_headers_and_the_abort_signal_while_retrieving_results()
+    {
+        var handler = new RecordingHandler().Respond(BatchResponse()).Respond(ResultsUrl, "{\"custom_id\":\"canceled\",\"result\":{\"type\":\"canceled\"}}");
+        var batch = CreateBatch(handler, new Dictionary<string, string> { ["Provider-Header"] = "provider" });
+        using var source = new CancellationTokenSource();
+
+        var stream = await batch.DoGetResultsAsync(OperationCall(new Dictionary<string, string> { ["Operation-Header"] = "operation" }, source.Token), source.Token);
+        await stream.ToListAsync().AsTask();
+
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.All(handler.Requests, request =>
+        {
+            Assert.Equal("provider", request.Headers["provider-header"]);
+            Assert.Equal("operation", request.Headers["operation-header"]);
+        });
+        Assert.All(handler.Requests, request => Assert.True(request.TokenCanBeCanceled));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::exposes batch support on the provider", Coverage = UpstreamCoverage.Partial, Note = "Language models have no batch members by construction in C#, so only the batch API surface is checked.")]
+    public void Exposes_batch_support_on_the_provider()
+    {
+        var batch = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" }).ExperimentalBatch();
+
+        Assert.NotNull(batch);
+        Assert.True(batch!.CanCancel);
+        Assert.True(batch.CanList);
+        Assert.Equal("anthropic.batch", batch.Provider);
     }
 
     private static IBatchApi CreateBatch(HttpMessageHandler handler, IReadOnlyDictionary<string, string>? headers = null)
@@ -571,11 +603,12 @@ public sealed class AnthropicBatchTests
         return batch;
     }
 
-    private sealed record RecordedRequest(string Method, string Url, string Body, Dictionary<string, string> Headers, bool TokenCancelledByCaller);
+    private sealed record RecordedRequest(string Method, string Url, string Body, Dictionary<string, string> Headers, bool TokenCancelledByCaller, bool TokenCanBeCanceled);
 
     private sealed class RecordingHandler : HttpMessageHandler
     {
         private string _response = "{}";
+        private readonly Dictionary<string, string> _routes = new();
 
         public List<RecordedRequest> Requests { get; } = [];
 
@@ -587,13 +620,19 @@ public sealed class AnthropicBatchTests
             return this;
         }
 
+        public RecordingHandler Respond(string url, string jsonLines)
+        {
+            _routes[url] = jsonLines;
+            return this;
+        }
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
             var headers = request.Headers.ToDictionary(header => header.Key, header => string.Join(",", header.Value), StringComparer.OrdinalIgnoreCase);
             OnSend?.Invoke();
-            Requests.Add(new RecordedRequest(request.Method.Method, request.RequestUri!.AbsoluteUri, body, headers, cancellationToken.IsCancellationRequested));
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_response, Encoding.UTF8, "application/json") };
+            Requests.Add(new RecordedRequest(request.Method.Method, request.RequestUri!.AbsoluteUri, body, headers, cancellationToken.IsCancellationRequested, cancellationToken.CanBeCanceled));
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_routes.TryGetValue(request.RequestUri.AbsoluteUri, out var routed) ? routed : _response, Encoding.UTF8, "application/json") };
         }
     }
 
