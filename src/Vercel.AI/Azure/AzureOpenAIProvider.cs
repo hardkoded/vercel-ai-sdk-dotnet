@@ -83,7 +83,14 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options = null)
-        : base(Prepare(options), httpClient)
+        : this(httpClient, options, null)
+    {
+    }
+
+    // The download client is the transport for untrusted file URLs: it never carries the provider credentials.
+    // It maps to the raw `downloadFetch` delegate that upstream hands to the image models.
+    private AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options, HttpClient? downloadClient)
+        : base(Prepare(options, downloadClient), httpClient)
     {
         _azure = options ?? new AzureOpenAIOptions();
     }
@@ -168,7 +175,11 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         }
 
         var client = transport is null ? new HttpClient() : new HttpClient(transport, disposeHandler: false);
-        return new AzureOpenAIProvider(client, options);
+
+        // Downloads skip the token-injecting handler. A caller-supplied handler stays the transport, like a custom `fetch`;
+        // without one, the shared client that never follows a redirect is used.
+        var downloadClient = handler is null ? null : new HttpClient(handler, disposeHandler: false);
+        return new AzureOpenAIProvider(client, options, downloadClient);
     }
 
     /// <summary>
@@ -226,7 +237,22 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             deploymentId);
     }
 
-    private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options)
+    /// <summary>
+    /// Image model. MAI-Image models use the MAI image API by default; other IDs use OpenAI. Override with
+    /// <c>providerOptions.azure.api</c>. Maps to <c>image</c>.
+    /// </summary>
+    public AzureImageModel Image(string deploymentId)
+    {
+        return new AzureImageModel(this, deploymentId);
+    }
+
+    /// <summary>Image model. Alias of <see cref="Image(string)"/>. Maps to <c>imageModel</c>.</summary>
+    public override IImageModel ImageModel(string deploymentId)
+    {
+        return Image(deploymentId);
+    }
+
+    private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options, HttpClient? downloadClient)
     {
         options ??= new AzureOpenAIOptions();
         if (!string.IsNullOrEmpty(options.ApiKey) && options.TokenProvider != null)
@@ -247,6 +273,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             AzureUseDeploymentBasedUrls = options.UseDeploymentBasedUrls,
             SupportsEmbeddings = true,
             SupportsImages = false,
+            DownloadHttpClient = downloadClient,
         };
         foreach (var pair in options.Headers)
         {
