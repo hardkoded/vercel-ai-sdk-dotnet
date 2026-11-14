@@ -298,6 +298,67 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        /// <summary>
+        /// Serializes the model id and config for a workflow boundary. Maps to <c>[WORKFLOW_SERIALIZE]</c>.
+        /// The API key is not part of the serialized config. Pass it to <see cref="Deserialize"/>.
+        /// </summary>
+        public SerializedModelOptions Serialize()
+        {
+            var headers = new Dictionary<string, object?>();
+            foreach (var pair in _provider.Options.Headers)
+            {
+                if (!IsSensitiveHeader(pair.Key))
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+
+            var options = _provider.Options as GladiaOptions;
+            var config = new Dictionary<string, object?>
+            {
+                ["provider"] = Provider,
+                ["url"] = _provider.Options.BaseUrl,
+                ["headers"] = headers,
+                ["pollIntervalMs"] = options?.PollIntervalMs,
+                ["pollTimeoutMs"] = options?.PollTimeoutMs,
+            };
+            return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+        }
+
+        /// <summary>Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+        /// <param name="serialized">The serialized model id and config.</param>
+        /// <param name="apiKey">API key. Defaults to the <c>GLADIA_API_KEY</c> environment variable.</param>
+        /// <param name="handler">HTTP handler. Pass one from tests.</param>
+        public static GladiaTranscriptionModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+        {
+            if (serialized is null)
+            {
+                throw new ArgumentNullException(nameof(serialized));
+            }
+
+            var options = new GladiaOptions { ApiKey = apiKey };
+            // The provider's fixed endpoint is restored when the config has no url.
+            if (serialized.Config.TryGetValue("url", out var url) && url is string baseUrl)
+            {
+                options.BaseUrl = baseUrl;
+            }
+
+            if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
+            {
+                foreach (System.Collections.DictionaryEntry entry in map)
+                {
+                    if (entry.Value is string value)
+                    {
+                        options.Headers[(string)entry.Key] = value;
+                    }
+                }
+            }
+
+            options.PollIntervalMs = ReadInt(serialized.Config, "pollIntervalMs");
+            options.PollTimeoutMs = ReadInt(serialized.Config, "pollTimeoutMs");
+            return (GladiaTranscriptionModel)GladiaProvider.Create(options, handler).TranscriptionModel(serialized.ModelId);
+        }
+
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
@@ -517,6 +578,26 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             ProviderExchange.AddUserAgent(headers, "gladia");
             return headers;
         }
+    }
+
+    private static int? ReadInt(IReadOnlyDictionary<string, object?> config, string name)
+    {
+        return config.TryGetValue(name, out var value) && value is not null
+            ? Convert.ToInt32(value, CultureInfo.InvariantCulture)
+            : null;
+    }
+
+    private static bool IsSensitiveHeader(string name)
+    {
+        foreach (var marker in new[] { "authorization", "key", "token", "secret", "cookie" })
+        {
+            if (name.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string? ReadString(JsonElement element, string name)
