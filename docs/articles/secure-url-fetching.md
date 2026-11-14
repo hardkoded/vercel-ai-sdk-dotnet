@@ -55,7 +55,7 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 });
 ```
 
-Each request in the batch carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download.
+The download function is called once per generated file with a one-item batch. The request carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download. The SDK does not validate the URL before it calls your function: `Download.CreateDownload` validates it, so a custom function must do the same.
 
 ## Decision and extraction state downloads
 
