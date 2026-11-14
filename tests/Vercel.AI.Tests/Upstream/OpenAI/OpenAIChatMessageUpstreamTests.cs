@@ -377,7 +377,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message names::preserves names on plain user and assistant messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::preserves names on plain user and assistant messages", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void PreservesNamesOnPlainUserAndAssistantMessages()
     {
         var result = OpenAIChatMessages.Convert(new[]
@@ -390,7 +390,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message names::preserves names on user parts and assistant tool-only messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::preserves names on user parts and assistant tool-only messages", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void PreservesNamesOnUserPartsAndAssistantToolOnlyMessages()
     {
         var result = OpenAIChatMessages.Convert(new[]
@@ -410,7 +410,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     [Theory]
     [InlineData("system")]
     [InlineData("developer")]
-    [UpstreamTest(Prefix + "message names::preserves names and cache breakpoints in %s mode", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::preserves names and cache breakpoints in %s mode", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void PreservesNamesAndCacheBreakpointsInSystemMode(string systemMessageMode)
     {
         var result = OpenAIChatMessages.Convert(
@@ -430,7 +430,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message names::removes named system messages in remove mode", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::removes named system messages in remove mode", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void RemovesNamedSystemMessagesInRemoveMode()
     {
         var result = OpenAIChatMessages.Convert(
@@ -442,7 +442,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message names::warns and omits names on tool messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::warns and omits names on tool messages", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void WarnsAndOmitsNamesOnToolMessages()
     {
         var result = OpenAIChatMessages.Convert(new[]
@@ -461,7 +461,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     [InlineData("true")]
     [InlineData("{}")]
     [InlineData("[]")]
-    [UpstreamTest(Prefix + "message names::rejects invalid names: %j", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::rejects invalid names: %j", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void RejectsInvalidNames(string name)
     {
         var error = Assert.Throws<InvalidArgumentException>(() => OpenAIChatMessages.Convert(new[]
@@ -476,7 +476,7 @@ public sealed class OpenAIChatMessageUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "message names::ignores names from unrelated namespaces and content parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "message names::ignores names from unrelated namespaces and content parts", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public void IgnoresNamesFromUnrelatedNamespacesAndContentParts()
     {
         var result = OpenAIChatMessages.Convert(new[]

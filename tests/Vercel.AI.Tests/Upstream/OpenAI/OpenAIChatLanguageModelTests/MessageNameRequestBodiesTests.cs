@@ -17,7 +17,7 @@ public sealed class MessageNameRequestBodiesTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest(Prefix + "serializes names in %s requests", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "serializes names in %s requests", Coverage = UpstreamCoverage.Covered, Commit = "243bf221a89315cbe3d0c91161e5e61b763736d7")]
     public async Task Serializes_names_in_requests(string mode)
     {
         var capture = new OpenAICapture();
