@@ -18,11 +18,11 @@ public sealed class DeepgramStreamingTranscriptionTests
     private static readonly AudioFormat Pcm16 = new AudioFormat("audio/pcm", 16000);
 
     [Fact]
-    [UpstreamTest(Prefix + "uses the live endpoint, auth subprotocols, headers, and streaming options", Coverage = UpstreamCoverage.Partial, Note = "The API key is a string. Upstream resolves an async key function.", Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
+    [UpstreamTest(Prefix + "uses the live endpoint, auth subprotocols, headers, and streaming options", Coverage = UpstreamCoverage.Covered, Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
     public async Task Uses_the_live_endpoint_auth_subprotocols_headers_and_streaming_options()
     {
         MockWebSocket.Reset();
-        var options = new DeepgramOptions { ApiKey = "resolved-key", WebSocket = MockWebSocket.Factory };
+        var options = new DeepgramOptions { ApiKeyProvider = _ => Task.FromResult("resolved-key"), WebSocket = MockWebSocket.Factory };
         options.Headers["X-Provider"] = "provider";
         var result = await Stream(DeepgramProvider.Create(options).TranscriptionModel("nova-3"), Audio(), Pcm16, headers: new Dictionary<string, string> { ["X-Request"] = "request" }, providerOptions: @"{""deepgram"":{""language"":""fr"",""redact"":[""numbers"",""names""],""streaming"":{""interimResults"":true,""endpointing"":false,""channels"":2,""multichannel"":true,""vadEvents"":true,""utteranceEndMs"":1000}}}");
 
@@ -106,14 +106,11 @@ public sealed class DeepgramStreamingTranscriptionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits undefined headers before resolving the authentication scheme", Coverage = UpstreamCoverage.Partial, Note = "Request headers are non-null strings in .NET. The undefined entries are provider headers set to null.", Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
+    [UpstreamTest(Prefix + "omits undefined headers before resolving the authentication scheme", Coverage = UpstreamCoverage.Covered, Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
     public async Task Omits_undefined_headers_before_resolving_the_authentication_scheme()
     {
         MockWebSocket.Reset();
-        var options = new DeepgramOptions { WebSocket = MockWebSocket.Factory };
-        options.Headers["authorization"] = null!;
-        options.Headers["X-Optional"] = null!;
-        var result = await Stream(DeepgramProvider.Create(options).TranscriptionModel("nova-3"), Audio(), Pcm16);
+        var result = await Stream(Model(), Audio(), Pcm16, headers: new Dictionary<string, string> { ["authorization"] = null!, ["X-Optional"] = null! });
         var socket = MockWebSocket.Instances[0];
         Assert.Null(socket.Protocols);
         Assert.DoesNotContain("authorization", socket.Headers!.Keys);
@@ -269,11 +266,12 @@ public sealed class DeepgramStreamingTranscriptionTests
     }
 
     [Theory]
-    [InlineData("audio/mp3", 16000)]
+    [InlineData("audio/mp3", 16000.0)]
     [InlineData("audio/pcm", null)]
-    [InlineData("audio/pcm", 0)]
-    [UpstreamTest(Prefix + "rejects unsupported raw formats or sample rates: %j", Coverage = UpstreamCoverage.Partial, Note = "The sample rate is an integer in .NET, so the 1.5 case cannot be expressed.", Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
-    public async Task Rejects_unsupported_raw_formats_or_sample_rates(string type, int? rate)
+    [InlineData("audio/pcm", 0.0)]
+    [InlineData("audio/pcm", 1.5)]
+    [UpstreamTest(Prefix + "rejects unsupported raw formats or sample rates: %j", Coverage = UpstreamCoverage.Covered, Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
+    public async Task Rejects_unsupported_raw_formats_or_sample_rates(string type, double? rate)
     {
         MockWebSocket.Reset();
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => Stream(Model(), Audio(), new AudioFormat(type, rate)));

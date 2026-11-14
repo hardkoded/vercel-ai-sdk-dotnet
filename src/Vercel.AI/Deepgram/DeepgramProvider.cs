@@ -24,6 +24,13 @@ public class DeepgramOptions : OpenAICompatibleOptions
 
     /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>.</summary>
     public WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>
+    /// Resolves the API key on every call, like upstream's resolvable <c>apiKey</c>. Its value wins over
+    /// <see cref="OpenAICompatibleOptions.ApiKey"/> and the environment variable. An <c>Authorization</c> header in
+    /// <see cref="OpenAICompatibleOptions.Headers"/> still wins.
+    /// </summary>
+    public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
 }
 
 /// <summary>Parsed Deepgram error body.</summary>
@@ -291,6 +298,24 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     /// <summary>The WebSocket factory for streaming transcription.</summary>
     internal WebSocketFactory? WebSocket => (Options as DeepgramOptions)?.WebSocket;
 
+    /// <summary>Provider headers with the key from <see cref="DeepgramOptions.ApiKeyProvider"/> resolved.</summary>
+    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(CancellationToken cancellationToken)
+    {
+        var headers = CreateHeaders();
+        if ((Options as DeepgramOptions)?.ApiKeyProvider is { } provider && !Options.Headers.Keys.Any(name => string.Equals(name, "Authorization", StringComparison.OrdinalIgnoreCase)))
+        {
+            var key = await provider(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new AiSdkException("Deepgram API key resolved to an empty value.");
+            }
+
+            headers["Authorization"] = "Token " + key;
+        }
+
+        return headers;
+    }
+
     internal DateTimeOffset Now()
     {
         var clock = (Options as DeepgramOptions)?.Clock;
@@ -302,7 +327,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         var uri = new Uri(ApiKeys.Combine(Options.BaseUrl, path).AbsoluteUri + "?" + string.Join("&", query.Select(pair => pair.Key + "=" + Uri.EscapeDataString(pair.Value))));
         try
         {
-            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers), cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception) when (DeepgramError.Parse(exception.ResponseBody).Value is { } error)
         {
@@ -782,7 +807,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
         {
-            return StreamAsync(call ?? throw new ArgumentNullException(nameof(call)));
+            return StreamAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
         }
 
         /// <inheritdoc />
@@ -792,9 +817,9 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
             return new TranscriptionResult(result.Text);
         }
 
-        private async Task<TranscriptionStreamStart?> StreamAsync(TranscriptionStreamCall call)
+        private async Task<TranscriptionStreamStart?> StreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
         {
-            return await DeepgramStreamingTranscription.StreamAsync(ModelId, _provider, call).ConfigureAwait(false);
+            return await DeepgramStreamingTranscription.StreamAsync(ModelId, _provider, call, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<TranscriptionModelResult> GenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)

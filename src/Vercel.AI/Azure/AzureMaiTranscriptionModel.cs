@@ -17,8 +17,8 @@ namespace Vercel.AI.Azure;
 /// </summary>
 internal sealed class AzureMaiTranscriptionModel
 {
-    private static readonly int[] SupportedSampleRates = { 16000, 24000 };
-    private const int DefaultSampleRate = 24000;
+    private static readonly double[] SupportedSampleRates = { 16000, 24000 };
+    private const double DefaultSampleRate = 24000;
 
     private readonly Func<Uri> _url;
     private readonly Func<Dictionary<string, string?>> _headers;
@@ -122,7 +122,7 @@ internal sealed class AzureMaiTranscriptionModel
         }
 
         var connection = GetConnection(WebSocketUtils.ToWebSocketUrl(_url()), headers, _webSocket != null);
-        var session = new Session(call, sessionUpdate, rate * 2, maiOptions.Language, warnings);
+        var session = new Session(call, sessionUpdate, (int)rate * 2, maiOptions.Language, warnings);
         session.Start(connection.Url, connection.Headers, _webSocket ?? _nativeWebSocket);
         return Task.FromResult<TranscriptionStreamStart?>(new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),

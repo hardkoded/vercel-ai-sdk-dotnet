@@ -45,7 +45,7 @@ internal static class DeepgramStreamingTranscription
 
     private static readonly Regex Credentials = new Regex(@"^(Token|Bearer) (\S+)\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
-    public static Task<TranscriptionStreamStart> StreamAsync(string modelId, DeepgramProvider provider, TranscriptionStreamCall options)
+    public static async Task<TranscriptionStreamStart> StreamAsync(string modelId, DeepgramProvider provider, TranscriptionStreamCall options, CancellationToken cancellationToken)
     {
         if (!DeepgramModelCatalog.GetDeepgramTranscriptionModelEntry(modelId).Streaming)
         {
@@ -60,7 +60,7 @@ internal static class DeepgramStreamingTranscription
             _ => null,
         };
         var rate = options.InputAudioFormat.Rate;
-        if (encoding is null || rate is null || rate <= 0)
+        if (encoding is null || rate is null || rate <= 0 || rate != Math.Floor(rate.Value) || double.IsInfinity(rate.Value))
         {
             throw new InvalidArgumentException("inputAudioFormat", options.InputAudioFormat, "Deepgram streaming requires audio/pcm (16-bit little-endian), audio/pcmu, or audio/pcma and a positive integer sample rate.");
         }
@@ -124,7 +124,7 @@ internal static class DeepgramStreamingTranscription
         }.Uri;
 
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>[] { provider.CreateHeaders(), options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)) })
+        foreach (var source in new IEnumerable<KeyValuePair<string, string?>>[] { await provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), options.Headers.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)) })
         {
             foreach (var pair in source)
             {
@@ -145,10 +145,10 @@ internal static class DeepgramStreamingTranscription
         var timestamp = provider.Now().UtcDateTime;
         var session = new Session(modelId, options, timestamp, warnings, language);
         session.Start(url, protocols, headers, provider.WebSocket);
-        return Task.FromResult(new TranscriptionStreamStart(
+        return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: timestamp, modelId: modelId),
-            new ProviderRequest(url.ToString())));
+            new ProviderRequest(url.ToString()));
     }
 
     private static void ValidateStreamingOption(string option, JsonElement value)
