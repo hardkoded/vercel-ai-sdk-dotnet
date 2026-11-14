@@ -1202,6 +1202,18 @@ var second = await client.GenerateTextAsync(new GenerateTextOptions
 
 On a continuation the request omits `system` and the tool definitions, even when you pass them, because Anthropic keeps them from the create request. Keep passing identical tools so tool names, tool choice, and tool beta headers still work. The request keeps `tool_choice` and the other per-request settings. A `compatibility` warning on `providerOptions.anthropic.thread` says that supplied instructions or tools were left out. To change them, start a new thread.
 
+### Computer toolset factory
+
+`AnthropicTools.ComputerToolset20260801(configs, name)` declares `anthropic.computer_toolset_20260801` with a local input schema. `configs` maps a member name (see `AnthropicTools.ComputerToolset20260801Members`) to an `AnthropicComputerToolsetMemberConfig` with `Enabled` (default `true`) and `DeferLoading` (default `false`). Members you omit keep their defaults, including `zoom`. The input schema drops every member with `Enabled = false` from the `action` enum, so a call to it fails input validation. An unknown member name throws `ArgumentException`.
+
+```csharp
+var computer = AnthropicTools.ComputerToolset20260801(new Dictionary<string, AnthropicComputerToolsetMemberConfig>
+{
+    ["wait"] = new() { Enabled = false },
+    ["zoom"] = new() { DeferLoading = true },
+});
+```
+
 ### Computer toolset members
 
 `anthropic.computer_toolset_20260801` (`LanguageModelTool.ProviderDefined("anthropic.computer_toolset_20260801", name, args)`) returns each action as its own `tool_use` block with `toolset_name: "computer"`. The provider maps every action to one tool call named like your tool, with the member name as `action`, and keeps that returned member name as `action` even when the member input carries a different `action`.
