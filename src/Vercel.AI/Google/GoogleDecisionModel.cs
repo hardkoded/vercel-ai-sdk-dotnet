@@ -43,6 +43,97 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
     /// <inheritdoc />
     public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
 
+    /// <summary>
+    /// Serializes the model id, the provider id, the endpoint, and the resolved request headers (including authentication) for a workflow boundary.
+    /// Maps to <c>[WORKFLOW_SERIALIZE]</c>. The HTTP client is not serialized. Headers that need asynchronous work throw <see cref="SerializationError"/>.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        var pending = _provider.HeadersAsync(CancellationToken.None);
+        if (!pending.IsCompleted)
+        {
+            throw new SerializationError("Cannot serialize asynchronous model options.");
+        }
+
+        var headers = new Dictionary<string, string>();
+        foreach (var pair in pending.GetAwaiter().GetResult())
+        {
+            if (pair.Value != null)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        var config = new Dictionary<string, object?>
+        {
+            ["provider"] = Provider,
+            ["baseURL"] = _provider.Options.BaseUrl,
+            ["headers"] = headers,
+        };
+        return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+    }
+
+    /// <summary>
+    /// Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>. Pass <paramref name="httpClient"/> to
+    /// send the requests through a custom handler.
+    /// </summary>
+    public static GoogleDecisionModel Deserialize(SerializedModelOptions options, HttpClient? httpClient = null)
+    {
+        if (options == null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        var providerOptions = new GoogleOptions();
+        if (options.Config.TryGetValue("baseURL", out var baseUrl) && AsString(baseUrl) is { } url)
+        {
+            providerOptions.BaseUrl = url;
+        }
+
+        if (options.Config.TryGetValue("headers", out var headers))
+        {
+            switch (headers)
+            {
+                case JsonElement { ValueKind: JsonValueKind.Object } element:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        if (property.Value.ValueKind == JsonValueKind.String)
+                        {
+                            providerOptions.Headers[property.Name] = property.Value.GetString()!;
+                        }
+                    }
+
+                    break;
+                case IDictionary<string, object?> values:
+                    foreach (var pair in values)
+                    {
+                        if (AsString(pair.Value) is { } value)
+                        {
+                            providerOptions.Headers[pair.Key] = value;
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        // The serialized headers already carry the credentials. Feed them back through the provider's own key settings.
+        if (providerOptions.Headers.TryGetValue("x-goog-api-key", out var apiKey) && !string.IsNullOrWhiteSpace(apiKey))
+        {
+            providerOptions.ApiKey = apiKey;
+        }
+        else if (providerOptions.Headers.TryGetValue("Authorization", out var authorization) && authorization is { } bearer
+            && bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            providerOptions.UseBearerToken = true;
+            providerOptions.ApiKey = bearer.Substring("Bearer ".Length);
+        }
+
+        var provider = new GoogleProvider(httpClient ?? new HttpClient(), providerOptions);
+        var providerId = options.Config.TryGetValue("provider", out var id) && AsString(id) is { } text ? text : "google.decision";
+        return new GoogleDecisionModel(provider, options.ModelId, providerId);
+    }
+
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]
     public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
@@ -259,6 +350,16 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         }
 
         return input;
+    }
+
+    private static string? AsString(object? value)
+    {
+        return value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
     }
 
     private static JsonObject BuildQuestion(string id, DecisionQuestion question, string provider, string modelId)

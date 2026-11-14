@@ -414,19 +414,33 @@ public sealed class GoogleDecisionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "preserves workflow serialization", Commit = "f70336158e026a1aa493f41eb22fc8df7c6aadb1", Coverage = UpstreamCoverage.Partial, Note = "The port has no workflow serialization. The test checks that a model rebuilt from the same provider keeps its model id, provider id, and configured headers.")]
+    [UpstreamTest(Prefix + "preserves workflow serialization", Commit = "f70336158e026a1aa493f41eb22fc8df7c6aadb1", Coverage = UpstreamCoverage.Covered)]
     public async Task Preserves_workflow_serialization()
     {
-        var (model, capture) = Setup();
-        var restored = new GoogleDecisionModel(
-            GoogleProvider.Create(new GoogleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1beta/", Headers = { ["x-provider"] = "configured" } }, capture),
-            model.ModelId,
-            model.Provider);
+        var provider = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1beta/", Headers = { ["x-provider"] = "configured" } });
+        var model = provider.DecisionModel("gemini-decision-1");
+        var serialized = model.Serialize();
+        var capture = new GoogleDecisionCapture { ResponseJson = Fixture().ToJsonString() };
+        var restored = GoogleDecisionModel.Deserialize(serialized, new HttpClient(capture));
         Assert.Equal(model.ModelId, restored.ModelId);
         Assert.Equal(model.Provider, restored.Provider);
+        Assert.False(serialized.Config.ContainsKey("fetch"));
+        Assert.False(serialized.Config.ContainsKey("httpClient"));
+        var headers = Assert.IsAssignableFrom<IDictionary<string, object?>>(serialized.Config["headers"]);
+        Assert.Equal("test-key", headers["x-goog-api-key"]);
+        Assert.Equal("configured", headers["x-provider"]);
         await restored.DoDecideAsync(Call());
         Assert.Equal("test-key", capture.Headers["x-goog-api-key"]);
         Assert.Equal("configured", capture.Headers["x-provider"]);
+
+        // A workflow runtime rehydrates the config from JSON, so values arrive as JsonElement.
+        var rehydrated = new Vercel.AI.ProviderUtils.SerializedModelOptions(
+            serialized.ModelId,
+            System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(System.Text.Json.JsonSerializer.Serialize(serialized.Config))!.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+        var secondCapture = new GoogleDecisionCapture { ResponseJson = Fixture().ToJsonString() };
+        await GoogleDecisionModel.Deserialize(rehydrated, new HttpClient(secondCapture)).DoDecideAsync(Call());
+        Assert.Equal("test-key", secondCapture.Headers["x-goog-api-key"]);
+        Assert.Equal("https://example.com/v1beta/decisions", secondCapture.Uri);
     }
 
     private static Dictionary<string, object?> File(string mediaType, Dictionary<string, object?> data)
