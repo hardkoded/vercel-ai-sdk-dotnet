@@ -17,16 +17,6 @@ namespace Vercel.AI.Google;
 public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
 #pragma warning restore CS0618
 {
-    private static string? AsString(object? value)
-    {
-        return value switch
-        {
-            string text => text,
-            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
-            _ => null,
-        };
-    }
-
     private static readonly JsonSerializerOptions Text = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     private static readonly string[] MediaKinds = { "image", "audio", "video", "document" };
@@ -128,7 +118,7 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         }
 
         // The serialized headers already carry the credentials. Feed them back through the provider's own key settings.
-        if (providerOptions.Headers.TryGetValue("x-goog-api-key", out var apiKey))
+        if (providerOptions.Headers.TryGetValue("x-goog-api-key", out var apiKey) && !string.IsNullOrWhiteSpace(apiKey))
         {
             providerOptions.ApiKey = apiKey;
         }
@@ -360,6 +350,16 @@ public sealed class GoogleDecisionModel : IEvaluationDecisionCaller
         }
 
         return input;
+    }
+
+    private static string? AsString(object? value)
+    {
+        return value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
     }
 
     private static JsonObject BuildQuestion(string id, DecisionQuestion question, string provider, string modelId)

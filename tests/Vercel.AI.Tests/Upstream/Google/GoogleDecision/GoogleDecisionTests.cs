@@ -432,6 +432,15 @@ public sealed class GoogleDecisionTests
         await restored.DoDecideAsync(Call());
         Assert.Equal("test-key", capture.Headers["x-goog-api-key"]);
         Assert.Equal("configured", capture.Headers["x-provider"]);
+
+        // A workflow runtime rehydrates the config from JSON, so values arrive as JsonElement.
+        var rehydrated = new Vercel.AI.ProviderUtils.SerializedModelOptions(
+            serialized.ModelId,
+            System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(System.Text.Json.JsonSerializer.Serialize(serialized.Config))!.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+        var secondCapture = new GoogleDecisionCapture { ResponseJson = Fixture().ToJsonString() };
+        await GoogleDecisionModel.Deserialize(rehydrated, new HttpClient(secondCapture)).DoDecideAsync(Call());
+        Assert.Equal("test-key", secondCapture.Headers["x-goog-api-key"]);
+        Assert.Equal("https://example.com/v1beta/decisions", secondCapture.Uri);
     }
 
     private static Dictionary<string, object?> File(string mediaType, Dictionary<string, object?> data)
