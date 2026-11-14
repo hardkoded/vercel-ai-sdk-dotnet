@@ -136,7 +136,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     public override async Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel");
-        var headers = await BatchHeadersAsync(call, "POST", "{}", uri, cancellationToken).ConfigureAwait(false);
+        var headers = await BatchHeadersAsync(call, "{}", uri, cancellationToken).ConfigureAwait(false);
         await SendBatchAsync(HttpMethod.Post, uri, "{}", headers, cancellationToken).ConfigureAwait(false);
         return new BatchCancelResult();
     }
@@ -161,7 +161,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
             uri = new Uri(uri.AbsoluteUri + "?" + string.Join("&", query));
         }
 
-        var headers = await BatchHeadersAsync(call, "GET", null, uri, cancellationToken).ConfigureAwait(false);
+        var headers = await BatchHeadersAsync(call, null, uri, cancellationToken).ConfigureAwait(false);
         JsonElement page;
         using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false))
         {
@@ -246,11 +246,12 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
 
     private Uri GetBatchUrl(string path) => new Uri(_provider.NormalizedBase().TrimEnd('/') + "/messages/batches" + path);
 
-    private Task<Dictionary<string, string?>> BatchHeadersAsync(BatchOperationCall call, string method, string? body, Uri signingUri, CancellationToken cancellationToken)
+    // Like upstream's AWS fetch wrapper, only POST requests with a body are signed. GETs go out unsigned.
+    private Task<Dictionary<string, string?>> BatchHeadersAsync(BatchOperationCall call, string? body, Uri signingUri, CancellationToken cancellationToken)
     {
         var callHeaders = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
         return _provider.UsesAws
-            ? _provider.CreateSignedHeadersAsync(Array.Empty<string>(), callHeaders, body, signingUri, cancellationToken, method)
+            ? _provider.CreateSignedHeadersAsync(Array.Empty<string>(), callHeaders, body, signingUri, cancellationToken)
             : _provider.CreateHeadersAsync(Array.Empty<string>(), callHeaders, body, cancellationToken);
     }
 
@@ -263,7 +264,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     private async Task<JsonElement> RetrieveBatchAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty));
-        var headers = await BatchHeadersAsync(call, "GET", null, uri, cancellationToken).ConfigureAwait(false);
+        var headers = await BatchHeadersAsync(call, null, uri, cancellationToken).ConfigureAwait(false);
         return await SendBatchAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false);
     }
 
@@ -329,7 +330,7 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
             throw new AiSdkException("Anthropic batch \"" + batchId + "\" completed without batch output.");
         }
 
-        var headers = await BatchHeadersAsync(call, "GET", null, new Uri(url), cancellationToken).ConfigureAwait(false);
+        var headers = await BatchHeadersAsync(call, null, new Uri(url), cancellationToken).ConfigureAwait(false);
 
         // The results URL comes from the response. Off the provider origin it must pass download validation and gets no credentials.
         if (!ProviderValues.IsSameOrigin(url, baseUrl))
