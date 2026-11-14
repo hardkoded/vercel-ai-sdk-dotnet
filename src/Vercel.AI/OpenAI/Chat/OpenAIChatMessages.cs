@@ -5,6 +5,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -45,6 +46,12 @@ public sealed class OpenAIChatPromptMessage
 
     /// <summary>Provider options for this message. The <c>openai</c> object is read.</summary>
     public JsonElement? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// Message-level provider options of a tool message, where <c>openai.name</c> is read and then dropped with a warning.
+    /// Other roles read <see cref="ProviderOptions"/>.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; set; }
 }
 
 /// <summary>One user or assistant content part.</summary>
@@ -110,31 +117,40 @@ public static class OpenAIChatMessages
     public static OpenAIChatMessageResult Convert(IReadOnlyList<ModelMessage> prompt, string systemMessageMode = "system")
     {
         var messages = new List<OpenAIChatPromptMessage>();
-        foreach (var message in ToolModelMessage.Flatten(prompt))
+        foreach (var message in prompt)
         {
             switch (message)
             {
                 case SystemModelMessage system:
-                    messages.Add(new OpenAIChatPromptMessage("system") { Text = system.Content });
+                    messages.Add(new OpenAIChatPromptMessage("system") { Text = system.Content, ProviderOptions = Options(system.ProviderOptions) });
                     break;
                 case UserModelMessage user:
-                    messages.Add(new OpenAIChatPromptMessage("user") { Parts = Parts(user) });
+                    messages.Add(new OpenAIChatPromptMessage("user") { Parts = Parts(user), ProviderOptions = Options(user.ProviderOptions) });
                     break;
                 case AssistantModelMessage assistant:
                     messages.Add(new OpenAIChatPromptMessage("assistant")
                     {
                         Text = assistant.Text,
                         ToolCalls = assistant.ToolCalls,
+                        ProviderOptions = Options(assistant.ProviderOptions),
                     });
                     break;
                 case ToolModelMessage tool:
-                    messages.Add(new OpenAIChatPromptMessage("tool")
+                    // The message-level options belong to the whole tool message, so they are read once, before its results are split.
+                    var first = true;
+                    foreach (var result in tool.Results)
                     {
-                        ToolCallId = tool.ToolCallId,
-                        ToolOutput = tool.OutputJson,
-                        ToolOutputType = tool.OutputType,
-                        ProviderOptions = tool.ProviderMetadata,
-                    });
+                        messages.Add(new OpenAIChatPromptMessage("tool")
+                        {
+                            ToolCallId = result.ToolCallId,
+                            ToolOutput = result.OutputJson,
+                            ToolOutputType = result.OutputType,
+                            ProviderOptions = result.ProviderMetadata,
+                            MessageProviderOptions = first ? tool.MessageProviderOptions : null,
+                        });
+                        first = false;
+                    }
+
                     break;
                 default:
                     throw new AiSdkException("Unsupported message role '" + message.Role + "'.");
@@ -157,12 +173,17 @@ public static class OpenAIChatMessages
                     ConvertSystem(messages, warnings, message, systemMessageMode);
                     break;
                 case "user":
-                    messages.Add(ConvertUser(message));
+                    messages.Add(WithName(ConvertUser(message), Name(message.ProviderOptions)));
                     break;
                 case "assistant":
-                    messages.Add(ConvertAssistant(message));
+                    messages.Add(WithName(ConvertAssistant(message), Name(message.ProviderOptions)));
                     break;
                 case "tool":
+                    if (Name(message.MessageProviderOptions) != null)
+                    {
+                        warnings.Add(new OpenAICallWarning("unsupported", "message name on tool messages", null));
+                    }
+
                     messages.Add(ConvertTool(message));
                     break;
                 default:
@@ -175,6 +196,8 @@ public static class OpenAIChatMessages
 
     private static void ConvertSystem(JsonArray messages, List<OpenAICallWarning> warnings, OpenAIChatPromptMessage message, string systemMessageMode)
     {
+        // Upstream validates the message options before it picks the role or the remove mode.
+        var name = Name(message.ProviderOptions);
         switch (systemMessageMode)
         {
             case "remove":
@@ -186,7 +209,7 @@ public static class OpenAIChatMessages
                 JsonNode content = breakpoint == null
                     ? JsonValue.Create(message.Text ?? string.Empty)!
                     : new JsonArray(TextBlock(message.Text ?? string.Empty, breakpoint));
-                messages.Add(new JsonObject { ["role"] = systemMessageMode, ["content"] = content });
+                messages.Add(WithName(new JsonObject { ["role"] = systemMessageMode, ["content"] = content }, name));
                 return;
             default:
                 throw new AiSdkException("Unsupported system message mode: " + systemMessageMode);
@@ -429,6 +452,82 @@ public static class OpenAIChatMessages
             ["tool_call_id"] = message.ToolCallId,
             ["content"] = content,
         };
+    }
+
+    private static JsonElement? Options(IReadOnlyDictionary<string, JsonElement>? options)
+    {
+        if (options == null)
+        {
+            return null;
+        }
+
+        var json = new JsonObject();
+        foreach (var option in options)
+        {
+            json[option.Key] = JsonNode.Parse(option.Value.GetRawText());
+        }
+
+        return JsonSerializer.SerializeToElement(json);
+    }
+
+    /// <summary>Reads <c>openai.name</c> from message options. Only the <c>openai</c> namespace counts; a name that is not a string is invalid.</summary>
+    private static string? Name(JsonElement? providerOptions)
+    {
+        if (providerOptions is not { ValueKind: JsonValueKind.Object } options
+            || !options.TryGetProperty("openai", out var openai)
+            || openai.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return NameOf(openai);
+    }
+
+    private static string? NameOf(JsonElement openai)
+    {
+        if (!openai.TryGetProperty("name", out var name))
+        {
+            return null;
+        }
+
+        if (name.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidArgumentException("providerOptions", name.GetRawText(), "invalid openai provider options");
+        }
+
+        return name.GetString();
+    }
+
+    private static string? Name(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    {
+        if (providerOptions == null || !providerOptions.TryGetValue("openai", out var openai) || openai.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return NameOf(openai);
+    }
+
+    private static JsonObject WithName(JsonObject message, string? name)
+    {
+        if (name == null)
+        {
+            return message;
+        }
+
+        // Upstream puts name right after role.
+        var named = new JsonObject();
+        foreach (var property in message.ToList())
+        {
+            message.Remove(property.Key);
+            named[property.Key] = property.Value;
+            if (property.Key == "role")
+            {
+                named["name"] = name;
+            }
+        }
+
+        return named;
     }
 
     private static JsonObject TextBlock(string text, JsonObject? breakpoint)
