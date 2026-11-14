@@ -105,6 +105,23 @@ Always `V4`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L41)
 
+<a id="Vercel_AI_DeepSeek_DeepSeekResponsesLanguageModel_SupportedUrls_"></a>
+<a id="Vercel_AI_DeepSeek_DeepSeekResponsesLanguageModel_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+URL patterns the model accepts without downloading: `image/*` over http or https. Maps to `supportedUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L50)
+
 ## Methods
 
 <a id="Vercel_AI_DeepSeek_DeepSeekResponsesLanguageModel_DoGenerateAsync_"></a>
@@ -129,7 +146,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L58)
 
 <a id="Vercel_AI_DeepSeek_DeepSeekResponsesLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_DeepSeek_DeepSeekResponsesLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -153,4 +170,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepSeek/DeepSeekResponsesLanguageModel.cs#L92)

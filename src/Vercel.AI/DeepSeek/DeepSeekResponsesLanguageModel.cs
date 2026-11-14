@@ -46,6 +46,12 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <summary>URL patterns the model accepts without downloading: <c>image/*</c> over http or https. Maps to <c>supportedUrls</c>.</summary>
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["image/*"] = "^https?://.*\\z",
+    };
+
     private string ProviderOptionsName => _provider.Options.ProviderName;
 
     /// <inheritdoc />
