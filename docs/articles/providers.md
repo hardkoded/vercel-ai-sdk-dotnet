@@ -1085,6 +1085,8 @@ When Gladia reports a failed job, the call throws an `AiSdkError` named `Transcr
 - When the budget runs out, the call throws an `AiSdkError` named `TranscriptionJobPollingTimedOut` with the message `Transcription job polling timed out after <timeout> ms`.
 - The `CancellationToken` stops the loop before the next poll and cancels the wait between polls. A cancel surfaces as an `OperationCanceledException`.
 
+`GladiaTranscriptionModel.Serialize()` returns the model id and config for a workflow boundary (provider id, base URL, headers, and the two polling settings). It leaves out the API key and any header whose name contains `authorization`, `key`, `token`, `secret`, or `cookie`. `GladiaTranscriptionModel.Deserialize(serialized, apiKey)` restores the model with its polling settings; without `apiKey` it reads `GLADIA_API_KEY`.
+
 ## QuiverAI reference images
 
 The SVG edit provider option `quiverai.referenceImages` takes up to four `{ "url" }` or `{ "base64" }` objects. URL references must use HTTP or HTTPS. Base64 references must decode to PNG, JPEG, WebP, GIF, or SVG data. Use `QuiverAIImageReference.Prepare` to convert binary, data URL, or URL inputs into this shape. It returns a `QuiverAIImageReference` with exactly one of `Url` and `Base64` set, and it serializes to the JSON shape above.

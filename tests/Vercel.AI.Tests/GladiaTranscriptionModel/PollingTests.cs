@@ -170,4 +170,31 @@ public sealed class PollingTests
         Assert.IsAssignableFrom<OperationCanceledException>(error);
         Assert.Equal(1, Polls(handler));
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "keeps polling settings through workflow serialization", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    public async Task Keeps_polling_settings_through_workflow_serialization()
+    {
+        var now = 0;
+        var handler = Handler(_ => ProcessingBody, () => now += 12);
+        var configured = GladiaProvider.Create(
+            new GladiaOptions { ApiKey = "test-api-key", PollIntervalMs = 1, PollTimeoutMs = 20, Clock = () => DateTimeOffset.UnixEpoch.AddMilliseconds(now) },
+            handler).Transcription();
+
+        // Round-trip through JSON so the config holds JsonElement values, as a persisted workflow snapshot would.
+        var snapshot = configured.Serialize();
+        var json = JsonSerializer.Serialize(snapshot.Config);
+        var restoredConfig = JsonSerializer.Deserialize<Dictionary<string, object?>>(json)!;
+        var restored = GladiaProvider.GladiaTranscriptionModel.Deserialize(
+            new Vercel.AI.ProviderUtils.SerializedModelOptions(snapshot.ModelId, restoredConfig),
+            "test-api-key",
+            handler);
+        Assert.Equal(configured.ModelId, restored.ModelId);
+
+        var error = Assert.IsType<AiSdkError>(await Record.ExceptionAsync(() =>
+            restored.TranscribeAsync(Audio(), null, CancellationToken.None)));
+
+        Assert.Equal("TranscriptionJobPollingTimedOut", error.ErrorName);
+        Assert.Equal("Transcription job polling timed out after 20 ms", error.Message);
+    }
 }
