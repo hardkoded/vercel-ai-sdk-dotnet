@@ -698,48 +698,49 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _providerOptionsName);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            JsonObject? node = null;
-            var invalidJson = false;
+            JsonDocument? chunkDocument = null;
             try
             {
-                node = JsonNode.Parse(data) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                invalidJson = true;
-            }
+                try
+                {
+                    chunkDocument = JsonDocument.Parse(data);
+                }
+                catch (JsonException)
+                {
+                    state.MarkParseError();
+                }
 
-            if (invalidJson)
-            {
-                state.MarkParseError();
-                yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
-                continue;
-            }
+                if (chunkDocument == null)
+                {
+                    yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
+                    continue;
+                }
 
-            if (node == null)
-            {
-                continue;
-            }
+                // Mirrors openaiResponsesChunkSchema: an invalid chunk (including a non-object value) fails the stream,
+                // an unknown chunk (unknown_chunk) is ignored.
+                var node = JsonNode.Parse(data) as JsonObject;
+                if (node == null || !OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
+                {
+                    state.MarkParseError();
+                    yield return node != null && IsOpenAIChatCompletionChunk(node)
+                        ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node))
+                        : new ErrorStreamPart("Type validation failed: Value: " + data + ".");
+                    continue;
+                }
 
-            // Mirrors openaiResponsesChunkSchema: an invalid chunk fails the stream, an unknown chunk (unknown_chunk) is ignored.
-            using var chunkDocument = JsonDocument.Parse(data);
-            if (!OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
-            {
-                state.MarkParseError();
-                yield return IsOpenAIChatCompletionChunk(node)
-                    ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node))
-                    : new ErrorStreamPart("Type validation failed: Value: " + data + ".");
-                continue;
-            }
+                if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
+                {
+                    continue;
+                }
 
-            if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
-            {
-                continue;
+                foreach (var part in state.Push(node))
+                {
+                    yield return part;
+                }
             }
-
-            foreach (var part in state.Push(node))
+            finally
             {
-                yield return part;
+                chunkDocument?.Dispose();
             }
         }
 
