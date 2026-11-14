@@ -11,14 +11,18 @@ namespace Vercel.AI.Tests.MoreProviders;
 internal sealed class ParityCall
 {
     /// <summary>Creates a captured call.</summary>
-    public ParityCall(HttpMethod method, Uri uri, byte[] body, IReadOnlyDictionary<string, string> headers)
+    public ParityCall(HttpMethod method, Uri uri, byte[] body, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken = default)
     {
+        CancellationToken = cancellationToken;
         Method = method;
         Uri = uri;
         Body = body ?? Array.Empty<byte>();
         Headers = headers;
         Text = Encoding.UTF8.GetString(Body);
     }
+
+    /// <summary>Token the request was sent with.</summary>
+    public CancellationToken CancellationToken { get; }
 
     /// <summary>HTTP method.</summary>
     public HttpMethod Method { get; }
@@ -115,7 +119,7 @@ internal sealed class ParityHandler : HttpMessageHandler
             }
         }
 
-        var call = new ParityCall(request.Method, request.RequestUri ?? new Uri("https://example.invalid/"), body, headers);
+        var call = new ParityCall(request.Method, request.RequestUri ?? new Uri("https://example.invalid/"), body, headers, cancellationToken);
         Calls.Add(call);
         return Respond(call);
     }
