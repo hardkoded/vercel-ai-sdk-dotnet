@@ -61,6 +61,7 @@ public sealed class Agent
             Instructions = prepared.Instructions,
             Prompt = prepared.Prompt,
             Messages = prepared.Messages,
+            AllowSystemInMessages = prepared.AllowSystemInMessages,
             Tools = prepared.Tools,
             ActiveTools = prepared.ActiveTools,
             ToolCallConcurrency = prepared.ToolCallConcurrency,
