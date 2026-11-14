@@ -589,6 +589,72 @@ public sealed class TakoOutputSettings
     public bool? ForceRefresh { get; set; }
 }
 
+/// <summary>A dataset cell: a boolean, number, string or null. Maps to <c>TakoDatasetCell</c>.</summary>
+[JsonConverter(typeof(TakoDatasetCellConverter))]
+public readonly struct TakoDatasetCell
+{
+    internal TakoDatasetCell(bool? boolean, double? number, string? text)
+    {
+        Boolean = boolean;
+        Number = number;
+        String = text;
+    }
+
+    /// <summary>The value when the cell is a boolean.</summary>
+    public bool? Boolean { get; }
+
+    /// <summary>The value when the cell is a number.</summary>
+    public double? Number { get; }
+
+    /// <summary>The value when the cell is a string.</summary>
+    public string? String { get; }
+
+    /// <summary>True when the cell is null.</summary>
+    public bool IsNull => Boolean is null && Number is null && String is null;
+}
+
+internal sealed class TakoDatasetCellConverter : JsonConverter<TakoDatasetCell>
+{
+    public override TakoDatasetCell Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.Null:
+                return default;
+            case JsonTokenType.True:
+                return new TakoDatasetCell(true, null, null);
+            case JsonTokenType.False:
+                return new TakoDatasetCell(false, null, null);
+            case JsonTokenType.Number:
+                return new TakoDatasetCell(null, reader.GetDouble(), null);
+            case JsonTokenType.String:
+                return new TakoDatasetCell(null, null, reader.GetString());
+            default:
+                throw new JsonException("A Tako dataset cell must be a boolean, number, string or null.");
+        }
+    }
+
+    public override void Write(Utf8JsonWriter writer, TakoDatasetCell value, JsonSerializerOptions options)
+    {
+        if (value.Boolean is { } boolean)
+        {
+            writer.WriteBooleanValue(boolean);
+        }
+        else if (value.Number is { } number)
+        {
+            writer.WriteNumberValue(number);
+        }
+        else if (value.String is { } text)
+        {
+            writer.WriteStringValue(text);
+        }
+        else
+        {
+            writer.WriteNullValue();
+        }
+    }
+}
+
 /// <summary>A column of a <see cref="TakoDataset"/>.</summary>
 public sealed class TakoDatasetColumn
 {
@@ -624,9 +690,9 @@ public sealed class TakoDataset
     [JsonPropertyName("columns")]
     public IList<TakoDatasetColumn> Columns { get; set; } = [];
 
-    /// <summary>Rows. A cell is a boolean, number, string or null.</summary>
+    /// <summary>Rows.</summary>
     [JsonPropertyName("rows")]
-    public IList<IList<JsonElement>> Rows { get; set; } = [];
+    public IList<IList<TakoDatasetCell>> Rows { get; set; } = [];
 
     /// <summary>Total rows.</summary>
     [JsonPropertyName("total_rows")]
@@ -724,9 +790,9 @@ public sealed class TakoResultContent
     [JsonPropertyName("data")]
     public string? Data { get; set; }
 
-    /// <summary>Records. A cell is a boolean, number, string or null.</summary>
+    /// <summary>Records.</summary>
     [JsonPropertyName("records")]
-    public IList<IDictionary<string, JsonElement>>? Records { get; set; }
+    public IList<IDictionary<string, TakoDatasetCell>>? Records { get; set; }
 
     /// <summary>Inline dataset.</summary>
     [JsonPropertyName("dataset")]
