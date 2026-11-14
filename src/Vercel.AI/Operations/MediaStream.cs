@@ -31,7 +31,7 @@ public sealed class TranscriptSegment
 public sealed class AudioFormat
 {
     /// <summary>Creates an audio format.</summary>
-    public AudioFormat(string type, int? rate = null)
+    public AudioFormat(string type, double? rate = null)
     {
         Type = type ?? throw new ArgumentNullException(nameof(type));
         Rate = rate;
@@ -41,7 +41,7 @@ public sealed class AudioFormat
     public string Type { get; }
 
     /// <summary>Sample rate in Hz, when the format needs one.</summary>
-    public int? Rate { get; }
+    public double? Rate { get; }
 
     /// <summary>Creates a format with no sample rate.</summary>
     public static implicit operator AudioFormat(string type)
