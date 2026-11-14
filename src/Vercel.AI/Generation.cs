@@ -26,6 +26,11 @@ internal static class Generation
 
         if (options.Messages != null)
         {
+            if (!options.AllowSystemInMessages && options.Messages.Any(message => message is SystemModelMessage))
+            {
+                throw new InvalidPromptException("System messages are not allowed in the prompt or messages fields. Use the instructions option instead.");
+            }
+
             messages.AddRange(options.Messages);
         }
 
@@ -264,6 +269,7 @@ internal static class Generation
         var finishSource = new TaskCompletionSource<FinishReason>(TaskCreationOptions.RunContinuationsAsynchronously);
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var outputSource = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var abort = new StreamAbort();
         var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true, cancellationToken);
         var signal = timeouts?.Signal ?? options.AbortSignal;
@@ -280,8 +286,8 @@ internal static class Generation
         }
 
         buffer.OnConsumerStop = abort.Stop;
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource));
-        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task);
+        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource, outputSource));
+        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, outputSource.Task);
     }
 
     private static async Task ProduceAsync(
@@ -294,7 +300,8 @@ internal static class Generation
         TaskCompletionSource<string> textSource,
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
-        TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource)
+        TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
+        TaskCompletionSource<JsonElement?> outputSource)
     {
         var steps = new List<StepResult>();
         var cancellationToken = abort.Token;
@@ -683,6 +690,7 @@ internal static class Generation
             textSource.TrySetResult(result.Text);
             finishSource.TrySetResult(result.FinishReason);
             usageSource.TrySetResult(result.Usage);
+            outputSource.TrySetResult(result.Output);
             stepsSource.TrySetResult(result.Steps);
             if (options.OnFinish != null)
             {
@@ -2396,7 +2404,8 @@ public sealed class StreamTextResult
         Task<string> text,
         Task<FinishReason> finishReason,
         Task<LanguageModelUsage> usage,
-        Task<IReadOnlyList<StepResult>> steps)
+        Task<IReadOnlyList<StepResult>> steps,
+        Task<JsonElement?> output)
     {
         _buffer = buffer;
         Text = text;
@@ -2406,11 +2415,15 @@ public sealed class StreamTextResult
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
         ResponseMessages = AllResponseMessages(steps);
+        ProviderMetadata = FromFinalStep(steps, step => step.ProviderMetadata);
+        Output = FromSteps(steps, output);
 
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = ResponseMessages.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = ProviderMetadata.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private static async Task<IReadOnlyList<ModelMessage>> AllResponseMessages(Task<IReadOnlyList<StepResult>> steps)
@@ -2419,10 +2432,25 @@ public sealed class StreamTextResult
         return completed.SelectMany(step => step.Response.Messages).ToArray();
     }
 
+    private static async Task<JsonElement?> FromSteps(Task<IReadOnlyList<StepResult>> steps, Task<JsonElement?> output)
+    {
+        // Steps carries the failure, so a failed stream throws its error here.
+        await steps.ConfigureAwait(false);
+        return await output.ConfigureAwait(false);
+    }
+
     private static async Task<T> FromFinalStep<T>(Task<IReadOnlyList<StepResult>> steps, Func<StepResult, T> select)
     {
         var completed = await steps.ConfigureAwait(false);
         return select(completed[completed.Count - 1]);
+    }
+
+    /// <summary>Consumes the stream without processing the parts. Use it when only the final result or the callbacks matter. Maps to <c>consumeStream</c>.</summary>
+    public async Task ConsumeStreamAsync(CancellationToken cancellationToken = default)
+    {
+        await foreach (var _ in _buffer.Read(cancellationToken).ConfigureAwait(false))
+        {
+        }
     }
 
     /// <summary>Text deltas only.</summary>
@@ -2445,6 +2473,12 @@ public sealed class StreamTextResult
 
     /// <summary>Full text from the last step. Completes when the stream finishes.</summary>
     public Task<string> Text { get; }
+
+    /// <summary>The parsed structured output, or null when no output is set. Completes when the stream finishes. Maps to <c>output</c>.</summary>
+    public Task<JsonElement?> Output { get; }
+
+    /// <summary>Provider metadata of the last step. Completes when the stream finishes. Maps to <c>providerMetadata</c>.</summary>
+    public Task<JsonElement?> ProviderMetadata { get; }
 
     /// <summary>Finish reason. Completes when the stream finishes.</summary>
     public Task<FinishReason> FinishReason { get; }

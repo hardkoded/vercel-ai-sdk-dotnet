@@ -635,6 +635,12 @@ public class GenerateTextOptions
     /// <summary>Full prompt. Maps to <c>messages</c>.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; set; }
 
+    /// <summary>
+    /// Whether system messages are allowed in <see cref="Messages"/>. Defaults to false, which rejects them with an <see cref="InvalidPromptException"/>.
+    /// Use <see cref="Instructions"/> for the system prompt instead. Maps to <c>allowSystemInMessages</c>.
+    /// </summary>
+    public bool AllowSystemInMessages { get; set; }
+
     /// <summary>Tools available to the model.</summary>
     public IReadOnlyList<Tool>? Tools { get; set; }
 
