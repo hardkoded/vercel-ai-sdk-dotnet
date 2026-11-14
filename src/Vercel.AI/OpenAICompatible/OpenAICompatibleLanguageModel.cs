@@ -13,7 +13,7 @@ using Vercel.AI.ProviderUtils;
 namespace Vercel.AI.OpenAICompatible;
 
 /// <summary>Chat Completions language model.</summary>
-public sealed class OpenAICompatibleLanguageModel : ILanguageModel
+public class OpenAICompatibleLanguageModel : ILanguageModel
 {
     private static readonly string[] KnownProviderOptionNames =
     {

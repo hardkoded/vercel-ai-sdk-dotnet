@@ -99,6 +99,9 @@ public sealed class TencentProvider : OpenAICompatibleProvider
         return new TencentProvider(client, options);
     }
 
+    /// <inheritdoc />
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId) => new TencentChatLanguageModel(this, modelId);
+
     /// <summary>Creates a TokenHub model for text generation.</summary>
     public ILanguageModel Chat(string modelId) => LanguageModel(modelId);
 

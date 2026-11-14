@@ -692,6 +692,8 @@ var tencent = TencentProvider.Create(new TencentOptions { ApiKey = Environment.G
 
 `tencent.LanguageModel("hy4")` or `tencent.Chat("hy4")` creates a TokenHub language model (provider id `tencent.chat`). It uses the OpenAI-compatible chat completions API and always asks for usage. Options under `ProviderOptions["tencent"]` that the OpenAI-compatible provider does not handle, such as `thinking`, are sent in the request body unchanged. See the [TokenHub model list](https://www.tencentcloud.com/document/product/1300/78934) for available models.
 
+The model is a `TencentChatLanguageModel`. To pass it across a workflow boundary, call `Serialize()` and persist the result as JSON. Restore it with `TencentChatLanguageModel.Deserialize(serialized, apiKey)`. The TokenHub endpoint (`BaseUrl`) and non-sensitive headers are kept. The API key is not serialized, so supply it again when you restore the model, or set `TENCENT_TOKENHUB_API_KEY`.
+
 ### Video models
 
 Create a video model with `tencent.VideoModel(id)` or its alias `tencent.Video(id)` (provider id `tencent.video`). `TencentVideoModel` implements `IVideoCaller`, so pass it as the `Model` of `GenerateVideoRequest`.
