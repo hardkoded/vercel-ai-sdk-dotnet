@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Azure;
 
@@ -36,6 +37,20 @@ public sealed class AzureOpenAIOptions
     /// <summary>Microsoft Entra token provider. Each call receives a fresh bearer token.</summary>
     public Func<string>? TokenProvider { get; set; }
 
+    /// <summary>
+    /// URL prefix for Azure Speech (MAI-Transcribe transcription and MAI-Voice speech), for example
+    /// <c>https://eastus.api.cognitive.microsoft.com</c>. Defaults to
+    /// <c>https://{resourceName}.cognitiveservices.azure.com</c>. Speech requests do not use
+    /// <see cref="BaseUrl"/> or <see cref="ApiVersion"/>. Maps to <c>speechBaseURL</c>.
+    /// </summary>
+    public string? SpeechBaseUrl { get; set; }
+
+    /// <summary>
+    /// URL prefix for MAI APIs (MAI-Image, MAI-Transcribe-2-Streaming). Defaults to
+    /// <c>https://{resourceName}.services.ai.azure.com/mai/v1</c>. Maps to <c>maiBaseURL</c>.
+    /// </summary>
+    public string? MaiBaseUrl { get; set; }
+
     /// <summary>Headers copied onto every request.</summary>
     public Dictionary<string, string> Headers { get; } = new();
 }
@@ -64,10 +79,82 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
+    private readonly AzureOpenAIOptions _azure;
+
     /// <summary>Creates a provider.</summary>
     public AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options = null)
         : base(Prepare(options), httpClient)
     {
+        _azure = options ?? new AzureOpenAIOptions();
+    }
+
+    /// <summary>The Azure options this provider was created with.</summary>
+    internal AzureOpenAIOptions AzureOptions => _azure;
+
+    /// <summary>Entra token provider, when one is configured.</summary>
+    internal Func<string>? TokenProvider => _azure.TokenProvider;
+
+    /// <summary>
+    /// Azure Speech URL prefix without a trailing slash. Maps to <c>speechBaseURL()</c>.
+    /// </summary>
+    internal string SpeechBaseUrl()
+    {
+        return !string.IsNullOrEmpty(_azure.SpeechBaseUrl)
+            ? _azure.SpeechBaseUrl!.TrimEnd('/')
+            : "https://" + ResourceName() + ".cognitiveservices.azure.com";
+    }
+
+    /// <summary>MAI URL prefix without a trailing slash. Maps to <c>maiBaseURL()</c>.</summary>
+    internal string MaiBaseUrl()
+    {
+        return !string.IsNullOrEmpty(_azure.MaiBaseUrl)
+            ? _azure.MaiBaseUrl!.TrimEnd('/')
+            : "https://" + ResourceName() + ".services.ai.azure.com/mai/v1";
+    }
+
+    /// <summary>
+    /// Headers for the Azure Speech API (<c>Ocp-Apim-Subscription-Key</c>) or the MAI API (<c>api-key</c>).
+    /// With a token provider, no key header is added; callers add the bearer token. Maps to <c>getHeaders('speech' | 'mai')</c>.
+    /// </summary>
+    internal Dictionary<string, string?> CreateHeaders(AzureApi api, IReadOnlyDictionary<string, string?>? callHeaders = null)
+    {
+        var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (_azure.TokenProvider == null)
+        {
+            var key = ApiKeys.Require(_azure.ApiKey, "AZURE_API_KEY");
+            headers[api == AzureApi.Speech ? "Ocp-Apim-Subscription-Key" : "api-key"] = key;
+        }
+
+        foreach (var pair in _azure.Headers)
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        headers.TryGetValue("User-Agent", out var current);
+        var suffix = "ai-sdk-azure/" + Operations.AiSdkVersion.Version;
+        headers["user-agent"] = string.IsNullOrEmpty(current) ? suffix : current + " " + suffix;
+        if (callHeaders != null)
+        {
+            foreach (var pair in callHeaders)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return headers;
+    }
+
+    private string ResourceName()
+    {
+        var resource = _azure.ResourceName ?? Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME") ?? "resource";
+        if (!IsValidHostnamePart(resource))
+        {
+            throw new ArgumentException(
+                "An Azure resource name must be a single DNS label (letters, digits, and hyphens). Custom endpoints belong in BaseUrl.",
+                nameof(AzureOpenAIOptions.ResourceName));
+        }
+
+        return resource;
     }
 
     /// <summary>Creates a provider.</summary>
@@ -194,6 +281,19 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         var match = HostnamePart.Match(value);
         return match.Success && match.Value == value;
     }
+}
+
+/// <summary>The Azure API a request goes to.</summary>
+internal enum AzureApi
+{
+    /// <summary>Azure OpenAI.</summary>
+    OpenAI,
+
+    /// <summary>Azure Speech (MAI-Voice, MAI-Transcribe).</summary>
+    Speech,
+
+    /// <summary>MAI (MAI-Image, MAI-Transcribe-2-Streaming).</summary>
+    Mai,
 }
 
 /// <summary>Replaces the placeholder bearer value with a token from the provider on every request.</summary>
