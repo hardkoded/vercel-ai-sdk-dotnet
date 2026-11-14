@@ -11,6 +11,12 @@ namespace Vercel.AI.OpenAI;
 internal sealed record OpenAIExpandedToolCall(string ToolCallId, string ToolName, string Input, JsonElement ProviderMetadata);
 
 /// <summary>
+/// Preserves the original wrapper identity so child results can be sent back as one function output when
+/// Responses API server-side state is used. <paramref name="Input"/> is retained only on the first child; older histories may repeat it.
+/// </summary>
+internal sealed record OpenAIParallelToolCallMetadata(string ItemId, string ToolCallId, string ToolName, string? Input, int Index, int Count);
+
+/// <summary>
 /// Expands the internal <c>parallel</c> tool wrapper that OpenAI models can emit as a regular function call.
 /// The wrapper is only recognized when every nested recipient is a declared client-side function tool.
 /// </summary>
@@ -18,6 +24,78 @@ internal static class OpenAIParallelToolCall
 {
     private const string ParallelToolName = "parallel";
     private const string RecipientNamePrefix = "functions.";
+
+    /// <summary>The wrapper identity stored under <c>parallelToolCall</c> in the provider options, or null when it is missing or malformed.</summary>
+    public static OpenAIParallelToolCallMetadata? GetParallelToolCallMetadata(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string providerOptionsName)
+    {
+        if (providerOptions is null
+            || !providerOptions.TryGetValue(providerOptionsName, out var named)
+            || named.ValueKind != JsonValueKind.Object
+            || !named.TryGetProperty("parallelToolCall", out var metadata)
+            || metadata.ValueKind != JsonValueKind.Object
+            || !TryString(metadata, "itemId", out var itemId)
+            || !TryString(metadata, "toolCallId", out var toolCallId)
+            || !TryString(metadata, "toolName", out var toolName)
+            || !TryInteger(metadata, "index", out var index)
+            || !TryInteger(metadata, "count", out var count)
+            || index < 0
+            || count <= index)
+        {
+            return null;
+        }
+
+        string? input = null;
+        if (metadata.TryGetProperty("input", out var inputValue))
+        {
+            if (inputValue.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            input = inputValue.GetString();
+        }
+
+        return new OpenAIParallelToolCallMetadata(itemId!, toolCallId!, toolName!, input, index, count);
+    }
+
+    /// <summary>Whether two metadata values describe the same wrapper call. A missing input matches any input.</summary>
+    public static bool HasSameParallelToolCall(OpenAIParallelToolCallMetadata first, OpenAIParallelToolCallMetadata second) =>
+        first.ItemId == second.ItemId
+        && first.ToolCallId == second.ToolCallId
+        && first.ToolName == second.ToolName
+        && (first.Input is null || second.Input is null || first.Input == second.Input)
+        && first.Count == second.Count;
+
+    private static bool TryString(JsonElement parent, string name, out string? value)
+    {
+        value = null;
+        if (!parent.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        value = property.GetString();
+        return true;
+    }
+
+    private static bool TryInteger(JsonElement parent, string name, out int value)
+    {
+        value = 0;
+        if (!parent.TryGetProperty(name, out var property) || property.ValueKind != JsonValueKind.Number)
+        {
+            return false;
+        }
+
+        if (property.TryGetInt32(out value))
+        {
+            return true;
+        }
+
+        return property.TryGetDouble(out var number) && number == Math.Floor(number) && number is >= 0 and <= int.MaxValue
+            && (value = (int)number) >= 0;
+    }
 
     public static bool IsUndeclared(string toolName, IReadOnlyCollection<string> functionToolNames) =>
         toolName == ParallelToolName && !functionToolNames.Contains(ParallelToolName);
