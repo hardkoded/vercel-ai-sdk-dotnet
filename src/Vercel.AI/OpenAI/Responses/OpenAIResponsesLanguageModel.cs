@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -720,6 +721,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 continue;
             }
 
+            // Mirrors openaiResponsesChunkSchema: an invalid chunk fails the stream, an unknown chunk (unknown_chunk) is ignored.
+            using var chunkDocument = JsonDocument.Parse(data);
+            if (!OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
+            {
+                state.MarkParseError();
+                yield return IsOpenAIChatCompletionChunk(node)
+                    ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node))
+                    : new ErrorStreamPart("Type validation failed: Value: " + data + ".");
+                continue;
+            }
+
+            if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
+            {
+                continue;
+            }
+
             foreach (var part in state.Push(node))
             {
                 yield return part;
@@ -731,6 +748,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             yield return part;
         }
     }
+
+    private static bool IsOpenAIChatCompletionChunk(JsonObject chunk) =>
+        chunk["choices"] is JsonArray && chunk["type"]?.GetValueKind() != JsonValueKind.String;
+
+    private static ProviderStreamError CreateChatCompletionsMismatchError(JsonObject value) =>
+        new(
+            "Received a Chat Completions stream while using the OpenAI Responses API. "
+            + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
+            + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
+            value.ToJsonString(),
+            isRetryable: false);
 
     internal static LanguageModelGenerateResult Parse(
         JsonElement root,
