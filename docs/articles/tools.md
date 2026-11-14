@@ -189,7 +189,7 @@ In the UI message stream, provider-executed chunks are marked `providerExecuted`
 
 ## Gateway Tako search tool
 
-`GatewayTakoSearch.Create(config)` declares the AI Gateway's Tako Search tool, a provider-defined tool (`gateway.tako_search`) that searches the web and Tako's curated data. The three options of `GatewayTakoSearchConfig` are developer-only: the model can't see or set them, and they are not in the tool input schema.
+`GatewayTakoSearch.Create(config)` declares the AI Gateway's Tako Search tool, a provider-defined tool (`gateway.tako_search`) that searches the web and Tako's curated data. `GatewayTakoSearchConfig` sets the search options up front. `VariableCost`, `MaxVariableCostUsd` and `ExtraBody` are developer-only: the model can't see or set them, and they are not in the tool input schema.
 
 ```csharp
 var tool = GatewayTakoSearch.Create(new GatewayTakoSearchConfig
@@ -198,11 +198,26 @@ var tool = GatewayTakoSearch.Create(new GatewayTakoSearchConfig
 });
 ```
 
+- **Effort** _string?_ - `deep`, `fast` or `instant`. `fast` is the default balanced option.
+- **Sources** _TakoSearchSourcesConfig?_ - Sources to search. Omit to search both curated data and the web. `Data` (`TakoDataSourceConfig`) has `Count` (1-20), `IncludeContents`, `Mode` (`inline` or `url`), `ContentFormat` (`card_json`, `csv`, `json_compact`, `json_records`), `MaxRows`, `NodeIds` and `Strict`. `Web` (`TakoWebSourceConfig`) has `Count` (1-20), `IncludeContents`, `Category` (`finance`, `news`, `sports`), `IncludeDomains`, `ExcludeDomains`, `SnippetMaxChars`, `Highlights`, `ArticleContentMaxChars`, `PublishedAfter` and `PublishedBefore`. With `IncludeContents` on a data source, each result adds a data surcharge: limit `Count` and `MaxRows` to control cost.
+- **Location** _TakoLocation?_ - End-user `Latitude` and `Longitude` for localized results.
+- **CountryCode**, **Locale**, **Timezone** _string?_ - ISO 3166-1 alpha-2 country code, BCP-47 locale and IANA timezone.
+- **OutputSettings** _TakoOutputSettings?_ - `ImageDarkMode`, and `ForceRefresh` (instant effort only). They control card rendering.
+- **IncludeRelated** _int?_ - Maximum related search suggestions to include (1-20).
 - **VariableCost** _bool?_ - Serve data from sources priced per unit, such as web traffic and SEO. Each such card adds a charge, and the total per call is capped by `MaxVariableCostUsd`. The Gateway defaults it to `true`. Set it to `false` to opt out; those cards then come back as placeholders. Only searches that include the data index return these cards.
 - **MaxVariableCostUsd** _double?_ - The most one search call can be charged in variable cost, in USD. The Gateway defaults it to `0.25`. Set `RemoveMaxVariableCostCap` to `true` to remove the cap (`maxVariableCostUsd: null`). Tako checks each card's maximum charge (`content.export_pricing.variable_cost_max_usd`) in rank order. A card that doesn't fit comes back as a placeholder with `reason: "over_cap"`, even if its actual charge would have fit. `0` returns only the cards whose charge the base price already covers. It can't be combined with `VariableCost = false`.
 - **ExtraBody** _IDictionary&lt;string, JsonNode?&gt;_ - Extra Tako request fields, in snake_case, deep-merged into the request body last. Use it for Tako parameters this tool doesn't model yet. It can't set a field the tool already models (the gateway answers `invalid_input`), Tako rejects unknown keys (`api_error`), and it is limited to 16,384 serialized characters.
 
 When Tako withholds a card's data, it returns a placeholder card instead. A placeholder keeps its title and description but carries no data. `placeholder.withheld_source` names the source, and `placeholder.reason` is `not_served` (variable cost is off, or the account isn't served that source) or `over_cap`. `usage.variable_cost.cost_usd` reports the variable-cost charge for the call.
+
+The model fills the input schema (`GatewayTakoSearch.InputSchema`): `query`, plus `effort`, `sources`, `location`, `country_code`, `locale`, `timezone`, `output_settings` and `include_related` in snake_case.
+
+Deserialize the tool output (`ExecutedTool.OutputJson`) into `TakoSearchResponse` to read it typed. It holds `TakoCard`, `TakoWebResult` and `TakoResultContent`. Fields the schema doesn't declare are kept in `AdditionalProperties`.
+
+```csharp
+var output = JsonSerializer.Deserialize<TakoSearchResponse>(toolResult.OutputJson);
+Console.WriteLine(output?.Usage?.VariableCost?.CostUsd);
+```
 
 `GatewayTakoSearch.OutputSchema` describes these fields, including `relevance_score`, `content.export_pricing.variable_cost_max_usd` and `usage.variable_cost`. `export_pricing.free_rows` is deprecated and optional: Tako always sends 0 and will stop sending it. `GatewayTakoSearch.ResultContentSchema` is the schema of a card or web result `content`, for reuse by other Tako tools.
 

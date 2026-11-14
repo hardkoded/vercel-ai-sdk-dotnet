@@ -11,6 +11,7 @@
     <Project Path="examples/DecidePerplexityWebGrounding/DecidePerplexityWebGrounding.csproj" />
     <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
     <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
+    <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />

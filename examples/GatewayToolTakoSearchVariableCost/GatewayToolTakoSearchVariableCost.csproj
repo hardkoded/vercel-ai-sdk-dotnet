@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Searches with the Gateway Tako tool and reads variable-cost charges and placeholder cards.</Description>
+  </PropertyGroup>
+</Project>
