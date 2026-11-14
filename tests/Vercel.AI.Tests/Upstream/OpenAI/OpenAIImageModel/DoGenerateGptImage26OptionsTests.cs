@@ -10,7 +10,7 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIImageModel;
 public sealed class DoGenerateGptImage26OptionsTests
 {
     [Fact]
-    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate - GPT Image 2.6 options::should throw when markup and mask are both provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/openai/src/image/openai-image-model.test.ts::doGenerate - GPT Image 2.6 options::should throw when markup and mask are both provided", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
     public async Task Should_throw_when_markup_and_mask_are_both_provided()
     {
         var capture = new OpenAICapture();
