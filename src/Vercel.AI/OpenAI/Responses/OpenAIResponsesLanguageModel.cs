@@ -300,7 +300,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             hasConversation: OpenAIJson.String(openai, "conversation") != null,
             toolNameMapping: toolNameMapping,
             hasApplyPatchTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.apply_patch") == true,
-            hasLocalShellTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell") == true);
+            hasLocalShellTool: options.Tools?.Any(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.local_shell") == true,
+            hasPreviousResponseId: OpenAIJson.String(openai, "previousResponseId") != null);
         warnings.AddRange(converted.Warnings);
 
         // The schema accepts update efforts supported by any model. Check this model's list.
@@ -1150,10 +1151,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool hasConversation = false,
         ToolNameMapping? toolNameMapping = null,
         bool hasApplyPatchTool = false,
-        bool hasLocalShellTool = false)
+        bool hasLocalShellTool = false,
+        bool hasPreviousResponseId = false)
     {
         var input = new JsonArray();
         var programmaticToolCallIds = new HashSet<string>();
+        var parallelToolResultGroups = hasConversation || hasPreviousResponseId
+            ? CollectCompleteParallelToolResultGroups(prompt, providerOptionsName)
+            : new Dictionary<string, ParallelToolResultGroup>();
+        var emittedParallelToolCalls = new HashSet<string>();
+        var emittedParallelToolResults = new HashSet<string>();
         var warnings = new List<OpenAICallWarning>();
         foreach (var message in ToolModelMessage.Flatten(prompt))
         {
@@ -1262,6 +1269,27 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     foreach (var call in assistant.ToolCalls)
                     {
+                        var parallelCallMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(AssistantCallOptions(assistant, call), providerOptionsName);
+                        if (parallelCallMetadata != null
+                            && parallelToolResultGroups.TryGetValue(parallelCallMetadata.ToolCallId, out var parallelCallGroup)
+                            && OpenAIParallelToolCall.HasSameParallelToolCall(parallelCallGroup.Metadata, parallelCallMetadata))
+                        {
+                            if (emittedParallelToolCalls.Add(parallelCallGroup.Metadata.ToolCallId) && !hasConversation)
+                            {
+                                // Conversations already contain the original wrapper item.
+                                // previousResponseId chains require plain client function calls to be reconstructed in full.
+                                input.Add(new JsonObject
+                                {
+                                    ["type"] = "function_call",
+                                    ["call_id"] = parallelCallGroup.Metadata.ToolCallId,
+                                    ["name"] = parallelCallGroup.Metadata.ToolName,
+                                    ["arguments"] = parallelCallGroup.Metadata.Input,
+                                });
+                            }
+
+                            continue;
+                        }
+
                         if (ToolCaller(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName)) is JsonObject { } callCaller
                             && callCaller["type"]?.GetValue<string>() == "program")
                         {
@@ -1370,6 +1398,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
 
                     break;
                 case ToolModelMessage tool:
+                    var parallelResultMetadata = OpenAIParallelToolCall.GetParallelToolCallMetadata(ToOptions(tool.ProviderMetadata), providerOptionsName);
+                    if (parallelResultMetadata != null
+                        && parallelToolResultGroups.TryGetValue(parallelResultMetadata.ToolCallId, out var parallelResultGroup)
+                        && OpenAIParallelToolCall.HasSameParallelToolCall(parallelResultGroup.Metadata, parallelResultMetadata))
+                    {
+                        if (emittedParallelToolResults.Add(parallelResultGroup.Metadata.ToolCallId))
+                        {
+                            AddParallelToolResults(input, parallelResultGroup, outputSchemaToolNames, providerOptionsName);
+                        }
+
+                        break;
+                    }
+
                     // The output's own breakpoint wins over the tool result's.
                     var toolBreakpoint = OpenAIJson.PromptCacheBreakpoint(tool.OutputProviderOptions)
                         ?? OpenAIJson.PromptCacheBreakpoint(tool.ProviderMetadata);
@@ -1441,6 +1482,132 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         return new ResponsesInput(input, warnings);
+    }
+
+    private sealed record ParallelToolResultGroup(OpenAIParallelToolCallMetadata Metadata, IReadOnlyList<ToolModelMessage> Results);
+
+    private sealed class PendingParallelToolResultGroup(OpenAIParallelToolCallMetadata metadata, ToolModelMessage first)
+    {
+        public OpenAIParallelToolCallMetadata Metadata { get; set; } = metadata;
+
+        public Dictionary<int, ToolModelMessage> Results { get; } = new() { [metadata.Index] = first };
+
+        public bool Invalid { get; set; }
+    }
+
+    private static Dictionary<string, ParallelToolResultGroup> CollectCompleteParallelToolResultGroups(IReadOnlyList<ModelMessage> prompt, string providerOptionsName)
+    {
+        var pendingGroups = new Dictionary<string, PendingParallelToolResultGroup>();
+        foreach (var message in ToolModelMessage.Flatten(prompt))
+        {
+            if (message is not ToolModelMessage part
+                || OpenAIParallelToolCall.GetParallelToolCallMetadata(ToOptions(part.ProviderMetadata), providerOptionsName) is not { } metadata)
+            {
+                continue;
+            }
+
+            if (!pendingGroups.TryGetValue(metadata.ToolCallId, out var existing))
+            {
+                pendingGroups[metadata.ToolCallId] = new PendingParallelToolResultGroup(metadata, part);
+                continue;
+            }
+
+            if (!OpenAIParallelToolCall.HasSameParallelToolCall(existing.Metadata, metadata) || existing.Results.ContainsKey(metadata.Index))
+            {
+                existing.Invalid = true;
+                continue;
+            }
+
+            if (existing.Metadata.Input is null && metadata.Input is not null)
+            {
+                existing.Metadata = metadata;
+            }
+
+            existing.Results[metadata.Index] = part;
+        }
+
+        var completeGroups = new Dictionary<string, ParallelToolResultGroup>();
+        foreach (var pair in pendingGroups)
+        {
+            var toolCallId = pair.Key;
+            var group = pair.Value;
+            if (group.Invalid || group.Results.Count != group.Metadata.Count || group.Metadata.Input is null)
+            {
+                continue;
+            }
+
+            var results = new List<ToolModelMessage>(group.Metadata.Count);
+            for (var index = 0; index < group.Metadata.Count; index++)
+            {
+                if (!group.Results.TryGetValue(index, out var result))
+                {
+                    break;
+                }
+
+                results.Add(result);
+            }
+
+            if (results.Count == group.Metadata.Count)
+            {
+                completeGroups[toolCallId] = new ParallelToolResultGroup(group.Metadata, results);
+            }
+        }
+
+        return completeGroups;
+    }
+
+    // The internal wrapper returns one output containing the child results in the order of the original tool_uses array.
+    private static void AddParallelToolResults(JsonArray input, ParallelToolResultGroup group, ISet<string>? outputSchemaToolNames, string providerOptionsName)
+    {
+        var texts = new List<string>();
+        var breakpoints = new List<JsonNode?>();
+        foreach (var result in group.Results)
+        {
+            var hasSchema = outputSchemaToolNames?.Contains(result.ToolName) == true;
+            texts.Add(OpenAIJson.ToolOutputText(result.OutputType, result.OutputJson, hasSchema));
+            breakpoints.Add(OpenAIJson.PromptCacheBreakpoint(result.OutputProviderOptions) ?? OpenAIJson.PromptCacheBreakpoint(result.ProviderMetadata));
+        }
+
+        JsonNode output;
+        if (breakpoints.Any(breakpoint => breakpoint != null))
+        {
+            var items = new JsonArray();
+            for (var index = 0; index < texts.Count; index++)
+            {
+                var item = new JsonObject
+                {
+                    ["type"] = "input_text",
+                    ["text"] = index == 0 ? texts[index] : "\n" + texts[index],
+                };
+                if (breakpoints[index] is { } breakpoint)
+                {
+                    item["prompt_cache_breakpoint"] = breakpoint;
+                }
+
+                items.Add(item);
+            }
+
+            output = items;
+        }
+        else
+        {
+            output = JsonValue.Create(string.Join("\n", texts))!;
+        }
+
+        input.Add(new JsonObject
+        {
+            ["type"] = "function_call_output",
+            ["call_id"] = group.Metadata.ToolCallId,
+            ["output"] = output,
+        });
+
+        foreach (var result in group.Results)
+        {
+            if (ToolResultAdditionalTools(result.ProviderMetadata, providerOptionsName) is { Count: > 0 } additionalTools)
+            {
+                input.Add(AdditionalToolsItem(additionalTools));
+            }
+        }
     }
 
     private static bool IsProgrammaticToolName(string toolName, ToolNameMapping? toolNameMapping) =>

@@ -102,6 +102,27 @@ public sealed class AdditionalToolsAfterOrdinaryToolResultsTests
             input);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::keeps definitions from expanded parallel results with %j", Coverage = UpstreamCoverage.Covered, Commit = "a279e869252270b0c7ee9eff0fd263b7c17463b3")]
+    public void Keeps_definitions_from_expanded_parallel_results(bool hasConversation)
+    {
+        var prompt = ExpandedParallelToolCallPrompt.Create(
+            additionalTools: index => JsonNode.Parse("[" + Definition.Replace("list_issues", "tool_" + index) + "]"));
+
+        var input = ExpandedParallelToolCallPrompt.Convert(prompt, "developer", hasConversation, !hasConversation).Input;
+
+        AssertJson(
+            "[" + (hasConversation
+                ? string.Empty
+                : "{\"type\":\"function_call\",\"call_id\":\"call_parallel\",\"name\":\"parallel\",\"arguments\":" + JsonSerializer.Serialize(ExpandedParallelToolCallPrompt.ParallelToolCallInput) + "},")
+            + "{\"type\":\"function_call_output\",\"call_id\":\"call_parallel\",\"output\":" + JsonSerializer.Serialize(ExpandedParallelToolCallPrompt.ParallelToolCallOutput) + "},"
+            + "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[" + Definition.Replace("list_issues", "tool_0") + "]},"
+            + "{\"type\":\"additional_tools\",\"role\":\"developer\",\"tools\":[" + Definition.Replace("list_issues", "tool_1") + "]}]",
+            input);
+    }
+
     [Fact]
     [UpstreamTest("packages/openai/src/responses/convert-to-openai-responses-input.test.ts::convertToOpenAIResponsesInput > additional tools after ordinary tool results::accepts custom and namespace definitions", Coverage = UpstreamCoverage.Covered, Commit = "6eff9587dfef6b92924ca8f6349dcb5ad8a8b39e")]
     public void Accepts_custom_and_namespace_definitions()
