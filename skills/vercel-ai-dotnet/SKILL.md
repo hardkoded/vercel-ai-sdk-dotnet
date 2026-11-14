@@ -61,6 +61,8 @@ var total = result.Answers["total"].Number; // null when the state has no total
 
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.
 
+`GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`.
+
 ## Providers
 
 Each package exposes `CreateXxx()` / `AddXxx()` and reads the same environment variable as the JavaScript provider. Gateway uses `AI_GATEWAY_API_KEY` and `https://ai-gateway.vercel.sh/v4/ai`. OpenAI-compatible providers share `Vercel.AI.OpenAICompatible`.
