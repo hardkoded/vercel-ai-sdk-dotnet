@@ -604,7 +604,11 @@ public static class OperationRetry
                 return action(cancellationToken);
             }).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (abortReason != null && cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException canceled) when (abortReason != null && cancellationToken.IsCancellationRequested && canceled.CancellationToken == cancellationToken)
+        {
+            throw abortReason;
+        }
+        catch (RetryError) when (abortReason != null && cancellationToken.IsCancellationRequested)
         {
             throw abortReason;
         }
