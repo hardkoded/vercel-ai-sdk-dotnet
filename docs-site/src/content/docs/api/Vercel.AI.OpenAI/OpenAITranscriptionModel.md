@@ -30,6 +30,29 @@ OpenAI audio transcription model.
 ## Constructors
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_"></a>
+<a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_Vercel_AI_Azure_AzureOpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
+
+### `OpenAITranscriptionModel(AzureOpenAIProvider, string, Func<DateTimeOffset>?)`
+
+
+```csharp
+public OpenAITranscriptionModel(AzureOpenAIProvider provider, string deploymentId, Func<DateTimeOffset>? clock = null)
+```
+
+
+Creates an Azure OpenAI transcription model for a deployment. Requests go to the deployment's
+`audio/transcriptions` route and the provider id is `azure.transcription`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `provider` | [AzureOpenAIProvider](/api/Vercel.AI.Azure/AzureOpenAIProvider/) |  |
+| `deploymentId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L199)
+
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
 
 ### `OpenAITranscriptionModel(OpenAIProvider, string, Func<DateTimeOffset>?)`
@@ -50,7 +73,7 @@ Creates a transcription model. &lt;code class="paramref"&gt;clock&lt;/code&gt; s
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L172)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L174)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_String_System_Func_System_DateTimeOffset__"></a>
 
@@ -73,7 +96,7 @@ Creates a transcription or translation model for &lt;code class="paramref"&gt;pa
 | `path` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L180)
 
 ## Properties
 
@@ -92,7 +115,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L218)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_Provider"></a>
@@ -109,7 +132,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L215)
 
 ## Methods
 
@@ -134,7 +157,7 @@ Builds the multipart body so tests can inspect field names.
 
 **Returns:** [MultipartFormDataContent](https://learn.microsoft.com/dotnet/api/system.net.http.multipartformdatacontent)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L269)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L297)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -158,7 +181,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L227)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_IsRealtimeWhisper_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_IsRealtimeWhisper_System_String_"></a>
@@ -181,7 +204,7 @@ True when &lt;code class="paramref"&gt;modelId&lt;/code&gt; must use the realtim
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L221)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_TranscribeAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_TranscribeAsync_Vercel_AI_OpenAI_OpenAITranscriptionCall_System_Threading_CancellationToken_"></a>
@@ -205,4 +228,4 @@ Transcribes audio and returns segments, language, duration, and response metadat
 
 **Returns:** [Task&lt;OpenAITranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L206)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L234)

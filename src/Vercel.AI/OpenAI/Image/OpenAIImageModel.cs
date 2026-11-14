@@ -4,6 +4,9 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
+using Vercel.AI.Azure;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -57,8 +60,23 @@ public sealed class OpenAIImageFile
         FileName = fileName;
     }
 
-    /// <summary>Image bytes.</summary>
-    public byte[] Data { get; }
+    private OpenAIImageFile(string url)
+    {
+        Url = url;
+        MediaType = "application/octet-stream";
+    }
+
+    /// <summary>Creates an image file that is downloaded from <paramref name="url"/> before the edit is sent.</summary>
+    public static OpenAIImageFile FromUrl(string url)
+    {
+        return new OpenAIImageFile(url ?? throw new ArgumentNullException(nameof(url)));
+    }
+
+    /// <summary>Image bytes. Null for a file created with <see cref="FromUrl(string)"/>.</summary>
+    public byte[]? Data { get; }
+
+    /// <summary>URL to download when the file is a URL image.</summary>
+    public string? Url { get; }
 
     /// <summary>IANA media type.</summary>
     public string MediaType { get; }
@@ -123,7 +141,16 @@ public sealed class OpenAIImageGeneration
 /// <summary>OpenAI image generation and edit model.</summary>
 public sealed class OpenAIImageModel : IImageModel
 {
-    private readonly OpenAIProvider _provider;
+    // `data:` URL of a markup image: media type, optional base64 marker, payload.
+    private static readonly Regex MarkupDataUrl = new(
+        "^data:([^;,]*)(;base64)?,(.*)$",
+        RegexOptions.Singleline | RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5));
+
+    private readonly OpenAICompatibleProvider _provider;
+    private readonly string _providerId;
+    private readonly Func<string, Uri> _url;
+    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates an image model.</summary>
@@ -132,10 +159,27 @@ public sealed class OpenAIImageModel : IImageModel
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _clock = clock;
+        _providerId = provider.Name + ".image";
+        _url = path => ApiKeys.Combine(provider.Options.BaseUrl, path);
+        _headers = provider.CreateOpenAIHeaders;
+    }
+
+    /// <summary>
+    /// Creates an Azure OpenAI image model for a deployment. The provider id is <c>azure.image</c>. Requests use the
+    /// Azure routes and headers of <paramref name="provider"/>, and file URLs are downloaded without its credentials.
+    /// </summary>
+    public OpenAIImageModel(AzureOpenAIProvider provider, string deploymentId, Func<DateTimeOffset>? clock = null)
+    {
+        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        ModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
+        _clock = clock;
+        _providerId = "azure.image";
+        _url = path => provider.AzureUri(path, deploymentId);
+        _headers = provider.CreateHeaders;
     }
 
     /// <inheritdoc />
-    public string Provider => _provider.Name + ".image";
+    public string Provider => _providerId;
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -194,7 +238,8 @@ public sealed class OpenAIImageModel : IImageModel
             result.Images,
             result.Warnings.Select(warning => warning.ToCallWarning()).ToList(),
             new ImageResponseInfo(result.Timestamp, result.ModelId, result.Headers),
-            usage);
+            usage,
+            result.ProviderMetadata);
     }
 
     private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
@@ -204,12 +249,12 @@ public sealed class OpenAIImageModel : IImageModel
 
     private static OpenAIImageFile ToOpenAIFile(Operations.ImageModelFile file)
     {
-        if (file.Data == null)
+        if (file.Type == "url")
         {
-            throw new AiSdkException("OpenAI image edits need image data. URL images are not supported.");
+            return OpenAIImageFile.FromUrl(file.Url ?? throw new AiSdkException("A URL image needs a url."));
         }
 
-        return new OpenAIImageFile(file.Data, file.MediaType ?? "image/png", file.FileName);
+        return new OpenAIImageFile(file.Data ?? throw new AiSdkException("OpenAI image edits need image data."), file.MediaType ?? "image/png", file.FileName);
     }
 
     /// <summary>Generates or edits images.</summary>
@@ -254,7 +299,19 @@ public sealed class OpenAIImageModel : IImageModel
             body["output_compression"] = compression;
         }
 
+        Copy(body, "complexity", OpenAIJson.String(openai, "complexity"));
+        if (OpenAIJson.Int(openai, "frameCount") is { } frameCount)
+        {
+            body["frame_count"] = frameCount;
+        }
+
+        if (OpenAIJson.Int(openai, "frameDurationMs") is { } frameDurationMs)
+        {
+            body["frame_duration_ms"] = frameDurationMs;
+        }
+
         Copy(body, "user", OpenAIJson.String(openai, "user"));
+        Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
         if (!OmitsResponseFormat(ModelId))
         {
             body["response_format"] = "b64_json";
@@ -262,9 +319,9 @@ public sealed class OpenAIImageModel : IImageModel
 
         var response = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "images/generations"),
+            _url("images/generations"),
             body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(call.Headers),
+            _headers(call.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
         return Read(document.RootElement, warnings, timestamp, response.Headers);
@@ -276,6 +333,13 @@ public sealed class OpenAIImageModel : IImageModel
         DateTimeOffset timestamp,
         CancellationToken cancellationToken)
     {
+        var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
+        var markup = OpenAIJson.String(openai, "markup");
+        if (call.Mask != null && markup != null)
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` cannot be combined with `mask`.");
+        }
+
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(ModelId), "model");
         content.Add(new StringContent(call.Prompt), "prompt");
@@ -285,38 +349,103 @@ public sealed class OpenAIImageModel : IImageModel
             content.Add(new StringContent(call.Size), "size");
         }
 
-        var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
         Add(content, "quality", OpenAIJson.String(openai, "quality"));
         Add(content, "background", OpenAIJson.String(openai, "background"));
         Add(content, "output_format", OpenAIJson.String(openai, "outputFormat"));
         Add(content, "output_compression", OpenAIJson.Int(openai, "outputCompression")?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Add(content, "complexity", OpenAIJson.String(openai, "complexity"));
         Add(content, "input_fidelity", OpenAIJson.String(openai, "inputFidelity"));
+        Add(content, "moderation", OpenAIJson.String(openai, "moderation"));
         Add(content, "user", OpenAIJson.String(openai, "user"));
+        Add(content, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
 
         // Several source images are sent as an image[] array.
         var imageField = call.Files!.Count > 1 ? "image[]" : "image";
-        foreach (var file in call.Files!)
+        var images = await Task.WhenAll(call.Files!.Select(file => ResolveFileAsync(file, "image.png", cancellationToken))).ConfigureAwait(false);
+        foreach (var image in images)
         {
-            var bytes = new ByteArrayContent(file.Data);
-            bytes.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.MediaType);
-            content.Add(bytes, imageField, file.FileName ?? "image.png");
+            content.Add(ToContent(image), imageField, image.FileName);
         }
 
         if (call.Mask != null)
         {
-            var mask = new ByteArrayContent(call.Mask.Data);
-            mask.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(call.Mask.MediaType);
-            content.Add(mask, "mask", call.Mask.FileName ?? "mask.png");
+            var mask = await ResolveFileAsync(call.Mask, "mask.png", cancellationToken).ConfigureAwait(false);
+            content.Add(ToContent(mask), "mask", mask.FileName);
+        }
+
+        if (markup != null)
+        {
+            var blob = await MarkupToBlobAsync(markup, cancellationToken).ConfigureAwait(false);
+            content.Add(ToContent(blob), "markup", blob.FileName);
         }
 
         var response = await _provider.Http.SendBinaryAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "images/edits"),
+            _url("images/edits"),
             content,
-            _provider.CreateOpenAIHeaders(call.Headers),
+            _headers(call.Headers),
             cancellationToken).ConfigureAwait(false);
         using var document = OpenAIJson.ParseResponse(System.Text.Encoding.UTF8.GetString(response.Body));
         return Read(document.RootElement, warnings, timestamp, response.Headers);
+    }
+
+    private static ByteArrayContent ToContent(ImageBlob blob)
+    {
+        var bytes = new ByteArrayContent(blob.Data);
+        bytes.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.TryParse(blob.MediaType, out var type)
+            ? type
+            : new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        return bytes;
+    }
+
+    private async Task<ImageBlob> ResolveFileAsync(OpenAIImageFile file, string defaultName, CancellationToken cancellationToken)
+    {
+        if (file.Url == null)
+        {
+            return new ImageBlob(file.Data!, file.MediaType, file.FileName ?? defaultName);
+        }
+
+        return await DownloadBlobAsync(file.Url, defaultName, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Maps to <c>markupToBlob</c>: a base64 <c>data:</c> URL is decoded, any other value is downloaded.
+    /// </summary>
+    private async Task<ImageBlob> MarkupToBlobAsync(string markup, CancellationToken cancellationToken)
+    {
+        var dataUrl = MarkupDataUrl.Match(markup);
+        if (!dataUrl.Success)
+        {
+            return await DownloadBlobAsync(markup, "markup.png", cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!dataUrl.Groups[2].Success)
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` data URLs must be base64 encoded.");
+        }
+
+        var mediaType = dataUrl.Groups[1].Value.Length == 0 ? "image/png" : dataUrl.Groups[1].Value;
+        byte[] decoded;
+        try
+        {
+            decoded = Convert.FromBase64String(dataUrl.Groups[3].Value);
+        }
+        catch (FormatException)
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` data URLs must contain valid base64.");
+        }
+
+        return new ImageBlob(decoded, mediaType, "markup.png");
+    }
+
+    /// <summary>
+    /// Maps to <c>downloadBlob</c> with <c>downloadFetch</c>: the URL is untrusted, so the request carries only the user agent,
+    /// never the provider credentials, and every redirect hop is validated before it is requested.
+    /// </summary>
+    private async Task<ImageBlob> DownloadBlobAsync(string url, string defaultName, CancellationToken cancellationToken)
+    {
+        var (data, mediaType) = await ImageFileDownload.DownloadBlobAsync(_provider, _headers(null), url, cancellationToken).ConfigureAwait(false);
+        return new ImageBlob(data, mediaType, defaultName);
     }
 
     private OpenAIImageGeneration Read(JsonElement root, IReadOnlyList<OpenAICallWarning> warnings, DateTimeOffset timestamp, IReadOnlyDictionary<string, string> headers)
@@ -443,4 +572,6 @@ public sealed class OpenAIImageModel : IImageModel
             content.Add(new StringContent(value), name);
         }
     }
+
+    private sealed record ImageBlob(byte[] Data, string MediaType, string FileName);
 }
