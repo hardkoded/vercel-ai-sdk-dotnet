@@ -23,7 +23,7 @@ What a video model id implies for request building.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L367)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Whether the model accepts the audio and multi-shot settings.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L380)
 
 <a id="Vercel_AI_Tencent_TencentVideoRequestConfig_Omni_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoRequestConfig_Omni"></a>
@@ -59,7 +59,7 @@ Whether the model can route reference inputs to the omni endpoint.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L383)
 
 <a id="Vercel_AI_Tencent_TencentVideoRequestConfig_Parsed_"></a>
 <a id="Vercel_AI_Tencent_TencentVideoRequestConfig_Parsed"></a>
@@ -76,4 +76,4 @@ The parsed id, or null when the id is not recognised.
 
 **Value:** [ParsedTencentVideoModelId](/api/Vercel.AI.Tencent/ParsedTencentVideoModelId/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Tencent/TencentModelCatalog.cs#L377)
