@@ -76,8 +76,9 @@ public sealed class MessageNamesTests
             new[] { new OpenAIChatPromptMessage("system") { Text = "Be helpful", ProviderOptions = Named("instructions") } },
             "remove");
         Assert.Empty(result.Messages);
-        Assert.Equal("other", result.Warnings[0].Type);
-        Assert.Equal("system messages are removed for this model", result.Warnings[0].Message);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("other", warning.Type);
+        Assert.Equal("system messages are removed for this model", warning.Message);
     }
 
     [Fact]
