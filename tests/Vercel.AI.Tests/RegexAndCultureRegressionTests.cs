@@ -32,7 +32,7 @@ public sealed class RegexAndCultureRegressionTests
     [InlineData("é")]
     public void Anthropic_batch_request_id_rejects_trailing_newline_and_non_ascii(string id)
     {
-        Assert.Throws<AiSdkException>(() => AnthropicBatch.ValidateRequestId(id));
+        Assert.Throws<InvalidArgumentException>(() => AnthropicBatch.ValidateRequestId(id));
     }
 
     [Fact]

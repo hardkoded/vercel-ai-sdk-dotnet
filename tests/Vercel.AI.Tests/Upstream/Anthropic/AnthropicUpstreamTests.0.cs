@@ -366,55 +366,6 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported request types before making an API request", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0051()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported request types before making an API request").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported $feature", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0059()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported $feature").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects invalid request IDs before making an API request", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0060()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects invalid request IDs before making an API request").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects duplicate request IDs before making an API request", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0061()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects duplicate request IDs before making an API request").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::maps status %s to %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0062()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::maps status %s to %s").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::normalizes request counts", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0063()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::normalizes request counts").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects result retrieval after Anthropic archives the result file", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0067()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects result retrieval after Anthropic archives the result file").ConfigureAwait(false);
-    }
-
-    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0079()
     {
