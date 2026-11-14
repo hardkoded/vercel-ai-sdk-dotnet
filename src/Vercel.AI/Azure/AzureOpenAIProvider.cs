@@ -252,6 +252,28 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return Image(deploymentId);
     }
 
+    /// <summary>
+    /// Speech model. MAI-Voice models use the Azure Speech API and every other model uses the Azure OpenAI speech API;
+    /// <c>providerOptions.azure.api</c> overrides that for a call. The provider id is <c>azure.speech</c>.
+    /// </summary>
+    public AzureSpeechModel Speech(string deploymentId)
+    {
+        return new AzureSpeechModel(
+            deploymentId,
+            new OpenAI.OpenAISpeechModel(this, deploymentId),
+            new AzureSpeechSpeechModel(
+                deploymentId,
+                Http,
+                () => new Uri(SpeechBaseUrl() + "/tts/cognitiveservices/v1"),
+                () => CreateHeaders(AzureApi.Speech)));
+    }
+
+    /// <summary>Speech model. Alias of <see cref="Speech(string)"/>.</summary>
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return Speech(modelId);
+    }
+
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options, HttpClient? downloadClient)
     {
         options ??= new AzureOpenAIOptions();
