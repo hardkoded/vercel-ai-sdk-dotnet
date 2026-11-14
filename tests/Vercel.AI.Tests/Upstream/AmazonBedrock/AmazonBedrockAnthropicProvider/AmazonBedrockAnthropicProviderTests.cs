@@ -211,7 +211,9 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
     [InlineData("us.anthropic.claude-fable-5-2")]
     [InlineData("global.anthropic.claude-fable-5-1")]
     [InlineData("global.anthropic.claude-fable-5-2")]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable native structured output for %s", Coverage = UpstreamCoverage.Partial, Note = "Rows for unknown future models (claude-opus-6, claude-future) are not ported: the port's Bedrock Anthropic model allowlist does not default unknown models.")]
+    [InlineData("us.anthropic.claude-opus-6-v1:0")]
+    [InlineData("global.anthropic.claude-future-v1:0")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable native structured output for %s", Coverage = UpstreamCoverage.Covered)]
     public void Should_disable_native_structured_output_for(string modelId)
     {
         var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
@@ -236,7 +238,9 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
     [InlineData("us.anthropic.claude-fable-5-2")]
     [InlineData("global.anthropic.claude-fable-5-1")]
     [InlineData("global.anthropic.claude-fable-5-2")]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable strict tools for %s (Bedrock rejects tools[].strict)", Coverage = UpstreamCoverage.Partial, Note = "Rows for unknown future models (claude-opus-6, claude-future) are not ported: the port's Bedrock Anthropic model allowlist does not default unknown models.")]
+    [InlineData("us.anthropic.claude-opus-6-v1:0")]
+    [InlineData("global.anthropic.claude-future-v1:0")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable strict tools for %s (Bedrock rejects tools[].strict)", Coverage = UpstreamCoverage.Covered)]
     public void Should_disable_strict_tools_for(string modelId)
     {
         var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });

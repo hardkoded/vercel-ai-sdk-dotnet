@@ -163,7 +163,8 @@ public static class AnthropicToolPreparer
             }
 
             prepared.Add(node);
-            if (supportsStructuredOutput)
+            // Native final output does not require this beta. Only send it for providers that also support strict tools.
+            if (supportsStructuredOutput && supportsStrictTools)
             {
                 AddBeta(betas, "structured-outputs-2025-11-13");
             }
