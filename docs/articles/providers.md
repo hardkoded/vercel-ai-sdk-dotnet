@@ -1079,6 +1079,8 @@ var result = await provider.Transcription().TranscribeAsync(
 ```
 
 - `GladiaOptions.PollIntervalMs` and `GladiaOptions.PollTimeoutMs` set the provider defaults. `GladiaTranscriptionRequest.PollIntervalMs` and `GladiaTranscriptionRequest.PollTimeoutMs` override them for one call. They are never sent to the Gladia API.
+
+When Gladia reports a failed job, the call throws an `AiSdkError` named `TranscriptionJobFailed`. Its `Cause` is a `GladiaTranscriptionJobResultException` with the parsed `Result` and the `ErrorCode`.
 - Each value must be a positive integer. Anything else throws `InvalidArgumentError`: the provider settings when the provider is created, the per-call values when the call starts.
 - When the budget runs out, the call throws an `AiSdkError` named `TranscriptionJobPollingTimedOut` with the message `Transcription job polling timed out after <timeout> ms`.
 - The `CancellationToken` stops the loop before the next poll and cancels the wait between polls. A cancel surfaces as an `OperationCanceledException`.
