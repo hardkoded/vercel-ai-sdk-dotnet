@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Transcribes paced live audio with Deepgram streaming transcription.</Description>
+  </PropertyGroup>
+</Project>
