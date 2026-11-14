@@ -218,7 +218,7 @@ public sealed class ProviderStreamingTests
     {
         var handler = new GatedStreamHandler();
         var model = BedrockMantleProvider.Create(new BedrockMantleOptions { ApiKey = "test-key" }, handler).Responses("openai.gpt-oss-120b");
-        handler.Body.Write(MantleEvent("{\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}"));
+        handler.Body.Write(MantleEvent("{\"type\":\"response.output_text.delta\",\"item_id\":\"msg_1\",\"output_index\":0,\"delta\":\"Hi\"}"));
         handler.Body.Write(MantleEvent("{\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":4,\"output_tokens\":1}}}"));
         handler.Body.Complete();
 

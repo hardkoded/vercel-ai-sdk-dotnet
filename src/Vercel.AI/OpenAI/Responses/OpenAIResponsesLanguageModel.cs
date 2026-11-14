@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -697,32 +698,49 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             _providerOptionsName);
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
-            JsonObject? node = null;
-            var invalidJson = false;
+            JsonDocument? chunkDocument = null;
             try
             {
-                node = JsonNode.Parse(data) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                invalidJson = true;
-            }
+                try
+                {
+                    chunkDocument = JsonDocument.Parse(data);
+                }
+                catch (JsonException)
+                {
+                    state.MarkParseError();
+                }
 
-            if (invalidJson)
-            {
-                state.MarkParseError();
-                yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
-                continue;
-            }
+                if (chunkDocument == null)
+                {
+                    yield return new ErrorStreamPart("JSON parsing failed: Text: " + data + ".");
+                    continue;
+                }
 
-            if (node == null)
-            {
-                continue;
-            }
+                // Mirrors openaiResponsesChunkSchema: an invalid chunk (including a non-object value) fails the stream,
+                // an unknown chunk (unknown_chunk) is ignored.
+                var node = JsonNode.Parse(data) as JsonObject;
+                if (node == null || !OpenAIResponsesSchema.IsValidChunk(chunkDocument.RootElement))
+                {
+                    state.MarkParseError();
+                    yield return node != null && IsOpenAIChatCompletionChunk(node)
+                        ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node))
+                        : new ErrorStreamPart("Type validation failed: Value: " + data + ".");
+                    continue;
+                }
 
-            foreach (var part in state.Push(node))
+                if (OpenAIResponsesSchema.IsUnknownChunk(chunkDocument.RootElement))
+                {
+                    continue;
+                }
+
+                foreach (var part in state.Push(node))
+                {
+                    yield return part;
+                }
+            }
+            finally
             {
-                yield return part;
+                chunkDocument?.Dispose();
             }
         }
 
@@ -731,6 +749,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             yield return part;
         }
     }
+
+    private static bool IsOpenAIChatCompletionChunk(JsonObject chunk) =>
+        chunk["choices"] is JsonArray && chunk["type"]?.GetValueKind() != JsonValueKind.String;
+
+    private static ProviderStreamError CreateChatCompletionsMismatchError(JsonObject value) =>
+        new(
+            "Received a Chat Completions stream while using the OpenAI Responses API. "
+            + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
+            + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
+            value.ToJsonString(),
+            isRetryable: false);
 
     internal static LanguageModelGenerateResult Parse(
         JsonElement root,

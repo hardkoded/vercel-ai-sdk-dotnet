@@ -403,4 +403,40 @@ public sealed class DoStreamTests
         Assert.Null(finish.RawFinishReason);
         Assert.Equal(refusal, string.Concat(parts.OfType<TextDeltaStreamPart>().Select(part => part.Delta)));
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should return helpful error when Chat Completions stream is received",
+        Coverage = UpstreamCoverage.Partial)]
+    public async Task Should_return_helpful_error_when_Chat_Completions_stream_is_received()
+    {
+        const string chunk = """{"choices":[],"created":0,"id":"","model":"","object":"","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{}}]}""";
+        var parts = await OpenAIResponsesSupport.Stream("data:" + chunk + "\n\ndata: [DONE]\n\n");
+
+        var error = parts.OfType<ErrorStreamPart>().Single();
+        Assert.Equal(
+            "Received a Chat Completions stream while using the OpenAI Responses API. "
+            + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
+            + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
+            error.Message);
+        Assert.Equal(chunk, error.Error!.Data);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should continue ignoring unknown event types",
+        Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_continue_ignoring_unknown_event_types()
+    {
+        var parts = await OpenAIResponsesSupport.Stream(OpenAIResponsesSupport.Sse(new JsonNode[]
+        {
+            JsonNode.Parse("""{"type":"response.created","response":{"id":"response_1","created_at":1,"model":"gpt-5.1"}}""")!,
+            JsonNode.Parse("""{"type":"response.future_event","value":"ignored"}""")!,
+            JsonNode.Parse("""{"type":"response.completed","response":{"incomplete_details":null,"output":[],"usage":{"input_tokens":1,"output_tokens":2}}}""")!,
+        }));
+
+        Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+    }
 }
