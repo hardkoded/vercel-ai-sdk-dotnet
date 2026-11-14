@@ -338,19 +338,16 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
             var options = new GladiaOptions { ApiKey = apiKey };
             // The provider's fixed endpoint is restored when the config has no url.
-            if (serialized.Config.TryGetValue("url", out var url) && url is string baseUrl)
+            if (ReadString(serialized.Config, "url") is { } baseUrl)
             {
                 options.BaseUrl = baseUrl;
             }
 
-            if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
+            if (serialized.Config.TryGetValue("headers", out var headers))
             {
-                foreach (System.Collections.DictionaryEntry entry in map)
+                foreach (var pair in ReadStringMap(headers))
                 {
-                    if (entry.Value is string value)
-                    {
-                        options.Headers[(string)entry.Key] = value;
-                    }
+                    options.Headers[pair.Key] = pair.Value;
                 }
             }
 
@@ -580,11 +577,55 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         }
     }
 
+    private static string? ReadString(IReadOnlyDictionary<string, object?> config, string name)
+    {
+        return config.TryGetValue(name, out var value)
+            ? value switch
+            {
+                string text => text,
+                JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+                _ => null,
+            }
+            : null;
+    }
+
+    private static Dictionary<string, string> ReadStringMap(object? value)
+    {
+        var map = new Dictionary<string, string>();
+        if (value is JsonElement { ValueKind: JsonValueKind.Object } element)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.String)
+                {
+                    map[property.Name] = property.Value.GetString()!;
+                }
+            }
+        }
+        else if (value is System.Collections.IDictionary dictionary)
+        {
+            foreach (System.Collections.DictionaryEntry entry in dictionary)
+            {
+                if (entry.Key is string key && entry.Value is string text)
+                {
+                    map[key] = text;
+                }
+            }
+        }
+
+        return map;
+    }
+
     private static int? ReadInt(IReadOnlyDictionary<string, object?> config, string name)
     {
-        return config.TryGetValue(name, out var value) && value is not null
-            ? Convert.ToInt32(value, CultureInfo.InvariantCulture)
-            : null;
+        if (!config.TryGetValue(name, out var value) || value is null)
+        {
+            return null;
+        }
+
+        return value is JsonElement { ValueKind: JsonValueKind.Number } element
+            ? element.GetInt32()
+            : Convert.ToInt32(value, CultureInfo.InvariantCulture);
     }
 
     private static bool IsSensitiveHeader(string name)
