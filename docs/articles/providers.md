@@ -1309,6 +1309,22 @@ var options = new LanguageModelCallOptions
 
 In explicit mode, only content marked with `promptCacheBreakpoint` is cached. Set `{"mode":"explicit","ttl":"12h"}` under `openai` in the `ProviderOptions` of a system message, a `TextContentPart`, or a `FileContentPart`; the Responses request carries it as `prompt_cache_breakpoint`. `Usage.CacheWriteTokens` reports the tokens written, and `Usage.Raw` holds `input_tokens_details.cache_write_tokens_details` with `ttl_30m_tokens` and `ttl_12h_tokens`.
 
+### OpenAI message names
+
+Chat Completions accepts an optional participant name on each system, developer, user, or assistant message. Set `{"name":"alice"}` under `openai` in the `ProviderOptions` of the `SystemModelMessage`, `UserModelMessage`, or `AssistantModelMessage` to help the model tell participants with the same role apart. Use pseudonyms instead of personal identifiers when possible; names are sent to the provider with the message.
+
+```csharp
+var alice = new UserModelMessage("My favorite color is blue.")
+{
+    ProviderOptions = new Dictionary<string, JsonElement>
+    {
+        ["openai"] = JsonDocument.Parse("{\"name\":\"alice\"}").RootElement.Clone(),
+    },
+};
+```
+
+Set the name on the message, not on a content part or in the call-level provider options. A name that is not a string throws `InvalidArgumentException` (`invalid openai provider options`). `ToolModelMessage` does not support names: a name in its `MessageProviderOptions` is omitted with an `unsupported` warning (`message name on tool messages`). The option applies to Chat Completions (`ChatModel`), including Azure chat models. The Responses model does not support message names. A name is separate from the call-level `user` and `safetyIdentifier` options.
+
 ### OpenAI batch
 
 Batch support is experimental and the API may change in patch releases.
