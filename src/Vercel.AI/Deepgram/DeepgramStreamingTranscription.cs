@@ -70,7 +70,7 @@ internal static class DeepgramStreamingTranscription
         {
             new KeyValuePair<string, string>("model", modelId),
             new KeyValuePair<string, string>("encoding", encoding),
-            new KeyValuePair<string, string>("sample_rate", rate.Value.ToString(CultureInfo.InvariantCulture)),
+            new KeyValuePair<string, string>("sample_rate", rate.Value.ToString("0", CultureInfo.InvariantCulture)),
         };
         var deepgram = options.ProviderOptions.ValueKind == JsonValueKind.Object && options.ProviderOptions.TryGetProperty("deepgram", out var bag) && bag.ValueKind == JsonValueKind.Object ? bag : (JsonElement?)null;
         string? language = null;

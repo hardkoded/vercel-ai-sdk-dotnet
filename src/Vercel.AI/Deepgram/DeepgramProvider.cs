@@ -302,7 +302,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     internal async Task<Dictionary<string, string?>> CreateHeadersAsync(CancellationToken cancellationToken)
     {
         var headers = CreateHeaders();
-        if ((Options as DeepgramOptions)?.ApiKeyProvider is { } provider && !Options.Headers.Keys.Any(name => string.Equals(name, "Authorization", StringComparison.OrdinalIgnoreCase)))
+        if ((Options as DeepgramOptions)?.ApiKeyProvider is { } provider && !Options.Headers.Any(pair => !string.IsNullOrEmpty(pair.Value) && string.Equals(pair.Key, "Authorization", StringComparison.OrdinalIgnoreCase)))
         {
             var key = await provider(cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(key))
