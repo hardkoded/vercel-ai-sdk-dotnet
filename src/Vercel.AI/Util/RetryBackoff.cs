@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Util;
@@ -163,7 +164,7 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
 
     private async Task<bool> ShouldRetryAsync(Exception error)
     {
-        if ((error is ApiCallError api && api.IsRetryable) || (error is GatewayError gateway && gateway.IsRetryable))
+        if ((error is ApiCallError api && api.IsRetryable) || (error is GatewayError gateway && gateway.IsRetryable) || (error is RetryableCallException call && call.IsRetryable))
         {
             return true;
         }
@@ -197,6 +198,11 @@ public sealed class RetryWithExponentialBackoffRespectingRetryHeaders
         if (api != null)
         {
             return api.ResponseHeaders;
+        }
+
+        if (error is RetryableCallException call)
+        {
+            return call.ResponseHeaders;
         }
 
         var gateway = error as GatewayError;
