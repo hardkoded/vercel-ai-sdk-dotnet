@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Gladia;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.GladiaTranscriptionModel;
 
@@ -259,9 +260,13 @@ public sealed class DoGenerateTranscriptionTests
         var handler = GladiaFixtures.Handler(result: response);
         var provider = GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
 
-        var error = await Assert.ThrowsAsync<AiSdkException>(() => provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<AiSdkError>(() => provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None));
 
         Assert.Contains("Transcription job failed with error code 400", error.Message, StringComparison.Ordinal);
+        Assert.Equal("TranscriptionJobFailed", error.ErrorName);
+        var cause = Assert.IsType<GladiaTranscriptionJobResultException>(error.Cause);
+        Assert.Equal(400, cause.ErrorCode);
+        Assert.Equal("error", cause.Result["status"]!.GetValue<string>());
     }
 
     [Fact]

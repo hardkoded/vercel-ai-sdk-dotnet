@@ -14,6 +14,27 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Gladia;
 
+/// <summary>
+/// Cause of the <c>TranscriptionJobFailed</c> error. Carries the Gladia result that upstream passes as <c>cause</c>.
+/// .NET-only: a JavaScript <c>cause</c> can be any value, but an <see cref="Exception"/> cause must be an exception.
+/// </summary>
+public sealed class GladiaTranscriptionJobResultException : Exception
+{
+    /// <summary>Creates the cause for a failed job.</summary>
+    public GladiaTranscriptionJobResultException(string message, JsonObject result, int? errorCode)
+        : base(message)
+    {
+        Result = result;
+        ErrorCode = errorCode;
+    }
+
+    /// <summary>The parsed Gladia result of the failed job.</summary>
+    public JsonObject Result { get; }
+
+    /// <summary>The <c>error_code</c> of the result, when Gladia sent one.</summary>
+    public int? ErrorCode { get; }
+}
+
 /// <summary>Gladia settings.</summary>
 public class GladiaOptions : OpenAICompatibleOptions
 {
@@ -479,9 +500,16 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         var errorCode = document.RootElement.TryGetProperty("error_code", out var code) && code.ValueKind == JsonValueKind.Number && code.TryGetInt32(out var number)
                             ? number
                             : (int?)null;
-                        throw new AiSdkException(errorCode is null
-                            ? "Transcription job failed."
-                            : "Transcription job failed with error code " + errorCode.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
+                        var message = errorCode is null
+                            ? "Transcription job failed"
+                            : "Transcription job failed with error code " + errorCode.Value.ToString(CultureInfo.InvariantCulture);
+                        throw new AiSdkError(
+                            "TranscriptionJobFailed",
+                            message,
+                            new GladiaTranscriptionJobResultException(
+                                message,
+                                JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? [],
+                                errorCode));
                     }
 
                     if (string.Equals(status, "done", StringComparison.Ordinal) || string.IsNullOrEmpty(status))
