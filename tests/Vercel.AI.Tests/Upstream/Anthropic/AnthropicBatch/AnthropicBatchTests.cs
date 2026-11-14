@@ -41,7 +41,7 @@ public sealed class AnthropicBatchTests
     }
 
     [Fact]
-    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects message threads before making an API request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects message threads before making an API request", Coverage = UpstreamCoverage.Covered, Commit = "6b101ac0765a3cf796e94692c3e3c8a3e08ff7f4")]
     public async Task Rejects_message_threads_before_making_an_API_request()
     {
         var calls = 0;
