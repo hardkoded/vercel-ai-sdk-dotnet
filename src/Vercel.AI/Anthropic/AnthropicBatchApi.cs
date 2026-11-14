@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
+using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -22,6 +24,140 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
 
     /// <inheritdoc />
     public override string Provider => _provider.ModelProvider.Replace(".messages", string.Empty) + ".batch";
+
+    /// <inheritdoc />
+    public override async Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var requests = call.Requests ?? Array.Empty<NormalizedBatchRequest>();
+        foreach (var request in requests)
+        {
+            if (request.Type != "text")
+            {
+                throw new UnsupportedFunctionalityException("batch request type: " + request.Type, "The Anthropic Message Batches API does not support batch requests with type \"" + request.Type + "\".");
+            }
+        }
+
+        AnthropicBatch.ValidateRequestIds(requests.Select(request => request.Id));
+
+        var explicitBetas = GetAnthropicBatchProviderBetas(call.ProviderOptions);
+        var batchBetas = new List<string>(explicitBetas);
+        var warnings = new List<BatchRequestWarning>();
+        if (call.WebhookUrl != null)
+        {
+            warnings.Add(new BatchRequestWarning(null, new OperationWarning("unsupported", feature: "webhookUrl", details: "The Anthropic Message Batches API does not support completion webhooks.")));
+        }
+
+        var prepared = new JsonArray();
+        foreach (var request in requests)
+        {
+            var options = request.Options;
+            var requestOptions = options.ValueKind == JsonValueKind.Object && options.TryGetProperty("providerOptions", out var po) ? po : (JsonElement?)null;
+            if (GetAnthropicBatchProviderBetas(requestOptions).Count > 0)
+            {
+                throw new UnsupportedFunctionalityException(
+                    "per-request providerOptions.anthropic.anthropicBeta",
+                    "Anthropic Message Batches do not support per-request betas (request \"" + request.Id + "\"). Set providerOptions.anthropic.anthropicBeta on startBatch instead.");
+            }
+
+            var result = AnthropicMessagesRequest.Prepare(
+                request.ModelId,
+                OpenAIBatchApi.ToCallOptions(options, "Anthropic"),
+                false,
+                _provider.ModelProvider,
+                _provider.SupportsNativeStructuredOutput,
+                _provider.SupportsStrictTools,
+                AnthropicProvider.ThreadSettings);
+            if (result.Body["thread"] != null)
+            {
+                throw new UnsupportedFunctionalityException(
+                    "message threads in batches",
+                    "Anthropic Message Batches do not support message threads (request \"" + request.Id + "\").");
+            }
+
+            if (result.UsesJsonResponseTool)
+            {
+                throw new UnsupportedFunctionalityException(
+                    "batch responseFormat JSON-tool fallback",
+                    "Anthropic Message Batches cannot decode the JSON-tool structured-output fallback (request \"" + request.Id + "\") because batch results are retrieved independently of the start call. Use a model that supports native output_format structured outputs.");
+            }
+
+            var body = _provider.TransformRequestBody(result.Body, result.Betas);
+            AnthropicBatch.ValidateAnthropicBatchBody(body, request.Id);
+            prepared.Add(new JsonObject { ["custom_id"] = request.Id, ["params"] = body.DeepClone() });
+            foreach (var beta in result.Betas)
+            {
+                if (!batchBetas.Contains(beta))
+                {
+                    batchBetas.Add(beta);
+                }
+            }
+
+            foreach (var warning in result.Warnings)
+            {
+                warnings.Add(new BatchRequestWarning(request.Id, new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)));
+            }
+        }
+
+        var baseUrl = _provider.NormalizedBase().TrimEnd('/');
+        var batchUri = new Uri(baseUrl + "/messages/batches");
+        var payload = new JsonObject { ["requests"] = prepared }.ToJsonString();
+        var callHeaders = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+        var headers = _provider.UsesAws
+            ? await _provider.CreateSignedHeadersAsync(batchBetas, callHeaders, payload, batchUri, cancellationToken).ConfigureAwait(false)
+            : await _provider.CreateHeadersAsync(batchBetas, callHeaders, payload, cancellationToken).ConfigureAwait(false);
+        JsonElement batch;
+        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, batchUri, payload, headers, cancellationToken).ConfigureAwait(false))
+        {
+            batch = document.RootElement.Clone();
+        }
+
+        var rawStatus = Str(batch, "processing_status");
+        var counts = AnthropicBatch.Count(batch);
+        return new BatchStartResult
+        {
+            Id = Str(batch, "id") ?? string.Empty,
+            Status = AnthropicBatch.MapStatus(rawStatus),
+            RawStatus = rawStatus,
+            RequestCounts = new BatchRequestCounts(counts.Total, counts.Pending, counts.Completed, counts.Failed),
+            CreatedAt = Str(batch, "created_at"),
+            ExpiresAt = Str(batch, "expires_at"),
+            Warnings = warnings,
+        };
+    }
+
+    private IReadOnlyList<string> GetAnthropicBatchProviderBetas(JsonElement? providerOptions)
+    {
+        var betas = new List<string>();
+        if (providerOptions is not { ValueKind: JsonValueKind.Object } options)
+        {
+            return betas;
+        }
+
+        var name = _provider.ModelProvider.Split('.')[0];
+        JsonElement? effective = null;
+        foreach (var key in name == "anthropic" ? new[] { "anthropic" } : new[] { "anthropic", name })
+        {
+            // Custom provider options overlay the canonical ones.
+            if (options.TryGetProperty(key, out var entry) && entry.ValueKind == JsonValueKind.Object
+                && entry.TryGetProperty("anthropicBeta", out var list) && list.ValueKind == JsonValueKind.Array)
+            {
+                effective = list;
+            }
+        }
+
+        if (effective is { } array)
+        {
+            foreach (var beta in array.EnumerateArray())
+            {
+                if (beta.ValueKind == JsonValueKind.String && !betas.Contains(beta.GetString()!))
+                {
+                    betas.Add(beta.GetString()!);
+                }
+            }
+        }
+
+        return betas;
+    }
 
     /// <inheritdoc />
     public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
@@ -74,19 +210,31 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
                     return new BatchItem("text", id, "failed") { ErrorCode = "invalid_response", ErrorMessage = "Anthropic returned an invalid Message batch result." };
                 }
 
-                var texts = new List<string>();
+                var parts = new List<BatchContentPart>();
                 if (message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var part in content.EnumerateArray())
                     {
-                        if (Str(part, "type") == "text")
+                        switch (Str(part, "type"))
                         {
-                            texts.Add(Str(part, "text") ?? string.Empty);
+                            case "text":
+                                parts.Add(new BatchContentPart("text") { Text = Str(part, "text") ?? string.Empty });
+                                break;
+                            case "tool_use":
+                                parts.Add(new BatchContentPart("tool-call")
+                                {
+                                    ToolCallId = Str(part, "id"),
+                                    ToolName = Str(part, "name"),
+                                    Text = part.TryGetProperty("input", out var input) ? input.GetRawText() : "null",
+                                });
+                                break;
                         }
                     }
                 }
 
-                return TextItem(id, texts, Str(message, "stop_reason"), Str(message, "id"), Str(message, "model"));
+                var item = new BatchItem("text", id, "succeeded");
+                item.Text = new BatchTextGeneration { Content = parts, RawFinishReason = Str(message, "stop_reason"), ResponseId = Str(message, "id"), ModelId = Str(message, "model") };
+                return item;
             case "canceled":
                 return new BatchItem("text", id, "cancelled");
             case "expired":

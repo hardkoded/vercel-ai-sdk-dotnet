@@ -329,14 +329,14 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     }
 
     // Reads the normalized options that Batch.StartBatchAsync builds for a text request.
-    private static LanguageModelCallOptions ToCallOptions(JsonElement options)
+    internal static LanguageModelCallOptions ToCallOptions(JsonElement options, string providerName = "OpenAI")
     {
         var prompt = new List<ModelMessage>();
         if (OpenAIJson.Child(options, "prompt") is { ValueKind: JsonValueKind.Array } messages)
         {
             foreach (var message in messages.EnumerateArray())
             {
-                prompt.Add(ToMessage(message));
+                prompt.Add(ToMessage(message, providerName));
             }
         }
 
@@ -378,7 +378,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
                 if (Str(tool, "type") != "function")
                 {
-                    throw new UnsupportedFunctionalityException("batch tool type: " + Str(tool, "type"), "OpenAI batches support only function and provider tools.");
+                    throw new UnsupportedFunctionalityException("batch tool type: " + Str(tool, "type"), providerName + " batches support only function and provider tools.");
                 }
 
                 converted.Add(new LanguageModelTool(Str(tool, "name") ?? string.Empty, Str(tool, "description"), tool.TryGetProperty("inputSchema", out var schema) ? schema.Clone() : OpenAIJson.Parse("{}")));
@@ -402,7 +402,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         return result;
     }
 
-    private static ModelMessage ToMessage(JsonElement message)
+    private static ModelMessage ToMessage(JsonElement message, string providerName)
     {
         var role = Str(message, "role");
         var content = OpenAIJson.Child(message, "content");
@@ -418,7 +418,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             {
                 if (Str(part, "type") != "text")
                 {
-                    throw new UnsupportedFunctionalityException("batch prompt part: " + Str(part, "type"), "OpenAI batches support only text prompt parts.");
+                    throw new UnsupportedFunctionalityException("batch prompt part: " + Str(part, "type"), providerName + " batches support only text prompt parts.");
                 }
 
                 converted.Add(new TextContentPart(Str(part, "text") ?? string.Empty));
@@ -427,7 +427,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             return new UserModelMessage(converted);
         }
 
-        throw new UnsupportedFunctionalityException("batch prompt message: " + role, "OpenAI batches support only system and user text messages.");
+        throw new UnsupportedFunctionalityException("batch prompt message: " + role, providerName + " batches support only system and user text messages.");
     }
 
     private static BatchItem Convert(JsonElement line)
