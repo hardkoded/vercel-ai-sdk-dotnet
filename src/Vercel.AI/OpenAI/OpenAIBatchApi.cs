@@ -387,6 +387,18 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             result.Tools = converted;
         }
 
+        if (OpenAIJson.Child(options, "responseFormat") is { ValueKind: JsonValueKind.Object } responseFormat && Str(responseFormat, "type") == "json")
+        {
+            result.JsonResponse = true;
+            if (responseFormat.TryGetProperty("schema", out var jsonSchema) && jsonSchema.ValueKind == JsonValueKind.Object)
+            {
+                result.JsonSchema = jsonSchema.Clone();
+            }
+
+            result.JsonSchemaName = Str(responseFormat, "name");
+            result.JsonSchemaDescription = Str(responseFormat, "description");
+        }
+
         if (OpenAIJson.Child(options, "toolChoice") is { ValueKind: JsonValueKind.Object } choice)
         {
             result.ToolChoice = Str(choice, "type") switch

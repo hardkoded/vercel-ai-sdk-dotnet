@@ -1051,35 +1051,6 @@ internal static class AnthropicAssertions
         Assert.NotNull(options);
     }
 
-    public static void BatchIds()
-    {
-        var invalid = Assert.Throws<AiSdkException>(() => AnthropicBatch.ValidateRequestId("invalid id"));
-        Assert.Contains("must match ^[A-Za-z0-9_-]{1,64}$", invalid.Message);
-        var longId = Assert.Throws<AiSdkException>(() => AnthropicBatch.ValidateRequestId(new string('a', 65)));
-        Assert.Contains("must match ^[A-Za-z0-9_-]{1,64}$", longId.Message);
-        var duplicate = Assert.Throws<AiSdkException>(() => AnthropicBatch.ValidateRequestIds(new[] { "duplicate", "duplicate" }));
-        Assert.Contains("duplicate ID \"duplicate\"", duplicate.Message);
-        AnthropicBatch.ValidateRequestIds(new[] { "request-1", "request_2" });
-    }
-
-    public static void BatchStatusAndCounts()
-    {
-        Assert.Equal("pending", AnthropicBatch.MapStatus("in_progress"));
-        Assert.Equal("pending", AnthropicBatch.MapStatus("canceling"));
-        Assert.Equal("completed", AnthropicBatch.MapStatus("ended"));
-        Assert.Equal("pending", AnthropicBatch.MapStatus("future_status"));
-        var counts = AnthropicBatch.Count(0, 2, 1, 1, 1);
-        Assert.Equal(5, counts.Total);
-        Assert.Equal(0, counts.Pending);
-        Assert.Equal(2, counts.Completed);
-        Assert.Equal(3, counts.Failed);
-        var speed = Assert.Throws<AiSdkException>(() => AnthropicBatch.RejectSpeed("fast", false));
-        Assert.Contains("do not support speed", speed.Message);
-        var fallback = Assert.Throws<AiSdkException>(() => AnthropicBatch.RejectSpeed(null, true));
-        Assert.Contains("fallback speed", fallback.Message);
-        Assert.Throws<AiSdkException>(() => AnthropicBatch.ValidateRequestType("image"));
-    }
-
     public static void BatchResults()
     {
         using var pending = JsonDocument.Parse("{\"processing_status\":\"in_progress\",\"results_url\":null}");

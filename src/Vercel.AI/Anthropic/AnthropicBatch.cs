@@ -44,7 +44,7 @@ public static class AnthropicBatch
     {
         if (id == null || !IdPattern.IsMatch(id))
         {
-            throw new AiSdkException("Anthropic batch request ID \"" + id + "\" must match ^[A-Za-z0-9_-]{1,64}$.");
+            throw new InvalidArgumentException("requests", id, "Anthropic batch request ID \"" + id + "\" must match ^[A-Za-z0-9_-]{1,64}$.");
         }
     }
 
@@ -72,31 +72,8 @@ public static class AnthropicBatch
             ValidateRequestId(id);
             if (!seen.Add(id))
             {
-                throw new AiSdkException("Anthropic batch request IDs must be unique; duplicate ID \"" + id + "\".");
+                throw new InvalidArgumentException("requests", ids, "Anthropic batch request IDs must be unique; duplicate ID \"" + id + "\".");
             }
-        }
-    }
-
-    /// <summary>Rejects request types the batches API does not accept, such as image.</summary>
-    public static void ValidateRequestType(string? type)
-    {
-        if (type == "image")
-        {
-            throw new AiSdkException("Unsupported batch request type 'image'.");
-        }
-    }
-
-    /// <summary>Rejects speed and fallback speed, which batches do not support.</summary>
-    public static void RejectSpeed(string? speed, bool fallbackSpeed)
-    {
-        if (!string.IsNullOrEmpty(speed))
-        {
-            throw new AiSdkException("Anthropic Message Batches do not support speed (request \"request-1\").");
-        }
-
-        if (fallbackSpeed)
-        {
-            throw new AiSdkException("Anthropic Message Batches do not support fallback speed (request \"request-1\").");
         }
     }
 
