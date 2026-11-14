@@ -67,7 +67,7 @@ public sealed class AnthropicFiles : IFileStore
     public async Task<AnthropicFileDownload> DownloadFileAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
         var id = GetFileId(file);
-        var response = await _http.SendBinaryAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id) + "/content"), null, GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http.OpenBinaryStreamAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id) + "/content"), GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
         string? mediaType = null;
         if (response.Headers.TryGetValue("Content-Type", out var contentType) && !string.IsNullOrWhiteSpace(contentType))
         {
@@ -79,7 +79,7 @@ public sealed class AnthropicFiles : IFileStore
             }
         }
 
-        return new AnthropicFileDownload(new MemoryStream(response.Body, writable: false), mediaType);
+        return new AnthropicFileDownload(response.Body, mediaType);
     }
 
     /// <summary>Deletes a file with <c>DELETE /files/{id}</c>.</summary>
@@ -88,7 +88,7 @@ public sealed class AnthropicFiles : IFileStore
         var id = GetFileId(file);
         var response = await _http.SendBinaryAsync(HttpMethod.Delete, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id)), null, GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
-        return new AnthropicFileDeleteResult(new Dictionary<string, string> { ["anthropic"] = AnthropicJson.String(document.RootElement, "id") ?? id }, true);
+        return new AnthropicFileDeleteResult(new Dictionary<string, string> { ["anthropic"] = AnthropicJson.String(document.RootElement, "id") ?? throw new InvalidOperationException("Anthropic delete response is missing 'id'.") }, true);
     }
 
     private static string GetFileId(IReadOnlyDictionary<string, string?> file)
@@ -107,9 +107,8 @@ public sealed class AnthropicFiles : IFileStore
         var root = document.RootElement;
         return new AnthropicUploadedFile(
             AnthropicJson.String(root, "id") ?? string.Empty,
-            AnthropicJson.String(root, "filename"),
+            AnthropicJson.String(root, "filename") ?? uploadedName,
             root.Clone(),
-            uploadedName,
             uploadedMediaType);
     }
 
@@ -138,22 +137,20 @@ public sealed class AnthropicFiles : IFileStore
 /// <summary>Files API upload or metadata result.</summary>
 public sealed class AnthropicUploadedFile
 {
-    private readonly string? _uploadedName;
     private readonly string? _uploadedMediaType;
 
     /// <summary>Creates a result.</summary>
     public AnthropicUploadedFile(string id, string? fileName, JsonElement raw)
-        : this(id, fileName, raw, null, null)
+        : this(id, fileName, raw, null)
     {
     }
 
-    /// <summary>Creates a result. The uploaded name and media type are the fallbacks for an upload response.</summary>
-    public AnthropicUploadedFile(string id, string? fileName, JsonElement raw, string? uploadedName, string? uploadedMediaType)
+    /// <summary>Creates a result. The uploaded media type is the fallback for an upload response.</summary>
+    public AnthropicUploadedFile(string id, string? fileName, JsonElement raw, string? uploadedMediaType)
     {
         Id = id;
         FileName = fileName;
         Raw = raw;
-        _uploadedName = uploadedName;
         _uploadedMediaType = uploadedMediaType;
     }
 
@@ -172,9 +169,6 @@ public sealed class AnthropicUploadedFile
     /// <summary><c>mime_type</c>, or the uploaded media type.</summary>
     public string? MediaType => AnthropicJson.String(Raw, "mime_type") ?? _uploadedMediaType;
 
-    /// <summary><c>filename</c>, or the uploaded name.</summary>
-    public string? ResolvedFileName => FileName ?? _uploadedName;
-
     /// <summary><c>size_bytes</c>.</summary>
     public long? ByteSize => Raw.ValueKind == JsonValueKind.Object && Raw.TryGetProperty("size_bytes", out var value) && value.ValueKind == JsonValueKind.Number ? value.GetInt64() : null;
 
@@ -188,7 +182,7 @@ public sealed class AnthropicUploadedFile
     public IReadOnlyList<ModelWarning> Warnings => Array.Empty<ModelWarning>();
 
     /// <summary>Metadata stored under <c>providerMetadata.anthropic</c>. Fields the response left out or set to null are omitted.</summary>
-    public IReadOnlyDictionary<string, object> ProviderMetadata
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> ProviderMetadata
     {
         get
         {
@@ -199,7 +193,7 @@ public sealed class AnthropicUploadedFile
             Add(metadata, "createdAt", "created_at");
             Add(metadata, "downloadable", "downloadable");
             Add(metadata, "expiresAt", "expires_at");
-            return metadata;
+            return new Dictionary<string, IReadOnlyDictionary<string, object>> { ["anthropic"] = metadata };
         }
     }
 

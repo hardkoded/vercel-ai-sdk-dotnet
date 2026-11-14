@@ -55,7 +55,7 @@ public sealed class AnthropicFilesTests
         var uploaded = await files.UploadAsync("blob", Encoding.UTF8.GetBytes("hello"), "text/plain", null, CancellationToken.None).ConfigureAwait(false);
         var metadata = await files.GetFileMetadataAsync(uploaded.ProviderReference.ToDictionary(p => p.Key, p => (string?)p.Value), CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(uploaded.ProviderReference, metadata.ProviderReference);
-        Assert.Equal(uploaded.ResolvedFileName, metadata.ResolvedFileName);
+        Assert.Equal(uploaded.FileName, metadata.FileName);
         Assert.Equal(uploaded.ProviderMetadata, metadata.ProviderMetadata);
         Assert.Equal("application/pdf", metadata.MediaType);
         Assert.Equal(12345, metadata.ByteSize);
@@ -64,12 +64,12 @@ public sealed class AnthropicFilesTests
         if (expiresAt == null || expiresAt == "null")
         {
             Assert.Null(metadata.ExpiresAt);
-            Assert.False(metadata.ProviderMetadata.ContainsKey("expiresAt"));
+            Assert.False(metadata.ProviderMetadata["anthropic"].ContainsKey("expiresAt"));
         }
         else
         {
             Assert.Equal(new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero), metadata.ExpiresAt);
-            Assert.Equal("2027-01-01T00:00:00Z", metadata.ProviderMetadata["expiresAt"]);
+            Assert.Equal("2027-01-01T00:00:00Z", metadata.ProviderMetadata["anthropic"]["expiresAt"]);
         }
     }
 }

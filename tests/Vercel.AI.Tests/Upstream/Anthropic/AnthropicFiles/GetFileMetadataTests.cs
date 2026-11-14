@@ -23,12 +23,12 @@ public sealed class GetFileMetadataTests
         Assert.Equal("application/pdf", result.MediaType);
         Assert.Equal(12345, result.ByteSize);
         Assert.Equal(new DateTimeOffset(2025, 4, 14, 12, 0, 0, TimeSpan.Zero), result.CreatedAt);
-        Assert.Equal("test.pdf", result.ProviderMetadata["filename"]);
-        Assert.Equal("application/pdf", result.ProviderMetadata["mimeType"]);
-        Assert.Equal(12345L, result.ProviderMetadata["sizeBytes"]);
-        Assert.Equal("2025-04-14T12:00:00Z", result.ProviderMetadata["createdAt"]);
-        Assert.Equal(true, result.ProviderMetadata["downloadable"]);
-        Assert.Equal(5, result.ProviderMetadata.Count);
+        Assert.Equal("test.pdf", result.ProviderMetadata["anthropic"]["filename"]);
+        Assert.Equal("application/pdf", result.ProviderMetadata["anthropic"]["mimeType"]);
+        Assert.Equal(12345L, result.ProviderMetadata["anthropic"]["sizeBytes"]);
+        Assert.Equal("2025-04-14T12:00:00Z", result.ProviderMetadata["anthropic"]["createdAt"]);
+        Assert.Equal(true, result.ProviderMetadata["anthropic"]["downloadable"]);
+        Assert.Equal(5, result.ProviderMetadata["anthropic"].Count);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class GetFileMetadataTests
     {
         var (files, _) = FilesFixture.Json("{\"id\":\"file-abc123\",\"type\":\"file\",\"filename\":\"test.pdf\",\"mime_type\":\"application/pdf\",\"size_bytes\":12345,\"created_at\":\"2025-04-14T12:00:00Z\"}");
         var result = await files.GetFileMetadataAsync(FilesFixture.Ref("file-abc123"), CancellationToken.None).ConfigureAwait(false);
-        Assert.False(result.ProviderMetadata.ContainsKey("downloadable"));
+        Assert.False(result.ProviderMetadata["anthropic"].ContainsKey("downloadable"));
     }
 
     [Theory]
@@ -52,7 +52,7 @@ public sealed class GetFileMetadataTests
         Assert.Null(result.FileName);
         Assert.Null(result.ByteSize);
         Assert.Null(result.CreatedAt);
-        Assert.Empty(result.ProviderMetadata);
+        Assert.Empty(result.ProviderMetadata["anthropic"]);
     }
 
     [Fact]

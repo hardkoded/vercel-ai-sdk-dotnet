@@ -121,6 +121,35 @@ public sealed class ProviderHttp
         return new ProviderBinaryResponse(bytes, CopyHeaders(response), response.Content.Headers.ContentType?.MediaType);
     }
 
+    /// <summary>
+    /// Sends a request and returns the response body as a stream once the status is known. A failed response throws here.
+    /// The returned stream owns the response and releases it when disposed, so a consumer that stops reading stops the transfer.
+    /// </summary>
+    internal async Task<ProviderStreamResponse> OpenBinaryStreamAsync(
+        HttpMethod method,
+        Uri uri,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken)
+    {
+        var response = await SendRawAsync(method, uri, null, headers, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+                throw MapStatusWithHeaders((int)response.StatusCode, JsonValues.ExtractErrorMessage(text, (int)response.StatusCode), text, CopyHeaders(response));
+            }
+
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            return new ProviderStreamResponse(new ResponseOwningStream(stream, response), CopyHeaders(response));
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Posts JSON and yields SSE data payloads.</summary>
     public async IAsyncEnumerable<string> SendSseAsync(
         Uri uri,
@@ -569,4 +598,97 @@ internal sealed class ProviderBinaryResponse
     public IReadOnlyDictionary<string, string> Headers { get; }
 
     public string? MediaType { get; }
+}
+
+internal sealed class ProviderStreamResponse
+{
+    public ProviderStreamResponse(Stream body, IReadOnlyDictionary<string, string> headers)
+    {
+        Body = body;
+        Headers = headers;
+    }
+
+    public Stream Body { get; }
+
+    public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
+/// <summary>A read-only stream that disposes the HTTP response with it.</summary>
+internal sealed class ResponseOwningStream : Stream
+{
+    private readonly Stream _inner;
+    private readonly HttpResponseMessage _response;
+
+    public ResponseOwningStream(Stream inner, HttpResponseMessage response)
+    {
+        _inner = inner;
+        _response = response;
+    }
+
+    public override bool CanRead => _inner.CanRead;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => false;
+
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
+
+    public override void Flush()
+    {
+    }
+
+    public override int Read(byte[] buffer, int offset, int count)
+    {
+        return _inner.Read(buffer, offset, count);
+    }
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    {
+        return _inner.ReadAsync(buffer, offset, count, cancellationToken);
+    }
+
+#if NET
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        return _inner.ReadAsync(buffer, cancellationToken);
+    }
+#endif
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        throw new NotSupportedException();
+    }
+
+    public override void SetLength(long value)
+    {
+        throw new NotSupportedException();
+    }
+
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        throw new NotSupportedException();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            try
+            {
+                _inner.Dispose();
+            }
+            finally
+            {
+                _response.Dispose();
+            }
+        }
+
+        base.Dispose(disposing);
+    }
 }

@@ -13,6 +13,7 @@ public sealed class DownloadFileTests
 {
     [Theory]
     [InlineData(null)]
+    [InlineData("")]
     [InlineData("; charset=utf-8")]
     [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles > downloadFile::omits unknown download media types (%s)", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
     public async Task Omits_unknown_download_media_types(string? contentType)

@@ -124,6 +124,13 @@ internal sealed class ParityHandler : HttpMessageHandler
     {
         foreach (var header in headers)
         {
+            if (string.Equals(header.Name, "Content-Type", StringComparison.OrdinalIgnoreCase))
+            {
+                response.Content.Headers.Remove("Content-Type");
+                response.Content.Headers.TryAddWithoutValidation(header.Name, header.Value);
+                continue;
+            }
+
             response.Headers.TryAddWithoutValidation(header.Name, header.Value);
         }
     }
