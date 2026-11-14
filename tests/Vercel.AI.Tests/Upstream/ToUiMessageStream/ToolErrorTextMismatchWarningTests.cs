@@ -4,8 +4,8 @@
 
 using Vercel.AI.AspNetCore;
 using Vercel.AI.Provider;
-using Vercel.AI.Util;
 using Vercel.AI.Tests.Upstream.Logger;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.ToUiMessageStream;
 
