@@ -166,7 +166,14 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 
     private string ResourceName()
     {
-        var resource = _azure.ResourceName ?? Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME") ?? "resource";
+        var resource = !string.IsNullOrEmpty(_azure.ResourceName) ? _azure.ResourceName : Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME");
+        if (string.IsNullOrEmpty(resource))
+        {
+            throw new ArgumentException(
+                "Azure OpenAI resource name is missing. Pass it in AzureOpenAIOptions.ResourceName or set the AZURE_RESOURCE_NAME environment variable.",
+                nameof(AzureOpenAIOptions.ResourceName));
+        }
+
         if (!IsValidHostnamePart(resource))
         {
             throw new ArgumentException(

@@ -331,7 +331,7 @@ internal sealed class AzureMaiImageModel : IImageModel
             return new ImageBlob(data, mediaType);
         }
 
-        return new ImageBlob(file.Data ?? Array.Empty<byte>(), file.MediaType ?? "application/octet-stream");
+        return new ImageBlob(file.Data ?? throw new AiSdkException("MAI image edits need image data."), file.MediaType ?? "application/octet-stream");
     }
 
     private sealed record ImageBlob(byte[] Data, string MediaType);

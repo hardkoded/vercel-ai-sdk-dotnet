@@ -254,7 +254,7 @@ public sealed class OpenAIImageModel : IImageModel
             return OpenAIImageFile.FromUrl(file.Url ?? throw new AiSdkException("A URL image needs a url."));
         }
 
-        return new OpenAIImageFile(file.Data ?? Array.Empty<byte>(), file.MediaType ?? "image/png", file.FileName);
+        return new OpenAIImageFile(file.Data ?? throw new AiSdkException("OpenAI image edits need image data."), file.MediaType ?? "image/png", file.FileName);
     }
 
     /// <summary>Generates or edits images.</summary>
@@ -425,7 +425,17 @@ public sealed class OpenAIImageModel : IImageModel
         }
 
         var mediaType = dataUrl.Groups[1].Value.Length == 0 ? "image/png" : dataUrl.Groups[1].Value;
-        return new ImageBlob(Convert.FromBase64String(dataUrl.Groups[3].Value), mediaType, "markup.png");
+        byte[] decoded;
+        try
+        {
+            decoded = Convert.FromBase64String(dataUrl.Groups[3].Value);
+        }
+        catch (FormatException)
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai.markup", markup, "`markup` data URLs must contain valid base64.");
+        }
+
+        return new ImageBlob(decoded, mediaType, "markup.png");
     }
 
     /// <summary>
