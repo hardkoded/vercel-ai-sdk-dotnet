@@ -149,8 +149,18 @@ public static class AnthropicMessagesRequest
         var anthropic = Merge(canonical, custom);
         var mode = String(anthropic, "structuredOutputMode") ?? "auto";
         var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
-        var useStructured = mode == "outputFormat" || (mode == "auto" && supportsStructured);
-        if (!useStructured && capabilities.RejectsForcedToolUse && supportsStructured && options.JsonSchema != null)
+        var supportsResponseSchema = options.JsonSchema is not { } responseSchema
+            || SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(responseSchema);
+        var useStructured = mode == "outputFormat" || (mode == "auto" && supportsStructured && supportsResponseSchema);
+
+        // The JSON response tool relies on forced tool use, which some models reject (e.g. Opus 5.5,
+        // Fable 5.1). Fall back to native structured outputs even when the provider disables them by
+        // default (Bedrock, Vertex), unless they would reject the schema or lose data from it.
+        if (!useStructured
+            && capabilities.RejectsForcedToolUse
+            && capabilities.SupportsStructuredOutput
+            && options.JsonSchema is { } fallbackSchema
+            && SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(fallbackSchema))
         {
             warnings.Add(new AnthropicWarning(
                 "unsupported",

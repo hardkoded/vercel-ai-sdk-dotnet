@@ -4,7 +4,6 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.AmazonBedrock;
@@ -12,14 +11,6 @@ namespace Vercel.AI.AmazonBedrock;
 /// <summary>Builds a Converse <c>toolConfig</c> from V4 function tools.</summary>
 public static class AmazonBedrockTools
 {
-    private const string ModelSuffix = @"(?:-\d{8})?(?:-v\d+)?(?:[:.]|$)";
-
-    private static readonly Regex LegacyClaude = new(@"claude-(?:instant|2|v2|3)(?:[-.:]|$)", RegexOptions.CultureInvariant);
-
-    private static readonly Regex StrictClaude = new(
-        @"claude-(?:(?:opus|sonnet)-4|opus-4-(?:1|5|6)|sonnet-4-(?:5|6)|haiku-4-5)" + ModelSuffix,
-        RegexOptions.CultureInvariant);
-
     /// <summary>
     /// Prepares function tools. An empty or missing list returns an empty object.
     /// Tool choice <c>none</c> clears the tools. A named choice keeps only that tool.
@@ -48,7 +39,7 @@ public static class AmazonBedrockTools
             return new JsonObject();
         }
 
-        var supportsStrict = SupportsStrictTools(modelId);
+        var supportsStrict = AmazonBedrockModelSupport.SupportsStrictTools(modelId);
         var prepared = new JsonArray();
         foreach (var tool in selected)
         {
@@ -100,16 +91,6 @@ public static class AmazonBedrockTools
         }
 
         return config;
-    }
-
-    internal static bool SupportsStrictTools(string modelId)
-    {
-        if (string.IsNullOrEmpty(modelId) || modelId.IndexOf("claude-", StringComparison.Ordinal) < 0)
-        {
-            return true;
-        }
-
-        return LegacyClaude.IsMatch(modelId) || StrictClaude.IsMatch(modelId);
     }
 
     private static JsonObject ToolChoiceObject(ToolChoice toolChoice)
