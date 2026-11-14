@@ -141,7 +141,7 @@ public sealed class ProviderHttp
             }
 
             var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-            return new ProviderStreamResponse(new ResponseOwningStream(stream, response), CopyHeaders(response));
+            return new ProviderStreamResponse(new ResponseOwningStream(stream, response, cancellationToken), CopyHeaders(response));
         }
         catch
         {
@@ -618,11 +618,13 @@ internal sealed class ResponseOwningStream : Stream
 {
     private readonly Stream _inner;
     private readonly HttpResponseMessage _response;
+    private readonly CancellationToken _callToken;
 
-    public ResponseOwningStream(Stream inner, HttpResponseMessage response)
+    public ResponseOwningStream(Stream inner, HttpResponseMessage response, CancellationToken callToken)
     {
         _inner = inner;
         _response = response;
+        _callToken = callToken;
     }
 
     public override bool CanRead => _inner.CanRead;
@@ -648,15 +650,32 @@ internal sealed class ResponseOwningStream : Stream
         return _inner.Read(buffer, offset, count);
     }
 
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
-        return _inner.ReadAsync(buffer, offset, count, cancellationToken);
+        // The call token that opened the response also cancels body reads.
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_callToken, cancellationToken);
+        try
+        {
+            return await _inner.ReadAsync(buffer, offset, count, linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(_callToken);
+        }
     }
 
 #if NET
-    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
-        return _inner.ReadAsync(buffer, cancellationToken);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_callToken, cancellationToken);
+        try
+        {
+            return await _inner.ReadAsync(buffer, linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (_callToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(_callToken);
+        }
     }
 #endif
 
