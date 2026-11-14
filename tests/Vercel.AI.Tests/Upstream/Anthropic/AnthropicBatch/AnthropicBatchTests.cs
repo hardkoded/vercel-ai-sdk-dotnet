@@ -39,4 +39,29 @@ public sealed class AnthropicBatchTests
             Assert.Single(await results);
         }
     }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects message threads before making an API request", Coverage = UpstreamCoverage.Covered)]
+    public async Task Rejects_message_threads_before_making_an_API_request()
+    {
+        var calls = 0;
+        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-key" }, new CountingHandler(() => calls++));
+        var batch = provider.ExperimentalBatch()!;
+        var options = System.Text.Json.JsonDocument.Parse("{\"prompt\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]}],\"providerOptions\":{\"anthropic\":{\"thread\":{\"type\":\"create\"}}}}").RootElement.Clone();
+        var call = new BatchOperationCall(null, null, new Dictionary<string, string>(), CancellationToken.None, requests: new[] { new NormalizedBatchRequest("thread-request", "text", "claude-3-haiku-20240307", options) });
+
+        var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => batch.DoStartAsync(call, CancellationToken.None));
+
+        Assert.Contains("Message Batches do not support message threads", error.Message);
+        Assert.Equal(0, calls);
+    }
+
+    private sealed class CountingHandler(Action onCall) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            onCall();
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError));
+        }
+    }
 }

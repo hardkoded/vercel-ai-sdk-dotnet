@@ -174,7 +174,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return new AnthropicLanguageModel(this, modelId, ThreadSettings);
     }
 
-    private static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings { SupportsMessageThreads = true };
+    internal static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings { SupportsMessageThreads = true };
 
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
@@ -234,7 +234,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 #pragma warning restore CS0618
 
-    /// <summary>Message Batches API. Downloads batch results.</summary>
+    /// <summary>Message Batches API. Starts a batch and downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {
         return new AnthropicBatchApi(this);
