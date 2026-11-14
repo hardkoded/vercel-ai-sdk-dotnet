@@ -139,6 +139,8 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>True for Claude Platform on AWS.</summary>
     protected bool Aws { get; set; }
 
+    internal bool UsesAws => Aws;
+
     /// <summary>True when the caller supplied a base URL other than the public Anthropic host.</summary>
     protected bool ExplicitBaseUrl { get; set; }
 
@@ -319,7 +321,13 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 
     /// <summary>Headers for a Messages call. Signs the body when AWS credentials are used.</summary>
-    public virtual async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public virtual Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    {
+        return CreateSignedHeadersAsync(betas, callHeaders, body, null, cancellationToken);
+    }
+
+    /// <summary>Headers for a call to <paramref name="signingUri"/> (the Messages URL when null). AWS credentials sign that URL and <paramref name="body"/>.</summary>
+    internal async Task<Dictionary<string, string?>> CreateSignedHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, Uri? signingUri, CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -362,7 +370,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             else if (Aws && body != null)
             {
                 var credentials = await ResolveCredentialsAsync(cancellationToken).ConfigureAwait(false);
-                var signed = AnthropicAwsFetch.Prepare(MessagesUri().AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
+                var signed = AnthropicAwsFetch.Prepare((signingUri ?? MessagesUri()).AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
                 foreach (var pair in signed.Headers)
                 {
                     headers[pair.Key] = pair.Value;

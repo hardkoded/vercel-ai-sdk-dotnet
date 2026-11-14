@@ -49,7 +49,7 @@ public static class AnthropicBatch
     }
 
     /// <summary>Rejects <c>speed</c> and <c>fallbacks[].speed</c>, which Message Batches do not support.</summary>
-    public static void ValidateBody(System.Text.Json.Nodes.JsonObject body, string requestId)
+    public static void ValidateAnthropicBatchBody(System.Text.Json.Nodes.JsonObject body, string requestId)
     {
         if (body["speed"] != null)
         {
