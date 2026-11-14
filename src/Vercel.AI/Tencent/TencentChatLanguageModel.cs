@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.ProviderUtils;
 
@@ -58,18 +59,35 @@ public sealed class TencentChatLanguageModel : OpenAICompatibleLanguageModel
         }
 
         var options = new TencentOptions { ApiKey = apiKey };
-        if (serialized.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
+        if (serialized.Config.TryGetValue("baseURL", out var baseUrl))
         {
-            options.BaseUrl = url;
+            var url = baseUrl is JsonElement { ValueKind: JsonValueKind.String } element ? element.GetString() : baseUrl as string;
+            if (!string.IsNullOrEmpty(url))
+            {
+                options.BaseUrl = url;
+            }
         }
 
-        if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
+        if (serialized.Config.TryGetValue("headers", out var headers))
         {
-            foreach (System.Collections.DictionaryEntry entry in map)
+            if (headers is JsonElement { ValueKind: JsonValueKind.Object } json)
             {
-                if (entry.Value is string value)
+                foreach (var property in json.EnumerateObject())
                 {
-                    options.Headers[(string)entry.Key] = value;
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        options.Headers[property.Name] = property.Value.GetString()!;
+                    }
+                }
+            }
+            else if (headers is System.Collections.IDictionary map)
+            {
+                foreach (System.Collections.DictionaryEntry entry in map)
+                {
+                    if (entry.Value is string value)
+                    {
+                        options.Headers[(string)entry.Key] = value;
+                    }
                 }
             }
         }

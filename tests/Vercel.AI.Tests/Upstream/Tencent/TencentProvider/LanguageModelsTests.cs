@@ -4,6 +4,7 @@
 
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tencent;
 using static Vercel.AI.Tests.Upstream.Tencent.TencentProvider.TencentProviderSupport;
 using TencentProviderType = Vercel.AI.Tencent.TencentProvider;
@@ -88,7 +89,7 @@ public sealed class LanguageModelsTests : IDisposable
     {
         var server = Server();
         var model = (TencentChatLanguageModel)Create(new TencentOptions { ApiKey = "test-key" }, server).LanguageModel("hy4");
-        var serialized = model.Serialize();
+        var serialized = System.Text.Json.JsonSerializer.Deserialize<SerializedModelOptions>(System.Text.Json.JsonSerializer.Serialize(model.Serialize()))!;
         var restored = TencentChatLanguageModel.Deserialize(serialized, "test-key", server);
 
         var result = await restored.DoGenerateAsync(ChatPrompt(), CancellationToken.None);
