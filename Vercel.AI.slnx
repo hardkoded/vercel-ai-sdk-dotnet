@@ -17,6 +17,7 @@
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />
     <Project Path="examples/Providers/Providers.csproj" />
     <Project Path="examples/StreamText/StreamText.csproj" />
+    <Project Path="examples/StreamTranscribeDeepgramBasic/StreamTranscribeDeepgramBasic.csproj" />
     <Project Path="examples/Tools/Tools.csproj" />
     <Project Path="examples/UIMessageStream/UIMessageStream.csproj" />
   </Folder>
