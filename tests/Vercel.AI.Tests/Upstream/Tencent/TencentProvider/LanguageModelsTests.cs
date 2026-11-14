@@ -24,18 +24,18 @@ public sealed class LanguageModelsTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "creates TokenHub chat models", Coverage = UpstreamCoverage.Partial, Commit = Commit, Note = "The instanceOf checks for TencentChatLanguageModel are not ported: the OpenAI-compatible chat model is sealed, so the provider returns it directly.")]
+    [UpstreamTest(Prefix + "creates TokenHub chat models", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Creates_TokenHub_chat_models()
     {
         var provider = TencentProviderType.Create(new TencentOptions { ApiKey = "test-key" });
 
         var model = provider.LanguageModel("hy4");
 
-        Assert.IsType<OpenAICompatibleLanguageModel>(model);
+        Assert.IsType<TencentChatLanguageModel>(model);
         Assert.Equal("tencent.chat", model.Provider);
         Assert.Equal("hy4", model.ModelId);
-        Assert.IsType<OpenAICompatibleLanguageModel>(provider.Chat("hy3"));
-        Assert.IsType<OpenAICompatibleLanguageModel>(provider.LanguageModel("hy3"));
+        Assert.IsType<TencentChatLanguageModel>(provider.Chat("hy3"));
+        Assert.IsType<TencentChatLanguageModel>(provider.LanguageModel("hy3"));
     }
 
     [Fact]
@@ -80,6 +80,25 @@ public sealed class LanguageModelsTests : IDisposable
         var error = await Assert.ThrowsAsync<AiSdkException>(() => Create(new TencentOptions(), Server()).LanguageModel("hy4").DoGenerateAsync(ChatPrompt(), CancellationToken.None));
 
         Assert.Contains("TENCENT_TOKENHUB_API_KEY", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "keeps the TokenHub endpoint after workflow serialization", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    public async Task Keeps_the_TokenHub_endpoint_after_workflow_serialization()
+    {
+        var server = Server();
+        var model = (TencentChatLanguageModel)Create(new TencentOptions { ApiKey = "test-key" }, server).LanguageModel("hy4");
+        var serialized = model.Serialize();
+        var restored = TencentChatLanguageModel.Deserialize(serialized, "test-key", server);
+
+        var result = await restored.DoGenerateAsync(ChatPrompt(), CancellationToken.None);
+
+        Assert.IsType<TencentChatLanguageModel>(restored);
+        Assert.Equal("tencent.chat", restored.Provider);
+        Assert.Equal("https://tokenhub-intl.tencentcloudmaas.com/v1/chat/completions", server.Calls[0].Uri.AbsoluteUri);
+        Assert.Equal("Bearer test-key", server.Calls[0].Header("authorization"));
+        var text = Assert.IsType<GeneratedText>(Assert.Single(result.Content));
+        Assert.Equal("Hello", text.Text);
     }
 
     [Fact]
