@@ -51,6 +51,19 @@ public sealed class AzureOpenAIOptions
     /// </summary>
     public string? MaiBaseUrl { get; set; }
 
+    /// <summary>
+    /// Custom WebSocket implementation for MAI streaming transcription. Without one, the key is sent as the
+    /// <c>api-key</c> query parameter and Microsoft Entra tokens are rejected, because the default WebSocket cannot send
+    /// headers. Maps to <c>webSocket</c>.
+    /// </summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>
+    /// The WebSocket used for MAI streaming transcription when <see cref="WebSocket"/> is not set. Defaults to
+    /// <c>ClientWebSocket</c>. Maps to <c>globalThis.WebSocket</c>, which upstream tests stub.
+    /// </summary>
+    internal WebSocketFactory? NativeWebSocket { get; set; }
+
     /// <summary>Headers copied onto every request.</summary>
     public Dictionary<string, string> Headers { get; } = new();
 }
@@ -274,6 +287,50 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return Speech(modelId);
     }
 
+    /// <summary>
+    /// Transcription model. MAI-Transcribe models use the Speech API and MAI-Transcribe-2-Streaming the MAI realtime API
+    /// by default; other deployment names use the Azure OpenAI transcription API. Maps to <c>transcription</c>.
+    /// </summary>
+    public AzureTranscriptionModel Transcription(string deploymentId)
+    {
+        return new AzureTranscriptionModel(
+            deploymentId,
+            _azure,
+            new OpenAI.OpenAITranscriptionModel(this, deploymentId),
+            new AzureSpeechTranscriptionModel(
+                deploymentId,
+                Http,
+                () => new Uri(SpeechBaseUrl() + "/speechtotext/transcriptions:transcribe?api-version=2025-10-15"),
+                callHeaders => CreateHeaders(AzureApi.Speech, callHeaders)),
+            new AzureMaiTranscriptionModel(
+                deploymentId,
+                () => new Uri(MaiBaseUrl() + "/realtime?intent=transcription"),
+                () =>
+                {
+                    var headers = CreateHeaders(AzureApi.Mai);
+                    if (_azure.TokenProvider == null)
+                    {
+                        return headers;
+                    }
+
+                    var withToken = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["authorization"] = "Bearer " + _azure.TokenProvider() };
+                    foreach (var pair in headers)
+                    {
+                        withToken[pair.Key] = pair.Value;
+                    }
+
+                    return withToken;
+                },
+                _azure.WebSocket,
+                _azure.NativeWebSocket));
+    }
+
+    /// <summary>Transcription model. Alias of <see cref="Transcription(string)"/>. Maps to <c>transcriptionModel</c>.</summary>
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return Transcription(modelId);
+    }
+
     private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options, HttpClient? downloadClient)
     {
         options ??= new AzureOpenAIOptions();
@@ -287,7 +344,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         {
             ProviderName = ProviderId,
             BaseUrl = baseUrl,
-            ApiKey = options.TokenProvider == null ? options.ApiKey : "azure-ad",
+            ApiKey = options.TokenProvider == null ? options.ApiKey : AzureEntraTokenHandler.PlaceholderToken,
             ApiKeyEnvironmentVariable = "AZURE_API_KEY",
             ApiKeyStyle = options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
             ApiKeyHeaderName = "api-key",
@@ -348,6 +405,8 @@ internal enum AzureApi
 /// <summary>Replaces the placeholder bearer value with a token from the provider on every request.</summary>
 internal sealed class AzureEntraTokenHandler : DelegatingHandler
 {
+    internal const string PlaceholderToken = "azure-ad";
+
     private readonly Func<string> _tokenProvider;
 
     /// <summary>Creates a handler that calls <paramref name="tokenProvider"/> for each request.</summary>
@@ -361,7 +420,12 @@ internal sealed class AzureEntraTokenHandler : DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         request.Headers.Remove("api-key");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenProvider());
+        // A bearer token the caller supplied stays. Only the placeholder or a missing header gets a fresh token.
+        if (request.Headers.Authorization is null || request.Headers.Authorization is { Scheme: "Bearer", Parameter: PlaceholderToken })
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenProvider());
+        }
+
         return base.SendAsync(request, cancellationToken);
     }
 }

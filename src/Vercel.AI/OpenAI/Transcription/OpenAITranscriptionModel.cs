@@ -164,8 +164,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
         ["welsh"] = "cy",
     };
 
-    private readonly OpenAIProvider _provider;
-    private readonly string _path;
+    private readonly ProviderHttp _http;
+    private readonly string _providerName;
+    private readonly Func<Uri> _url;
+    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates a transcription model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now.</summary>
@@ -177,14 +179,40 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
     /// <summary>Creates a transcription or translation model for <paramref name="path"/>.</summary>
     public OpenAITranscriptionModel(OpenAIProvider provider, string modelId, string path, Func<DateTimeOffset>? clock = null)
     {
-        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
-        _path = path;
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _url = () => ApiKeys.Combine(provider.Options.BaseUrl, path);
+        _headers = provider.CreateOpenAIHeaders;
+        _clock = clock;
+    }
+
+    /// <summary>
+    /// Creates an Azure OpenAI transcription model for a deployment. Requests go to the deployment's
+    /// <c>audio/transcriptions</c> route and the provider id is <c>azure.transcription</c>.
+    /// </summary>
+    public OpenAITranscriptionModel(Azure.AzureOpenAIProvider provider, string deploymentId, Func<DateTimeOffset>? clock = null)
+    {
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
+        ModelId = deploymentId ?? throw new ArgumentNullException(nameof(deploymentId));
+        _http = provider.Http;
+        _providerName = provider.Name;
+        _url = () => provider.AzureUri("audio/transcriptions", deploymentId);
+        _headers = provider.CreateHeaders;
         _clock = clock;
     }
 
     /// <inheritdoc />
-    public string Provider => _provider.Name + ".transcription";
+    public string Provider => _providerName + ".transcription";
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -211,11 +239,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel
         }
 
         var timestamp = OpenAIClock.Now(_clock);
-        var response = await _provider.Http.SendBinaryAsync(
+        var response = await _http.SendBinaryAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, _path),
+            _url(),
             Build(call),
-            _provider.CreateOpenAIHeaders(call.Headers),
+            _headers(call.Headers),
             cancellationToken).ConfigureAwait(false);
         var body = Encoding.UTF8.GetString(response.Body);
         using var document = OpenAIJson.ParseResponse(body);

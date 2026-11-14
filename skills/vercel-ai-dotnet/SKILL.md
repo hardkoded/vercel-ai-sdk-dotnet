@@ -65,6 +65,8 @@ Both take URL files in `State` only with `Download = Download.CreateDownload(fet
 
 Each package exposes `CreateXxx()` / `AddXxx()` and reads the same environment variable as the JavaScript provider. Gateway uses `AI_GATEWAY_API_KEY` and `https://ai-gateway.vercel.sh/v4/ai`. OpenAI-compatible providers share `Vercel.AI.OpenAICompatible`.
 
+Azure transcription (`AzureOpenAIProvider.Transcription(id)`) picks the OpenAI, Speech (MAI-Transcribe) or MAI streaming API for each call. Set `providerOptions.azure.api` to override it, and see `docs/articles/providers.md` for the options.
+
 Register the client with `services.AddAiSdk()`. Add `services.AddAiSdkOpenTelemetry()` to record spans on the `Vercel.AI` activity source.
 
 ## Tests
