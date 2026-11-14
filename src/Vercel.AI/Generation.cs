@@ -1034,6 +1034,30 @@ internal static class Generation
         return options;
     }
 
+    // Maps to resolveGeneratedFileData. A generated file has no model to pass the URL through to, so a null result from a custom
+    // download function cannot be honored.
+    private static async Task<GeneratedFile> ResolveGeneratedFileDataAsync(
+        GeneratedFileUrl remote,
+        Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download,
+        CancellationToken cancellationToken)
+    {
+        if (download is null)
+        {
+            DownloadUrls.ValidateDownloadUrl(remote.Url);
+            var downloaded = await Download.GetAsync(remote.Url, null, cancellationToken).ConfigureAwait(false);
+            return new GeneratedFile(downloaded.Data, remote.MediaType);
+        }
+
+        var results = await download(new[] { new DownloadRequestItem(remote.Url, false) { AbortSignal = cancellationToken } }).ConfigureAwait(false);
+        var result = results.Count == 0 ? null : results[0];
+        if (result is null)
+        {
+            throw new DownloadException(remote.Url.ToString(), "Generated file URL " + remote.Url + " must be downloaded, but the download function returned null");
+        }
+
+        return new GeneratedFile(result.Data, remote.MediaType);
+    }
+
     private static async Task<StepResult> FinishStepAsync(
         LanguageModelGenerateResult generated,
         GenerateTextOptions options,
@@ -1061,6 +1085,7 @@ internal static class Generation
             {
                 GeneratedToolApprovalRequest request => ResolveApprovalRequest(request, generated.Content),
                 GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
+                GeneratedFileUrl remote => await ResolveGeneratedFileDataAsync(remote, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false),
                 _ => part,
             };
             content.Add(resolved);
@@ -1091,9 +1116,6 @@ internal static class Generation
                     break;
                 case GeneratedFile file:
                     files.Add(file);
-                    break;
-                case GeneratedFileUrl remote:
-                    DownloadUrls.ValidateDownloadUrl(remote.Url);
                     break;
             }
         }

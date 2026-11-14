@@ -617,6 +617,14 @@ public class GenerateTextOptions
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
 
+    /// <summary>
+    /// Custom download function for generated file URLs returned by the model. Pass <see cref="Download.CreateDownload"/> to route
+    /// them through a custom <see cref="DownloadFetch"/>. By default generated file URLs are downloaded with <see cref="Download"/>.
+    /// Generated file URLs are always downloaded, so returning <c>null</c> for one throws a <see cref="DownloadException"/>.
+    /// Maps to <c>experimental_download</c>.
+    /// </summary>
+    public Func<IReadOnlyList<Vercel.AI.Util.DownloadRequestItem>, Task<IReadOnlyList<Vercel.AI.Util.DownloadResult>>>? ExperimentalDownload { get; set; }
+
     /// <summary>Gateway model id such as <c>openai/gpt-4.1-mini</c>.</summary>
     public string? ModelId { get; set; }
 

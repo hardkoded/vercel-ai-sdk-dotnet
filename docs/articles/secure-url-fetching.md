@@ -42,6 +42,21 @@ var response = await Download.FetchWithValidatedEndpointAsync(
     new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
 ```
 
+## Generated file downloads
+
+`GenerateTextOptions.ExperimentalDownload` (`experimental_download` upstream) also handles generated file URLs that the model returns, for example an image URL from an image-generation response. Generated file URLs are always downloaded, so a `null` result for one throws a `DownloadException`. Without the option, they are downloaded with `Download.GetAsync` and the default fetch. Pass `Download.CreateDownload(fetch: ...)` to use your own transport.
+
+```csharp
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Prompt = "Draw an otter.",
+    ExperimentalDownload = Download.CreateDownload(fetch: guardedFetch),
+});
+```
+
+Each request in the batch carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download.
+
 ## Decision and extraction state downloads
 
 `DecideRequest.Download` and `ExtractRequest.Download` (`experimental_download` upstream) are the only way URL files in `state` are downloaded. Without the hook, a URL file throws `DownloadError` before any download or model call. Inline bytes, base64 content, and data URLs need no hook. For untrusted URLs, pass `Download.CreateDownload(fetch: ...)` with a `DownloadFetch` that validates DNS at connection time and pins the connection to the validated addresses. A model's own transport does not cover these downloads. `Download.CreateDownload()` without a `fetch` explicitly opts into the default fetch.
