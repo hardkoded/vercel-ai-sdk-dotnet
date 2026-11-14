@@ -15,7 +15,7 @@ public sealed class CancelReplicatePredictionTests
     private const string BaseUrl = "https://api.replicate.com/v1";
 
     [Fact]
-    [UpstreamTest(Prefix + "posts to the prediction cancel endpoint with the configured headers", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(Prefix + "posts to the prediction cancel endpoint with the configured headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Posts_to_the_prediction_cancel_endpoint_with_the_configured_headers()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json("{\"status\":\"canceled\"}"));
@@ -29,6 +29,8 @@ public sealed class CancelReplicatePredictionTests
         Assert.Equal("Bearer test-api-token", call.Header("authorization"));
         // no idempotency key on the cancel request
         Assert.Null(call.Header("idempotency-key"));
+        // no caller abort signal on the cancel request: its token is its own timeout token, not cancelled
+        Assert.False(call.CancellationToken.IsCancellationRequested);
     }
 
     [Fact]

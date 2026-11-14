@@ -76,13 +76,12 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     /// so the provider credentials only go to the provider origin; no response data such as <c>urls.cancel</c> is used as a request target.
     /// It sends the provider headers only (no per-call headers, no idempotency key), gets no caller token, is not retried, and never throws.
     /// </summary>
-    internal async Task CancelPredictionAsync(string predictionId, CancellationToken cancellationToken = default)
+    internal async Task CancelPredictionAsync(string predictionId)
     {
         try
         {
             var uri = ApiKeys.Combine(Options.BaseUrl, "/predictions/" + Uri.EscapeDataString(predictionId) + "/cancel");
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(CancelTimeout);
+            using var timeout = new CancellationTokenSource(CancelTimeout);
             await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, null, CreateHeaders(), timeout.Token).ConfigureAwait(false);
         }
         catch
