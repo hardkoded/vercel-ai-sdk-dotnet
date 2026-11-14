@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json.Nodes;
-using Vercel.AI.Gateway;
+using Vercel.AI.AspNetCore;
 using Vercel.AI.Provider;
-using Vercel.AI.Testing;
-using Vercel.AI.Tests.Upstream.GenerateText;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.ToUiMessageStream;
 
@@ -14,73 +13,84 @@ namespace Vercel.AI.Tests.Upstream.ToUiMessageStream;
 public sealed class ToUIMessageStreamTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream::";
+    private const string PartialNote = "The onError argument is the formatted error message, not the error object.";
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "routes an invalid tool call through onError once",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Runs through streamText with an unknown tool instead of feeding hand-built stream parts, because the .NET writer takes a StreamTextResult. The onError argument is the formatted error string, not the error object.")]
+    [UpstreamTest(Prefix + "routes an invalid tool call through onError once", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
     public async Task Routes_an_invalid_tool_call_through_onError_once()
     {
         var errors = new List<string>();
-        var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(
-            Run("unknown-tool", "{\"value\":\"invalid\"}", []),
-            error =>
+        var chunks = await Convert(
+            [
+                new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"invalid\"}") { Invalid = true, Dynamic = true, Error = new NoSuchToolError("test-tool", message: "invalid tool input") }),
+                new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, ModelOutput = "Error: invalid tool input" }),
+            ],
+            new ToUIMessageChunkOptions
             {
-                errors.Add(error);
-                return "formatted tool error";
+                OnError = error =>
+                {
+                    errors.Add(error);
+                    return "formatted tool error";
+                },
             });
 
-        var inputError = Assert.Single(chunks, chunk => (string?)chunk!["type"] == "tool-input-error")!;
-        Assert.Equal("formatted tool error", (string?)inputError["errorText"]);
-        Assert.DoesNotContain(chunks, chunk => (string?)chunk!["type"] == "tool-output-error");
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse("""[{"type":"tool-input-error","toolCallId":"call-1","toolName":"test-tool","input":{"value":"invalid"},"dynamic":true,"errorText":"formatted tool error"}]"""),
+                chunks),
+            chunks.ToJsonString());
         Assert.Single(errors);
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "forwards tool errors for valid tool calls",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Runs through streamText with a tool that throws instead of feeding hand-built stream parts.")]
+    [UpstreamTest(Prefix + "forwards tool errors for valid tool calls", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
     public async Task Forwards_tool_errors_for_valid_tool_calls()
     {
         var errors = new List<string>();
-        var tool = Tool.Function(
-            "test-tool",
-            null,
-            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
-            (_, _) => throw new InvalidOperationException("execution failed"));
-        var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(
-            Run("test-tool", "{\"value\":\"valid\"}", [tool]),
-            error =>
+        var chunks = await Convert(
+            [
+                new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"valid\"}") { Dynamic = true }),
+                new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, Error = new JsError("execution failed"), ModelOutput = "Error: execution failed" }),
+            ],
+            new ToUIMessageChunkOptions
             {
-                errors.Add(error);
-                return "formatted tool error";
+                OnError = error =>
+                {
+                    errors.Add(error);
+                    return "formatted tool error";
+                },
             });
 
-        Assert.Contains(chunks, chunk => (string?)chunk!["type"] == "tool-input-available");
-        var outputError = Assert.Single(chunks, chunk => (string?)chunk!["type"] == "tool-output-error")!;
-        Assert.Equal("formatted tool error", (string?)outputError["errorText"]);
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse("""
+                    [
+                      {"type":"tool-input-available","toolCallId":"call-1","toolName":"test-tool","input":{"value":"valid"},"dynamic":true},
+                      {"type":"tool-output-error","toolCallId":"call-1","dynamic":true,"errorText":"formatted tool error"}
+                    ]
+                    """),
+                chunks),
+            chunks.ToJsonString());
         Assert.Single(errors);
     }
 
-    private static StreamTextResult Run(string toolName, string input, Tool[] tools)
+    internal static async Task<JsonArray> Convert(IReadOnlyList<TextStreamPart> parts, ToUIMessageChunkOptions? options = null)
     {
-        var model = new TestLanguageModel
+        var chunks = new JsonArray();
+        await foreach (var chunk in UIMessageStreamConverter.ToUIMessageStream(ToAsync(parts), options))
         {
-            StreamParts = new LanguageModelStreamPart[]
-            {
-                new ResponseMetadataStreamPart("id-0", "mock-model-id", DateTimeOffset.FromUnixTimeMilliseconds(0)),
-                new ToolCallStreamPart("call-1", toolName, input),
-                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10), "stop"),
-            },
-        };
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).StreamTextAsync(new StreamTextOptions
+            chunks.Add(chunk);
+        }
+
+        return chunks;
+    }
+
+    private static async IAsyncEnumerable<TextStreamPart> ToAsync(IReadOnlyList<TextStreamPart> parts)
+    {
+        foreach (var part in parts)
         {
-            Model = model,
-            Prompt = "test-input",
-            Tools = tools,
-            NowMs = () => 0,
-        });
+            yield return part;
+            await Task.Yield();
+        }
     }
 }
