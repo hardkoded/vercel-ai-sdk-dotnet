@@ -93,7 +93,7 @@ Headers copied onto every request.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L68)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_MaiBaseUrl_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_MaiBaseUrl"></a>
@@ -184,3 +184,22 @@ Uses the legacy `/openai/deployments/{deploymentId}{path}` routes instead of `/o
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L35)
+
+<a id="Vercel_AI_Azure_AzureOpenAIOptions_WebSocket_"></a>
+<a id="Vercel_AI_Azure_AzureOpenAIOptions_WebSocket"></a>
+
+### WebSocket
+
+
+```csharp
+public WebSocketFactory? WebSocket { get; set; }
+```
+
+
+Custom WebSocket implementation for MAI streaming transcription. Without one, the key is sent as the
+`api-key` query parameter and Microsoft Entra tokens are rejected, because the default WebSocket cannot send
+headers. Maps to `webSocket`.
+
+**Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L59)
