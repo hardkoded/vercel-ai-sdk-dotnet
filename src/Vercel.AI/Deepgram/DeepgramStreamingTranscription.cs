@@ -76,6 +76,7 @@ internal static class DeepgramStreamingTranscription
         string? language = null;
         if (deepgram is { } values)
         {
+            ValidateProviderOptions(values);
             foreach (var key in ProviderOptionOrder)
             {
                 if (!values.TryGetProperty(key, out var value) || value.ValueKind == JsonValueKind.Null)
@@ -111,7 +112,6 @@ internal static class DeepgramStreamingTranscription
                 {
                     if (streaming.TryGetProperty(option, out var value) && value.ValueKind != JsonValueKind.Null)
                     {
-                        ValidateStreamingOption(option, value);
                         query.Add(new KeyValuePair<string, string>(parameter, QueryValue(value)));
                     }
                 }
@@ -151,20 +151,61 @@ internal static class DeepgramStreamingTranscription
             new ProviderRequest(url.ToString()));
     }
 
-    private static void ValidateStreamingOption(string option, JsonElement value)
+    // Maps to parseProviderOptions with deepgramTranscriptionModelOptionsSchema.
+    private static void ValidateProviderOptions(JsonElement values)
     {
-        var valid = option switch
+        foreach (var property in values.EnumerateObject())
         {
-            "interimResults" or "multichannel" or "vadEvents" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
-            "endpointing" => value.ValueKind == JsonValueKind.False || (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var ms) && ms >= 0),
-            "channels" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var channels) && channels > 0,
-            "utteranceEndMs" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var utterance) && utterance >= 1000,
-            _ => true,
-        };
-        if (!valid)
-        {
-            throw new InvalidArgumentException("providerOptions", value.GetRawText(), "Invalid deepgram.streaming." + option + " option.");
+            var value = property.Value;
+            var valid = property.Name switch
+            {
+                "language" or "replace" or "search" or "keyterm" => IsNullOr(value, JsonValueKind.String),
+                "detectLanguage" or "smartFormat" or "punctuate" or "paragraphs" or "topics" or "intents" or "sentiment"
+                    or "detectEntities" or "diarize" or "utterances" or "fillerWords" => value.ValueKind is JsonValueKind.Null or JsonValueKind.True or JsonValueKind.False,
+                "summarize" => value.ValueKind is JsonValueKind.Null or JsonValueKind.False || (value.ValueKind == JsonValueKind.String && value.GetString() == "v2"),
+                "redact" => value.ValueKind is JsonValueKind.Null or JsonValueKind.String
+                    || (value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(entry => entry.ValueKind == JsonValueKind.String)),
+                "uttSplit" => IsNullOr(value, JsonValueKind.Number),
+                "streaming" => value.ValueKind == JsonValueKind.Null || IsValidStreaming(value),
+                _ => true,
+            };
+            if (!valid)
+            {
+                throw new InvalidArgumentException("providerOptions", values.GetRawText(), "Invalid deepgram provider options: " + property.Name + ".");
+            }
         }
+    }
+
+    private static bool IsValidStreaming(JsonElement streaming)
+    {
+        if (streaming.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        foreach (var property in streaming.EnumerateObject())
+        {
+            var value = property.Value;
+            var valid = property.Name switch
+            {
+                "interimResults" or "multichannel" or "vadEvents" => value.ValueKind is JsonValueKind.True or JsonValueKind.False,
+                "endpointing" => value.ValueKind == JsonValueKind.False || (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var ms) && ms >= 0),
+                "channels" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var channels) && channels > 0,
+                "utteranceEndMs" => value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var utterance) && utterance >= 1000,
+                _ => true,
+            };
+            if (!valid)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsNullOr(JsonElement value, JsonValueKind kind)
+    {
+        return value.ValueKind == JsonValueKind.Null || value.ValueKind == kind;
     }
 
     private static string QueryValue(JsonElement value)
