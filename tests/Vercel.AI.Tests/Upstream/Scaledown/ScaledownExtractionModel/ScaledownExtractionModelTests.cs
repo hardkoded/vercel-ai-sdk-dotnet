@@ -9,11 +9,13 @@ using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.ScaleDown;
 using Vercel.AI.Tests.Upstream.Scaledown.ScaledownDecisionModel;
+using Vercel.AI.Tests.Upstream.Scaledown;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.Scaledown.ScaledownExtractionModel;
 
 /// <summary>Port of the tests outside any <c>describe</c> in <c>scaledown-extraction-model.test.ts</c>.</summary>
+[Collection(ScaleDownEnvironmentCollection.Name)]
 public sealed class ScaledownExtractionModelTests
 {
     private const string Prefix = "packages/scaledown/src/scaledown-extraction-model.test.ts::";
@@ -342,6 +344,19 @@ public sealed class ScaledownExtractionModelTests
             await restored.DoExtractAsync(Call(), CancellationToken.None);
             Assert.Equal("env-key", server.Calls[0].Headers["x-api-key"]);
             Assert.Equal(["text", "list"], restored.SupportedFieldTypes);
+
+            // A System.Text.Json round trip stores the config values as JsonElement.
+            var custom = ScaleDownProvider.Create(
+                new ScaleDownProviderSettings { ApiKey = "custom-key", BaseUrl = "https://custom.example", Headers = new Dictionary<string, string> { ["shared"] = "provider" } },
+                server).ExtractionModel("extract");
+            var json = JsonSerializer.Deserialize<Dictionary<string, object?>>(JsonSerializer.Serialize(custom.Serialize().Config))!;
+            var fromJson = ScaleDownExtractionModel.Deserialize(
+                new Vercel.AI.ProviderUtils.SerializedModelOptions("extract", json),
+                new HttpClient(server, disposeHandler: false));
+            await fromJson.DoExtractAsync(Call(), CancellationToken.None);
+            Assert.Equal("https://custom.example/v1/chat/completions", server.Calls[1].Url);
+            Assert.Equal("custom-key", server.Calls[1].Headers["x-api-key"]);
+            Assert.Equal("provider", server.Calls[1].Headers["shared"]);
         }
         finally
         {

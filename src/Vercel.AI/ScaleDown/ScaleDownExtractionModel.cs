@@ -83,19 +83,18 @@ public sealed class ScaleDownExtractionModel : IExtractionCaller
         }
 
         var config = new ScaleDownExtractionModelConfig { HttpClient = httpClient };
-        if (options.Config.TryGetValue("provider", out var provider) && provider is string providerId)
+        if (options.Config.TryGetValue("provider", out var provider) && ReadString(provider) is { } providerId)
         {
             config.Provider = providerId;
         }
 
-        if (options.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
+        if (options.Config.TryGetValue("baseURL", out var baseUrl) && ReadString(baseUrl) is { } url)
         {
             config.BaseUrl = url;
         }
 
-        if (options.Config.TryGetValue("headers", out var headers) && headers is IDictionary<string, object?> values)
+        if (options.Config.TryGetValue("headers", out var headers) && ReadHeaders(headers) is { } copy)
         {
-            var copy = values.Where(pair => pair.Value is string).ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
             config.Headers = () => copy;
         }
 
@@ -220,6 +219,34 @@ public sealed class ScaleDownExtractionModel : IExtractionCaller
 
             return ParseResponse(uri.ToString(), body, status, responseHeaders, text, call);
         }
+    }
+
+    // A System.Text.Json round trip turns the serialized values into JsonElement.
+    private static string? ReadString(object? value)
+    {
+        return value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
+    }
+
+    private static Dictionary<string, string>? ReadHeaders(object? value)
+    {
+        if (value is JsonElement { ValueKind: JsonValueKind.Object } json)
+        {
+            return json.EnumerateObject()
+                .Where(property => property.Value.ValueKind == JsonValueKind.String)
+                .ToDictionary(property => property.Name, property => property.Value.GetString()!);
+        }
+
+        if (value is IDictionary<string, object?> values)
+        {
+            return values.Where(pair => pair.Value is string).ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
+        }
+
+        return null;
     }
 
     private static IReadOnlyDictionary<string, string> CopyHeaders(HttpResponseMessage response)
