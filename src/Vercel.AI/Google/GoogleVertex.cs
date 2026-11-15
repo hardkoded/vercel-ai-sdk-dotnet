@@ -209,6 +209,16 @@ public sealed class VertexOptions : GoogleOptions
     /// </summary>
     public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
 
+    /// <summary>Settings for downloading remote files that a tool result returns. Maps to <c>toolResultDownloads</c>.</summary>
+    public ToolResultDownloads? ToolResultDownloads { get; set; }
+
+    /// <summary>
+    /// Transport for untrusted file URLs in tool results, without provider authentication. Null uses the runtime transport.
+    /// Upstream forwards the one <c>fetch</c> option. A .NET provider authenticates through its <see cref="HttpClient"/> handler,
+    /// so the raw transport is a separate option.
+    /// </summary>
+    public Vercel.AI.Util.DownloadFetch? DownloadFetch { get; set; }
+
     /// <summary>Returns a copy. The provider changes the copy, so the options the caller passed in are left as they were.</summary>
     public VertexOptions Copy()
     {
@@ -226,6 +236,8 @@ public sealed class VertexOptions : GoogleOptions
             Region = Region,
             UpstreamRoutes = UpstreamRoutes,
             GenerateAuthToken = GenerateAuthToken,
+            ToolResultDownloads = ToolResultDownloads,
+            DownloadFetch = DownloadFetch,
         };
         foreach (var pair in Headers)
         {
@@ -248,6 +260,12 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
     /// <summary>Vertex options.</summary>
     public VertexOptions Vertex { get; }
+
+    /// <summary>Tool-result file downloads. The size limit defaults to 7 MiB. Direct Google Cloud Storage URLs are forwarded.</summary>
+    internal override GoogleToolResultDownloadSettings? ToolResultDownloadSettings => new GoogleToolResultDownloadSettings(
+        Vertex.ToolResultDownloads?.MaxBytes ?? 7L * 1024 * 1024,
+        true,
+        Vertex.DownloadFetch);
 
     /// <summary>Creates a provider.</summary>
     public static GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)

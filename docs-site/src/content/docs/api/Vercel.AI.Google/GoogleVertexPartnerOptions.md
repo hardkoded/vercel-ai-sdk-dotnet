@@ -44,6 +44,25 @@ OpenAI-compatible base URL. When empty, it is built from the project and locatio
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L44)
 
+<a id="Vercel_AI_Google_GoogleVertexPartnerOptions_DownloadHttpClient_"></a>
+<a id="Vercel_AI_Google_GoogleVertexPartnerOptions_DownloadHttpClient"></a>
+
+### DownloadHttpClient
+
+
+```csharp
+public HttpClient? DownloadHttpClient { get; set; }
+```
+
+
+Client for image downloads and redirect hops off the provider origin. It carries no credentials and must not follow redirects,
+because each hop is validated before it is requested. Null uses a shared client that does not follow them.
+Upstream sends these downloads through the configured `fetch`.
+
+**Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L57)
+
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_GenerateAuthToken_"></a>
 <a id="Vercel_AI_Google_GoogleVertexPartnerOptions_GenerateAuthToken"></a>
 

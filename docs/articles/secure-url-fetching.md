@@ -57,6 +57,14 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 The download function is called once per generated file with a one-item batch. The request carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download. The SDK does not validate the URL before it calls your function: `Download.CreateDownload` validates it, so a custom function must do the same.
 
+## Google Vertex tool-result files and MaaS images
+
+`GoogleVertexProvider` downloads HTTP(S) file URLs in tool results and sends them to Vertex as inline data. The size of each file is limited by `VertexOptions.ToolResultDownloads.MaxBytes` (`toolResultDownloads.maxBytes` upstream), 7 MiB by default. Direct `gs://` references are not downloaded for Gemini 3 and later models: Vertex fetches them (`image/png`, `image/jpeg`, `image/webp`, `application/pdf`, `text/plain`).
+
+The downloads use `VertexOptions.DownloadFetch`, or `Download.Fetch`, or the default fetch, in that order. They never use the provider's `HttpClient`, so the Vertex API key or bearer token is not sent to the file host, and redirects are followed one validated hop at a time. For untrusted URLs, pass a DNS-validating `DownloadFetch`. Upstream forwards its one `fetch` option here. A .NET provider authenticates through its `HttpClient` handler, so the raw transport is a separate option.
+
+`GoogleVertexMaasProvider.ImageModel` downloads an image URL on another origin without the provider credentials. Set `GoogleVertexPartnerOptions.DownloadHttpClient` to a client that does not follow redirects to use your own transport.
+
 ## Decision and extraction state downloads
 
 `DecideRequest.Download` and `ExtractRequest.Download` (`experimental_download` upstream) are the only way URL files in `state` are downloaded. Without the hook, a URL file throws `DownloadError` before any download or model call. Inline bytes, base64 content, and data URLs need no hook. For untrusted URLs, pass `Download.CreateDownload(fetch: ...)` with a `DownloadFetch` that validates DNS at connection time and pins the connection to the validated addresses. A model's own transport does not cover these downloads. `Download.CreateDownload()` without a `fetch` explicitly opts into the default fetch.

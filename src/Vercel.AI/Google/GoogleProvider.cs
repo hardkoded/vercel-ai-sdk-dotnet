@@ -66,6 +66,9 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     /// <summary>Options.</summary>
     public GoogleOptions Options { get; }
 
+    /// <summary>Settings for downloading remote files in tool results before conversion. Null leaves tool-result URLs alone.</summary>
+    internal virtual GoogleToolResultDownloadSettings? ToolResultDownloadSettings => null;
+
     /// <summary>Gemini Batch API. Downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {
