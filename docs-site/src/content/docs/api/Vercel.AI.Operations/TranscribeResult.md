@@ -142,6 +142,21 @@ Segments.
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L190)
 
 <a id="Vercel_AI_Operations_TranscribeResult_Text_"></a>
+<a id="Vercel_AI_Operations_TranscribeResult_Words_"></a>
+<a id="Vercel_AI_Operations_TranscribeResult_Words"></a>
+
+### Words
+
+
+```csharp
+public IReadOnlyList<TranscriptSegment>? Words { get; }
+```
+
+
+Word-level timings returned by the provider, whether explicitly requested or returned by default. `null` when the provider does not return them. Maps to `words`.
+
+**Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
 <a id="Vercel_AI_Operations_TranscribeResult_Text"></a>
 
 ### Text

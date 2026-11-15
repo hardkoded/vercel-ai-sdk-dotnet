@@ -325,12 +325,72 @@ public sealed class GoogleMediaUpstreamTests
                 + "{\"word\":\"brown\",\"startOffset\":\"0.400s\",\"endOffset\":\"0.700s\"},"
                 + "{\"word\":\"fox.\",\"startOffset\":\"0.700s\",\"endOffset\":\"1s\"}]}}]}}],\"usageMetadata\":{\"promptTokenCount\":64}}",
         };
-        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}"), CancellationToken.None).ConfigureAwait(false);
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}", "word"), CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("The quick brown fox.", result.Text);
         Assert.Equal("en-US", result.Language);
-        Assert.Equal(
-            new[] { ("The", 0.1, 0.1), ("quick", 0.1, 0.4), ("brown", 0.4, 0.7), ("fox.", 0.7, 1d) },
-            result.Segments.Select(segment => (segment.Text, segment.StartSecond, segment.EndSecond)));
+        var expected = new[] { ("The", 0.1, 0.1), ("quick", 0.1, 0.4), ("brown", 0.4, 0.7), ("fox.", 0.7, 1d) };
+        Assert.Equal(expected, result.Segments.Select(segment => (segment.Text, segment.StartSecond, segment.EndSecond)));
+        Assert.Equal(expected, result.Words!.Select(word => (word.Text, word.StartSecond, word.EndSecond)));
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::maps shared word timings and warns that caption segments are unavailable", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Maps_Vertex_shared_word_timings_and_warns_that_caption_segments_are_unavailable()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}]}}]}" };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}", "word", "segment"), CancellationToken.None).ConfigureAwait(false);
+        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body)!["generationConfig"], "{\"audioTranscriptionConfig\":{\"wordTimestamp\":true}}");
+        Assert.Equal(2, result.Warnings.Count);
+        Assert.Equal("unsupported", result.Warnings[0].Type);
+        Assert.Equal("timestampGranularities", result.Warnings[0].Feature);
+        Assert.Equal("Vertex Gemini transcription returns word timings and does not provide separate caption segments.", result.Warnings[0].Details);
+        Assert.Equal("other", result.Warnings[1].Type);
+        Assert.Equal("The Vertex Gemini transcription response omitted the requested word timings.", result.Warnings[1].Message);
+    }
+
+    [Theory]
+    [InlineData("googleVertex")]
+    [InlineData("vertex")]
+    [InlineData("google")]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::warns when %s.wordTimestamp disables requested word timings", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Warns_when_wordTimestamp_disables_requested_word_timings(string name)
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hello\"}]}}]}" };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{\"" + name + "\":{\"wordTimestamp\":false,\"languageCodes\":[\"en-US\"]}}", "word"), CancellationToken.None).ConfigureAwait(false);
+        GoogleUpstream.JsonEqual(JsonNode.Parse(handler.Body)!["generationConfig"], "{\"audioTranscriptionConfig\":{\"languageCodes\":[\"en-US\"],\"wordTimestamp\":false}}");
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("timestampGranularities", warning.Feature);
+        Assert.Equal("The provider wordTimestamp option is false and overrides the requested word timings.", warning.Details);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(",\"words\":null")]
+    [InlineData(",\"words\":[]")]
+    [InlineData(",\"words\":[{\"word\":\"Hello\"}]")]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::warns when a nonempty response omits requested word timings ($words)", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Warns_when_a_nonempty_response_omits_requested_word_timings(string words)
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[{\"content\":{\"parts\":[{\"audioTranscription\":{\"text\":\"Hello\"" + words + "}}]}}]}" };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}", "word"), CancellationToken.None).ConfigureAwait(false);
+        Assert.Null(result.Words);
+        Assert.Empty(result.Segments);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("other", warning.Type);
+        Assert.Equal("The Vertex Gemini transcription response omitted the requested word timings.", warning.Message);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::does not warn about omitted word timings for an empty transcript", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Does_not_warn_about_omitted_word_timings_for_an_empty_transcript()
+    {
+        var handler = new RecordingHandler { ResponseText = "{\"candidates\":[]}" };
+        var result = await VertexGeminiTranscription(handler).DoGenerateAsync(TranscriptionCall("{}", "word"), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(string.Empty, result.Text);
+        Assert.Null(result.Words);
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
@@ -479,10 +539,13 @@ public sealed class GoogleMediaUpstreamTests
         return (GoogleVertexGeminiTranscriptionModel)provider.TranscriptionModel("gemini-3.5-transcribe");
     }
 
-    private static TranscriptionModelCall TranscriptionCall(string providerOptions)
+    private static TranscriptionModelCall TranscriptionCall(string providerOptions, params string[] timestampGranularities)
     {
         using var options = JsonDocument.Parse(providerOptions);
-        return new TranscriptionModelCall(new byte[] { 1, 2, 3, 4 }, "audio/wav", options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None);
+        return new TranscriptionModelCall(new byte[] { 1, 2, 3, 4 }, "audio/wav", options.RootElement.Clone(), new Dictionary<string, string>(), CancellationToken.None)
+        {
+            TimestampGranularities = timestampGranularities.Length > 0 ? timestampGranularities : null,
+        };
     }
 
 }

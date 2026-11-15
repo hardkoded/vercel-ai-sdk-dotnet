@@ -111,3 +111,19 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/TranscriptionModel
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L215)
+
+<a id="Vercel_AI_Operations_TranscribeRequest_TimestampGranularities_"></a>
+<a id="Vercel_AI_Operations_TranscribeRequest_TimestampGranularities"></a>
+
+### TimestampGranularities
+
+
+```csharp
+public IReadOnlyList<string>? TimestampGranularities { get; set; }
+```
+
+
+Timing granularities to request, `word` and `segment`. Maps to `timestampGranularities`.
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+

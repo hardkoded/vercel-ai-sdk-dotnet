@@ -1632,6 +1632,28 @@ var result = StreamTranscribe.Start(new StreamTranscribeRequest
 - **Authentication.** A native WebSocket cannot send headers, so the bearer token goes in the `openai-insecure-api-key.{token}` subprotocol next to `realtime`, and the `Authorization` header is removed because OpenAI rejects handshakes that send both. Other headers are passed on. The scheme is case-insensitive, and a per-call header overrides the provider header whatever its casing. Without an `Authorization` header only `realtime` is requested.
 - **Custom socket.** `OpenAIOptions.WebSocket` sets the `WebSocketFactory`. It defaults to `ClientWebSocket`. Backpressure pauses audio reads while the socket buffer is full, and cancelling the stream closes the socket and cancels the audio (`AudioChunkStream(onCancel)`).
 
+## Word and segment timings
+
+`Transcribe.TranscribeAsync` returns `Segments` and an optional `Words` list on `TranscribeResult`. `Words` holds the word-level timings that the provider returned, whether you asked for them or the provider sends them by default. It is `null` when the provider returns none, and an empty list is kept as an empty list. `Segments` keeps the provider's own behavior and may hold individual words. The SDK does not build caption segments from word timings.
+
+Ask for timings with `TranscribeRequest.TimestampGranularities` (`"word"`, `"segment"`). Omitting it keeps the provider defaults. An empty list asks for no extra timing detail and does not suppress timings the provider returns by default. An explicit provider option wins over the shared request, and the adapter warns when a requested granularity is unavailable or disabled by a provider option.
+
+```csharp
+var transcript = await Transcribe.TranscribeAsync(new TranscribeRequest
+{
+    Model = model,
+    Audio = audio,
+    TimestampGranularities = new[] { "word", "segment" },
+});
+
+var words = transcript.Words;
+var segments = transcript.Segments;
+```
+
+Vertex Gemini transcription (`gemini-3.5-transcribe`) returns word timings only. They appear in both `Words` and `Segments`. A request for `"word"` sends `audioTranscriptionConfig.wordTimestamp = true` unless `wordTimestamp` is set. If `wordTimestamp` is `false`, the adapter warns that the option overrides the request. A request for `"segment"` warns that no separate caption segments exist. A non-empty transcript without word timings warns that the response omitted them. Azure Speech fills `Words` from the phrase words.
+
+OpenAI transcription sends the shared request as `timestamp_granularities[]`. `providerOptions.openai.timestampGranularities` wins over it, and each requested granularity it leaves out is reported as an `unsupported` warning on `timestampGranularities`. Only the `verbose_json` response format accepts timestamp granularities, so `whisper-1` (which defaults to it) sends `segment` when you ask for nothing. For `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-transcribe` and an explicit `json` response format the field is omitted and each requested granularity gets an `unsupported` warning. `gpt-4o-transcribe-diarize` returns speaker segments without a timestamp control and warns only about `word`. `Words` is filled from the response `words` even when the response also has `segments`.
+
 ## Azure transcription
 
 `AzureOpenAIProvider.Transcription(deploymentId)` (alias `TranscriptionModel(deploymentId)`) returns an `AzureTranscriptionModel` with provider id `azure.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe` and `StreamTranscribe`. The API is resolved for each call from the model ID and `providerOptions.azure.api`:

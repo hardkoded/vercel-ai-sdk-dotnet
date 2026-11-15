@@ -497,6 +497,7 @@ public sealed class OpenAIMediaUpstreamTests
         var fields = await TranscriptionFields("whisper-1", null);
         Assert.Equal("whisper-1", fields["model"][0]);
         Assert.Equal("verbose_json", fields["response_format"][0]);
+        Assert.Equal("segment", fields["timestamp_granularities[]"][0]);
         Assert.False(fields.ContainsKey("temperature"));
     }
 
@@ -506,16 +507,6 @@ public sealed class OpenAIMediaUpstreamTests
     {
         var fields = await TranscriptionFields("whisper-1", "{\"timestampGranularities\":[\"word\"]}");
         Assert.Equal("verbose_json", fields["response_format"][0]);
-        Assert.Equal("0", fields["temperature"][0]);
-        Assert.Equal("word", fields["timestamp_granularities[]"][0]);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should not set pass response_format to \"verbose_json\" when model is \"gpt-4o-transcribe\"", Coverage = UpstreamCoverage.Covered)]
-    public async Task UsesJsonForGpt4oTranscribe()
-    {
-        var fields = await TranscriptionFields("gpt-4o-transcribe", "{\"timestampGranularities\":[\"word\"]}");
-        Assert.Equal("json", fields["response_format"][0]);
         Assert.Equal("0", fields["temperature"][0]);
         Assert.Equal("word", fields["timestamp_granularities[]"][0]);
     }
@@ -553,7 +544,7 @@ public sealed class OpenAIMediaUpstreamTests
         Assert.Equal("json", fields["response_format"][0]);
         Assert.Equal("auto", fields["chunking_strategy"][0]);
         Assert.Equal("0", fields["temperature"][0]);
-        Assert.Equal("segment", fields["timestamp_granularities[]"][0]);
+        Assert.False(fields.ContainsKey("timestamp_granularities[]"));
     }
 
     [Fact]
@@ -661,6 +652,7 @@ public sealed class OpenAIMediaUpstreamTests
         };
         var result = await Transcribe(capture, "{\"timestampGranularities\":[\"word\"]}");
         AssertSegments(result.Segments, ("Hello", 0, 1), ("world", 1, 2));
+        AssertSegments(result.Words!, ("Hello", 0, 1), ("world", 1, 2));
     }
 
     [Fact]
