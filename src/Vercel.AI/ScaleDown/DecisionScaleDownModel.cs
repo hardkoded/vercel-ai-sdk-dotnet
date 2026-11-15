@@ -196,7 +196,7 @@ public sealed class DecisionScaleDownModel : IDecisionCaller
         }
     }
 
-    private static string ToText(DecisionInput value)
+    internal static string ToText(DecisionInput value)
     {
         return value.Value.ValueKind == JsonValueKind.String ? value.Value.GetString()! : JsonSerializer.Serialize(value.Value, Compact);
     }

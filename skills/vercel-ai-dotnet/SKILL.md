@@ -59,6 +59,8 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 var total = result.Answers["total"].Number; // null when the state has no total
 ```
 
+`ScaleDownProvider.ExtractionModel("extract-1")` extracts `text` fields and `list` fields of `text` items as verbatim spans, with confidence and sources. It accepts `providerOptions.scaledown.threshold` and rejects other field types with `ExtractionUnsupportedFieldTypeError`. See `docs/articles/scaledown.md`.
+
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.
 
 `GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`.

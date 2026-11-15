@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Extracts text fields and a list from text with a ScaleDown extraction model.</Description>
+  </PropertyGroup>
+</Project>

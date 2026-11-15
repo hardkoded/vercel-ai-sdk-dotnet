@@ -1,6 +1,6 @@
 # ScaleDown
 
-`Vercel.AI.ScaleDown` ports `@ai-sdk/scaledown`. It gives `Decide.DecideAsync` a decision model for ScaleDown's [Decisions API](https://docs.scaledown.ai/api-reference/decisions). The capability is experimental, like `Decide` itself. The extraction model of the package is not ported, because `experimental_extract` is not ported yet (#923).
+`Vercel.AI.ScaleDown` ports `@ai-sdk/scaledown`. It gives `Decide.DecideAsync` a decision model for ScaleDown's [Decisions API](https://docs.scaledown.ai/api-reference/decisions), and `Extract.ExtractAsync` an extraction model for its [Extract API](https://docs.scaledown.ai/api-reference/extract). Both capabilities are experimental, like `Decide` and `Extract` themselves.
 
 ```csharp
 var provider = ScaleDownProvider.Create(new ScaleDownProviderSettings { ApiKey = "..." });
@@ -25,7 +25,7 @@ var result = await Decide.DecideAsync(new DecideRequest
 | `BaseUrl` | Defaults to `https://api.scaledown.xyz`. A trailing slash is removed. |
 | `Headers` | Sent with every request. Headers on the call win over them. |
 
-`AddScaleDown(configure)` registers the provider with dependency injection. `DecisionModel(id)` accepts any model id. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw `NoSuchModelError`. The provider id of the model is `scaledown.decision`.
+`AddScaleDown(configure)` registers the provider with dependency injection. `DecisionModel(id)` and `ExtractionModel(id)` accept any model id. `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw `NoSuchModelError`. The provider id of the decision model is `scaledown.decision` and the provider id of the extraction model is `scaledown.extraction`.
 
 ## Decision model
 
@@ -43,3 +43,31 @@ var result = await Decide.DecideAsync(new DecideRequest
 `DecisionScaleDownModel.Serialize()` and `DecisionScaleDownModel.Deserialize(options)` carry the model across a workflow boundary. A model restored without headers reads `SCALEDOWN_API_KEY` at call time.
 
 A failed response throws `ApiCallError` with the `detail` text of the response. A response that does not fit the schema throws `ApiCallError` with the message `Invalid JSON response`.
+
+## Extraction model
+
+```csharp
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    Model = ScaleDownProvider.Default.ExtractionModel("extract-1"),
+    State = "Invoice INV-2041 from Acme Corp. Contacts: Ana, Bo.",
+    Fields = new Dictionary<string, ExtractionField>
+    {
+        ["invoiceNumber"] = new("text", DecisionInput.From("The invoice number")),
+        ["vendor"] = new("text", DecisionInput.From("Company that issued the invoice")),
+        ["contacts"] = new("list", DecisionInput.From("Contact names")) { Items = "text" },
+    },
+    ProviderOptions = JsonDocument.Parse("""{"scaledown":{"threshold":0.5}}""").RootElement.Clone(),
+});
+```
+
+`ScaleDownExtractionModel` calls `POST {BaseUrl}/v1/chat/completions` with a JSON schema for the fields. `extract` selects the latest model and `extract-1` pins version 1. Both support `text` fields and `list` fields of `text` items, with the same text, JSON, and single-document inputs as the decision model. For document-only input, the model sends the non-empty user message that ScaleDown requires (`Extract the requested fields from the document.`).
+
+- A `text` field returns the most confident verbatim match, or a null `Text` when there is none.
+- A `list` field returns up to 30 distinct matches in source order, or null `TextItems` when there are none. Each entry of `Items` keeps its confidence and source when ScaleDown reports them.
+- A text source converts ScaleDown's UTF-8 byte offsets to UTF-16 offsets in the original state part. JSON parts have no source location. A document match cites the file when its location can be established. The OCR text is in `result.ProviderMetadata` under `scaledown.ocrText`.
+- ScaleDown extracts spans and does not normalize values. `number`, `date`, `time`, `datetime`, `duration`, and lists of numbers or dates throw `ExtractionUnsupportedFieldTypeError` before the request. Use `text` fields to read amounts or dates verbatim.
+- `providerOptions.scaledown.threshold` sets the minimum confidence from 0 to 1 (default 0). `ScaleDownExtractionModelOptions` describes it. A value outside that range throws `InvalidArgumentException`.
+- `ReferenceDate`, `Reasoning`, and `MaxOutputTokens` are not supported. Each is reported as an `unsupported` warning and not sent. ScaleDown does not return `PNull` or guesses, so the model leaves them unset.
+
+`ScaleDownExtractionModel.Serialize()` and `ScaleDownExtractionModel.Deserialize(options)` carry the model across a workflow boundary. Errors are the same as for the decision model: a failed response throws `ApiCallError` with the `detail` text, and content that is not valid extraction JSON throws `InvalidResponseDataException`.
