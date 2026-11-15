@@ -80,11 +80,45 @@ public sealed class DoGenerateStatefulChainingTests
     {
         var handler = Basic();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options("{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}"), CancellationToken.None);
+        var options = Options("{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}");
+        options.Reasoning = "xhigh";
+        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(options, CancellationToken.None);
 
         var generationConfig = JsonNode.Parse(handler.Bodies[0])!["generation_config"]!;
         Assert.Equal("high", (string?)generationConfig["thinking_level"]);
         Assert.Equal("auto", (string?)generationConfig["thinking_summaries"]);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "maps top-level reasoning to the Hydrogen thinking level", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    public async Task Maps_top_level_reasoning_to_the_Hydrogen_thinking_level()
+    {
+        var handler = Basic();
+        var options = Options();
+        options.Reasoning = "xhigh";
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen").DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("xhigh", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "warns and falls back for unsupported reasoning levels", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    public async Task Warns_and_falls_back_for_unsupported_reasoning_levels()
+    {
+        var handler = Basic();
+        var options = Options();
+        options.Reasoning = "xhigh";
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-argon").DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("high", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".", warning.Message);
     }
 
     [Theory]

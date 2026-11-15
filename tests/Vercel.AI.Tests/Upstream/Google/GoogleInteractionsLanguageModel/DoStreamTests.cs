@@ -51,4 +51,19 @@ public sealed class DoStreamTests
 
         Assert.False(JsonNode.Parse(handler.Bodies[0])!.AsObject().ContainsKey("labels"));
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "maps top-level reasoning on streaming requests", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    public async Task Maps_top_level_reasoning_on_streaming_requests()
+    {
+        var handler = GoogleInteractionsStreamSupport.FixtureHandler("basic");
+        var options = GoogleUpstream.Prompt(new UserModelMessage("Hello, how are you?"));
+        options.Reasoning = "xhigh";
+
+        var parts = await GoogleInteractionsStreamSupport.Stream(GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen"), options);
+
+        Assert.Equal("xhigh", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        var start = Assert.IsType<StreamStartStreamPart>(parts[0]);
+        Assert.Empty(start.Warnings);
+    }
 }

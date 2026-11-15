@@ -5,6 +5,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Google;
 
@@ -318,6 +320,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     {
         var warnings = new List<CallWarning>();
         var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high", "xhigh");
+        var reasoningWarnings = new List<ModelWarning>();
         var thinkingSummaries = EnumOption(options, "thinkingSummaries", "auto", "none");
         var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
         var previousInteractionId = StringOption(options, "previousInteractionId");
@@ -385,6 +388,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             AddIf(dropped, options.Seed != null, "seed");
             AddIf(dropped, options.StopSequences is { Count: > 0 }, "stopSequences");
             AddIf(dropped, options.MaxOutputTokens != null, "maxOutputTokens");
+            AddIf(dropped, ReasoningMap.IsCustomReasoning(options.Reasoning), "reasoning");
             AddIf(dropped, thinkingLevel != null, "thinkingLevel");
             AddIf(dropped, thinkingSummaries != null, "thinkingSummaries");
             if (dropped.Count > 0)
@@ -405,7 +409,15 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
 
             GoogleJson.Set(generationConfig, "max_output_tokens", options.MaxOutputTokens);
-            GoogleJson.Set(generationConfig, "thinking_level", thinkingLevel);
+            string? mappedLevel = thinkingLevel;
+            if (thinkingLevel == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
+            {
+                var effortMap = GoogleThinking.ReasoningEfforts(ModelId).ToDictionary(level => level, level => level);
+                mappedLevel = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, effortMap, reasoningWarnings);
+                warnings.AddRange(reasoningWarnings.Select(ReasoningMap.ToCallWarning).OfType<CallWarning>());
+            }
+
+            GoogleJson.Set(generationConfig, "thinking_level", mappedLevel);
             GoogleJson.Set(generationConfig, "thinking_summaries", thinkingSummaries);
             if (generationConfig.Count > 0)
             {

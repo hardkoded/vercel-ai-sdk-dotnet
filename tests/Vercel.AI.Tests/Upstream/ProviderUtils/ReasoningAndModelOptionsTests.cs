@@ -51,13 +51,64 @@ public sealed class ReasoningAndModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns undefined with unsupported warning for key missing from effortMap", Coverage = UpstreamCoverage.Covered)]
-    public void Missing_effort_returns_null_and_an_unsupported_warning()
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps an unsupported level to the next lower supported level", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_an_unsupported_level_to_the_next_lower_supported_level()
+    {
+        var warnings = new List<ModelWarning>();
+        var map = new Dictionary<string, string> { ["low"] = "low", ["medium"] = "medium", ["high"] = "high", ["max"] = "max" };
+        Assert.Equal("high", ReasoningMap.MapReasoningToProviderEffort("xhigh", map, warnings));
+        var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
+        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".", warning.Details);
+    }
+
+    [Fact]
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps to the next higher supported level when no lower level is supported", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_to_the_next_higher_supported_level_when_no_lower_level_is_supported()
+    {
+        var warnings = new List<ModelWarning>();
+        var map = new Dictionary<string, string> { ["low"] = "low", ["high"] = "high" };
+        Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("minimal", map, warnings));
+        var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
+        Assert.Equal("reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".", warning.Details);
+    }
+
+    [Fact]
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::does not round a reasoning level down to \"none\"", Coverage = UpstreamCoverage.Covered)]
+    public void Does_not_round_a_reasoning_level_down_to_none()
+    {
+        var map = new Dictionary<string, string> { ["none"] = "none", ["low"] = "low", ["high"] = "high" };
+        Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("minimal", map, new List<ModelWarning>()));
+    }
+
+    [Fact]
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps \"none\" directly when supported", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_none_directly_when_supported()
+    {
+        var warnings = new List<ModelWarning>();
+        var map = new Dictionary<string, string> { ["none"] = "none", ["low"] = "low" };
+        Assert.Equal("none", ReasoningMap.MapReasoningToProviderEffort("none", map, warnings));
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::maps an unsupported \"none\" to the lowest supported level", Coverage = UpstreamCoverage.Covered)]
+    public void Maps_an_unsupported_none_to_the_lowest_supported_level()
+    {
+        var warnings = new List<ModelWarning>();
+        var map = new Dictionary<string, string> { ["low"] = "low", ["medium"] = "medium", ["high"] = "high" };
+        Assert.Equal("low", ReasoningMap.MapReasoningToProviderEffort("none", map, warnings));
+        var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
+        Assert.Equal("reasoning \"none\" is not directly supported by this model. mapped to effort \"low\".", warning.Details);
+    }
+
+    [Fact]
+    [UpstreamTest(Reasoning + "mapReasoningToProviderEffort::returns undefined with unsupported warning for an empty effortMap", Coverage = UpstreamCoverage.Covered)]
+    public void Empty_effort_map_returns_null_and_an_unsupported_warning()
     {
         var warnings = new List<ModelWarning>();
         var result = ReasoningMap.MapReasoningToProviderEffort(
             "high",
-            new Dictionary<string, string> { ["medium"] = "medium" },
+            new Dictionary<string, string>(),
             warnings);
         Assert.Null(result);
         var warning = Assert.IsType<UnsupportedWarning>(Assert.Single(warnings));
