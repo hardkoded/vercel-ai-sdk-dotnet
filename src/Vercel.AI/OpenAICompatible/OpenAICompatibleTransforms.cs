@@ -79,28 +79,17 @@ public static class OpenAICompatibleTransforms
         return body;
     }
 
-    /// <summary>Maps Fireworks thinking, cache, service tier, and reasoning effort. Fireworks supports <c>low</c>, <c>medium</c>, and <c>high</c>.</summary>
+    /// <summary>Maps Fireworks thinking, cache, and service tier. Reasoning effort is resolved per model by <c>FireworksModelCatalog</c>.</summary>
     public static JsonObject Fireworks(JsonObject body, IList<CallWarning> warnings)
     {
         var thinking = body["thinking"] as JsonObject;
         var reasoningHistory = Text(body["reasoningHistory"]);
         var promptCacheKey = Text(body["promptCacheKey"]);
         var serviceTier = Text(body["serviceTier"]);
-        var effort = Text(body["reasoning_effort"]);
         body.Remove("thinking");
         body.Remove("reasoningHistory");
         body.Remove("promptCacheKey");
         body.Remove("serviceTier");
-        if (effort != null)
-        {
-            var mapped = effort == "minimal" ? "low" : effort == "xhigh" || effort == "max" ? "high" : effort;
-            body["reasoning_effort"] = mapped;
-            if (mapped != effort)
-            {
-                warnings.Add(new CallWarning("compatibility", "reasoning", "reasoning \"" + effort + "\" is not directly supported by this model. mapped to effort \"" + mapped + "\"."));
-            }
-        }
-
         if (promptCacheKey != null)
         {
             body["prompt_cache_key"] = promptCacheKey;
