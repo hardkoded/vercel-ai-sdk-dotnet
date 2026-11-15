@@ -28,7 +28,7 @@ public static class UIMessageStreamExtensions
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="onError">
-    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when
+    /// Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when
     /// <c>redactToolErrors</c> is enabled, which is the default when this callback is provided. Errors of provider-executed tools are not masked.
     /// </param>
     /// <param name="redactToolErrors">
@@ -41,7 +41,7 @@ public static class UIMessageStreamExtensions
     public static IResult ToUIMessageStreamResult(
         this StreamTextResult result,
         int? keepAliveMs = null,
-        Func<string, string>? onError = null,
+        Func<Exception, string>? onError = null,
         bool? redactToolErrors = null)
     {
         if (result is null)
@@ -62,15 +62,15 @@ public sealed class UIMessageStreamResult : IResult
 
     private readonly StreamTextResult _result;
     private readonly int? _keepAliveMs;
-    private readonly Func<string, string>? _onError;
+    private readonly Func<Exception, string>? _onError;
     private readonly bool? _redactToolErrors;
 
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null, bool? redactToolErrors = null)
+    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<Exception, string>? onError = null, bool? redactToolErrors = null)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
@@ -99,14 +99,14 @@ public sealed class UIMessageStreamResult : IResult
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
         int? keepAliveMs = null,
         CancellationToken cancellationToken = default,
-        Func<string, string>? onError = null,
+        Func<Exception, string>? onError = null,
         bool? redactToolErrors = null)
     {
         if (result is null)
@@ -210,7 +210,7 @@ public sealed class UIMessageStreamResult : IResult
 
     private static async IAsyncEnumerable<string> ReadSseChunks(
         StreamTextResult result,
-        Func<string, string>? onError,
+        Func<Exception, string>? onError,
         bool? redactToolErrors,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {

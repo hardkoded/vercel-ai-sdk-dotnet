@@ -14,7 +14,7 @@ public sealed class ErrorTextOfFailedToolCallsTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk > error text of failed tool calls::";
     private const string Commit = "ceeee29f9a7b7ca8c12a9270a542581bd760bdc7";
-    private const string PartialNote = "The onError argument is the formatted error message, not the error object. The invalid tool call has a NoSuchToolError, because the converter has no tool list and marks only calls of unknown tools as dynamic. The expected text of the invalid call is the error string of that error.";
+    private const string PartialNote = "The invalid tool call has a NoSuchToolError, because the converter has no tool list and marks only calls of unknown tools as dynamic. The expected text of the invalid call is the error string of that error.";
 
     [Fact]
     [UpstreamTest(Prefix + "keeps the text that the model received by default", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
@@ -29,7 +29,7 @@ public sealed class ErrorTextOfFailedToolCallsTests
     [Fact]
     [UpstreamTest(Prefix + "uses a provided onError", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
     public void Uses_a_provided_onError()
-        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError }, "handled: tool failed", "handled: AI_NoSuchToolError: tool failed");
+        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError }, "handled: tool failed", "handled: tool failed");
 
     [Fact]
     [UpstreamTest(Prefix + "keeps the text that the model received when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
@@ -50,7 +50,7 @@ public sealed class ErrorTextOfFailedToolCallsTests
     private static void AssertJson(string expected, JsonObject? actual)
         => Assert.True(JsonNode.DeepEquals(JsonNode.Parse(expected), actual), actual?.ToJsonString());
 
-    private static string FormatError(string message) => "handled: " + message;
+    private static string FormatError(Exception error) => "handled: " + error.Message;
 
     private static GeneratedToolCall InvalidToolCall(bool providerExecuted = false)
         => new("call-1", "runtimeTool", "{broken") { Dynamic = true, Invalid = true, Error = new NoSuchToolError("runtimeTool", message: "tool failed"), ProviderExecuted = providerExecuted };

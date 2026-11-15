@@ -159,7 +159,7 @@ public sealed class SingleProviderExecutedToolCallAndResultTests
         Assert.True(JsonNode.DeepEquals(expected, chunks), chunks.ToJsonString());
     }
 
-    internal static async Task<JsonArray> ReadUiChunks(StreamTextResult result, Func<string, string>? onError = null, bool? redactToolErrors = null)
+    internal static async Task<JsonArray> ReadUiChunks(StreamTextResult result, Func<Exception, string>? onError = null, bool? redactToolErrors = null)
     {
         using var body = new MemoryStream();
         await UIMessageStreamResult.WriteAsync(result, body, onError: onError, redactToolErrors: redactToolErrors);
