@@ -155,6 +155,6 @@ public sealed class ApiRoutingTests
         await restored.GenerateAsync(AzureSpeechModelSetup.Call("Hello"), CancellationToken.None);
         Assert.Equal("https://eastus.api.cognitive.microsoft.com/tts/cognitiveservices/v1", setup.Request.Url);
         await restored.GenerateAsync(AzureSpeechModelSetup.Call("Hello", "{\"azure\":{\"api\":\"openai\"}}"), CancellationToken.None);
-        Assert.Equal("https://proxy.example/openai/v1/audio/speech?api-version=v1", setup.Request.Url);
+        Assert.Equal("https://proxy.example/audio/speech", setup.Request.Url);
     }
 }

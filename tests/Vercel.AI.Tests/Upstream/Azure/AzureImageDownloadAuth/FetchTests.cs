@@ -21,7 +21,7 @@ public sealed class FetchTests
     [InlineData("api-key", "MAI-Image-2.6")]
     [InlineData("api-key", "gpt-image-1")]
     [UpstreamTest("packages/azure/src/azure-image-download-auth.test.ts::%s fetch > %s authentication::keeps credentials off %s image downloads and redirects", Coverage = UpstreamCoverage.Partial, Commit = Commit,
-        Note = "Covers the custom fetch transport. The port has no global fetch to stub, so the global transport variant is not ported. A redirect is an observable second request, not a fetch init flag.")]
+        Note = "Covers the custom fetch transport. The port has no global fetch to stub, so the global transport variant is not ported (#1082). A redirect is an observable second request, not a fetch init flag.")]
     public async Task KeepsCredentialsOffImageDownloadsAndRedirects(string auth, string modelId)
     {
         var handler = new AzureImageHandler((request, _) =>

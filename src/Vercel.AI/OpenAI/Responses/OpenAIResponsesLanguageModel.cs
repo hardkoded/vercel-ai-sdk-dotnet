@@ -39,6 +39,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private readonly string _providerOptionsName;
     private readonly string? _requestModelId;
     private readonly Func<Uri> _url;
+    private readonly bool _explicitMessageItemType;
     private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
 
     /// <summary>
@@ -91,6 +92,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         _providerName = provider.Name;
         _providerOptionsName = "azure";
         _url = () => provider.AzureUri("responses", deploymentId);
+        _explicitMessageItemType = Azure.AzureOpenAIProvider.GetAzureOpenAIBaseURLInfo(provider.Options.BaseUrl).IsFoundryProject;
         _headers = provider.CreateHeaders;
     }
 
@@ -226,8 +228,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <summary>
     /// Builds the Responses body. <paramref name="modelId"/> drives capability detection and
     /// <paramref name="requestModelId"/>, when set, is sent as the request <c>model</c>.
+    /// <paramref name="explicitMessageItemType"/> adds <c>type: "message"</c> to message items (Foundry projects).
     /// </summary>
-    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude, string? requestModelId)
+    public static OpenAIResponsesPreparedRequest Prepare(string modelId, LanguageModelCallOptions options, bool stream, string providerOptionsName, bool supportsWebSearchSourcesInclude, string? requestModelId, bool explicitMessageItemType = false)
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<OpenAICallWarning>();
@@ -269,7 +272,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         }
 
         var systemMode = OpenAIJson.String(openai, "systemMessageMode") ?? (reasoning ? "developer" : capabilities.SystemMessageMode);
-        var explicitItem = OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
+        var explicitItem = explicitMessageItemType || OpenAIJson.Bool(openai, "explicitMessageItemType") == true;
         var configurationUpdateUnsupportedReason = GetConfigurationUpdateUnsupportedReason(capabilities, openai);
         var hasContinuation = OpenAIJson.String(openai, "conversation") != null || OpenAIJson.String(openai, "previousResponseId") != null;
         var outputSchemaToolNames = new HashSet<string>();
@@ -649,7 +652,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId);
+        var prepared = Prepare(ModelId, options, false, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId, _explicitMessageItemType);
         var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
             _url(),
@@ -678,7 +681,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId);
+        var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId, _explicitMessageItemType);
         var json = prepared.Body.ToJsonString();
         var sse = await _http.OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken).ConfigureAwait(false);
         return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
