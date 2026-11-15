@@ -93,6 +93,11 @@ internal sealed class OpenAIResponsesStream
                     && webSearchAdded["type"]?.GetValue<string>() == "web_search_call")
                 {
                     var webSearchId = webSearchAdded["id"]?.GetValue<string>() ?? string.Empty;
+                    if (OutputIndex(node) is { } webSearchIndex)
+                    {
+                        _activeOutputItemIds[webSearchIndex] = webSearchId;
+                    }
+
                     parts.Add(new ToolInputStartStreamPart(webSearchId, WebSearchName(), providerExecuted: true));
                     parts.Add(new ToolInputEndStreamPart(webSearchId));
                     parts.Add(new ToolCallStreamPart(webSearchId, WebSearchName(), "{}") { ProviderExecuted = true });
@@ -322,6 +327,11 @@ internal sealed class OpenAIResponsesStream
                 else if (node["item"] is JsonObject done)
                 {
                     ItemDone(parts, JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()), done["id"]?.GetValue<string>() is { } doneId ? ResolveOutputItemId(doneId, node) : null);
+                    if (done["type"]?.GetValue<string>() == "web_search_call" && OutputIndex(node) is { } webSearchDoneIndex)
+                    {
+                        _activeOutputItemIds.Remove(webSearchDoneIndex);
+                    }
+
                     if (done["type"]?.GetValue<string>() == "message" && OutputIndex(node) is { } messageDoneIndex)
                     {
                         _activeOutputItemIds.Remove(messageDoneIndex);
@@ -709,7 +719,7 @@ internal sealed class OpenAIResponsesStream
         else if (itemType == "web_search_call")
         {
             parts.Add(new ToolResultStreamPart(
-                OpenAIJson.String(item, "id") ?? string.Empty,
+                resolvedId ?? OpenAIJson.String(item, "id") ?? string.Empty,
                 WebSearchName(),
                 JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.WebSearchResult(item))));
             foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))

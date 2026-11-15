@@ -1338,6 +1338,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             programmaticToolCallIds.Add(call.ToolCallId);
                         }
 
+                        // A provider-executed web search call has no client function to replay (upstream breaks out for provider-executed calls).
+                        if (call.ProviderExecuted && toolNameMapping?.ToProviderToolName(call.ToolName) is "web_search" or "web_search_preview")
+                        {
+                            continue;
+                        }
+
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
                             AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
