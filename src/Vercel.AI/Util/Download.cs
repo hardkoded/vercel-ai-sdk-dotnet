@@ -364,18 +364,28 @@ public static class Download
     /// <param name="fetch">Fetch used for the request. Defaults to <see cref="Fetch"/>, then the built-in fetch.</param>
     /// <param name="trustedOrigin">A developer-configured origin whose requests skip validation. Never derive it from response data.</param>
     /// <param name="redirect"><c>error</c> or <c>manual</c>.</param>
-    /// <exception cref="DownloadError">The URL is unsafe.</exception>
+    /// <param name="requireDnsValidation">
+    /// Reject untrusted URLs on server runtimes unless an explicit custom <paramref name="fetch"/> provides connect-time DNS
+    /// validation and connection pinning. The runtime's default fetch, including <see cref="Fetch"/>, does not satisfy this requirement.
+    /// </param>
+    /// <exception cref="DownloadError">The URL is unsafe, or <paramref name="requireDnsValidation"/> is set and no custom fetch was passed.</exception>
     public static async Task<DownloadResponse> FetchWithValidatedEndpointAsync(
         string url,
         DownloadRequest? request = null,
         DownloadFetch? fetch = null,
         string? trustedOrigin = null,
-        string redirect = "error")
+        string redirect = "error",
+        bool requireDnsValidation = false)
     {
         var isTrusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
         if (!isTrusted)
         {
             ValidateDownloadUrl(url);
+
+            if (requireDnsValidation && (fetch == null || fetch == Fetch) && !IsBrowser)
+            {
+                throw new DownloadError(url, "This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs");
+            }
         }
 
         var init = new DownloadRequest(request == null ? null : new HeaderCollection(request.Headers.Entries()), request?.AbortSignal ?? default, redirect)
