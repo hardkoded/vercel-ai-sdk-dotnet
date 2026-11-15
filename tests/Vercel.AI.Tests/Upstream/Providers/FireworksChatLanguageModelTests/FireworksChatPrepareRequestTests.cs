@@ -36,6 +36,24 @@ public sealed class FireworksChatPrepareRequestTests
         Assert.Empty(capture.Requests);
     }
 
+    [Fact]
+    [UpstreamTest(Prefix + "should map reasoning with the compatibility warning", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public void Should_map_reasoning_with_the_compatibility_warning()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "none";
+
+        var prepared = Model(capture).PrepareRequest(options);
+
+        Assert.Equal("minimal", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal("reasoning \"none\" is not directly supported by this model. mapped to effort \"minimal\".", warning.Message);
+        Assert.Empty(capture.Requests);
+    }
+
     private static OpenAICompatibleLanguageModel Model(UpstreamCapture capture)
     {
         return (OpenAICompatibleLanguageModel)FireworksProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-key" }, capture).LanguageModel("accounts/fireworks/models/gpt-oss-120b");

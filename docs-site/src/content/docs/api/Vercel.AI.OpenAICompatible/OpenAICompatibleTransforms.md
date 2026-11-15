@@ -109,7 +109,7 @@ public static JsonObject Fireworks(JsonObject body, IList<CallWarning> warnings)
 ```
 
 
-Maps Fireworks thinking, cache, service tier, and reasoning effort. Fireworks supports `low`, `medium`, and `high`.
+Maps Fireworks thinking, cache, and service tier. Reasoning effort is resolved per model by `FireworksModelCatalog`.
 
 **Parameters**
 

@@ -5,6 +5,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Fireworks;
 
@@ -39,6 +41,31 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
         return new FireworksProvider(client, options);
     }
 
+    private static string? ResolveReasoningEffort(string modelId, string? reasoning, string? providerEffort, IList<CallWarning> warnings)
+    {
+        if (providerEffort != null)
+        {
+            return providerEffort;
+        }
+
+        if (!ReasoningMap.IsCustomReasoning(reasoning))
+        {
+            return null;
+        }
+
+        var mappingWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning!, FireworksModelCatalog.GetFireworksReasoningEffortMap(modelId), mappingWarnings);
+        foreach (var warning in mappingWarnings)
+        {
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
+        }
+
+        return effort;
+    }
+
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -66,6 +93,7 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
         }
         options.IncludeUsage = true;
         options.SupportsStructuredOutputs = true;
+        options.ResolveReasoningEffort ??= ResolveReasoningEffort;
         options.TransformRequestBody = OpenAICompatibleTransforms.Fireworks;
         return options;
     }
