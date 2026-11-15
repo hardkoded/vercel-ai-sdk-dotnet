@@ -1338,12 +1338,6 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             programmaticToolCallIds.Add(call.ToolCallId);
                         }
 
-                        // A provider-executed web search call has no client function to replay (upstream breaks out for provider-executed calls).
-                        if (call.ProviderExecuted && toolNameMapping?.ToProviderToolName(call.ToolName) is "web_search" or "web_search_preview")
-                        {
-                            continue;
-                        }
-
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
                             AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
@@ -1365,6 +1359,17 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         if (hasApplyPatchTool && toolNameMapping?.ToProviderToolName(call.ToolName) == "apply_patch")
                         {
                             AddApplyPatchCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasContinuation, hasConversation);
+                            continue;
+                        }
+
+                        // A provider-executed call has no client function to replay. Upstream references the stored item, or drops the call.
+                        if (call.ProviderExecuted)
+                        {
+                            if (store && OpenAIJson.String(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), "itemId") is { } providerItemId)
+                            {
+                                input.Add(new JsonObject { ["type"] = "item_reference", ["id"] = providerItemId });
+                            }
+
                             continue;
                         }
 
