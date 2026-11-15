@@ -365,10 +365,10 @@ internal static class Generation
                 // Tool choice none rejects tool calls when the model call finishes. Withhold tool parts so that consumers
                 // cannot act on them before the rejection, and skip the callbacks that would repair or refine them.
                 var withholdToolParts = callOptions.ToolChoice?.Type == "none";
+                callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
                 LanguageModelStreamResult streamResult;
                 try
                 {
-                    callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
                     streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)

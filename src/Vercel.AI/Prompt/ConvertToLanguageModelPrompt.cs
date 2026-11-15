@@ -76,6 +76,11 @@ public static class LanguageModelPrompts
         // Like upstream, the download function is called even when the batch is empty.
         var result = new Dictionary<string, DownloadResult>(StringComparer.Ordinal);
         var downloadedFiles = await download(planned).ConfigureAwait(false);
+        if (downloadedFiles.Count != planned.Count)
+        {
+            throw new InvalidOperationException("The download function returned " + downloadedFiles.Count + " results for " + planned.Count + " requested downloads.");
+        }
+
         for (var i = 0; i < downloadedFiles.Count && i < planned.Count; i++)
         {
             if (downloadedFiles[i] is { } file)

@@ -9,6 +9,8 @@ namespace Vercel.AI.ProviderUtils;
 /// <summary>Checks whether a model can read a URL natively. Maps to <c>isUrlSupported</c>.</summary>
 public static class UrlSupport
 {
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Regex> Compiled = new(StringComparer.Ordinal);
+
     /// <summary>A model that supports no URLs, such as <c>supportedUrls: {}</c> upstream.</summary>
     public static readonly IReadOnlyDictionary<string, string> None = new Dictionary<string, string>();
 
@@ -26,7 +28,7 @@ public static class UrlSupport
         var compiled = new Dictionary<string, IReadOnlyList<Regex>>(StringComparer.Ordinal);
         foreach (var pair in supportedUrls)
         {
-            compiled[pair.Key] = new[] { new Regex(pair.Value, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100)) };
+            compiled[pair.Key] = new[] { Compiled.GetOrAdd(pair.Value, pattern => new Regex(pattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100))) };
         }
 
         return IsUrlSupported(mediaType, url, compiled);
