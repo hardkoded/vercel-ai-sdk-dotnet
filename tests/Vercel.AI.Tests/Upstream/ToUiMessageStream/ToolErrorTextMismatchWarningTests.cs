@@ -10,6 +10,7 @@ using Vercel.AI.Util;
 namespace Vercel.AI.Tests.Upstream.ToUiMessageStream;
 
 /// <summary>Port of <c>to-ui-message-stream.test.ts</c> &gt; <c>toUIMessageStream</c> &gt; <c>tool error text mismatch warning</c>.</summary>
+[Collection("LogWarnings")]
 public sealed class ToolErrorTextMismatchWarningTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream > tool error text mismatch warning::";

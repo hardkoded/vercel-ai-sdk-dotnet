@@ -8,7 +8,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for <c>generateImage</c>.</summary>
-[Collection("WarningLog")]
+[Collection("LogWarnings")]
 public sealed class GenerateImageTests
 {
     private const string Prefix = "packages/ai/src/generate-image/generate-image.test.ts::";
