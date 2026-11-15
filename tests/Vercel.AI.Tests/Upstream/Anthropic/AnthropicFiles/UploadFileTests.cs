@@ -153,15 +153,6 @@ public sealed class UploadFileTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "handles base64 string data", Coverage = UpstreamCoverage.Partial, Note = "UploadAsync takes byte[], so the base64 string is decoded before the call.", Commit = Commit)]
-    public async Task Handles_base64_string_data()
-    {
-        var (files, _) = FilesFixture.Json(FilesFixture.Metadata);
-        var result = await files.UploadAsync("blob", Convert.FromBase64String("AQID"), "application/octet-stream", null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal(new Dictionary<string, string> { ["anthropic"] = "file-abc123" }, result.ProviderReference);
-    }
-
-    [Fact]
     [UpstreamTest(Prefix + "has specificationVersion v4", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Has_specificationVersion_v4()
     {

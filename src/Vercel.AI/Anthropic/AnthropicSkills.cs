@@ -51,11 +51,17 @@ public sealed class AnthropicSkillUpload
 public sealed class AnthropicSkills
 {
     private readonly ProviderHttp _http;
-    private readonly Func<IReadOnlyDictionary<string, string?>> _headers;
+    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> _headers;
     private readonly Func<string> _baseUrl;
 
     /// <summary>Creates a skills client.</summary>
     public AnthropicSkills(ProviderHttp http, Func<string> baseUrl, Func<IReadOnlyDictionary<string, string?>> headers, string provider)
+        : this(http, baseUrl, WrapHeaders(headers), provider)
+    {
+    }
+
+    /// <summary>Creates a skills client whose provider headers resolve asynchronously on every call.</summary>
+    public AnthropicSkills(ProviderHttp http, Func<string> baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers, string provider)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _baseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -68,6 +74,16 @@ public sealed class AnthropicSkills
 
     /// <summary>Provider id.</summary>
     public string Provider { get; }
+
+    private static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> WrapHeaders(Func<IReadOnlyDictionary<string, string?>> headers)
+    {
+        if (headers == null)
+        {
+            throw new ArgumentNullException(nameof(headers));
+        }
+
+        return _ => Task.FromResult(headers());
+    }
 
     /// <summary>Uploads skill files, then reads the latest version metadata.</summary>
     public async Task<AnthropicSkillUpload> UploadSkillAsync(IReadOnlyList<AnthropicSkillFile> files, string? displayTitle, CancellationToken cancellationToken)
@@ -85,7 +101,7 @@ public sealed class AnthropicSkills
             MultipartForm.AddFile(form, content, "files[]", file.Path);
         }
 
-        var headers = WithBeta(_headers());
+        var headers = WithBeta(await _headers(cancellationToken).ConfigureAwait(false));
         var created = await _http.SendBytesAsync(HttpMethod.Post, new Uri(ApiKeys.Combine(_baseUrl(), "skills").AbsoluteUri), form, headers, cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(System.Text.Encoding.UTF8.GetString(created));
         var root = document.RootElement;

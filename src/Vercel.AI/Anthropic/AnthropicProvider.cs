@@ -248,13 +248,13 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>Files API client.</summary>
     public AnthropicFiles Files()
     {
-        return new AnthropicFiles(Http, NormalizedBase, FilesHeadersAsync, ModelProvider);
+        return new AnthropicFiles(Http, NormalizedBase, ProviderHeadersAsync, ModelProvider);
     }
 
     /// <summary>Skills API client.</summary>
     public AnthropicSkills Skills()
     {
-        return new AnthropicSkills(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), Aws ? "anthropic-aws.skills" : "anthropic.skills");
+        return new AnthropicSkills(Http, NormalizedBase, ProviderHeadersAsync, Aws ? "anthropic-aws.skills" : "anthropic.skills");
     }
 
     /// <summary>Messages URL for the resolved base.</summary>
@@ -317,7 +317,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return raw;
     }
 
-    private async Task<IReadOnlyDictionary<string, string?>> FilesHeadersAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyDictionary<string, string?>> ProviderHeadersAsync(CancellationToken cancellationToken)
     {
         return await CreateHeadersAsync(Array.Empty<string>(), null, null, cancellationToken).ConfigureAwait(false);
     }
