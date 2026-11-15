@@ -18,7 +18,7 @@ public sealed class GenerateVideoTests
 
     [Fact]
     [UpstreamTest(Video + "::returns upload confirmations without downloading or synthesizing files", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
-    public async Task Returns_upload_confirmations_without_downloading_or_synthesizing_files()
+    public async Task Partial_returns_upload_confirmations_without_downloading_or_synthesizing_files()
     {
         var downloads = 0;
         var model = new VideoFake
@@ -43,11 +43,18 @@ public sealed class GenerateVideoTests
         Assert.Single(result.Responses);
         var error = Assert.Throws<NoVideoGeneratedException>(() => result.Video);
         Assert.Contains("Use uploadedVideos instead of video.", error.Message);
+        var json = System.Text.Json.JsonSerializer.Serialize(result);
+        using (var document = JsonDocument.Parse(json))
+        {
+            Assert.Equal(1, document.RootElement.GetProperty("UploadedVideos").GetInt32());
+            Assert.Equal(0, document.RootElement.GetProperty("Videos").GetArrayLength());
+            Assert.False(document.RootElement.TryGetProperty("Video", out _));
+        }
     }
 
     [Fact]
     [UpstreamTest(Video + "::counts uploads alongside downloadable videos across calls", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
-    public async Task Counts_uploads_alongside_downloadable_videos_across_calls()
+    public async Task Partial_counts_uploads_alongside_downloadable_videos_across_calls()
     {
         var call = 0;
         var model = new VideoFake
@@ -60,6 +67,8 @@ public sealed class GenerateVideoTests
         Assert.Single(result.Videos);
         Assert.Equal(Mp4, result.Video.Base64);
         Assert.Equal(2, result.Responses.Count);
+        using var document = JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result));
+        Assert.True(document.RootElement.TryGetProperty("Video", out _));
     }
 
     [Fact]

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Vercel.AI.Operations;
 
@@ -424,6 +425,7 @@ public sealed class VideoCallInputs
 }
 
 /// <summary>Result of <see cref="GenerateVideo.GenerateVideoAsync"/>.</summary>
+[JsonConverter(typeof(GenerateVideoResultConverter))]
 public sealed class GenerateVideoResult
 {
     /// <summary>Creates a result.</summary>
@@ -1076,5 +1078,39 @@ public static class GetVideoStatus
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoStatusAsync(new VideoModelCall(null, 0, null, null, null, null, null, null, null, null, null, OperationJson.Parse("{}"), headers, ct, operation: request.Operation), ct), null).ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Writes a <see cref="GenerateVideoResult"/> without evaluating the throwing <see cref="GenerateVideoResult.Video"/> getter on upload-only results.
+/// The <c>video</c> property is written only when <see cref="GenerateVideoResult.Videos"/> is not empty, as upstream keeps it non-enumerable then.
+/// </summary>
+internal sealed class GenerateVideoResultConverter : JsonConverter<GenerateVideoResult>
+{
+    public override GenerateVideoResult Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        throw new NotSupportedException("GenerateVideoResult is write-only for JSON.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, GenerateVideoResult value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        if (value.Videos.Count > 0)
+        {
+            Property(writer, options, "Video", value.Video);
+        }
+
+        Property(writer, options, "Videos", value.Videos);
+        Property(writer, options, "UploadedVideos", value.UploadedVideos);
+        Property(writer, options, "Warnings", value.Warnings);
+        Property(writer, options, "Responses", value.Responses);
+        Property(writer, options, "ProviderMetadata", value.ProviderMetadata);
+        writer.WriteEndObject();
+    }
+
+    private static void Property<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
+    {
+        writer.WritePropertyName(options.PropertyNamingPolicy?.ConvertName(name) ?? name);
+        JsonSerializer.Serialize(writer, value, options);
     }
 }
