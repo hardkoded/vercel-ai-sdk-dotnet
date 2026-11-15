@@ -25,6 +25,9 @@ public sealed class TestLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; set; } = Vercel.AI.ProviderUtils.UrlSupport.None;
+
     /// <summary>Calls observed by generate and stream.</summary>
     public List<LanguageModelCallOptions> Calls { get; } = new();
 

@@ -134,7 +134,7 @@ public sealed class UiMessageResponseTests
             buffer,
             onError: message =>
             {
-                seen = message;
+                seen = message.Message;
                 return "handled error";
             });
 
@@ -318,7 +318,7 @@ public sealed class UiMessageResponseTests
             },
         });
         using var buffer = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(stream, buffer, onError: message => "handled: " + message);
+        await UIMessageStreamResult.WriteAsync(stream, buffer, onError: error => "handled: " + error.Message);
 
         Assert.Contains("\"errorText\":\"handled: tool failed\"", Body(buffer), StringComparison.Ordinal);
     }

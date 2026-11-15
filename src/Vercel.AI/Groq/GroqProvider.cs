@@ -35,6 +35,11 @@ public sealed class GroqProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
+        options.SupportedUrls ??= new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.*\\z",
+        };
+
         if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
         {
             options.ProviderName = ProviderId;

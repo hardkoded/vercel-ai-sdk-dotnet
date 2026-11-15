@@ -30,6 +30,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["image/*"] = "^https?://.*\\z",
+    };
+
+    /// <inheritdoc />
     public string Provider => _provider.Name;
 
     /// <inheritdoc />

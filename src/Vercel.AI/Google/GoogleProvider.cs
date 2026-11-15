@@ -69,6 +69,38 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     /// <summary>Settings for downloading remote files in tool results before conversion. Null leaves tool-result URLs alone.</summary>
     internal virtual GoogleToolResultDownloadSettings? ToolResultDownloadSettings => null;
 
+    /// <summary>
+    /// URLs a Gemini model reads itself: Generative Language file URLs and YouTube URLs for any media type, plus any https URL
+    /// for the media types in <c>supportedExternalUrlMediaTypes</c> (Gemini models other than 2.0). Maps to <c>getSupportedUrls</c>.
+    /// </summary>
+    internal virtual IReadOnlyDictionary<string, string> GetSupportedUrls(string? modelId)
+    {
+        var baseUrl = System.Text.RegularExpressions.Regex.Escape(Options.BaseUrl);
+        var urls = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["*"] = "^https://generativelanguage\\.googleapis\\.com/v1beta/files/.*\\z"
+                + "|^" + baseUrl + "/files/.*\\z"
+                + "|^https://(?:www\\.)?youtube\\.com/watch\\?v=[\\w-]+(?:&[\\w=&.-]*)?\\z"
+                + "|^https://youtu\\.be/[\\w-]+(?:\\?[\\w=&.-]*)?\\z",
+        };
+        if (modelId is null || (System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-") && !System.Text.RegularExpressions.Regex.IsMatch(modelId, "(^|/)gemini-2\\.0")))
+        {
+            foreach (var mediaType in ExternalUrlMediaTypes)
+            {
+                urls[mediaType] = "^https://.*\\z";
+            }
+        }
+
+        return urls;
+    }
+
+    private static readonly string[] ExternalUrlMediaTypes =
+    {
+        "text/html", "text/css", "text/plain", "text/xml", "text/csv", "text/rtf", "text/javascript", "application/json", "application/pdf",
+        "image/bmp", "image/jpeg", "image/png", "image/webp", "video/mp4", "video/mpeg", "video/quicktime", "video/avi",
+        "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp",
+    };
+
     /// <summary>Gemini Batch API. Downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {

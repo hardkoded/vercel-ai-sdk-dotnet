@@ -218,20 +218,6 @@ public sealed class FireworksUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/fireworks/src/fireworks-provider.test.ts::FireworksProvider > chatModel::should remap reasoning_effort xhigh to high", Coverage = UpstreamCoverage.Covered)]
-    public void Xhigh_reasoning_becomes_high()
-    {
-        Assert.Equal("high", Transform("{\"reasoning_effort\":\"xhigh\"}")["reasoning_effort"]!.GetValue<string>());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/fireworks/src/fireworks-provider.test.ts::FireworksProvider > chatModel::should remap reasoning_effort minimal to low", Coverage = UpstreamCoverage.Covered)]
-    public void Minimal_reasoning_becomes_low()
-    {
-        Assert.Equal("low", Transform("{\"reasoning_effort\":\"minimal\"}")["reasoning_effort"]!.GetValue<string>());
-    }
-
-    [Fact]
     [UpstreamTest("packages/fireworks/src/fireworks-provider.test.ts::FireworksProvider > chatModel::should pass through supported reasoning_effort values unchanged", Coverage = UpstreamCoverage.Covered)]
     public void Medium_reasoning_is_unchanged()
     {

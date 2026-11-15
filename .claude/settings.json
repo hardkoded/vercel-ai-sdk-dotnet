@@ -4,5 +4,28 @@
       "RemoteTrigger",
       "mcp__claude-code-remote__add_repo"
     ]
+  },
+  "extraKnownMarketplaces": {
+    "dotnet-claude-kit": {
+      "source": {
+        "source": "github",
+        "repo": "codewithmukesh/dotnet-claude-kit"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "dotnet-claude-kit@dotnet-claude-kit": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v cwm-roslyn-navigator >/dev/null 2>&1 || dotnet tool install -g CWM.RoslynNavigator >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
   }
 }

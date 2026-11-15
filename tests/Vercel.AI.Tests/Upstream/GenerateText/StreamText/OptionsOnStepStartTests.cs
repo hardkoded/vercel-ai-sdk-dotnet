@@ -63,6 +63,8 @@ public sealed class OptionsOnStepStartTests
 
     private sealed class PromptRecordingModel(ILanguageModel inner, List<IReadOnlyList<ModelMessage>> prompts) : ILanguageModel
     {
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => inner.SpecificationVersion;
 
         public string Provider => inner.Provider;

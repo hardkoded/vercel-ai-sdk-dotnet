@@ -618,9 +618,12 @@ public class GenerateTextOptions
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
 
     /// <summary>
-    /// Custom download function for generated file URLs returned by the model. Pass <see cref="Download.CreateDownload"/> to route
-    /// them through a custom <see cref="DownloadFetch"/>. By default generated file URLs are downloaded with <see cref="Download"/>.
-    /// Generated file URLs are always downloaded, so returning <c>null</c> for one throws a <see cref="DownloadException"/>.
+    /// Custom download function for URLs in the prompt and for generated file URLs returned by the model. Pass <see cref="Download.CreateDownload"/>
+    /// to route them through a custom <see cref="DownloadFetch"/>. By default, prompt files are downloaded when the model does not support
+    /// their URL (see <see cref="ILanguageModel.SupportedUrls"/>), and generated file URLs are downloaded with <see cref="Download"/>.
+    /// The function receives one <see cref="DownloadRequestItem"/> per prompt URL, with <see cref="DownloadRequestItem.IsUrlSupportedByModel"/> set,
+    /// and returns <c>null</c> for a URL the model can read itself. Generated file URLs are always downloaded, so returning <c>null</c>
+    /// for one throws a <see cref="DownloadException"/>.
     /// Maps to <c>experimental_download</c>.
     /// </summary>
     public Func<IReadOnlyList<Vercel.AI.Util.DownloadRequestItem>, Task<IReadOnlyList<Vercel.AI.Util.DownloadResult>>>? ExperimentalDownload { get; set; }
@@ -1337,6 +1340,24 @@ public sealed class ToolErrorPart : TextStreamPart
     public ExecutedTool Result { get; }
 }
 
+/// <summary>A file the model generated. A URL has been downloaded by the time this part is emitted. Maps to the <c>file</c> stream part.</summary>
+public sealed class FilePart : TextStreamPart
+{
+    /// <summary>Creates a file part.</summary>
+    public FilePart(GeneratedFile file, JsonElement? providerMetadata = null)
+        : base("file")
+    {
+        File = file ?? throw new ArgumentNullException(nameof(file));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>The file, with its bytes.</summary>
+    public GeneratedFile File { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>A cited source.</summary>
 public sealed class SourcePart : TextStreamPart
 {
@@ -1458,6 +1479,9 @@ public sealed class ErrorPart : TextStreamPart
 
     /// <summary>Error message.</summary>
     public string Message { get; }
+
+    /// <summary>The error that caused this part, when there is one. Maps to the error part's <c>error</c>.</summary>
+    public Exception? Error { get; init; }
 }
 
 /// <summary>The call was aborted. It is the last part of the stream.</summary>

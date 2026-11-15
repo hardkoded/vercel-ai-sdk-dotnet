@@ -59,7 +59,9 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 });
 ```
 
-The download function is called once per generated file with a one-item batch. The request carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download. The SDK does not validate the URL before it calls your function: `Download.CreateDownload` validates it, so a custom function must do the same.
+`ExperimentalDownload` also handles URLs in the prompt. Before each model call, the SDK checks every file part that has a URL against `ILanguageModel.SupportedUrls` (`supportedUrls` upstream) and passes the batch to the download function with `IsUrlSupportedByModel` set. The function returns `null` for a URL the model reads itself and the bytes for every other URL. The batch is empty when the prompt has no URLs. Without the option, prompt files whose URL the model does not support are downloaded with the default function. The model of the step decides, so a `PrepareStep` model switch changes which URLs are downloaded. Streamed file parts (`FilePart`) are downloaded the same way as generated files, and `StreamTextResult.Files` holds the files of the last step.
+
+For generated files, the download function is called once per file with a one-item batch. The request carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download. The SDK does not validate the URL before it calls your function: `Download.CreateDownload` validates it, so a custom function must do the same.
 
 ## Google Vertex tool-result files and MaaS images
 

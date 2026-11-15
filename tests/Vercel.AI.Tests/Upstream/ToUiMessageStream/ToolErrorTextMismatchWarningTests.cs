@@ -15,7 +15,7 @@ public sealed class ToolErrorTextMismatchWarningTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream > tool error text mismatch warning::";
     private const string Commit = "ceeee29f9a7b7ca8c12a9270a542581bd760bdc7";
-    private const string PartialNote = "The .NET stream parts have no reasoning-start, reasoning-end, text-start, or text-end parts, so the reasoning is one reasoning delta. The onError argument is the formatted error message, not the error object.";
+    private const string PartialNote = "The .NET stream parts have no reasoning-start, reasoning-end, text-start, or text-end parts, so the reasoning is one reasoning delta.";
 
     private static readonly StartStepPart StartStep = new();
 
@@ -75,7 +75,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     [UpstreamTest(Prefix + "does not warn when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
     public async Task Does_not_warn_when_a_provided_onError_does_not_redact_tool_errors()
     {
-        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = message => message, RedactToolErrors = false });
+        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => error.Message, RedactToolErrors = false });
 
         Assert.Empty(logged);
     }
@@ -84,7 +84,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     [UpstreamTest(Prefix + "warns when onError returns a text that differs from the text the model received", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
     public async Task Warns_when_onError_returns_a_text_that_differs_from_the_text_the_model_received()
     {
-        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = message => message });
+        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => error.Message });
 
         Assert.Single(logged);
     }
@@ -93,7 +93,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     [UpstreamTest(Prefix + "does not warn when onError returns the text the model received", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
     public async Task Does_not_warn_when_onError_returns_the_text_the_model_received()
     {
-        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = message => "Error: " + message });
+        var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => "Error: " + error.Message });
 
         Assert.Empty(logged);
     }

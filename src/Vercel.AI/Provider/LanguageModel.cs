@@ -1753,6 +1753,42 @@ public abstract class LanguageModelStreamPart
     public JsonElement? Chunk { get; internal set; }
 }
 
+/// <summary>
+/// A file in a model stream. The data is inline bytes or a URL the SDK downloads before it emits the file. Maps to the <c>file</c> stream part.
+/// </summary>
+public sealed class FileStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a file part with inline bytes.</summary>
+    public FileStreamPart(byte[] data, string mediaType, JsonElement? providerMetadata = null)
+        : base("file")
+    {
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Creates a file part that points at a URL.</summary>
+    public FileStreamPart(Uri url, string mediaType, JsonElement? providerMetadata = null)
+        : base("file")
+    {
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Inline bytes, or null when the file is a URL.</summary>
+    public byte[]? Data { get; }
+
+    /// <summary>File URL, or null when the bytes are inline.</summary>
+    public Uri? Url { get; }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>A text delta.</summary>
 public sealed class TextDeltaStreamPart : LanguageModelStreamPart
 {
@@ -2262,6 +2298,12 @@ public interface ILanguageModel
 
     /// <summary>Model id.</summary>
     string ModelId { get; }
+
+    /// <summary>
+    /// URLs the model can read itself, keyed by media type pattern (such as <c>image/*</c>). Each value is a regular expression that a URL
+    /// must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to <c>supportedUrls</c>.
+    /// </summary>
+    IReadOnlyDictionary<string, string> SupportedUrls { get; }
 
     /// <summary>Generates a complete result.</summary>
     Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken);

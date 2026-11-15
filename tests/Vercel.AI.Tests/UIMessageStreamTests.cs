@@ -340,6 +340,8 @@ public sealed class UIMessageStreamTests
             _release = release ?? throw new ArgumentNullException(nameof(release));
         }
 
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "test";

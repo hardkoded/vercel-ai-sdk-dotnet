@@ -263,6 +263,8 @@ public sealed class ResourceCleanupTests
 
     private sealed class ResourceModel(CountingResource resource) : ILanguageModel
     {
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "test";
