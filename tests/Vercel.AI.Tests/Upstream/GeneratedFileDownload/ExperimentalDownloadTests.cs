@@ -4,6 +4,7 @@
 
 using System.Text;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Provider;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.GeneratedFileDownload;
@@ -14,9 +15,11 @@ public sealed class ExperimentalDownloadTests
 {
     private const string Id = "packages/ai/src/generate-text/generated-file-download.test.ts::generated file downloads > experimental_download::";
 
-    [Fact]
-    [UpstreamTest(Id + "downloads %s file URLs through the configured download function instead of global fetch", Coverage = UpstreamCoverage.Partial, Note = "generate mode only: the port has no stream part that carries a file URL", Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
-    public async Task Downloads_generate_file_urls_through_the_configured_download_function_instead_of_global_fetch()
+    [Theory]
+    [InlineData("generate")]
+    [InlineData("stream")]
+    [UpstreamTest(Id + "downloads %s file URLs through the configured download function instead of global fetch", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Downloads_file_urls_through_the_configured_download_function_instead_of_global_fetch(string mode)
     {
         var globalFetches = 0;
         var calls = new List<IReadOnlyList<DownloadRequestItem>>();
@@ -28,27 +31,42 @@ public sealed class ExperimentalDownloadTests
                 globalFetches++;
                 return Task.FromResult(new DownloadResponse(500, "Unexpected", null, null));
             };
-            var result = await GeneratedFileDownloadTests.Client().GenerateTextAsync(new GenerateTextOptions
+            Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> download = requests =>
             {
-                Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
-                Prompt = "image",
-                ExperimentalDownload = requests =>
+                calls.Add(requests);
+                return Task.FromResult<IReadOnlyList<DownloadResult>>(requests.Select(_ => new DownloadResult(Encoding.UTF8.GetBytes("Hello World"), "text/plain")).ToArray());
+            };
+            IReadOnlyList<GeneratedFile> files;
+            if (mode == "generate")
+            {
+                files = (await GeneratedFileDownloadTests.Client().GenerateTextAsync(new GenerateTextOptions
                 {
-                    calls.Add(requests);
-                    return Task.FromResult<IReadOnlyList<DownloadResult>>(requests.Select(_ => new DownloadResult(Encoding.UTF8.GetBytes("Hello World"), "text/plain")).ToArray());
-                },
-            });
+                    Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
+                    Prompt = "image",
+                    ExperimentalDownload = download,
+                })).Files;
+            }
+            else
+            {
+                files = await GeneratedFileDownloadTests.Client().StreamTextAsync(new StreamTextOptions
+                {
+                    Model = GeneratedFileDownloadTests.FileModel("https://example.com/generated.txt"),
+                    Prompt = "image",
+                    ExperimentalDownload = download,
+                }).Files;
+            }
 
-            Assert.Equal(Encoding.UTF8.GetBytes("Hello World"), result.Files[0].Data);
+            Assert.Equal(Encoding.UTF8.GetBytes("Hello World"), files[0].Data);
         }
         finally
         {
             Download.Fetch = previous;
         }
 
-        // The prompt has no URLs, so the port does not call the download function for it.
-        var call = Assert.Single(calls);
-        var request = Assert.Single(call);
+        // The prompt has no URLs, so its batch is empty.
+        Assert.Equal(2, calls.Count);
+        Assert.Empty(calls[0]);
+        var request = Assert.Single(calls[1]);
         Assert.Equal(new Uri("https://example.com/generated.txt"), request.Url);
         Assert.False(request.IsUrlSupportedByModel);
         Assert.Equal(0, globalFetches);

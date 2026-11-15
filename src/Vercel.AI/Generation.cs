@@ -165,6 +165,7 @@ internal static class Generation
                 }
 
                 callOptions.ProviderOptions = MergeProviderOptions(callOptions.ProviderOptions, update?.ProviderOptions);
+                callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
 
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
@@ -367,6 +368,7 @@ internal static class Generation
                 LanguageModelStreamResult streamResult;
                 try
                 {
+                    callOptions.Prompt = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(callOptions.Prompt, current.SupportedUrls, options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
                     streamResult = await current.DoStreamAsync(callOptions, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
@@ -562,6 +564,13 @@ internal static class Generation
                                 var generatedSource = new GeneratedSource(source.Id, source.Url, source.Title, source.ProviderMetadata);
                                 sources.Add(generatedSource);
                                 buffer.Add(new SourcePart(generatedSource));
+                                break;
+                            case FileStreamPart filePart:
+                                var generatedFile = filePart.Url is null
+                                    ? new GeneratedFile(filePart.Data!, filePart.MediaType)
+                                    : await ResolveGeneratedFileDataAsync(new GeneratedFileUrl(filePart.Url, filePart.MediaType), options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
+                                toolContent.Add(generatedFile);
+                                buffer.Add(new FilePart(generatedFile, filePart.ProviderMetadata));
                                 break;
                             case FinishStreamPart done:
                                 finish = done.FinishReason;
@@ -2434,6 +2443,7 @@ public sealed class StreamTextResult
         FinishReason = finishReason;
         Usage = usage;
         Steps = steps;
+        Files = FromFinalStep(steps, step => step.Files);
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
         ResponseMessages = AllResponseMessages(steps);
@@ -2441,6 +2451,7 @@ public sealed class StreamTextResult
         Output = FromSteps(steps, output);
 
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
+        _ = Files.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Response.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = ResponseMessages.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
@@ -2510,6 +2521,9 @@ public sealed class StreamTextResult
 
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
+
+    /// <summary>Files generated in the last step. Completes when the stream finishes. Maps to <c>files</c>.</summary>
+    public Task<IReadOnlyList<GeneratedFile>> Files { get; }
 
     /// <summary>
     /// Additional request information of the last step. <see cref="LanguageModelRequestMetadata.Body"/> and

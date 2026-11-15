@@ -224,6 +224,15 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     }
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["image/*"] = "^https?://.+\\z",
+        ["application/pdf"] = "^https?://.+\\z",
+        ["audio/*"] = "^https?://.+\\z",
+        ["video/*"] = "^https?://(www\\.)?youtube\\.com/watch\\?v=.+\\z|^https?://youtu\\.be/.+\\z|^gs://.+\\z",
+    };
+
+    /// <inheritdoc />
     public string ModelId { get; }
 
     /// <inheritdoc />

@@ -43,6 +43,9 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => UrlSupport.None;
+
+    /// <inheritdoc />
     public string Provider => _provider.Name + ".completion";
 
     /// <inheritdoc />

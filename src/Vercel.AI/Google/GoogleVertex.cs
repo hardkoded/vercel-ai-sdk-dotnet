@@ -267,6 +267,12 @@ public sealed class GoogleVertexProvider : GoogleProvider
         true,
         Vertex.DownloadFetch);
 
+    /// <summary>Vertex models read any http(s) URL and Google Cloud Storage URLs themselves.</summary>
+    internal override IReadOnlyDictionary<string, string> GetSupportedUrls(string? modelId)
+    {
+        return new Dictionary<string, string>(StringComparer.Ordinal) { ["*"] = "^https?://.*\\z|^gs://.*\\z" };
+    }
+
     /// <summary>Creates a provider.</summary>
     public static GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)
     {

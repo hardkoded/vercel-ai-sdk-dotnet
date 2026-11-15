@@ -131,6 +131,8 @@ internal static class OptionsTimeoutSupport
 
         public Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>>? Stream { get; set; }
 
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "mock-provider";

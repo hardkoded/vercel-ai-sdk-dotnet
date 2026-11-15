@@ -109,6 +109,8 @@ public sealed class ProviderExecutedToolResultReplayAcrossStepsTests
 
         public List<IReadOnlyList<ModelMessage>> Prompts { get; } = new();
 
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "test";

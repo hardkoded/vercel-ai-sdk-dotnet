@@ -178,6 +178,12 @@ public class OpenAICompatibleOptions
     public HttpClient? DownloadHttpClient { get; set; }
 
     /// <summary>
+    /// URLs the chat model reads itself, as regular expression text per media type. Maps to the <c>supportedUrls</c> config.
+    /// When it is null, no URL is supported and prompt file URLs are downloaded.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? SupportedUrls { get; set; }
+
+    /// <summary>
     /// Returns a copy. Providers change the copy, so the options the caller passed in are left as they were.
     /// </summary>
     public OpenAICompatibleOptions Copy()

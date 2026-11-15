@@ -228,6 +228,12 @@ public sealed class GatewayLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
+    {
+        ["*/*"] = ".*",
+    };
+
+    /// <inheritdoc />
     public string Provider => GatewayProvider.ProviderId;
 
     /// <inheritdoc />

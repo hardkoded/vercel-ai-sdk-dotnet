@@ -48,6 +48,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => _provider.Options.SupportedUrls ?? UrlSupport.None;
+
+    /// <inheritdoc />
     public string Provider => _providerId;
 
     /// <summary>Provider-options key. The segment before the first dot of <see cref="Provider"/>.</summary>

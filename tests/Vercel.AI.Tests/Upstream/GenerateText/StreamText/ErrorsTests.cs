@@ -340,6 +340,8 @@ public sealed class ErrorsTests
     private sealed class MockLanguageModel(
         Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> doStream) : ILanguageModel
     {
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "test";
