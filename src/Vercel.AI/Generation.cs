@@ -1762,7 +1762,7 @@ internal static class Generation
                         }
                         else if (part is AssistantToolApprovalRequestPart request)
                         {
-                            parts.Add(new ApprovalRequestPart(request.ApprovalId, request.ToolCallId) { Signature = request.Signature, Reason = request.Reason });
+                            parts.Add(new ApprovalRequestPart(request.ApprovalId, request.ToolCallId) { Signature = request.Signature, Reason = request.Reason, InputSchemaInput = request.InputSchemaInput });
                         }
                     }
 
