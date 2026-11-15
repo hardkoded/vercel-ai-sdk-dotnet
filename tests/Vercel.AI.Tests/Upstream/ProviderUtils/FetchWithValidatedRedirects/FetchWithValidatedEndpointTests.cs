@@ -69,6 +69,123 @@ public sealed class FetchWithValidatedEndpointTests
         Assert.Empty(other);
     }
 
+    [Theory]
+    [InlineData("default")]
+    [InlineData("forwarded global")]
+    [UpstreamTest(Prefix + "rejects the runtime fetch with strict DNS validation enabled (%s)", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Rejects_the_runtime_fetch_with_strict_DNS_validation_enabled(string mode)
+    {
+        var calls = 0;
+        DownloadFetch runtimeFetch = (url, request) =>
+        {
+            calls++;
+            return Task.FromResult(OkResponse());
+        };
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = runtimeFetch;
+            var error = await Assert.ThrowsAsync<DownloadError>(delegate
+            {
+                return Download.FetchWithValidatedEndpointAsync(
+                    "https://example.com/metadata",
+                    fetch: mode == "default" ? null : runtimeFetch,
+                    requireDnsValidation: true);
+            });
+            Assert.Contains("This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs", error.Message);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "uses a custom fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Uses_a_custom_fetch_with_strict_DNS_validation_enabled()
+    {
+        var runtimeCalls = 0;
+        var customCalls = 0;
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = (url, request) =>
+            {
+                runtimeCalls++;
+                return Task.FromResult(OkResponse());
+            };
+            await Download.FetchWithValidatedEndpointAsync(
+                "https://example.com/metadata",
+                fetch: (url, request) =>
+                {
+                    customCalls++;
+                    return Task.FromResult(OkResponse());
+                },
+                requireDnsValidation: true);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Equal(1, customCalls);
+        Assert.Equal(0, runtimeCalls);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "allows the trusted origin through the runtime fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Allows_the_trusted_origin_through_the_runtime_fetch_with_strict_DNS_validation_enabled()
+    {
+        var calls = 0;
+        var previous = Download.Fetch;
+        try
+        {
+            Download.Fetch = (url, request) =>
+            {
+                calls++;
+                return Task.FromResult(OkResponse());
+            };
+            await Download.FetchWithValidatedEndpointAsync(
+                "http://localhost:3000/metadata",
+                trustedOrigin: "http://localhost:3000",
+                requireDnsValidation: true);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "preserves browser fetch with strict DNS validation enabled", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Preserves_browser_fetch_with_strict_DNS_validation_enabled()
+    {
+        var calls = 0;
+        var previous = Download.Fetch;
+        var previousBrowser = Download.IsBrowser;
+        try
+        {
+            Download.IsBrowser = true;
+            Download.Fetch = (url, request) =>
+            {
+                calls++;
+                return Task.FromResult(OkResponse());
+            };
+            await Download.FetchWithValidatedEndpointAsync("https://example.com/metadata", requireDnsValidation: true);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+            Download.IsBrowser = previousBrowser;
+        }
+
+        Assert.Equal(1, calls);
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "uses redirect: error for credential-bearing requests", Coverage = UpstreamCoverage.Covered)]
     public async Task Uses_redirect_error_for_credential_bearing_requests()

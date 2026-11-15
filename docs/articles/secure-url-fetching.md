@@ -42,6 +42,8 @@ var response = await Download.FetchWithValidatedEndpointAsync(
     new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
 ```
 
+Pass `requireDnsValidation: true` when the endpoint comes from untrusted data, as in MCP OAuth. Then an untrusted URL is rejected with a `DownloadError` unless you pass a custom `fetch` that validates DNS at connection time and pins the connection. The default fetch and `Download.Fetch` do not count, even when you pass `Download.Fetch` explicitly. A URL on `trustedOrigin` skips the check, and so does a runtime where `Download.IsBrowser` is true.
+
 ## Generated file downloads
 
 `GenerateTextOptions.ExperimentalDownload` (`experimental_download` upstream) also handles generated file URLs that the model returns, for example an image URL from an image-generation response. Generated file URLs are always downloaded, so a `null` result for one throws a `DownloadException`. Without the option, they are downloaded with `Download.GetAsync` and the default fetch. Pass `Download.CreateDownload(fetch: ...)` to use your own transport.

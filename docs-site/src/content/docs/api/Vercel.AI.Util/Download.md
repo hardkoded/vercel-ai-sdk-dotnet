@@ -125,13 +125,13 @@ Creates a download function with configurable options. Maps to `createDownload`.
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L216)
 
 <a id="Vercel_AI_Util_Download_FetchWithValidatedEndpointAsync_"></a>
-<a id="Vercel_AI_Util_Download_FetchWithValidatedEndpointAsync_System_String_Vercel_AI_Util_DownloadRequest_Vercel_AI_Util_DownloadFetch_System_String_System_String_"></a>
+<a id="Vercel_AI_Util_Download_FetchWithValidatedEndpointAsync_System_String_Vercel_AI_Util_DownloadRequest_Vercel_AI_Util_DownloadFetch_System_String_System_String_System_Boolean_"></a>
 
-### FetchWithValidatedEndpointAsync(string, DownloadRequest?, DownloadFetch?, string?, string)
+### FetchWithValidatedEndpointAsync(string, DownloadRequest?, DownloadFetch?, string?, string, bool)
 
 
 ```csharp
-public static Task<DownloadResponse> FetchWithValidatedEndpointAsync(string url, DownloadRequest? request = null, DownloadFetch? fetch = null, string? trustedOrigin = null, string redirect = "error")
+public static Task<DownloadResponse> FetchWithValidatedEndpointAsync(string url, DownloadRequest? request = null, DownloadFetch? fetch = null, string? trustedOrigin = null, string redirect = "error", bool requireDnsValidation = false)
 ```
 
 
@@ -147,6 +147,7 @@ Fetches one validated URL without following redirects. A redirect is rejected by
 | `fetch` | [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/) | Fetch used for the request. Defaults to [Fetch](#Vercel_AI_Util_Download_Fetch), then the built-in fetch. |
 | `trustedOrigin` | [string](https://learn.microsoft.com/dotnet/api/system.string) | A developer-configured origin whose requests skip validation. Never derive it from response data. |
 | `redirect` | [string](https://learn.microsoft.com/dotnet/api/system.string) | `error` or `manual`. |
+| `requireDnsValidation` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) | Reject untrusted URLs on server runtimes unless an explicit custom `fetch` provides connect-time DNS validation and connection pinning. The runtime's default fetch, including [Fetch](#Vercel_AI_Util_Download_Fetch), does not satisfy this requirement. |
 
 **Returns:** [Task&lt;DownloadResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
@@ -154,7 +155,7 @@ Fetches one validated URL without following redirects. A redirect is rejected by
 
 | Type | Condition |
 | --- | --- |
-| [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The URL is unsafe. |
+| [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The URL is unsafe, or `requireDnsValidation` is set and no custom fetch was passed. |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L368)
 
