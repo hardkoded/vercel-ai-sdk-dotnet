@@ -17,10 +17,10 @@ public sealed class ApprovedToolContinuationTests
     private const string Id = "packages/ai/src/generate-text/tool-approval-follow-up.test.ts::%s approved tool continuation::";
 
     [Theory]
-    [InlineData("generateText", false)]
-    [InlineData("generateText", true)]
+    [InlineData(false)]
+    [InlineData(true)]
     [UpstreamTest(Id + "should isolate in-place refinement during signed approval replay (schema input supplied: %s)", Coverage = UpstreamCoverage.Partial, Note = "A JsonElement is immutable, so a refineToolInput function cannot change its input in place. It returns a changed input instead, which has the same effect on the comparison with the approved input. The streamText half is not ported: StreamTextAsync does not process approval responses in the history yet.")]
-    public async Task Should_isolate_in_place_refinement_during_signed_approval_replay(string api, bool hasInputSchemaInput)
+    public async Task Should_isolate_in_place_refinement_during_signed_approval_replay(bool hasInputSchemaInput)
     {
         const string secret = "test-secret";
         const string input = "{\"counter\":{\"value\":2}}";
@@ -64,41 +64,16 @@ public sealed class ApprovedToolContinuationTests
             },
         };
 
-        IReadOnlyList<ModelMessage> responseMessages;
-        if (api == "generateText")
+        var result = await Client().GenerateTextAsync(new GenerateTextOptions
         {
-            var result = await Client().GenerateTextAsync(new GenerateTextOptions
-            {
-                Model = model,
-                Tools = new[] { tool },
-                ExperimentalToolApprovalSecret = secret,
-                RefineToolInput = refine,
-                ToolApproval = new ToolApprovalConfiguration { { "record", "user-approval" } },
-                Messages = messages,
-            });
-            responseMessages = result.ResponseMessages;
-        }
-        else
-        {
-            var errors = new List<Exception>();
-            var result = Client().StreamTextAsync(new StreamTextOptions
-            {
-                Model = model,
-                Tools = new[] { tool },
-                ExperimentalToolApprovalSecret = secret,
-                RefineToolInput = refine,
-                ToolApproval = new ToolApprovalConfiguration { { "record", "user-approval" } },
-                Messages = messages,
-                OnError = (error, _) =>
-                {
-                    errors.Add(error);
-                    return Task.CompletedTask;
-                },
-            });
-            await result.ConsumeStreamAsync();
-            Assert.Empty(errors);
-            responseMessages = await result.ResponseMessages;
-        }
+            Model = model,
+            Tools = new[] { tool },
+            ExperimentalToolApprovalSecret = secret,
+            RefineToolInput = refine,
+            ToolApproval = new ToolApprovalConfiguration { { "record", "user-approval" } },
+            Messages = messages,
+        });
+        var responseMessages = result.ResponseMessages;
 
         Assert.Equal(hasInputSchemaInput ? 1 : 0, executed.Count);
         if (hasInputSchemaInput)
