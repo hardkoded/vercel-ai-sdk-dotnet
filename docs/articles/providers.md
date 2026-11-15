@@ -304,6 +304,22 @@ Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `gene
 
 On Baseten Model APIs, `deepseek-ai/DeepSeek-V4-Pro-0813` can return an empty answer when JSON mode and reasoning are combined. When reasoning is enabled (the default), `BasetenProvider` puts JSON instructions and your schema in a system message and omits `response_format`. It emits a `compatibility` warning for `responseFormat` because the server does not constrain the output; the SDK still validates the result. Set reasoning to `none` to use native JSON Schema enforcement instead. Dedicated deployments (`ModelUrl`) are not affected.
 
+## Videos delivered to your storage
+
+A video model can deliver a finished video straight to storage you manage, for example through a signed upload URL. It reports that with a `VideoOutput` of type `uploaded`. `GenerateVideo` does not download it and does not add it to `GenerateVideoResult.Videos`. `GenerateVideoResult.UploadedVideos` counts those videos.
+
+An upload-only call succeeds with an empty `Videos` list. Reading `GenerateVideoResult.Video` on such a result throws `NoVideoGeneratedException`, so use `UploadedVideos` instead. A call that returns neither videos nor uploads still throws `NoVideoGeneratedException`. A result that mixes both has the downloaded videos in `Videos`, and `Video` returns the first of them.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(request);
+if (result.Videos.Count == 0)
+{
+    Console.WriteLine("Videos delivered by the provider: " + result.UploadedVideos);
+}
+```
+
+An `uploaded` output never carries the signed upload URL. The xAI and Gateway video models are not ported yet, so no built-in model returns `uploaded` today. Implement `IVideoCaller` to return it.
+
 ## HeyGen
 
 The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It also supports [HeyGen Decision](#decision-models) models, which classify, check, and score text, images, and video. HeyGen's avatar, voice, translation, and video editing APIs are not included.

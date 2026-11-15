@@ -296,7 +296,13 @@ public sealed class NoVideoGeneratedException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public NoVideoGeneratedException(IReadOnlyList<ProviderResponse> responses)
-        : base("No video generated.")
+        : this(responses, null)
+    {
+    }
+
+    /// <summary>Creates the exception with a custom message.</summary>
+    public NoVideoGeneratedException(IReadOnlyList<ProviderResponse> responses, string? message)
+        : base(message ?? "No video generated.")
     {
         Responses = responses ?? Array.Empty<ProviderResponse>();
     }

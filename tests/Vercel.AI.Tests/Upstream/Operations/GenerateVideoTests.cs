@@ -17,6 +17,70 @@ public sealed class GenerateVideoTests
     private const string Mp4 = "AAAAIGZ0eXBpc29tAAACAGlzb20iaXNvMgAAAAhmcmVl";
 
     [Fact]
+    [UpstreamTest(Video + "::returns upload confirmations without downloading or synthesizing files", Coverage = UpstreamCoverage.Partial)]
+    public async Task Returns_upload_confirmations_without_downloading_or_synthesizing_files()
+    {
+        var downloads = 0;
+        var model = new VideoFake
+        {
+            Result = new VideoModelResult(new[] { new VideoOutput("uploaded", mediaType: "video/mp4") }, new[] { OperationWarning.Other("upload warning") }, OperationJson.Parse("{\"testProvider\":{\"requestId\":\"uploaded-1\"}}")),
+        };
+        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+        {
+            Model = model,
+            Prompt = new VideoPrompt("a cat"),
+            Download = (_, _) =>
+            {
+                downloads++;
+                throw new InvalidOperationException("must not download");
+            },
+        });
+        Assert.Empty(result.Videos);
+        Assert.Equal(1, result.UploadedVideos);
+        Assert.Equal(0, downloads);
+        Assert.Equal("uploaded-1", result.ProviderMetadata.GetProperty("testProvider").GetProperty("requestId").GetString());
+        Assert.Contains(result.Warnings, warning => warning.Message == "upload warning");
+        Assert.Single(result.Responses);
+        var error = Assert.Throws<NoVideoGeneratedException>(() => result.Video);
+        Assert.Contains("Use uploadedVideos instead of video.", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(Video + "::counts uploads alongside downloadable videos across calls", Coverage = UpstreamCoverage.Partial)]
+    public async Task Counts_uploads_alongside_downloadable_videos_across_calls()
+    {
+        var call = 0;
+        var model = new VideoFake
+        {
+            MaxVideosPerCall = 1,
+            Next = () => ++call == 1 ? new VideoModelResult(new[] { new VideoOutput("uploaded", mediaType: "video/mp4") }) : Clip(),
+        };
+        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = model, Prompt = new VideoPrompt("a cat"), N = 2 });
+        Assert.Equal(1, result.UploadedVideos);
+        Assert.Single(result.Videos);
+        Assert.Equal(Mp4, result.Video.Base64);
+        Assert.Equal(2, result.Responses.Count);
+    }
+
+    [Fact]
+    [UpstreamTest(Video + "::accepts uploaded outcomes through the asynchronous start/status flow", Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_uploaded_outcomes_through_the_asynchronous_start_status_flow()
+    {
+        var downloads = 0;
+        var model = new VideoFake { CanGenerate = false, CanStart = true, CanStatus = true, StatusVideos = new[] { new VideoOutput("uploaded", mediaType: "video/mp4") } };
+        var request = Poll(model);
+        request.Download = (_, _) =>
+        {
+            downloads++;
+            throw new InvalidOperationException("must not download");
+        };
+        var result = await GenerateVideo.GenerateVideoAsync(request);
+        Assert.Equal(1, result.UploadedVideos);
+        Assert.Empty(result.Videos);
+        Assert.Equal(0, downloads);
+    }
+
+    [Fact]
     [UpstreamTest(Video + "::should send args to doGenerate", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_arguments_to_do_generate()
     {
@@ -1092,6 +1156,8 @@ public sealed class GenerateVideoTests
 
         public JsonElement? StatusMetadata { get; set; }
 
+        public VideoOutput[]? StatusVideos { get; set; }
+
         public Action? OnStart { get; set; }
 
         public Func<Func<Task<VideoWebhook>>, Task<VideoWebhook>>? WebhookFactory { get; set; }
@@ -1145,7 +1211,7 @@ public sealed class GenerateVideoTests
             }
 
             var status = StatusScript.Length == 0 ? "completed" : StatusScript[Math.Min(_statusIndex++, StatusScript.Length - 1)];
-            var videos = status == "completed" ? new[] { new VideoOutput("base64", data: "AAAAIGZ0eXBpc29tAAACAGlzb20iaXNvMgAAAAhmcmVl", mediaType: "video/mp4") } : Array.Empty<VideoOutput>();
+            var videos = status == "completed" && StatusVideos != null ? StatusVideos : status == "completed" ? new[] { new VideoOutput("base64", data: "AAAAIGZ0eXBpc29tAAACAGlzb20iaXNvMgAAAAhmcmVl", mediaType: "video/mp4") } : Array.Empty<VideoOutput>();
             return new VideoStatusResult(status, videos, warnings: StatusWarnings, providerMetadata: StatusMetadata);
         }
 

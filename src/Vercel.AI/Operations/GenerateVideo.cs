@@ -145,7 +145,7 @@ public sealed class VideoOutput
         MediaType = mediaType;
     }
 
-    /// <summary><c>url</c>, <c>base64</c>, or <c>binary</c>.</summary>
+    /// <summary><c>url</c>, <c>base64</c>, <c>binary</c>, or <c>uploaded</c>. An <c>uploaded</c> output confirms the provider delivered the video to caller-managed storage. It has no URL or bytes, and its URL must never contain a signed upload URL.</summary>
     public string Type { get; }
 
     /// <summary>URL for <c>url</c> outputs.</summary>
@@ -427,22 +427,37 @@ public sealed class VideoCallInputs
 public sealed class GenerateVideoResult
 {
     /// <summary>Creates a result.</summary>
-    public GenerateVideoResult(IReadOnlyList<GeneratedVideo> videos, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata)
+    public GenerateVideoResult(IReadOnlyList<GeneratedVideo> videos, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, int uploadedVideos = 0)
     {
         Videos = videos ?? Array.Empty<GeneratedVideo>();
+        UploadedVideos = uploadedVideos;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
         Responses = responses ?? Array.Empty<ProviderResponse>();
         ProviderMetadata = providerMetadata;
     }
 
-    /// <summary>First video.</summary>
+    /// <summary>
+    /// The first video available to the SDK.
+    /// Throws <see cref="NoVideoGeneratedException"/> when all videos were delivered directly to caller-managed storage. Use <see cref="UploadedVideos"/> for upload-only results.
+    /// </summary>
     public GeneratedVideo Video
     {
-        get { return Videos[0]; }
+        get
+        {
+            if (Videos.Count == 0)
+            {
+                throw new NoVideoGeneratedException(Responses, "Videos were delivered to the upload destination. Use uploadedVideos instead of video.");
+            }
+
+            return Videos[0];
+        }
     }
 
-    /// <summary>All videos.</summary>
+    /// <summary>All videos available to the SDK, excluding videos uploaded by the provider.</summary>
     public IReadOnlyList<GeneratedVideo> Videos { get; }
+
+    /// <summary>Number of videos delivered directly to caller-managed storage. They are not downloaded and are not in <see cref="Videos"/>.</summary>
+    public int UploadedVideos { get; }
 
     /// <summary>Warnings.</summary>
     public IReadOnlyList<OperationWarning> Warnings { get; }
@@ -596,6 +611,7 @@ public static class GenerateVideo
         }).ToArray()).ConfigureAwait(false);
 
         var videos = new List<GeneratedVideo>();
+        var uploadedVideos = 0;
         var warnings = new List<OperationWarning>(inputs.Warnings);
         var responses = new List<ProviderResponse>();
         var metadata = new JsonObject();
@@ -603,6 +619,12 @@ public static class GenerateVideo
         {
             foreach (var video in result.Videos)
             {
+                if (video.Type == "uploaded")
+                {
+                    uploadedVideos++;
+                    continue;
+                }
+
                 videos.Add(await MaterializeAsync(video, request.Download, token).ConfigureAwait(false));
             }
 
@@ -611,7 +633,7 @@ public static class GenerateVideo
             MergeMetadata(metadata, result.ProviderMetadata);
         }
 
-        if (videos.Count == 0)
+        if (videos.Count == 0 && uploadedVideos == 0)
         {
             throw new NoVideoGeneratedException(responses);
         }
@@ -621,7 +643,7 @@ public static class GenerateVideo
             WarningLog.Write(warnings, model.Provider, model.ModelId);
         }
 
-        return new GenerateVideoResult(videos, warnings, responses, OperationJson.Parse(metadata.ToJsonString()));
+        return new GenerateVideoResult(videos, warnings, responses, OperationJson.Parse(metadata.ToJsonString()), uploadedVideos);
     }
 
     /// <summary>Normalizes prompt, frames, and references.</summary>
