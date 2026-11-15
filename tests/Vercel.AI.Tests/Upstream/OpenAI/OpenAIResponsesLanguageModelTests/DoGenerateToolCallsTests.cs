@@ -48,10 +48,14 @@ public sealed class DoGenerateToolCallsTests
         FunctionCall("fc_67caf7f4c1ec8190b27edfb5580cfd31", "call_0NdsJqOS8N3J9l2p0p4WpYU9", "weather", """{"location":"San Francisco"}"""),
         FunctionCall("fc_67caf7f5071c81908209c2909c77af05", "call_gexo0HtjUfmAIW4gjNOgyrcr", "cityAttractions", """{"city":"San Francisco"}"""));
 
-    private static string ParallelToolCallProviderMetadata(int index) =>
-        """{"openai":{"parallelToolCall":{"itemId":"fc_parallel","toolCallId":"call_parallel","toolName":"parallel","input":"""
-        + System.Text.Json.JsonSerializer.Serialize(ParallelToolCallInput)
-        + ""","index":""" + index + ""","count":2}}}""";
+    private static string ParallelToolCallProviderMetadata(int index)
+    {
+        var input = index == 0
+            ? "\"input\":" + System.Text.Json.JsonSerializer.Serialize(ParallelToolCallInput) + ","
+            : string.Empty;
+        return "{\"openai\":{\"parallelToolCall\":{\"itemId\":\"fc_parallel\",\"toolCallId\":\"call_parallel\",\"toolName\":\"parallel\","
+            + input + "\"index\":" + index + ",\"count\":2}}}";
+    }
 
     [Fact]
     [UpstreamTest(

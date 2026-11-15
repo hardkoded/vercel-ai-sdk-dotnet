@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Extracts typed fields from text with an Anthropic extraction model.</Description>
+  </PropertyGroup>
+</Project>

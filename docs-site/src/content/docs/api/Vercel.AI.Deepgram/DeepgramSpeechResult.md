@@ -23,7 +23,7 @@ Synthesized Deepgram audio.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L156)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L160)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a speech result.
 | `response` | [DeepgramResponse](/api/Vercel.AI.Deepgram/DeepgramResponse/) |  |
 | `providerMetadata` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L159)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L163)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L174)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_MediaType_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_MediaType"></a>
@@ -87,7 +87,7 @@ Response media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L177)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_ProviderMetadata"></a>
@@ -104,7 +104,7 @@ public JsonElement ProviderMetadata { get; }
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L189)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_RequestBody_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_RequestBody"></a>
@@ -121,7 +121,7 @@ JSON request body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L183)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_Response_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_Response"></a>
@@ -138,7 +138,7 @@ Response metadata.
 
 **Value:** [DeepgramResponse](/api/Vercel.AI.Deepgram/DeepgramResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L186)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechResult_Warnings"></a>
@@ -155,4 +155,4 @@ Warnings for ignored or adjusted settings.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L180)

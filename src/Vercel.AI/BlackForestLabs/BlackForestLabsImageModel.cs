@@ -24,6 +24,10 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     private const int DefaultPollIntervalMillis = 500;
     private const int DefaultPollTimeoutMillis = 60000;
 
+    // Webhook jobs can answer get_result with "Task not found" for a moment after submission. Cap those retries
+    // separately from the overall poll timeout: at the default 500ms interval this gives the job about 10s to register.
+    private const int MaxTaskNotFoundAttempts = 20;
+
     private static readonly Regex LegacyFamily = new Regex("^flux-[12](?:[.-]|$)", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     private static readonly string[] Flux3AspectRatios =
@@ -167,12 +171,18 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
             throw Failed(exception, submitUrl);
         }
 
-        using var submit = ParseSubmit(submitted.Body);
+        using var submit = ParseSubmit(submitted.Body, allowMissingPollingUrl: true);
         var root = submit.RootElement;
-        var pollUrl = root.GetProperty("polling_url").GetString()!;
+        // Black Forest Labs answers with a webhook-shaped response (no polling_url) when a webhook is registered.
+        // The task can still be polled through the documented get_result endpoint on the configured base URL.
+        var pollingUrl = root.TryGetProperty("polling_url", out var pollingUrlElement) && pollingUrlElement.ValueKind == JsonValueKind.String
+            ? pollingUrlElement.GetString()
+            : null;
+        var usesGetResultFallback = pollingUrl == null;
+        var pollUrl = pollingUrl ?? baseUrl + "/get_result";
         var requestId = root.GetProperty("id").GetString()!;
 
-        var polled = await PollForImageUrlAsync(pollUrl, requestId, baseUrl, headers, options, cancellationToken).ConfigureAwait(false);
+        var polled = await PollForImageUrlAsync(pollUrl, requestId, usesGetResultFallback, baseUrl, headers, options, cancellationToken).ConfigureAwait(false);
 
         var baseHost = new Uri(baseUrl).Host;
         var useCustomDownloadHeaders = ProviderValues.IsSameOrigin(polled.ImageUrl, baseUrl)
@@ -362,6 +372,7 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
     private async Task<PolledImage> PollForImageUrlAsync(
         string pollUrl,
         string requestId,
+        bool allowTaskNotFound,
         string baseUrl,
         IReadOnlyDictionary<string, string?> headers,
         BflOptions options,
@@ -378,6 +389,22 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         var userAgentOnly = UserAgentOnly(headers);
         using var timeout = new CancellationTokenSource(pollTimeoutMillis);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        string? lastStatus = null;
+        var taskNotFoundAttempts = 0;
+        AiSdkException TaskNotFoundError() =>
+            new AiSdkException("Black Forest Labs task " + requestId + " was not found via get_result before timing out");
+
+        // Record "Task not found" answers so a task that never appears is reported as such, not as a generic timeout.
+        void TrackTaskNotFound()
+        {
+            lastStatus = "Task not found";
+            taskNotFoundAttempts += 1;
+            if (taskNotFoundAttempts >= MaxTaskNotFoundAttempts)
+            {
+                throw TaskNotFoundError();
+            }
+        }
+
         try
         {
             while (true)
@@ -397,10 +424,20 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                 }
                 catch (ApiException exception)
                 {
-                    throw Failed(exception, url.AbsoluteUri);
+                    var failure = Failed(exception, url.AbsoluteUri);
+                    // Webhook jobs are registered asynchronously: get_result can briefly answer 404 "Task not found".
+                    if (allowTaskNotFound && IsTaskNotFound(failure))
+                    {
+                        TrackTaskNotFound();
+                        await Task.Delay(pollIntervalMillis, linked.Token).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    throw failure;
                 }
 
                 using var document = ParsePoll(response.Body, out var status);
+                lastStatus = status;
                 if (status == "Ready")
                 {
                     if (document.RootElement.TryGetProperty("result", out var result)
@@ -418,6 +455,13 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
                     throw new AiSdkException("Black Forest Labs poll response is Ready but missing result.sample");
                 }
 
+                if (status == "Task not found" && allowTaskNotFound)
+                {
+                    TrackTaskNotFound();
+                    await Task.Delay(pollIntervalMillis, linked.Token).ConfigureAwait(false);
+                    continue;
+                }
+
                 if (status == "Error" || status == "Failed")
                 {
                     throw new AiSdkException("Black Forest Labs generation failed.");
@@ -433,7 +477,9 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         }
         catch (OperationCanceledException) when (timeout.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            throw new AiSdkException("Black Forest Labs generation timed out.");
+            throw lastStatus == "Task not found"
+                ? TaskNotFoundError()
+                : new AiSdkException("Black Forest Labs generation timed out.");
         }
     }
 

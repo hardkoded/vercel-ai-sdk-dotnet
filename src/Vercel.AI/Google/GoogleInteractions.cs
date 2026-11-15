@@ -5,6 +5,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Google;
 
@@ -317,11 +319,13 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(LanguageModelCallOptions options)
     {
         var warnings = new List<CallWarning>();
-        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high");
+        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high", "xhigh");
+        var reasoningWarnings = new List<ModelWarning>();
         var thinkingSummaries = EnumOption(options, "thinkingSummaries", "auto", "none");
         var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
         var previousInteractionId = StringOption(options, "previousInteractionId");
         var store = Store(options);
+        var labels = LabelsOption(options);
 
         if (!_isAgent)
         {
@@ -363,6 +367,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         }
 
         input[_isAgent ? "agent" : "model"] = ModelId;
+        GoogleJson.Set(input, "labels", labels);
         GoogleJson.Set(input, "response_format", responseFormat);
         GoogleJson.Set(input, "previous_interaction_id", previousInteractionId);
         GoogleJson.Set(input, "service_tier", serviceTier);
@@ -383,6 +388,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             AddIf(dropped, options.Seed != null, "seed");
             AddIf(dropped, options.StopSequences is { Count: > 0 }, "stopSequences");
             AddIf(dropped, options.MaxOutputTokens != null, "maxOutputTokens");
+            AddIf(dropped, ReasoningMap.IsCustomReasoning(options.Reasoning), "reasoning");
             AddIf(dropped, thinkingLevel != null, "thinkingLevel");
             AddIf(dropped, thinkingSummaries != null, "thinkingSummaries");
             if (dropped.Count > 0)
@@ -403,7 +409,15 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
 
             GoogleJson.Set(generationConfig, "max_output_tokens", options.MaxOutputTokens);
-            GoogleJson.Set(generationConfig, "thinking_level", thinkingLevel);
+            string? mappedLevel = thinkingLevel;
+            if (thinkingLevel == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
+            {
+                var effortMap = GoogleThinking.ReasoningEfforts(ModelId).ToDictionary(level => level, level => level);
+                mappedLevel = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, effortMap, reasoningWarnings);
+                warnings.AddRange(reasoningWarnings.Select(ReasoningMap.ToCallWarning).OfType<CallWarning>());
+            }
+
+            GoogleJson.Set(generationConfig, "thinking_level", mappedLevel);
             GoogleJson.Set(generationConfig, "thinking_summaries", thinkingSummaries);
             if (generationConfig.Count > 0)
             {
@@ -438,6 +452,33 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         return GoogleOption(options, name) is { } value
             ? value.ValueKind == JsonValueKind.String ? value.GetString() : throw new AiSdkException("providerOptions.google." + name + " must be a string.")
             : null;
+    }
+
+    // `labels` is a record of string values. A null or missing value omits it, and a non-string value fails before any request.
+    private static JsonObject? LabelsOption(LanguageModelCallOptions options)
+    {
+        if (GoogleOption(options, "labels") is not { } value)
+        {
+            return null;
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiSdkException("providerOptions.google.labels must be an object of string values.");
+        }
+
+        var labels = new JsonObject();
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                throw new AiSdkException("providerOptions.google.labels." + property.Name + " must be a string.");
+            }
+
+            labels[property.Name] = property.Value.GetString();
+        }
+
+        return labels;
     }
 
     private static string? EnumOption(LanguageModelCallOptions options, string name, params string[] allowed)

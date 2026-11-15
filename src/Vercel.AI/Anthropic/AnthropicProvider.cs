@@ -26,6 +26,9 @@ public class AnthropicOptions
     /// <summary>Bearer token. Mutually exclusive with <see cref="ApiKey"/>.</summary>
     public string? AuthToken { get; set; }
 
+    /// <summary>Resolves the bearer token on every request, for tokens that refresh. Mutually exclusive with <see cref="ApiKey"/>. Takes precedence over <see cref="AuthToken"/>.</summary>
+    public Func<CancellationToken, Task<string>>? AuthTokenProvider { get; set; }
+
     /// <summary>Environment variable. Defaults to <c>ANTHROPIC_API_KEY</c>.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "ANTHROPIC_API_KEY";
 
@@ -122,7 +125,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             throw new ArgumentException("baseURL must be a non-empty string.", nameof(options));
         }
 
-        if (!string.IsNullOrEmpty(Options.ApiKey) && !string.IsNullOrEmpty(Options.AuthToken))
+        if (!string.IsNullOrEmpty(Options.ApiKey) && (!string.IsNullOrEmpty(Options.AuthToken) || Options.AuthTokenProvider != null))
         {
             throw new InvalidOperationException("Both apiKey and authToken were provided. Please use only one authentication method.");
         }
@@ -138,6 +141,8 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
 
     /// <summary>True for Claude Platform on AWS.</summary>
     protected bool Aws { get; set; }
+
+    internal bool UsesAws => Aws;
 
     /// <summary>True when the caller supplied a base URL other than the public Anthropic host.</summary>
     protected bool ExplicitBaseUrl { get; set; }
@@ -171,8 +176,10 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             ResolveRegion();
         }
 
-        return new AnthropicLanguageModel(this, modelId);
+        return new AnthropicLanguageModel(this, modelId, ThreadSettings);
     }
+
+    internal static readonly AnthropicModelSettings ThreadSettings = new AnthropicModelSettings { SupportsMessageThreads = true };
 
     /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
     public ILanguageModel New(string modelId)
@@ -204,6 +211,15 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return new Operations.DecisionLanguageModel(LanguageModel(modelId), "anthropic.decision");
     }
 
+    /// <summary>
+    /// Experimental typed field extraction model that uses Messages. Anthropic caps structured output at 16 union parameters, so
+    /// field maps larger than 16 are sent as parallel calls of up to 16 fields. The provider id is <c>anthropic.extraction</c>.
+    /// </summary>
+    public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
+    {
+        return new Operations.ExtractionLanguageModel(LanguageModel(modelId), "anthropic.extraction", maxFieldsPerCall: 16);
+    }
+
     Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId)
     {
         return DecisionModel(modelId);
@@ -223,7 +239,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 #pragma warning restore CS0618
 
-    /// <summary>Message Batches API. Downloads batch results.</summary>
+    /// <summary>Message Batches API. Starts a batch and downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {
         return new AnthropicBatchApi(this);
@@ -232,13 +248,13 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>Files API client.</summary>
     public AnthropicFiles Files()
     {
-        return new AnthropicFiles(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), ModelProvider);
+        return new AnthropicFiles(Http, NormalizedBase, ProviderHeadersAsync, ModelProvider);
     }
 
     /// <summary>Skills API client.</summary>
     public AnthropicSkills Skills()
     {
-        return new AnthropicSkills(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), Aws ? "anthropic-aws.skills" : "anthropic.skills");
+        return new AnthropicSkills(Http, NormalizedBase, ProviderHeadersAsync, Aws ? "anthropic-aws.skills" : "anthropic.skills");
     }
 
     /// <summary>Messages URL for the resolved base.</summary>
@@ -301,6 +317,11 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return raw;
     }
 
+    private async Task<IReadOnlyDictionary<string, string?>> ProviderHeadersAsync(CancellationToken cancellationToken)
+    {
+        return await CreateHeadersAsync(Array.Empty<string>(), null, null, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Headers for a Messages call that already has an API key or auth token.</summary>
     public Dictionary<string, string?> CreateHeaders(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders)
     {
@@ -308,7 +329,13 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     }
 
     /// <summary>Headers for a Messages call. Signs the body when AWS credentials are used.</summary>
-    public virtual async Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    public virtual Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, CancellationToken cancellationToken)
+    {
+        return CreateSignedHeadersAsync(betas, callHeaders, body, null, cancellationToken);
+    }
+
+    /// <summary>Headers for a call to <paramref name="signingUri"/> (the Messages URL when null). AWS credentials sign that URL and <paramref name="body"/>.</summary>
+    internal async Task<Dictionary<string, string?>> CreateSignedHeadersAsync(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders, string? body, Uri? signingUri, CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in Options.Headers)
@@ -337,7 +364,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             headers["anthropic-beta"] = string.Join(",", betas);
         }
 
-        if (!string.IsNullOrEmpty(Options.AuthToken))
+        if (Options.AuthTokenProvider != null)
+        {
+            var token = await Options.AuthTokenProvider(cancellationToken).ConfigureAwait(false);
+            headers["Authorization"] = "Bearer " + token;
+        }
+        else if (!string.IsNullOrEmpty(Options.AuthToken))
         {
             headers["Authorization"] = "Bearer " + Options.AuthToken;
         }
@@ -351,7 +383,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             else if (Aws && body != null)
             {
                 var credentials = await ResolveCredentialsAsync(cancellationToken).ConfigureAwait(false);
-                var signed = AnthropicAwsFetch.Prepare(MessagesUri().AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
+                var signed = AnthropicAwsFetch.Prepare((signingUri ?? MessagesUri()).AbsoluteUri, "POST", body, null, null, ToStringMap(headers), null, credentials, Options.UtcNow == null ? (DateTimeOffset?)null : Options.UtcNow());
                 foreach (var pair in signed.Headers)
                 {
                     headers[pair.Key] = pair.Value;
@@ -371,6 +403,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         {
             foreach (var pair in callHeaders)
             {
+                // The call's anthropic-beta header is already part of betas, so it must not replace the merged set.
+                if (betas != null && betas.Count > 0 && pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 headers[pair.Key] = pair.Value;
             }
         }
@@ -516,7 +554,17 @@ public class AnthropicLanguageModel : ILanguageModel
         var body = prepared.Body.ToJsonString();
         var headers = await CreateHeadersAsync(prepared, options, body, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(HttpMethod.Post, _provider.RequestUri(ModelId, false), body, headers, cancellationToken).ConfigureAwait(false);
-        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared));
+        var context = new AnthropicParseContext(prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, Warnings(prepared))
+        {
+            MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+            PreparedTools = prepared.PreparedTools,
+            ComputerToolsetName = prepared.ComputerToolsetName,
+        };
+        foreach (var pair in prepared.ToolNames)
+        {
+            context.ToolNames[pair.Key] = pair.Value;
+        }
+
         return AnthropicResponse.Parse(response.Body, context, response.Headers);
     }
 
@@ -537,7 +585,12 @@ public class AnthropicLanguageModel : ILanguageModel
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(Warnings(prepared));
-        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey);
+        var reader = new AnthropicStream(options.IncludeRawChunks, prepared.UsesJsonResponseTool, prepared.ProviderOptionsName, prepared.UsedCustomProviderKey, prepared.ToolNames)
+        {
+            MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
+            PreparedTools = prepared.PreparedTools,
+            ComputerToolsetName = prepared.ComputerToolsetName,
+        };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             foreach (var part in reader.Push(data))
@@ -593,7 +646,13 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.Betas,
             prepared.UsesJsonResponseTool,
             prepared.ProviderOptionsName,
-            prepared.UsedCustomProviderKey);
+            prepared.UsedCustomProviderKey,
+            prepared.MarkCodeExecutionDynamic,
+            prepared.PreparedTools,
+            prepared.ComputerToolsetName)
+        {
+            ToolNames = prepared.ToolNames,
+        };
     }
 
     private static IReadOnlyList<CallWarning> Warnings(AnthropicPreparedRequest prepared)

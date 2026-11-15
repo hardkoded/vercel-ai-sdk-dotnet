@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -20,6 +21,16 @@ public class DeepgramOptions : OpenAICompatibleOptions
 {
     /// <summary>Clock used for response timestamps. Defaults to UTC now.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
+
+    /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>
+    /// Resolves the API key on every call, like upstream's resolvable <c>apiKey</c>. Its value wins over
+    /// <see cref="OpenAICompatibleOptions.ApiKey"/> and the environment variable. An <c>Authorization</c> header in
+    /// <see cref="OpenAICompatibleOptions.Headers"/> still wins.
+    /// </summary>
+    public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
 }
 
 /// <summary>Parsed Deepgram error body.</summary>
@@ -284,7 +295,28 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         return new DeepgramTranscriptionModel(this, modelId).TranscribeAsync(audio, request, cancellationToken);
     }
 
-    private DateTimeOffset Now()
+    /// <summary>The WebSocket factory for streaming transcription.</summary>
+    internal WebSocketFactory? WebSocket => (Options as DeepgramOptions)?.WebSocket;
+
+    /// <summary>Provider headers with the key from <see cref="DeepgramOptions.ApiKeyProvider"/> resolved.</summary>
+    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(CancellationToken cancellationToken)
+    {
+        var headers = CreateHeaders();
+        if ((Options as DeepgramOptions)?.ApiKeyProvider is { } provider && !Options.Headers.Any(pair => !string.IsNullOrEmpty(pair.Value) && string.Equals(pair.Key, "Authorization", StringComparison.OrdinalIgnoreCase)))
+        {
+            var key = await provider(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new AiSdkException("Deepgram API key resolved to an empty value.");
+            }
+
+            headers["Authorization"] = "Token " + key;
+        }
+
+        return headers;
+    }
+
+    internal DateTimeOffset Now()
     {
         var clock = (Options as DeepgramOptions)?.Clock;
         return clock != null ? clock() : DateTimeOffset.UtcNow;
@@ -295,7 +327,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         var uri = new Uri(ApiKeys.Combine(Options.BaseUrl, path).AbsoluteUri + "?" + string.Join("&", query.Select(pair => pair.Key + "=" + Uri.EscapeDataString(pair.Value))));
         try
         {
-            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, ProviderExchange.Merge(CreateHeaders(), headers), cancellationToken).ConfigureAwait(false);
+            return await ProviderExchange.SendAsync(_httpClient, HttpMethod.Post, uri, content, ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers), cancellationToken).ConfigureAwait(false);
         }
         catch (ApiException exception) when (DeepgramError.Parse(exception.ResponseBody).Value is { } error)
         {
@@ -360,12 +392,31 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         }
 
         /// <summary>Synthesizes speech with <c>/v1/speak</c>.</summary>
+        /// <remarks>
+        /// <c>providerOptions.deepgram.callback</c> is rejected with an <see cref="Vercel.AI.Operations.InvalidArgumentException"/>: with a callback URL
+        /// Deepgram answers with a JSON acknowledgement instead of audio. <c>callbackMethod</c> is ignored with an unsupported warning.
+        /// </remarks>
         public async Task<DeepgramSpeechResult> GenerateAsync(DeepgramSpeechRequest request, CancellationToken cancellationToken)
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
             var warnings = new List<ModelWarning>();
             var deepgram = DeepgramObject(request.ProviderOptions);
+
+            // With a `callback` URL Deepgram processes the request asynchronously and answers with a JSON
+            // acknowledgement ({"request_id": "..."}) instead of audio, so the audio can never be returned.
+            if (deepgram != null && Child(deepgram.Value, "callback") is { ValueKind: not JsonValueKind.Null } callback)
+            {
+                throw new Vercel.AI.Operations.InvalidArgumentException(
+                    "providerOptions.deepgram.callback",
+                    callback.ValueKind == JsonValueKind.String ? callback.GetString() : callback.ToString(),
+                    "Deepgram processes speech requests with a `callback` URL asynchronously: it returns a JSON acknowledgement instead of audio and delivers the audio to the callback URL. `generateSpeech` requires the audio response, so `providerOptions.deepgram.callback` is not supported. Remove the option to receive the audio, or call the Deepgram REST API directly when you need asynchronous callback delivery.");
+            }
+
+            if (deepgram != null && Child(deepgram.Value, "callbackMethod") is { ValueKind: not JsonValueKind.Null })
+            {
+                warnings.Add(new UnsupportedWarning("providerOptions.deepgram.callbackMethod", "providerOptions.deepgram.callbackMethod is only used together with `callback`, which is not supported by the AI SDK. Callback method was ignored."));
+            }
 
             // Deepgram embeds voice and language in the model id (aura-2-thalia-en). Family ids compose it from the call.
             var upstreamModelId = ModelId;
@@ -617,16 +668,6 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 }
             }
 
-            if (Child(deepgram, "callback")?.GetString() is { Length: > 0 } callback)
-            {
-                query["callback"] = callback;
-            }
-
-            if (Child(deepgram, "callbackMethod")?.GetString() is { Length: > 0 } callbackMethod)
-            {
-                query["callback_method"] = callbackMethod;
-            }
-
             if (Child(deepgram, "mipOptOut") is { } mipOptOut)
             {
                 query["mip_opt_out"] = QueryValue(mipOptOut);
@@ -712,7 +753,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Deepgram pre-recorded transcription model.</summary>
-    public sealed class DeepgramTranscriptionModel : ITranscriptionModel
+    public sealed class DeepgramTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
     {
         private static readonly (string Option, string Query)[] QueryOptions =
         {
@@ -752,10 +793,52 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
+        public string SpecificationVersion => "v4";
+
+        /// <inheritdoc />
+        public bool CanStream => true;
+
+        /// <inheritdoc />
+        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        {
+            return GenerateAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        {
+            return StreamAsync(call ?? throw new ArgumentNullException(nameof(call)), cancellationToken);
+        }
+
+        /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
             var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
+        }
+
+        private async Task<TranscriptionStreamStart?> StreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        {
+            return await DeepgramStreamingTranscription.StreamAsync(ModelId, _provider, call, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task<TranscriptionModelResult> GenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+        {
+            var request = new DeepgramTranscriptionRequest { ProviderOptions = call.ProviderOptions, Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value) };
+            var result = await TranscribeAsync(new AudioInput(call.Audio, call.MediaType, null), request, cancellationToken).ConfigureAwait(false);
+            var warnings = new List<OperationWarning>();
+            if (DeepgramObject(call.ProviderOptions) is { } options && Child(options, "streaming") is not null)
+            {
+                warnings.Add(OperationWarning.Unsupported("providerOptions.deepgram.streaming", "Deepgram batch transcription does not support streaming options."));
+            }
+
+            return new TranscriptionModelResult(
+                result.Text,
+                result.Segments,
+                result.Language,
+                result.DurationInSeconds,
+                warnings,
+                response: new ProviderResponse(result.Response.Headers, result.Response.Body, timestamp: result.Response.Timestamp.UtcDateTime, modelId: ModelId));
         }
 
         /// <summary>Posts raw audio to <c>/v1/listen</c>. Provider options become query parameters.</summary>

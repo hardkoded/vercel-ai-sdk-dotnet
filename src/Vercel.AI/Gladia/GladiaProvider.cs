@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -9,17 +10,52 @@ using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Gladia;
+
+/// <summary>
+/// Cause of the <c>TranscriptionJobFailed</c> error. Carries the Gladia result that upstream passes as <c>cause</c>.
+/// .NET-only: a JavaScript <c>cause</c> can be any value, but an <see cref="Exception"/> cause must be an exception.
+/// </summary>
+public sealed class GladiaTranscriptionJobResultException : Exception
+{
+    /// <summary>Creates the cause for a failed job.</summary>
+    public GladiaTranscriptionJobResultException(string message, JsonObject result, int? errorCode)
+        : base(message)
+    {
+        Result = result;
+        ErrorCode = errorCode;
+    }
+
+    /// <summary>The parsed Gladia result of the failed job.</summary>
+    public JsonObject Result { get; }
+
+    /// <summary>The <c>error_code</c> of the result, when Gladia sent one.</summary>
+    public int? ErrorCode { get; }
+}
 
 /// <summary>Gladia settings.</summary>
 public class GladiaOptions : OpenAICompatibleOptions
 {
-    /// <summary>Clock used for response timestamps.</summary>
+    /// <summary>Clock used for response timestamps and to measure the polling budget.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
 
-    /// <summary>Wait between result polls. Defaults to one second.</summary>
+    /// <summary>Wait between result polls. Defaults to <see cref="PollIntervalMs"/>.</summary>
     public Func<CancellationToken, Task>? PollDelay { get; set; }
+
+    /// <summary>
+    /// Interval in milliseconds between transcription job status checks. Defaults to 1000 (1 second).
+    /// Must be a positive integer. A per-call <see cref="GladiaTranscriptionRequest.PollIntervalMs"/> overrides it.
+    /// </summary>
+    public int? PollIntervalMs { get; set; }
+
+    /// <summary>
+    /// Maximum time in milliseconds to wait for an asynchronous transcription job to finish before throwing
+    /// a <c>TranscriptionJobPollingTimedOut</c> error. Defaults to 600000 (10 minutes). Must be a positive integer.
+    /// A per-call <see cref="GladiaTranscriptionRequest.PollTimeoutMs"/> overrides it.
+    /// </summary>
+    public int? PollTimeoutMs { get; set; }
 }
 
 /// <summary>Parsed Gladia error payload.</summary>
@@ -83,6 +119,18 @@ public sealed class GladiaTranscriptionRequest
 
     /// <summary>Extra JSON fields sent with <c>audio_url</c>.</summary>
     public JsonObject? Body { get; set; }
+
+    /// <summary>
+    /// Interval in milliseconds between job status checks for this call. Overrides
+    /// <see cref="GladiaOptions.PollIntervalMs"/>. Must be a positive integer. Not sent to the Gladia API.
+    /// </summary>
+    public int? PollIntervalMs { get; set; }
+
+    /// <summary>
+    /// Maximum time in milliseconds to wait for the job to finish for this call. Overrides
+    /// <see cref="GladiaOptions.PollTimeoutMs"/>. Must be a positive integer. Not sent to the Gladia API.
+    /// </summary>
+    public int? PollTimeoutMs { get; set; }
 }
 
 /// <summary>One Gladia utterance mapped to a segment.</summary>
@@ -180,6 +228,9 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.gladia.io";
 
+    private const int DefaultPollIntervalMs = 1000;
+    private const int DefaultPollTimeoutMs = 10 * 60 * 1000;
+
     private readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
@@ -217,6 +268,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
+        if (options is GladiaOptions gladia)
+        {
+            ValidatePollingSettings(gladia.PollIntervalMs, gladia.PollTimeoutMs);
+        }
+
         options.ProviderName = ProviderId;
         options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "GLADIA_API_KEY";
@@ -225,7 +281,26 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options.ApiKeyStyle = ApiKeyStyle.CustomHeader;
         options.ApiKeyHeaderName = "x-gladia-key";
         options.UserAgent = ProviderExchange.UserAgent("gladia");
+        if (!options.Headers.ContainsKey("x-gladia-version"))
+        {
+            options.Headers["x-gladia-version"] = "ai-sdk/" + Operations.AiSdkVersion.Version;
+        }
+
         return options;
+    }
+
+    private static void ValidatePollingSettings(int? pollIntervalMs, int? pollTimeoutMs)
+    {
+        ValidatePollSetting("PollIntervalMs", pollIntervalMs);
+        ValidatePollSetting("PollTimeoutMs", pollTimeoutMs);
+    }
+
+    private static void ValidatePollSetting(string parameter, int? value)
+    {
+        if (value is int milliseconds && milliseconds <= 0)
+        {
+            throw new InvalidArgumentError(parameter, value, parameter + " must be a positive integer number of milliseconds");
+        }
     }
 
     /// <summary>Uploads audio, starts a pre-recorded job, and reads the result.</summary>
@@ -249,6 +324,64 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        /// <summary>
+        /// Serializes the model id and config for a workflow boundary. Maps to <c>[WORKFLOW_SERIALIZE]</c>.
+        /// The API key is not part of the serialized config. Pass it to <see cref="Deserialize"/>.
+        /// </summary>
+        public SerializedModelOptions Serialize()
+        {
+            var headers = new Dictionary<string, object?>();
+            foreach (var pair in _provider.Options.Headers)
+            {
+                if (!IsSensitiveHeader(pair.Key))
+                {
+                    headers[pair.Key] = pair.Value;
+                }
+            }
+
+            var options = _provider.Options as GladiaOptions;
+            var config = new Dictionary<string, object?>
+            {
+                ["provider"] = Provider,
+                ["url"] = _provider.Options.BaseUrl,
+                ["headers"] = headers,
+                ["pollIntervalMs"] = options?.PollIntervalMs,
+                ["pollTimeoutMs"] = options?.PollTimeoutMs,
+            };
+            return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+        }
+
+        /// <summary>Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+        /// <param name="serialized">The serialized model id and config.</param>
+        /// <param name="apiKey">API key. Defaults to the <c>GLADIA_API_KEY</c> environment variable.</param>
+        /// <param name="handler">HTTP handler. Pass one from tests.</param>
+        public static GladiaTranscriptionModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+        {
+            if (serialized is null)
+            {
+                throw new ArgumentNullException(nameof(serialized));
+            }
+
+            var options = new GladiaOptions { ApiKey = apiKey };
+            // The provider's fixed endpoint is restored when the config has no url.
+            if (ReadString(serialized.Config, "url") is { } baseUrl)
+            {
+                options.BaseUrl = baseUrl;
+            }
+
+            if (serialized.Config.TryGetValue("headers", out var headers))
+            {
+                foreach (var pair in ReadStringMap(headers))
+                {
+                    options.Headers[pair.Key] = pair.Value;
+                }
+            }
+
+            options.PollIntervalMs = ReadInt(serialized.Config, "pollIntervalMs");
+            options.PollTimeoutMs = ReadInt(serialized.Config, "pollTimeoutMs");
+            return (GladiaTranscriptionModel)GladiaProvider.Create(options, handler).TranscriptionModel(serialized.ModelId);
+        }
+
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
         {
@@ -265,6 +398,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
 
             var options = _provider.Options as GladiaOptions;
+            ValidatePollingSettings(request?.PollIntervalMs, request?.PollTimeoutMs);
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = Headers(request, includeKey: true);
             var form = new MultipartFormDataContent();
@@ -300,6 +434,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
                 var body = request?.Body == null ? new JsonObject() : JsonNode.Parse(request.Body.ToJsonString()) as JsonObject ?? new JsonObject();
                 body["audio_url"] = audioUrl;
+
+                // `default` is the placeholder used when no model id is passed: omit the field
+                // and let the Gladia API fall back to its own default.
+                if (ModelId != "default" && !body.ContainsKey("model"))
+                {
+                    body["model"] = ModelId;
+                }
+
                 var initiated = await ProviderExchange.SendAsync(
                     _provider._httpClient,
                     HttpMethod.Post,
@@ -315,7 +457,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         throw new AiSdkException("Gladia did not return a result URL.");
                     }
 
-                    var result = await PollAsync(resultUrl!, headers, cancellationToken).ConfigureAwait(false);
+                    var result = await PollAsync(resultUrl!, headers, request, cancellationToken).ConfigureAwait(false);
                     return Parse(result.Body, result.Headers, started);
                 }
             }
@@ -376,7 +518,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             }
         }
 
-        private async Task<ProviderExchangeResult> PollAsync(string resultUrl, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+        private async Task<ProviderExchangeResult> PollAsync(string resultUrl, IReadOnlyDictionary<string, string?> headers, GladiaTranscriptionRequest? request, CancellationToken cancellationToken)
         {
             var options = _provider.Options as GladiaOptions;
             var origin = new Uri(_provider.Options.BaseUrl, UriKind.Absolute);
@@ -399,12 +541,19 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 callHeaders = stripped;
             }
 
-            var started = DateTime.UtcNow;
+            var timeoutMs = request?.PollTimeoutMs ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
+            var intervalMs = request?.PollIntervalMs ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
+            var started = Now(options);
             while (true)
             {
-                if (DateTime.UtcNow - started > TimeSpan.FromSeconds(60))
+                // Stop before polling again when the caller cancelled the request.
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if ((Now(options) - started).TotalMilliseconds > timeoutMs)
                 {
-                    throw new AiSdkException("Transcription job polling timed out.");
+                    throw new AiSdkError(
+                        "TranscriptionJobPollingTimedOut",
+                        "Transcription job polling timed out after " + timeoutMs.ToString(CultureInfo.InvariantCulture) + " ms");
                 }
 
                 var response = await ProviderExchange.SendAsync(
@@ -419,7 +568,19 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                     var status = ReadString(document.RootElement, "status");
                     if (string.Equals(status, "error", StringComparison.Ordinal))
                     {
-                        throw new AiSdkException("Transcription job failed.");
+                        var errorCode = document.RootElement.TryGetProperty("error_code", out var code) && code.ValueKind == JsonValueKind.Number && code.TryGetInt32(out var number)
+                            ? number
+                            : (int?)null;
+                        var message = errorCode is null
+                            ? "Transcription job failed"
+                            : "Transcription job failed with error code " + errorCode.Value.ToString(CultureInfo.InvariantCulture);
+                        throw new AiSdkError(
+                            "TranscriptionJobFailed",
+                            message,
+                            new GladiaTranscriptionJobResultException(
+                                message,
+                                JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? [],
+                                errorCode));
                     }
 
                     if (string.Equals(status, "done", StringComparison.Ordinal) || string.IsNullOrEmpty(status))
@@ -434,9 +595,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 }
                 else
                 {
-                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(intervalMs, cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        private static DateTimeOffset Now(GladiaOptions? options)
+        {
+            return options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
         }
 
         private Dictionary<string, string?> Headers(GladiaTranscriptionRequest? request, bool includeKey)
@@ -450,6 +616,70 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             ProviderExchange.AddUserAgent(headers, "gladia");
             return headers;
         }
+    }
+
+    private static string? ReadString(IReadOnlyDictionary<string, object?> config, string name)
+    {
+        return config.TryGetValue(name, out var value)
+            ? value switch
+            {
+                string text => text,
+                JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+                _ => null,
+            }
+            : null;
+    }
+
+    private static Dictionary<string, string> ReadStringMap(object? value)
+    {
+        var map = new Dictionary<string, string>();
+        if (value is JsonElement { ValueKind: JsonValueKind.Object } element)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.String)
+                {
+                    map[property.Name] = property.Value.GetString()!;
+                }
+            }
+        }
+        else if (value is System.Collections.IDictionary dictionary)
+        {
+            foreach (System.Collections.DictionaryEntry entry in dictionary)
+            {
+                if (entry.Key is string key && entry.Value is string text)
+                {
+                    map[key] = text;
+                }
+            }
+        }
+
+        return map;
+    }
+
+    private static int? ReadInt(IReadOnlyDictionary<string, object?> config, string name)
+    {
+        if (!config.TryGetValue(name, out var value) || value is null)
+        {
+            return null;
+        }
+
+        return value is JsonElement { ValueKind: JsonValueKind.Number } element
+            ? element.GetInt32()
+            : Convert.ToInt32(value, CultureInfo.InvariantCulture);
+    }
+
+    private static bool IsSensitiveHeader(string name)
+    {
+        foreach (var marker in new[] { "authorization", "key", "token", "secret", "cookie" })
+        {
+            if (name.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string? ReadString(JsonElement element, string name)

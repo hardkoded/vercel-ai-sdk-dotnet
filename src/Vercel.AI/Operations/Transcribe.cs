@@ -42,6 +42,12 @@ public sealed class TranscriptionModelCall
     /// <summary>Detected media type, or <c>audio/wav</c>.</summary>
     public string MediaType { get; }
 
+    /// <summary>
+    /// Timing granularities the caller asks for, <c>word</c> and <c>segment</c>. An empty list requests no additional
+    /// timing detail and does not suppress timings returned by default. Maps to <c>timestampGranularities</c>.
+    /// </summary>
+    public IReadOnlyList<string>? TimestampGranularities { get; init; }
+
     /// <summary>Provider options.</summary>
     public JsonElement ProviderOptions { get; }
 
@@ -56,9 +62,10 @@ public sealed class TranscriptionModelCall
 public sealed class TranscriptionModelResult
 {
     /// <summary>Creates a result.</summary>
-    public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+    public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, IReadOnlyList<TranscriptSegment>? words = null)
     {
         Text = text;
+        Words = words;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
         Language = language;
         DurationInSeconds = durationInSeconds;
@@ -72,6 +79,9 @@ public sealed class TranscriptionModelResult
 
     /// <summary>Segments.</summary>
     public IReadOnlyList<TranscriptSegment> Segments { get; }
+
+    /// <summary>Word-level timings reported by the provider, or <see langword="null"/> when they are unavailable. Maps to <c>words</c>.</summary>
+    public IReadOnlyList<TranscriptSegment>? Words { get; }
 
     /// <summary>Language.</summary>
     public string? Language { get; }
@@ -93,7 +103,7 @@ public sealed class TranscriptionModelResult
 public sealed class TranscriptionStreamCall
 {
     /// <summary>Creates a stream call.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, string inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -107,7 +117,7 @@ public sealed class TranscriptionStreamCall
     public AudioChunkStream Audio { get; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; }
+    public AudioFormat InputAudioFormat { get; }
 
     /// <summary>Provider options.</summary>
     public JsonElement ProviderOptions { get; }
@@ -126,11 +136,15 @@ public sealed class TranscriptionStreamCall
 public sealed class TranscriptionStreamStart
 {
     /// <summary>Creates a start payload.</summary>
-    public TranscriptionStreamStart(ModelPartStream stream, ProviderResponse? response = null)
+    public TranscriptionStreamStart(ModelPartStream stream, ProviderResponse? response = null, ProviderRequest? request = null)
     {
         Stream = stream;
         Response = response;
+        Request = request;
     }
+
+    /// <summary>Request metadata. <see cref="ProviderRequest.Body"/> never carries credentials.</summary>
+    public ProviderRequest? Request { get; }
 
     /// <summary>Model parts.</summary>
     public ModelPartStream Stream { get; }
@@ -237,7 +251,7 @@ public sealed class StreamTranscribeRequest : OperationRequest
     public AudioChunkStream? Audio { get; set; }
 
     /// <summary>Input audio format.</summary>
-    public string InputAudioFormat { get; set; } = string.Empty;
+    public AudioFormat InputAudioFormat { get; set; } = new AudioFormat(string.Empty);
 
     /// <summary>Requests raw provider chunks.</summary>
     public bool? IncludeRawChunks { get; set; }

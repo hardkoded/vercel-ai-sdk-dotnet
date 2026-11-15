@@ -436,6 +436,13 @@ public sealed class GoogleLanguageUpstreamTests
     {
         var cases = new (string Model, string Reasoning, string Level)[]
         {
+            ("gemini-4-hydrogen-eap", "xhigh", "xhigh"),
+            ("models/gemini-4-hydrogen-eap", "xhigh", "xhigh"),
+            ("gemini-4-hydrogen", "max", "xhigh"),
+            ("gemini-4-hydrogen", "minimal", "low"),
+            ("gemini-4-argon", "xhigh", "high"),
+            ("gemini-4-carbon", "xhigh", "high"),
+            ("gemini-4-hydrogenous", "xhigh", "high"),
             ("gemini-3.7-flash-video-understanding-eap", "minimal", "low"),
             ("gemini-3.7-flash-video-understanding-eap", "none", "low"),
             ("gemini-flash-latest", "minimal", "low"),

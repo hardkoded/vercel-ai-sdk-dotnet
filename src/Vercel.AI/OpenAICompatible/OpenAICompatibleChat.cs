@@ -379,8 +379,31 @@ public static class OpenAICompatibleChat
 
     private static JsonObject MapFile(FileContentPart file, string metadataKey, string providerName, bool includeProviderOptions = true)
     {
+        if (file.Text != null && MediaTypes.GetTopLevelMediaType(file.MediaType ?? string.Empty) == "text")
+        {
+            var inline = new JsonObject { ["type"] = "text", ["text"] = file.Text };
+            if (includeProviderOptions
+                && file.ProviderOptions != null
+                && (file.ProviderOptions.TryGetValue(metadataKey, out var meta)
+                    || file.ProviderOptions.TryGetValue("openaiCompatible", out meta))
+                && meta.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in meta.EnumerateObject())
+                {
+                    inline[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+            }
+
+            return inline;
+        }
+
         if (file.Url == null && file.Data == null)
         {
+            if (file.Text != null)
+            {
+                throw Unsupported("text file parts");
+            }
+
             if (file.ProviderReference == null)
             {
                 throw Unsupported("file parts with provider references");

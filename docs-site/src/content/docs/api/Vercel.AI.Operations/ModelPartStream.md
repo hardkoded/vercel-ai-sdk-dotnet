@@ -23,7 +23,7 @@ Model stream that stays open until [Cancel()](#Vercel_AI_Operations_ModelPartStr
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L288)
 
 ## Constructors
 
@@ -48,7 +48,28 @@ Creates a scripted stream.
 | `completes` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `failure` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L296)
+
+<a id="Vercel_AI_Operations_ModelPartStream__ctor_Vercel_AI_Operations_PartQueue_Vercel_AI_Operations_ModelStreamPart__System_Action_"></a>
+
+### `ModelPartStream(PartQueue<ModelStreamPart>, Action?)`
+
+
+```csharp
+public ModelPartStream(PartQueue<ModelStreamPart> queue, Action? onCancel = null)
+```
+
+
+Creates a live stream. Parts are read from &lt;code class="paramref"&gt;queue&lt;/code&gt; until it completes. &lt;code class="paramref"&gt;onCancel&lt;/code&gt; runs on [Cancel()](#Vercel_AI_Operations_ModelPartStream_Cancel).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `queue` | `PartQueue&lt;ModelStreamPart&gt;` |  |
+| `onCancel` | [Action](https://learn.microsoft.com/dotnet/api/system.action) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L304)
 
 ## Properties
 
@@ -67,7 +88,7 @@ True after [Cancel()](#Vercel_AI_Operations_ModelPartStream_Cancel).
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L325)
 
 <a id="Vercel_AI_Operations_ModelPartStream_Completes_"></a>
 <a id="Vercel_AI_Operations_ModelPartStream_Completes"></a>
@@ -84,7 +105,7 @@ True when the stream ends after [Parts](#Vercel_AI_Operations_ModelPartStream_Pa
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L313)
 
 <a id="Vercel_AI_Operations_ModelPartStream_Failure_"></a>
 <a id="Vercel_AI_Operations_ModelPartStream_Failure"></a>
@@ -101,7 +122,7 @@ Error raised after the scripted parts.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L316)
 
 <a id="Vercel_AI_Operations_ModelPartStream_Parts_"></a>
 <a id="Vercel_AI_Operations_ModelPartStream_Parts"></a>
@@ -118,7 +139,7 @@ Scripted parts.
 
 **Value:** [IReadOnlyList&lt;ModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L319)
 
 ## Methods
 
@@ -135,7 +156,7 @@ public void Cancel()
 
 Stops a stream that has not completed.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L328)
 
 <a id="Vercel_AI_Operations_ModelPartStream_ReadAsync_"></a>
 <a id="Vercel_AI_Operations_ModelPartStream_ReadAsync_System_Threading_CancellationToken_"></a>
@@ -158,4 +179,4 @@ Reads the scripted parts, then waits when the stream stays open.
 
 **Returns:** [IAsyncEnumerable&lt;ModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L336)

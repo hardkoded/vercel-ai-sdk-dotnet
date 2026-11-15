@@ -28,13 +28,13 @@ Arguments for streaming transcription.
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_"></a>
-<a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Operations_TranscriptionStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
 
-### `TranscriptionStreamCall(AudioChunkStream, string, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
+### `TranscriptionStreamCall(AudioChunkStream, AudioFormat, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
 
 
 ```csharp
-public TranscriptionStreamCall(AudioChunkStream audio, string inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
 ```
 
 
@@ -45,7 +45,7 @@ Creates a stream call.
 | Name | Type | Description |
 | --- | --- | --- |
 | `audio` | [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/) |  |
-| `inputAudioFormat` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `inputAudioFormat` | [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) |  |
 | `providerOptions` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `includeRawChunks` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
@@ -130,13 +130,13 @@ When true, raw parts are requested.
 
 
 ```csharp
-public string InputAudioFormat { get; }
+public AudioFormat InputAudioFormat { get; }
 ```
 
 
 Input audio format.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L110)
 

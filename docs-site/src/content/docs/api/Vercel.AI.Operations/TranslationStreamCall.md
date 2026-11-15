@@ -28,13 +28,13 @@ Arguments for a speech-translation stream.
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranslationStreamCall__ctor_"></a>
-<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_System_String_System_String_System_String_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Operations_TranslationStreamCall__ctor_Vercel_AI_Operations_AudioChunkStream_Vercel_AI_Operations_AudioFormat_System_String_System_String_System_String_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Boolean__System_Threading_CancellationToken_"></a>
 
-### `TranslationStreamCall(AudioChunkStream, string, string, string?, string?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
+### `TranslationStreamCall(AudioChunkStream, AudioFormat, string, string?, string?, JsonElement, IReadOnlyDictionary<string, string>, bool?, CancellationToken)`
 
 
 ```csharp
-public TranslationStreamCall(AudioChunkStream audio, string inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+public TranslationStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, string targetLanguage, string? sourceLanguage, string? outputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
 ```
 
 
@@ -45,7 +45,7 @@ Creates a translation call.
 | Name | Type | Description |
 | --- | --- | --- |
 | `audio` | [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/) |  |
-| `inputAudioFormat` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `inputAudioFormat` | [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) |  |
 | `targetLanguage` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `sourceLanguage` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `outputAudioFormat` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
@@ -133,13 +133,13 @@ When true, raw parts are requested.
 
 
 ```csharp
-public string InputAudioFormat { get; }
+public AudioFormat InputAudioFormat { get; }
 ```
 
 
 Input audio format.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Translate.cs#L30)
 

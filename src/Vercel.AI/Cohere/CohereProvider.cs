@@ -21,6 +21,9 @@ public sealed class CohereOptions
 
     /// <summary>Headers sent with every request. Call headers override them.</summary>
     public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Creates the ids of citation sources. Maps to upstream <c>generateId</c>. Defaults to a random id.</summary>
+    public Func<string>? GenerateId { get; set; }
 }
 
 /// <summary>Cohere provider for chat, embeddings, and rerank.</summary>

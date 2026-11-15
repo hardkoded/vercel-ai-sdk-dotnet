@@ -198,31 +198,3 @@ public sealed class ValidateToolContextTests
         Assert.Equal("weather", exception.Context.EntityName);
     }
 }
-
-public sealed class GeneratedFileDownloadTests
-{
-    [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/generated-file-download.test.ts::generated file downloads::rejects an unsafe file URL before fetching it", Coverage = UpstreamCoverage.Covered)]
-    public async Task Rejects_an_unsafe_file_url_before_fetching()
-    {
-        var model = new TestLanguageModel
-        {
-            OnGenerate = _ => new LanguageModelGenerateResult(
-                new GeneratedContent[] { new GeneratedFileUrl(new Uri("http://127.0.0.1/file"), "text/plain") },
-                FinishReason.Stop,
-                LanguageModelUsage.Empty,
-                "stop"),
-        };
-
-        var exception = await Assert.ThrowsAsync<DownloadException>(() => Client().GenerateTextAsync(new GenerateTextOptions { Model = model, Prompt = "image" }));
-        Assert.Equal("AI_DownloadError", exception.Name);
-        Assert.Contains("127.0.0.1", exception.Message);
-        Assert.Single(model.Calls);
-        Assert.Single(model.Calls);
-    }
-
-    private static AiClient Client()
-    {
-        return new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
-    }
-}

@@ -266,7 +266,7 @@ internal static class XaiResponsesLanguageModelSupport
             "Expected an item equal to " + node!.ToJsonString() + " in " + actual.ToJsonString());
     }
 
-    private static string Unified(FinishReason finishReason)
+    internal static string Unified(FinishReason finishReason)
     {
         return finishReason switch
         {
@@ -279,7 +279,7 @@ internal static class XaiResponsesLanguageModelSupport
         };
     }
 
-    private static JsonObject Usage(LanguageModelUsage usage)
+    internal static JsonObject Usage(LanguageModelUsage usage)
     {
         var input = new JsonObject();
         Set(input, "total", usage.InputTokens);

@@ -23,7 +23,7 @@ Settings for converting a prompt into Gemini `contents`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L36)
 
 ## Properties
 
@@ -42,7 +42,7 @@ When false, function call and response ids are omitted. Vertex omits them.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L54)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemini3Model_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemini3Model"></a>
@@ -59,7 +59,7 @@ When true, unsigned Gemini 3 function calls receive the documented skip sentinel
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L45)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemmaModel_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_IsGemmaModel"></a>
@@ -76,7 +76,7 @@ When true, system text is prepended to the first user turn and `systemInstructio
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L42)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_ModelId_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_ModelId"></a>
@@ -93,7 +93,7 @@ Model id used to detect Gemma and Gemini 3 behavior when the flags below are lef
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L39)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_ProviderOptionNames_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_ProviderOptionNames"></a>
@@ -110,7 +110,24 @@ Provider-option namespaces, in precedence order.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L57)
+
+<a id="Vercel_AI_Google_GoogleMessageOptions_SupportedFunctionResponseUrls_"></a>
+<a id="Vercel_AI_Google_GoogleMessageOptions_SupportedFunctionResponseUrls"></a>
+
+### SupportedFunctionResponseUrls
+
+
+```csharp
+public IReadOnlyDictionary<string, IReadOnlyList<Regex>>? SupportedFunctionResponseUrls { get; set; }
+```
+
+
+File URLs that a function response may reference directly, keyed by media type. Maps to `supportedFunctionResponseUrls`.
+
+**Value:** [IReadOnlyDictionary&lt;string, IReadOnlyList&lt;Regex&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L51)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_SupportsFunctionResponseParts_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_SupportsFunctionResponseParts"></a>
@@ -127,7 +144,7 @@ When true, multimodal tool results use `functionResponse.parts`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L48)
 
 <a id="Vercel_AI_Google_GoogleMessageOptions_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleMessageOptions_Warnings"></a>
@@ -144,4 +161,4 @@ Warnings produced while converting.
 
 **Value:** [List&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleMessages.cs#L60)

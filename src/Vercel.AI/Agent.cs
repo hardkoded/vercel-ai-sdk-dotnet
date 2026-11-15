@@ -36,7 +36,21 @@ public sealed class Agent
     /// </summary>
     public Task<GenerateTextResult> GenerateAsync(string prompt, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null)
     {
-        var prepared = Prepare(CreateOptions(prompt));
+        return GenerateAsync(CreateOptions(prompt, null), cancellationToken, timeout);
+    }
+
+    /// <summary>
+    /// Generates a reply to <paramref name="messages"/>. System messages in <paramref name="messages"/> are rejected unless
+    /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. Maps to <c>messages</c> of <c>generate</c>.
+    /// </summary>
+    public Task<GenerateTextResult> GenerateAsync(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, TimeoutConfiguration? timeout = null)
+    {
+        return GenerateAsync(CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))), cancellationToken, timeout);
+    }
+
+    private Task<GenerateTextResult> GenerateAsync(GenerateTextOptions call, CancellationToken cancellationToken, TimeoutConfiguration? timeout)
+    {
+        var prepared = Prepare(call);
         if (timeout != null)
         {
             prepared = prepared.ShallowCopy();
@@ -52,7 +66,21 @@ public sealed class Agent
     /// </summary>
     public StreamTextResult Stream(string prompt, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null)
     {
-        var prepared = Prepare(CreateOptions(prompt));
+        return Stream(CreateOptions(prompt, null), cancellationToken, abortSignal, timeout);
+    }
+
+    /// <summary>
+    /// Streams a reply to <paramref name="messages"/>. System messages in <paramref name="messages"/> are rejected unless
+    /// <see cref="AgentOptions.AllowSystemInMessages"/> is set. Maps to <c>messages</c> of <c>stream</c>.
+    /// </summary>
+    public StreamTextResult Stream(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken = default, Vercel.AI.Util.AbortSignal? abortSignal = null, TimeoutConfiguration? timeout = null)
+    {
+        return Stream(CreateOptions(null, messages ?? throw new ArgumentNullException(nameof(messages))), cancellationToken, abortSignal, timeout);
+    }
+
+    private StreamTextResult Stream(GenerateTextOptions call, CancellationToken cancellationToken, Vercel.AI.Util.AbortSignal? abortSignal, TimeoutConfiguration? timeout)
+    {
+        var prepared = Prepare(call);
         return _client.StreamTextAsync(new StreamTextOptions
         {
             Model = prepared.Model,
@@ -61,6 +89,7 @@ public sealed class Agent
             Instructions = prepared.Instructions,
             Prompt = prepared.Prompt,
             Messages = prepared.Messages,
+            AllowSystemInMessages = prepared.AllowSystemInMessages,
             Tools = prepared.Tools,
             ActiveTools = prepared.ActiveTools,
             ToolCallConcurrency = prepared.ToolCallConcurrency,
@@ -101,14 +130,16 @@ public sealed class Agent
         return Options.PrepareCall?.Invoke(call) ?? call;
     }
 
-    private GenerateTextOptions CreateOptions(string prompt)
+    private GenerateTextOptions CreateOptions(string? prompt, IReadOnlyList<ModelMessage>? messages)
     {
         return new GenerateTextOptions
         {
             Model = Options.Model,
             ModelId = Options.ModelId,
             Instructions = Options.Instructions,
+            AllowSystemInMessages = Options.AllowSystemInMessages,
             Prompt = prompt,
+            Messages = messages,
             Tools = Options.Tools,
             StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
@@ -132,6 +163,14 @@ public sealed class AgentOptions
 
     /// <summary>System instructions: a string, one <see cref="SystemModelMessage"/>, or an array of them.</summary>
     public Instructions? Instructions { get; set; }
+
+    /// <summary>
+    /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?)"/>
+    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?)"/>.
+    /// Defaults to false, which rejects them with an <see cref="InvalidPromptException"/>. Use <see cref="Instructions"/> for the system prompt instead.
+    /// <see cref="PrepareCall"/> can replace it. Maps to <c>allowSystemInMessages</c>.
+    /// </summary>
+    public bool AllowSystemInMessages { get; set; }
 
     /// <summary>Tools.</summary>
     public IReadOnlyList<Tool>? Tools { get; set; }
@@ -158,19 +197,19 @@ public sealed class AgentOptions
     public IReadOnlyDictionary<string, Func<JsonElement, CancellationToken, Task<JsonElement>>>? RefineToolInput { get; set; }
 
     /// <summary>
-    /// Timeout of each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
+    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>timeout</c> of <c>ToolLoopAgentSettings</c>.
     /// </summary>
     public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>
-    /// Called before each <see cref="Agent.GenerateAsync"/> and <see cref="Agent.Stream"/> call with the options the agent would use,
+    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?)"/> call with the options the agent would use,
     /// including the default <see cref="GenerateTextOptions.StopWhen"/>. Return replacement options, or null to keep them.
     /// A returned options object that sets <see cref="GenerateTextOptions.StopWhen"/> replaces the default limit. Maps to <c>prepareCall</c>.
     /// </summary>
     public Func<GenerateTextOptions, GenerateTextOptions?>? PrepareCall { get; set; }
 
-    /// <summary>Called after <see cref="Agent.Stream"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
+    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }
 

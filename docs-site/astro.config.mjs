@@ -60,6 +60,7 @@ export default defineConfig({
                         { label: "Streaming", slug: "streaming" },
                         { label: "Providers", slug: "providers" },
                         { label: "TypeSafe", slug: "typesafe-ai" },
+                        { label: "ScaleDown", slug: "scaledown" },
                         { label: "Compatibility", slug: "compatibility" },
                         { label: "Warnings", slug: "warnings" },
                         { label: "Secure URL fetching", slug: "secure-url-fetching" },

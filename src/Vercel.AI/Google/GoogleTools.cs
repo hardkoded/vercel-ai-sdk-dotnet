@@ -74,7 +74,11 @@ public static class GoogleTools
         var warnings = new List<GoogleWarning>();
         var names = new Dictionary<string, string>(StringComparer.Ordinal);
         var functions = functionTools ?? Array.Empty<LanguageModelTool>();
-        var providers = providerTools ?? Array.Empty<GoogleProviderTool>();
+        // NONE only disables function calling in the Google API. Provider tools must be omitted so they cannot
+        // execute server-side. Function declarations stay for conversation history containing function calls.
+        var providers = toolChoice?.Type == "none"
+            ? Array.Empty<GoogleProviderTool>()
+            : providerTools ?? Array.Empty<GoogleProviderTool>();
         if (functions.Count == 0 && providers.Count == 0)
         {
             return new GoogleToolPreparation(null, null, warnings, names);

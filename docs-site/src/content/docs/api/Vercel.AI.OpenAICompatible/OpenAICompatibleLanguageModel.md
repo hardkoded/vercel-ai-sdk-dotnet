@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.OpenAICompatible](/api/Vercel.AI.OpenAICompatible/)
 
 
 ```csharp
-public sealed class OpenAICompatibleLanguageModel : ILanguageModel
+public class OpenAICompatibleLanguageModel : ILanguageModel
 ```
 
 

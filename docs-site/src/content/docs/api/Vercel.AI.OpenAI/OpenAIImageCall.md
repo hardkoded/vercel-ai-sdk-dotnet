@@ -23,7 +23,7 @@ Image generation settings beyond the shared prompt and size.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L16)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates an image call.
 | --- | --- | --- |
 | `prompt` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L19)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Aspect ratio. OpenAI image models do not accept it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L34)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Count_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Count"></a>
@@ -82,7 +82,7 @@ How many images to generate.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L28)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Files_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Files"></a>
@@ -99,7 +99,7 @@ Source images for an edit.
 
 **Value:** [IReadOnlyList&lt;OpenAIImageFile&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L43)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Headers_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Headers"></a>
@@ -116,7 +116,7 @@ Extra HTTP headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L49)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Mask_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Mask"></a>
@@ -133,7 +133,7 @@ Optional edit mask.
 
 **Value:** [OpenAIImageFile](/api/Vercel.AI.OpenAI/OpenAIImageFile/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L46)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Prompt_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Prompt"></a>
@@ -150,7 +150,7 @@ Image prompt.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L25)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_ProviderOptions_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_ProviderOptions"></a>
@@ -167,7 +167,7 @@ Provider options. The `openai` object is read.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L40)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Seed_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Seed"></a>
@@ -184,7 +184,7 @@ Seed. OpenAI image models do not accept it.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L37)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Size_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageCall_Size"></a>
@@ -201,4 +201,4 @@ Size such as `1024x1024`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L31)

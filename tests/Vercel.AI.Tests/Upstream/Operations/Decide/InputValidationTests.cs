@@ -16,6 +16,7 @@ namespace Vercel.AI.Tests.Upstream.Operations.Decide;
 [Collection("DownloadFetch")]
 public sealed class InputValidationTests
 {
+    private const string UpstreamCommit = "c70adf670be399319e6d06633501aab39e033600";
     public static TheoryData<string> InstructionFields()
     {
         return new TheoryData<string> { "{}", "{\"instructions\":null}" };
@@ -63,7 +64,7 @@ public sealed class InputValidationTests
 
     [Theory]
     [MemberData(nameof(InstructionFields))]
-    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects Boolean questions without instructions or a described criterion: %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so the undefined case shares the {} case.")]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects Boolean questions without instructions or a described criterion: %j", Coverage = UpstreamCoverage.Partial, Note = "A missing, undefined, and null instructions field are all a null instruction here, so the undefined case shares the {} case. A null criteria stands in for the undefined and null criteria.")]
     public async Task Rejects_Boolean_questions_without_instructions_or_a_described_criterion(string instructionFields)
     {
         _ = instructionFields;
@@ -90,6 +91,22 @@ public sealed class InputValidationTests
     }
 
     [Fact]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::forwards null Boolean criteria with instructions", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Forwards_null_Boolean_criteria_with_instructions()
+    {
+        var model = new DecideModel();
+        model.Result = new DecisionModelResult(new Dictionary<string, DecisionAnswer> { ["refund"] = SampleAnswers()["refund"] });
+        var questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["refund"] = new DecisionQuestion("boolean", In("Refund?")) { HasCriteria = true },
+        };
+        var result = await DecideOperation.DecideAsync(new DecideRequest { Model = model, State = "text", Questions = questions });
+        Assert.Same(questions, model.Calls[0].Questions);
+        Assert.Equal(SampleAnswers()["refund"].Probability, Assert.Single(result.Answers).Value.Probability);
+        Assert.Equal("refund", Assert.Single(result.Answers).Key);
+    }
+
+    [Fact]
     [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects non-JSON state %s before I/O", Coverage = UpstreamCoverage.Partial, Note = "JsonElement holds only JSON. A missing state, true, and 42 are rejected. A Date, undefined, NaN, a function, a cycle, and a sparse array cannot be built.")]
     public async Task Rejects_non_JSON_state_before_I_O()
     {
@@ -101,7 +118,7 @@ public sealed class InputValidationTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects invalid questions %s before I/O", Coverage = UpstreamCoverage.Partial, Note = "Typed criteria and instructions cannot hold a non-string, non-object, non-array instruction, a non-string description, an undefined level, or boolean keys other than true and false. A box without instructions stands in for the missing and null box instructions.")]
+    [UpstreamTest("packages/ai/src/decide/decide.test.ts::input validation::rejects invalid questions %s before I/O", Coverage = UpstreamCoverage.Partial, Note = "Typed criteria and instructions cannot hold a non-string, non-object, non-array instruction, a non-string description, an undefined level, or boolean keys other than true and false.")]
     public async Task Rejects_invalid_questions_before_I_O()
     {
         var cases = new IReadOnlyDictionary<string, DecisionQuestion>?[]
@@ -110,7 +127,6 @@ public sealed class InputValidationTests
             null,
             new Dictionary<string, DecisionQuestion> { ["test"] = Q("other", "test") },
             new Dictionary<string, DecisionQuestion> { ["test"] = Q("choice", "test", new Dictionary<string, object?>()) },
-            new Dictionary<string, DecisionQuestion> { ["test"] = Q("box", null) },
             new Dictionary<string, DecisionQuestion> { ["test"] = Q("score", "test", new List<object?>()) },
         };
         foreach (var questions in cases)

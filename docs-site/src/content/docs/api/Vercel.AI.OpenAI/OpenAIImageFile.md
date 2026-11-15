@@ -23,7 +23,7 @@ An image file sent to the edits endpoint.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L53)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates an inline image file.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `fileName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L56)
 
 ## Properties
 
@@ -59,15 +59,15 @@ Creates an inline image file.
 
 
 ```csharp
-public byte[] Data { get; }
+public byte[]? Data { get; }
 ```
 
 
-Image bytes.
+Image bytes. Null for a file created with [FromUrl(string)](#Vercel_AI_OpenAI_OpenAIImageFile_FromUrl_System_String_).
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L76)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageFile_FileName_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageFile_FileName"></a>
@@ -84,7 +84,7 @@ File name used in the multipart body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L85)
 
 <a id="Vercel_AI_OpenAI_OpenAIImageFile_MediaType_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIImageFile_MediaType"></a>
@@ -101,4 +101,46 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L82)
+
+<a id="Vercel_AI_OpenAI_OpenAIImageFile_Url_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIImageFile_Url"></a>
+
+### Url
+
+
+```csharp
+public string? Url { get; }
+```
+
+
+URL to download when the file is a URL image.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L79)
+
+## Methods
+
+<a id="Vercel_AI_OpenAI_OpenAIImageFile_FromUrl_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIImageFile_FromUrl_System_String_"></a>
+
+### FromUrl(string)
+
+
+```csharp
+public static OpenAIImageFile FromUrl(string url)
+```
+
+
+Creates an image file that is downloaded from &lt;code class="paramref"&gt;url&lt;/code&gt; before the edit is sent.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [OpenAIImageFile](./)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Image/OpenAIImageModel.cs#L70)

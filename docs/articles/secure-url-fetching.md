@@ -6,8 +6,13 @@ The SDK:
 
 - **Rejects private, loopback, and link-local targets.** This covers IPv4 (`10/8`, `172.16/12`, `192.168/16`, `127/8`, `169.254/16`, CGNAT, multicast, and so on) and the equivalent IPv6 ranges, plus `localhost`, `.local`, `.localhost`, and `.internal` hostnames. Hostnames are compared without case, a trailing dot, or a port. Non-`http(s)` schemes are rejected, except `data:` URLs, which the SDK accepts and decodes locally.
 - **Re-validates every inspectable redirect hop.** A URL that passes but then redirects to an internal address is blocked. An opaque redirect, whose destination the SDK cannot read, is blocked too, unless a browser-style runtime opts in to following it natively. In that case the SDK cannot validate the destination.
+- **Rejects HTTPS downgrades on server-side downloads.** A redirect from HTTPS to HTTP is blocked with a `DownloadError` before the SDK requests the insecure target, even when that target matches `trustedOrigin`. Initial HTTP URLs, HTTP-to-HTTP redirects, and HTTP-to-HTTPS upgrades remain supported.
 
-- **Validates resolved addresses in the default fetch.** On `net10.0`, the default fetch resolves the hostname itself, rejects it with a `DownloadError` when any returned address is private or reserved, and connects to the validated address. The connection is pinned, so DNS rebinding cannot introduce a second lookup. On `netstandard2.0` the default fetch validates the resolved addresses just before the request but cannot pin the connection. The default fetch does not use a proxy, because the pinned connection must reach the validated address itself. Name resolution is bounded to 30 seconds. A custom fetch must do its own validation. A `trustedOrigin` skips the check.
+## What the SDK does not check
+
+The default fetch does not validate resolved DNS addresses and does not pin connections. A hostname that passes URL validation but resolves to a private address, or a DNS rebinding attack, is not blocked by the SDK. This is a deliberate change: DNS protection is opt-in.
+
+Applications that download untrusted URLs must pass a DNS-validating fetch (a `DownloadFetch` that resolves the host, rejects private and reserved addresses, and connects to the validated address) wherever the SDK accepts one, such as `Download.Fetch`, the `fetch` argument of `Download.GetAsync`, or `WebFetchTools.Fetch`. Otherwise enforce equivalent outbound network restrictions. A `trustedOrigin` skips URL validation for a developer-configured origin.
 
 The `.internal` rule is defense in depth. It does not replace network-level protection.
 
@@ -35,4 +40,43 @@ var response = await Download.FetchWithValidatedRedirectsAsync(
 var response = await Download.FetchWithValidatedEndpointAsync(
     "https://auth.example.com/token",
     new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
+```
+
+Pass `requireDnsValidation: true` when the endpoint comes from untrusted data, as in MCP OAuth. Then an untrusted URL is rejected with a `DownloadError` unless you pass a custom `fetch` that validates DNS at connection time and pins the connection. The default fetch and `Download.Fetch` do not count, even when you pass `Download.Fetch` explicitly. A URL on `trustedOrigin` skips the check, and so does a runtime where `Download.IsBrowser` is true.
+
+## Generated file downloads
+
+`GenerateTextOptions.ExperimentalDownload` (`experimental_download` upstream) also handles generated file URLs that the model returns, for example an image URL from an image-generation response. Generated file URLs are always downloaded, so a `null` result for one throws a `DownloadException`. Without the option, they are downloaded with `Download.GetAsync` and the default fetch. Pass `Download.CreateDownload(fetch: ...)` to use your own transport.
+
+```csharp
+var result = await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Prompt = "Draw an otter.",
+    ExperimentalDownload = Download.CreateDownload(fetch: guardedFetch),
+});
+```
+
+The download function is called once per generated file with a one-item batch. The request carries the call's `AbortSignal`, and `CreateDownload` forwards it, so cancellation and timeouts reach the download. The SDK does not validate the URL before it calls your function: `Download.CreateDownload` validates it, so a custom function must do the same.
+
+## Google Vertex tool-result files and MaaS images
+
+`GoogleVertexProvider` downloads HTTP(S) file URLs in tool results and sends them to Vertex as inline data. The size of each file is limited by `VertexOptions.ToolResultDownloads.MaxBytes` (`toolResultDownloads.maxBytes` upstream), 7 MiB by default. Direct `gs://` references are not downloaded for Gemini 3 and later models: Vertex fetches them (`image/png`, `image/jpeg`, `image/webp`, `application/pdf`, `text/plain`).
+
+The downloads use `VertexOptions.DownloadFetch`, or `Download.Fetch`, or the default fetch, in that order. They never use the provider's `HttpClient`, so the Vertex API key or bearer token is not sent to the file host, and redirects are followed one validated hop at a time. For untrusted URLs, pass a DNS-validating `DownloadFetch`. Upstream forwards its one `fetch` option here. A .NET provider authenticates through its `HttpClient` handler, so the raw transport is a separate option.
+
+`GoogleVertexMaasProvider.ImageModel` downloads an image URL on another origin without the provider credentials. Set `GoogleVertexPartnerOptions.DownloadHttpClient` to a client that does not follow redirects to use your own transport.
+
+## Decision and extraction state downloads
+
+`DecideRequest.Download` and `ExtractRequest.Download` (`experimental_download` upstream) are the only way URL files in `state` are downloaded. Without the hook, a URL file throws `DownloadError` before any download or model call. Inline bytes, base64 content, and data URLs need no hook. For untrusted URLs, pass `Download.CreateDownload(fetch: ...)` with a `DownloadFetch` that validates DNS at connection time and pins the connection to the validated addresses. A model's own transport does not cover these downloads. `Download.CreateDownload()` without a `fetch` explicitly opts into the default fetch.
+
+```csharp
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    Model = openai.ExtractionModel("gpt-6-luna"),
+    State = new DecisionStatePart[] { new DecisionFilePart("application/pdf", FilePartInput.FromUrl(new Uri("https://example.com/invoice.pdf"))) },
+    Fields = fields,
+    Download = Download.CreateDownload(fetch: guardedFetch),
+});
 ```

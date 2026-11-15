@@ -87,7 +87,8 @@ public sealed class AnthropicModelCapabilities
             return Known(128000, true, true, true, true, true, false, false, false);
         }
 
-        if (modelId.IndexOf("claude-fable-5-1", StringComparison.Ordinal) >= 0)
+        if (modelId.IndexOf("claude-fable-5-2", StringComparison.Ordinal) >= 0
+            || modelId.IndexOf("claude-fable-5-1", StringComparison.Ordinal) >= 0)
         {
             return Known(128000, true, true, true, true, false, true, true, true);
         }

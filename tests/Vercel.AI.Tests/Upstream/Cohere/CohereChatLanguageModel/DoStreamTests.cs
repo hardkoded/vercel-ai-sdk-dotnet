@@ -52,4 +52,25 @@ public sealed class DoStreamTests
         Assert.Equal(withError ? FinishReason.Error : FinishReason.Interrupted, finish.FinishReason);
         Assert.Null(finish.RawFinishReason);
     }
+
+    [Fact]
+    [UpstreamTest("packages/cohere/src/cohere-chat-language-model.test.ts::doStream > text::should return undefined token counts when message-end has no tokens", Coverage = UpstreamCoverage.Partial, Note = "NoCacheInputTokens and TextTokens stay null because Cohere reports no cache-write or reasoning counts. Upstream reports them equal to the totals.", Commit = "3aad18a4178eada4ef31b4c169933a2dfe0f792f")]
+    public async Task Should_return_undefined_token_counts_when_message_end_has_no_tokens()
+    {
+        const string rawUsage = "{\"billed_units\":{\"input_tokens\":88,\"output_tokens\":13},\"cached_tokens\":128}";
+        var handler = CohereTestSupport.ChunkLines("{\"type\":\"message-end\",\"delta\":{\"finish_reason\":\"COMPLETE\",\"usage\":" + rawUsage + "}}");
+
+        var parts = await CohereTestSupport.Stream(CohereTestSupport.Model(handler), new LanguageModelCallOptions { Prompt = CohereTestSupport.TestPrompt().Prompt, IncludeRawChunks = false });
+
+        var finish = Assert.IsType<FinishStreamPart>(parts[^1]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal("COMPLETE", finish.RawFinishReason);
+        Assert.Null(finish.Usage.InputTokens);
+        Assert.Null(finish.Usage.OutputTokens);
+        Assert.Null(finish.Usage.NoCacheInputTokens);
+        Assert.Equal(128, finish.Usage.CacheReadTokens);
+        Assert.Null(finish.Usage.CacheWriteTokens);
+        Assert.Null(finish.Usage.ReasoningTokens);
+        JsonAssert.Equal(finish.Usage.Raw!.Value, rawUsage);
+    }
 }

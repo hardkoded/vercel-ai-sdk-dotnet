@@ -206,6 +206,28 @@ public static class Download
     /// <summary>User-Agent suffix sent on download requests.</summary>
     public static string? UserAgent { get; set; } = "ai-sdk/dotnet";
 
+    /// <summary>
+    /// Creates a download function with configurable options. Maps to <c>createDownload</c>. Pass it as the <c>Download</c> option of
+    /// <see cref="Operations.DecideRequest"/> and <see cref="Operations.ExtractRequest"/>. A URL the model supports is passed through
+    /// (a null result). All others are downloaded with <paramref name="fetch"/>.
+    /// </summary>
+    /// <param name="maxBytes">Maximum allowed download size in bytes. Default: 2 GiB.</param>
+    /// <param name="fetch">Fetch transport, for example one that validates DNS at connection time.</param>
+    public static Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> CreateDownload(long? maxBytes = null, DownloadFetch? fetch = null)
+    {
+        return async delegate (IReadOnlyList<DownloadRequestItem> requested)
+        {
+            var tasks = new Task<DownloadResult>[requested.Count];
+            for (var i = 0; i < requested.Count; i++)
+            {
+                var item = requested[i];
+                tasks[i] = item.IsUrlSupportedByModel ? Task.FromResult<DownloadResult>(null!) : GetAsync(item.Url, maxBytes, item.AbortSignal, fetch);
+            }
+
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+        };
+    }
+
     /// <summary>Downloads <paramref name="url"/>.</summary>
     public static Task<DownloadResult> GetAsync(Uri url, long? maxBytes = null, CancellationToken abortSignal = default, DownloadFetch? fetch = null)
     {
@@ -342,18 +364,28 @@ public static class Download
     /// <param name="fetch">Fetch used for the request. Defaults to <see cref="Fetch"/>, then the built-in fetch.</param>
     /// <param name="trustedOrigin">A developer-configured origin whose requests skip validation. Never derive it from response data.</param>
     /// <param name="redirect"><c>error</c> or <c>manual</c>.</param>
-    /// <exception cref="DownloadError">The URL is unsafe.</exception>
+    /// <param name="requireDnsValidation">
+    /// Reject untrusted URLs on server runtimes unless an explicit custom <paramref name="fetch"/> provides connect-time DNS
+    /// validation and connection pinning. The runtime's default fetch, including <see cref="Fetch"/>, does not satisfy this requirement.
+    /// </param>
+    /// <exception cref="DownloadError">The URL is unsafe, or <paramref name="requireDnsValidation"/> is set and no custom fetch was passed.</exception>
     public static async Task<DownloadResponse> FetchWithValidatedEndpointAsync(
         string url,
         DownloadRequest? request = null,
         DownloadFetch? fetch = null,
         string? trustedOrigin = null,
-        string redirect = "error")
+        string redirect = "error",
+        bool requireDnsValidation = false)
     {
         var isTrusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
         if (!isTrusted)
         {
             ValidateDownloadUrl(url);
+
+            if (requireDnsValidation && (fetch == null || fetch == Fetch) && !IsBrowser)
+            {
+                throw new DownloadError(url, "This server runtime requires a custom fetch with connect-time DNS validation for untrusted URLs");
+            }
         }
 
         var init = new DownloadRequest(request == null ? null : new HeaderCollection(request.Headers.Entries()), request?.AbortSignal ?? default, redirect)
@@ -404,6 +436,12 @@ public static class Download
                 // pending must not hold up the redirect.
                 _ = Task.Run(response.Cancel);
                 var next = new Uri(new Uri(currentUrl), location);
+                if (string.Equals(new Uri(currentUrl).Scheme, "https", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(next.Scheme, "http", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new DownloadError(url, "Redirect from HTTPS to HTTP was blocked");
+                }
+
                 if (currentHeaders != null && !ProviderValues.IsSameOrigin(next.AbsoluteUri, currentUrl))
                 {
                     var userAgent = currentHeaders.Get("user-agent");
@@ -483,19 +521,9 @@ public static class Download
 
     private static async Task<DownloadResponse> DefaultFetchCoreAsync(string url, DownloadRequest request)
     {
-#if NET5_0_OR_GREATER
-        // The pinned handler resolves, validates, and connects to the validated address. A developer-configured origin keeps
-        // the plain handler, because it may legitimately resolve to a private address.
-        using (var handler = request.IsTrustedOrigin ? (HttpMessageHandler)new HttpClientHandler { AllowAutoRedirect = false } : SafeLookup.CreatePinnedHandler())
-#else
-        // This target cannot pin a connection. Validate the resolved addresses just before the request instead.
-        if (!request.IsTrustedOrigin)
-        {
-            await SafeLookup.ResolveValidatedAsync(new Uri(url).DnsSafeHost, SafeLookup.SystemResolveAsync, request.AbortSignal).ConfigureAwait(false);
-        }
-
+        // The default fetch uses the runtime transport. It does not validate resolved DNS addresses or pin connections. An
+        // application that downloads untrusted URLs passes a DNS-validating fetch (the equivalent of guarded-fetch) instead.
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
-#endif
         using (var client = new HttpClient(handler))
         using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {
@@ -836,6 +864,9 @@ public sealed class DownloadRequestItem
 
     /// <summary>URL to download or pass through.</summary>
     public Uri Url { get; }
+
+    /// <summary>Signal for cancellation and timeouts of the enclosing call.</summary>
+    public CancellationToken AbortSignal { get; init; }
 
     /// <summary>When true, the model accepts the URL and the download function returns null.</summary>
     public bool IsUrlSupportedByModel { get; }

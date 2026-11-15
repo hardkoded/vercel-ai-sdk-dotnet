@@ -8,8 +8,8 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.HeyGen;
 
-/// <summary>HeyGen provider. It supports video generation only.</summary>
-public sealed class HeyGenProvider : OpenAICompatibleProvider
+/// <summary>HeyGen provider. It supports video generation and experimental decision models.</summary>
+public sealed class HeyGenProvider : OpenAICompatibleProvider, Operations.IDecisionProvider
 {
     /// <summary>Provider id.</summary>
     public const string ProviderId = "heygen";
@@ -44,6 +44,11 @@ public sealed class HeyGenProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
     public IVideoModel Video(string modelId) => VideoModel(modelId);
+
+    /// <summary>Creates an experimental decision model using the HeyGen Decision API. The provider id is <c>heygen.decision</c>. Maps to <c>decisionModel</c>.</summary>
+    public DecisionHeyGenModel DecisionModel(string modelId) => new DecisionHeyGenModel(this, modelId);
+
+    Operations.IDecisionCaller? Operations.IDecisionProvider.DecisionModel(string modelId) => DecisionModel(modelId);
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {

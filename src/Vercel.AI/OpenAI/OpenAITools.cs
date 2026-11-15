@@ -239,7 +239,10 @@ public sealed class OpenAIWebSearchPreviewToolOptions
     public OpenAIApproximateLocation? UserLocation { get; set; }
 }
 
-/// <summary>Options of <see cref="OpenAITools.Mcp"/>. One of <see cref="ServerUrl"/> or <see cref="ConnectorId"/> must be set.</summary>
+/// <summary>
+/// Options of <see cref="OpenAITools.Mcp"/>. One of <see cref="ServerUrl"/>, <see cref="ConnectorId"/>, or <see cref="TunnelId"/>
+/// must be set. <see cref="TunnelId"/> cannot be combined with <see cref="ServerUrl"/> or <see cref="ConnectorId"/>.
+/// </summary>
 public sealed class OpenAIMcpToolOptions
 {
     /// <summary>A label for this MCP server, used to identify it in tool calls.</summary>
@@ -251,7 +254,7 @@ public sealed class OpenAIMcpToolOptions
     /// <summary>Allow only read-only tools.</summary>
     public bool? AllowedToolsReadOnly { get; set; }
 
-    /// <summary>OAuth access token for the MCP server or connector.</summary>
+    /// <summary>OAuth access token usable with the remote MCP server or connector (including tunneled servers).</summary>
     public string? Authorization { get; set; }
 
     /// <summary>Identifier of a service connector.</summary>
@@ -271,6 +274,9 @@ public sealed class OpenAIMcpToolOptions
 
     /// <summary>URL of the MCP server.</summary>
     public string? ServerUrl { get; set; }
+
+    /// <summary>Identifier for an OpenAI Secure MCP tunnel.</summary>
+    public string? TunnelId { get; set; }
 }
 
 /// <summary>
@@ -358,9 +364,14 @@ public static class OpenAITools
             throw new ArgumentNullException(nameof(options));
         }
 
-        if (options.ServerUrl == null && options.ConnectorId == null)
+        if (options.ServerUrl == null && options.ConnectorId == null && options.TunnelId == null)
         {
-            throw new ArgumentException("One of serverUrl or connectorId must be provided.", nameof(options));
+            throw new ArgumentException("One of serverUrl, connectorId, or tunnelId must be provided.", nameof(options));
+        }
+
+        if (options.TunnelId != null && (options.ServerUrl != null || options.ConnectorId != null))
+        {
+            throw new ArgumentException("tunnelId cannot be combined with serverUrl or connectorId.", nameof(options));
         }
 
         var args = new JsonObject { ["serverLabel"] = options.ServerLabel };
@@ -401,6 +412,7 @@ public static class OpenAITools
 
         Set(args, "serverDescription", options.ServerDescription);
         Set(args, "serverUrl", options.ServerUrl);
+        Set(args, "tunnelId", options.TunnelId);
         return Create("openai.mcp", "mcp", args);
     }
 

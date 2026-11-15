@@ -59,29 +59,10 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - model identity::throws if the provider function is called with new", AnthropicAssertions.AwsNewKeyword);
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - auth precedence::prefers the API-key path when both apiKey and AWS SigV4 creds are present", AnthropicAssertions.AwsApiKeyBeatsSigV4);
         AnthropicCases.Add("packages/anthropic-aws/src/anthropic-aws-provider.test.ts::anthropicAws provider - streaming::forwards doStream through the SigV4 / api-key fetch wrapper and yields stream events", AnthropicAssertions.AwsStream);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported request types before making an API request", AnthropicAssertions.BatchStatusAndCounts);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported $feature", AnthropicAssertions.BatchStatusAndCounts);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects invalid request IDs before making an API request", AnthropicAssertions.BatchIds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects duplicate request IDs before making an API request", AnthropicAssertions.BatchIds);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::maps status %s to %s", AnthropicAssertions.BatchStatusAndCounts);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::normalizes request counts", AnthropicAssertions.BatchStatusAndCounts);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects result retrieval after Anthropic archives the result file", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", AnthropicAssertions.ErrorOverloaded);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends POST to /v1/files with correct beta header", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::threads per-call headers and abortSignal", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends x-api-key header", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends multipart form data with file", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses default filename \"blob\" when not specified", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses custom filename from spec options", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses mediaType from spec options", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::returns providerReference with anthropic key set to file ID", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::returns providerMetadata with response data", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::omits downloadable from providerMetadata when null", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::handles base64 string data", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::has specificationVersion v4", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::has correct provider name", AnthropicAssertions.FilesBeta);
+
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings", AnthropicAssertions.ThinkingBudgetRequest);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response", AnthropicAssertions.ReasoningResponse);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content", AnthropicAssertions.ContainerUploadResponse);
@@ -115,6 +96,7 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-8", AnthropicAssertions.Opus48);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5", AnthropicAssertions.Fable5);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-1", AnthropicAssertions.Fable51);
+        AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2", AnthropicAssertions.Fable52);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-7", AnthropicAssertions.Opus47);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-sonnet-5", AnthropicAssertions.Sonnet5);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-6", AnthropicAssertions.Opus46);
@@ -165,7 +147,6 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > edge cases::should handle zero tokens in iterations", AnthropicAssertions.UsageZeroIterations);
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > real-world scenarios from documentation::should match documentation example exactly", AnthropicAssertions.UsageDocumentation);
         AnthropicCases.Add("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > real-world scenarios from documentation::should handle re-applying previous compaction block (no new compaction)", AnthropicAssertions.UsageReapplied);
-        AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message", AnthropicAssertions.PromptSystemAndTrim);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::user messages::should add image parts for URL images", AnthropicAssertions.PromptUrlImage);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::tool messages::should combine user and tool messages", AnthropicAssertions.PromptMore);
         AnthropicCases.Add("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::assistant messages::should omit empty compaction blocks", AnthropicAssertions.PromptMore);

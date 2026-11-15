@@ -47,13 +47,36 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <summary>Builds the generateContent body without sending it.</summary>
     public GooglePreparedRequest Prepare(LanguageModelCallOptions options, bool streaming)
     {
-        return GoogleRequest.Prepare(ModelId, Provider, options, streaming);
+        return GoogleRequest.Prepare(ModelId, Provider, options, streaming, _provider.ToolResultDownloadSettings?.SupportsGoogleCloudStorageUrls ?? false);
+    }
+
+    private async Task<LanguageModelCallOptions> DownloadToolResultFilesAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    {
+        var settings = _provider.ToolResultDownloadSettings;
+        if (settings is null)
+        {
+            return options;
+        }
+
+        var supported = settings.SupportsGoogleCloudStorageUrls && GoogleModelCapability.Get(ModelId).UsesGemini3Features
+            ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls
+            : null;
+        var prompt = await DownloadToolResultFiles.DownloadToolResultFilesAsync(options.Prompt, cancellationToken, settings.MaxBytes, settings.Fetch, supported).ConfigureAwait(false);
+        if (ReferenceEquals(prompt, options.Prompt))
+        {
+            return options;
+        }
+
+        var copy = options.Copy();
+        copy.Prompt = prompt;
+        return copy;
     }
 
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(options ?? new LanguageModelCallOptions(), false);
+        options = await DownloadToolResultFilesAsync(options ?? new LanguageModelCallOptions(), cancellationToken).ConfigureAwait(false);
+        var prepared = Prepare(options, false);
         var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
         var context = Context(prepared);
         var response = await PostAsync(prepared.Body, headers, cancellationToken).ConfigureAwait(false);
@@ -149,7 +172,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <inheritdoc />
     public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
     {
-        options ??= new LanguageModelCallOptions();
+        options = await DownloadToolResultFilesAsync(options ?? new LanguageModelCallOptions(), cancellationToken).ConfigureAwait(false);
         var prepared = Prepare(options, true);
         var headers = await HeadersAsync(options, prepared, cancellationToken).ConfigureAwait(false);
         var json = GoogleJson.Write(prepared.Body);
@@ -403,6 +426,12 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             {
                                 // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
                                 yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted, Dynamic = tool.Dynamic };
+                            }
+                            else if (generated is GoogleToolResult codeResult && !codeResult.ToolName.StartsWith("server:", StringComparison.Ordinal))
+                            {
+                                // Code execution results correspond to the most recent executable code part.
+                                var resultJson = new JsonObject { ["outcome"] = codeResult.Outcome, ["output"] = codeResult.Output };
+                                yield return new ToolResultStreamPart(codeResult.ToolCallId, codeResult.ToolName, JsonSerializer.SerializeToElement(resultJson));
                             }
                             else if (generated is GoogleGeneratedFile file)
                             {

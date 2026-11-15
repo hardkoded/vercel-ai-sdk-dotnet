@@ -16,6 +16,7 @@ namespace Vercel.AI.Tests.Upstream.TypesafeAi.TypesafeAiDecisionModel;
 public sealed class TypesafeAiDecisionModelTests
 {
     private const string Prefix = "packages/typesafe-ai/src/typesafe-ai-decision-model.test.ts::";
+    private const string UpstreamCommit = "c70adf670be399319e6d06633501aab39e033600";
 
     [Fact]
     [UpstreamTest(Prefix + "sends all three question types and structured rubrics in one request", Coverage = UpstreamCoverage.Covered)]
@@ -67,7 +68,7 @@ public sealed class TypesafeAiDecisionModelTests
         Assert.Equal(0.99, requestsRefund.Probability);
         Assert.Equal(2, result.Rounding!.ProbabilityDecimals);
         Assert.Equal(2, result.Rounding.ScoreDecimals);
-        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"typesafe\":{\"confidence\":{\"department\":1,\"severity\":0.64}}}");
+        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"typesafe\":{\"confidence\":{\"department\":1,\"severity\":0.64},\"legend\":{\"severity\":{\"0\":{\"meaning\":\"Cosmetic; functionality works\"},\"1\":\"Functionality impaired; workaround exists\",\"2\":\"Blocking; no workaround\"}}}}");
         Assert.Equal(471, result.Usage!.InputTokens);
         Assert.Equal(71, result.Usage.OutputTokens);
         Assert.Equal("jev-1.13.0", result.Response!.ModelId);
@@ -143,8 +144,12 @@ public sealed class TypesafeAiDecisionModelTests
             options[index.ToString()] = null;
         }
 
+        yield return new object[] { Q("choice", null, new Dictionary<string, object?>()) };
         yield return new object[] { Q("choice", "Pick", options) };
         yield return new object[] { Q("score", "Rate", Enumerable.Range(0, 11).Select(index => (object?)("Level " + index)).ToList()) };
+        yield return new object[] { Q("score", null, new List<object?>()) };
+        yield return new object[] { Q("score", null, new List<object?> { null }) };
+        yield return new object[] { Q("score", null, new List<object?> { "Low", null }) };
     }
 
     [Theory]
@@ -159,6 +164,188 @@ public sealed class TypesafeAiDecisionModelTests
         Assert.Empty(server.Calls);
     }
 
+    private static string RequestBody(TypeSafeAiServer server)
+    {
+        return server.Calls[0].Body;
+    }
+
+    private static JsonNode? RequestState(TypeSafeAiServer server)
+    {
+        return JsonNode.Parse(RequestBody(server))!["state"];
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("true")]
+    [InlineData("false")]
+    [InlineData("0")]
+    [InlineData("42")]
+    [UpstreamTest(Prefix + "serializes a primitive JSON state part as text: %j", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Serializes_a_primitive_JSON_state_part_as_text(string valueJson)
+    {
+        var server = Server();
+        var value = JsonNode.Parse(valueJson);
+        await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(state: JsonState(ToObject(value))), CancellationToken.None);
+        Assert.Equal(valueJson, RequestState(server)!.GetValue<string>());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "preserves a single JSON string state without adding quotes", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Preserves_a_single_JSON_string_state_without_adding_quotes()
+    {
+        var server = Server();
+        await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(state: JsonState("Customer requests a refund.")), CancellationToken.None);
+        Assert.Equal("Customer requests a refund.", RequestState(server)!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("{\"nested\":{\"amount\":49},\"history\":[\"refund\"]}")]
+    [InlineData("[1,null]")]
+    [UpstreamTest(Prefix + "preserves a single JSON state part as native JSON: %j", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_a_single_JSON_state_part_as_native_JSON(string valueJson)
+    {
+        var server = Server();
+        await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(state: JsonState(ToObject(JsonNode.Parse(valueJson)))), CancellationToken.None);
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(valueJson), RequestState(server)), RequestBody(server));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [UpstreamTest(Prefix + "supports %i non-null score levels", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Supports_non_null_score_levels(int length)
+    {
+        var server = Server();
+        var criteria = Enumerable.Range(0, length).Select(index => (object?)("Level " + index)).ToList();
+        var legend = new JsonObject();
+        var probabilities = new JsonObject();
+        for (var index = 0; index < length; index++)
+        {
+            legend[index.ToString()] = "Level " + index;
+            probabilities[index.ToString()] = index == 0 ? 1 : 0;
+        }
+
+        var response = JsonNode.Parse(NativeResponseJson)!.AsObject();
+        response["answers"] = new JsonObject
+        {
+            ["rating"] = new JsonObject
+            {
+                ["type"] = "score",
+                ["score"] = 0,
+                ["probabilities"] = probabilities,
+                ["confidence"] = 1,
+                ["legend"] = legend.DeepClone(),
+            },
+        };
+        server.ResponseBody = response.ToJsonString();
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(
+            Call(new Dictionary<string, DecisionQuestion> { ["rating"] = Q("score", null, criteria) }),
+            CancellationToken.None);
+        var rating = JsonNode.Parse(RequestBody(server))!["questions"]!["rating"]!;
+        Assert.Equal("score", rating["type"]!.GetValue<string>());
+        Assert.Equal(length, rating["criteria"]!.AsArray().Count);
+        Assert.Equal("score", result.Answers["rating"].Type);
+        Assert.Equal(0, result.Answers["rating"].Score);
+        JsonAssert.Equal(result.ProviderMetadata!.Value.GetProperty("typesafe").GetProperty("legend"), new JsonObject { ["rating"] = legend }.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "forwards null boolean criteria", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Forwards_null_boolean_criteria()
+    {
+        var server = Server();
+        var questions = Questions();
+        questions["requestsRefund"] = new DecisionQuestion("boolean", In("Refund?")) { HasCriteria = true };
+        await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(questions), CancellationToken.None);
+        var refund = JsonNode.Parse(RequestBody(server))!["questions"]!["requestsRefund"]!.AsObject();
+        Assert.Equal("noul", refund["type"]!.GetValue<string>());
+        Assert.Equal("Refund?", refund["instructions"]!.GetValue<string>());
+        Assert.True(refund.ContainsKey("criteria"));
+        Assert.Null(refund["criteria"]);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"instructions\":undefined}")]
+    [InlineData("{\"instructions\":null}")]
+    [UpstreamTest(Prefix + "forwards optional box instructions: %j", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Forwards_optional_box_instructions(string questionFields)
+    {
+        var server = Server();
+        var box = new JsonObject { ["top"] = 0.25, ["bottom"] = 0.82, ["left"] = 0.44, ["right"] = 0.84 };
+        var response = JsonNode.Parse(NativeResponseJson)!.AsObject();
+        response["answers"] = new JsonObject { ["target"] = new JsonObject { ["type"] = "box", ["box"] = box.DeepClone(), ["confidence"] = null } };
+        server.ResponseBody = response.ToJsonString();
+        var explicitNull = questionFields == "{\"instructions\":null}";
+        var question = explicitNull ? new DecisionQuestion("box", null) { HasInstructions = true } : new DecisionQuestion("box", null);
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(
+            Call(new Dictionary<string, DecisionQuestion> { ["target"] = question }),
+            CancellationToken.None);
+        var target = JsonNode.Parse(RequestBody(server))!["questions"]!["target"]!.AsObject();
+        var expected = new JsonObject { ["type"] = "box" };
+        if (explicitNull)
+        {
+            expected["instructions"] = null;
+        }
+
+        Assert.True(JsonNode.DeepEquals(expected, target), target.ToJsonString());
+        Assert.Equal("true", server.Calls[0].Headers["typesafe-danger-zone-images"]);
+        var answer = result.Answers["target"];
+        Assert.Equal("box", answer.Type);
+        Assert.Equal((0.25, 0.82, 0.44, 0.84), (answer.Box!.Top, answer.Box.Bottom, answer.Box.Left, answer.Box.Right));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "accepts a nullish score legend: %j", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Accepts_a_nullish_score_legend(bool legendIsNull)
+    {
+        var server = Server();
+        var response = JsonNode.Parse(NativeResponseJson)!.AsObject();
+        var severity = response["answers"]!["severity"]!.AsObject();
+        if (legendIsNull)
+        {
+            severity["legend"] = null;
+        }
+        else
+        {
+            severity.Remove("legend");
+        }
+
+        server.ResponseBody = response.ToJsonString();
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(), CancellationToken.None);
+        JsonAssert.Equal(result.ProviderMetadata!.Value.GetProperty("typesafe").GetProperty("legend"), "{}");
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "preserves structured score legends in provider metadata and the raw response", Coverage = UpstreamCoverage.Covered, Commit = UpstreamCommit)]
+    public async Task Preserves_structured_score_legends_in_provider_metadata_and_the_raw_response()
+    {
+        var server = Server();
+        var legend = "{\"0\":{\"meaning\":\"Cosmetic\",\"examples\":[\"Color mismatch\"]},\"1\":[\"Workaround exists\",{\"impact\":\"Limited\"}],\"2\":\"Blocking\"}";
+        var response = JsonNode.Parse(NativeResponseJson)!.AsObject();
+        response["answers"]!["severity"]!["legend"] = JsonNode.Parse(legend);
+        server.ResponseBody = response.ToJsonString();
+        var result = await CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(Call(), CancellationToken.None);
+        JsonAssert.Equal(result.ProviderMetadata!.Value.GetProperty("typesafe").GetProperty("legend"), "{\"severity\":" + legend + "}");
+        JsonAssert.Equal(result.Response!.Body!.Value, response.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "rejects undefined score levels before HTTP: $criteria", Coverage = UpstreamCoverage.Partial, Note = "C# has no undefined, so a null level stands in for an undefined one.", Commit = UpstreamCommit)]
+    public async Task Rejects_undefined_score_levels_before_HTTP(bool withLeadingLevel)
+    {
+        var server = Server();
+        var criteria = withLeadingLevel ? new List<object?> { "Low", null } : new List<object?> { null };
+        await Assert.ThrowsAsync<InvalidArgumentError>(() => CreateProvider(server).DecisionModel("jev-latest").DoDecideAsync(
+            Call(new Dictionary<string, DecisionQuestion> { ["rating"] = Q("score", null, criteria) }, state: JsonState("test")),
+            CancellationToken.None));
+        Assert.Empty(server.Calls);
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "accepts null optional metadata without inventing usage", Coverage = UpstreamCoverage.Covered)]
     public async Task Accepts_null_optional_metadata_without_inventing_usage()
@@ -169,7 +356,7 @@ public sealed class TypesafeAiDecisionModelTests
         Assert.Null(result.Usage!.InputTokens);
         Assert.Null(result.Usage.OutputTokens);
         Assert.Equal("jev-latest", result.Response!.ModelId);
-        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"typesafe\":{\"confidence\":{}}}");
+        JsonAssert.Equal(result.ProviderMetadata!.Value, "{\"typesafe\":{\"confidence\":{},\"legend\":{}}}");
     }
 
     [Fact]

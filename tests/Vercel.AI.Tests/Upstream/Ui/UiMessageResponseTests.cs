@@ -286,8 +286,7 @@ public sealed class UiMessageResponseTests
             throwOnExecute: true);
         Assert.Contains("\"type\":\"tool-output-error\"", failed, StringComparison.Ordinal);
         Assert.Contains("\"toolCallId\":\"call_2\"", failed, StringComparison.Ordinal);
-        Assert.Contains("\"errorText\":\"An error occurred.\"", failed, StringComparison.Ordinal);
-        Assert.DoesNotContain("tool failed", failed, StringComparison.Ordinal);
+        Assert.Contains("\"errorText\":\"InvalidOperationException: tool failed\"", failed, StringComparison.Ordinal);
     }
 
     [Fact]

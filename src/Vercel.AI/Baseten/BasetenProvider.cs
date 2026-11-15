@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -109,7 +111,65 @@ public sealed class BasetenProvider : OpenAICompatibleProvider
         options.SelectErrorMessage = OpenAICompatibleTransforms.BasetenError;
         options.SupportsStructuredOutputs = true;
         options.MaxEmbeddingsPerCall = 128;
+        var modelUrl = (options as BasetenOptions)?.ModelUrl;
+        if (string.IsNullOrEmpty(modelUrl) || modelUrl!.IndexOf("/sync/v1", StringComparison.Ordinal) < 0)
+        {
+            options.TransformRequestBody = TransformRequestBody;
+        }
+
         return options;
+    }
+
+    private const string DeepSeekV4ProModel = "deepseek-ai/DeepSeek-V4-Pro-0813";
+
+    private static JsonObject TransformRequestBody(JsonObject body, IList<CallWarning> warnings)
+    {
+        var responseFormat = body["response_format"] as JsonObject;
+        var formatType = TextOf(responseFormat?["type"]);
+        if (TextOf(body["model"]) != DeepSeekV4ProModel
+            || TextOf(body["reasoning_effort"]) == "none"
+            || (formatType != "json_schema" && formatType != "json_object"))
+        {
+            return body;
+        }
+
+        // With JSON mode enabled, Baseten returns this model's answer as reasoning
+        // and leaves content empty. Keep reasoning and prompt for JSON instead.
+        warnings.Add(new CallWarning(
+            "compatibility",
+            "responseFormat",
+            "JSON instructions are injected into the system message and response_format is omitted because Baseten DeepSeek V4 Pro 0813 returns JSON as reasoning when JSON mode and reasoning are combined. The response is not constrained by the server."));
+
+        JsonElement? schema = null;
+        if (responseFormat!["json_schema"] is JsonObject jsonSchema && jsonSchema["schema"] is { } schemaNode)
+        {
+            using var document = JsonDocument.Parse(schemaNode.ToJsonString());
+            schema = document.RootElement.Clone();
+        }
+
+        body.Remove("response_format");
+        var messages = body["messages"] as JsonArray ?? new JsonArray();
+        body.Remove("messages");
+        var rewritten = new JsonArray
+        {
+            new JsonObject
+            {
+                ["role"] = "system",
+                ["content"] = Vercel.AI.GenerateText.JsonInstructions.InjectJsonInstruction(null, schema),
+            },
+        };
+        foreach (var message in messages)
+        {
+            rewritten.Add(message?.DeepClone());
+        }
+
+        body["messages"] = rewritten;
+        return body;
+    }
+
+    private static string? TextOf(JsonNode? node)
+    {
+        return node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
     }
 }
 

@@ -15,10 +15,11 @@ public sealed class AnthropicCacheControlValidator
     private readonly string _providerOptionsName;
     private int _breakpoints;
 
-    /// <summary>Creates a validator. <paramref name="providerOptionsName"/> is read before <c>anthropic</c>.</summary>
-    public AnthropicCacheControlValidator(string providerOptionsName = "anthropic")
+    /// <summary>Creates a validator. <paramref name="providerOptionsName"/> is read before <c>anthropic</c>. <paramref name="initialBreakpointCount"/> counts breakpoints already used, such as a top-level cache control.</summary>
+    public AnthropicCacheControlValidator(string providerOptionsName = "anthropic", int initialBreakpointCount = 0)
     {
         _providerOptionsName = providerOptionsName;
+        _breakpoints = initialBreakpointCount;
     }
 
     /// <summary>Warnings collected while reading cache controls.</summary>

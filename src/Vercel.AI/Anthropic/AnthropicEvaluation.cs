@@ -160,10 +160,13 @@ public sealed class AnthropicEvaluationModel : IRubricModel
                 prepared.Betas,
                 prepared.UsesJsonResponseTool,
                 prepared.ProviderOptionsName,
-                prepared.UsedCustomProviderKey);
+                prepared.UsedCustomProviderKey,
+                prepared.MarkCodeExecutionDynamic,
+                prepared.PreparedTools,
+                prepared.ComputerToolsetName);
         }
 
-        var headers = _provider.CreateHeaders(prepared.Betas, call.Headers);
+        var headers = await _provider.CreateHeadersAsync(prepared.Betas, call.Headers, null, cancellationToken).ConfigureAwait(false);
         var response = await _provider.Http.SendJsonStringAsync(
             HttpMethod.Post,
             _provider.MessagesUri(),

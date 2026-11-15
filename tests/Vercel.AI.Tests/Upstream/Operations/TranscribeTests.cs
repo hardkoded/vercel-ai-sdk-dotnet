@@ -8,7 +8,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for transcription.</summary>
-[Collection("WarningLog")]
+[Collection("LogWarnings")]
 public sealed class TranscribeTests
 {
     private const string Stream = "packages/ai/src/transcribe/stream-transcribe.test.ts::experimental_streamTranscribe::";
@@ -33,7 +33,7 @@ public sealed class TranscribeTests
         });
         await model.Started.Task;
         Assert.Same(audio, model.Call!.Audio);
-        Assert.Equal("pcm16", model.Call.InputAudioFormat);
+        Assert.Equal("pcm16", model.Call.InputAudioFormat.Type);
         Assert.True(model.Call.IncludeRawChunks);
         Assert.True(model.Call.ProviderOptions.GetProperty("p").GetBoolean());
         Assert.Equal("1", model.Call.Headers["x-test"]);

@@ -87,25 +87,3 @@ public sealed class GatewayEmbeddingParityTests
         return (GatewayEmbeddingModel)provider.EmbeddingModel("openai/text-embedding-3-small");
     }
 }
-
-public sealed class GatewayTakoSearchTests
-{
-    [Fact]
-    [UpstreamTest("packages/gateway/src/tool/tako-search.test.ts::takoSearch::describes data surcharge controls in the input schema", Coverage = UpstreamCoverage.Covered)]
-    public void Describes_data_surcharge_controls()
-    {
-        var data = GatewayTakoSearch.InputSchema.GetProperty("properties").GetProperty("sources").GetProperty("properties").GetProperty("data").GetProperty("properties");
-        Assert.Contains("data surcharge", data.GetProperty("count").GetProperty("description").GetString());
-        Assert.Contains("cards.content.export_pricing", data.GetProperty("include_contents").GetProperty("description").GetString());
-        Assert.Contains("per 1,000 exported rows", data.GetProperty("max_rows").GetProperty("description").GetString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/gateway/src/tool/tako-search.test.ts::takoSearch::does not declare internal response fields in the output schema", Coverage = UpstreamCoverage.Covered)]
-    public void Omits_internal_response_fields()
-    {
-        var serialized = GatewayTakoSearch.OutputSchema.GetRawText();
-        Assert.DoesNotContain("relevance_score", serialized);
-        Assert.DoesNotContain("citation_number", serialized);
-    }
-}

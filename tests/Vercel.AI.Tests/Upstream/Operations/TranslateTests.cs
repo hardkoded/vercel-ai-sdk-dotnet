@@ -32,7 +32,7 @@ public sealed class TranslateTests
         });
         await model.Started.Task;
         Assert.Same(audio, model.Call!.Audio);
-        Assert.Equal("pcm16", model.Call.InputAudioFormat);
+        Assert.Equal("pcm16", model.Call.InputAudioFormat.Type);
         Assert.Equal("es", model.Call.TargetLanguage);
         Assert.Equal("en", model.Call.SourceLanguage);
         Assert.Equal("mp3", model.Call.OutputAudioFormat);

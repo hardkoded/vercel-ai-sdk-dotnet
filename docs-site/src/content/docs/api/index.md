@@ -59,6 +59,7 @@ Generated from the XML documentation of `Vercel.AI`. Regenerate it with `npm run
 - [Vercel.AI.QuiverAI](/api/Vercel.AI.QuiverAI/) — Public types in the `Vercel.AI.QuiverAI` namespace.
 - [Vercel.AI.Replicate](/api/Vercel.AI.Replicate/) — Public types in the `Vercel.AI.Replicate` namespace.
 - [Vercel.AI.RevAI](/api/Vercel.AI.RevAI/) — Public types in the `Vercel.AI.RevAI` namespace.
+- [Vercel.AI.Tencent](/api/Vercel.AI.Tencent/) — Public types in the `Vercel.AI.Tencent` namespace.
 - [Vercel.AI.Testing](/api/Vercel.AI.Testing/) — Test doubles for language models.
 - [Vercel.AI.TogetherAI](/api/Vercel.AI.TogetherAI/) — Public types in the `Vercel.AI.TogetherAI` namespace.
 - [Vercel.AI.TypeSafeAi](/api/Vercel.AI.TypeSafeAi/) — TypeSafe decision models.

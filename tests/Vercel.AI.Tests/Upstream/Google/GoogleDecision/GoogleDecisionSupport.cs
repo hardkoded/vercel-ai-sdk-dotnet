@@ -25,7 +25,8 @@ internal static class GoogleDecisionSupport
         return new Dictionary<string, DecisionQuestion>
         {
             ["department"] = Q("choice", "Pick the team.", new Dictionary<string, object?> { ["technical"] = "Bugs", ["billing"] = "Charges" }),
-            ["severity"] = Q("score", "[\"Rate severity.\"]", new List<object?> { "Low", "Medium", "High" }),
+            ["severity"] = Q("score", new[] { "Rate severity." }, new List<object?> { "Low", "Medium", "High" }),
+            ["requestsRefund"] = Q("boolean", "Is a refund requested?"),
         };
     }
 
@@ -33,10 +34,13 @@ internal static class GoogleDecisionSupport
         IReadOnlyDictionary<string, DecisionQuestion>? questions = null,
         string providerOptions = "{}",
         IReadOnlyDictionary<string, string>? headers = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<object?>? state = null,
+        double? maxOutputTokens = null,
+        string? reasoning = null)
     {
         using var document = JsonDocument.Parse(providerOptions);
-        var state = new List<object?>
+        state ??= new List<object?>
         {
             new Dictionary<string, object?>
             {
@@ -44,22 +48,18 @@ internal static class GoogleDecisionSupport
                 ["value"] = new Dictionary<string, object?> { ["message"] = "A billing issue with a workaround." },
             },
         };
-        return new DecisionModelCall(P(state), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken);
+        return new DecisionModelCall(P(state), questions ?? Questions(), document.RootElement.Clone(), headers ?? new Dictionary<string, string>(), cancellationToken, maxOutputTokens, reasoning);
     }
 
-    internal static (DecisionLanguageModel Model, GoogleDecisionCapture Capture) Setup(JsonNode? body = null, bool withBaseUrl = true)
+    internal static (GoogleDecisionModel Model, GoogleDecisionCapture Capture) Setup(JsonNode? body = null, int status = 200)
     {
-        var capture = new GoogleDecisionCapture { ResponseJson = (body ?? Fixture()).ToJsonString() };
+        var capture = new GoogleDecisionCapture { ResponseJson = (body ?? Fixture()).ToJsonString(), Status = (HttpStatusCode)status };
         capture.ResponseHeaders["x-request-id"] = "req-test";
-        var options = new GoogleOptions { ApiKey = "test-key" };
-        if (withBaseUrl)
-        {
-            options.BaseUrl = "https://example.com/v1beta";
-        }
+        var options = new GoogleOptions { ApiKey = "test-key", BaseUrl = "https://example.com/v1beta/" };
 
         options.Headers["x-provider"] = "configured";
         var provider = GoogleProvider.Create(options, capture);
-        return (provider.DecisionModel("gemini-3.5-flash-lite"), capture);
+        return (provider.DecisionModel("gemini-decision-1"), capture);
     }
 
     internal static JsonObject RequestBody(GoogleDecisionCapture capture)
@@ -79,6 +79,8 @@ internal sealed class GoogleDecisionCapture : HttpMessageHandler
 
     public Dictionary<string, string> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+
     public string ResponseJson { get; set; } = "{}";
 
     public Dictionary<string, string> ResponseHeaders { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -94,7 +96,7 @@ internal sealed class GoogleDecisionCapture : HttpMessageHandler
             Headers[header.Key] = string.Join(",", header.Value);
         }
 
-        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ResponseJson, Encoding.UTF8, "application/json") };
+        var response = new HttpResponseMessage(Status) { Content = new StringContent(ResponseJson, Encoding.UTF8, "application/json") };
         foreach (var header in ResponseHeaders)
         {
             response.Headers.TryAddWithoutValidation(header.Key, header.Value);

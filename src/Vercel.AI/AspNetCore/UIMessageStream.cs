@@ -28,19 +28,28 @@ public static class UIMessageStreamExtensions
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="onError">
-    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. Errors of provider-executed tools are not masked.
+    /// Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when
+    /// <c>redactToolErrors</c> is enabled, which is the default when this callback is provided. Errors of provider-executed tools are not masked.
+    /// </param>
+    /// <param name="redactToolErrors">
+    /// Replaces the error text of failed tool calls (tool execution errors and invalid tool calls) with the result of <c>onError</c>.
+    /// By default, the client receives the same error text as the model. The UI messages are sent back to the model on the next request,
+    /// so a different text changes the message history that the model's reasoning and answers are based on. Some models reject such a history,
+    /// for example Anthropic models with preserved thinking. To keep error details away from the model and the client, throw a safe error from the tool.
+    /// Defaults to <c>true</c> when <c>onError</c> is provided, so that an existing <c>onError</c> keeps handling tool errors, and to <c>false</c> otherwise.
     /// </param>
     public static IResult ToUIMessageStreamResult(
         this StreamTextResult result,
         int? keepAliveMs = null,
-        Func<string, string>? onError = null)
+        Func<string, string>? onError = null,
+        bool? redactToolErrors = null)
     {
         if (result is null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        return new UIMessageStreamResult(result, keepAliveMs, onError);
+        return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors);
     }
 }
 
@@ -54,17 +63,20 @@ public sealed class UIMessageStreamResult : IResult
     private readonly StreamTextResult _result;
     private readonly int? _keepAliveMs;
     private readonly Func<string, string>? _onError;
+    private readonly bool? _redactToolErrors;
 
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null)
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
+    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<string, string>? onError = null, bool? redactToolErrors = null)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
         _keepAliveMs = keepAliveMs;
         _onError = onError;
+        _redactToolErrors = redactToolErrors;
     }
 
     /// <inheritdoc />
@@ -76,7 +88,7 @@ public sealed class UIMessageStreamResult : IResult
         }
 
         ApplyProtocolHeaders(httpContext.Response);
-        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError).ConfigureAwait(false);
+        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError, _redactToolErrors).ConfigureAwait(false);
     }
 
     /// <summary>Writes the UI message stream to <paramref name="destination"/>.</summary>
@@ -87,13 +99,15 @@ public sealed class UIMessageStreamResult : IResult
     /// A positive value up to 2147483647 writes <c>: stream-open</c> before the start event and <c>: keep-alive</c> while the next part is still pending.
     /// </param>
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
-    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
+    /// <param name="onError">Optional mapper for <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
+    /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
         int? keepAliveMs = null,
         CancellationToken cancellationToken = default,
-        Func<string, string>? onError = null)
+        Func<string, string>? onError = null,
+        bool? redactToolErrors = null)
     {
         if (result is null)
         {
@@ -110,7 +124,7 @@ public sealed class UIMessageStreamResult : IResult
         // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
         // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
         var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, cancellationToken), keepAliveMs, cancellationToken);
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -197,275 +211,13 @@ public sealed class UIMessageStreamResult : IResult
     private static async IAsyncEnumerable<string> ReadSseChunks(
         StreamTextResult result,
         Func<string, string>? onError,
+        bool? redactToolErrors,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var messageId = JsonValues.GenerateId("msg_");
-        var stepOpen = false;
-        string? textId = null;
-        string? reasoningId = null;
-        var providerExecutedIds = new HashSet<string>(StringComparer.Ordinal);
-        var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
-        onError ??= _ => "An error occurred.";
-
-        yield return Frame(new JsonObject { ["type"] = "start", ["messageId"] = messageId });
-
-        await foreach (var part in result.Stream(cancellationToken).ConfigureAwait(false))
+        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors };
+        await foreach (var chunk in UIMessageStreamConverter.ToUIMessageStream(result.Stream(cancellationToken), options, cancellationToken).ConfigureAwait(false))
         {
-            if (part is not StartPart && part is not StepFinishPart && part is not FinishPart && part is not ErrorPart && part is not AbortPart && !stepOpen)
-            {
-                yield return Frame(new JsonObject { ["type"] = "start-step" });
-                stepOpen = true;
-            }
-
-            switch (part)
-            {
-                case TextDeltaPart text:
-                    if (textId == null)
-                    {
-                        textId = "text";
-                        yield return Frame(new JsonObject { ["type"] = "text-start", ["id"] = textId });
-                    }
-
-                    yield return Frame(new JsonObject { ["type"] = "text-delta", ["id"] = textId, ["delta"] = text.Text });
-                    break;
-                case ReasoningDeltaPart reasoning:
-                    if (reasoningId == null)
-                    {
-                        reasoningId = "reasoning";
-                        yield return Frame(new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningId });
-                    }
-
-                    yield return Frame(new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoningId, ["delta"] = reasoning.Text });
-                    break;
-                case ToolInputStartPart inputStart:
-                    var inputStartChunk = new JsonObject
-                    {
-                        ["type"] = "tool-input-start",
-                        ["toolCallId"] = inputStart.Id,
-                        ["toolName"] = inputStart.ToolName,
-                    };
-                    if (inputStart.InputEncoding is ToolInputEncoding inputEncoding)
-                    {
-                        inputStartChunk["inputEncoding"] = inputEncoding == ToolInputEncoding.Text ? "text" : "json";
-                    }
-
-                    if (inputStart.ProviderExecuted is bool providerExecuted)
-                    {
-                        if (providerExecuted)
-                        {
-                            providerExecutedIds.Add(inputStart.Id);
-                        }
-
-                        inputStartChunk["providerExecuted"] = providerExecuted;
-                    }
-
-                    AddProviderMetadata(inputStartChunk, inputStart.ProviderMetadata);
-                    if (inputStart.ToolMetadata is { } inputStartMetadata)
-                    {
-                        inputStartChunk["toolMetadata"] = JsonSerializer.SerializeToNode(inputStartMetadata);
-                    }
-
-                    if (inputStart.Dynamic)
-                    {
-                        inputStartChunk["dynamic"] = true;
-                    }
-
-                    if (inputStart.Title != null)
-                    {
-                        inputStartChunk["title"] = inputStart.Title;
-                    }
-
-                    yield return Frame(inputStartChunk);
-                    break;
-                case ToolInputDeltaPart inputDelta:
-                    yield return Frame(new JsonObject
-                    {
-                        ["type"] = "tool-input-delta",
-                        ["toolCallId"] = inputDelta.Id,
-                        ["inputTextDelta"] = inputDelta.Delta,
-                    });
-                    break;
-                case ToolCallPart call:
-                    var toolInput = new JsonObject
-                    {
-                        ["type"] = call.ToolCall.Invalid ? "tool-input-error" : "tool-input-available",
-                        ["toolCallId"] = call.ToolCall.ToolCallId,
-                        ["toolName"] = call.ToolCall.ToolName,
-                        ["input"] = ParseJson(call.ToolCall.ArgumentsJson),
-                    };
-                    if (call.ToolCall.ProviderExecuted)
-                    {
-                        providerExecutedIds.Add(call.ToolCall.ToolCallId);
-                        toolInput["providerExecuted"] = true;
-                    }
-
-                    AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
-                    if (call.ToolCall.ToolMetadata is { } toolMetadata)
-                    {
-                        toolInput["toolMetadata"] = JsonSerializer.SerializeToNode(toolMetadata);
-                    }
-
-                    // Every invalid call is dynamic, but upstream marks it only when its tool is unknown. This writer has no tool list,
-                    // so a call whose tool exists but whose input is invalid is not marked.
-                    if (call.ToolCall.Dynamic && (!call.ToolCall.Invalid || call.ToolCall.Error is NoSuchToolError))
-                    {
-                        toolInput["dynamic"] = true;
-                    }
-
-                    if (call.ToolCall.Invalid && call.ToolCall.Error is not NoSuchToolError)
-                    {
-                        knownToolInvalidIds.Add(call.ToolCall.ToolCallId);
-                    }
-
-                    if (call.ToolCall.Invalid)
-                    {
-                        toolInput["errorText"] = onError(ErrorMessage.ToErrorString(call.ToolCall.Error!));
-                    }
-
-                    if (call.ToolCall.Title != null)
-                    {
-                        toolInput["title"] = call.ToolCall.Title;
-                    }
-
-                    yield return Frame(toolInput);
-                    break;
-                case ToolApprovalRequestPart approvalRequest:
-                    yield return Frame(new JsonObject
-                    {
-                        ["type"] = "tool-approval-request",
-                        ["approvalId"] = approvalRequest.ApprovalId,
-                        ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
-                    });
-                    break;
-                case ToolErrorPart toolError:
-                    var providerError = providerExecutedIds.Contains(toolError.Result.ToolCallId);
-                    var errorOutput = new JsonObject
-                    {
-                        ["type"] = "tool-output-error",
-                        ["toolCallId"] = toolError.Result.ToolCallId,
-                        ["errorText"] = providerError
-                            ? ProviderErrorText(toolError.Result.OutputJson)
-                            : onError(toolError.Result.Error?.Message ?? toolError.Result.ModelOutput ?? toolError.Result.OutputJson),
-                    };
-                    if (providerError)
-                    {
-                        errorOutput["providerExecuted"] = true;
-                        AddProviderMetadata(errorOutput, toolError.Result.ProviderMetadata);
-                    }
-
-                    AddToolMetadata(errorOutput, toolError.Result.ToolMetadata);
-                    if (toolError.Result.Dynamic && !knownToolInvalidIds.Contains(toolError.Result.ToolCallId))
-                    {
-                        errorOutput["dynamic"] = true;
-                    }
-
-                    yield return Frame(errorOutput);
-                    break;
-                case ToolResultPart toolResult:
-                    var toolOutput = new JsonObject
-                    {
-                        ["type"] = "tool-output-available",
-                        ["toolCallId"] = toolResult.Result.ToolCallId,
-                        ["output"] = ParseJson(toolResult.Result.OutputJson),
-                    };
-                    if (providerExecutedIds.Contains(toolResult.Result.ToolCallId))
-                    {
-                        toolOutput["providerExecuted"] = true;
-                        AddProviderMetadata(toolOutput, toolResult.Result.ProviderMetadata);
-                    }
-
-                    AddToolMetadata(toolOutput, toolResult.Result.ToolMetadata);
-                    if (toolResult.Result.Dynamic)
-                    {
-                        toolOutput["dynamic"] = true;
-                    }
-
-                    yield return Frame(toolOutput);
-                    break;
-                case SourcePart source:
-                    var sourceChunk = new JsonObject
-                    {
-                        ["type"] = "source-url",
-                        ["sourceId"] = source.Source.Id,
-                        ["url"] = source.Source.Url,
-                    };
-                    if (source.Source.Title != null)
-                    {
-                        sourceChunk["title"] = source.Source.Title;
-                    }
-
-                    AddProviderMetadata(sourceChunk, source.Source.ProviderMetadata);
-                    yield return Frame(sourceChunk);
-                    break;
-                case StepFinishPart stepFinish:
-                    if (textId != null)
-                    {
-                        var textEnd = new JsonObject { ["type"] = "text-end", ["id"] = textId };
-                        var citations = new List<Citation>();
-                        foreach (var content in stepFinish.Step.Content)
-                        {
-                            if (content is GeneratedText { Citations: { } textCitations })
-                            {
-                                citations.AddRange(textCitations);
-                            }
-                        }
-
-                        if (citations.Count > 0)
-                        {
-                            textEnd["citations"] = CitationJson.ToJson(citations);
-                        }
-
-                        yield return Frame(textEnd);
-                        textId = null;
-                    }
-
-                    if (reasoningId != null)
-                    {
-                        yield return Frame(new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId });
-                        reasoningId = null;
-                    }
-
-                    if (!stepOpen)
-                    {
-                        yield return Frame(new JsonObject { ["type"] = "start-step" });
-                    }
-
-                    yield return Frame(new JsonObject { ["type"] = "finish-step" });
-                    stepOpen = false;
-                    break;
-                case AbortPart abortPart:
-                    yield return Frame(new JsonObject { ["type"] = "abort", ["reason"] = abortPart.Reason });
-                    break;
-                case ErrorPart error:
-                    var errorText = onError(error.Message);
-                    yield return Frame(new JsonObject { ["type"] = "error", ["errorText"] = errorText });
-                    break;
-                case FinishPart finish:
-                    if (textId != null)
-                    {
-                        yield return Frame(new JsonObject { ["type"] = "text-end", ["id"] = textId });
-                        textId = null;
-                    }
-
-                    if (reasoningId != null)
-                    {
-                        yield return Frame(new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId });
-                        reasoningId = null;
-                    }
-
-                    if (stepOpen)
-                    {
-                        yield return Frame(new JsonObject { ["type"] = "finish-step" });
-                        stepOpen = false;
-                    }
-
-                    yield return Frame(new JsonObject
-                    {
-                        ["type"] = "finish",
-                        ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason),
-                    });
-                    break;
-            }
+            yield return Frame(chunk);
         }
 
         yield return "data: [DONE]\n\n";
@@ -585,65 +337,5 @@ public sealed class UIMessageStreamResult : IResult
     private static string Frame(JsonObject payload)
     {
         return "data: " + payload.ToJsonString() + "\n\n";
-    }
-
-    private static void AddToolMetadata(JsonObject payload, IReadOnlyDictionary<string, JsonElement>? metadata)
-    {
-        if (metadata != null)
-        {
-            payload["toolMetadata"] = JsonSerializer.SerializeToNode(metadata);
-        }
-    }
-
-    private static void AddProviderMetadata(JsonObject payload, JsonElement? metadata)
-    {
-        if (metadata is not JsonElement element || element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return;
-        }
-
-        var node = JsonNode.Parse(element.GetRawText());
-        if (node != null)
-        {
-            payload["providerMetadata"] = node;
-        }
-    }
-
-    // A provider-executed error keeps its structure: a string stays text and any other value is its JSON.
-    private static string ProviderErrorText(string outputJson)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(outputJson);
-            return document.RootElement.ValueKind == JsonValueKind.String ? document.RootElement.GetString()! : outputJson;
-        }
-        catch (JsonException)
-        {
-            return outputJson;
-        }
-    }
-
-    private static JsonNode ParseJson(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return new JsonObject();
-        }
-
-        try
-        {
-            var node = JsonNode.Parse(json);
-            if (node != null)
-            {
-                return node;
-            }
-
-            using var document = JsonDocument.Parse(json);
-            return JsonSerializer.SerializeToNode(document.RootElement)!;
-        }
-        catch (JsonException)
-        {
-            return JsonValue.Create(json)!;
-        }
     }
 }

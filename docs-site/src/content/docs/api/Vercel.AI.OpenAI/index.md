@@ -46,7 +46,7 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 | [OpenAIJsonSchema](/api/Vercel.AI.OpenAI/OpenAIJsonSchema/) | Removes JSON Schema keywords OpenAI does not enforce: string propertyNames and regex lookaround in pattern. |
 | [OpenAIJsonSchemaResult](/api/Vercel.AI.OpenAI/OpenAIJsonSchemaResult/) | JSON Schema adjusted for OpenAI structured outputs. |
 | [OpenAILanguageModelCapabilities](/api/Vercel.AI.OpenAI/OpenAILanguageModelCapabilities/) | Request limits derived from an OpenAI model id. |
-| [OpenAIMcpToolOptions](/api/Vercel.AI.OpenAI/OpenAIMcpToolOptions/) | Options of Mcp(OpenAIMcpToolOptions). One of ServerUrl or ConnectorId must be set. |
+| [OpenAIMcpToolOptions](/api/Vercel.AI.OpenAI/OpenAIMcpToolOptions/) | Options of Mcp(OpenAIMcpToolOptions). One of ServerUrl, ConnectorId, or TunnelId must be set. TunnelId cannot be combined with ServerUrl or ConnectorId. |
 | [OpenAIOptions](/api/Vercel.AI.OpenAI/OpenAIOptions/) | OpenAI provider settings. |
 | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) | OpenAI provider: Chat Completions, Responses, embeddings, images, speech, transcription, files, and batches. |
 | [OpenAIRealtimeClientSecret](/api/Vercel.AI.OpenAI/OpenAIRealtimeClientSecret/) | A realtime client secret. |

@@ -23,7 +23,7 @@ One Deepgram text-to-speech call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L126)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a speech request.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L129)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Headers merged over the provider headers.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L156)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Instructions_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Instructions"></a>
@@ -82,7 +82,7 @@ Ignored. Deepgram does not accept instructions; a warning is returned.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L150)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Language_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Language"></a>
@@ -99,7 +99,7 @@ Language. Used to compose family model ids. `auto` falls back to `en`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L147)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_OutputFormat"></a>
@@ -116,7 +116,7 @@ Output format, such as `mp3`, `wav`, or `linear16_16000`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L141)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_ProviderOptions_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_ProviderOptions"></a>
@@ -133,7 +133,7 @@ Provider options. The `deepgram` object is read.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L153)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Speed_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Speed"></a>
@@ -150,7 +150,7 @@ Speaking rate, sent as the `speed` query parameter.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L144)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Text_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Text"></a>
@@ -167,7 +167,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L135)
 
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Voice_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramSpeechRequest_Voice"></a>
@@ -184,4 +184,4 @@ Voice. Required for the `aura` and `aura-2` family ids, where it becomes part of
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L138)

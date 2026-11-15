@@ -14,7 +14,8 @@ namespace Vercel.AI.Perplexity;
 
 /// <summary>
 /// Answers questions through the Perplexity Decisions API (<c>POST {base}/v1/decisions</c>). Boolean questions are sent as
-/// native <c>noul</c> questions. Probabilities and scores keep full precision. Provider options are not supported.
+/// native <c>noul</c> questions. Probabilities and scores keep full precision. Provider options <c>mode</c> (<c>web_grounding</c>)
+/// and <c>maxStaleness</c> enable web-grounded decisions.
 /// </summary>
 public sealed class PerplexityDecisionModel : IDecisionCaller
 {
@@ -122,6 +123,7 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             throw new ArgumentNullException(nameof(call));
         }
 
+        var (mode, maxStaleness) = ParseProviderOptions(call.ProviderOptions);
         if (call.Questions.Count == 0 || call.Questions.Count > MaxQuestions)
         {
             throw new InvalidArgumentException("questions", call.Questions, "Perplexity Decisions supports 1 to 128 questions per request.");
@@ -139,6 +141,16 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             ["state"] = PerplexityDecisionState.Convert(call.State),
             ["questions"] = questions,
         };
+        if (mode != null)
+        {
+            body["mode"] = mode;
+        }
+
+        if (maxStaleness != null)
+        {
+            body["max_staleness"] = maxStaleness.Value;
+        }
+
         var headers = new Dictionary<string, string?>();
         foreach (var pair in call.Headers)
         {
@@ -203,14 +215,34 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
         {
             foreach (var option in options.EnumerateObject())
             {
+                if (option.Name is "mode" or "maxStaleness")
+                {
+                    continue;
+                }
+
                 warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.perplexity." + option.Name));
             }
         }
 
-        var metadata = JsonSerializer.SerializeToElement(new JsonObject
+        var perplexityMetadata = new JsonObject();
+        if (root.TryGetProperty("search_results", out var searchResults) && searchResults.ValueKind != JsonValueKind.Null)
         {
-            [PerplexityProvider.ProviderId] = new JsonObject { ["confidence"] = confidence, ["legend"] = legend },
-        });
+            perplexityMetadata["searchResults"] = ValidateEvidence(searchResults, "search_results", true, response.Body);
+        }
+
+        if (root.TryGetProperty("fetched_results", out var fetchedResults) && fetchedResults.ValueKind != JsonValueKind.Null)
+        {
+            perplexityMetadata["fetchedResults"] = ValidateEvidence(fetchedResults, "fetched_results", false, response.Body);
+        }
+
+        if (ToolCalls(root, response.Body) is { } toolCalls)
+        {
+            perplexityMetadata["toolCalls"] = toolCalls;
+        }
+
+        perplexityMetadata["confidence"] = confidence;
+        perplexityMetadata["legend"] = legend;
+        var metadata = JsonSerializer.SerializeToElement(new JsonObject { [PerplexityProvider.ProviderId] = perplexityMetadata });
         string? requestId = null;
         foreach (var header in response.Headers)
         {
@@ -222,6 +254,126 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
 
         // Perplexity returns full-precision probabilities, so no rounding is declared.
         return new DecisionModelResult(answers, warnings, usage, null, metadata, new ProviderResponse(response.Headers, root, id: requestId, modelId: modelId ?? ModelId));
+    }
+
+    private static (string? Mode, long? MaxStaleness) ParseProviderOptions(JsonElement providerOptions)
+    {
+        if (providerOptions.ValueKind != JsonValueKind.Object
+            || !providerOptions.TryGetProperty(PerplexityProvider.ProviderId, out var options)
+            || options.ValueKind != JsonValueKind.Object)
+        {
+            return (null, null);
+        }
+
+        InvalidArgumentException Invalid(string message)
+        {
+            return new InvalidArgumentException("providerOptions", options.GetRawText(), "Invalid perplexity provider options: " + message);
+        }
+
+        string? mode = null;
+        long? maxStaleness = null;
+        if (options.TryGetProperty("mode", out var modeElement) && modeElement.ValueKind != JsonValueKind.Null)
+        {
+            if (modeElement.ValueKind != JsonValueKind.String || modeElement.GetString() != "web_grounding")
+            {
+                throw Invalid("mode must be 'web_grounding'.");
+            }
+
+            mode = "web_grounding";
+        }
+
+        if (options.TryGetProperty("maxStaleness", out var staleness) && staleness.ValueKind != JsonValueKind.Null)
+        {
+            if (staleness.ValueKind != JsonValueKind.Number
+                || !staleness.TryGetDecimal(out var number)
+                || number != decimal.Truncate(number)
+                || number < 0
+                || number > long.MaxValue)
+            {
+                throw Invalid("maxStaleness must be a non-negative integer.");
+            }
+
+            maxStaleness = (long)number;
+        }
+
+        return (mode, maxStaleness);
+    }
+
+    private static JsonNode? ValidateEvidence(JsonElement element, string name, bool search, string body)
+    {
+        bool Text(JsonElement item, string property, bool nullable)
+        {
+            if (!item.TryGetProperty(property, out var value))
+            {
+                return nullable;
+            }
+
+            return value.ValueKind == JsonValueKind.String || (nullable && value.ValueKind == JsonValueKind.Null);
+        }
+
+        var valid = element.ValueKind == JsonValueKind.Array;
+        if (valid)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object
+                    || !Text(item, "title", false)
+                    || !Text(item, "url", false)
+                    || !Text(item, "snippet", false)
+                    || (search && (!Text(item, "date", true) || !Text(item, "last_updated", true))))
+                {
+                    valid = false;
+                    break;
+                }
+            }
+        }
+
+        if (!valid)
+        {
+            throw new ApiException("Type validation failed: " + name + " is malformed.", 200, body);
+        }
+
+        return JsonNode.Parse(element.GetRawText());
+    }
+
+    private static JsonObject? ToolCalls(JsonElement root, string body)
+    {
+        if (!root.TryGetProperty("usage", out var usage)
+            || usage.ValueKind != JsonValueKind.Object
+            || !usage.TryGetProperty("tool_calls_details", out var details)
+            || details.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (details.ValueKind != JsonValueKind.Object)
+        {
+            throw new ApiException("Type validation failed: tool_calls_details must be an object.", 200, body);
+        }
+
+        var result = new JsonObject();
+        foreach (var tool in details.EnumerateObject())
+        {
+            if (tool.Value.ValueKind != JsonValueKind.Object)
+            {
+                throw new ApiException("Type validation failed: tool_calls_details entries must be objects.", 200, body);
+            }
+
+            JsonNode? invocation = null;
+            if (tool.Value.TryGetProperty("invocation", out var count) && count.ValueKind != JsonValueKind.Null)
+            {
+                if (count.ValueKind != JsonValueKind.Number)
+                {
+                    throw new ApiException("Type validation failed: invocation must be a number.", 200, body);
+                }
+
+                invocation = JsonNode.Parse(count.GetRawText());
+            }
+
+            result[tool.Name] = new JsonObject { ["invocation"] = invocation };
+        }
+
+        return result;
     }
 
     private static string? AsString(object? value)

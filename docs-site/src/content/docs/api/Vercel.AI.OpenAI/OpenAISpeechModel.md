@@ -25,11 +25,34 @@ OpenAI speech model.
 
 **Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L118)
 
 ## Constructors
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel__ctor_"></a>
+<a id="Vercel_AI_OpenAI_OpenAISpeechModel__ctor_Vercel_AI_Azure_AzureOpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
+
+### `OpenAISpeechModel(AzureOpenAIProvider, string, Func<DateTimeOffset>?)`
+
+
+```csharp
+public OpenAISpeechModel(AzureOpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+```
+
+
+Creates an Azure OpenAI speech model for a deployment. The provider id is `azure.speech` and requests go to
+`/openai/v1/audio/speech` (or the deployments route) with the Azure headers.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `provider` | [AzureOpenAIProvider](/api/Vercel.AI.Azure/AzureOpenAIProvider/) |  |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L148)
+
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
 
 ### `OpenAISpeechModel(OpenAIProvider, string, Func<DateTimeOffset>?)`
@@ -50,7 +73,7 @@ Creates a speech model.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L129)
 
 ## Properties
 
@@ -69,7 +92,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L167)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Provider"></a>
@@ -86,7 +109,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L164)
 
 ## Methods
 
@@ -112,7 +135,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L230)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_GenerateAsync_Vercel_AI_OpenAI_OpenAISpeechCall_System_Threading_CancellationToken_"></a>
@@ -136,7 +159,7 @@ Synthesizes speech and returns the audio bytes, warnings, and response headers.
 
 **Returns:** [Task&lt;OpenAISpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L237)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Now_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Now"></a>
@@ -153,7 +176,7 @@ Clock used when a caller records a response timestamp.
 
 **Returns:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L254)
 
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Prepare_"></a>
 <a id="Vercel_AI_OpenAI_OpenAISpeechModel_Prepare_System_String_Vercel_AI_OpenAI_OpenAISpeechCall_"></a>
@@ -177,4 +200,4 @@ Builds the speech request body.
 
 **Returns:** [OpenAISpeechPreparation](/api/Vercel.AI.OpenAI/OpenAISpeechPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Speech/OpenAISpeechModel.cs#L170)

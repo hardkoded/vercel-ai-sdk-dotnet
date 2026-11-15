@@ -2,13 +2,25 @@
   <Folder Name="/examples/">
     <Project Path="examples/Agent/Agent.csproj" />
     <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
+    <Project Path="examples/DeepSeekResponses/DeepSeekResponses.csproj" />
     <Project Path="examples/DecidePerplexityCriteriaOnly/DecidePerplexityCriteriaOnly.csproj" />
     <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
+    <Project Path="examples/ExtractAnthropicBasic/ExtractAnthropicBasic.csproj" />
+    <Project Path="examples/ExtractGoogleBasic/ExtractGoogleBasic.csproj" />
+    <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
+    <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
+    <Project Path="examples/DecidePerplexityWebGrounding/DecidePerplexityWebGrounding.csproj" />
+    <Project Path="examples/DecideHeyGenBasic/DecideHeyGenBasic.csproj" />
+    <Project Path="examples/DecideHeyGenVideo/DecideHeyGenVideo.csproj" />
+    <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
+    <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
+    <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />
     <Project Path="examples/Providers/Providers.csproj" />
     <Project Path="examples/StreamText/StreamText.csproj" />
+    <Project Path="examples/StreamTranscribeDeepgramBasic/StreamTranscribeDeepgramBasic.csproj" />
     <Project Path="examples/Tools/Tools.csproj" />
     <Project Path="examples/UIMessageStream/UIMessageStream.csproj" />
   </Folder>

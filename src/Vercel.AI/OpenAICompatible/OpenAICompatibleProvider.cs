@@ -393,13 +393,34 @@ public class OpenAICompatibleProvider : ProviderBase
     }
 
     /// <summary>
-    /// Azure URL for <paramref name="path"/>: <c>/openai/deployments/{modelId}{path}</c> when
-    /// <see cref="OpenAICompatibleOptions.AzureUseDeploymentBasedUrls"/> is set, otherwise <c>/openai/v1{path}</c>.
+    /// Azure URL for <paramref name="path"/>. Uses <c>{baseUrl}/deployments/{modelId}{path}</c> when
+    /// <see cref="OpenAICompatibleOptions.AzureUseDeploymentBasedUrls"/> is set. A custom gateway or a complete
+    /// <c>/openai/v1</c> URL is used as is, and any other URL gets <c>/v1{path}</c>. Maps to <c>url</c> in <c>createAzure</c>.
     /// </summary>
     internal Uri AzureUri(string path, string modelId)
     {
-        var route = Options.AzureUseDeploymentBasedUrls ? "deployments/" + Uri.EscapeDataString(modelId) : "v1";
-        return WithQuery(ApiKeys.Combine(Options.BaseUrl, "openai/" + route + "/" + path + "?api-version=" + Uri.EscapeDataString(Options.AzureApiVersion!)));
+        var info = Azure.AzureOpenAIProvider.GetAzureOpenAIBaseURLInfo(Options.BaseUrl);
+        var prefix = Options.BaseUrl.TrimEnd('/');
+        string full;
+        if (Options.AzureUseDeploymentBasedUrls)
+        {
+            full = prefix + "/deployments/" + Uri.EscapeDataString(modelId) + "/" + path;
+        }
+        else if (!info.IsAzureOpenAI || info.IsVersioned)
+        {
+            full = prefix + "/" + path;
+        }
+        else
+        {
+            full = prefix + "/v1/" + path;
+        }
+
+        if (Options.AzureUseDeploymentBasedUrls || (info.IsAzureOpenAI && !info.IsVersioned && !info.IsFoundryProject))
+        {
+            full += "?api-version=" + Uri.EscapeDataString(Options.AzureApiVersion!);
+        }
+
+        return WithQuery(new Uri(full, UriKind.Absolute));
     }
 
     /// <summary>Chat Completions URL for a model. Azure deployment routes include the model id.</summary>

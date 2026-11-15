@@ -37,11 +37,41 @@ var result = await client.GenerateTextAsync(new GenerateTextOptions
 
 ## Stream
 
-`StreamTextResult.TextStream` yields text deltas. `Stream` yields every part. In ASP.NET Core, `result.ToUIMessageStreamResult()` writes `text/event-stream` for a JavaScript `useChat` client. Pass `keepAliveMs` to write `: stream-open` immediately and `: keep-alive` comments while the next part is still pending. Do not add a React or Razor chat component for that protocol.
+`StreamTextResult.TextStream` yields text deltas. `Stream` yields every part. In ASP.NET Core, `result.ToUIMessageStreamResult()` writes `text/event-stream` for a JavaScript `useChat` client. Pass `keepAliveMs` to write `: stream-open` immediately and `: keep-alive` comments while the next part is still pending. Do not add a React or Razor chat component for that protocol. The client gets a failed tool call's error text unchanged, the same text the model received. Pass `redactToolErrors: true` to replace it with the `onError` result (`An error occurred.` by default). `redactToolErrors` defaults to `true` when you pass `onError`. A stream `error` chunk stays masked.
+
+## Decide and extract
+
+`Decide.DecideAsync` answers typed questions (choice, score, boolean, box) about one shared state. `Extract.ExtractAsync` is the other direction: it pulls typed values out of text, JSON, images, or PDFs.
+
+```csharp
+var result = await Extract.ExtractAsync(new ExtractRequest
+{
+    Model = OpenAIProvider.Create().ExtractionModel("gpt-6-luna"),
+    State = "Invoice INV-2041, total 1,250.00 USD, due March 3.",
+    ReferenceDate = "2027-01-15",
+    Fields = new Dictionary<string, ExtractionField>
+    {
+        ["number"] = new ExtractionField("text", "The invoice number."),
+        ["total"] = new ExtractionField("number") { Unit = "USD", Decimals = 2 },
+        ["due"] = new ExtractionField("date"),
+    },
+});
+var total = result.Answers["total"].Number; // null when the state has no total
+```
+
+Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.
+
+`GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`.
 
 ## Providers
 
 Each package exposes `CreateXxx()` / `AddXxx()` and reads the same environment variable as the JavaScript provider. Gateway uses `AI_GATEWAY_API_KEY` and `https://ai-gateway.vercel.sh/v4/ai`. OpenAI-compatible providers share `Vercel.AI.OpenAICompatible`.
+
+OpenAI transcription (`OpenAIProvider.TranscriptionModel(id)`, cast to `ITranscriptionCaller`) streams `gpt-transcribe`, `gpt-live-transcribe` and `gpt-realtime-whisper` over the Realtime WebSocket with `StreamTranscribe`; set `OpenAIOptions.WebSocket` for a custom socket. `providerOptions.openai` takes `include`, `languages` and `keywords` for REST calls. See `docs/articles/providers.md`.
+
+Azure transcription (`AzureOpenAIProvider.Transcription(id)`) picks the OpenAI, Speech (MAI-Transcribe) or MAI streaming API for each call. Set `providerOptions.azure.api` to override it, and see `docs/articles/providers.md` for the options.
+
+Google Vertex (`GoogleVertexProvider`) downloads HTTP(S) file URLs in tool results as inline data: `VertexOptions.ToolResultDownloads.MaxBytes` (default 7 MiB) limits each file, and `VertexOptions.DownloadFetch` is the transport, which never carries the Vertex credentials. `GoogleVertexMaasProvider.ImageModel(id)` downloads image URLs on another origin without credentials; `GoogleVertexPartnerOptions.DownloadHttpClient` sets that client. See `docs/articles/secure-url-fetching.md`.
 
 Register the client with `services.AddAiSdk()`. Add `services.AddAiSdkOpenTelemetry()` to record spans on the `Vercel.AI` activity source.
 

@@ -76,6 +76,40 @@ internal static class OpenAIJson
         return null;
     }
 
+    /// <summary>
+    /// Merges the options under <paramref name="namespaces"/>; later namespaces win key by key. Maps to
+    /// <c>resolveProviderOptions</c> with the <c>merge</c> resolution.
+    /// </summary>
+    public static JsonElement? MergedProvider(IReadOnlyDictionary<string, JsonElement>? providerOptions, params string[] namespaces)
+    {
+        var resolved = ProviderOptionsResolver.Resolve<JsonElement>(
+            providerOptions,
+            namespaces,
+            ProviderOptionsResolution.Merge,
+            element => element,
+            (first, second) =>
+            {
+                if (first.ValueKind != JsonValueKind.Object || second.ValueKind != JsonValueKind.Object)
+                {
+                    return second;
+                }
+
+                var merged = new JsonObject();
+                foreach (var property in first.EnumerateObject())
+                {
+                    merged[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+
+                foreach (var property in second.EnumerateObject())
+                {
+                    merged[property.Name] = JsonNode.Parse(property.Value.GetRawText());
+                }
+
+                return Element(merged);
+            });
+        return resolved.Namespaces.Count == 0 ? null : resolved.Options;
+    }
+
     public static JsonElement? Child(JsonElement? element, string name)
     {
         if (element == null || element.Value.ValueKind != JsonValueKind.Object || !element.Value.TryGetProperty(name, out var value))

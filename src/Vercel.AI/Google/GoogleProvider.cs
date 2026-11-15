@@ -66,6 +66,9 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     /// <summary>Options.</summary>
     public GoogleOptions Options { get; }
 
+    /// <summary>Settings for downloading remote files in tool results before conversion. Null leaves tool-result URLs alone.</summary>
+    internal virtual GoogleToolResultDownloadSettings? ToolResultDownloadSettings => null;
+
     /// <summary>Gemini Batch API. Downloads batch results.</summary>
     public Operations.IBatchApi? ExperimentalBatch()
     {
@@ -95,13 +98,27 @@ public class GoogleProvider : ProviderBase, Operations.IBatchProvider
     }
 
     /// <summary>
-    /// Experimental Choice/Score/Boolean decision model that uses Gemini structured output.
+    /// Experimental decision model that uses the Gemini Decisions API (<c>POST /decisions</c>).
     /// The provider id is <c>google.decision</c>.
     /// </summary>
-    public Operations.DecisionLanguageModel DecisionModel(string modelId)
+    public GoogleDecisionModel DecisionModel(string modelId)
     {
         var provider = System.Text.RegularExpressions.Regex.Replace(ModelProvider, @"\.generative-ai$", string.Empty) + ".decision";
-        return new Operations.DecisionLanguageModel(LanguageModel(modelId), provider);
+        return new GoogleDecisionModel(this, modelId, provider);
+    }
+
+    /// <summary>Deprecated alias of <see cref="DecisionModel"/>. Maps to <c>evaluationModel</c>.</summary>
+    [Obsolete("Use DecisionModel instead.")]
+    public GoogleDecisionModel EvaluationModel(string modelId)
+    {
+        return DecisionModel(modelId);
+    }
+
+    /// <summary>Experimental typed field extraction model that uses Gemini structured output. The provider id is <c>google.extraction</c>.</summary>
+    public Operations.ExtractionLanguageModel ExtractionModel(string modelId)
+    {
+        var provider = System.Text.RegularExpressions.Regex.Replace(ModelProvider, @"\.generative-ai$", string.Empty) + ".extraction";
+        return new Operations.ExtractionLanguageModel(LanguageModel(modelId), provider);
     }
 
     /// <summary>Language model that posts to the Interactions API.</summary>

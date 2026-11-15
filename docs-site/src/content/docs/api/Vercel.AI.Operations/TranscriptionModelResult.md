@@ -23,18 +23,18 @@ Transcription model response.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L62)
 
 ## Constructors
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult__ctor_"></a>
-<a id="Vercel_AI_Operations_TranscriptionModelResult__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_TranscriptSegment__System_String_System_Nullable_System_Double__System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_OperationWarning__System_Nullable_System_Text_Json_JsonElement__Vercel_AI_Operations_ProviderResponse_"></a>
+<a id="Vercel_AI_Operations_TranscriptionModelResult__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_TranscriptSegment__System_String_System_Nullable_System_Double__System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_OperationWarning__System_Nullable_System_Text_Json_JsonElement__Vercel_AI_Operations_ProviderResponse_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_TranscriptSegment__"></a>
 
-### `TranscriptionModelResult(string?, IReadOnlyList<TranscriptSegment>?, string?, double?, IReadOnlyList<OperationWarning>?, JsonElement?, ProviderResponse?)`
+### `TranscriptionModelResult(string?, IReadOnlyList<TranscriptSegment>?, string?, double?, IReadOnlyList<OperationWarning>?, JsonElement?, ProviderResponse?, IReadOnlyList<TranscriptSegment>?)`
 
 
 ```csharp
-public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
+public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, IReadOnlyList<TranscriptSegment>? words = null)
 ```
 
 
@@ -51,8 +51,9 @@ Creates a result.
 | `warnings` | [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
+| `words` | [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L65)
 
 ## Properties
 
@@ -71,7 +72,7 @@ Duration in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L90)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Language_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Language"></a>
@@ -88,7 +89,7 @@ Language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L87)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_ProviderMetadata"></a>
@@ -105,7 +106,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L96)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Response_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Response"></a>
@@ -122,7 +123,7 @@ Response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L99)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Segments_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Segments"></a>
@@ -139,7 +140,7 @@ Segments.
 
 **Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L81)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Text_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Text"></a>
@@ -156,7 +157,7 @@ Transcript text, or &lt;a href="https://learn.microsoft.com/dotnet/csharp/langua
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L78)
 
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelResult_Warnings"></a>
@@ -173,4 +174,21 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L93)
+
+<a id="Vercel_AI_Operations_TranscriptionModelResult_Words_"></a>
+<a id="Vercel_AI_Operations_TranscriptionModelResult_Words"></a>
+
+### Words
+
+
+```csharp
+public IReadOnlyList<TranscriptSegment>? Words { get; }
+```
+
+
+Word-level timings reported by the provider, or &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null"&gt;null&lt;/a&gt; when they are unavailable. Maps to `words`.
+
+**Value:** [IReadOnlyList&lt;TranscriptSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L84)

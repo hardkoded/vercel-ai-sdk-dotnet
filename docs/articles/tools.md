@@ -34,6 +34,10 @@ The default stop condition is one step. That step’s tool calls still run, and 
 
 `GenerateTextOptions.Instructions`, `StreamTextOptions.Instructions`, and `AgentOptions.Instructions` take an `Instructions` value (`Vercel.AI.Prompt`): a string, one `SystemModelMessage`, or an array of `SystemModelMessage`. Each converts implicitly, so `Instructions = "Be brief."` still works. Use a system message to attach provider options to the instructions. An array becomes several leading system messages, in order. `Instructions` wins over `System`. Code that reads the property now gets an `Instructions`: use `Text` for a string and `Messages` for system messages. `ToolCallRepairContext.Instructions` and `System` are `Instructions` too, so a repair function reads `.Text` or `.Messages` there as well. The string conversion rejects null: assigning a null `string?` variable to `Instructions` throws `ArgumentNullException`. Leave `Instructions` unset when there are none.
 
+System messages in `Messages` are rejected with an `InvalidPromptException` ("System messages are not allowed in the prompt or messages fields. Use the instructions option instead."). Set `AllowSystemInMessages = true` on `GenerateTextOptions` or `StreamTextOptions` to allow them, for example to replay a history that holds a system message with provider options such as `openai.textFormatUpdate`. Maps to `allowSystemInMessages`. `AgentOptions.AllowSystemInMessages` does the same for `Agent.GenerateAsync(messages)` and `Agent.Stream(messages)`, which take a `IReadOnlyList<ModelMessage>` instead of a string prompt. `PrepareCall` can replace it by setting `AllowSystemInMessages` on the options it returns. Maps to `allowSystemInMessages` of `ToolLoopAgentSettings`.
+
+`StreamTextResult` exposes `Output` (the parsed structured output) and `ProviderMetadata` (of the last step) as tasks that complete when the stream finishes, and `ConsumeStreamAsync()` to read the stream without processing the parts. They map to `output`, `providerMetadata` and `consumeStream`.
+
 Set `AgentOptions.PrepareCall` to change the options of each `Agent.GenerateAsync` and `Agent.Stream` call. It receives the options the agent would use, including the default `StopWhen`, and returns replacement options (or null to keep them). Returning them unchanged keeps the default warning; setting `StopWhen` replaces the default limit and silences it.
 
 A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated. A call that waits for approval (see below) also ends the loop, and no warning is logged.
@@ -187,6 +191,40 @@ A provider tool declared with an input schema (the four-argument `Tool.ProviderD
 
 In the UI message stream, provider-executed chunks are marked `providerExecuted`, and an error chunk keeps the provider's error text or JSON instead of the `onError` text. A provider-executed tool approval request (MCP) is not supported ([#542](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/542)).
 
+## Gateway Tako search tool
+
+`GatewayTakoSearch.Create(config)` declares the AI Gateway's Tako Search tool, a provider-defined tool (`gateway.tako_search`) that searches the web and Tako's curated data. `GatewayTakoSearchConfig` sets the search options up front. `VariableCost`, `MaxVariableCostUsd` and `ExtraBody` are developer-only: the model can't see or set them, and they are not in the tool input schema.
+
+```csharp
+var tool = GatewayTakoSearch.Create(new GatewayTakoSearchConfig
+{
+    MaxVariableCostUsd = 0.1,
+});
+```
+
+- **Effort** _string?_ - `deep`, `fast` or `instant`. `fast` is the default balanced option.
+- **Sources** _TakoSearchSourcesConfig?_ - Sources to search. Omit to search both curated data and the web. `Data` (`TakoDataSourceConfig`) has `Count` (1-20), `IncludeContents`, `Mode` (`inline` or `url`), `ContentFormat` (`card_json`, `csv`, `json_compact`, `json_records`), `MaxRows`, `NodeIds` and `Strict`. `Web` (`TakoWebSourceConfig`) has `Count` (1-20), `IncludeContents`, `Category` (`finance`, `news`, `sports`), `IncludeDomains`, `ExcludeDomains`, `SnippetMaxChars`, `Highlights`, `ArticleContentMaxChars`, `PublishedAfter` and `PublishedBefore`. With `IncludeContents` on a data source, each result adds a data surcharge: limit `Count` and `MaxRows` to control cost.
+- **Location** _TakoLocation?_ - End-user `Latitude` and `Longitude` for localized results.
+- **CountryCode**, **Locale**, **Timezone** _string?_ - ISO 3166-1 alpha-2 country code, BCP-47 locale and IANA timezone.
+- **OutputSettings** _TakoOutputSettings?_ - `ImageDarkMode`, and `ForceRefresh` (instant effort only). They control card rendering.
+- **IncludeRelated** _int?_ - Maximum related search suggestions to include (1-20).
+- **VariableCost** _bool?_ - Serve data from sources priced per unit, such as web traffic and SEO. Each such card adds a charge, and the total per call is capped by `MaxVariableCostUsd`. The Gateway defaults it to `true`. Set it to `false` to opt out; those cards then come back as placeholders. Only searches that include the data index return these cards.
+- **MaxVariableCostUsd** _double?_ - The most one search call can be charged in variable cost, in USD. The Gateway defaults it to `0.25`. Set `RemoveMaxVariableCostCap` to `true` to remove the cap (`maxVariableCostUsd: null`). Tako checks each card's maximum charge (`content.export_pricing.variable_cost_max_usd`) in rank order. A card that doesn't fit comes back as a placeholder with `reason: "over_cap"`, even if its actual charge would have fit. `0` returns only the cards whose charge the base price already covers. It can't be combined with `VariableCost = false`.
+- **ExtraBody** _IDictionary&lt;string, JsonNode?&gt;_ - Extra Tako request fields, in snake_case, deep-merged into the request body last. Use it for Tako parameters this tool doesn't model yet. It can't set a field the tool already models (the gateway answers `invalid_input`), Tako rejects unknown keys (`api_error`), and it is limited to 16,384 serialized characters.
+
+When Tako withholds a card's data, it returns a placeholder card instead. A placeholder keeps its title and description but carries no data. `placeholder.withheld_source` names the source, and `placeholder.reason` is `not_served` (variable cost is off, or the account isn't served that source) or `over_cap`. `usage.variable_cost.cost_usd` reports the variable-cost charge for the call.
+
+The model fills the input schema (`GatewayTakoSearch.InputSchema`): `query`, plus `effort`, `sources`, `location`, `country_code`, `locale`, `timezone`, `output_settings` and `include_related` in snake_case.
+
+Deserialize the tool output (`ExecutedTool.OutputJson`) into `TakoSearchOutput` to read it typed: `Response` is the `TakoSearchResponse`, and `Error` is a `GatewayToolError` (`Error` code, `Message`, `StatusCode`, `RetryAfter`, `StatusText`) when the tool failed. It holds `TakoCard`, `TakoWebResult` and `TakoResultContent`. Fields the schema doesn't declare are kept in `AdditionalProperties`.
+
+```csharp
+var output = JsonSerializer.Deserialize<TakoSearchOutput>(toolResult.OutputJson);
+Console.WriteLine(output?.Response?.Usage?.VariableCost?.CostUsd);
+```
+
+`GatewayTakoSearch.OutputSchema` describes these fields, including `relevance_score`, `content.export_pricing.variable_cost_max_usd` and `usage.variable_cost`. `export_pricing.free_rows` is deprecated and optional: Tako always sends 0 and will stop sending it. `GatewayTakoSearch.ResultContentSchema` is the schema of a card or web result `content`, for reuse by other Tako tools.
+
 ## Custom tools
 
 A custom tool is a non-function tool that takes free-form text. OpenAI Responses supports it. Declare it with `OpenAITools.CustomTool(new OpenAICustomToolOptions { Name = ... })`. Add `GrammarSyntax` (`regex` or `lark`) and `GrammarDefinition` to constrain the input. The tool has no `Execute`. Run it yourself and send the result back in a `ToolModelMessage`.
@@ -264,7 +302,7 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 ### Security
 
-The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. On `net10.0` the default transport also validates the resolved DNS addresses and connects to the validated address, so a hostname that resolves to a private or reserved address returns `url_not_allowed`. On `netstandard2.0` it validates the resolved addresses just before the request but cannot pin the connection, so restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
 
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 

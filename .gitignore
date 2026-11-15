@@ -11,3 +11,4 @@ TestResults/
 agent-tools/
 __pycache__/
 tests/parity/generated/
+.claude/worktrees/

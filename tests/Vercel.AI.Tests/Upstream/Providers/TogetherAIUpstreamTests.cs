@@ -174,21 +174,39 @@ public sealed class TogetherAIUpstreamTests
         Assert.True(UpstreamChat.Body(capture)["stream_options"]!["include_usage"]!.GetValue<bool>());
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("deepseek-ai/DeepSeek-V4-Flash-0731", true)]
+    [InlineData("deepseek-ai/DeepSeek-V4.1-Flash", true)]
+    [InlineData("deepseek-ai/DeepSeek-V4.1-Flash-1017", true)]
+    [InlineData("openai/gpt-oss-120b", true)]
+    [InlineData("zai-org/GLM-5.2", true)]
+    [InlineData("zai-org/GLM-5.3-Flash", true)]
+    [InlineData("moonshotai/Kimi-K3", true)]
+    [InlineData("MiniMaxAI/MiniMax-M3.1-Flash", true)]
+    [InlineData("zai-org/GLM-5.3", false)]
+    [InlineData("custom-model-id", false)]
     [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > chatModel::should set supportsStructuredOutputs for %s to %s", Coverage = UpstreamCoverage.Covered)]
-    public void Structured_outputs_are_limited_to_the_flash_model()
+    public void Structured_outputs_are_limited_to_the_flash_model(string modelId, bool expected)
     {
         var provider = TogetherAIProvider.Create(new OpenAICompatibleOptions { ApiKey = "secret" });
-        Assert.True(provider.CreateChatModel(TogetherAIProvider.StructuredOutputModelId).SupportsStructuredOutputs);
-        Assert.False(provider.CreateChatModel("meta-llama/Llama-3-8b-chat-hf").SupportsStructuredOutputs);
+        Assert.Equal(expected, provider.CreateChatModel(modelId).SupportsStructuredOutputs);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("deepseek-ai/DeepSeek-V4-Flash-0731", true)]
+    [InlineData("deepseek-ai/DeepSeek-V4.1-Flash", true)]
+    [InlineData("deepseek-ai/DeepSeek-V4.1-Flash-1017", true)]
+    [InlineData("openai/gpt-oss-120b", true)]
+    [InlineData("zai-org/GLM-5.2", true)]
+    [InlineData("zai-org/GLM-5.3-Flash", true)]
+    [InlineData("moonshotai/Kimi-K3", true)]
+    [InlineData("MiniMaxAI/MiniMax-M3.1-Flash", true)]
+    [InlineData("zai-org/GLM-5.3", false)]
+    [InlineData("custom-model-id", false)]
     [UpstreamTest("packages/togetherai/src/togetherai-provider.test.ts::getModelStructuredOutputSupport::returns structured output support for %s as %s", Coverage = UpstreamCoverage.Covered)]
-    public void Structured_output_support_matches_the_model_id()
+    public void Structured_output_support_matches_the_model_id(string modelId, bool expected)
     {
-        Assert.True(TogetherAIProvider.SupportsStructuredOutputs("deepseek-ai/DeepSeek-V4-Flash-0731"));
-        Assert.False(TogetherAIProvider.SupportsStructuredOutputs("meta-llama/Llama-3-8b-chat-hf"));
+        Assert.Equal(expected, TogetherAIProvider.SupportsStructuredOutputs(modelId));
     }
 
     [Fact]

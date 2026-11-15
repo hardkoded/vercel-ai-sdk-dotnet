@@ -93,6 +93,17 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [EvaluationQuestion](/api/Vercel.AI.Operations/EvaluationQuestion/) | Deprecated alias of DecisionQuestion. |
 | [EvaluationRounding](/api/Vercel.AI.Operations/EvaluationRounding/) | Deprecated alias of DecisionRounding. |
 | [EvaluationUnsupportedQuestionTypeException](/api/Vercel.AI.Operations/EvaluationUnsupportedQuestionTypeException/) | Deprecated alias of DecisionUnsupportedQuestionTypeException. |
+| [Extract](/api/Vercel.AI.Operations/Extract/) | Extracts typed field values from one shared state. Maps to experimentalextract. |
+| [ExtractionAnswer](/api/Vercel.AI.Operations/ExtractionAnswer/) | One model answer. Maps to ExtractionModelV4Answer. The value member is split by type: Text for text, date, time, and datetime, Number for number and duration, and TextItems or NumberItems for list. All are null when the state has no value for the field. |
+| [ExtractionField](/api/Vercel.AI.Operations/ExtractionField/) | A typed value to extract from the shared state. Maps to ExtractionModelV4Field. |
+| [ExtractionItem](/api/Vercel.AI.Operations/ExtractionItem/) | One entry of a list answer. Maps to the items member of a list ExtractionModelV4Answer. |
+| [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/) | Adapts structured language-model output to typed field extraction. Maps to ExtractionLanguageModel. |
+| [ExtractionLanguageModelOptions](/api/Vercel.AI.Operations/ExtractionLanguageModelOptions/) | The wrapped model, provider id, and field limit that cross a workflow boundary for ExtractionLanguageModel. |
+| [ExtractionModelCall](/api/Vercel.AI.Operations/ExtractionModelCall/) | Arguments for doExtract. Maps to ExtractionModelV4CallOptions. |
+| [ExtractionModelResult](/api/Vercel.AI.Operations/ExtractionModelResult/) | Model response for doExtract. Maps to ExtractionModelV4Result. |
+| [ExtractionResult](/api/Vercel.AI.Operations/ExtractionResult/) | Extraction result. Maps to ExtractionResult. |
+| [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/) | Where in the state a value was found. Maps to ExtractionModelV4Source. |
+| [ExtractRequest](/api/Vercel.AI.Operations/ExtractRequest/) | Options for CancellationToken). |
 | [GeneratedAudio](/api/Vercel.AI.Operations/GeneratedAudio/) | Generated speech audio. |
 | [GeneratedImage](/api/Vercel.AI.Operations/GeneratedImage/) | A generated image file. |
 | [GeneratedVideo](/api/Vercel.AI.Operations/GeneratedVideo/) | A generated video file. |
@@ -215,6 +226,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [UploadSkillRequest](/api/Vercel.AI.Operations/UploadSkillRequest/) | Options for CancellationToken). |
 | [UploadSkillResult](/api/Vercel.AI.Operations/UploadSkillResult/) | Skill upload result. |
 | [UploadStream](/api/Vercel.AI.Operations/UploadStream/) | A stream the provider may take ownership of. |
+| [ValidateExtraction](/api/Vercel.AI.Operations/ValidateExtraction/) | Validates extraction input and answers. Maps to validate-extraction.ts. |
 | [VideoCallInputs](/api/Vercel.AI.Operations/VideoCallInputs/) | Normalized prompt, frames, and references. |
 | [VideoFrameFile](/api/Vercel.AI.Operations/VideoFrameFile/) | A normalized frame image. |
 | [VideoFrameImage](/api/Vercel.AI.Operations/VideoFrameImage/) | A role-tagged frame image. |
@@ -242,6 +254,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [IEvaluationCaller](/api/Vercel.AI.Operations/IEvaluationCaller/) | Deprecated decision model contract. Implement IDecisionCaller instead. |
 | [IEvaluationDecisionCaller](/api/Vercel.AI.Operations/IEvaluationDecisionCaller/) | A decision model that also has the deprecated CancellationToken). Returned by the deprecated EvaluationModel accessors of ProviderRegistry and CustomProvider. Both methods decide the same way. |
 | [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/) | Deprecated provider factory for decision models. Implement IDecisionProvider instead. A provider that implements both is asked through IDecisionProvider only. |
+| [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/) | Experimental extraction model used by CancellationToken). Maps to ExtractionModelV4. |
 | [IFileStore](/api/Vercel.AI.Operations/IFileStore/) | Files API. |
 | [IFileStoreProvider](/api/Vercel.AI.Operations/IFileStoreProvider/) | Provider that can expose a files API. |
 | [IImageCaller](/api/Vercel.AI.Operations/IImageCaller/) | Image model used by GenerateImage. |

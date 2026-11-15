@@ -169,17 +169,54 @@ public sealed class DeepgramParityTests
         var request = new DeepgramSpeechRequest(Hello)
         {
             Voice = "helena",
-            ProviderOptions = Options("{\"encoding\":\"mp3\",\"bitRate\":48000,\"container\":\"wav\",\"callback\":\"https://example.com/callback\",\"callbackMethod\":\"POST\",\"mipOptOut\":true,\"tag\":\"test-tag\"}"),
+            ProviderOptions = Options("{\"encoding\":\"mp3\",\"bitRate\":48000,\"container\":\"wav\",\"mipOptOut\":true,\"tag\":\"test-tag\"}"),
         };
         await SpeechModel(handler).GenerateAsync(request, CancellationToken.None);
         var query = Query(handler);
         Assert.Equal("mp3", query["encoding"]);
         Assert.Equal("48000", query["bit_rate"]);
         Assert.Null(query["container"]);
-        Assert.Equal("https://example.com/callback", query["callback"]);
-        Assert.Equal("POST", query["callback_method"]);
         Assert.Equal("true", query["mip_opt_out"]);
         Assert.Equal("test-tag", query["tag"]);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should reject the callback provider option because Deepgram returns a JSON acknowledgement instead of audio", Coverage = UpstreamCoverage.Covered)]
+    public async Task Callback_is_rejected_because_deepgram_returns_an_acknowledgement()
+    {
+        var handler = SpeechHandler();
+        var request = new DeepgramSpeechRequest(Hello) { Voice = "helena", ProviderOptions = Options("{\"callback\":\"https://example.com/callback\"}") };
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => SpeechModel(handler).GenerateAsync(request, CancellationToken.None));
+        Assert.Equal("providerOptions.deepgram.callback", error.Parameter);
+        Assert.Contains("returns a JSON acknowledgement instead of audio", error.Message, StringComparison.Ordinal);
+
+        // the request is rejected before any API call is made
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should reject the callback provider option when callbackMethod is also set", Coverage = UpstreamCoverage.Covered)]
+    public async Task Callback_is_rejected_when_callback_method_is_also_set()
+    {
+        var handler = SpeechHandler();
+        var request = new DeepgramSpeechRequest(Hello) { Voice = "helena", ProviderOptions = Options("{\"callback\":\"https://example.com/callback\",\"callbackMethod\":\"PUT\"}") };
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => SpeechModel(handler).GenerateAsync(request, CancellationToken.None));
+        Assert.Equal("providerOptions.deepgram.callback", error.Parameter);
+
+        // the request is rejected before any API call is made
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should warn about a callbackMethod without callback", Coverage = UpstreamCoverage.Covered)]
+    public async Task Callback_method_without_callback_warns()
+    {
+        var handler = SpeechHandler();
+        var request = new DeepgramSpeechRequest(Hello) { Voice = "helena", ProviderOptions = Options("{\"callbackMethod\":\"PUT\"}") };
+        var result = await SpeechModel(handler).GenerateAsync(request, CancellationToken.None);
+        Assert.Null(Query(handler).Get("callback_method"));
+        var warning = Assert.Single(result.Warnings);
+        AssertWarning(warning, "unsupported", "providerOptions.deepgram.callbackMethod", "providerOptions.deepgram.callbackMethod is only used together with `callback`, which is not supported by the AI SDK. Callback method was ignored.");
     }
 
     [Fact]

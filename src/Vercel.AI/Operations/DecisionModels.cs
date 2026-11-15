@@ -78,4 +78,15 @@ public static class DecisionModels
     {
         return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
     }
+
+    /// <summary>Maps to <c>resolveExtractionModel</c>. Only model instances are accepted. A model that is not <c>v4</c> throws.</summary>
+    public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+    {
+        if (model is null)
+        {
+            throw new InvalidArgumentException("model", null, "must be an extraction model");
+        }
+
+        return model.SpecificationVersion == "v4" ? model : throw new UnsupportedModelVersionException(model.SpecificationVersion, model.Provider, model.ModelId);
+    }
 }

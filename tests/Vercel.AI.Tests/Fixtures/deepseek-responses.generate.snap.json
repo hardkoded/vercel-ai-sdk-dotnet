@@ -1,0 +1,159 @@
+{
+ "content": [
+  {
+   "providerMetadata": {
+    "deepseek": {
+     "itemId": "ce3fcfc1-5896-44c8-aea0-4b70bcb7b61e"
+    }
+   },
+   "text": "We need answer one sentence. Need explain Rayleigh scattering. Concise.",
+   "type": "reasoning"
+  },
+  {
+   "text": "The sky appears blue because air molecules scatter shorter-wavelength blue light from the Sun more strongly than longer-wavelength red light.",
+   "type": "text"
+  }
+ ],
+ "finishReason": {
+  "raw": "completed",
+  "unified": "stop"
+ },
+ "providerMetadata": {
+  "deepseek": {
+   "responseId": "2eb56558-d132-4164-9b25-855b14ab2dab"
+  }
+ },
+ "request": {
+  "body": {
+   "input": [
+    {
+     "content": [
+      {
+       "text": "Why is the sky blue? Answer in one sentence.",
+       "type": "input_text"
+      }
+     ],
+     "role": "user"
+    }
+   ],
+   "model": "deepseek-flash"
+  }
+ },
+ "response": {
+  "body": {
+   "background": false,
+   "completed_at": 1794263126,
+   "content_filters": null,
+   "created_at": 1794263125,
+   "error": null,
+   "frequency_penalty": 0,
+   "id": "2eb56558-d132-4164-9b25-855b14ab2dab",
+   "incomplete_details": null,
+   "instructions": null,
+   "max_output_tokens": null,
+   "max_tool_calls": null,
+   "metadata": {},
+   "model": "deepseek-flash",
+   "moderation": null,
+   "object": "response",
+   "output": [
+    {
+     "content": [
+      {
+       "text": "We need answer one sentence. Need explain Rayleigh scattering. Concise.",
+       "type": "reasoning_text"
+      }
+     ],
+     "encrypted_content": "2eb56558-d132-4164-9b25-855b14ab2dab-0",
+     "id": "ce3fcfc1-5896-44c8-aea0-4b70bcb7b61e",
+     "status": "completed",
+     "summary": [],
+     "type": "reasoning"
+    },
+    {
+     "content": [
+      {
+       "annotations": [],
+       "logprobs": [],
+       "text": "The sky appears blue because air molecules scatter shorter-wavelength blue light from the Sun more strongly than longer-wavelength red light.",
+       "type": "output_text"
+      }
+     ],
+     "id": "c597782f-3383-48de-8637-161d61d584f7",
+     "phase": "final_answer",
+     "role": "assistant",
+     "status": "completed",
+     "type": "message"
+    }
+   ],
+   "parallel_tool_calls": true,
+   "presence_penalty": 0,
+   "previous_response_id": null,
+   "prompt_cache_key": null,
+   "prompt_cache_retention": null,
+   "reasoning": {
+    "effort": null,
+    "summary": null
+   },
+   "safety_identifier": null,
+   "service_tier": "default",
+   "status": "completed",
+   "store": false,
+   "temperature": 1,
+   "text": {
+    "format": {
+     "type": "text"
+    },
+    "verbosity": null
+   },
+   "tool_choice": "auto",
+   "tools": [],
+   "top_logprobs": 0,
+   "top_p": 1,
+   "truncation": "disabled",
+   "usage": {
+    "input_tokens": 41,
+    "input_tokens_details": {
+     "cached_tokens": 0
+    },
+    "output_tokens": 40,
+    "output_tokens_details": {
+     "reasoning_tokens": 14
+    },
+    "total_tokens": 81
+   },
+   "user": null
+  },
+  "headers": {
+   "content-length": "1551",
+   "content-type": "application/json"
+  },
+  "id": "2eb56558-d132-4164-9b25-855b14ab2dab",
+  "modelId": "deepseek-flash",
+  "timestamp": "2026-11-09T22:25:25.000Z"
+ },
+ "usage": {
+  "inputTokens": {
+   "cacheRead": 0,
+   "noCache": 41,
+   "total": 41
+  },
+  "outputTokens": {
+   "reasoning": 14,
+   "text": 26,
+   "total": 40
+  },
+  "raw": {
+   "input_tokens": 41,
+   "input_tokens_details": {
+    "cached_tokens": 0
+   },
+   "output_tokens": 40,
+   "output_tokens_details": {
+    "reasoning_tokens": 14
+   },
+   "total_tokens": 81
+  }
+ },
+ "warnings": []
+}

@@ -368,7 +368,7 @@ public sealed class PositionedReasoningEffortUpdatesTests
         var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(
             () => Request(method, prompt, JsonNode.Parse(optionsJson)!.AsObject(), "gpt-6-astra", capture: capture));
 
-        Assert.Equal("Adjacent reasoning effort configuration updates", error.Functionality);
+        Assert.Equal("Adjacent configuration updates", error.Functionality);
         Assert.Equal(string.Empty, capture.Body);
     }
 

@@ -47,6 +47,9 @@ public sealed class GoogleMessageOptions
     /// <summary>When true, multimodal tool results use <c>functionResponse.parts</c>.</summary>
     public bool? SupportsFunctionResponseParts { get; set; }
 
+    /// <summary>File URLs that a function response may reference directly, keyed by media type. Maps to <c>supportedFunctionResponseUrls</c>.</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? SupportedFunctionResponseUrls { get; set; }
+
     /// <summary>When false, function call and response ids are omitted. Vertex omits them.</summary>
     public bool IncludeFunctionCallIds { get; set; } = true;
 
@@ -338,6 +341,9 @@ public static class GoogleMessages
     /// <summary>Sentinel Gemini documents for replaying a function call whose thought signature was dropped.</summary>
     public const string SkipThoughtSignatureValidator = "skip_thought_signature_validator";
 
+    /// <summary>Google Cloud Storage URLs that Gemini 3 function responses reference directly. Maps to <c>googleCloudStorageFunctionResponseUrls</c>.</summary>
+    internal static readonly IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>> GoogleCloudStorageFunctionResponseUrls = BuildGcsUrls();
+
     /// <summary>Converts shared prompt messages.</summary>
     public static GooglePrompt Convert(IReadOnlyList<ModelMessage> prompt, GoogleMessageOptions? options = null)
     {
@@ -411,7 +417,7 @@ public static class GoogleMessages
                 var parts = new JsonArray();
                 foreach (var result in tool.Results)
                 {
-                    AppendToolResult(contents, parts, result, names, supportsParts, options.IncludeFunctionCallIds);
+                    AppendToolResult(contents, parts, result, names, supportsParts, options.IncludeFunctionCallIds, options.SupportedFunctionResponseUrls);
                 }
 
                 contents.Add(new JsonObject { ["role"] = "user", ["parts"] = parts });
@@ -469,6 +475,34 @@ public static class GoogleMessages
         }
 
         return new GooglePrompt(contents, instruction);
+    }
+
+    private static GoogleToolContentPart ToContentPart(UserContentPart part)
+    {
+        if (part is FileContentPart file)
+        {
+            return new GoogleToolContentPart("file")
+            {
+                MediaType = file.MediaType,
+                DataKind = file.ProviderReference != null ? "reference" : file.Data != null ? "data" : "url",
+                Data = file.Data,
+                Url = file.Url,
+            };
+        }
+
+        return new GoogleToolContentPart("text") { Text = ((TextContentPart)part).Text };
+    }
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>> BuildGcsUrls()
+    {
+        var gcs = new System.Text.RegularExpressions.Regex(@"^gs://.*\z", System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
+        var result = new Dictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>(StringComparer.Ordinal);
+        foreach (var type in new[] { "image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain" })
+        {
+            result[type] = new[] { gcs };
+        }
+
+        return result;
     }
 
     private static List<GoogleTurn> FromModelMessages(IReadOnlyList<ModelMessage> prompt)
@@ -544,6 +578,12 @@ public static class GoogleMessages
                     Output = tool.OutputJson,
                     DenialReason = tool.OutputType == "execution-denied" && tool.OutputJson.Length > 0 ? tool.OutputJson : null,
                 };
+                if (tool.OutputContent != null)
+                {
+                    result.OutputKind = "content";
+                    result.Content = tool.OutputContent.Select(ToContentPart).ToList();
+                }
+
                 if (tool.ProviderMetadata is { } metadata)
                 {
                     result.ProviderOptions = new Dictionary<string, JsonElement> { ["google"] = metadata };
@@ -745,7 +785,7 @@ public static class GoogleMessages
         return null;
     }
 
-    private static void AppendToolResult(JsonArray contents, JsonArray parts, GoogleToolResultPart result, IReadOnlyList<string> names, bool supportsParts, bool includeIds)
+    private static void AppendToolResult(JsonArray contents, JsonArray parts, GoogleToolResultPart result, IReadOnlyList<string> names, bool supportsParts, bool includeIds, IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? supportedUrls)
     {
         var options = ReadOptions(result.ProviderOptions, names, !Contains(names, "google"));
         var serverId = GoogleJson.String(options, "serverToolCallId");
@@ -770,7 +810,7 @@ public static class GoogleMessages
         {
             if (supportsParts)
             {
-                parts.Add(ModernFunctionResponse(result, includeIds));
+                parts.Add(ModernFunctionResponse(result, includeIds, supportedUrls));
             }
             else
             {
@@ -809,7 +849,7 @@ public static class GoogleMessages
         parts.Add(new JsonObject { ["functionResponse"] = function });
     }
 
-    private static JsonObject ModernFunctionResponse(GoogleToolResultPart result, bool includeIds)
+    private static JsonObject ModernFunctionResponse(GoogleToolResultPart result, bool includeIds, IReadOnlyDictionary<string, IReadOnlyList<System.Text.RegularExpressions.Regex>>? supportedUrls)
     {
         var texts = new List<string>();
         var files = new JsonArray();
@@ -833,6 +873,10 @@ public static class GoogleMessages
             else if (part.DataKind == "url" && TryDataUrl(part.Url, out var media, out var data))
             {
                 files.Add(new JsonObject { ["inlineData"] = new JsonObject { ["mimeType"] = media, ["data"] = data } });
+            }
+            else if (part.DataKind == "url" && supportedUrls != null && part.Url != null && !string.IsNullOrEmpty(part.MediaType) && MediaTypes.IsFullMediaType(part.MediaType!) && UrlSupport.IsUrlSupported(part.MediaType!, part.Url, supportedUrls))
+            {
+                files.Add(new JsonObject { ["fileData"] = new JsonObject { ["mimeType"] = part.MediaType, ["fileUri"] = part.Url } });
             }
             else
             {

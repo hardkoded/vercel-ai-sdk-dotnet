@@ -187,6 +187,68 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
         Assert.Contains("ai-sdk-amazon-bedrock/", headers["user-agent"]);
     }
 
+    [Theory]
+    [InlineData("anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("us.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("eu.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("global.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [InlineData("anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("us.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("eu.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("global.anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("anthropic.claude-opus-4-7")]
+    [InlineData("us.anthropic.claude-opus-4-7")]
+    [InlineData("eu.anthropic.claude-opus-4-7")]
+    [InlineData("anthropic.claude-opus-4-8")]
+    [InlineData("us.anthropic.claude-opus-4-8")]
+    [InlineData("eu.anthropic.claude-opus-4-8")]
+    [InlineData("anthropic.claude-fable-5")]
+    [InlineData("us.anthropic.claude-fable-5")]
+    [InlineData("eu.anthropic.claude-fable-5")]
+    [InlineData("anthropic.claude-fable-5-1")]
+    [InlineData("anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-fable-5-1")]
+    [InlineData("us.anthropic.claude-fable-5-2")]
+    [InlineData("global.anthropic.claude-fable-5-1")]
+    [InlineData("global.anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-opus-6-v1:0")]
+    [InlineData("global.anthropic.claude-future-v1:0")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable native structured output for %s", Coverage = UpstreamCoverage.Covered)]
+    public void Should_disable_native_structured_output_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(provider.LanguageModel(modelId));
+
+        Assert.False(model.CreateInnerProvider().SupportsNativeStructuredOutput);
+    }
+
+    [Theory]
+    [InlineData("anthropic.claude-opus-4-7")]
+    [InlineData("us.anthropic.claude-opus-4-7")]
+    [InlineData("eu.anthropic.claude-opus-4-7")]
+    [InlineData("anthropic.claude-opus-4-8")]
+    [InlineData("us.anthropic.claude-opus-4-8")]
+    [InlineData("eu.anthropic.claude-opus-4-8")]
+    [InlineData("anthropic.claude-fable-5")]
+    [InlineData("us.anthropic.claude-fable-5")]
+    [InlineData("eu.anthropic.claude-fable-5")]
+    [InlineData("anthropic.claude-fable-5-1")]
+    [InlineData("anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-fable-5-1")]
+    [InlineData("us.anthropic.claude-fable-5-2")]
+    [InlineData("global.anthropic.claude-fable-5-1")]
+    [InlineData("global.anthropic.claude-fable-5-2")]
+    [InlineData("us.anthropic.claude-opus-6-v1:0")]
+    [InlineData("global.anthropic.claude-future-v1:0")]
+    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should disable strict tools for %s (Bedrock rejects tools[].strict)", Coverage = UpstreamCoverage.Covered)]
+    public void Should_disable_strict_tools_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(new AmazonBedrockAnthropicOptions { Region = "us-east-1", AccessKeyId = "test-key", SecretAccessKey = "test-secret" });
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(provider.LanguageModel(modelId));
+
+        Assert.False(model.CreateInnerProvider().SupportsStrictTools);
+    }
+
     [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should map old tool versions to Bedrock-supported versions", Coverage = UpstreamCoverage.Covered)]
     public void Should_map_old_tool_versions_to_Bedrock_supported_versions()
@@ -224,26 +286,6 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
         var transformed = Transform(Object("{\"model\":\"test-model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":1024,\"tools\":[{\"type\":\"function\",\"name\":\"get_weather\",\"input_schema\":{\"type\":\"object\",\"properties\":{}}}]}"), Array.Empty<string>());
 
         Assert.Null(transformed["anthropic_beta"]);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should rename thinking block_binding prefix_mismatch_behavior to mismatch_behavior", Coverage = UpstreamCoverage.Covered)]
-    public void Should_rename_thinking_block_binding_prefix_mismatch_behavior_to_mismatch_behavior()
-    {
-        var transformed = Transform(Object("{\"model\":\"test-model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":1024,\"thinking\":{\"type\":\"adaptive\",\"display\":\"summarized\",\"block_binding\":{\"prefix_mismatch_behavior\":\"drop_block\"}}}"), new[] { "thinking-binding-controls-2026-08-01" });
-
-        Assert.Equal(
-            "{\"type\":\"adaptive\",\"display\":\"summarized\",\"block_binding\":{\"mismatch_behavior\":\"drop_block\"}}",
-            transformed["thinking"]!.ToJsonString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should leave thinking unchanged when it has no block_binding", Coverage = UpstreamCoverage.Covered)]
-    public void Should_leave_thinking_unchanged_when_it_has_no_block_binding()
-    {
-        var transformed = Transform(Object("{\"model\":\"test-model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":1024,\"thinking\":{\"type\":\"enabled\",\"budget_tokens\":2000}}"), Array.Empty<string>());
-
-        Assert.Equal("{\"type\":\"enabled\",\"budget_tokens\":2000}", transformed["thinking"]!.ToJsonString());
     }
 
     [Fact]

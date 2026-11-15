@@ -37,24 +37,36 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use the json tool fallback for claude-opus-5 (Bedrock rejects output_config.format)",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_use_the_json_tool_fallback_for_claude_opus_5_Bedrock_rejects_output_config_format()
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use native structured output for claude-opus-5 (Bedrock supports output_config.format)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "5700d1269e763c1f9397de3e60ee16321ed09dc3")]
+    public async Task Should_use_native_structured_output_for_claude_opus_5_Bedrock_supports_output_config_format()
     {
-        var handler = new UpstreamRecordingHandler(JsonToolResponse);
-        await Generate(handler, "us.anthropic.claude-opus-5");
-        AssertJsonToolFallback(handler);
+        var (_, body) = await Run("us.anthropic.claude-opus-5", "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"{\\\"name\\\":\\\"Test\\\"}\"}]}},\"usage\":{\"inputTokens\":4,\"outputTokens\":10,\"totalTokens\":14},\"stopReason\":\"end_turn\"}", new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Generate a name") },
+            JsonSchema = Schema(NameSchema),
+        });
+
+        Assert.False(body.TryGetProperty("toolConfig", out _));
+        AssertEqual("{\"format\":{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
 
     [Fact]
     [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use the json tool fallback for claude-haiku-5-5 (Bedrock rejects output_config.format)",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_use_the_json_tool_fallback_for_claude_haiku_5_5_Bedrock_rejects_output_config_format()
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use native structured output for claude-haiku-5-5 (Bedrock supports output_config.format)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "5700d1269e763c1f9397de3e60ee16321ed09dc3")]
+    public async Task Should_use_native_structured_output_for_claude_haiku_5_5_Bedrock_supports_output_config_format()
     {
-        var handler = new UpstreamRecordingHandler(JsonToolResponse);
-        await Generate(handler, "us.anthropic.claude-haiku-5-5");
-        AssertJsonToolFallback(handler);
+        var (_, body) = await Run("us.anthropic.claude-haiku-5-5", "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"{\\\"name\\\":\\\"Test\\\"}\"}]}},\"usage\":{\"inputTokens\":4,\"outputTokens\":10,\"totalTokens\":14},\"stopReason\":\"end_turn\"}", new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage("Generate a name") },
+            JsonSchema = Schema(NameSchema),
+        });
+
+        Assert.False(body.TryGetProperty("toolConfig", out _));
+        AssertEqual("{\"format\":{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
 
     [Fact]
@@ -212,19 +224,18 @@ public sealed class DoGenerateTests
         AssertEqual("{\"effort\":\"medium\",\"format\":{\"type\":\"json_schema\",\"schema\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}}}", body.GetProperty("additionalModelRequestFields").GetProperty("output_config"));
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("jsonTool")]
+    [Fact]
     [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use JSON instructions instead of forced tool use for claude-opus-5-5 with structuredOutputMode %s",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_use_JSON_instructions_instead_of_forced_tool_use_for_claude_opus_5_5_with_structuredOutputMode(string? structuredOutputMode)
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use JSON instructions instead of forced tool use for claude-opus-5-5 with structuredOutputMode jsonTool",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "5700d1269e763c1f9397de3e60ee16321ed09dc3")]
+    public async Task Should_use_JSON_instructions_instead_of_forced_tool_use_for_claude_opus_5_5_with_structuredOutputMode_jsonTool()
     {
         var (result, body) = await Run("us.anthropic.claude-opus-5-5", "{\"output\":{\"message\":{\"role\":\"assistant\",\"content\":[{\"text\":\"{\\\"answer\\\":\\\"OK\\\"}\"}]}},\"usage\":{\"inputTokens\":4,\"outputTokens\":5,\"totalTokens\":9},\"stopReason\":\"end_turn\"}", new LanguageModelCallOptions
         {
             Prompt = new ModelMessage[] { new UserModelMessage("Return an answer of OK.") },
             JsonSchema = Schema("{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}},\"required\":[\"answer\"]}"),
-            ProviderOptions = structuredOutputMode == null ? null : Options("{\"amazonBedrock\":{\"structuredOutputMode\":\"" + structuredOutputMode + "\"}}"),
+            ProviderOptions = Options("{\"amazonBedrock\":{\"structuredOutputMode\":\"jsonTool\"}}"),
         });
 
         Assert.False(body.TryGetProperty("toolConfig", out _));
@@ -371,11 +382,12 @@ public sealed class DoGenerateTests
 
     [Theory]
     [InlineData("us.anthropic.claude-opus-4-8")]
-    [InlineData("us.anthropic.claude-sonnet-5")]
+    [InlineData("us.anthropic.claude-opus-6-v1:0")]
     [UpstreamTest(
-        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use JSON instructions instead of a response tool when structured output is combined with tools on %s",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Should_use_JSON_instructions_instead_of_a_response_tool_when_structured_output_is_combined_with_tools_on(string modelId)
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should use JSON instructions instead of a response tool when structured output is combined with tools on unsupported model %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "5700d1269e763c1f9397de3e60ee16321ed09dc3")]
+    public async Task Should_use_JSON_instructions_instead_of_a_response_tool_when_structured_output_is_combined_with_tools_on_unsupported_model(string modelId)
     {
         using var toolSchema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{}}");
         var (result, body) = await Run(modelId, "{\"output\":{\"message\":{\"content\":[{\"text\":\"```json\\n{\\\"name\\\":\\\"Test\\\"}\\n```.\"}],\"role\":\"assistant\"}},\"usage\":{\"inputTokens\":4,\"outputTokens\":10,\"totalTokens\":14},\"stopReason\":\"end_turn\"}", new LanguageModelCallOptions

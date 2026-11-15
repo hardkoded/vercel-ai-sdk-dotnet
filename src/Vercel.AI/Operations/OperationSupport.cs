@@ -362,6 +362,19 @@ public class DecisionUnsupportedQuestionTypeException : AiSdkException, IErrorMa
     }
 }
 
+/// <summary>Request metadata returned by a provider call.</summary>
+public sealed class ProviderRequest
+{
+    /// <summary>Creates request metadata.</summary>
+    public ProviderRequest(string? body = null)
+    {
+        Body = body;
+    }
+
+    /// <summary>Request body, or the request URL for a WebSocket call.</summary>
+    public string? Body { get; }
+}
+
 /// <summary>Headers and body returned by one provider call.</summary>
 public sealed class ProviderResponse
 {
@@ -399,12 +412,13 @@ public sealed class ProviderResponse
 public sealed class OperationUsage
 {
     /// <summary>Creates usage. Unset counts stay null.</summary>
-    public OperationUsage(int? inputTokens = null, int? outputTokens = null, int? totalTokens = null, double? tokens = null)
+    public OperationUsage(int? inputTokens = null, int? outputTokens = null, int? totalTokens = null, double? tokens = null, double? seconds = null)
     {
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
         TotalTokens = totalTokens;
         Tokens = tokens;
+        Seconds = seconds;
     }
 
     /// <summary>Prompt tokens.</summary>
@@ -418,6 +432,9 @@ public sealed class OperationUsage
 
     /// <summary>Embedding token count. <see cref="double.NaN"/> when the provider omitted usage.</summary>
     public double? Tokens { get; }
+
+    /// <summary>Seconds of audio processed. Reported by streaming transcription.</summary>
+    public double? Seconds { get; }
 
     /// <summary>Adds two image usage values. A missing count stays missing until one side reports it.</summary>
     public static OperationUsage AddImage(OperationUsage left, OperationUsage right)
@@ -547,7 +564,7 @@ public static class OperationRetry
         }
 
         var resolved = ResolveMaxRetries(maxRetries);
-        return ExecuteResolvedAsync(resolved, cancellationToken, abortReason, action, additionalRetryable, 2000, new List<Exception>());
+        return ExecuteResolvedAsync(resolved, cancellationToken, abortReason, action, additionalRetryable);
     }
 
     /// <summary>Returns the retry count after validation. Null becomes 2.</summary>
@@ -569,64 +586,42 @@ public static class OperationRetry
         CancellationToken cancellationToken,
         Exception? abortReason,
         Func<CancellationToken, Task<T>> action,
-        Func<Exception, bool>? additionalRetryable,
-        int delayInMs,
-        List<Exception> errors)
+        Func<Exception, bool>? additionalRetryable)
     {
-        ThrowIfAborted(cancellationToken, abortReason);
+        var retry = new RetryWithExponentialBackoffRespectingRetryHeaders(new Vercel.AI.Util.RetryOptions
+        {
+            MaxRetries = maxRetries,
+            AbortSignal = cancellationToken,
+            AdditionalRetryableError = additionalRetryable == null
+                ? null
+                : error => Task.FromResult(error is Exception exception && additionalRetryable(exception)),
+        });
         try
         {
-            return await action(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception error)
-        {
-            if (error is OperationCanceledException)
+            return await retry.ExecuteAsync(() =>
             {
-                throw;
-            }
-
-            if (maxRetries == 0)
-            {
-                throw;
-            }
-
-            errors.Add(error);
-            var tryNumber = errors.Count;
-            if (tryNumber > maxRetries)
-            {
-                throw new OperationRetryException(
-                    "Failed after " + tryNumber.ToString(CultureInfo.InvariantCulture) + " attempts. Last error: " + error.Message,
-                    "maxRetriesExceeded",
-                    errors);
-            }
-
-            var retryable = error is RetryableCallException call && call.IsRetryable;
-            if (!retryable && additionalRetryable != null)
-            {
-                retryable = additionalRetryable(error);
-            }
-
-            if (retryable && tryNumber <= maxRetries)
-            {
-                var delay = DelayFor(error, delayInMs);
-                if (delay > 0)
-                {
-                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                }
-
                 ThrowIfAborted(cancellationToken, abortReason);
-                return await ExecuteResolvedAsync(maxRetries, cancellationToken, abortReason, action, additionalRetryable, delayInMs * 2, errors).ConfigureAwait(false);
-            }
-
-            if (tryNumber == 1)
+                return action(cancellationToken);
+            }).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException canceled) when (abortReason != null && cancellationToken.IsCancellationRequested && canceled.CancellationToken == cancellationToken)
+        {
+            throw abortReason;
+        }
+        catch (RetryError) when (abortReason != null && cancellationToken.IsCancellationRequested)
+        {
+            throw abortReason;
+        }
+        catch (RetryError error)
+        {
+            var errors = new List<Exception>();
+            foreach (var item in error.Errors)
             {
-                throw;
+                errors.Add(item as Exception ?? new InvalidOperationException(item?.ToString()));
             }
 
-            throw new OperationRetryException(
-                "Failed after " + tryNumber.ToString(CultureInfo.InvariantCulture) + " attempts. Last error: " + error.Message,
-                "errorNotRetryable",
-                errors);
+            var reason = error.Reason == Vercel.AI.Util.RetryErrorReason.MaxRetriesExceeded ? "maxRetriesExceeded" : "errorNotRetryable";
+            throw new OperationRetryException(error.Message, reason, errors);
         }
     }
 
@@ -644,25 +639,6 @@ public static class OperationRetry
         }
 
         throw new OperationCanceledException(cancellationToken);
-    }
-
-    private static int DelayFor(Exception error, int exponentialBackoffDelay)
-    {
-        var headers = (error as RetryableCallException)?.ResponseHeaders;
-        if (headers == null)
-        {
-            return exponentialBackoffDelay;
-        }
-
-        if (headers.TryGetValue("retry-after-ms", out var retryAfterMs) && double.TryParse(retryAfterMs, NumberStyles.Float, CultureInfo.InvariantCulture, out var milliseconds))
-        {
-            if (milliseconds >= 0 && (milliseconds < 60000 || milliseconds < exponentialBackoffDelay))
-            {
-                return (int)milliseconds;
-            }
-        }
-
-        return exponentialBackoffDelay;
     }
 }
 

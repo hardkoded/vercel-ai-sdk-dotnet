@@ -67,6 +67,25 @@ public sealed class GoogleVertexUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google-vertex/src/google-vertex-provider-base.test.ts::google-vertex-provider-base::should configure the tool result download size limit", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public void Configures_the_tool_result_download_size_limit()
+    {
+        var provider = GoogleVertexProvider.Create(new VertexOptions
+        {
+            Project = "test-project",
+            Region = "test-location",
+            UpstreamRoutes = true,
+            ToolResultDownloads = new ToolResultDownloads { MaxBytes = 20 * 1024 * 1024 },
+        }, new RecordingHandler());
+
+        var settings = provider.ToolResultDownloadSettings!;
+        Assert.Equal(20 * 1024 * 1024, settings.MaxBytes);
+        Assert.True(settings.SupportsGoogleCloudStorageUrls);
+        Assert.Null(settings.Fetch);
+        Assert.Equal(7L * 1024 * 1024, Upstream("test-project", "us").ToolResultDownloadSettings!.MaxBytes);
+    }
+
+    [Fact]
     [UpstreamTest("packages/google-vertex/src/google-vertex-provider-base.test.ts::google-vertex-provider-base::should use multi-region REP URL for eu location", Coverage = UpstreamCoverage.Covered)]
     public void Uses_the_eu_multi_region_host()
     {

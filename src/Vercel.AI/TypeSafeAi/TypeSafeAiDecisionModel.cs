@@ -139,14 +139,15 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         foreach (var pair in call.Questions)
         {
             var count = pair.Value.Criteria?.Count ?? 0;
-            if (pair.Value.Type == "choice" && count > 255)
+            if (pair.Value.Type == "choice" && (count == 0 || count > 255))
             {
-                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Choice questions support at most 255 options.");
+                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Choice questions require 1 to 255 options.");
             }
 
-            if (pair.Value.Type == "score" && count > 10)
+            if (pair.Value.Type == "score"
+                && (count == 0 || count > 10 || (pair.Value.Criteria is DecisionScoreCriteria score && score.Levels.Any(level => level == null))))
             {
-                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Score questions support at most 10 levels.");
+                throw new InvalidArgumentError("questions." + pair.Key + ".criteria", pair.Value.Criteria, "TypeSafe Score questions require 1 to 10 non-null levels.");
             }
         }
 
@@ -187,14 +188,14 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         foreach (var pair in call.Questions)
         {
             var question = new JsonObject { ["type"] = pair.Value.Type == "boolean" ? "noul" : pair.Value.Type };
-            if (pair.Value.Instructions != null)
+            if (pair.Value.HasInstructions)
             {
-                question["instructions"] = pair.Value.Instructions.ToNode();
+                question["instructions"] = pair.Value.Instructions?.ToNode();
             }
 
-            if (pair.Value.Criteria != null && pair.Value.Type != "box")
+            if ((pair.Value.Criteria != null || pair.Value.HasCriteria) && pair.Value.Type != "box")
             {
-                question["criteria"] = pair.Value.Criteria.ToNode();
+                question["criteria"] = pair.Value.Criteria?.ToNode();
             }
 
             questions[pair.Key] = question;
@@ -294,6 +295,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
             var answers = new Dictionary<string, DecisionAnswer>();
             var confidence = new JsonObject();
+            var legend = new JsonObject();
             foreach (var pair in Property(root, "answers", JsonValueKind.Object).EnumerateObject())
             {
                 var answer = pair.Value;
@@ -317,6 +319,16 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                             score: Property(answer, "score", JsonValueKind.Number).GetDouble(),
                             probabilities: Probabilities(answer));
                         AddConfidence(confidence, pair.Name, answer);
+                        if (answer.TryGetProperty("legend", out var legendValue) && legendValue.ValueKind != JsonValueKind.Null)
+                        {
+                            if (legendValue.ValueKind != JsonValueKind.Object)
+                            {
+                                throw new FormatException("Invalid legend.");
+                            }
+
+                            legend[pair.Name] = JsonNode.Parse(legendValue.GetRawText());
+                        }
+
                         break;
                     case "box":
                         var box = Property(answer, "box", JsonValueKind.Object);
@@ -356,7 +368,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
                 outputTokens = OptionalInteger(usage, "output_tokens");
             }
 
-            var metadata = JsonDocument.Parse(new JsonObject { ["typesafe"] = new JsonObject { ["confidence"] = confidence } }.ToJsonString()).RootElement.Clone();
+            var metadata = JsonDocument.Parse(new JsonObject { ["typesafe"] = new JsonObject { ["confidence"] = confidence, ["legend"] = legend } }.ToJsonString()).RootElement.Clone();
             return new DecisionModelResult(
                 answers,
                 warnings: warnings,
@@ -574,7 +586,6 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
         // Each entry is a text value or a JSON value; a skipped image adds none.
         var stateParts = new List<(bool IsText, JsonNode? Value)>();
-        var values = new JsonArray();
         for (var index = 0; index < items.Count; index++)
         {
             switch (items[index])
@@ -589,32 +600,22 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
 
                     break;
                 case DecisionModelTextPart text:
-                    values.Add(JsonValue.Create(text.Text));
                     stateParts.Add((true, JsonValue.Create(text.Text)));
                     break;
                 case DecisionModelJsonPart json:
-                    values.Add(JsonNode.Parse(json.Value.GetRawText()));
                     stateParts.Add((false, JsonNode.Parse(json.Value.GetRawText())));
                     break;
             }
         }
 
-        if (images.Count > 0)
+        // A single string, object, or array JSON part keeps its native value. Everything else, primitives included, is text.
+        if (stateParts.Count == 1 && !stateParts[0].IsText
+            && (stateParts[0].Value is JsonObject or JsonArray || (stateParts[0].Value is JsonValue single && single.TryGetValue<string>(out _))))
         {
-            if (stateParts.Count == 1 && !stateParts[0].IsText)
-            {
-                return stateParts[0].Value;
-            }
-
-            return string.Join("\n", stateParts.Select(part => part.IsText ? part.Value!.GetValue<string>() : part.Value?.ToJsonString() ?? "null"));
+            return stateParts[0].Value;
         }
 
-        if (values.Count == 1 && (values[0] is JsonObject or JsonArray || (values[0] is JsonValue single && single.TryGetValue<string>(out _))))
-        {
-            return values[0]!.DeepClone();
-        }
-
-        return values;
+        return string.Join("\n", stateParts.Select(part => part.IsText ? part.Value!.GetValue<string>() : part.Value?.ToJsonString() ?? "null"));
     }
 
     private static void JsonStrings(JsonNode? node, List<string> strings)

@@ -31,6 +31,7 @@ internal sealed class OpenAIResponsesStream
     private bool _hasFileSearchResults;
     private string? _incompleteReason;
     private bool _hasFunctionCall;
+    private bool _hasRefusal;
     private bool _finished;
     private bool _streamError;
     private FinishReason? _failedFinish;
@@ -39,12 +40,14 @@ internal sealed class OpenAIResponsesStream
     private string? _responseId;
     private string? _serviceTier;
     private string? _reasoningContext;
+    private JsonObject? _promptCacheDiagnostics;
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
 
     private readonly ToolNameMapping? _toolNameMapping;
     private readonly bool _store;
+    private readonly string? _webSearchToolName;
     private readonly Dictionary<string, ActiveReasoning> _activeReasoning = new(StringComparer.Ordinal);
 
     // Compatible providers can rotate item ids between events. The output index stays the same for the life of an item.
@@ -55,9 +58,11 @@ internal sealed class OpenAIResponsesStream
         IReadOnlyCollection<string>? functionToolNames = null,
         ToolNameMapping? toolNameMapping = null,
         bool store = false,
-        string providerOptionsName = "openai")
+        string providerOptionsName = "openai",
+        string? webSearchToolName = null)
     {
         _store = store;
+        _webSearchToolName = webSearchToolName;
         _providerOptionsName = providerOptionsName;
         _toolNameMapping = toolNameMapping;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
@@ -84,7 +89,20 @@ internal sealed class OpenAIResponsesStream
 
                 break;
             case "response.output_item.added":
-                if (node["item"] is JsonObject functionCall
+                if (node["item"] is JsonObject webSearchAdded
+                    && webSearchAdded["type"]?.GetValue<string>() == "web_search_call")
+                {
+                    var webSearchId = webSearchAdded["id"]?.GetValue<string>() ?? string.Empty;
+                    if (OutputIndex(node) is { } webSearchIndex)
+                    {
+                        _activeOutputItemIds[webSearchIndex] = webSearchId;
+                    }
+
+                    parts.Add(new ToolInputStartStreamPart(webSearchId, WebSearchName(), providerExecuted: true));
+                    parts.Add(new ToolInputEndStreamPart(webSearchId));
+                    parts.Add(new ToolCallStreamPart(webSearchId, WebSearchName(), "{}") { ProviderExecuted = true });
+                }
+                else if (node["item"] is JsonObject functionCall
                     && functionCall["type"]?.GetValue<string>() == "function_call"
                     && node["output_index"] is JsonValue addedIndex
                     && addedIndex.TryGetValue<int>(out var functionCallIndex))
@@ -149,6 +167,15 @@ internal sealed class OpenAIResponsesStream
                     parts.Add(new TextDeltaStreamPart(itemId, delta!));
                 }
 
+                break;
+            case "response.refusal.delta":
+                _hasRefusal = true;
+                var refusalItemId = ResolveOutputItemId(node["item_id"]?.GetValue<string>() ?? _openTextId ?? "text", node);
+                OpenText(parts, refusalItemId);
+                parts.Add(new TextDeltaStreamPart(refusalItemId, node["delta"]?.GetValue<string>() ?? string.Empty));
+                break;
+            case "response.refusal.done":
+                _hasRefusal = true;
                 break;
             case "response.reasoning_summary_part.added":
                 if (node["item_id"]?.GetValue<string>() is { } partItem)
@@ -300,6 +327,11 @@ internal sealed class OpenAIResponsesStream
                 else if (node["item"] is JsonObject done)
                 {
                     ItemDone(parts, JsonSerializer.Deserialize<JsonElement>(done.ToJsonString()), done["id"]?.GetValue<string>() is { } doneId ? ResolveOutputItemId(doneId, node) : null);
+                    if (done["type"]?.GetValue<string>() == "web_search_call" && OutputIndex(node) is { } webSearchDoneIndex)
+                    {
+                        _activeOutputItemIds.Remove(webSearchDoneIndex);
+                    }
+
                     if (done["type"]?.GetValue<string>() == "message" && OutputIndex(node) is { } messageDoneIndex)
                     {
                         _activeOutputItemIds.Remove(messageDoneIndex);
@@ -319,6 +351,7 @@ internal sealed class OpenAIResponsesStream
                     }
 
                     _reasoningContext = ReasoningContext(response) ?? _reasoningContext;
+                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(response["prompt_cache_diagnostics"]);
                     if (response["output"] is JsonArray output)
                     {
                         foreach (var item in output)
@@ -339,7 +372,8 @@ internal sealed class OpenAIResponsesStream
                 {
                     var failedReason = failed["incomplete_details"]?["reason"]?.GetValue<string>();
                     _reasoningContext = ReasoningContext(failed) ?? _reasoningContext;
-                    _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall) : FinishReason.Error;
+                    _promptCacheDiagnostics = OpenAIResponsesLanguageModel.PromptCacheDiagnostics(failed["prompt_cache_diagnostics"]);
+                    _failedFinish = failedReason != null ? OpenAIResponsesLanguageModel.MapFinishReason(failedReason, _hasFunctionCall, _hasRefusal) : FinishReason.Error;
                     _failedRaw = failedReason ?? "error";
                     if (failed["error"] is JsonNode failedError && !_streamError)
                     {
@@ -441,7 +475,7 @@ internal sealed class OpenAIResponsesStream
         var finish = failedFinish
             ? _failedFinish!.Value
             : _finished
-                ? OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall)
+                ? OpenAIResponsesLanguageModel.MapFinishReason(_incompleteReason, _hasFunctionCall, _hasRefusal)
                 : FinishReason.Interrupted;
         parts.Add(new FinishStreamPart(
             finish,
@@ -462,6 +496,11 @@ internal sealed class OpenAIResponsesStream
         if (_reasoningContext != null)
         {
             metadata["reasoningContext"] = _reasoningContext;
+        }
+
+        if (_promptCacheDiagnostics != null)
+        {
+            metadata["promptCacheDiagnostics"] = _promptCacheDiagnostics;
         }
 
         return metadata;
@@ -659,11 +698,29 @@ internal sealed class OpenAIResponsesStream
                 ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName),
             });
         }
+        else if (itemType == "mcp_call")
+        {
+            var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
+            var mcpToolCallId = OpenAIJson.String(item, "id") ?? string.Empty;
+            parts.Add(new ToolCallStreamPart(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
+            {
+                ProviderExecuted = true,
+                Dynamic = true,
+            });
+            parts.Add(new ToolResultStreamPart(mcpToolCallId, mcpToolName, JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.McpCallResult(item)))
+            {
+                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName),
+            });
+        }
+        else if (itemType == "mcp_list_tools")
+        {
+            // Skip listTools: it is not exposed and not sent back.
+        }
         else if (itemType == "web_search_call")
         {
             parts.Add(new ToolResultStreamPart(
-                OpenAIJson.String(item, "id") ?? string.Empty,
-                "web_search",
+                resolvedId ?? OpenAIJson.String(item, "id") ?? string.Empty,
+                WebSearchName(),
                 JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.WebSearchResult(item))));
             foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
             {
@@ -687,6 +744,9 @@ internal sealed class OpenAIResponsesStream
             }
         }
     }
+
+    private string WebSearchName() =>
+        _toolNameMapping?.ToCustomToolName(_webSearchToolName ?? "web_search") ?? _webSearchToolName ?? "web_search";
 
     private static LanguageModelStreamPart ToSourcePart(GeneratedContent source) => source switch
     {

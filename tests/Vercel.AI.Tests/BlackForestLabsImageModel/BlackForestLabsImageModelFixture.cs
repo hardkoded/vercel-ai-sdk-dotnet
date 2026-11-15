@@ -56,6 +56,7 @@ internal sealed class BlackForestLabsServer : HttpMessageHandler
         }
 
         Json("https://api.example.com/poll", "{\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}");
+        Json("https://api.example.com/v1/get_result", "{\"id\":\"req-123\",\"status\":\"Ready\",\"result\":{\"sample\":\"https://api.example.com/image.png\"}}");
         Binary("https://api.example.com/image.png");
         Binary("https://cdn.evil.example/image.png");
         Json("https://api.bfl.ai/v1/flux-2-pro", "{\"id\":\"req-123\",\"polling_url\":\"https://api.us1.bfl.ai/v1/get_result\"}");

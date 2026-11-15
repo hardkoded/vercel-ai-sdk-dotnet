@@ -86,7 +86,7 @@ Cancellation token.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L58)
 
 <a id="Vercel_AI_Operations_TranscriptionModelCall_Headers_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelCall_Headers"></a>
@@ -103,7 +103,7 @@ Headers including the user-agent suffix.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L55)
 
 <a id="Vercel_AI_Operations_TranscriptionModelCall_MediaType_"></a>
 <a id="Vercel_AI_Operations_TranscriptionModelCall_MediaType"></a>
@@ -137,4 +137,22 @@ Provider options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L52)
+
+<a id="Vercel_AI_Operations_TranscriptionModelCall_TimestampGranularities_"></a>
+<a id="Vercel_AI_Operations_TranscriptionModelCall_TimestampGranularities"></a>
+
+### TimestampGranularities
+
+
+```csharp
+public IReadOnlyList<string>? TimestampGranularities { get; init; }
+```
+
+
+Timing granularities the caller asks for, `word` and `segment`. An empty list requests no additional
+timing detail and does not suppress timings returned by default. Maps to `timestampGranularities`.
+
+**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L49)

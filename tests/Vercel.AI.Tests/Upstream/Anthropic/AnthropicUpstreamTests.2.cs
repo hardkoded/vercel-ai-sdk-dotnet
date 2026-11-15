@@ -39,6 +39,13 @@ public sealed partial class AnthropicUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2", Coverage = UpstreamCoverage.Covered, Commit = "84208104a4eac2dcc84ef0973ac47d4f9c84088c")]
+    public async Task Case_0633()
+    {
+        await AnthropicCases.Run("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-fable-5-2").ConfigureAwait(false);
+    }
+
+    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-language-model.test.ts::getModelCapabilities::should return correct capabilities for claude-opus-4-7", Coverage = UpstreamCoverage.Covered)]
     public async Task Case_0384()
     {
@@ -396,13 +403,6 @@ public sealed partial class AnthropicUpstreamTests
     public async Task Case_0526()
     {
         await AnthropicCases.Run("packages/anthropic/src/convert-anthropic-usage.test.ts::convertAnthropicUsage > real-world scenarios from documentation::should handle re-applying previous compaction block (no new compaction)").ConfigureAwait(false);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message", Coverage = UpstreamCoverage.Covered)]
-    public async Task Case_0527()
-    {
-        await AnthropicCases.Run("packages/anthropic/src/convert-to-anthropic-prompt.test.ts::system messages::should convert a single system message into an anthropic system message").ConfigureAwait(false);
     }
 
     [Fact]

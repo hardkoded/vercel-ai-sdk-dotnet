@@ -80,11 +80,61 @@ public sealed class DoGenerateStatefulChainingTests
     {
         var handler = Basic();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options("{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}"), CancellationToken.None);
+        var options = Options("{\"google\":{\"thinkingLevel\":\"high\",\"thinkingSummaries\":\"auto\"}}");
+        options.Reasoning = "xhigh";
+        var result = await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(options, CancellationToken.None);
 
         var generationConfig = JsonNode.Parse(handler.Bodies[0])!["generation_config"]!;
         Assert.Equal("high", (string?)generationConfig["thinking_level"]);
         Assert.Equal("auto", (string?)generationConfig["thinking_summaries"]);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "maps top-level reasoning to the Hydrogen thinking level", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    public async Task Maps_top_level_reasoning_to_the_Hydrogen_thinking_level()
+    {
+        var handler = Basic();
+        var options = Options();
+        options.Reasoning = "xhigh";
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-hydrogen").DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("xhigh", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "warns and falls back for unsupported reasoning levels", Coverage = UpstreamCoverage.Covered, Commit = "8e60cb4ba35426e7f4a21e341a5e16f37a478a5b")]
+    public async Task Warns_and_falls_back_for_unsupported_reasoning_levels()
+    {
+        var handler = Basic();
+        var options = Options();
+        options.Reasoning = "xhigh";
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, "gemini-4-argon").DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("high", (string?)JsonNode.Parse(handler.Bodies[0])!["generation_config"]!["thinking_level"]);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal("reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\".", warning.Message);
+    }
+
+    [Theory]
+    [InlineData("gemini-4-hydrogen")]
+    [InlineData("gemini-4-hydrogen-eap")]
+    [UpstreamTest(Prefix + "passes the xhigh thinking level for %s", Coverage = UpstreamCoverage.Covered, Commit = "4e43721f73006cda79d95cb3e8733360493ed388")]
+    public async Task Passes_the_xhigh_thinking_level_for_model_id(string modelId)
+    {
+        var handler = Basic();
+
+        var result = await GoogleInteractionsStreamSupport.Model(handler, modelId).DoGenerateAsync(Options("{\"google\":{\"thinkingLevel\":\"xhigh\"}}"), CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!;
+        Assert.Equal(modelId, (string?)body["model"]);
+        Assert.Equal("xhigh", (string?)body["generation_config"]!["thinking_level"]);
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]

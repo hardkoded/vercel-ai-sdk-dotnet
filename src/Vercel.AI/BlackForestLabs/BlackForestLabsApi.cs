@@ -78,13 +78,19 @@ internal static class BlackForestLabsApi
         };
     }
 
-    internal static JsonDocument ParseSubmit(string text)
+    /// <summary>
+    /// Parses a submit response. With <paramref name="allowMissingPollingUrl"/>, a webhook-shaped response
+    /// (<c>AsyncWebhookResponse</c>) without <c>polling_url</c> is valid.
+    /// </summary>
+    internal static JsonDocument ParseSubmit(string text, bool allowMissingPollingUrl = false)
     {
         var document = Parse(text);
         var root = document.RootElement;
         var valid = root.ValueKind == JsonValueKind.Object
             && root.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
-            && root.TryGetProperty("polling_url", out var pollingUrl) && IsUrl(pollingUrl)
+            && (allowMissingPollingUrl
+                ? !root.TryGetProperty("polling_url", out var optionalUrl) || optionalUrl.ValueKind == JsonValueKind.Null || IsUrl(optionalUrl)
+                : root.TryGetProperty("polling_url", out var pollingUrl) && IsUrl(pollingUrl))
             && NullableNumber(root, "cost") && NullableNumber(root, "input_mp") && NullableNumber(root, "output_mp");
         if (!valid)
         {
@@ -93,6 +99,27 @@ internal static class BlackForestLabsApi
         }
 
         return document;
+    }
+
+    /// <summary>True for an HTTP 404 whose body reports <c>Task not found</c> as its status or state.</summary>
+    internal static bool IsTaskNotFound(ApiException exception)
+    {
+        if (exception.StatusCode != 404)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(exception.ResponseBody) ? "{}" : exception.ResponseBody);
+            var root = document.RootElement;
+            return root.ValueKind == JsonValueKind.Object
+                && (StringProperty(root, "status") ?? StringProperty(root, "state")) == "Task not found";
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     internal static JsonDocument Parse(string text)

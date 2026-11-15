@@ -10,7 +10,7 @@ namespace Vercel.AI.Tests;
 
 public sealed class OpenAIResponsesFunctionCallMetadataTests
 {
-    private static JsonObject FunctionCall(string arguments, JsonNode? async, JsonNode? caller)
+    private static JsonObject FunctionCall(string arguments, JsonNode? async, JsonNode? caller, string? status = null)
     {
         var item = new JsonObject
         {
@@ -28,6 +28,11 @@ public sealed class OpenAIResponsesFunctionCallMetadataTests
         if (caller != null)
         {
             item["caller"] = caller;
+        }
+
+        if (status != null)
+        {
+            item["status"] = status;
         }
 
         return item;
@@ -74,7 +79,7 @@ public sealed class OpenAIResponsesFunctionCallMetadataTests
                 {
                     ["type"] = "response.output_item.done",
                     ["output_index"] = 0,
-                    ["item"] = FunctionCall("{}", null, new JsonObject { ["type"] = "program", ["caller_id"] = "caller_1" }),
+                    ["item"] = FunctionCall("{}", null, new JsonObject { ["type"] = "program", ["caller_id"] = "caller_1" }, "completed"),
                 },
             }),
             OpenAIResponsesSupport.TestTools);

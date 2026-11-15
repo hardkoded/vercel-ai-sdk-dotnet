@@ -18,6 +18,7 @@ Google Gemini and Vertex provider.
 | [GoogleAssistantPart](/api/Vercel.AI.Google/GoogleAssistantPart/) | An assistant content part. |
 | [GoogleAssistantTurn](/api/Vercel.AI.Google/GoogleAssistantTurn/) | An assistant turn. |
 | [GoogleBatchApi](/api/Vercel.AI.Google/GoogleBatchApi/) | Gemini Batch API. Downloads the file-based JSONL results of a finished batch. |
+| [GoogleDecisionModel](/api/Vercel.AI.Google/GoogleDecisionModel/) | Answers questions through the Gemini Decisions API (POST /decisions). Maps to DecisionGoogleModel. |
 | [GoogleEmbeddingModel](/api/Vercel.AI.Google/GoogleEmbeddingModel/) | Gemini embedding model. One value uses :embedContent; several values use :batchEmbedContents. |
 | [GoogleFileAssistantPart](/api/Vercel.AI.Google/GoogleFileAssistantPart/) | An assistant file or reasoning file. |
 | [GoogleFileUrls](/api/Vercel.AI.Google/GoogleFileUrls/) | URLs Gemini can read without downloading the bytes. |

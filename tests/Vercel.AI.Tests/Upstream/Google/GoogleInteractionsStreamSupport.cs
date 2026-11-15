@@ -13,9 +13,9 @@ namespace Vercel.AI.Tests.Upstream.Google;
 internal static class GoogleInteractionsStreamSupport
 {
     /// <summary>The model upstream builds with <c>generateId: () =&gt; 'test-id'</c>.</summary>
-    public static ILanguageModel Model(SequencedHandler handler)
+    public static ILanguageModel Model(SequencedHandler handler, string modelId = "gemini-2.5-flash")
     {
-        return GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" }, handler).Interactions("gemini-2.5-flash");
+        return GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" }, handler).Interactions(modelId);
     }
 
     /// <summary>The events of a <c>__fixtures__/*.chunks.txt</c> file, one JSON object per line.</summary>

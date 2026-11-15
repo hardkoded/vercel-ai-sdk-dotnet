@@ -15,7 +15,7 @@ internal static class OpenAIResponsesSupport
     internal static string Fixture(string name) => File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
 
     // Parses a Responses body with predictable source ids: id-0, id-1, and so on.
-    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null)
+    internal static LanguageModelGenerateResult Generate(JsonNode body, IReadOnlyList<LanguageModelTool>? tools = null, bool jsonResponse = false)
     {
         var raw = body.ToJsonString();
         using var document = JsonDocument.Parse(raw);
@@ -26,7 +26,10 @@ internal static class OpenAIResponsesSupport
             raw,
             new Dictionary<string, string>(),
             () => "id-" + next++,
-            OpenAIParallelToolCall.FunctionToolNames(tools));
+            OpenAIParallelToolCall.FunctionToolNames(tools),
+            toolNameMapping: OpenAIResponsesLanguageModel.CreateToolNameMapping(tools),
+            jsonResponse: jsonResponse,
+            webSearchToolName: OpenAIResponsesLanguageModel.WebSearchToolName(tools));
     }
 
     internal static JsonNode FixtureBody(string name) => JsonNode.Parse(Fixture(name))!;
@@ -84,6 +87,56 @@ internal static class OpenAIResponsesSupport
         Assert.Equal(expected.Count, actual.Count);
     }
 
+    /// <summary>Asserts generated content against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
+    internal static void AssertContentSnapshot(IReadOnlyList<GeneratedContent> content, string fixture)
+    {
+        var expected = JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray();
+        var actual = new JsonArray();
+        foreach (var part in content)
+        {
+            var node = new JsonObject { ["type"] = part.Type };
+            switch (part)
+            {
+                case GeneratedText text:
+                    node["text"] = text.Text;
+                    SetMetadata(node, (text as OpenAIText)?.ProviderMetadata ?? text.ProviderMetadata);
+                    break;
+                case GeneratedReasoning reasoning:
+                    node["text"] = reasoning.Text;
+                    SetMetadata(node, reasoning.ProviderMetadata);
+                    break;
+                case GeneratedToolCall call:
+                    node["toolCallId"] = call.ToolCallId;
+                    node["toolName"] = call.ToolName;
+                    node["input"] = call.ArgumentsJson;
+                    if (call.ProviderExecuted)
+                    {
+                        node["providerExecuted"] = true;
+                    }
+
+                    if (call.Dynamic)
+                    {
+                        node["dynamic"] = true;
+                    }
+
+                    SetMetadata(node, call.ProviderMetadata);
+                    break;
+                case GeneratedToolResult result:
+                    node["toolCallId"] = result.ToolCallId;
+                    node["toolName"] = result.ToolName;
+                    node["result"] = JsonNode.Parse(result.ResultJson);
+                    SetMetadata(node, result.ProviderMetadata);
+                    break;
+                default:
+                    throw new InvalidOperationException("Unexpected content " + part.Type);
+            }
+
+            actual.Add(node);
+        }
+
+        Assert.True(JsonNode.DeepEquals(expected, actual), "Expected " + expected.ToJsonString() + " but got " + actual.ToJsonString());
+    }
+
     private static JsonNode SnapshotOf(LanguageModelStreamPart part)
     {
         var node = new JsonObject { ["type"] = part.Type };
@@ -139,7 +192,23 @@ internal static class OpenAIResponsesSupport
                 node["toolCallId"] = call.ToolCallId;
                 node["toolName"] = call.ToolName;
                 node["input"] = call.ArgumentsJson;
+                if (call.ProviderExecuted)
+                {
+                    node["providerExecuted"] = true;
+                }
+
+                if (call.Dynamic)
+                {
+                    node["dynamic"] = true;
+                }
+
                 SetMetadata(node, call.ProviderMetadata);
+                break;
+            case ToolResultStreamPart toolResult:
+                node["toolCallId"] = toolResult.ToolCallId;
+                node["toolName"] = toolResult.ToolName;
+                node["result"] = JsonNode.Parse(toolResult.Result.GetRawText());
+                SetMetadata(node, toolResult.ProviderMetadata);
                 break;
             case FinishStreamPart finish:
                 var finishReason = new JsonObject { ["unified"] = KebabCase(finish.FinishReason.ToString()) };

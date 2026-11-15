@@ -64,7 +64,7 @@ public sealed class MessageLevelContinuationTests
                 "gpt-6-astra",
                 capture: capture));
 
-        Assert.Equal("Adjacent reasoning effort configuration updates", error.Functionality);
+        Assert.Equal("Adjacent configuration updates", error.Functionality);
         Assert.Equal(0, capture.Calls);
         Assert.NotEmpty(field);
     }

@@ -51,6 +51,29 @@ Creates a skills client.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L58)
 
+<a id="Vercel_AI_Anthropic_AnthropicSkills__ctor_Vercel_AI_ProviderUtils_ProviderHttp_System_Func_System_String__System_Func_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String____System_String_"></a>
+
+### `AnthropicSkills(ProviderHttp, Func<string>, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>, string)`
+
+
+```csharp
+public AnthropicSkills(ProviderHttp http, Func<string> baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers, string provider)
+```
+
+
+Creates a skills client whose provider headers resolve asynchronously on every call.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `http` | [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/) |  |
+| `baseUrl` | [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+| `headers` | [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
+| `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L64)
+
 ## Properties
 
 <a id="Vercel_AI_Anthropic_AnthropicSkills_Provider_"></a>
@@ -68,7 +91,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L76)
 
 <a id="Vercel_AI_Anthropic_AnthropicSkills_SpecificationVersion_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicSkills_SpecificationVersion"></a>
@@ -85,7 +108,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L73)
 
 ## Methods
 
@@ -112,4 +135,4 @@ Uploads skill files, then reads the latest version metadata.
 
 **Returns:** [Task&lt;AnthropicSkillUpload&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L73)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicSkills.cs#L89)

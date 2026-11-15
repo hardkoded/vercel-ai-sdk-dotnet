@@ -54,7 +54,11 @@ public static class AnthropicJsonSchema
 
         if (schema.TryGetProperty("$ref", out var reference) && reference.ValueKind != JsonValueKind.Null)
         {
-            return new JsonObject { ["$ref"] = JsonNode.Parse(reference.GetRawText()) };
+            // Keep the definitions next to a `$ref` so a top-level reference still resolves
+            // (e.g. `{ $ref: '#/definitions/Answer', definitions: {...} }`).
+            var referenced = new JsonObject { ["$ref"] = JsonNode.Parse(reference.GetRawText()) };
+            AddDefinitions(schema, referenced);
+            return referenced;
         }
 
         var result = new JsonObject();
@@ -81,15 +85,7 @@ public static class AnthropicJsonSchema
             result["allOf"] = MapArray(allOf);
         }
 
-        if (schema.TryGetProperty("definitions", out var definitions) && definitions.ValueKind == JsonValueKind.Object)
-        {
-            result["definitions"] = MapObject(definitions);
-        }
-
-        if (schema.TryGetProperty("$defs", out var defs) && defs.ValueKind == JsonValueKind.Object)
-        {
-            result["$defs"] = MapObject(defs);
-        }
+        AddDefinitions(schema, result);
 
         var type = schema.TryGetProperty("type", out var typeValue) && typeValue.ValueKind == JsonValueKind.String ? typeValue.GetString() : null;
         var hasProperties = schema.TryGetProperty("properties", out var properties) && properties.ValueKind == JsonValueKind.Object;
@@ -133,6 +129,19 @@ public static class AnthropicJsonSchema
         }
 
         return result;
+    }
+
+    private static void AddDefinitions(JsonElement schema, JsonObject result)
+    {
+        if (schema.TryGetProperty("definitions", out var definitions) && definitions.ValueKind == JsonValueKind.Object)
+        {
+            result["definitions"] = MapObject(definitions);
+        }
+
+        if (schema.TryGetProperty("$defs", out var defs) && defs.ValueKind == JsonValueKind.Object)
+        {
+            result["$defs"] = MapObject(defs);
+        }
     }
 
     private static JsonObject MapObject(JsonElement element)

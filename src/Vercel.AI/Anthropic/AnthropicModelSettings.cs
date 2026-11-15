@@ -27,4 +27,7 @@ public sealed class AnthropicModelSettings
 
     /// <summary>Provider-options namespace read for cache control before <c>anthropic</c>. Defaults to <c>anthropic</c>.</summary>
     public string? CacheControlProviderOptionsName { get; init; }
+
+    /// <summary>Opts in to <c>providerOptions.anthropic.thread</c>. Only platforms that support Anthropic message threads set it.</summary>
+    public bool SupportsMessageThreads { get; init; }
 }

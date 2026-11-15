@@ -249,6 +249,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             body["tools"] = tools;
         }
 
+        if (string.Equals(options.ToolChoice?.Type, "none", StringComparison.Ordinal))
+        {
+            // Presets can enable tools without an explicit list, so a zero budget disables them too.
+            body["max_tool_calls"] = 0;
+        }
+
         if (stream)
         {
             body["stream"] = true;
@@ -264,6 +270,11 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         List<CallWarning> warnings)
     {
         var prepared = new JsonArray();
+        if (string.Equals(toolChoice?.Type, "none", StringComparison.Ordinal))
+        {
+            return prepared;
+        }
+
         if (nativeTools != null)
         {
             foreach (var tool in nativeTools)

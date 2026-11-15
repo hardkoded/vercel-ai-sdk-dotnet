@@ -15,6 +15,27 @@ public sealed class ValidateApprovedToolApprovalsTests
     private const string Id = "packages/ai/src/generate-text/validate-tool-approvals.test.ts::validateApprovedToolApprovals::";
 
     [Fact]
+    [UpstreamTest(Id + "should reject signed approvals changed by an in-place schema validator", Commit = "3c09e0011c718c33f9287c5487c1f95190aeb772", Coverage = UpstreamCoverage.Partial, Note = "A tool input schema is plain JSON Schema, with no custom validate function that can change the value in place, and a JsonElement is immutable. A refineToolInput function that returns a changed input stands in for the validator.")]
+    public async Task Should_reject_signed_approvals_changed_by_an_in_place_schema_validator()
+    {
+        const string secret = "test-secret";
+        var signature = ToolApprovalSignatures.SignToolApproval(secret, "approval-1", "call-1", "tool1", Json("{\"counter\":{\"value\":2}}"));
+        var approval = CreateApproval("tool1", "{\"counter\":{\"value\":2}}", signature);
+
+        var result = await ValidateAsync(
+            approval,
+            new[] { ExecutableTool("tool1", "{\"type\":\"object\"}") },
+            secret: secret,
+            refine: Refine("tool1", input => Json("{\"counter\":{\"value\":" + (input.GetProperty("counter").GetProperty("value").GetInt32() + 1) + "}}")));
+
+        Assert.Empty(result.ApprovedToolApprovals);
+        var invalid = Assert.Single(result.InvalidToolApprovals);
+        Assert.Matches("does not match the validated schema output", invalid.Error.Cause!.Message);
+        Assert.Equal("{\"counter\":{\"value\":2}}", approval.ToolCall.Input.GetRawText());
+        Assert.Null(approval.ApprovalRequest.InputSchemaInput);
+    }
+
+    [Fact]
     [UpstreamTest(Id + "should keep approvals whose input matches the tool input schema", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_keep_approvals_whose_input_matches_the_tool_input_schema()
     {
