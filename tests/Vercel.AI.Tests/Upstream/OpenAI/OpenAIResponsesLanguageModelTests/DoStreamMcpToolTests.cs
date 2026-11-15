@@ -35,4 +35,26 @@ public sealed class DoStreamMcpToolTests
         var body = JsonNode.Parse(capture.Body)!;
         Assert.True(JsonNode.DeepEquals(expected, body["tools"]), body["tools"]!.ToJsonString());
     }
+
+    [Fact]
+    [UpstreamTest("packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream > mcp tool::should stream mcp tool results (list tools, tool calls, tool results)", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_stream_mcp_tool_results_list_tools_tool_calls_tool_results()
+    {
+        var events = OpenAIResponsesSupport.Fixture("openai-mcp-tool.1.chunks.txt")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonNode.Parse(line)!);
+        var capture = new OpenAICapture { ServerSentEvents = OpenAIResponsesSupport.Sse(events) };
+        var options = OpenAIUpstream.Hello();
+        options.Tools = new[]
+        {
+            LanguageModelTool.ProviderDefined(
+                "openai.mcp",
+                "MCP",
+                OpenAIUpstream.Json("""{"serverLabel":"dmcp","serverUrl":"https://mcp.exa.ai/mcp","serverDescription":"A web-search API for AI agents"}""")),
+        };
+
+        var parts = await OpenAIUpstream.Read(await OpenAIUpstream.Provider(capture).ResponsesModel("gpt-5-mini").DoStreamAsync(options, CancellationToken.None));
+
+        OpenAIResponsesSupport.AssertStreamSnapshot(parts, "openai-mcp-tool.1");
+    }
 }
