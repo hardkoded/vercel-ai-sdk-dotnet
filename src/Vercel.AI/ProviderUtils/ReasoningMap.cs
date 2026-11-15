@@ -20,6 +20,8 @@ public static class ReasoningMap
         { "max", 0.95 },
     };
 
+    private static readonly string[] ReasoningLevels = ["minimal", "low", "medium", "high", "xhigh", "max"];
+
     /// <summary>Converts a warning produced while mapping reasoning into a call warning that keeps its feature.</summary>
     internal static CallWarning? ToCallWarning(ModelWarning warning)
     {
@@ -37,7 +39,10 @@ public static class ReasoningMap
         return reasoning != null && reasoning != "provider-default";
     }
 
-    /// <summary>Maps a reasoning level through <paramref name="effortMap"/>. Maps to <c>mapReasoningToProviderEffort</c>.</summary>
+    /// <summary>
+    /// Maps a reasoning level through <paramref name="effortMap"/>. An unsupported level maps to the next lower supported
+    /// level, or the next higher one. Maps to <c>mapReasoningToProviderEffort</c>.
+    /// </summary>
     public static string? MapReasoningToProviderEffort(
         string reasoning,
         IReadOnlyDictionary<string, string> effortMap,
@@ -53,8 +58,29 @@ public static class ReasoningMap
             throw new ArgumentNullException(nameof(warnings));
         }
 
-        string? mapped;
-        if (!effortMap.TryGetValue(reasoning, out mapped) || mapped is null)
+        var index = Array.IndexOf(ReasoningLevels, reasoning);
+        var candidates = new List<string> { reasoning };
+        for (var i = Math.Max(index, 0) - 1; i >= 0; i--)
+        {
+            candidates.Add(ReasoningLevels[i]);
+        }
+
+        for (var i = index + 1; i < ReasoningLevels.Length; i++)
+        {
+            candidates.Add(ReasoningLevels[i]);
+        }
+
+        string? mapped = null;
+        foreach (var candidate in candidates)
+        {
+            if (effortMap.TryGetValue(candidate, out var value) && value is not null)
+            {
+                mapped = value;
+                break;
+            }
+        }
+
+        if (mapped is null)
         {
             warnings.Add(new UnsupportedWarning("reasoning", "reasoning \"" + reasoning + "\" is not supported by this model."));
             return null;

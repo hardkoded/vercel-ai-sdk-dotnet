@@ -85,6 +85,14 @@ public static class GoogleThinking
         return mapped;
     }
 
+    /// <summary>The reasoning efforts of the model catalog entry. Empty for budget-based models.</summary>
+    internal static IReadOnlyList<string> ReasoningEfforts(string modelId)
+    {
+        return GoogleModelCapability.Get(modelId).UsesGemini3Features && modelId.IndexOf("gemini-3-pro-image", StringComparison.Ordinal) < 0
+            ? ThinkingLevels(modelId)
+            : [];
+    }
+
     // Maps to the reasoning efforts of the model catalog entry.
     private static List<string> ThinkingLevels(string modelId)
     {
