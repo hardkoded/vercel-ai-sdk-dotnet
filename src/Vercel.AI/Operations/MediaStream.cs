@@ -86,6 +86,9 @@ public sealed class ModelStreamPart
     /// <summary>Response headers.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; set; }
 
+    /// <summary>Response body carried by <c>response-metadata</c>.</summary>
+    public JsonElement? Body { get; set; }
+
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; set; }
 
