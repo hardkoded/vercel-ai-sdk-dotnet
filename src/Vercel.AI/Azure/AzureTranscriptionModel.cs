@@ -142,7 +142,8 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
                 AzureProviderOptions.WithAzureOptionsForOpenAI(call.ProviderOptions, options.OpenAIOptions) ?? call.ProviderOptions,
                 call.Headers,
                 call.IncludeRawChunks,
-                call.CancellationToken),
+                call.CancellationToken,
+                call.AbortReason),
             cancellationToken).ConfigureAwait(false);
     }
 

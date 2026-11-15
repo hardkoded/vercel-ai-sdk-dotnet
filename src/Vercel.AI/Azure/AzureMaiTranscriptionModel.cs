@@ -212,6 +212,7 @@ internal sealed class AzureMaiTranscriptionModel
                 Headers = headers,
                 WebSocket = webSocket,
                 AbortSignal = _call.CancellationToken,
+                AbortReason = _call.AbortReason,
                 OnAbort = FinishWithError,
                 OnProcessingError = error => FinishWithError(Redact(error)),
                 OnOpen = _ => Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings }),

@@ -335,31 +335,33 @@ public sealed class DeepgramStreamingTranscriptionTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "aborts an active connection and cancels a pending audio read", Coverage = UpstreamCoverage.Partial, Note = "A cancelled token carries no reason, so the test checks for cancellation instead of the 'stop' message.", Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
+    [UpstreamTest(Prefix + "aborts an active connection and cancels a pending audio read", Coverage = UpstreamCoverage.Covered, Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
     public async Task Aborts_an_active_connection_and_cancels_a_pending_audio_read()
     {
         MockWebSocket.Reset();
         var cancels = 0;
         using var controller = new CancellationTokenSource();
-        var result = await Stream(Model(), new AudioChunkStream(_ => cancels++), Pcm16, cancellationToken: controller.Token);
+        var result = await Stream(Model(), new AudioChunkStream(_ => cancels++), Pcm16, cancellationToken: controller.Token, abortReason: new Exception("stop"));
         var parts = Collect(result);
         MockWebSocket.Instances[0].Open();
         controller.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parts);
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => parts);
+        Assert.Equal("stop", failure.Message);
         Assert.Equal(1, cancels);
         Assert.NotEmpty(MockWebSocket.Instances[0].Closes);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "handles an already aborted request without opening a socket", Coverage = UpstreamCoverage.Partial, Note = "A cancelled token carries no reason, so the test checks for cancellation instead of the 'already stopped' message.", Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
+    [UpstreamTest(Prefix + "handles an already aborted request without opening a socket", Coverage = UpstreamCoverage.Covered, Commit = "5b89b2560ccb9eef8f0fc375367158bdfbbb5724")]
     public async Task Handles_an_already_aborted_request_without_opening_a_socket()
     {
         MockWebSocket.Reset();
         var cancels = 0;
         using var controller = new CancellationTokenSource();
         controller.Cancel();
-        var result = await Stream(Model(), new AudioChunkStream(_ => cancels++), Pcm16, cancellationToken: controller.Token);
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Collect(result));
+        var result = await Stream(Model(), new AudioChunkStream(_ => cancels++), Pcm16, cancellationToken: controller.Token, abortReason: new Exception("already stopped"));
+        var failure = await Assert.ThrowsAnyAsync<Exception>(() => Collect(result));
+        Assert.Equal("already stopped", failure.Message);
         Assert.Equal(1, cancels);
         Assert.Empty(MockWebSocket.Instances);
     }
@@ -482,19 +484,19 @@ public sealed class DeepgramStreamingTranscriptionTests
         return (ITranscriptionCaller)model;
     }
 
-    private static Task<TranscriptionStreamStart> Stream(ITranscriptionCaller model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks = null, string? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    private static Task<TranscriptionStreamStart> Stream(ITranscriptionCaller model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks = null, string? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default, Exception? abortReason = null)
     {
-        return StartAsync(model, audio, format, includeRawChunks, providerOptions, headers, cancellationToken);
+        return StartAsync(model, audio, format, includeRawChunks, providerOptions, headers, cancellationToken, abortReason);
     }
 
-    private static Task<TranscriptionStreamStart> Stream(Vercel.AI.Provider.ITranscriptionModel model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks = null, string? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    private static Task<TranscriptionStreamStart> Stream(Vercel.AI.Provider.ITranscriptionModel model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks = null, string? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default, Exception? abortReason = null)
     {
-        return StartAsync(Model(model), audio, format, includeRawChunks, providerOptions, headers, cancellationToken);
+        return StartAsync(Model(model), audio, format, includeRawChunks, providerOptions, headers, cancellationToken, abortReason);
     }
 
-    private static async Task<TranscriptionStreamStart> StartAsync(ITranscriptionCaller model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks, string? providerOptions, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
+    private static async Task<TranscriptionStreamStart> StartAsync(ITranscriptionCaller model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks, string? providerOptions, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken, Exception? abortReason)
     {
-        var call = new TranscriptionStreamCall(audio, format, OperationJson.Parse(providerOptions ?? "{}"), headers ?? new Dictionary<string, string>(), includeRawChunks, cancellationToken);
+        var call = new TranscriptionStreamCall(audio, format, OperationJson.Parse(providerOptions ?? "{}"), headers ?? new Dictionary<string, string>(), includeRawChunks, cancellationToken, abortReason);
         var start = await model.DoStreamAsync(call, cancellationToken);
         return start!;
     }

@@ -726,6 +726,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
                 Headers = headers,
                 WebSocket = webSocket,
                 AbortSignal = _call.CancellationToken,
+                AbortReason = _call.AbortReason,
                 OnAbort = FinishWithError,
                 OnProcessingError = FinishWithError,
                 OnOpen = OnOpen,
