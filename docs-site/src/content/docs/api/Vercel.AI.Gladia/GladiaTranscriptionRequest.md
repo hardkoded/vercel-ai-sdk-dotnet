@@ -38,11 +38,28 @@ public JsonObject? Body { get; set; }
 ```
 
 
-Extra JSON fields sent with `audio_url`.
+Extra JSON fields sent with `audio_url`, in the snake_case names of the Gladia API. .NET-only: they are merged over the fields built from [ProviderOptions](/api/Vercel.AI.Gladia/GladiaTranscriptionRequest/#Vercel_AI_Gladia_GladiaTranscriptionRequest_ProviderOptions).
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L85)
+
+<a id="Vercel_AI_Gladia_GladiaTranscriptionRequest_ProviderOptions_"></a>
+<a id="Vercel_AI_Gladia_GladiaTranscriptionRequest_ProviderOptions"></a>
+
+### ProviderOptions
+
+
+```csharp
+public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+```
+
+
+Provider options. The `gladia` object is read, with camelCase keys.
+
+**Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L121)
 
 <a id="Vercel_AI_Gladia_GladiaTranscriptionRequest_Headers_"></a>
 <a id="Vercel_AI_Gladia_GladiaTranscriptionRequest_Headers"></a>

@@ -26,6 +26,93 @@ public sealed class DoGenerateTranscriptionTests
     }
 
     [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass provider options to pre-recorded endpoint", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task ShouldPassProviderOptionsToPreRecordedEndpoint()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""
+            {"languageConfig":{"languages":["en"],"codeSwitching":true},"piiRedaction":true,
+             "piiRedactionConfig":{"entityTypes":["EMAIL_ADDRESS","NAME"],"processedTextType":"MARKER"}}
+            """);
+        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var body = GladiaFixtures.InitBody(handler);
+        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", (string?)body["audio_url"]);
+        Assert.Equal("""{"languages":["en"],"code_switching":true}""", body["language_config"]!.ToJsonString());
+        Assert.True((bool?)body["pii_redaction"]);
+        Assert.Equal("""{"entity_types":["EMAIL_ADDRESS","NAME"],"processed_text_type":"MARKER"}""", body["pii_redaction_config"]!.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated language options to language_config", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task ShouldMapDeprecatedLanguageOptionsToLanguageConfig()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""{"language":"en","enableCodeSwitching":true}""");
+        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        Assert.Equal("""{"languages":["en"],"code_switching":true}""", GladiaFixtures.InitBody(handler)["language_config"]!.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should map deprecated customVocabulary arrays to custom_vocabulary_config", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task ShouldMapDeprecatedCustomVocabularyArraysToCustomVocabularyConfig()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""{"customVocabulary":["Gladia","AI SDK"]}""");
+        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var body = GladiaFixtures.InitBody(handler);
+        Assert.True((bool?)body["custom_vocabulary"]);
+        Assert.Equal("""{"vocabulary":["Gladia","AI SDK"]}""", body["custom_vocabulary_config"]!.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::should pass the model id to the pre-recorded endpoint", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task ShouldPassTheModelIdToThePreRecordedEndpoint()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr"]}}""");
+        var provider = GladiaFixtures.Provider(handler);
+        await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        var body = GladiaFixtures.InitBody(handler);
+        Assert.Equal("https://api.gladia.io/file/7403f025-be30-4335-ae29-20131e0adbd6", (string?)body["audio_url"]);
+        Assert.Equal("solaria-3", (string?)body["model"]);
+        Assert.Equal("""{"languages":["fr"]}""", body["language_config"]!.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send a model when none is specified", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task DoesNotSendAModelWhenNoneIsSpecified()
+    {
+        var handler = GladiaFixtures.Handler();
+        await GladiaFixtures.Provider(handler).Transcription().TranscribeAsync(GladiaFixtures.Audio(), null, CancellationToken.None);
+        Assert.False(GladiaFixtures.InitBody(handler).ContainsKey("model"));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::warns when solaria-3 is combined with multiple languages or code switching", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task WarnsWhenSolaria3IsCombinedWithMultipleLanguagesOrCodeSwitching()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr","en"],"codeSwitching":true}}""");
+        var provider = GladiaFixtures.Provider(handler);
+        var result = await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        Assert.Collection(
+            result.Warnings,
+            warning => Assert.Contains("single language", Assert.IsType<OtherWarning>(warning).Message, StringComparison.Ordinal),
+            warning => Assert.Contains("code switching", Assert.IsType<OtherWarning>(warning).Message, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not warn when solaria-3 is used with a single language", Coverage = UpstreamCoverage.Covered, Commit = "c8875b71a36f921e49b34884edcf8a43a236bdeb")]
+    public async Task DoesNotWarnWhenSolaria3IsUsedWithASingleLanguage()
+    {
+        var handler = GladiaFixtures.Handler();
+        var request = GladiaFixtures.Options("""{"languageConfig":{"languages":["fr"]}}""");
+        var provider = GladiaFixtures.Provider(handler);
+        var result = await ((GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3")).TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
     [UpstreamTest("packages/gladia/src/gladia-transcription-model.test.ts::doGenerate > transcription::does not send the API key when the result URL is on a foreign origin", Coverage = UpstreamCoverage.Covered)]
     public async Task DoesNotSendTheApiKeyWhenTheResultUrlIsOnAForeignOrigin()
     {
@@ -49,6 +136,7 @@ public sealed class DoGenerateTranscriptionTests
         await provider.Transcription().TranscribeAsync(GladiaFixtures.Audio(), request, CancellationToken.None);
         var call = handler.Calls[1];
         Assert.Equal("test-api-key", call.Header("x-gladia-key"));
+        Assert.Equal("ai-sdk/" + AiSdkVersion.Version, call.Header("x-gladia-version"));
         Assert.Equal("application/json", call.Header("Content-Type"));
         Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
