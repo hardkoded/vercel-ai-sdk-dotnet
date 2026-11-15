@@ -281,6 +281,11 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
         options.ApiKeyStyle = ApiKeyStyle.CustomHeader;
         options.ApiKeyHeaderName = "x-gladia-key";
         options.UserAgent = ProviderExchange.UserAgent("gladia");
+        if (!options.Headers.ContainsKey("x-gladia-version"))
+        {
+            options.Headers["x-gladia-version"] = "ai-sdk/" + Operations.AiSdkVersion.Version;
+        }
+
         return options;
     }
 
@@ -429,6 +434,14 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
                 var body = request?.Body == null ? new JsonObject() : JsonNode.Parse(request.Body.ToJsonString()) as JsonObject ?? new JsonObject();
                 body["audio_url"] = audioUrl;
+
+                // `default` is the placeholder used when no model id is passed: omit the field
+                // and let the Gladia API fall back to its own default.
+                if (ModelId != "default" && !body.ContainsKey("model"))
+                {
+                    body["model"] = ModelId;
+                }
+
                 var initiated = await ProviderExchange.SendAsync(
                     _provider._httpClient,
                     HttpMethod.Post,
