@@ -365,7 +365,10 @@ public sealed class ScaleDownExtractionModel : IExtractionCaller
         JsonElement? providerMetadata = content.OcrText == null
             ? null
             : JsonSerializer.SerializeToElement(new JsonObject { ["scaledown"] = new JsonObject { ["ocrText"] = content.OcrText } });
-        DateTime? timestamp = value.Created == null ? null : new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(value.Created.Value * 1000);
+        // An out-of-range value leaves the timestamp unset, as an invalid Date does upstream.
+        DateTime? timestamp = value.Created is { } created && Math.Abs(created) < 253402300799
+            ? new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(created * 1000)
+            : null;
         return new ExtractionModelResult(
             answers,
             warnings: warnings,
