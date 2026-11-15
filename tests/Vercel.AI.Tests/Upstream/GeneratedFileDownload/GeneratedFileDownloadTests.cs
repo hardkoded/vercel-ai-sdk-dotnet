@@ -134,7 +134,7 @@ public sealed class GeneratedFileDownloadTests
             Download.Fetch = fetch;
             using var abort = new CancellationTokenSource();
             var model = FileModel("https://example.com/generated.txt");
-            var download = customDownload ? Download.CreateDownload(fetch: fetch) : null;
+            Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>? download = customDownload ? Download.CreateDownload(fetch: fetch).InvokeAsync : null;
             Task operation;
             if (mode == "generate")
             {

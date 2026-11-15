@@ -16,7 +16,7 @@ public sealed class DownloadBlobTests
     [UpstreamTest(
         "packages/provider-utils/src/download-blob.test.ts::downloadBlob()::uses an injected transport while retaining URL and redirect checks",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The injected transport is OpenAICompatibleOptions.DownloadHttpClient. It does not take a per-request redirect flag, so the request init is not checked.",
+        Note = "The injected transport is the provider HttpClient. It does not take a per-request redirect flag, so the request init is not checked.",
         Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
     public async Task Uses_an_injected_transport_while_retaining_url_and_redirect_checks()
     {
@@ -27,7 +27,7 @@ public sealed class DownloadBlobTests
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.UTF8.GetBytes("content")) };
         });
         var runtime = new OpenAICapture();
-        var provider = OpenAIUpstream.Provider(runtime, options => options.DownloadHttpClient = new HttpClient(transport, disposeHandler: false));
+        var provider = OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, transport);
 
         var blob = await ImageFileDownload.DownloadBlobAsync(provider, new Dictionary<string, string?>(), "https://files.example.com/file", CancellationToken.None);
         Assert.Equal("content", Encoding.UTF8.GetString(blob.Data));
