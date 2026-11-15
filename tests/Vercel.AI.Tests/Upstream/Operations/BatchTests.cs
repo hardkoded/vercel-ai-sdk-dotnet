@@ -9,7 +9,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for batch operations.</summary>
-[Collection("WarningLog")]
+[Collection("LogWarnings")]
 public sealed class BatchTests
 {
     private const string Prefix = "packages/ai/src/batch/batch.test.ts::";

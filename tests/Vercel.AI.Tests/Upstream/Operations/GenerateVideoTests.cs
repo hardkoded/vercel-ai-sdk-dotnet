@@ -8,7 +8,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests;
 
 /// <summary>Upstream parity for <c>generateVideo</c>, <c>startVideo</c>, and <c>getVideoStatus</c>.</summary>
-[Collection("WarningLog")]
+[Collection("LogWarnings")]
 public sealed class GenerateVideoTests
 {
     private const string Video = "packages/ai/src/generate-video/generate-video.test.ts::experimental_generateVideo";
