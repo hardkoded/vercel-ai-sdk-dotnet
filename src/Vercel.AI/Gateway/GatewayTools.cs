@@ -1163,6 +1163,12 @@ public sealed class TakoSearchOutput
 
 internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput>
 {
+    private static readonly string[] GatewayToolErrorCodes =
+    [
+        "api_error", "configuration_error", "execution_error", "gateway_rate_limit", "invalid_input", "rate_limit",
+        "timeout", "unknown", "unknown_tool",
+    ];
+
     public override TakoSearchOutput? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var document = JsonDocument.ParseValue(ref reader);
@@ -1172,18 +1178,30 @@ internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput
             throw new JsonException("The Tako search output must be an object.");
         }
 
-        // Upstream tries the response branch first, so a response (it has request_id) keeps `error` and `message` as extra fields.
-        var isError = !root.TryGetProperty("request_id", out _)
-            && root.TryGetProperty("error", out var code) && code.ValueKind == JsonValueKind.String
-            && root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String;
+        // Upstream tries the response branch first: a response has request_id and keeps `error` and `message` as extra fields.
         var raw = root.GetRawText();
-        return isError
-            ? new TakoSearchOutput { Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options) }
-            : new TakoSearchOutput { Response = JsonSerializer.Deserialize<TakoSearchResponse>(raw, options) };
+        if (root.TryGetProperty("request_id", out var requestId) && requestId.ValueKind == JsonValueKind.String)
+        {
+            return new TakoSearchOutput { Response = JsonSerializer.Deserialize<TakoSearchResponse>(raw, options) };
+        }
+
+        if (root.TryGetProperty("error", out var code) && code.ValueKind == JsonValueKind.String
+            && Array.IndexOf(GatewayToolErrorCodes, code.GetString()) >= 0
+            && root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String)
+        {
+            return new TakoSearchOutput { Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options) };
+        }
+
+        throw new JsonException("The Tako search output must be a search response (request_id) or a gateway tool error.");
     }
 
     public override void Write(Utf8JsonWriter writer, TakoSearchOutput value, JsonSerializerOptions options)
     {
+        if (value.Error is not null && value.Response is not null)
+        {
+            throw new JsonException("A Tako search output holds a Response or an Error, not both.");
+        }
+
         if (value.Error is { } error)
         {
             JsonSerializer.Serialize(writer, error, options);
