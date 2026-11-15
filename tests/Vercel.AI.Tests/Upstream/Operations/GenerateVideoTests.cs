@@ -17,7 +17,7 @@ public sealed class GenerateVideoTests
     private const string Mp4 = "AAAAIGZ0eXBpc29tAAACAGlzb20iaXNvMgAAAAhmcmVl";
 
     [Fact]
-    [UpstreamTest(Video + "::returns upload confirmations without downloading or synthesizing files", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(Video + "::returns upload confirmations without downloading or synthesizing files", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
     public async Task Returns_upload_confirmations_without_downloading_or_synthesizing_files()
     {
         var downloads = 0;
@@ -46,7 +46,7 @@ public sealed class GenerateVideoTests
     }
 
     [Fact]
-    [UpstreamTest(Video + "::counts uploads alongside downloadable videos across calls", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(Video + "::counts uploads alongside downloadable videos across calls", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
     public async Task Counts_uploads_alongside_downloadable_videos_across_calls()
     {
         var call = 0;
@@ -63,7 +63,7 @@ public sealed class GenerateVideoTests
     }
 
     [Fact]
-    [UpstreamTest(Video + "::accepts uploaded outcomes through the asynchronous start/status flow", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Video + "::accepts uploaded outcomes through the asynchronous start/status flow", Coverage = UpstreamCoverage.Covered, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
     public async Task Accepts_uploaded_outcomes_through_the_asynchronous_start_status_flow()
     {
         var downloads = 0;
