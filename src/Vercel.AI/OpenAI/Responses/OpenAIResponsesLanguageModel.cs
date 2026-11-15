@@ -10,6 +10,7 @@ using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.OpenAI;
 
@@ -684,13 +685,16 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var prepared = Prepare(ModelId, options, true, _providerOptionsName, SupportsWebSearchSourcesInclude, _requestModelId, _explicitMessageItemType);
         var json = prepared.Body.ToJsonString();
         var sse = await _http.OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken).ConfigureAwait(false);
-        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, cancellationToken), json);
+        return sse.ToStreamResult(StreamAsync(options, prepared, sse.Events, _url().ToString(), json, sse.Headers, cancellationToken), json);
     }
 
     private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         OpenAIResponsesPreparedRequest prepared,
         IAsyncEnumerable<string> events,
+        string url,
+        string requestBodyJson,
+        IReadOnlyDictionary<string, string> responseHeaders,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield return new StreamStartStreamPart(ToCallWarnings(prepared.Warnings));
@@ -727,8 +731,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 {
                     state.MarkParseError();
                     yield return node != null && IsOpenAIChatCompletionChunk(node)
-                        ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node))
-                        : new ErrorStreamPart("Type validation failed: Value: " + data + ".");
+                        ? new ErrorStreamPart(CreateChatCompletionsMismatchError(node, url, requestBodyJson, responseHeaders))
+                        : new ErrorStreamPart(new ProviderUtils.TypeValidationException("Type validation failed: Value: " + data + ".", chunkDocument.RootElement.Clone()));
                     continue;
                 }
 
@@ -757,13 +761,22 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private static bool IsOpenAIChatCompletionChunk(JsonObject chunk) =>
         chunk["choices"] is JsonArray && chunk["type"]?.GetValueKind() != JsonValueKind.String;
 
-    private static ProviderStreamError CreateChatCompletionsMismatchError(JsonObject value) =>
+    private static ApiCallError CreateChatCompletionsMismatchError(
+        JsonObject value,
+        string url,
+        string requestBodyJson,
+        IReadOnlyDictionary<string, string> responseHeaders) =>
         new(
             "Received a Chat Completions stream while using the OpenAI Responses API. "
             + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
             + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
-            value.ToJsonString(),
-            isRetryable: false);
+            url,
+            JsonNode.Parse(requestBodyJson)!,
+            responseHeaders: responseHeaders,
+            responseBody: value.ToJsonString(),
+            cause: new ProviderUtils.TypeValidationException("Type validation failed: Value: " + value.ToJsonString() + ".", JsonDocument.Parse(value.ToJsonString()).RootElement.Clone()),
+            isRetryable: false,
+            data: value.DeepClone());
 
     internal static LanguageModelGenerateResult Parse(
         JsonElement root,

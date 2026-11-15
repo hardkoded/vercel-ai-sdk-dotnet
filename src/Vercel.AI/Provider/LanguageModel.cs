@@ -2077,8 +2077,19 @@ public sealed class ErrorStreamPart : LanguageModelStreamPart
         Message = error.Message;
     }
 
+    /// <summary>Creates an error part that carries the error object itself (upstream <c>error: unknown</c>).</summary>
+    public ErrorStreamPart(Exception exception)
+        : base("error")
+    {
+        Exception = exception ?? throw new ArgumentNullException(nameof(exception));
+        Message = exception.Message;
+    }
+
     /// <summary>Error message.</summary>
     public string Message { get; }
+
+    /// <summary>The error object, such as an <see cref="Util.ApiCallError"/> or a <see cref="ProviderUtils.TypeValidationException"/>. Null when the provider reported a message or a <see cref="Error"/>.</summary>
+    public Exception? Exception { get; }
 
     /// <summary>
     /// The provider's structured error (<c>type</c>, <c>code</c>, status, retry flag, and the original <c>data</c>).

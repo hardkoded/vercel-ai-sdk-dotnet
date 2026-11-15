@@ -407,7 +407,7 @@ public sealed class DoStreamTests
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doStream::should return helpful error when Chat Completions stream is received",
-        Coverage = UpstreamCoverage.Partial)]
+        Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_helpful_error_when_Chat_Completions_stream_is_received()
     {
         const string chunk = """{"choices":[],"created":0,"id":"","model":"","object":"","prompt_filter_results":[{"prompt_index":0,"content_filter_results":{}}]}""";
@@ -419,7 +419,10 @@ public sealed class DoStreamTests
             + "The default OpenAI provider model uses the Responses API. If your custom baseURL targets a Chat Completions-compatible endpoint, use openai.chat('model-id') or createOpenAI(...).chat('model-id') instead. "
             + "You can also use @ai-sdk/openai-compatible for OpenAI-compatible providers.",
             error.Message);
-        Assert.Equal(chunk, error.Error!.Data);
+        var apiCallError = Assert.IsType<Vercel.AI.Util.ApiCallError>(error.Exception);
+        Assert.True(Vercel.AI.Util.ApiCallError.IsInstance(apiCallError));
+        Assert.Equal(chunk, apiCallError.ResponseBody);
+        Assert.False(apiCallError.IsRetryable);
     }
 
     [Fact]

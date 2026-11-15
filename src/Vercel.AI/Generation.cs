@@ -581,7 +581,7 @@ internal static class Generation
                                 buffer.Add(new ErrorPart(error.Message));
                                 if (options.OnError != null)
                                 {
-                                    await options.OnError(new AiSdkException(error.Message), cancellationToken).ConfigureAwait(false);
+                                    await options.OnError(error.Exception ?? new AiSdkException(error.Message), cancellationToken).ConfigureAwait(false);
                                 }
 
                                 break;
