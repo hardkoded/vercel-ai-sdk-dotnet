@@ -9,7 +9,6 @@ using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.ScaleDown;
 using Vercel.AI.Tests.Upstream.Scaledown.ScaledownDecisionModel;
-using Vercel.AI.Tests.Upstream.Scaledown;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.Scaledown.ScaledownExtractionModel;

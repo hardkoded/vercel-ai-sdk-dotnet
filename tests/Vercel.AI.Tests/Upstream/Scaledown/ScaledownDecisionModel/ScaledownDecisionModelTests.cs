@@ -5,7 +5,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
-using Vercel.AI.Tests.Upstream.Scaledown;
 using Vercel.AI.ScaleDown;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
