@@ -26,6 +26,9 @@ public class AnthropicOptions
     /// <summary>Bearer token. Mutually exclusive with <see cref="ApiKey"/>.</summary>
     public string? AuthToken { get; set; }
 
+    /// <summary>Resolves the bearer token on every request, for tokens that refresh. Mutually exclusive with <see cref="ApiKey"/>. Takes precedence over <see cref="AuthToken"/>.</summary>
+    public Func<CancellationToken, Task<string>>? AuthTokenProvider { get; set; }
+
     /// <summary>Environment variable. Defaults to <c>ANTHROPIC_API_KEY</c>.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "ANTHROPIC_API_KEY";
 
@@ -122,7 +125,7 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             throw new ArgumentException("baseURL must be a non-empty string.", nameof(options));
         }
 
-        if (!string.IsNullOrEmpty(Options.ApiKey) && !string.IsNullOrEmpty(Options.AuthToken))
+        if (!string.IsNullOrEmpty(Options.ApiKey) && (!string.IsNullOrEmpty(Options.AuthToken) || Options.AuthTokenProvider != null))
         {
             throw new InvalidOperationException("Both apiKey and authToken were provided. Please use only one authentication method.");
         }
@@ -245,13 +248,13 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>Files API client.</summary>
     public AnthropicFiles Files()
     {
-        return new AnthropicFiles(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), ModelProvider);
+        return new AnthropicFiles(Http, NormalizedBase, ProviderHeadersAsync, ModelProvider);
     }
 
     /// <summary>Skills API client.</summary>
     public AnthropicSkills Skills()
     {
-        return new AnthropicSkills(Http, NormalizedBase, () => CreateHeaders(Array.Empty<string>(), null), Aws ? "anthropic-aws.skills" : "anthropic.skills");
+        return new AnthropicSkills(Http, NormalizedBase, ProviderHeadersAsync, Aws ? "anthropic-aws.skills" : "anthropic.skills");
     }
 
     /// <summary>Messages URL for the resolved base.</summary>
@@ -314,6 +317,11 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
         return raw;
     }
 
+    private async Task<IReadOnlyDictionary<string, string?>> ProviderHeadersAsync(CancellationToken cancellationToken)
+    {
+        return await CreateHeadersAsync(Array.Empty<string>(), null, null, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Headers for a Messages call that already has an API key or auth token.</summary>
     public Dictionary<string, string?> CreateHeaders(IReadOnlyList<string> betas, IReadOnlyDictionary<string, string?>? callHeaders)
     {
@@ -356,7 +364,12 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
             headers["anthropic-beta"] = string.Join(",", betas);
         }
 
-        if (!string.IsNullOrEmpty(Options.AuthToken))
+        if (Options.AuthTokenProvider != null)
+        {
+            var token = await Options.AuthTokenProvider(cancellationToken).ConfigureAwait(false);
+            headers["Authorization"] = "Bearer " + token;
+        }
+        else if (!string.IsNullOrEmpty(Options.AuthToken))
         {
             headers["Authorization"] = "Bearer " + Options.AuthToken;
         }

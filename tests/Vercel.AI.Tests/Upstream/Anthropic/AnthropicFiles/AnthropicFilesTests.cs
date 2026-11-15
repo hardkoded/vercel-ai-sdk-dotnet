@@ -16,9 +16,10 @@ public sealed class AnthropicFilesTests
     [InlineData("getFileMetadata")]
     [InlineData("downloadFile")]
     [InlineData("deleteFile")]
-    [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::preserves API errors and async request headers for %s", Coverage = UpstreamCoverage.Partial, Note = "Provider headers are a synchronous callback in the port, so 'called once' is checked without an async header resolver.", Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
+    [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles::preserves API errors and async request headers for %s", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
     public async Task Preserves_API_errors_and_request_headers(string operation)
     {
+        var headerCalls = 0;
         var (files, handler) = FilesFixture.Create(_ =>
         {
             var response = new HttpResponseMessage(HttpStatusCode.NotFound)
@@ -26,7 +27,11 @@ public sealed class AnthropicFilesTests
                 Content = new StringContent("{\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"File not found\"}}", Encoding.UTF8, "application/json"),
             };
             return response;
-        }, () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" });
+        }, _ =>
+        {
+            headerCalls++;
+            return Task.FromResult<IReadOnlyDictionary<string, string?>>(new Dictionary<string, string?> { ["Authorization"] = "Bearer test-token" });
+        });
         var reference = FilesFixture.Ref("file-abc123");
         var call = new Dictionary<string, string?> { ["x-request-id"] = "request-1" };
         var error = await Assert.ThrowsAsync<NotFoundException>(() => operation switch
@@ -37,6 +42,7 @@ public sealed class AnthropicFilesTests
         }).ConfigureAwait(false);
         Assert.Equal(404, error.StatusCode);
         Assert.Contains("File not found", error.Message);
+        Assert.Equal(1, headerCalls);
         Assert.Single(handler.Calls);
         Assert.Equal("Bearer test-token", handler.Calls[0].Header("Authorization"));
         Assert.Equal("request-1", handler.Calls[0].Header("x-request-id"));

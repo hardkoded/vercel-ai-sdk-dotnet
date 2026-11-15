@@ -15,10 +15,16 @@ public sealed class AnthropicFiles : IFileStore
 {
     private readonly ProviderHttp _http;
     private readonly Func<string> _baseUrl;
-    private readonly Func<IReadOnlyDictionary<string, string?>> _headers;
+    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> _headers;
 
     /// <summary>Creates a files client.</summary>
     public AnthropicFiles(ProviderHttp http, Func<string> baseUrl, Func<IReadOnlyDictionary<string, string?>> headers, string provider)
+        : this(http, baseUrl, WrapHeaders(headers), provider)
+    {
+    }
+
+    /// <summary>Creates a files client whose provider headers resolve asynchronously on every call.</summary>
+    public AnthropicFiles(ProviderHttp http, Func<string> baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers, string provider)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _baseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
@@ -51,7 +57,7 @@ public sealed class AnthropicFiles : IFileStore
             form.Add(new StringContent(downloadable.Value ? "true" : "false"), "downloadable");
         }
 
-        var response = await _http.SendBinaryAsync(HttpMethod.Post, ApiKeys.Combine(_baseUrl(), "files"), form, GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http.SendBinaryAsync(HttpMethod.Post, ApiKeys.Combine(_baseUrl(), "files"), form, await GetHeadersAsync(callHeaders, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         return Parse(response.Body, fileName, mediaType);
     }
 
@@ -59,7 +65,7 @@ public sealed class AnthropicFiles : IFileStore
     public async Task<AnthropicUploadedFile> GetFileMetadataAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
         var id = GetFileId(file);
-        var response = await _http.SendBinaryAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id)), null, GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http.SendBinaryAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id)), null, await GetHeadersAsync(callHeaders, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         return Parse(response.Body, null, null);
     }
 
@@ -67,7 +73,7 @@ public sealed class AnthropicFiles : IFileStore
     public async Task<AnthropicFileDownload> DownloadFileAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
         var id = GetFileId(file);
-        var response = await _http.OpenBinaryStreamAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id) + "/content"), GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http.OpenBinaryStreamAsync(HttpMethod.Get, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id) + "/content"), await GetHeadersAsync(callHeaders, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         string? mediaType = null;
         if (response.Headers.TryGetValue("Content-Type", out var contentType) && !string.IsNullOrWhiteSpace(contentType))
         {
@@ -86,9 +92,19 @@ public sealed class AnthropicFiles : IFileStore
     public async Task<AnthropicFileDeleteResult> DeleteFileAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? callHeaders = null)
     {
         var id = GetFileId(file);
-        var response = await _http.SendBinaryAsync(HttpMethod.Delete, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id)), null, GetHeaders(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http.SendBinaryAsync(HttpMethod.Delete, ApiKeys.Combine(_baseUrl(), "files/" + PathSegments.Encode(id)), null, await GetHeadersAsync(callHeaders, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         return new AnthropicFileDeleteResult(new Dictionary<string, string> { ["anthropic"] = AnthropicJson.String(document.RootElement, "id") ?? throw new InvalidOperationException("Anthropic delete response is missing 'id'.") }, true);
+    }
+
+    private static Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> WrapHeaders(Func<IReadOnlyDictionary<string, string?>> headers)
+    {
+        if (headers == null)
+        {
+            throw new ArgumentNullException(nameof(headers));
+        }
+
+        return _ => Task.FromResult(headers());
     }
 
     private static string GetFileId(IReadOnlyDictionary<string, string?> file)
@@ -113,10 +129,10 @@ public sealed class AnthropicFiles : IFileStore
     }
 
     // Provider headers, then the beta default, then the per-call headers, as upstream's combineHeaders does.
-    private Dictionary<string, string?> GetHeaders(IReadOnlyDictionary<string, string?>? callHeaders)
+    private async Task<Dictionary<string, string?>> GetHeadersAsync(IReadOnlyDictionary<string, string?>? callHeaders, CancellationToken cancellationToken)
     {
         var headers = new Dictionary<string, string?>();
-        foreach (var pair in _headers())
+        foreach (var pair in await _headers(cancellationToken).ConfigureAwait(false))
         {
             headers[pair.Key] = pair.Value;
         }

@@ -1021,36 +1021,6 @@ internal static class AnthropicAssertions
         Assert.Empty(new List<AnthropicWarning>());
     }
 
-    public static async Task FilesBeta()
-    {
-        var handler = new CaptureHandler { ResponseBody = "{\"id\":\"file_1\",\"filename\":\"blob\"}" };
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key", BaseUrl = "https://api.anthropic.com/v1" }, handler);
-        var file = await provider.Files().UploadAsync("blob", new byte[] { 1, 2 }, "text/plain", null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Contains("/v1/files", handler.Uri);
-        Assert.Equal("POST", handler.Method);
-        Assert.Equal("files-api-2025-04-14", handler.Headers["anthropic-beta"]);
-        Assert.Equal("test-api-key", handler.Headers["x-api-key"]);
-        Assert.Contains("name=\"file\"", handler.Body);
-        Assert.Contains("filename=\"blob\"", handler.Body);
-        Assert.Equal("file_1", file.Id);
-        Assert.Equal("v4", provider.Files().SpecificationVersion);
-        Assert.Equal("anthropic.messages", provider.Files().Provider);
-        Assert.DoesNotContain("downloadable", handler.Body);
-    }
-
-    public static async Task FilesCustomName()
-    {
-        var handler = new CaptureHandler { ResponseBody = "{\"id\":\"file_2\",\"filename\":\"notes.txt\"}" };
-        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key", BaseUrl = "https://api.anthropic.com/v1" }, handler);
-        var options = new LanguageModelCallOptions { Headers = new Dictionary<string, string?> { ["x-call"] = "yes" } };
-        var file = await provider.Files().UploadAsync("notes.txt", System.Text.Encoding.UTF8.GetBytes("hello"), "text/plain", false, CancellationToken.None).ConfigureAwait(false);
-        Assert.Contains("filename=\"notes.txt\"", handler.Body);
-        Assert.Contains("text/plain", handler.Body);
-        Assert.Contains("downloadable", handler.Body);
-        Assert.Equal("notes.txt", file.FileName);
-        Assert.NotNull(options);
-    }
-
     public static void BatchResults()
     {
         using var pending = JsonDocument.Parse("{\"processing_status\":\"in_progress\",\"results_url\":null}");

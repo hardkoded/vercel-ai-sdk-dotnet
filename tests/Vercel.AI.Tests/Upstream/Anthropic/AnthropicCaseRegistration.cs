@@ -62,19 +62,7 @@ internal static class AnthropicCaseRegistration
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects result retrieval while the batch is pending", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch > batch result lifecycle::rejects a completed batch without output", AnthropicAssertions.BatchResults);
         AnthropicCases.Add("packages/anthropic/src/anthropic-error.test.ts::anthropicError > anthropicErrorDataSchema::should parse overloaded error", AnthropicAssertions.ErrorOverloaded);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends POST to /v1/files with correct beta header", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::threads per-call headers and abortSignal", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends x-api-key header", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::sends multipart form data with file", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses default filename \"blob\" when not specified", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses custom filename from spec options", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::uses mediaType from spec options", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::returns providerReference with anthropic key set to file ID", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::returns providerMetadata with response data", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::omits downloadable from providerMetadata when null", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::handles base64 string data", AnthropicAssertions.FilesCustomName);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::has specificationVersion v4", AnthropicAssertions.FilesBeta);
-        AnthropicCases.Add("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::has correct provider name", AnthropicAssertions.FilesBeta);
+
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should pass thinking config; add budget tokens; clear out temperature, top_p, top_k; and return warnings", AnthropicAssertions.ThinkingBudgetRequest);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should extract reasoning response", AnthropicAssertions.ReasoningResponse);
         AnthropicCases.Add("packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > reasoning (thinking enabled)::should preserve container upload response blocks as custom content", AnthropicAssertions.ContainerUploadResponse);

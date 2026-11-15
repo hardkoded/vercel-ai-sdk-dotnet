@@ -110,5 +110,16 @@ internal static class FilesFixture
         return (files, handler);
     }
 
+    public static (global::Vercel.AI.Anthropic.AnthropicFiles Files, ParityHandler Handler) Create(Func<ParityCall, HttpResponseMessage> respond, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers)
+    {
+        var handler = new ParityHandler(respond);
+        var files = new global::Vercel.AI.Anthropic.AnthropicFiles(
+            new Vercel.AI.ProviderUtils.ProviderHttp(new HttpClient(handler, disposeHandler: false)),
+            () => "https://api.anthropic.com/v1",
+            headers,
+            "anthropic.files");
+        return (files, handler);
+    }
+
     public static (global::Vercel.AI.Anthropic.AnthropicFiles Files, ParityHandler Handler) Json(string json) => Create(_ => ParityHandler.Json(json));
 }
