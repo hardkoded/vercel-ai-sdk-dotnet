@@ -20,7 +20,14 @@
 
 # Reviewing .NET and C# code
 
-Run the `dotnet-claude-kit:code-review` skill on every C# change. Also check these points. Upstream parity, the last but one point, wins over the others.
+The `dotnet-claude-kit` plugin is enabled for this repo through `.claude/settings.json`. Use its skills:
+
+- Before you write or edit C# code, load the `dotnet-claude-kit:modern-csharp` skill and follow it. If it conflicts with `netstandard2.0` compatibility or with the style of the file you edit, the file and `netstandard2.0` win.
+- After every C# change, and before you report the work as ready or open a PR, run the `dotnet-claude-kit:code-review` skill on the diff. Fix every critical and high finding, or explain in the PR why you did not.
+- If the Roslyn MCP tools (`cwm-roslyn-navigator`) are available, use them for symbol lookup and antipattern detection. If they are not, review by hand and say so in the report.
+- If a skill suggestion conflicts with the points below, the points below win.
+
+Also check these points. Upstream parity, the last but one point, wins over the others.
 
 - **Cleanup on failure.** Dispose every `HttpResponseMessage`, stream, reader, enumerator, and `CancellationTokenSource` when a later step throws or the caller stops early. Look for a resource created before a call that can throw, with no `using`, `await using`, or `finally`. Put all disposals in a `finally` so one throw does not skip the next.
 - **Streaming.** Do not do synchronous I/O in an async path. Do not dispose a `StreamWriter` or `StreamReader` over a response stream with a synchronous `Dispose` when the host forbids it (Kestrel does). Stop reading the provider response when the consumer stops.
