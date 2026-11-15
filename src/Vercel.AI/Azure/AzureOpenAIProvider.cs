@@ -164,6 +164,70 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return headers;
     }
 
+    /// <summary>
+    /// Serializes a model id and the JSON-serializable provider settings of an Azure model for a workflow boundary. The API
+    /// key and the token provider are not part of the serialized config. Maps to <c>serializeModelOptions</c> over
+    /// <c>{ modelId, config }</c> in <c>[WORKFLOW_SERIALIZE]</c>.
+    /// </summary>
+    internal static SerializedModelOptions SerializeModel(string modelId, AzureOpenAIOptions options)
+    {
+        var config = new Dictionary<string, object?>();
+        void Add(string name, object? value)
+        {
+            if (value != null)
+            {
+                config[name] = value;
+            }
+        }
+
+        Add("baseURL", options.BaseUrl);
+        Add("resourceName", options.ResourceName);
+        Add("apiVersion", options.ApiVersion);
+        Add("useDeploymentBasedUrls", options.UseDeploymentBasedUrls);
+        Add("speechBaseURL", options.SpeechBaseUrl);
+        Add("maiBaseURL", options.MaiBaseUrl);
+        Add("headers", options.Headers.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
+        return ModelOptionsSerialization.SerializeModelOptions(modelId, config);
+    }
+
+    /// <summary>Creates the provider that <c>[WORKFLOW_DESERIALIZE]</c> builds with <c>createAzure(options.config)</c>.</summary>
+    internal static AzureOpenAIProvider DeserializeProvider(SerializedModelOptions serialized, string? apiKey, HttpMessageHandler? handler)
+    {
+        if (serialized is null)
+        {
+            throw new ArgumentNullException(nameof(serialized));
+        }
+
+        var options = new AzureOpenAIOptions { ApiKey = apiKey };
+        string? Text(string name) => serialized.Config.TryGetValue(name, out var value) ? value as string : null;
+        options.BaseUrl = Text("baseURL");
+        options.ResourceName = Text("resourceName");
+        options.SpeechBaseUrl = Text("speechBaseURL");
+        options.MaiBaseUrl = Text("maiBaseURL");
+        if (Text("apiVersion") is { } apiVersion)
+        {
+            options.ApiVersion = apiVersion;
+        }
+
+        if (serialized.Config.TryGetValue("useDeploymentBasedUrls", out var deployment) && deployment is bool useDeploymentBasedUrls)
+        {
+            options.UseDeploymentBasedUrls = useDeploymentBasedUrls;
+        }
+
+        if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
+        {
+            foreach (System.Collections.DictionaryEntry entry in map)
+            {
+                if (entry.Value is string value)
+                {
+                    options.Headers[(string)entry.Key] = value;
+                }
+            }
+        }
+
+        return Create(options, handler);
+    }
+
     private string ResourceName()
     {
         var resource = !string.IsNullOrEmpty(_azure.ResourceName) ? _azure.ResourceName : Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME");
@@ -280,6 +344,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     {
         return new AzureSpeechModel(
             deploymentId,
+            _azure,
             new OpenAI.OpenAISpeechModel(this, deploymentId),
             new AzureSpeechSpeechModel(
                 deploymentId,

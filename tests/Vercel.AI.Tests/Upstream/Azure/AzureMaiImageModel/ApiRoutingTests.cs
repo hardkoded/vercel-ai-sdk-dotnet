@@ -123,4 +123,18 @@ public sealed class ApiRoutingTests
 
         Assert.Single(result.Images);
     }
+
+    [Fact]
+    [UpstreamTest(File + "round-trips through workflow serialization", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    public void RoundTripsThroughWorkflowSerialization()
+    {
+        var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(MaiResponse));
+        var provider = CreateProvider(handler);
+        var model = provider.Image("MAI-Image-2.6");
+
+        var restored = AzureImageModel.Deserialize(model.Serialize(), "test-key", handler);
+
+        Assert.Equal("MAI-Image-2.6", restored.ModelId);
+        Assert.Equal(1, restored.MaxImagesPerCall);
+    }
 }

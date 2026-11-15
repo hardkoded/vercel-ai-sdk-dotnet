@@ -27,7 +27,7 @@ MAI-Voice models use the Azure Speech API and every other model uses the OpenAI 
 
 **Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L17)
 
 ## Properties
 
@@ -46,7 +46,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L35)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_Provider_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_Provider"></a>
@@ -63,9 +63,34 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L29)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L32)
 
 ## Methods
+
+<a id="Vercel_AI_Azure_AzureSpeechModel_Deserialize_"></a>
+<a id="Vercel_AI_Azure_AzureSpeechModel_Deserialize_Vercel_AI_ProviderUtils_SerializedModelOptions_System_String_System_Net_Http_HttpMessageHandler_"></a>
+
+### Deserialize(SerializedModelOptions, string?, HttpMessageHandler?)
+
+
+```csharp
+public static AzureSpeechModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+```
+
+
+Restores a model from [Serialize()](#Vercel_AI_Azure_AzureSpeechModel_Serialize), resolving the API for each call again. Maps to `[WORKFLOW_DESERIALIZE]`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `serialized` | [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/) | The serialized model id and config. |
+| `apiKey` | [string](https://learn.microsoft.com/dotnet/api/system.string) | API key. Defaults to the `AZURE_API_KEY` environment variable. |
+| `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) | HTTP handler. Pass one from tests. |
+
+**Returns:** [AzureSpeechModel](./)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L51)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_DoGenerateAsync_Vercel_AI_Provider_SpeechCallOptions_System_Threading_CancellationToken_"></a>
@@ -89,7 +114,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L57)
 
 <a id="Vercel_AI_Azure_AzureSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureSpeechModel_GenerateAsync_Vercel_AI_OpenAI_OpenAISpeechCall_System_Threading_CancellationToken_"></a>
@@ -120,4 +145,23 @@ Maps to `doGenerate`.
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | An `azure` provider option is unknown or out of range. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L73)
+
+<a id="Vercel_AI_Azure_AzureSpeechModel_Serialize_"></a>
+<a id="Vercel_AI_Azure_AzureSpeechModel_Serialize"></a>
+
+### Serialize()
+
+
+```csharp
+public SerializedModelOptions Serialize()
+```
+
+
+Serializes the model id and the JSON-serializable provider settings for a workflow boundary. Maps to
+`[WORKFLOW_SERIALIZE]`. The API key and the token provider are not part of the serialized config. Pass the key
+to `HttpMessageHandler)`.
+
+**Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechModel.cs#L42)
