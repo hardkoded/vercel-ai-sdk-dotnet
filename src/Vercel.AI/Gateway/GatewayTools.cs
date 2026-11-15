@@ -1146,3 +1146,52 @@ public sealed class TakoSearchResponse
     [JsonExtensionData]
     public IDictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
+
+/// <summary>
+/// Output of the Tako search tool: a <see cref="TakoSearchResponse"/> or a <see cref="GatewayToolError"/>. Maps to
+/// <c>TakoSearchOutput</c> (<c>TakoSearchError | TakoSearchResponse</c>, where <c>TakoSearchError</c> is <c>GatewayToolError</c>).
+/// </summary>
+[JsonConverter(typeof(TakoSearchOutputConverter))]
+public sealed class TakoSearchOutput
+{
+    /// <summary>The search response. Null when the tool returned an error.</summary>
+    public TakoSearchResponse? Response { get; set; }
+
+    /// <summary>The error (<c>TakoSearchError</c>). Null when the tool returned a response.</summary>
+    public GatewayToolError? Error { get; set; }
+}
+
+internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput>
+{
+    public override TakoSearchOutput? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException("The Tako search output must be an object.");
+        }
+
+        var isError = root.TryGetProperty("error", out _) && root.TryGetProperty("message", out _);
+        var raw = root.GetRawText();
+        return isError
+            ? new TakoSearchOutput { Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options) }
+            : new TakoSearchOutput { Response = JsonSerializer.Deserialize<TakoSearchResponse>(raw, options) };
+    }
+
+    public override void Write(Utf8JsonWriter writer, TakoSearchOutput value, JsonSerializerOptions options)
+    {
+        if (value.Error is { } error)
+        {
+            JsonSerializer.Serialize(writer, error, options);
+        }
+        else if (value.Response is { } response)
+        {
+            JsonSerializer.Serialize(writer, response, options);
+        }
+        else
+        {
+            writer.WriteNullValue();
+        }
+    }
+}
