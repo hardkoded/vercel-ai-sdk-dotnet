@@ -756,8 +756,8 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 callHeaders = stripped;
             }
 
-            var timeoutMs = request?.PollTimeoutMs ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
-            var intervalMs = request?.PollIntervalMs ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
+            var timeoutMs = request?.PollTimeoutMs ?? ProviderPollSetting(request, "pollTimeoutMs") ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
+            var intervalMs = request?.PollIntervalMs ?? ProviderPollSetting(request, "pollIntervalMs") ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
             var started = Now(options);
             while (true)
             {
@@ -813,6 +813,17 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                     await Task.Delay(intervalMs, cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        private static int? ProviderPollSetting(GladiaTranscriptionRequest? request, string name)
+        {
+            return request?.ProviderOptions != null
+                && request.ProviderOptions.TryGetValue(ProviderId, out var gladia)
+                && gladia.ValueKind == JsonValueKind.Object
+                && gladia.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                    ? value.GetInt32()
+                    : null;
         }
 
         private static DateTimeOffset Now(GladiaOptions? options)
