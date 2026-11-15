@@ -61,7 +61,7 @@ var total = result.Answers["total"].Number; // null when the state has no total
 
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.
 
-`GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`.
+`GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`. `Download.CreateDownload` returns a `CreatedDownload` with `InvokeAsync(batch)` and `InvokeAsync(single)`; it converts to the `Download` option of transcribe and generateVideo. A provider created with a handler (`OpenAIProvider.Create`, `OpenAICompatibleProvider.Create`) also uses its `HttpClient` for untrusted downloads unless `DownloadHttpClient` is set.
 
 ## Providers
 

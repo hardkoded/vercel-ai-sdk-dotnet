@@ -82,7 +82,7 @@ public sealed class GeneratedFileDownloadTests
             {
                 Model = FileModel("https://example.com/generated.txt"),
                 Prompt = "image",
-                ExperimentalDownload = customDownload ? Download.CreateDownload(fetch: fetch) : null,
+                ExperimentalDownload = customDownload ? Download.CreateDownload(fetch: fetch).InvokeAsync : null,
             };
             var operation = Client().GenerateTextAsync(options, abort.Token);
             var signal = await started.Task.WaitAsync(TimeSpan.FromSeconds(10));

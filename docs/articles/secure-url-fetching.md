@@ -46,7 +46,9 @@ Pass `requireDnsValidation: true` when the endpoint comes from untrusted data, a
 
 ## Generated file downloads
 
-`GenerateTextOptions.ExperimentalDownload` (`experimental_download` upstream) also handles generated file URLs that the model returns, for example an image URL from an image-generation response. Generated file URLs are always downloaded, so a `null` result for one throws a `DownloadException`. Without the option, they are downloaded with `Download.GetAsync` and the default fetch. Pass `Download.CreateDownload(fetch: ...)` to use your own transport.
+`GenerateTextOptions.ExperimentalDownload` (`experimental_download` upstream) also handles generated file URLs that the model returns, for example an image URL from an image-generation response. Generated file URLs are always downloaded, so a `null` result for one throws a `DownloadException`. Without the option, they are downloaded with `Download.GetAsync` and the default fetch. Pass `Download.CreateDownload(fetch: ...)` to use your own transport. `CreateDownload` returns a `CreatedDownload`. `InvokeAsync(IReadOnlyList<DownloadRequestItem>)` is the batch shape, which passes a URL the model supports through as `null`. `InvokeAsync(DownloadRequestItem)` downloads one URL. It converts implicitly to the `Download` option of `TranscribeRequest` and `GenerateVideoRequest`, and to the batch delegate of `ExperimentalDownload`, `DecideRequest.Download` and `ExtractRequest.Download`.
+
+When `OpenAIProvider.Create` or `OpenAICompatibleProvider.Create` gets a handler, the provider's `HttpClient` also serves untrusted downloads (`downloadFetch ?? config.fetch` upstream) unless `DownloadHttpClient` is set. The URL and redirect checks still run.
 
 ```csharp
 var result = await client.GenerateTextAsync(new GenerateTextOptions

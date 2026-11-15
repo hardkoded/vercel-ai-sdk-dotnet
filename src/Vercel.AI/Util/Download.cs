@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
+using Vercel.AI.Operations;
 using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Util;
@@ -185,6 +186,67 @@ public sealed class DownloadResponse
 /// <summary>Fetches one URL for <see cref="Download"/>.</summary>
 public delegate Task<DownloadResponse> DownloadFetch(string url, DownloadRequest request);
 
+/// <summary>
+/// Download function created by <see cref="Download.CreateDownload"/>. C# has no callable overloads, so the two upstream call
+/// signatures are <see cref="InvokeAsync(IReadOnlyList{DownloadRequestItem})"/> and <see cref="InvokeAsync(DownloadRequestItem)"/>.
+/// </summary>
+public sealed class CreatedDownload
+{
+    private readonly long? _maxBytes;
+    private readonly DownloadFetch? _fetch;
+
+    internal CreatedDownload(long? maxBytes, DownloadFetch? fetch)
+    {
+        _maxBytes = maxBytes;
+        _fetch = fetch;
+    }
+
+    /// <summary>Downloads one request. This is the shape of the <c>Download</c> option of transcribe and generateVideo.</summary>
+    public Task<DownloadResult> InvokeAsync(DownloadRequestItem request)
+    {
+        if (request == null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
+        return Download.GetAsync(request.Url, _maxBytes, request.AbortSignal, _fetch);
+    }
+
+    /// <summary>Downloads a batch. A URL the model supports is passed through as a null result.</summary>
+    public async Task<IReadOnlyList<DownloadResult>> InvokeAsync(IReadOnlyList<DownloadRequestItem> requests)
+    {
+        if (requests == null)
+        {
+            throw new ArgumentNullException(nameof(requests));
+        }
+
+        var tasks = new Task<DownloadResult>[requests.Count];
+        for (var i = 0; i < requests.Count; i++)
+        {
+            var item = requests[i];
+            tasks[i] = item.IsUrlSupportedByModel ? Task.FromResult<DownloadResult>(null!) : InvokeAsync(item);
+        }
+
+        return await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    /// <summary>Converts to the batch shape of <c>ExperimentalDownload</c>.</summary>
+    public static implicit operator Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>>(CreatedDownload download)
+    {
+        return download.InvokeAsync;
+    }
+
+    /// <summary>Converts to the single-request shape of the <c>Download</c> option of transcribe and generateVideo.</summary>
+    public static implicit operator Func<string, CancellationToken, Task<DownloadedMedia>>(CreatedDownload download)
+    {
+        return async (url, cancellationToken) =>
+        {
+            var result = await download.InvokeAsync(new DownloadRequestItem(new Uri(url), false) { AbortSignal = cancellationToken }).ConfigureAwait(false);
+            return new DownloadedMedia(result.Data, result.MediaType);
+        };
+    }
+}
+
 /// <summary>Downloads a URL with SSRF checks on every redirect hop.</summary>
 public static class Download
 {
@@ -207,25 +269,16 @@ public static class Download
     public static string? UserAgent { get; set; } = "ai-sdk/dotnet";
 
     /// <summary>
-    /// Creates a download function with configurable options. Maps to <c>createDownload</c>. Pass it as the <c>Download</c> option of
-    /// <see cref="Operations.DecideRequest"/> and <see cref="Operations.ExtractRequest"/>. A URL the model supports is passed through
-    /// (a null result). All others are downloaded with <paramref name="fetch"/>.
+    /// Creates a download function with configurable options. Maps to <c>createDownload</c>. The result converts to the <c>Download</c> option of
+    /// <see cref="Operations.DecideRequest"/>, <see cref="Operations.ExtractRequest"/>, <see cref="Operations.TranscribeRequest"/> and
+    /// <see cref="Operations.GenerateVideoRequest"/>, and to <c>ExperimentalDownload</c>. A batch call passes through a URL the model supports
+    /// (a null result) and downloads all others with <paramref name="fetch"/>. A single request downloads that URL.
     /// </summary>
     /// <param name="maxBytes">Maximum allowed download size in bytes. Default: 2 GiB.</param>
     /// <param name="fetch">Fetch transport, for example one that validates DNS at connection time.</param>
-    public static Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> CreateDownload(long? maxBytes = null, DownloadFetch? fetch = null)
+    public static CreatedDownload CreateDownload(long? maxBytes = null, DownloadFetch? fetch = null)
     {
-        return async delegate (IReadOnlyList<DownloadRequestItem> requested)
-        {
-            var tasks = new Task<DownloadResult>[requested.Count];
-            for (var i = 0; i < requested.Count; i++)
-            {
-                var item = requested[i];
-                tasks[i] = item.IsUrlSupportedByModel ? Task.FromResult<DownloadResult>(null!) : GetAsync(item.Url, maxBytes, item.AbortSignal, fetch);
-            }
-
-            return await Task.WhenAll(tasks).ConfigureAwait(false);
-        };
+        return new CreatedDownload(maxBytes, fetch);
     }
 
     /// <summary>Downloads <paramref name="url"/>.</summary>

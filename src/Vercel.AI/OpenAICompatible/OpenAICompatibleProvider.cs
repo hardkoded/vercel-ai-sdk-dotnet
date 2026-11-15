@@ -79,6 +79,13 @@ public class OpenAICompatibleProvider : ProviderBase
     public static OpenAICompatibleProvider Create(OpenAICompatibleOptions options, HttpMessageHandler? handler = null)
     {
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        if (handler is not null)
+        {
+            // The configured transport also serves untrusted downloads: upstream uses `downloadFetch ?? config.fetch`.
+            options = options.Copy();
+            options.DownloadHttpClient ??= client;
+        }
+
         return new OpenAICompatibleProvider(options, client);
     }
 

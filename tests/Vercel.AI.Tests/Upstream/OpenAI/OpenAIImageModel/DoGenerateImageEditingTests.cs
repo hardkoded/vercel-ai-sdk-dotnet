@@ -17,17 +17,16 @@ public sealed class DoGenerateImageEditingTests
     [InlineData("markup")]
     [UpstreamTest(
         "packages/openai/src/image/openai-image-model.test.ts::doGenerate - image editing::should use the configured fetch and abort signal when downloading a URL %s",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port sends untrusted downloads through OpenAICompatibleOptions.DownloadHttpClient, not through the provider HttpClient, so this checks that client and the cancellation token.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
-    public async Task Uses_the_configured_download_client_and_abort_signal_when_downloading_a_url(string downloadTarget)
+    public async Task Should_use_the_configured_fetch_and_abort_signal_when_downloading_a_url(string downloadTarget)
     {
         using var controller = new CancellationTokenSource();
-        var downloadHandler = new BlockingHandler();
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
+        var downloadHandler = new BlockingHandler(capture);
         var png = new byte[] { 137, 80, 78, 71 };
         var model = new Vercel.AI.OpenAI.OpenAIImageModel(
-            OpenAIUpstream.Provider(capture, options => options.DownloadHttpClient = new HttpClient(downloadHandler, disposeHandler: false)),
+            OpenAIProvider.Create(new OpenAIOptions { ApiKey = "test-api-key" }, downloadHandler),
             "gpt-image-1");
         var call = new OpenAIImageCall("edit")
         {
@@ -48,12 +47,17 @@ public sealed class DoGenerateImageEditingTests
         Assert.Equal(0, capture.Calls);
     }
 
-    private sealed class BlockingHandler : HttpMessageHandler
+    private sealed class BlockingHandler(HttpMessageHandler api) : HttpMessageHandler
     {
         public TaskCompletionSource<CancellationToken> Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (request.RequestUri!.Host != "example.com")
+            {
+                return await new HttpMessageInvoker(api, disposeHandler: false).SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+
             Started.TrySetResult(cancellationToken);
             await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
             return new HttpResponseMessage(HttpStatusCode.OK);

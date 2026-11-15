@@ -118,6 +118,13 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     {
         options ??= new OpenAIOptions();
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        if (handler is not null)
+        {
+            // The configured transport also serves untrusted downloads: upstream uses `downloadFetch ?? config.fetch`.
+            options = (OpenAIOptions)options.Copy();
+            options.DownloadHttpClient ??= client;
+        }
+
         return new OpenAIProvider(client, options);
     }
 

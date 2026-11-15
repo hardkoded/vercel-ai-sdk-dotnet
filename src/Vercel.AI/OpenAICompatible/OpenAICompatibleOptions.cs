@@ -173,7 +173,7 @@ public class OpenAICompatibleOptions
 
     /// <summary>
     /// Client for hops off the provider origin when a URL from a response body is downloaded (Fal, Replicate, Luma, Prodia).
-    /// It must not follow redirects: each hop is validated before it is requested. Null uses a shared client that does not follow them.
+    /// It must not follow redirects: each hop is validated before it is requested. Null uses the HttpClient the provider was created with when <c>Create</c> was given a handler, else a shared client that does not follow them.
     /// </summary>
     public HttpClient? DownloadHttpClient { get; set; }
 
