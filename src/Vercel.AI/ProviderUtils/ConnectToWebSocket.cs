@@ -43,6 +43,9 @@ public sealed class ConnectToWebSocketOptions
     /// <summary>Aborts the connection.</summary>
     public CancellationToken AbortSignal { get; set; }
 
+    /// <summary>The error <see cref="OnAbort"/> receives. Maps to <c>abortSignal.reason</c>. Defaults to an <see cref="OperationCanceledException"/>.</summary>
+    public Exception? AbortReason { get; set; }
+
     /// <summary>Called when the socket opens.</summary>
     public Action<IWebSocketLike>? OnOpen { get; set; }
 
@@ -99,9 +102,10 @@ public static class ConnectToWebSocket
         }
 
         var signal = options.AbortSignal;
+        var abortReason = options.AbortReason;
         if (signal.IsCancellationRequested)
         {
-            options.OnAbort?.Invoke(new OperationCanceledException(signal));
+            options.OnAbort?.Invoke(abortReason ?? new OperationCanceledException(signal));
             return new WebSocketConnection(null, Close);
         }
 
@@ -123,7 +127,7 @@ public static class ConnectToWebSocket
         {
             lock (gate)
             {
-                registration = signal.Register(() => options.OnAbort(new OperationCanceledException(signal)));
+                registration = signal.Register(() => options.OnAbort(abortReason ?? new OperationCanceledException(signal)));
             }
         }
 

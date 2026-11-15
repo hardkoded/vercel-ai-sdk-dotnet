@@ -265,6 +265,7 @@ internal static class DeepgramStreamingTranscription
                 Protocols = protocols,
                 WebSocket = webSocket,
                 AbortSignal = _options.CancellationToken,
+                AbortReason = _options.AbortReason,
                 OnAbort = Fail,
                 OnProcessingError = Fail,
                 OnOpen = OnOpen,
