@@ -53,23 +53,7 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
     /// </summary>
     public SerializedModelOptions Serialize()
     {
-        var config = new Dictionary<string, object?>();
-        void Add(string name, object? value)
-        {
-            if (value != null)
-            {
-                config[name] = value;
-            }
-        }
-
-        Add("baseURL", _config.BaseUrl);
-        Add("resourceName", _config.ResourceName);
-        Add("apiVersion", _config.ApiVersion);
-        Add("useDeploymentBasedUrls", _config.UseDeploymentBasedUrls);
-        Add("speechBaseURL", _config.SpeechBaseUrl);
-        Add("maiBaseURL", _config.MaiBaseUrl);
-        Add("headers", _config.Headers.ToDictionary(pair => pair.Key, pair => (object?)pair.Value));
-        return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+        return AzureOpenAIProvider.SerializeModel(ModelId, _config);
     }
 
     /// <summary>Restores a model from <see cref="Serialize"/>, resolving the API for each call again. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
@@ -78,39 +62,7 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
     /// <param name="handler">HTTP handler. Pass one from tests.</param>
     public static AzureTranscriptionModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
     {
-        if (serialized is null)
-        {
-            throw new ArgumentNullException(nameof(serialized));
-        }
-
-        var options = new AzureOpenAIOptions { ApiKey = apiKey };
-        string? Text(string name) => serialized.Config.TryGetValue(name, out var value) ? value as string : null;
-        options.BaseUrl = Text("baseURL");
-        options.ResourceName = Text("resourceName");
-        options.SpeechBaseUrl = Text("speechBaseURL");
-        options.MaiBaseUrl = Text("maiBaseURL");
-        if (Text("apiVersion") is { } apiVersion)
-        {
-            options.ApiVersion = apiVersion;
-        }
-
-        if (serialized.Config.TryGetValue("useDeploymentBasedUrls", out var deployment) && deployment is bool useDeploymentBasedUrls)
-        {
-            options.UseDeploymentBasedUrls = useDeploymentBasedUrls;
-        }
-
-        if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
-        {
-            foreach (System.Collections.DictionaryEntry entry in map)
-            {
-                if (entry.Value is string value)
-                {
-                    options.Headers[(string)entry.Key] = value;
-                }
-            }
-        }
-
-        return AzureOpenAIProvider.Create(options, handler).Transcription(serialized.ModelId);
+        return AzureOpenAIProvider.DeserializeProvider(serialized, apiKey, handler).Transcription(serialized.ModelId);
     }
 
     /// <inheritdoc />

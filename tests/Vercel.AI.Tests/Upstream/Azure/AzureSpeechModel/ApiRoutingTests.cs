@@ -137,6 +137,24 @@ public sealed class ApiRoutingTests
         Assert.Equal(0, setup.Handler.Calls);
     }
 
-    // Not ported: "restores request-time routing after a workflow serialization round trip". The port has no workflow
-    // serialization (WORKFLOW_SERIALIZE / WORKFLOW_DESERIALIZE), so there is nothing to round trip.
+    [Fact]
+    [UpstreamTest("packages/azure/src/azure-speech-model.test.ts::API routing::restores request-time routing after a workflow serialization round trip", Coverage = UpstreamCoverage.Covered, Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d")]
+    public async Task RestoresRequestTimeRoutingAfterAWorkflowSerializationRoundTrip()
+    {
+        var setup = AzureSpeechModelSetup.Create(options =>
+        {
+            options.BaseUrl = "https://proxy.example";
+            options.SpeechBaseUrl = "https://eastus.api.cognitive.microsoft.com/";
+        });
+        var model = setup.Provider.Speech("mai-voice-2");
+
+        var serialized = model.Serialize();
+
+        Assert.False(serialized.Config.ContainsKey("fetch"));
+        var restored = Vercel.AI.Azure.AzureSpeechModel.Deserialize(serialized, "test-key", setup.Handler);
+        await restored.GenerateAsync(AzureSpeechModelSetup.Call("Hello"), CancellationToken.None);
+        Assert.Equal("https://eastus.api.cognitive.microsoft.com/tts/cognitiveservices/v1", setup.Request.Url);
+        await restored.GenerateAsync(AzureSpeechModelSetup.Call("Hello", "{\"azure\":{\"api\":\"openai\"}}"), CancellationToken.None);
+        Assert.Equal("https://proxy.example/openai/v1/audio/speech?api-version=v1", setup.Request.Url);
+    }
 }

@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Azure;
 
@@ -15,12 +16,14 @@ namespace Vercel.AI.Azure;
 /// </summary>
 public sealed class AzureSpeechModel : ISpeechModel
 {
+    private readonly AzureOpenAIOptions _config;
     private readonly OpenAISpeechModel _openai;
     private readonly AzureSpeechSpeechModel _speech;
 
-    internal AzureSpeechModel(string modelId, OpenAISpeechModel openai, AzureSpeechSpeechModel speech)
+    internal AzureSpeechModel(string modelId, AzureOpenAIOptions config, OpenAISpeechModel openai, AzureSpeechSpeechModel speech)
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _config = config ?? throw new ArgumentNullException(nameof(config));
         _openai = openai ?? throw new ArgumentNullException(nameof(openai));
         _speech = speech ?? throw new ArgumentNullException(nameof(speech));
     }
@@ -30,6 +33,25 @@ public sealed class AzureSpeechModel : ISpeechModel
 
     /// <inheritdoc />
     public string ModelId { get; }
+
+    /// <summary>
+    /// Serializes the model id and the JSON-serializable provider settings for a workflow boundary. Maps to
+    /// <c>[WORKFLOW_SERIALIZE]</c>. The API key and the token provider are not part of the serialized config. Pass the key
+    /// to <see cref="Deserialize"/>.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        return AzureOpenAIProvider.SerializeModel(ModelId, _config);
+    }
+
+    /// <summary>Restores a model from <see cref="Serialize"/>, resolving the API for each call again. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+    /// <param name="serialized">The serialized model id and config.</param>
+    /// <param name="apiKey">API key. Defaults to the <c>AZURE_API_KEY</c> environment variable.</param>
+    /// <param name="handler">HTTP handler. Pass one from tests.</param>
+    public static AzureSpeechModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    {
+        return AzureOpenAIProvider.DeserializeProvider(serialized, apiKey, handler).Speech(serialized.ModelId);
+    }
 
     /// <inheritdoc />
     public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)

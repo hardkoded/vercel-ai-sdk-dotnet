@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Azure;
 
@@ -16,12 +17,14 @@ namespace Vercel.AI.Azure;
 /// </summary>
 public sealed class AzureImageModel : IImageModel, IImageCaller
 {
+    private readonly AzureOpenAIOptions _config;
     private readonly OpenAIImageModel _openai;
     private readonly AzureMaiImageModel _mai;
 
     internal AzureImageModel(AzureOpenAIProvider provider, string modelId)
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _config = provider.AzureOptions;
         _openai = new OpenAIImageModel(provider, modelId);
         _mai = new AzureMaiImageModel(provider, modelId);
     }
@@ -50,6 +53,25 @@ public sealed class AzureImageModel : IImageModel, IImageCaller
     int? IImageCaller.MaxImagesPerCall => MaxImagesPerCall;
 
     private bool IsDefaultMai => AzureImageModelOptions.IsMAIImageModel(ModelId);
+
+    /// <summary>
+    /// Serializes the model id and the JSON-serializable provider settings for a workflow boundary. Maps to
+    /// <c>[WORKFLOW_SERIALIZE]</c>. The API key and the token provider are not part of the serialized config. Pass the key
+    /// to <see cref="Deserialize"/>.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        return AzureOpenAIProvider.SerializeModel(ModelId, _config);
+    }
+
+    /// <summary>Restores a model from <see cref="Serialize"/>, resolving the API for each call again. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+    /// <param name="serialized">The serialized model id and config.</param>
+    /// <param name="apiKey">API key. Defaults to the <c>AZURE_API_KEY</c> environment variable.</param>
+    /// <param name="handler">HTTP handler. Pass one from tests.</param>
+    public static AzureImageModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    {
+        return AzureOpenAIProvider.DeserializeProvider(serialized, apiKey, handler).Image(serialized.ModelId);
+    }
 
     /// <inheritdoc />
     public Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken)

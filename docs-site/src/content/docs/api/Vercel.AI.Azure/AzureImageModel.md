@@ -26,7 +26,7 @@ Azure image model. Routes each call to the MAI image API or the OpenAI image API
 
 **Implements:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/), [IImageCaller](/api/Vercel.AI.Operations/IImageCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L18)
 
 ## Properties
 
@@ -45,7 +45,7 @@ Maximum images in one call. Follows the default route; an `api` override is per 
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L42)
 
 <a id="Vercel_AI_Azure_AzureImageModel_ModelId_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_ModelId"></a>
@@ -62,7 +62,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L36)
 
 <a id="Vercel_AI_Azure_AzureImageModel_Provider_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_Provider"></a>
@@ -79,7 +79,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L33)
 
 <a id="Vercel_AI_Azure_AzureImageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_SpecificationVersion"></a>
@@ -96,7 +96,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L39)
 
 <a id="Vercel_AI_Azure_AzureImageModel_SupportsFileInputs_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_SupportsFileInputs"></a>
@@ -114,7 +114,7 @@ user-defined, so OpenAI model family capabilities cannot be inferred from them.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L48)
 
 <a id="Vercel_AI_Azure_AzureImageModel_SupportsMaskInputs_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_SupportsMaskInputs"></a>
@@ -131,9 +131,34 @@ True when the model takes a mask, false when it takes input images but no mask, 
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L48)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L51)
 
 ## Methods
+
+<a id="Vercel_AI_Azure_AzureImageModel_Deserialize_"></a>
+<a id="Vercel_AI_Azure_AzureImageModel_Deserialize_Vercel_AI_ProviderUtils_SerializedModelOptions_System_String_System_Net_Http_HttpMessageHandler_"></a>
+
+### Deserialize(SerializedModelOptions, string?, HttpMessageHandler?)
+
+
+```csharp
+public static AzureImageModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+```
+
+
+Restores a model from [Serialize()](#Vercel_AI_Azure_AzureImageModel_Serialize), resolving the API for each call again. Maps to `[WORKFLOW_DESERIALIZE]`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `serialized` | [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/) | The serialized model id and config. |
+| `apiKey` | [string](https://learn.microsoft.com/dotnet/api/system.string) | API key. Defaults to the `AZURE_API_KEY` environment variable. |
+| `handler` | [HttpMessageHandler](https://learn.microsoft.com/dotnet/api/system.net.http.httpmessagehandler) | HTTP handler. Pass one from tests. |
+
+**Returns:** [AzureImageModel](./)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L71)
 
 <a id="Vercel_AI_Azure_AzureImageModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_DoGenerateAsync_Vercel_AI_Operations_ImageModelCall_System_Threading_CancellationToken_"></a>
@@ -157,7 +182,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L121)
 
 <a id="Vercel_AI_Azure_AzureImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -180,7 +205,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L83)
 
 <a id="Vercel_AI_Azure_AzureImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Azure_AzureImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -203,4 +228,23 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L77)
+
+<a id="Vercel_AI_Azure_AzureImageModel_Serialize_"></a>
+<a id="Vercel_AI_Azure_AzureImageModel_Serialize"></a>
+
+### Serialize()
+
+
+```csharp
+public SerializedModelOptions Serialize()
+```
+
+
+Serializes the model id and the JSON-serializable provider settings for a workflow boundary. Maps to
+`[WORKFLOW_SERIALIZE]`. The API key and the token provider are not part of the serialized config. Pass the key
+to `HttpMessageHandler)`.
+
+**Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureImageModel.cs#L62)

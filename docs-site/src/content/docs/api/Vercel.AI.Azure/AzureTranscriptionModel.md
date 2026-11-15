@@ -124,7 +124,7 @@ Restores a model from [Serialize()](#Vercel_AI_Azure_AzureTranscriptionModel_Ser
 
 **Returns:** [AzureTranscriptionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L63)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoGenerateAsync_Vercel_AI_Operations_TranscriptionModelCall_System_Threading_CancellationToken_"></a>
@@ -148,7 +148,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L82)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -172,7 +172,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L119)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -196,7 +196,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureTranscriptionModel.cs#L69)
 
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Serialize_"></a>
 <a id="Vercel_AI_Azure_AzureTranscriptionModel_Serialize"></a>
