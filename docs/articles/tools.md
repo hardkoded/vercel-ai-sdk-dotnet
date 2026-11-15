@@ -216,11 +216,11 @@ When Tako withholds a card's data, it returns a placeholder card instead. A plac
 
 The model fills the input schema (`GatewayTakoSearch.InputSchema`): `query`, plus `effort`, `sources`, `location`, `country_code`, `locale`, `timezone`, `output_settings` and `include_related` in snake_case.
 
-Deserialize the tool output (`ExecutedTool.OutputJson`) into `TakoSearchResponse` to read it typed. It holds `TakoCard`, `TakoWebResult` and `TakoResultContent`. Fields the schema doesn't declare are kept in `AdditionalProperties`.
+Deserialize the tool output (`ExecutedTool.OutputJson`) into `TakoSearchOutput` to read it typed: `Response` is the `TakoSearchResponse`, and `Error` is a `GatewayToolError` (`Error` code, `Message`, `StatusCode`, `RetryAfter`, `StatusText`) when the tool failed. It holds `TakoCard`, `TakoWebResult` and `TakoResultContent`. Fields the schema doesn't declare are kept in `AdditionalProperties`.
 
 ```csharp
-var output = JsonSerializer.Deserialize<TakoSearchResponse>(toolResult.OutputJson);
-Console.WriteLine(output?.Usage?.VariableCost?.CostUsd);
+var output = JsonSerializer.Deserialize<TakoSearchOutput>(toolResult.OutputJson);
+Console.WriteLine(output?.Response?.Usage?.VariableCost?.CostUsd);
 ```
 
 `GatewayTakoSearch.OutputSchema` describes these fields, including `relevance_score`, `content.export_pricing.variable_cost_max_usd` and `usage.variable_cost`. `export_pricing.free_rows` is deprecated and optional: Tako always sends 0 and will stop sending it. `GatewayTakoSearch.ResultContentSchema` is the schema of a card or web result `content`, for reuse by other Tako tools.

@@ -44,7 +44,14 @@ foreach (var toolResult in result.ToolResults)
         continue;
     }
 
-    var output = JsonSerializer.Deserialize<TakoSearchResponse>(toolResult.OutputJson);
+    var searchOutput = JsonSerializer.Deserialize<TakoSearchOutput>(toolResult.OutputJson);
+    if (searchOutput?.Error is { } error)
+    {
+        Console.WriteLine($"[{error.Error}] {error.Message}");
+        continue;
+    }
+
+    var output = searchOutput?.Response;
     if (output == null)
     {
         continue;
