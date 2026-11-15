@@ -126,16 +126,19 @@ public static class ToolApprovalValidation
 
             if (tool != null && (tool.Execute != null || tool.ExecuteWithOptions != null) && tool.InputSchema.ValueKind == JsonValueKind.Object)
             {
-                var value = approvalRequest.InputSchemaInput ?? toolCall.Input;
                 Exception? validationError = null;
-                var errors = ToolInputSchemaValidator.Validate(tool.InputSchema, value);
-                if (errors.Count > 0)
+                try
                 {
-                    validationError = new FormatException("Type validation failed: Value: " + value.GetRawText() + ".\nError message: " + string.Join("; ", errors));
-                }
-                else
-                {
-                    try
+                    // A JsonElement is immutable, so the approved input and the schema input cannot be changed by a
+                    // validator or a refiner. Upstream snapshots them with structuredClone for that reason.
+                    var approvedInput = toolCall.Input;
+                    var value = approvalRequest.InputSchemaInput ?? toolCall.Input;
+                    var errors = ToolInputSchemaValidator.Validate(tool.InputSchema, value);
+                    if (errors.Count > 0)
+                    {
+                        validationError = new FormatException("Type validation failed: Value: " + value.GetRawText() + ".\nError message: " + string.Join("; ", errors));
+                    }
+                    else
                     {
                         var revalidatedInput = value;
                         if (options.RefineToolInput != null && options.RefineToolInput.TryGetValue(toolCall.ToolName, out var refine) && refine != null)
@@ -145,15 +148,15 @@ public static class ToolApprovalValidation
 
                         // Revalidation must never change the operation that was approved,
                         // including when older or projected history omits the schema input.
-                        if (!JsonDeepEqual(revalidatedInput, toolCall.Input))
+                        if (!JsonDeepEqual(revalidatedInput, approvedInput))
                         {
                             validationError = new FormatException("Approved tool input does not match the validated schema output.");
                         }
                     }
-                    catch (Exception error) when (!cancellationToken.IsCancellationRequested)
-                    {
-                        validationError = error;
-                    }
+                }
+                catch (Exception error) when (!cancellationToken.IsCancellationRequested)
+                {
+                    validationError = error;
                 }
 
                 if (validationError != null)
