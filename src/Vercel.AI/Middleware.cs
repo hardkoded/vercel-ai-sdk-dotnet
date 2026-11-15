@@ -559,6 +559,8 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
 
     public string SpecificationVersion => _inner.SpecificationVersion;
 
+    public IReadOnlyDictionary<string, string> SupportedUrls => _inner.SupportedUrls;
+
     public string Provider => _inner.Provider;
 
     public string ModelId => _inner.ModelId;

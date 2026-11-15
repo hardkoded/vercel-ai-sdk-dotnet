@@ -72,6 +72,15 @@ public static partial class UIMessageStreamConverter
                 return options.SendReasoning
                     ? new JsonObject { ["type"] = "reasoning-delta", ["id"] = ReasoningId, ["delta"] = reasoning.Text }
                     : null;
+            case FilePart file:
+                var fileChunk = new JsonObject
+                {
+                    ["type"] = "file",
+                    ["mediaType"] = file.File.MediaType,
+                    ["url"] = "data:" + file.File.MediaType + ";base64," + Convert.ToBase64String(file.File.Data),
+                };
+                AddProviderMetadata(fileChunk, file.ProviderMetadata);
+                return fileChunk;
             case SourcePart source:
                 var sourceChunk = new JsonObject
                 {

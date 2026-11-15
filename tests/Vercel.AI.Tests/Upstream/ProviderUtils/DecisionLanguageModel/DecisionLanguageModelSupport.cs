@@ -94,6 +94,8 @@ internal static class DecisionLanguageModelSupport
 /// <summary>Language model that records each generate call with its cancellation token.</summary>
 internal sealed class RecordingLanguageModel : ILanguageModel
 {
+    public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
     public string SpecificationVersion => "v4";
 
     public string Provider => "test.language";

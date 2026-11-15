@@ -114,6 +114,8 @@ internal static class ExtractionLanguageModelSupport
 /// <summary>A language model of a former specification version.</summary>
 internal sealed class V3LanguageModel : ILanguageModel
 {
+    public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
     public string SpecificationVersion => "v3";
 
     public string Provider => "test.language";

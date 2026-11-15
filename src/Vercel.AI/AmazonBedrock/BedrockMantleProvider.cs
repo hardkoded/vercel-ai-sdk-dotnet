@@ -188,6 +188,9 @@ public sealed class BedrockMantleLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => UrlSupport.None;
+
+    /// <inheritdoc />
     public string Provider => _responses ? "bedrock-mantle.responses" : BedrockMantleProvider.ProviderId;
 
     /// <inheritdoc />

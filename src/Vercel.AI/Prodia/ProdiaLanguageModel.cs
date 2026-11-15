@@ -36,6 +36,9 @@ public sealed class ProdiaLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => UrlSupport.None;
+
+    /// <inheritdoc />
     public string Provider => "prodia.language";
 
     /// <inheritdoc />

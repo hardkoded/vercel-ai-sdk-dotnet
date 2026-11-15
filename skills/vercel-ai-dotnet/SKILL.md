@@ -61,7 +61,7 @@ var total = result.Answers["total"].Number; // null when the state has no total
 
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.
 
-`GenerateTextOptions.ExperimentalDownload` routes generated file URLs returned by the model through a download function, for example `Download.CreateDownload(fetch: ...)`. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`.
+`GenerateTextOptions.ExperimentalDownload` (also on `StreamTextOptions`) routes prompt file URLs and generated file URLs through a download function, for example `Download.CreateDownload(fetch: ...)`. Prompt URLs that `ILanguageModel.SupportedUrls` matches for the step's model are passed through (`IsUrlSupportedByModel` is true and the function returns `null`); all others are downloaded and inlined. A `null` result for a generated file URL throws `DownloadException`. Each request carries the call's `AbortSignal`. Every `ILanguageModel` implements `SupportedUrls` (media type pattern to URL regular expression); return `UrlSupport.None` when the model reads no URL itself. Streamed files arrive as `FilePart` and `StreamTextResult.Files`.
 
 ## Providers
 

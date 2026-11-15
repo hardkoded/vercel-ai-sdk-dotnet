@@ -44,6 +44,9 @@ public sealed class GoogleLanguageModel : ILanguageModel
     /// <inheritdoc />
     public string ModelId { get; }
 
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => _provider.GetSupportedUrls(ModelId);
+
     /// <summary>Builds the generateContent body without sending it.</summary>
     public GooglePreparedRequest Prepare(LanguageModelCallOptions options, bool streaming)
     {

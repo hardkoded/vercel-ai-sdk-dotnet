@@ -321,6 +321,9 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> SupportedUrls => UrlSupport.None;
+
+    /// <inheritdoc />
     public string Provider => AmazonBedrockAnthropicProvider.ProviderId;
 
     /// <inheritdoc />

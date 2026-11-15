@@ -348,6 +348,8 @@ internal static class DiceGameFixture
             _next = next;
         }
 
+        public IReadOnlyDictionary<string, string> SupportedUrls => Vercel.AI.ProviderUtils.UrlSupport.None;
+
         public string SpecificationVersion => "V4";
 
         public string Provider => "test";
