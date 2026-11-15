@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateText;
@@ -12,7 +13,7 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Anthropic;
 
-/// <summary>Anthropic Message Batches API. Downloads the JSONL results of a finished batch.</summary>
+/// <summary>Anthropic Message Batches API. Starts, inspects, cancels, and lists batches, and downloads the JSONL results of a finished batch.</summary>
 public sealed class AnthropicBatchApi : BatchResultsApiBase
 {
     private readonly AnthropicProvider _provider;
@@ -24,6 +25,12 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
 
     /// <inheritdoc />
     public override string Provider => _provider.ModelProvider.Replace(".messages", string.Empty) + ".batch";
+
+    /// <inheritdoc />
+    public override bool CanCancel => true;
+
+    /// <inheritdoc />
+    public override bool CanList => true;
 
     /// <inheritdoc />
     public override async Task<BatchStartResult> DoStartAsync(BatchOperationCall call, CancellationToken cancellationToken)
@@ -81,6 +88,14 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
                     "Anthropic Message Batches cannot decode the JSON-tool structured-output fallback (request \"" + request.Id + "\") because batch results are retrieved independently of the start call. Use a model that supports native output_format structured outputs.");
             }
 
+            var aliasedProviderTool = AliasedProviderToolName(result.ToolNames);
+            if (aliasedProviderTool != null)
+            {
+                throw new UnsupportedFunctionalityException(
+                    "aliased provider tool names in batches",
+                    "Anthropic Message Batches cannot restore the custom provider-tool name \"" + aliasedProviderTool + "\" when results are retrieved independently of the start call (request \"" + request.Id + "\"). Use the provider's canonical tool name.");
+            }
+
             var body = _provider.TransformRequestBody(result.Body, result.Betas);
             AnthropicBatch.ValidateAnthropicBatchBody(body, request.Id);
             prepared.Add(new JsonObject { ["custom_id"] = request.Id, ["params"] = body.DeepClone() });
@@ -105,24 +120,152 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         var headers = _provider.UsesAws
             ? await _provider.CreateSignedHeadersAsync(batchBetas, callHeaders, payload, batchUri, cancellationToken).ConfigureAwait(false)
             : await _provider.CreateHeadersAsync(batchBetas, callHeaders, payload, cancellationToken).ConfigureAwait(false);
-        JsonElement batch;
-        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, batchUri, payload, headers, cancellationToken).ConfigureAwait(false))
+        var batch = await SendBatchAsync(HttpMethod.Post, batchUri, payload, headers, cancellationToken).ConfigureAwait(false);
+        var started = Fill(new BatchStartResult { Id = Str(batch, "id")! }, batch);
+        started.Warnings = warnings;
+        return started;
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchStatus> DoGetStatusAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        return Fill(new BatchStatus(), await RetrieveBatchAsync(call, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchCancelResult> DoCancelAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel");
+        var headers = await BatchHeadersAsync(call, "{}", uri, cancellationToken).ConfigureAwait(false);
+        await SendBatchAsync(HttpMethod.Post, uri, "{}", headers, cancellationToken).ConfigureAwait(false);
+        return new BatchCancelResult();
+    }
+
+    /// <inheritdoc />
+    public override async Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var query = new List<string>();
+        if (call.Limit is { } limit)
         {
-            batch = document.RootElement.Clone();
+            query.Add("limit=" + limit.ToString(CultureInfo.InvariantCulture));
         }
 
+        if (call.Cursor != null)
+        {
+            query.Add("after_id=" + Uri.EscapeDataString(call.Cursor));
+        }
+
+        var uri = GetBatchUrl(string.Empty);
+        if (query.Count > 0)
+        {
+            uri = new Uri(uri.AbsoluteUri + "?" + string.Join("&", query));
+        }
+
+        var headers = await BatchHeadersAsync(call, null, uri, cancellationToken).ConfigureAwait(false);
+        JsonElement page;
+        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false))
+        {
+            page = document.RootElement.Clone();
+        }
+
+        if (!page.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array
+            || !page.TryGetProperty("has_more", out var hasMore) || (hasMore.ValueKind != JsonValueKind.True && hasMore.ValueKind != JsonValueKind.False)
+            || (page.TryGetProperty("last_id", out var lastIdValue) && lastIdValue.ValueKind != JsonValueKind.Null && lastIdValue.ValueKind != JsonValueKind.String))
+        {
+            throw new ApiException("Invalid JSON response", 200, page.GetRawText());
+        }
+
+        var batches = new List<ListedBatch>();
+        foreach (var batch in data.EnumerateArray())
+        {
+            batches.Add(Fill(new ListedBatch { Id = Str(Validate(batch), "id")! }, batch));
+        }
+
+        var lastId = Str(page, "last_id");
+        return new BatchListResult(batches, hasMore.GetBoolean() && lastId != null ? lastId : null);
+    }
+
+    // Upstream's batch response schema.
+    private static JsonElement Validate(JsonElement batch)
+    {
+        var valid = Str(batch, "id") != null
+            && Str(batch, "type") == "message_batch"
+            && Str(batch, "processing_status") != null
+            && Str(batch, "created_at") != null
+            && Str(batch, "expires_at") != null
+            && batch.TryGetProperty("request_counts", out var counts) && counts.ValueKind == JsonValueKind.Object
+            && new[] { "processing", "succeeded", "errored", "canceled", "expired" }.All(name => counts.TryGetProperty(name, out var count) && count.ValueKind == JsonValueKind.Number)
+            && new[] { "archived_at", "cancel_initiated_at", "ended_at", "results_url" }.All(name => !batch.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null || value.ValueKind == JsonValueKind.String);
+        if (!valid)
+        {
+            throw new ApiException("Invalid JSON response", 200, batch.GetRawText());
+        }
+
+        return batch;
+    }
+
+    private static T Fill<T>(T target, JsonElement batch)
+        where T : BatchStatus
+    {
         var rawStatus = Str(batch, "processing_status");
         var counts = AnthropicBatch.Count(batch);
-        return new BatchStartResult
+        target.Status = AnthropicBatch.MapStatus(rawStatus);
+        target.RawStatus = rawStatus;
+        target.RequestCounts = new BatchRequestCounts(counts.Total, counts.Pending, counts.Completed, counts.Failed);
+        target.CreatedAt = Str(batch, "created_at");
+        target.ExpiresAt = Str(batch, "expires_at");
+        var metadata = new JsonObject
         {
-            Id = Str(batch, "id") ?? string.Empty,
-            Status = AnthropicBatch.MapStatus(rawStatus),
-            RawStatus = rawStatus,
-            RequestCounts = new BatchRequestCounts(counts.Total, counts.Pending, counts.Completed, counts.Failed),
-            CreatedAt = Str(batch, "created_at"),
-            ExpiresAt = Str(batch, "expires_at"),
-            Warnings = warnings,
+            ["anthropic"] = new JsonObject
+            {
+                ["archivedAt"] = Str(batch, "archived_at"),
+                ["cancelInitiatedAt"] = Str(batch, "cancel_initiated_at"),
+                ["endedAt"] = Str(batch, "ended_at"),
+                ["requestCounts"] = JsonNode.Parse(batch.GetProperty("request_counts").GetRawText()),
+                ["resultsUrl"] = Str(batch, "results_url"),
+            },
         };
+        using var document = JsonDocument.Parse(metadata.ToJsonString());
+        target.ProviderMetadata = document.RootElement.Clone();
+        return target;
+    }
+
+    // ToolNames maps the API name of every provider tool the request declares (tools or providerOptions.anthropic.providerTools) to the caller's name, so a pair that differs is an alias.
+    private static string? AliasedProviderToolName(IReadOnlyDictionary<string, string> toolNames)
+    {
+        foreach (var pair in toolNames)
+        {
+            if (pair.Key != pair.Value)
+            {
+                return pair.Value;
+            }
+        }
+
+        return null;
+    }
+
+    private Uri GetBatchUrl(string path) => new Uri(_provider.NormalizedBase().TrimEnd('/') + "/messages/batches" + path);
+
+    // Like upstream's AWS fetch wrapper, only POST requests with a body are signed. GETs go out unsigned.
+    private Task<Dictionary<string, string?>> BatchHeadersAsync(BatchOperationCall call, string? body, Uri signingUri, CancellationToken cancellationToken)
+    {
+        var callHeaders = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+        return _provider.UsesAws
+            ? _provider.CreateSignedHeadersAsync(Array.Empty<string>(), callHeaders, body, signingUri, cancellationToken)
+            : _provider.CreateHeadersAsync(Array.Empty<string>(), callHeaders, body, cancellationToken);
+    }
+
+    private async Task<JsonElement> SendBatchAsync(HttpMethod method, Uri uri, string? body, Dictionary<string, string?> headers, CancellationToken cancellationToken)
+    {
+        using var document = await _provider.Http.SendJsonAsync(method, uri, body, headers, cancellationToken).ConfigureAwait(false);
+        return Validate(document.RootElement.Clone());
+    }
+
+    private async Task<JsonElement> RetrieveBatchAsync(BatchOperationCall call, CancellationToken cancellationToken)
+    {
+        var uri = GetBatchUrl("/" + Uri.EscapeDataString(call.BatchId ?? string.Empty));
+        var headers = await BatchHeadersAsync(call, null, uri, cancellationToken).ConfigureAwait(false);
+        return await SendBatchAsync(HttpMethod.Get, uri, null, headers, cancellationToken).ConfigureAwait(false);
     }
 
     private IReadOnlyList<string> GetAnthropicBatchProviderBetas(JsonElement? providerOptions)
@@ -139,8 +282,13 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         {
             // Custom provider options overlay the canonical ones.
             if (options.TryGetProperty(key, out var entry) && entry.ValueKind == JsonValueKind.Object
-                && entry.TryGetProperty("anthropicBeta", out var list) && list.ValueKind == JsonValueKind.Array)
+                && entry.TryGetProperty("anthropicBeta", out var list))
             {
+                if (list.ValueKind != JsonValueKind.Array || list.EnumerateArray().Any(beta => beta.ValueKind != JsonValueKind.String))
+                {
+                    throw new InvalidArgumentException("providerOptions", entry, "invalid " + key + " provider options: anthropicBeta must be an array of strings");
+                }
+
                 effective = list;
             }
         }
@@ -163,13 +311,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     public override async Task<IAsyncEnumerable<BatchItem>> DoGetResultsAsync(BatchOperationCall call, CancellationToken cancellationToken)
     {
         var batchId = call.BatchId ?? string.Empty;
-        var headers = await _provider.CreateHeadersAsync(Array.Empty<string>(), call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), null, cancellationToken).ConfigureAwait(false);
         var baseUrl = _provider.NormalizedBase().TrimEnd('/');
-        JsonElement batch;
-        using (var document = await _provider.Http.SendJsonAsync(HttpMethod.Get, new Uri(baseUrl + "/messages/batches/" + Uri.EscapeDataString(batchId)), null, headers, cancellationToken).ConfigureAwait(false))
-        {
-            batch = document.RootElement.Clone();
-        }
+        var batch = await RetrieveBatchAsync(call, cancellationToken).ConfigureAwait(false);
 
         if (AnthropicBatch.ResultsUnavailable(batch))
         {
@@ -186,6 +329,8 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
         {
             throw new AiSdkException("Anthropic batch \"" + batchId + "\" completed without batch output.");
         }
+
+        var headers = await BatchHeadersAsync(call, null, new Uri(url), cancellationToken).ConfigureAwait(false);
 
         // The results URL comes from the response. Off the provider origin it must pass download validation and gets no credentials.
         if (!ProviderValues.IsSameOrigin(url, baseUrl))

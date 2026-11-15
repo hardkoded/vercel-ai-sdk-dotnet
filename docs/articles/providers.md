@@ -1281,6 +1281,14 @@ Validation is strict and returns no partial results. `Extract.ExtractAsync` thro
 
 `providerOptions.gateway.models` for a decision request may start with one conditional entry, `{ "model": "...", "when": { ... } }`, followed by plain model ids. `when` is `confidenceBelow`, `probabilityBetween: [min, max]`, or an `any`, `all`, or `atLeast` group of conditions, nested at most 5 levels with 1 to 20 conditions per list. `GatewayDecisionModel` rejects an invalid shape with an `InvalidArgumentException` before any request. Other gateway options pass through unchanged.
 
+## Anthropic Message Batches
+
+`provider.ExperimentalBatch()` on the Anthropic provider starts, inspects, cancels, and lists Message Batches, and reads their results.
+
+- `DoStartAsync` sends one Messages request per batch request. Request IDs must match `^[A-Za-z0-9_-]{1,64}$` and be unique, or it throws `InvalidArgumentException` for `requests`. Only `text` requests are accepted. Set `anthropicBeta` (an array of strings) in `providerOptions.anthropic` of the batch call. Per-request `anthropicBeta` throws `UnsupportedFunctionalityException`, and so do `speed`, `fallbacks[].speed`, message threads, a JSON-tool structured-output fallback, and a provider tool with a custom name. All of them fail before a request is sent. An `anthropicBeta` that is not an array of strings throws `InvalidArgumentException` for `providerOptions`. The `anthropic-beta` header holds the batch betas plus the betas the requests need. A `webhookUrl` adds an `unsupported` warning.
+- `DoGetStatusAsync` maps `ended` to `completed`. Every other status (`in_progress`, `canceling`, or a new one) is `pending`. `RequestCounts` sums `processing`, `succeeded`, `errored`, `canceled`, and `expired` for the total. `Failed` is `errored + canceled + expired`. `ProviderMetadata.anthropic` holds `archivedAt`, `cancelInitiatedAt`, `endedAt`, `requestCounts`, and `resultsUrl`.
+- `DoCancelAsync` posts to the cancel endpoint. `DoListAsync` takes `Limit` and `Cursor` (sent as `after_id`) and returns `NextCursor` only when Anthropic reports more batches.
+
 ## Batch result downloads
 
 `GatewayOptions`, `OpenAIOptions`, `AnthropicOptions`, and `GoogleOptions` each take an optional `BatchResultDownloads` setting. It configures the download of JSON Lines batch results. `provider.ExperimentalBatch()` returns the batch API whose `DoGetResultsAsync` reads them.
