@@ -19,7 +19,7 @@ public sealed class ApprovedToolContinuationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Id + "should isolate in-place refinement during signed approval replay (schema input supplied: %s)", Coverage = UpstreamCoverage.Partial, Note = "A JsonElement is immutable, so a refineToolInput function cannot change its input in place. It returns a changed input instead, which has the same effect on the comparison with the approved input. The streamText half is not ported: StreamTextAsync does not process approval responses in the history yet.")]
+    [UpstreamTest(Id + "should isolate in-place refinement during signed approval replay (schema input supplied: %s)", Commit = "3c09e0011c718c33f9287c5487c1f95190aeb772", Coverage = UpstreamCoverage.Partial, Note = "A JsonElement is immutable, so a refineToolInput function cannot change its input in place. It returns a changed input instead, which has the same effect on the comparison with the approved input. The streamText half is not ported: StreamTextAsync does not process approval responses in the history yet.")]
     public async Task Should_isolate_in_place_refinement_during_signed_approval_replay(bool hasInputSchemaInput)
     {
         const string secret = "test-secret";
