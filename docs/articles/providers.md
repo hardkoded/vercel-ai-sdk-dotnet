@@ -1030,6 +1030,8 @@ Pass these under the `deepseek` key of `ProviderOptions`.
 - **topLogprobs** _number_: the number of most likely tokens to return at each token position (0 to 20). The log probabilities come back in `providerMetadata.deepseek.logprobs`.
 - **userId** _string_: an opaque end-user identifier, sent as `user`. It must match `^[a-zA-Z0-9_-]+$` and has at most 512 characters.
 
+`DeepSeekLanguageModelResponsesOptions` (upstream `DeepSeekLanguageModelResponsesOptions`) is the typed form of these options. Set `Thinking`, `ReasoningEffort`, `TopLogprobs`, and `UserId`, then pass `options.ToProviderOptions()` as `ProviderOptions`. `ToProviderOptions` is .NET-only: it validates the values and builds the `deepseek` entry. See `examples/DeepSeekResponses`.
+
 An invalid option throws an `InvalidArgumentError`.
 
 An image file part accepts the provider option `deepseek.imageDetail` (`low`, `high`, `original`, or `auto`) as `FileContentPart.ProviderOptions`. A file part with a provider reference sends `file_id`. The `fileData` option is not supported with the Responses API and throws an `UnsupportedFunctionalityException`. Image URLs are at most 8192 characters. Inline images must be JPEG, PNG, GIF, or WebP. A user file part that is not an image is left out with an `unsupported` warning (`user message part type: file`).

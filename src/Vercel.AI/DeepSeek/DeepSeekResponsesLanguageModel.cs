@@ -134,7 +134,7 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<CallWarning>();
-        var deepseek = DeepSeekResponsesOptions.Parse(options.ProviderOptions, ProviderOptionsName);
+        var deepseek = DeepSeekLanguageModelResponsesOptions.Parse(options.ProviderOptions, ProviderOptionsName);
 
         if (options.TopK.HasValue)
         {
@@ -166,7 +166,7 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
         warnings.AddRange(tools.Warnings);
         var webSearchToolName = WebSearchToolNameOf(options.Tools);
 
-        var effort = deepseek.ThinkingType == "disabled" ? "none" : deepseek.ReasoningEffort ?? MapReasoning(options.Reasoning, warnings);
+        var effort = deepseek.Thinking?.Type == "disabled" ? "none" : deepseek.ReasoningEffort ?? MapReasoning(options.Reasoning, warnings);
 
         var body = new JsonObject { ["model"] = ModelId, ["input"] = input };
         OpenAIJson.Set(body, "max_output_tokens", options.MaxOutputTokens.HasValue ? JsonValue.Create(options.MaxOutputTokens.Value) : null);

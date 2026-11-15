@@ -8,27 +8,70 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.DeepSeek;
 
-/// <summary>The <c>deepseek</c> provider options of a Responses call. Maps to <c>deepseekLanguageModelResponsesOptions</c>.</summary>
-internal sealed class DeepSeekResponsesOptions
+/// <summary>The <c>deepseek</c> provider options of a Responses call. Maps to <c>DeepSeekLanguageModelResponsesOptions</c>.</summary>
+public sealed class DeepSeekLanguageModelResponsesOptions
 {
     private static readonly string[] ThinkingTypes = { "enabled", "disabled" };
     private static readonly string[] ReasoningEfforts = { "low", "high", "max" };
     private static readonly Regex UserIdPattern = new Regex("^[a-zA-Z0-9_-]+\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
-    /// <summary><c>enabled</c> or <c>disabled</c>, or null when thinking is left to DeepSeek.</summary>
-    public string? ThinkingType { get; private set; }
+    /// <summary>Controls whether thinking mode is enabled. Thinking is enabled by default.</summary>
+    public DeepSeekThinkingOptions? Thinking { get; set; }
 
-    public string? ReasoningEffort { get; private set; }
+    /// <summary>Controls the thinking strength when thinking is enabled: <c>low</c>, <c>high</c> or <c>max</c>.</summary>
+    public string? ReasoningEffort { get; set; }
 
-    public int? TopLogprobs { get; private set; }
+    /// <summary>
+    /// Number of most likely tokens to return at each token position (0 to 20).
+    /// Log probabilities are returned in <c>providerMetadata.deepseek.logprobs</c>.
+    /// </summary>
+    public int? TopLogprobs { get; set; }
 
-    public string? UserId { get; private set; }
+    /// <summary>
+    /// An opaque identifier for the end user. DeepSeek uses it for content-safety tracing and request isolation.
+    /// It must contain only ASCII letters, numbers, underscores, and hyphens, and be at most 512 characters long.
+    /// </summary>
+    public string? UserId { get; set; }
+
+    /// <summary>
+    /// Validates the options and returns them as call provider options under <paramref name="providerOptionsName"/>
+    /// (<c>deepseek</c> by default), ready for <c>LanguageModelCallOptions.ProviderOptions</c>.
+    /// </summary>
+    /// <exception cref="InvalidArgumentError">An option has the wrong value.</exception>
+    public IReadOnlyDictionary<string, JsonElement> ToProviderOptions(string providerOptionsName = DeepSeekProvider.ProviderId)
+    {
+        var json = new System.Text.Json.Nodes.JsonObject();
+        if (Thinking?.Type is { } type)
+        {
+            json["thinking"] = new System.Text.Json.Nodes.JsonObject { ["type"] = type };
+        }
+
+        if (ReasoningEffort != null)
+        {
+            json["reasoningEffort"] = ReasoningEffort;
+        }
+
+        if (TopLogprobs.HasValue)
+        {
+            json["topLogprobs"] = TopLogprobs.Value;
+        }
+
+        if (UserId != null)
+        {
+            json["userId"] = UserId;
+        }
+
+        var element = JsonSerializer.SerializeToElement(json);
+        var result = new Dictionary<string, JsonElement> { [providerOptionsName] = element };
+        Parse(result, providerOptionsName);
+        return result;
+    }
 
     /// <summary>Reads and validates the options under <paramref name="providerOptions"/>[<paramref name="providerOptionsName"/>].</summary>
     /// <exception cref="InvalidArgumentError">An option has the wrong type or value.</exception>
-    public static DeepSeekResponsesOptions Parse(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
+    internal static DeepSeekLanguageModelResponsesOptions Parse(IReadOnlyDictionary<string, JsonElement>? providerOptions, string providerOptionsName)
     {
-        var options = new DeepSeekResponsesOptions();
+        var options = new DeepSeekLanguageModelResponsesOptions();
         if (providerOptions == null || !providerOptions.TryGetValue(providerOptionsName, out var source) || source.ValueKind == JsonValueKind.Null)
         {
             return options;
@@ -58,7 +101,7 @@ internal sealed class DeepSeekResponsesOptions
 
                     if (value.TryGetProperty("type", out var type) && type.ValueKind != JsonValueKind.Null)
                     {
-                        options.ThinkingType = OneOf(scope + ".thinking.type", type, ThinkingTypes);
+                        (options.Thinking ??= new DeepSeekThinkingOptions()).Type = OneOf(scope + ".thinking.type", type, ThinkingTypes);
                     }
 
                     break;
@@ -103,4 +146,11 @@ internal sealed class DeepSeekResponsesOptions
 
         return text;
     }
+}
+
+/// <summary>The <c>thinking</c> option of <see cref="DeepSeekLanguageModelResponsesOptions"/>.</summary>
+public sealed class DeepSeekThinkingOptions
+{
+    /// <summary><c>enabled</c> or <c>disabled</c>.</summary>
+    public string? Type { get; set; }
 }

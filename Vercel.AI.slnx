@@ -2,6 +2,7 @@
   <Folder Name="/examples/">
     <Project Path="examples/Agent/Agent.csproj" />
     <Project Path="examples/DecidePerplexityBasic/DecidePerplexityBasic.csproj" />
+    <Project Path="examples/DeepSeekResponses/DeepSeekResponses.csproj" />
     <Project Path="examples/DecidePerplexityCriteriaOnly/DecidePerplexityCriteriaOnly.csproj" />
     <Project Path="examples/DecidePerplexitySingleLevelScore/DecidePerplexitySingleLevelScore.csproj" />
     <Project Path="examples/ExtractAnthropicBasic/ExtractAnthropicBasic.csproj" />
