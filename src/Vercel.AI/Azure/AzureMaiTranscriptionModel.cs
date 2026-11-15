@@ -122,7 +122,12 @@ internal sealed class AzureMaiTranscriptionModel
         }
 
         var connection = GetConnection(WebSocketUtils.ToWebSocketUrl(_url()), headers, _webSocket != null);
-        var session = new Session(call, sessionUpdate, (int)rate * 2, maiOptions.Language, warnings);
+        var secrets = headers
+            .Where(pair => pair.Value is { Length: > 0 } && (string.Equals(pair.Key, "api-key", StringComparison.OrdinalIgnoreCase) || string.Equals(pair.Key, "authorization", StringComparison.OrdinalIgnoreCase)))
+            .SelectMany(pair => new[] { pair.Value!, Uri.EscapeDataString(pair.Value!) })
+            .Distinct()
+            .ToArray();
+        var session = new Session(call, sessionUpdate, (int)rate * 2, maiOptions.Language, warnings, secrets);
         session.Start(connection.Url, connection.Headers, _webSocket ?? _nativeWebSocket);
         return Task.FromResult<TranscriptionStreamStart?>(new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
@@ -177,6 +182,7 @@ internal sealed class AzureMaiTranscriptionModel
         private readonly int _bytesPerSecond;
         private readonly string? _language;
         private readonly IReadOnlyList<OperationWarning> _warnings;
+        private readonly string[] _secrets;
         private readonly object _gate = new object();
         private readonly System.Text.StringBuilder _deltas = new System.Text.StringBuilder();
         private WebSocketConnection? _connection;
@@ -186,8 +192,9 @@ internal sealed class AzureMaiTranscriptionModel
         private bool _committed;
         private long _audioBytes;
 
-        public Session(TranscriptionStreamCall call, JsonObject sessionUpdate, int bytesPerSecond, string? language, IReadOnlyList<OperationWarning> warnings)
+        public Session(TranscriptionStreamCall call, JsonObject sessionUpdate, int bytesPerSecond, string? language, IReadOnlyList<OperationWarning> warnings, string[] secrets)
         {
+            _secrets = secrets;
             _call = call;
             _sessionUpdate = sessionUpdate;
             _bytesPerSecond = bytesPerSecond;
@@ -206,14 +213,36 @@ internal sealed class AzureMaiTranscriptionModel
                 WebSocket = webSocket,
                 AbortSignal = _call.CancellationToken,
                 OnAbort = FinishWithError,
-                OnProcessingError = FinishWithError,
+                OnProcessingError = error => FinishWithError(Redact(error)),
                 OnOpen = _ => Queue.Enqueue(new ModelStreamPart { Type = "stream-start", Warnings = _warnings }),
                 OnMessageText = OnMessageTextAsync,
                 OnSocketError = () => FinishWithError(new AiSdkException("Azure MAI transcription WebSocket error")),
                 OnClose = (code, reason) => FinishWithError(new AiSdkException(
                     "Azure MAI transcription connection closed before the transcript completed"
-                    + (code != null ? " (code " + code.Value.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrEmpty(reason) ? string.Empty : ": " + reason) + ")" : string.Empty))),
+                    + (code != null ? " (code " + code.Value.ToString(CultureInfo.InvariantCulture) + (string.IsNullOrEmpty(reason) ? string.Empty : ": " + RedactText(reason)) + ")" : string.Empty))),
             });
+        }
+
+        // The key can travel in the WebSocket URL, so error text from the socket or the server must not echo it.
+        private string RedactText(string text)
+        {
+            foreach (var secret in _secrets)
+            {
+                text = text.Replace(secret, "[REDACTED]");
+            }
+
+            return text;
+        }
+
+        private Exception Redact(Exception error)
+        {
+            if (error is OperationCanceledException)
+            {
+                return error;
+            }
+
+            var message = RedactText(error.Message);
+            return string.Equals(message, error.Message, StringComparison.Ordinal) ? error : new AiSdkException(message);
         }
 
         public void Cancel()
@@ -449,7 +478,7 @@ internal sealed class AzureMaiTranscriptionModel
                     root.TryGetProperty("error", out var error);
                     var code = ReadString(error, "code");
                     FinishWithError(new AiSdkException(
-                        "Azure MAI transcription error" + (code != null ? " (" + code + ")" : string.Empty) + ": " + (ReadString(error, "message") ?? "unknown error")));
+                        "Azure MAI transcription error" + (code != null ? " (" + RedactText(code) + ")" : string.Empty) + ": " + RedactText(ReadString(error, "message") ?? "unknown error")));
                     break;
             }
 

@@ -73,6 +73,7 @@ internal sealed class AzureSpeechTranscriptionModel
         AzureTranscriptionModelSpeechOptions azureOptions,
         CancellationToken cancellationToken)
     {
+        call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = DateTime.UtcNow;
         var maiModel = AzureTranscriptionModelOptions.GetMAITranscribeModel(ModelId);
         var warnings = new List<OperationWarning>();
@@ -143,14 +144,18 @@ internal sealed class AzureSpeechTranscriptionModel
         using var formData = new MultipartFormDataContent();
         var mediaType = string.IsNullOrEmpty(call.MediaType) ? "audio/mpeg" : call.MediaType;
         var file = new ByteArrayContent(call.Audio);
-        file.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+        if (MediaTypeHeaderValue.TryParse(mediaType, out var parsedMediaType))
+        {
+            file.Headers.ContentType = parsedMediaType;
+        }
+
         formData.Add(file, "audio", "audio." + OpenAIJson.Extension(mediaType));
         var definitionPart = new StringContent(definition.ToJsonString(), Encoding.UTF8);
         definitionPart.Headers.ContentType = null;
         formData.Add(definitionPart, "definition");
 
         var callHeaders = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in call.Headers)
+        foreach (var pair in call.Headers ?? new Dictionary<string, string>())
         {
             callHeaders[pair.Key] = pair.Value;
         }

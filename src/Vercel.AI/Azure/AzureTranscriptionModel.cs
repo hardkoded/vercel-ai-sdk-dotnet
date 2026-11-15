@@ -135,7 +135,15 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
                 SpeechOnlyWarnings(options.SpeechOptions).Concat(OpenAITranscriptionOnlyWarnings(options.OpenAIOptions)).ToList()).ConfigureAwait(false);
         }
 
-        return await _openai.DoStreamAsync(call, cancellationToken).ConfigureAwait(false);
+        return await _openai.DoStreamAsync(
+            new TranscriptionStreamCall(
+                call.Audio,
+                call.InputAudioFormat,
+                AzureProviderOptions.WithAzureOptionsForOpenAI(call.ProviderOptions, options.OpenAIOptions) ?? call.ProviderOptions,
+                call.Headers,
+                call.IncludeRawChunks,
+                call.CancellationToken),
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static TranscriptionModelResult With(TranscriptionModelResult result, IEnumerable<OperationWarning> warnings)
