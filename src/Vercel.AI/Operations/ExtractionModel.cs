@@ -34,8 +34,8 @@ public sealed class ExtractionField
     /// <summary>Require an integer value. Applies to <c>number</c>, <c>duration</c>, and <c>list</c> of numbers.</summary>
     public bool? Integer { get; init; }
 
-    /// <summary>Maximum decimal places, an integer from 0 to 6. Applies to <c>number</c>, <c>duration</c>, and <c>list</c> of numbers.</summary>
-    public int? Decimals { get; init; }
+    /// <summary>Maximum decimal places, an integer from 0 to 6. A fractional value is rejected by validation. Applies to <c>number</c>, <c>duration</c>, and <c>list</c> of numbers.</summary>
+    public double? Decimals { get; init; }
 
     /// <summary>Item type of a <c>list</c> field: <c>text</c>, <c>number</c>, or <c>date</c>.</summary>
     public string? Items { get; init; }

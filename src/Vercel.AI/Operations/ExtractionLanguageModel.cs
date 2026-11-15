@@ -18,7 +18,7 @@ namespace Vercel.AI.Operations;
 public sealed class ExtractionLanguageModelOptions
 {
     /// <summary>Creates the options.</summary>
-    public ExtractionLanguageModelOptions(ILanguageModel model, string provider, int? maxFieldsPerCall = null)
+    public ExtractionLanguageModelOptions(ILanguageModel model, string provider, double maxFieldsPerCall = double.PositiveInfinity)
     {
         Model = model ?? throw new ArgumentNullException(nameof(model));
         Provider = provider ?? throw new ArgumentNullException(nameof(provider));
@@ -31,8 +31,8 @@ public sealed class ExtractionLanguageModelOptions
     /// <summary>The extraction provider id.</summary>
     public string Provider { get; }
 
-    /// <summary>Most fields per language-model call. Null means no limit.</summary>
-    public int? MaxFieldsPerCall { get; }
+    /// <summary>Most fields per language-model call. <see cref="double.PositiveInfinity"/> means no limit.</summary>
+    public double MaxFieldsPerCall { get; }
 }
 
 /// <summary>Adapts structured language-model output to typed field extraction. Maps to <c>ExtractionLanguageModel</c>.</summary>
@@ -54,16 +54,16 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
     };
 
     private readonly ILanguageModel _model;
-    private readonly int? _maxFieldsPerCall;
+    private readonly double _maxFieldsPerCall;
 
     /// <summary>Wraps a language model. The provider id defaults to <c>{model.Provider}.extraction</c>.</summary>
     /// <param name="model">The language model.</param>
     /// <param name="provider">The extraction provider id.</param>
     /// <param name="maxFieldsPerCall">
     /// Most fields per language-model call, for providers that limit schema size. Larger field maps are split into parallel calls
-    /// whose answers are merged. Usage is summed, and response and provider metadata come from the first call. Null means no limit.
+    /// whose answers are merged. Usage is summed, and response and provider metadata come from the first call. A positive integer or <see cref="double.PositiveInfinity"/>, the default, which means no limit.
     /// </param>
-    public ExtractionLanguageModel(ILanguageModel model, string? provider = null, int? maxFieldsPerCall = null)
+    public ExtractionLanguageModel(ILanguageModel model, string? provider = null, double maxFieldsPerCall = double.PositiveInfinity)
     {
         _model = model ?? throw new ArgumentNullException(nameof(model));
         if (!string.Equals(model.SpecificationVersion, "v4", StringComparison.OrdinalIgnoreCase))
@@ -71,9 +71,9 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
             throw new InvalidArgumentException("model", model.SpecificationVersion, "Extraction requires a LanguageModelV4 implementation.");
         }
 
-        if (maxFieldsPerCall is < 1)
+        if (!double.IsPositiveInfinity(maxFieldsPerCall) && !(maxFieldsPerCall >= 1 && Math.Floor(maxFieldsPerCall) == maxFieldsPerCall))
         {
-            throw new InvalidArgumentException("maxFieldsPerCall", maxFieldsPerCall, "maxFieldsPerCall must be a positive integer or null.");
+            throw new InvalidArgumentException("maxFieldsPerCall", maxFieldsPerCall, "maxFieldsPerCall must be a positive integer or Infinity.");
         }
 
         Provider = provider ?? model.Provider + ".extraction";
@@ -149,7 +149,7 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
         }
 
         var groups = new List<List<KeyValuePair<string, ExtractionField>>>();
-        var size = _maxFieldsPerCall ?? int.MaxValue;
+        var size = (int)Math.Min(_maxFieldsPerCall, int.MaxValue);
         for (var index = 0; index < entries.Count; index += size)
         {
             groups.Add(entries.GetRange(index, Math.Min(size, entries.Count - index)));
@@ -266,10 +266,10 @@ public sealed class ExtractionLanguageModel : IExtractionCaller
     }
 
     // Number(value.toFixed(decimals))
-    private static double Round(double value, int? decimals)
+    private static double Round(double value, double? decimals)
     {
         return decimals is { } places && !double.IsNaN(value) && !double.IsInfinity(value)
-            ? double.Parse(value.ToString("F" + places.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
+            ? double.Parse(value.ToString("F" + ((int)places).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
             : value;
     }
 

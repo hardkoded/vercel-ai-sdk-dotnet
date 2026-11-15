@@ -76,13 +76,13 @@ Field types an extraction model can support.
 
 
 ```csharp
-public int? Decimals { get; init; }
+public double? Decimals { get; init; }
 ```
 
 
-Maximum decimal places, an integer from 0 to 6. Applies to `number`, `duration`, and `list` of numbers.
+Maximum decimal places, an integer from 0 to 6. A fractional value is rejected by validation. Applies to `number`, `duration`, and `list` of numbers.
 
-**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L38)
 

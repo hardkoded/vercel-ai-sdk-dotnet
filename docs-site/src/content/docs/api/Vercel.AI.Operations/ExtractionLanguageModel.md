@@ -30,13 +30,13 @@ Adapts structured language-model output to typed field extraction. Maps to `Extr
 ## Constructors
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModel__ctor_"></a>
-<a id="Vercel_AI_Operations_ExtractionLanguageModel__ctor_Vercel_AI_Provider_ILanguageModel_System_String_System_Nullable_System_Int32__"></a>
+<a id="Vercel_AI_Operations_ExtractionLanguageModel__ctor_Vercel_AI_Provider_ILanguageModel_System_String_System_Double_"></a>
 
-### ExtractionLanguageModel(ILanguageModel, string?, int?)
+### ExtractionLanguageModel(ILanguageModel, string?, double)
 
 
 ```csharp
-public ExtractionLanguageModel(ILanguageModel model, string? provider = null, int? maxFieldsPerCall = null)
+public ExtractionLanguageModel(ILanguageModel model, string? provider = null, double maxFieldsPerCall = Infinity)
 ```
 
 
@@ -48,7 +48,7 @@ Wraps a language model. The provider id defaults to `{model.Provider}.extraction
 | --- | --- | --- |
 | `model` | [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/) | The language model. |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) | The extraction provider id. |
-| `maxFieldsPerCall` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) | Most fields per language-model call, for providers that limit schema size. Larger field maps are split into parallel calls whose answers are merged. Usage is summed, and response and provider metadata come from the first call. Null means no limit. |
+| `maxFieldsPerCall` | [double](https://learn.microsoft.com/dotnet/api/system.double) | Most fields per language-model call, for providers that limit schema size. Larger field maps are split into parallel calls whose answers are merged. Usage is summed, and response and provider metadata come from the first call. A positive integer or [PositiveInfinity](https://learn.microsoft.com/dotnet/api/system.double.positiveinfinity), the default, which means no limit. |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L66)
 
