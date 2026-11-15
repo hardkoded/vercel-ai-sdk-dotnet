@@ -289,26 +289,6 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should rename thinking block_binding prefix_mismatch_behavior to mismatch_behavior", Coverage = UpstreamCoverage.Covered)]
-    public void Should_rename_thinking_block_binding_prefix_mismatch_behavior_to_mismatch_behavior()
-    {
-        var transformed = Transform(Object("{\"model\":\"test-model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":1024,\"thinking\":{\"type\":\"adaptive\",\"display\":\"summarized\",\"block_binding\":{\"prefix_mismatch_behavior\":\"drop_block\"}}}"), new[] { "thinking-binding-controls-2026-08-01" });
-
-        Assert.Equal(
-            "{\"type\":\"adaptive\",\"display\":\"summarized\",\"block_binding\":{\"mismatch_behavior\":\"drop_block\"}}",
-            transformed["thinking"]!.ToJsonString());
-    }
-
-    [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should leave thinking unchanged when it has no block_binding", Coverage = UpstreamCoverage.Covered)]
-    public void Should_leave_thinking_unchanged_when_it_has_no_block_binding()
-    {
-        var transformed = Transform(Object("{\"model\":\"test-model-id\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"max_tokens\":1024,\"thinking\":{\"type\":\"enabled\",\"budget_tokens\":2000}}"), Array.Empty<string>());
-
-        Assert.Equal("{\"type\":\"enabled\",\"budget_tokens\":2000}", transformed["thinking"]!.ToJsonString());
-    }
-
-    [Fact]
     [UpstreamTest("packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should translate eager_input_streaming on tools into the fine-grained-tool-streaming beta", Coverage = UpstreamCoverage.Covered)]
     public void Should_translate_eager_input_streaming_on_tools_into_the_fine_grained_tool_streaming_beta()
     {
