@@ -427,6 +427,12 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                 // Provider-executed calls. Client function calls stream below, after the rest of the chunk.
                                 yield return new ToolCallStreamPart(tool.ToolCallId, tool.ToolName, tool.ArgumentsJson, tool.ProviderMetadata) { ProviderExecuted = tool.ProviderExecuted, Dynamic = tool.Dynamic };
                             }
+                            else if (generated is GoogleToolResult codeResult && !codeResult.ToolName.StartsWith("server:", StringComparison.Ordinal))
+                            {
+                                // Code execution results correspond to the most recent executable code part.
+                                var resultJson = new JsonObject { ["outcome"] = codeResult.Outcome, ["output"] = codeResult.Output };
+                                yield return new ToolResultStreamPart(codeResult.ToolCallId, codeResult.ToolName, JsonSerializer.SerializeToElement(resultJson));
+                            }
                             else if (generated is GoogleGeneratedFile file)
                             {
                                 yield return new FileStreamPart(file.Data, file.MediaType);
