@@ -76,7 +76,7 @@ public static class TencentModelCatalog
     /// <summary>
     /// Entries of every known model id. Upstream <c>tencentModelCatalog</c>; renamed because C# does not allow a member named like its class.
     /// </summary>
-    public static readonly IReadOnlyDictionary<string, TencentModelEntry> Entries = BuildEntries();
+    public static readonly IReadOnlyDictionary<string, ModelEntry<TencentRequestConfig>> Entries = BuildEntries();
 
     private const string VodModelIdPrefix = "vod/";
 
@@ -108,24 +108,42 @@ public static class TencentModelCatalog
         return null;
     }
 
-    private static Dictionary<string, TencentModelEntry> BuildEntries()
+    private static Dictionary<string, ModelEntry<TencentRequestConfig>> BuildEntries()
     {
-        var entries = new Dictionary<string, TencentModelEntry>();
+        var entries = new Dictionary<string, ModelEntry<TencentRequestConfig>>();
         foreach (var id in TencentLanguageModelIds)
         {
-            entries[id] = new TencentModelEntry(GetTencentLanguageModelEntry(id), entries.TryGetValue(id, out var previous) ? previous.Video : null);
+            entries[id] = Merge((entries.TryGetValue(id, out var previous) ? previous : null), GetTencentLanguageModelEntry(id));
         }
 
         foreach (var id in TencentVideoModelIds)
         {
-            entries[id] = new TencentModelEntry(entries.TryGetValue(id, out var previous) ? previous.Language : null, GetTencentVideoModelEntry(id));
+            entries[id] = Merge((entries.TryGetValue(id, out var previous) ? previous : null), GetTencentVideoModelEntry(id));
         }
 
         return entries;
     }
 
+    private static ModelEntry<TencentRequestConfig> Merge(ModelEntry<TencentRequestConfig>? previous, ModelEntry<TencentRequestConfig> entry) => new()
+    {
+        Capabilities = new ModelCapabilities
+        {
+            Language = entry.Capabilities.Language ?? previous?.Capabilities.Language,
+            Video = entry.Capabilities.Video ?? previous?.Capabilities.Video,
+        },
+        ProviderOptions = new ModelProviderOptions
+        {
+            Language = entry.ProviderOptions?.Language ?? previous?.ProviderOptions?.Language,
+            Video = entry.ProviderOptions?.Video ?? previous?.ProviderOptions?.Video,
+        },
+        RequestConfig = new TencentRequestConfig
+        {
+            Video = entry.RequestConfig?.Video ?? previous?.RequestConfig?.Video,
+        },
+    };
+
     /// <summary>Returns the catalog entry of a language model. Upstream <c>getTencentLanguageModelEntry</c>.</summary>
-    public static TencentLanguageModelEntry GetTencentLanguageModelEntry(string modelId)
+    public static ModelEntry<TencentRequestConfig> GetTencentLanguageModelEntry(string modelId)
     {
         var options = new Dictionary<string, ModelCapability>();
         foreach (var key in TencentProviderOptions.Language.Keys)
@@ -133,11 +151,15 @@ public static class TencentModelCatalog
             options[key] = ModelCapability.Unknown;
         }
 
-        return new TencentLanguageModelEntry(options);
+        return new ModelEntry<TencentRequestConfig>
+        {
+            Capabilities = new ModelCapabilities { Language = new LanguageCapabilities() },
+            ProviderOptions = new ModelProviderOptions { Language = options },
+        };
     }
 
     /// <summary>Returns the catalog entry of a video model. Upstream <c>getTencentVideoModelEntry</c>.</summary>
-    public static TencentVideoModelEntry GetTencentVideoModelEntry(string modelId)
+    public static ModelEntry<TencentRequestConfig> GetTencentVideoModelEntry(string modelId)
     {
         var parsed = ParseTencentVideoModelId(modelId);
         var vod = parsed is { IsVod: true };
@@ -146,14 +168,17 @@ public static class TencentModelCatalog
         var omni = parsed is { IsVod: false } && (parsed.Kind == TencentKlingVideoKind.Omni || modelId == "kling-video-v4");
         var backendSupport = ModelCapability.When("Depends on the selected VOD model and scenario.");
 
-        var video = new TencentVideoCapabilities
+        var video = new VideoCapabilities
         {
-            Text = vod ? backendSupport : ModelCapability.Supported,
-            Image = vod ? backendSupport : ModelCapability.Supported,
-            FirstFrame = vod ? backendSupport : ModelCapability.Supported,
-            LastFrame = vod ? backendSupport : ModelCapability.From(!motion),
-            ReferenceImage = vod ? backendSupport : ModelCapability.From(omni || motion),
-            ReferenceVideo = vod ? backendSupport : ModelCapability.From(omni || motion),
+            Inputs = new VideoInputCapabilities
+            {
+                Text = vod ? backendSupport : ModelCapability.Supported,
+                Image = vod ? backendSupport : ModelCapability.Supported,
+                FirstFrame = vod ? backendSupport : ModelCapability.Supported,
+                LastFrame = vod ? backendSupport : ModelCapability.From(!motion),
+                ReferenceImage = vod ? backendSupport : ModelCapability.From(omni || motion),
+                ReferenceVideo = vod ? backendSupport : ModelCapability.From(omni || motion),
+            },
             GenerateAudio = vod
                 ? backendSupport
                 : motion
@@ -194,11 +219,16 @@ public static class TencentModelCatalog
         providerOptions["elements"] = vod ? ModelCapability.Unsupported : ModelCapability.When("Image-to-video, omni, or motion control only.");
         providerOptions["referenceVideoType"] = ModelCapability.From(vod || omni);
 
-        return new TencentVideoModelEntry(video, providerOptions, new TencentVideoRequestConfig(parsed, audioAndMultiShot, omni));
+        return new ModelEntry<TencentRequestConfig>
+        {
+            Capabilities = new ModelCapabilities { Video = video },
+            ProviderOptions = new ModelProviderOptions { Video = providerOptions },
+            RequestConfig = new TencentRequestConfig { Video = new TencentVideoRequestConfig(parsed, audioAndMultiShot, omni) },
+        };
     }
 
     /// <summary>Request-shaping policy for a video model. Upstream <c>getTencentVideoModelEntry(modelId).requestConfig.video</c>.</summary>
-    public static TencentVideoRequestConfig GetTencentVideoRequestConfig(string modelId) => GetTencentVideoModelEntry(modelId).RequestConfig;
+    public static TencentVideoRequestConfig GetTencentVideoRequestConfig(string modelId) => GetTencentVideoModelEntry(modelId).RequestConfig?.Video ?? throw new InvalidOperationException($"Video model entry of '{modelId}' has no request config.");
 }
 
 /// <summary>Provider option descriptions. Upstream <c>tencentProviderOptions</c>.</summary>
@@ -242,125 +272,11 @@ public static class TencentProviderOptions
     };
 }
 
-/// <summary>One catalog record of a model id, holding the operations it declares. Upstream <c>ModelEntry</c> in <c>tencentModelCatalog</c>.</summary>
-public sealed class TencentModelEntry
+/// <summary>The request configuration of a Tencent catalog entry. Upstream <c>requestConfig</c> of <c>tencentModelCatalog</c>.</summary>
+public sealed class TencentRequestConfig
 {
-    internal TencentModelEntry(TencentLanguageModelEntry? language, TencentVideoModelEntry? video)
-    {
-        Language = language;
-        Video = video;
-    }
-
-    /// <summary>The language entry, or null when the id is not a language model.</summary>
-    public TencentLanguageModelEntry? Language { get; }
-
-    /// <summary>The video entry, or null when the id is not a video model.</summary>
-    public TencentVideoModelEntry? Video { get; }
-}
-
-/// <summary>The catalog entry of a language model. Upstream <c>getTencentLanguageModelEntry</c> result.</summary>
-public sealed class TencentLanguageModelEntry
-{
-    internal TencentLanguageModelEntry(IReadOnlyDictionary<string, ModelCapability> providerOptions)
-    {
-        ProviderOptions = providerOptions;
-    }
-
-    /// <summary>Image input. Unknown: the hosted model decides.</summary>
-    public ModelCapability ImageInput { get; } = ModelCapability.Unknown;
-
-    /// <summary>Audio input.</summary>
-    public ModelCapability AudioInput { get; } = ModelCapability.Unknown;
-
-    /// <summary>Object generation.</summary>
-    public ModelCapability ObjectGeneration { get; } = ModelCapability.Unknown;
-
-    /// <summary>Tool usage.</summary>
-    public ModelCapability ToolUsage { get; } = ModelCapability.Unknown;
-
-    /// <summary>Tool streaming.</summary>
-    public ModelCapability ToolStreaming { get; } = ModelCapability.Unknown;
-
-    /// <summary>Reasoning support.</summary>
-    public ModelCapability ReasoningSupport { get; } = ModelCapability.Unknown;
-
-    /// <summary>Temperature sampling.</summary>
-    public ModelCapability Temperature { get; } = ModelCapability.Unknown;
-
-    /// <summary>Top-p sampling.</summary>
-    public ModelCapability TopP { get; } = ModelCapability.Unknown;
-
-    /// <summary>Logprobs.</summary>
-    public ModelCapability Logprobs { get; } = ModelCapability.Unknown;
-
-    /// <summary>The model uses the chat completions API.</summary>
-    public bool ChatCompletions { get; } = true;
-
-    /// <summary>Support per language option in <see cref="TencentProviderOptions.Language"/>.</summary>
-    public IReadOnlyDictionary<string, ModelCapability> ProviderOptions { get; }
-}
-
-/// <summary>The catalog entry of a video model. Upstream <c>getTencentVideoModelEntry</c> result.</summary>
-public sealed class TencentVideoModelEntry
-{
-    internal TencentVideoModelEntry(TencentVideoCapabilities capabilities, IReadOnlyDictionary<string, ModelCapability> providerOptions, TencentVideoRequestConfig requestConfig)
-    {
-        Capabilities = capabilities;
-        ProviderOptions = providerOptions;
-        RequestConfig = requestConfig;
-    }
-
-    /// <summary>Upstream <c>capabilities.video</c>.</summary>
-    public TencentVideoCapabilities Capabilities { get; }
-
-    /// <summary>Support per video option in <see cref="TencentProviderOptions.Video"/>.</summary>
-    public IReadOnlyDictionary<string, ModelCapability> ProviderOptions { get; }
-
-    /// <summary>Upstream <c>requestConfig.video</c>.</summary>
-    public TencentVideoRequestConfig RequestConfig { get; }
-}
-
-/// <summary>Video capabilities of a model. Upstream <c>ModelCapabilities.video</c>.</summary>
-public sealed class TencentVideoCapabilities
-{
-    /// <summary>Text input.</summary>
-    public ModelCapability Text { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>The single starting image passed through <c>image</c>.</summary>
-    public ModelCapability Image { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Role-tagged first frame passed through <c>frameImages</c>.</summary>
-    public ModelCapability FirstFrame { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Role-tagged last frame passed through <c>frameImages</c>.</summary>
-    public ModelCapability LastFrame { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Reference images passed through <c>inputReferences</c>.</summary>
-    public ModelCapability ReferenceImage { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Reference videos passed through <c>inputReferences</c>.</summary>
-    public ModelCapability ReferenceVideo { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Audio generation.</summary>
-    public ModelCapability GenerateAudio { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Aspect ratio.</summary>
-    public ModelCapability AspectRatio { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Resolution.</summary>
-    public ModelCapability Resolution { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Duration.</summary>
-    public ModelCapability Duration { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Frames per second.</summary>
-    public ModelCapability Fps { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Seed.</summary>
-    public ModelCapability Seed { get; init; } = ModelCapability.Unknown;
-
-    /// <summary>Fixed limit of videos per call. Null when the catalog declares none.</summary>
-    public int? MaxVideosPerCall { get; init; }
+    /// <summary>Upstream <c>requestConfig.video</c>. Null for a model without a video entry.</summary>
+    public TencentVideoRequestConfig? Video { get; init; }
 }
 
 /// <summary>What a video model id implies for request building.</summary>

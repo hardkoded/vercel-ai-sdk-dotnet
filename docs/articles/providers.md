@@ -871,6 +871,10 @@ Language models: `hy4`, `hy4-preview`, `hy3`, `hy-mt2-pro`, `hy-mt2-plus`, `hy-m
 
 Video models (`TencentModelCatalog.TencentVideoModelIds`): `kling-video-v4`, `kling-video-v3`, `kling-video-v3-turbo`, `kling-video-v3-omni`, `kling-video-motion-control-v3.0`, `kling-video-motion-control-v2.6`, `vod/VS/2.5`, `vod/VS/2.0`, `vod/VS/2.0-fast`, `vod/VS/2.0-mini`, `vod/Kling/3.0`, `vod/Kling/3.0-Omni`, `vod/Kling/3.0-turbo`, `vod/Kling/2.6`, `vod/Hailuo/2.3`, `vod/Vidu/q3-pro`. Any id that starts with `kling-video-` or has the form `vod/<ModelName>/<ModelVersion>` is accepted.
 
+#### Model catalog
+
+`TencentModelCatalog.Entries` maps every known model id to a `ModelEntry<TencentRequestConfig>`, the shared catalog contract in `Vercel.AI`. `Capabilities` declares what the model supports by operation (`Language`, `Video`), each value a `ModelCapability` (`Supported`, `Unsupported`, `Unknown`, or `When(condition)`). `ProviderOptions` declares per-model support for the options in `TencentProviderOptions`, and `RequestConfig.Video` holds the request-shaping policy. A null section is undeclared, not unsupported. The declarations are metadata; they do not validate requests.
+
 ## Black Forest Labs
 
 The Black Forest Labs provider (`Vercel.AI.BlackForestLabs`) generates images with `ImageModel(id)` or `Image(id)` (provider id `black-forest-labs.image`) and videos with `VideoModel(id)` or `Video(id)` (provider id `black-forest-labs.video`, see [Black Forest Labs video models](#black-forest-labs-video-models)). It reads `BFL_API_KEY` and sends it as `x-key`. `LanguageModel` and `EmbeddingModel` throw `NoSuchModelError`.
