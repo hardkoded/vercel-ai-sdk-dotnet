@@ -34,6 +34,7 @@ Native wire protocols have their own request mappers:
 - Azure OpenAI Responses: `AzureOpenAIProvider.ResponsesModel(id)` posts to `/openai/v1/responses` (provider id `azure.responses`). Provider options and message options are read from `azure` first and fall back to `openai` only when the `azure` key is absent. An empty `azure` object therefore hides the `openai` options.
 - Azure deployment and model IDs: `AzureOpenAIProvider.ResponsesModel(deploymentId, settings)`, `ChatModel(deploymentId, settings)` and `CompletionModel(deploymentId, settings)` take an optional `AzureOpenAILanguageModelSettings { ModelId = "gpt-5" }`, for example `provider.ResponsesModel("production-chat", new AzureOpenAILanguageModelSettings { ModelId = "gpt-5" })`. The model reports `ModelId` as its identity (including telemetry) and, for Responses and Chat, uses it to detect capabilities such as reasoning support (no `temperature`, `developer` system role). API requests (and the deployment route, with `UseDeploymentBasedUrls`) still use the deployment name. The model ID Azure returns in response metadata is preserved. If `ModelId` is omitted, the deployment name is used for identity and capability detection. Keep the supplied model ID aligned with the model running in your deployment. The Responses reasoning-effort update check reads the model ID, so a custom deployment name such as `production` is only recognized when you pass `ModelId = "gpt-6-astra"` (or another supported GPT-6-or-later model).
 - TypeSafe (`TYPESAFE_AI_API_KEY`) posts the state and questions to `/systemone` through `TypeSafeAiProvider.DecisionModel(id)` (provider id `typesafe.decision`). `providerOptions.typesafe.longContext` raises the context window from 64k input and 32k output tokens to 262k. PNG and JPEG file parts are sent as `multipart/form-data` images; other files throw `UnsupportedFunctionalityException`. See [TypeSafe](typesafe-ai.md).
+- HeyGen (`HEYGEN_API_KEY`) posts the state and questions to `/v3/models/decisions` through `HeyGenProvider.DecisionModel(id)` (provider id `heygen.decision`). See [HeyGen](#heygen).
 - ScaleDown (`SCALEDOWN_API_KEY`) posts the state and questions to `/v1/scaledown` through `ScaleDownProvider.DecisionModel(id)` (provider id `scaledown.decision`). See [ScaleDown](scaledown.md).
 - Anthropic speaks the Messages API. `AnthropicAwsProvider` points that body at the AWS external endpoint. `DecisionModel(id)` answers `Decide` questions by wrapping the Messages language model in `DecisionLanguageModel` (provider id `anthropic.decision`). `AnthropicProvider` implements `IDecisionProvider`, and the deprecated `IEvaluationProvider.EvaluationModel(id)` resolves to the same model. `AnthropicProvider.EvaluationModel(id)` is a deprecated alias of `DecisionModel(id)`. `AnthropicProvider.RubricModel(id)` returns the rubric model. Anthropic tool calls emit `ToolInputStartStreamPart`, each non-empty input fragment as `ToolInputDeltaStreamPart`, and `ToolInputEndStreamPart` before `ToolCallStreamPart`; deferred tool calls pre-populated in `message_start` emit the same sequence with their complete input as one delta. A stream whose events end without a `message_stop` for the last message finishes with `FinishReason.Interrupted` and no raw finish reason, even when an earlier message in the same stream completed. A stream that ends after an error event or an invalid event gets no interrupted finish. A stream that ends before it produced any output also gets no interrupted finish, and the provider reports no finish part for it (the core no-output rejection is tracked in #769). The interrupted finish keeps the usage and provider metadata of the last completed message, or unset usage and no provider metadata when none completed.
   - `GeneratedSource` parts come from `web_search_tool_result` blocks, one per search result. The citations on a text block are attached to its `GeneratedText.Citations` (a `Citation` for each of `web_search_result_location`, `search_result_location`, `page_location`, `char_location`, and `content_block_location`), including on a streamed `TextEndStreamPart`. They are not repeated as sources. A `web_search_result_location` citation only becomes a `GeneratedSource` when the response has no search results. The raw citations stay in the text part's provider metadata as `anthropic.citations`. Page, character, and block locations refer to the source document, not to the generated answer. A document citation uses the `text/plain` media type, and the title falls back to `Document {index}`, because the port does not track the prompt's documents.
@@ -302,7 +303,7 @@ On Baseten Model APIs, `deepseek-ai/DeepSeek-V4-Pro-0813` can return an empty an
 
 ## HeyGen
 
-The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It supports video generation only. HeyGen's avatar, voice, translation, and video editing APIs are not included.
+The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It also supports [HeyGen Decision](#decision-models) models, which classify, check, and score text, images, and video. HeyGen's avatar, voice, translation, and video editing APIs are not included.
 
 ### Provider instance
 
@@ -456,6 +457,64 @@ Pass an `Idempotency-Key` through the call headers when retrying the same submis
 Submission and in-progress operation metadata exposes `videoId`, `mode`, and `resolution` directly under `providerMetadata.heygen`. Failed or canceled operations also expose `failureCode` when HeyGen reports it.
 
 The HeyGen video endpoint does not document token counts or credit consumption in its generation response. The provider returns the reported duration and dimensions without estimating those quantities.
+
+
+### Decision models
+
+Use `heygen.DecisionModel(modelId)` with `Decide.DecideAsync` to call the [HeyGen Decision API](https://developers.heygen.com/docs/models/heygen-decision) (`POST {BaseUrl}/v3/models/decisions`; provider id `heygen.decision`). This API is experimental and may change in patch releases. `HeyGenProvider` implements `IDecisionProvider`, and `DecisionHeyGenModel` implements `IDecisionCaller`.
+
+```csharp
+var result = await Decide.DecideAsync(new DecideRequest
+{
+    Model = heygen.DecisionModel("heygen-decision-1"),
+    State = "Video export fails for everyone on our team after today's update. We have no workaround.",
+    Questions = new Dictionary<string, DecisionQuestion>
+    {
+        ["team"] = new("choice", "Which support team should handle this request?", new DecisionChoiceCriteria(new Dictionary<string, DecisionInput?>
+        {
+            ["video"] = "Video creation, rendering, or export problems",
+            ["account"] = "Sign-in, access, or workspace administration",
+            ["billing"] = "Payments, invoices, or subscription charges",
+        })),
+        ["blocked"] = new("boolean", "Is the customer unable to work without a workaround?"),
+        ["impact"] = new("score", "How much does this issue affect the customer's work?", new DecisionScoreCriteria(["Cosmetic", "Slower, with a workaround", "Blocked"])),
+    },
+});
+
+result.Answers["blocked"].Probability; // P(true), from 0 to 1
+result.Answers["team"].Choice;         // "video", "account", or "billing"
+result.Answers["impact"].Score;        // Expected zero-based level, from 0 to 2
+```
+
+`heygen-decision-1` and `heygen-decision-1-turbo` are available. Other model ids are sent unchanged. The model maps a `boolean` question to HeyGen's native `noul` type and returns Choice and Score probability distributions without rounding. A `box` question throws `DecisionUnsupportedQuestionTypeException`. Examples are in `examples/DecideHeyGenBasic` and `examples/DecideHeyGenVideo`.
+
+#### Images and video
+
+Add image and video file parts to the state. The model sends them as HeyGen `assets` and keeps text and JSON parts in the native `state`. HeyGen reads images first, then videos, then the state, each in request order, so describe each input's role in the text by its order. Inline file data is sent as base64. When you call the model directly, an HTTPS URL file is passed to HeyGen as a URL, and a provider reference such as `{ "heygen": assetId }` is sent as an uploaded HeyGen asset. `Decide.DecideAsync` downloads URL file state before it calls the model. A file whose media type is not an image or a video, or an inline text file, throws `UnsupportedFunctionalityException`. A media type without a subtype, such as `image`, is detected from the bytes, and a failed detection throws `InvalidArgumentException`.
+
+#### Confidence, legends, and response metadata
+
+`ProviderMetadata` at `heygen` has `confidence` (Choice and Score confidence, keyed by question id), `legend` (Score index-to-description maps), `answerWarnings` (diagnostic warnings HeyGen returns for an answer), and `requestId`. Confidence is distinct from the selected option's probability. `Response.Id` is the HeyGen decision id, and `Usage` keeps the input and output token counts.
+
+#### Decision limits
+
+The model throws `InvalidArgumentException` before any request when the call goes over these limits:
+
+| Input | Limit |
+| --- | --- |
+| Questions | 1 to 400. Names are nonempty, without colons, newlines, or surrounding whitespace. |
+| Choice options | 1 to 255 |
+| Score levels | 1 to 10, all non-null |
+| Media | At most 4 images and 1 video. HTTPS URLs only. |
+
+HeyGen enforces its own [media limits](https://developers.heygen.com/docs/models/heygen-decision#media-limits) and [context limits](https://developers.heygen.com/docs/models/heygen-decision#context-limits). `MaxOutputTokens`, `Reasoning`, and every `providerOptions.heygen` entry are not sent. Each becomes an `unsupported` warning. A response with a missing, extra, or invalid answer throws `InvalidResponseDataException` or an `ApiException`. A HeyGen error body `{ error: { code, message, param } }` becomes the message `message (code) [param]`.
+
+`DecisionHeyGenModel.Serialize()` returns a `SerializedModelOptions` with the model id, `baseURL`, and the resolved request headers, including the `x-api-key` header. `DecisionHeyGenModel.Deserialize(options, httpClient)` restores the model. The HTTP client is not serialized.
+
+| Model | Boolean | Choice | Score | Box | Image input | Reasoning | Max output tokens |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `heygen-decision-1` | Yes | Yes | Yes | No | Yes | No | No |
+| `heygen-decision-1-turbo` | Yes | Yes | Yes | No | Yes | No | No |
 
 ## Kling AI
 

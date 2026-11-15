@@ -1,6 +1,6 @@
 ---
 title: "HeyGenProvider"
-description: "HeyGen provider. It supports video generation only."
+description: "HeyGen provider. It supports video generation and experimental decision models."
 editUrl: false
 prev: false
 next: false
@@ -15,13 +15,15 @@ Namespace: [Vercel.AI.HeyGen](/api/Vercel.AI.HeyGen/)
 
 
 ```csharp
-public sealed class HeyGenProvider : OpenAICompatibleProvider
+public sealed class HeyGenProvider : OpenAICompatibleProvider, IDecisionProvider
 ```
 
 
-HeyGen provider. It supports video generation only.
+HeyGen provider. It supports video generation and experimental decision models.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
+
+**Implements:** [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L12)
 
@@ -108,6 +110,29 @@ Creates a provider.
 **Returns:** [HeyGenProvider](./)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L30)
+
+<a id="Vercel_AI_HeyGen_HeyGenProvider_DecisionModel_"></a>
+<a id="Vercel_AI_HeyGen_HeyGenProvider_DecisionModel_System_String_"></a>
+
+### DecisionModel(string)
+
+
+```csharp
+public DecisionHeyGenModel DecisionModel(string modelId)
+```
+
+
+Creates an experimental decision model using the HeyGen Decision API. The provider id is `heygen.decision`. Maps to `decisionModel`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [DecisionHeyGenModel](/api/Vercel.AI.HeyGen/DecisionHeyGenModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/HeyGen/HeyGenProvider.cs#L49)
 
 <a id="Vercel_AI_HeyGen_HeyGenProvider_LanguageModel_"></a>
 <a id="Vercel_AI_HeyGen_HeyGenProvider_LanguageModel_System_String_"></a>

@@ -9,6 +9,8 @@
     <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
     <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
     <Project Path="examples/DecidePerplexityWebGrounding/DecidePerplexityWebGrounding.csproj" />
+    <Project Path="examples/DecideHeyGenBasic/DecideHeyGenBasic.csproj" />
+    <Project Path="examples/DecideHeyGenVideo/DecideHeyGenVideo.csproj" />
     <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
     <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
     <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
