@@ -59,8 +59,9 @@ public sealed class AzureOpenAIOptions
     public WebSocketFactory? WebSocket { get; set; }
 
     /// <summary>
-    /// The WebSocket used for MAI streaming transcription when <see cref="WebSocket"/> is not set. Defaults to
-    /// <c>ClientWebSocket</c>. Maps to <c>globalThis.WebSocket</c>, which upstream tests stub.
+    /// The WebSocket used for MAI streaming transcription when <see cref="WebSocket"/> is not set, and for OpenAI
+    /// realtime streaming transcription. Defaults to <c>ClientWebSocket</c>. Maps to <c>globalThis.WebSocket</c>, which
+    /// upstream tests stub.
     /// </summary>
     internal WebSocketFactory? NativeWebSocket { get; set; }
 
@@ -303,7 +304,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return new AzureTranscriptionModel(
             deploymentId,
             _azure,
-            new OpenAI.OpenAITranscriptionModel(this, deploymentId),
+            new OpenAI.OpenAITranscriptionModel(this, deploymentId, webSocket: _azure.NativeWebSocket),
             new AzureSpeechTranscriptionModel(
                 deploymentId,
                 Http,

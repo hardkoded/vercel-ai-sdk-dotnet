@@ -183,8 +183,7 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
                 SpeechOnlyWarnings(options.SpeechOptions).Concat(OpenAITranscriptionOnlyWarnings(options.OpenAIOptions)).ToList()).ConfigureAwait(false);
         }
 
-        // The OpenAI transcription model of this port has no streaming transcription yet, so the call is not supported.
-        return null;
+        return await _openai.DoStreamAsync(call, cancellationToken).ConfigureAwait(false);
     }
 
     private static TranscriptionModelResult With(TranscriptionModelResult result, IEnumerable<OperationWarning> warnings)

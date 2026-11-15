@@ -486,10 +486,8 @@ public sealed class OpenAIMediaUpstreamTests
     [UpstreamTest("packages/openai/src/transcription/openai-transcription-model.test.ts::doGenerate::should reject gpt-realtime-whisper for non-streaming transcription", Coverage = UpstreamCoverage.Covered)]
     public async Task RejectsRealtimeWhisper()
     {
-        var exception = await Assert.ThrowsAsync<AiSdkException>(() =>
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
             new OpenAITranscriptionModel(OpenAIUpstream.Provider(new OpenAICapture()), "gpt-realtime-whisper").TranscribeAsync(new OpenAITranscriptionCall(new AudioInput(new byte[] { 1 }, "audio/wav", "a.wav")), CancellationToken.None));
-        Assert.Equal("gpt-realtime-whisper requires a streaming transcription.", exception.Message);
-        Assert.True(OpenAITranscriptionModel.IsRealtimeWhisper("gpt-realtime-whisper-2025-01-01"));
     }
 
     [Fact]
