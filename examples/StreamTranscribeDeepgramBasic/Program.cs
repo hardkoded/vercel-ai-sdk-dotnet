@@ -16,9 +16,11 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPENAI_API_KEY"))
 }
 
 #region stream-transcribe-deepgram-basic
-var speech = await new OpenAISpeechModel(OpenAIProvider.Create(), "gpt-4o-mini-tts").GenerateAsync(
-    new OpenAISpeechCall("Hello from the AI SDK! Deepgram can transcribe live audio as it arrives.")
+var speech = await GenerateSpeech.GenerateSpeechAsync(
+    new GenerateSpeechRequest
     {
+        Model = new OpenAISpeechModel(OpenAIProvider.Create(), "gpt-4o-mini-tts"),
+        Text = "Hello from the AI SDK! Deepgram can transcribe live audio as it arrives.",
         OutputFormat = "pcm",
     },
     CancellationToken.None);
@@ -28,9 +30,9 @@ const int chunkSize = 4800;
 var audio = new AudioChunkStream();
 var feed = Task.Run(async () =>
 {
-    for (var offset = 0; offset < speech.Audio.Length; offset += chunkSize)
+    for (var offset = 0; offset < speech.Audio.Data.Length; offset += chunkSize)
     {
-        audio.Write(speech.Audio.AsSpan(offset, Math.Min(chunkSize, speech.Audio.Length - offset)).ToArray());
+        audio.Write(speech.Audio.Data.AsSpan(offset, Math.Min(chunkSize, speech.Audio.Data.Length - offset)).ToArray());
         await Task.Delay(100);
     }
 

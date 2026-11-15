@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -115,7 +116,7 @@ public sealed class OpenAISpeechPreparation
 }
 
 /// <summary>OpenAI speech model.</summary>
-public sealed class OpenAISpeechModel : ISpeechModel
+public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
 {
     private static readonly string[] Formats = { "mp3", "opus", "aac", "flac", "wav", "pcm" };
 
@@ -224,6 +225,35 @@ public sealed class OpenAISpeechModel : ISpeechModel
         }
 
         return new OpenAISpeechPreparation(body, warnings);
+    }
+
+    /// <inheritdoc />
+    public async Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+    {
+        if (call is null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        var result = await GenerateAsync(
+            new OpenAISpeechCall(call.Text)
+            {
+                Voice = call.Voice,
+                Speed = call.Speed,
+                Instructions = call.Instructions,
+                OutputFormat = call.OutputFormat,
+                Language = call.Language,
+                ProviderOptions = call.ProviderOptions,
+                Headers = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+            },
+            cancellationToken).ConfigureAwait(false);
+        var warnings = result.Warnings
+            .Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details))
+            .ToList();
+        return new SpeechModelResult(
+            result.Audio,
+            warnings,
+            response: new ProviderResponse(result.Headers, timestamp: result.Timestamp.UtcDateTime, modelId: result.ModelId));
     }
 
     /// <inheritdoc />
