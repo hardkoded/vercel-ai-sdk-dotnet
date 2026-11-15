@@ -63,7 +63,7 @@ internal sealed class AzureMaiImageModel : IImageModel
         var parts = aspectRatio.Split(':');
         var w = ParseNumber(parts[0]);
         var h = parts.Length > 1 ? ParseNumber(parts[1]) : double.NaN;
-        if (!(w > 0 && h > 0))
+        if (!(w > 0 && h > 0) || double.IsInfinity(w) || double.IsInfinity(h))
         {
             return null;
         }
@@ -146,15 +146,19 @@ internal sealed class AzureMaiImageModel : IImageModel
         }
 
         var headers = _provider.CreateHeaders(AzureApi.Mai, options.Headers);
+
+        // When one request fails the siblings are cancelled instead of left running.
+        using var siblings = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var token = siblings.Token;
         var images = options.Files is { Count: > 0 }
-            ? await Task.WhenAll(options.Files.Select(file => FileToBlobAsync(file, cancellationToken))).ConfigureAwait(false)
+            ? await WhenAllAsync(options.Files.Select(file => FileToBlobAsync(file, token)).ToArray(), siblings).ConfigureAwait(false)
             : null;
 
         // The API ignores `n`, so a call reached with n > 1 (e.g. through an `api: 'mai'` override) sends one request per image.
         var requests = Enumerable.Range(0, Math.Max(1, options.Count)).Select(_ => images != null
-            ? SendEditAsync(fields, images, headers, cancellationToken)
-            : SendGenerationAsync(fields, headers, cancellationToken)).ToArray();
-        var responses = await Task.WhenAll(requests).ConfigureAwait(false);
+            ? SendEditAsync(fields, images, headers, token)
+            : SendGenerationAsync(fields, headers, token)).ToArray();
+        var responses = await WhenAllAsync(requests, siblings).ConfigureAwait(false);
 
         var generated = new List<GeneratedImage>();
         var metadata = new JsonArray();
@@ -181,7 +185,7 @@ internal sealed class AzureMaiImageModel : IImageModel
             var responseSize = root.TryGetProperty("size", out var sizeValue) && sizeValue.ValueKind == JsonValueKind.String ? sizeValue.GetString() : null;
             foreach (var item in root.GetProperty("data").EnumerateArray())
             {
-                generated.Add(new GeneratedImage("image/png", Convert.FromBase64String(item.GetProperty("b64_json").GetString() ?? string.Empty), null));
+                generated.Add(new GeneratedImage("image/png", DecodeImage(item, response.Body), null));
                 var entry = new JsonObject();
                 if (created != null)
                 {
@@ -214,6 +218,53 @@ internal sealed class AzureMaiImageModel : IImageModel
             new ImageResponseInfo(timestamp, ModelId, responses.Length > 0 ? responses[0].Headers : null),
             inputTokens == null && outputTokens == null && totalTokens == null ? null : new LanguageModelUsage(inputTokens, outputTokens, totalTokens),
             providerMetadata);
+    }
+
+    private static byte[] DecodeImage(JsonElement item, string body)
+    {
+        if (item.ValueKind == JsonValueKind.Object
+            && item.TryGetProperty("b64_json", out var value)
+            && value.ValueKind == JsonValueKind.String)
+        {
+            try
+            {
+                return Convert.FromBase64String(value.GetString()!);
+            }
+            catch (FormatException)
+            {
+            }
+        }
+
+        throw new InvalidResponseDataException(body, "Invalid MAI image response.");
+    }
+
+    private static async Task<T[]> WhenAllAsync<T>(Task<T>[] tasks, CancellationTokenSource siblings)
+    {
+        try
+        {
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            siblings.Cancel();
+            try
+            {
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // The first failure is rethrown below; the cancelled siblings add nothing.
+            }
+
+            // Rethrow the first real failure rather than a sibling's cancellation.
+            var failed = tasks.FirstOrDefault(task => task.IsFaulted);
+            if (failed != null)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failed.Exception!.InnerException!).Throw();
+            }
+
+            throw;
+        }
     }
 
     private static double ParseNumber(string value)
