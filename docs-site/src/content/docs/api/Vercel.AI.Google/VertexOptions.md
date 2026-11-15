@@ -44,6 +44,25 @@ Creates Vertex options. An empty [BaseUrl](/api/Vercel.AI.Google/GoogleOptions/#
 
 ## Properties
 
+<a id="Vercel_AI_Google_VertexOptions_DownloadFetch_"></a>
+<a id="Vercel_AI_Google_VertexOptions_DownloadFetch"></a>
+
+### DownloadFetch
+
+
+```csharp
+public DownloadFetch? DownloadFetch { get; set; }
+```
+
+
+Transport for untrusted file URLs in tool results, without provider authentication. Null uses the runtime transport.
+Upstream forwards the one `fetch` option. A .NET provider authenticates through its [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) handler,
+so the raw transport is a separate option.
+
+**Value:** [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L220)
+
 <a id="Vercel_AI_Google_VertexOptions_GenerateAuthToken_"></a>
 <a id="Vercel_AI_Google_VertexOptions_GenerateAuthToken"></a>
 
@@ -96,6 +115,23 @@ Vertex location. One DNS label.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L198)
 
+<a id="Vercel_AI_Google_VertexOptions_ToolResultDownloads_"></a>
+<a id="Vercel_AI_Google_VertexOptions_ToolResultDownloads"></a>
+
+### ToolResultDownloads
+
+
+```csharp
+public ToolResultDownloads? ToolResultDownloads { get; set; }
+```
+
+
+Settings for downloading remote files that a tool result returns. Maps to `toolResultDownloads`.
+
+**Value:** [ToolResultDownloads](/api/Vercel.AI.Google/ToolResultDownloads/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L213)
+
 <a id="Vercel_AI_Google_VertexOptions_UpstreamRoutes_"></a>
 <a id="Vercel_AI_Google_VertexOptions_UpstreamRoutes"></a>
 
@@ -131,4 +167,4 @@ Returns a copy. The provider changes the copy, so the options the caller passed 
 
 **Returns:** [VertexOptions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L223)

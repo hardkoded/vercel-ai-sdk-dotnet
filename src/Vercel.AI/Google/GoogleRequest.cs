@@ -55,7 +55,7 @@ public static class GoogleRequest
     private static readonly Regex Gemini25 = new(@"(^|/)gemini-2\.5(?:[.-]|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
 
     /// <summary>Builds the request for a language-model call.</summary>
-    public static GooglePreparedRequest Prepare(string modelId, string provider, LanguageModelCallOptions options, bool streaming)
+    public static GooglePreparedRequest Prepare(string modelId, string provider, LanguageModelCallOptions options, bool streaming, bool supportsGoogleCloudStorageUrls = false)
     {
         options ??= new LanguageModelCallOptions();
         var warnings = new List<GoogleWarning>();
@@ -119,6 +119,7 @@ public static class GoogleRequest
             ModelId = modelId ?? string.Empty,
             IncludeFunctionCallIds = !vertex,
             ProviderOptionNames = names,
+            SupportedFunctionResponseUrls = supportsGoogleCloudStorageUrls && GoogleModelCapability.Get(modelId ?? string.Empty).UsesGemini3Features ? GoogleMessages.GoogleCloudStorageFunctionResponseUrls : null,
         };
         var prompt = GoogleMessages.Convert(options.Prompt, messageOptions);
         warnings.AddRange(messageOptions.Warnings);

@@ -48,6 +48,13 @@ public sealed class GoogleVertexPartnerOptions
 
     /// <summary>Returns a bearer token. Called once per request. The token replaces any Authorization header.</summary>
     public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
+
+    /// <summary>
+    /// Client for image downloads and redirect hops off the provider origin. It carries no credentials and must not follow redirects,
+    /// because each hop is validated before it is requested. Null uses a shared client that does not follow them.
+    /// Upstream sends these downloads through the configured <c>fetch</c>.
+    /// </summary>
+    public HttpClient? DownloadHttpClient { get; set; }
 }
 
 /// <summary>
@@ -283,6 +290,12 @@ public sealed class GoogleVertexMaasProvider
         return Client().LanguageModel(modelId);
     }
 
+    /// <summary>Returns an image model. An image URL on another origin is downloaded without the provider credentials.</summary>
+    public IImageModel ImageModel(string modelId)
+    {
+        return Client().ImageModel(modelId);
+    }
+
     private OpenAICompatibleProvider Client()
     {
         lock (_clientGate)
@@ -291,6 +304,8 @@ public sealed class GoogleVertexMaasProvider
             {
                 BaseUrl = BaseUrl,
                 ProviderName = "vertex.maas",
+                SupportsImages = true,
+                DownloadHttpClient = _options.DownloadHttpClient,
             }, _options, Handler);
         }
     }
