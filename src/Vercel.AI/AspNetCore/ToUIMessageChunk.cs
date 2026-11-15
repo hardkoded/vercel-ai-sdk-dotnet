@@ -25,9 +25,9 @@ public sealed class ToUIMessageChunkOptions
     /// <summary>
     /// Formats stream errors. Also formats invalid tool calls and application-executed tool errors when <see cref="RedactToolErrors"/> is enabled.
     /// Provider-executed tool execution errors bypass this callback so their original error data survives model-message round trips.
-    /// Null writes <c>An error occurred.</c>. The argument is the formatted error message.
+    /// Null writes <c>An error occurred.</c>. The argument is the error. Maps to <c>onError</c>.
     /// </summary>
-    public Func<string, string>? OnError { get; init; }
+    public Func<Exception, string>? OnError { get; init; }
 
     /// <summary>
     /// Replaces the error text of failed tool calls with the result of <see cref="OnError"/>.
@@ -149,10 +149,11 @@ public static partial class UIMessageStreamConverter
                 if (call.ToolCall.Invalid)
                 {
                     // streamText sends the model a tool result for an invalid tool call only when the tool is not provider-executed
-                    var invalidModelText = ErrorMessage.ToErrorString(call.ToolCall.Error!);
+                    var invalidError = call.ToolCall.Error!;
+                    var invalidModelText = ErrorMessage.ToErrorString(invalidError);
                     toolInput["errorText"] = call.ToolCall.ProviderExecuted
-                        ? onError(invalidModelText)
-                        : ToolErrorText(invalidModelText, invalidModelText, redactToolErrors, onError);
+                        ? onError(invalidError)
+                        : ToolErrorText(invalidModelText, invalidError, redactToolErrors, onError);
                 }
 
                 if (call.ToolCall.Title != null)
@@ -198,7 +199,7 @@ public static partial class UIMessageStreamConverter
                     ["toolCallId"] = toolError.Result.ToolCallId,
                     ["errorText"] = providerError
                         ? ProviderErrorText(toolError.Result.OutputJson)
-                        : ToolErrorText(ModelToolErrorText(toolError.Result), toolError.Result.Error?.Message ?? ModelToolErrorText(toolError.Result), redactToolErrors, onError),
+                        : ToolErrorText(ModelToolErrorText(toolError.Result), toolError.Result.Error ?? new JsError(ModelToolErrorText(toolError.Result)), redactToolErrors, onError),
                 };
                 if (providerError)
                 {
@@ -214,7 +215,7 @@ public static partial class UIMessageStreamConverter
 
                 return errorOutput;
             case ErrorPart error:
-                return new JsonObject { ["type"] = "error", ["errorText"] = onError(error.Message) };
+                return new JsonObject { ["type"] = "error", ["errorText"] = onError(error.Error ?? new JsError(error.Message)) };
             case StartStepPart:
                 return new JsonObject { ["type"] = "start-step" };
             case StepFinishPart:
@@ -254,7 +255,7 @@ public static partial class UIMessageStreamConverter
 
     // The error text of a failed tool call is not altered by default. The UI message is the record that ConvertToModelMessages sends back
     // to the model on the next request, so a replaced text changes the history after the model has received the original.
-    private static string ToolErrorText(string modelErrorText, string onErrorInput, bool redactToolErrors, Func<string, string> onError)
+    private static string ToolErrorText(string modelErrorText, Exception onErrorInput, bool redactToolErrors, Func<Exception, string> onError)
         => redactToolErrors ? onError(onErrorInput) : modelErrorText;
 
     private static void AddToolMetadata(JsonObject payload, IReadOnlyDictionary<string, JsonElement>? metadata)

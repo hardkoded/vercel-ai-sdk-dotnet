@@ -1458,6 +1458,9 @@ public sealed class ErrorPart : TextStreamPart
 
     /// <summary>Error message.</summary>
     public string Message { get; }
+
+    /// <summary>The error that caused this part, when there is one. Maps to the error part's <c>error</c>.</summary>
+    public Exception? Error { get; init; }
 }
 
 /// <summary>The call was aborted. It is the last part of the stream.</summary>

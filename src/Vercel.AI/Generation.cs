@@ -371,7 +371,7 @@ internal static class Generation
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
-                    buffer.Add(new ErrorPart(exception.Message));
+                    buffer.Add(new ErrorPart(exception.Message) { Error = exception });
                     if (options.OnError != null)
                     {
                         await options.OnError(exception, cancellationToken).ConfigureAwait(false);
@@ -578,7 +578,7 @@ internal static class Generation
 
                                 break;
                             case ErrorStreamPart error:
-                                buffer.Add(new ErrorPart(error.Message));
+                                buffer.Add(new ErrorPart(error.Message) { Error = error.Exception });
                                 if (options.OnError != null)
                                 {
                                     await options.OnError(error.Exception ?? new AiSdkException(error.Message), cancellationToken).ConfigureAwait(false);

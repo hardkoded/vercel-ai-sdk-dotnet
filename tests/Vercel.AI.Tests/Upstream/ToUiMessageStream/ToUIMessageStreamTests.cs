@@ -13,16 +13,27 @@ namespace Vercel.AI.Tests.Upstream.ToUiMessageStream;
 public sealed class ToUIMessageStreamTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream::";
-    private const string PartialNote = "The onError argument is the formatted error message, not the error object.";
 
     [Fact]
-    [UpstreamTest(Prefix + "routes an invalid tool call through onError once", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
+    [UpstreamTest(Prefix + "routes error parts through onError", Coverage = UpstreamCoverage.Covered)]
+    public async Task Routes_error_parts_through_onError()
+    {
+        var chunks = await Convert(
+            [new ErrorPart("boom") { Error = new JsError("boom") }],
+            new ToUIMessageChunkOptions { OnError = error => $"handled: {error.Message}" });
+
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("""[{"type":"error","errorText":"handled: boom"}]"""), chunks), chunks.ToJsonString());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "routes an invalid tool call through onError once", Coverage = UpstreamCoverage.Covered)]
     public async Task Routes_an_invalid_tool_call_through_onError_once()
     {
-        var errors = new List<string>();
+        var invalidToolCallError = new NoSuchToolError("test-tool", message: "invalid tool input");
+        var errors = new List<Exception>();
         var chunks = await Convert(
             [
-                new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"invalid\"}") { Invalid = true, Dynamic = true, Error = new NoSuchToolError("test-tool", message: "invalid tool input") }),
+                new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"invalid\"}") { Invalid = true, Dynamic = true, Error = invalidToolCallError }),
                 new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, ModelOutput = "Error: invalid tool input" }),
             ],
             new ToUIMessageChunkOptions
@@ -39,18 +50,19 @@ public sealed class ToUIMessageStreamTests
                 JsonNode.Parse("""[{"type":"tool-input-error","toolCallId":"call-1","toolName":"test-tool","input":{"value":"invalid"},"dynamic":true,"errorText":"formatted tool error"}]"""),
                 chunks),
             chunks.ToJsonString());
-        Assert.Single(errors);
+        Assert.Same(invalidToolCallError, Assert.Single(errors));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards tool errors for valid tool calls", Coverage = UpstreamCoverage.Partial, Note = PartialNote)]
+    [UpstreamTest(Prefix + "forwards tool errors for valid tool calls", Coverage = UpstreamCoverage.Covered)]
     public async Task Forwards_tool_errors_for_valid_tool_calls()
     {
-        var errors = new List<string>();
+        var executionError = new JsError("execution failed");
+        var errors = new List<Exception>();
         var chunks = await Convert(
             [
                 new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"valid\"}") { Dynamic = true }),
-                new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, Error = new JsError("execution failed"), ModelOutput = "Error: execution failed" }),
+                new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, Error = executionError, ModelOutput = "Error: execution failed" }),
             ],
             new ToUIMessageChunkOptions
             {
@@ -71,7 +83,7 @@ public sealed class ToUIMessageStreamTests
                     """),
                 chunks),
             chunks.ToJsonString());
-        Assert.Single(errors);
+        Assert.Same(executionError, Assert.Single(errors));
     }
 
     internal static async Task<JsonArray> Convert(IReadOnlyList<TextStreamPart> parts, ToUIMessageChunkOptions? options = null)
