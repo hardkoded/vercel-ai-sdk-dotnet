@@ -22,6 +22,9 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
     /// <summary>Settings for downloading JSON Lines batch results.</summary>
     public BatchResultDownloads? BatchResultDownloads { get; set; }
 
+    /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
     /// <summary>Creates options aimed at <c>https://api.openai.com/v1</c> unless <c>OPENAI_BASE_URL</c> is set.</summary>
     public OpenAIOptions()
     {
@@ -201,6 +204,8 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     {
         return new OpenAIBatchApi(this);
     }
+
+    internal WebSocketFactory? WebSocket => _openAI.WebSocket;
 
     internal int? MaxBatchLineBytes => _openAI.BatchResultDownloads?.MaxLineBytes;
 

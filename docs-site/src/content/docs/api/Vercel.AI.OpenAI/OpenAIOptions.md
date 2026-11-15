@@ -40,7 +40,7 @@ public OpenAIOptions()
 
 Creates options aimed at `https://api.openai.com/v1` unless `OPENAI_BASE_URL` is set.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L29)
 
 ## Properties
 
@@ -60,7 +60,7 @@ A blank value is rejected when the provider is created.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L41)
 
 <a id="Vercel_AI_OpenAI_OpenAIOptions_BatchResultDownloads_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIOptions_BatchResultDownloads"></a>
@@ -94,7 +94,7 @@ Value of the `OpenAI-Organization` header.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L64)
 
 <a id="Vercel_AI_OpenAI_OpenAIOptions_Project_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIOptions_Project"></a>
@@ -111,7 +111,7 @@ Value of the `OpenAI-Project` header.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L67)
 
 <a id="Vercel_AI_OpenAI_OpenAIOptions_UseResponsesApi_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIOptions_UseResponsesApi"></a>
@@ -128,4 +128,21 @@ When true, [LanguageModel(string)](/api/Vercel.AI.OpenAI/OpenAIProvider/#Vercel_
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L61)
+
+<a id="Vercel_AI_OpenAI_OpenAIOptions_WebSocket_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIOptions_WebSocket"></a>
+
+### WebSocket
+
+
+```csharp
+public WebSocketFactory? WebSocket { get; set; }
+```
+
+
+Custom WebSocket implementation for streaming transcription. Defaults to `ClientWebSocket`. Maps to `webSocket`.
+
+**Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L26)
