@@ -18,7 +18,7 @@ public sealed class GenerateVideoTests
 
     [Fact]
     [UpstreamTest(Video + "::returns upload confirmations without downloading or synthesizing files", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
-    public async Task Partial_returns_upload_confirmations_without_downloading_or_synthesizing_files()
+    public async Task Upload_only_result_reports_count_and_metadata()
     {
         var downloads = 0;
         var model = new VideoFake
@@ -54,7 +54,7 @@ public sealed class GenerateVideoTests
 
     [Fact]
     [UpstreamTest(Video + "::counts uploads alongside downloadable videos across calls", Coverage = UpstreamCoverage.Partial, Commit = "2e4414481225ed70af7c39326a5f0ef5052a90ca")]
-    public async Task Partial_counts_uploads_alongside_downloadable_videos_across_calls()
+    public async Task Mixed_result_reports_upload_count_and_returns_video()
     {
         var call = 0;
         var model = new VideoFake
