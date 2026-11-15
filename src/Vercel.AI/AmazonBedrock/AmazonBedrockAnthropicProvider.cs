@@ -131,18 +131,6 @@ public static class AmazonBedrockAnthropicRequests
             result["tool_choice"] = transformed;
         }
 
-        // Bedrock names the binding field `mismatch_behavior`; the Messages API names it `prefix_mismatch_behavior`.
-        if (result["thinking"] is JsonObject thinking && thinking["block_binding"] is JsonObject binding)
-        {
-            var renamed = new JsonObject();
-            if (binding["prefix_mismatch_behavior"] is JsonNode mismatch)
-            {
-                renamed["mismatch_behavior"] = mismatch.DeepClone();
-            }
-
-            thinking["block_binding"] = renamed;
-        }
-
         if (result["tools"] is JsonArray tools)
         {
             for (var index = 0; index < tools.Count; index++)
