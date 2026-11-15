@@ -25,14 +25,17 @@ public sealed class GatewayToolError
 
     /// <summary>HTTP status code, when the error came from an HTTP response.</summary>
     [JsonPropertyName("statusCode")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? StatusCode { get; set; }
 
     /// <summary>Retry-After value of a rate limit response.</summary>
     [JsonPropertyName("retryAfter")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? RetryAfter { get; set; }
 
     /// <summary>HTTP status text.</summary>
     [JsonPropertyName("statusText")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? StatusText { get; set; }
 
     /// <summary>Fields the schema does not declare.</summary>

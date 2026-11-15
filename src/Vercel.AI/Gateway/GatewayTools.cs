@@ -1172,7 +1172,10 @@ internal sealed class TakoSearchOutputConverter : JsonConverter<TakoSearchOutput
             throw new JsonException("The Tako search output must be an object.");
         }
 
-        var isError = root.TryGetProperty("error", out _) && root.TryGetProperty("message", out _);
+        // Upstream tries the response branch first, so a response (it has request_id) keeps `error` and `message` as extra fields.
+        var isError = !root.TryGetProperty("request_id", out _)
+            && root.TryGetProperty("error", out var code) && code.ValueKind == JsonValueKind.String
+            && root.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String;
         var raw = root.GetRawText();
         return isError
             ? new TakoSearchOutput { Error = JsonSerializer.Deserialize<GatewayToolError>(raw, options) }
