@@ -27,7 +27,9 @@ internal static class OpenAIResponsesSupport
             new Dictionary<string, string>(),
             () => "id-" + next++,
             OpenAIParallelToolCall.FunctionToolNames(tools),
-            jsonResponse: jsonResponse);
+            toolNameMapping: OpenAIResponsesLanguageModel.CreateToolNameMapping(tools),
+            jsonResponse: jsonResponse,
+            webSearchToolName: OpenAIResponsesLanguageModel.WebSearchToolName(tools));
     }
 
     internal static JsonNode FixtureBody(string name) => JsonNode.Parse(Fixture(name))!;

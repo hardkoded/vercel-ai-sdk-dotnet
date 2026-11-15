@@ -136,8 +136,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ["openai.programmatic_tool_calling"] = "programmatic_tool_calling",
     };
 
-    private static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools) =>
+    internal static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools) =>
         ToolNames.CreateToolNameMapping(MappedTools(tools), ProviderToolNames);
+
+    /// <summary>The client name of the web search tool, if the request defines one.</summary>
+    internal static string? WebSearchToolName(IReadOnlyList<LanguageModelTool>? tools) =>
+        tools?.FirstOrDefault(tool => tool.ProviderToolId == "openai.web_search" || tool.ProviderToolId == "openai.web_search_preview")?.Name;
 
     private static IReadOnlyList<MappedTool>? MappedTools(IReadOnlyList<LanguageModelTool>? tools)
     {
@@ -676,7 +680,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             CreateToolNameMapping(options.Tools),
             options.JsonResponse || options.JsonSchema != null,
             _providerOptionsName,
-            collectLogprobs);
+            collectLogprobs,
+            WebSearchToolName(options.Tools));
     }
 
     /// <inheritdoc />
@@ -703,7 +708,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             OpenAIParallelToolCall.FunctionToolNames(options.Tools),
             CreateToolNameMapping(options.Tools),
             prepared.Body["store"]?.GetValue<bool>() == true,
-            _providerOptionsName);
+            _providerOptionsName,
+            WebSearchToolName(options.Tools));
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonDocument? chunkDocument = null;
@@ -788,7 +794,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         ToolNameMapping? toolNameMapping = null,
         bool jsonResponse = false,
         string providerOptionsName = "openai",
-        bool collectLogprobs = false)
+        bool collectLogprobs = false,
+        string? webSearchToolName = null)
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -918,7 +925,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             else if (type == "web_search_call")
             {
                 var id = OpenAIJson.String(item, "id") ?? string.Empty;
-                content.Add(new GeneratedToolResult(id, "web_search", OpenAIResponsesOutput.WebSearchResult(item)));
+                var webSearchName = toolNameMapping?.ToCustomToolName(webSearchToolName ?? "web_search") ?? webSearchToolName ?? "web_search";
+                content.Add(new GeneratedToolCall(id, webSearchName, "{}") { ProviderExecuted = true });
+                content.Add(new GeneratedToolResult(id, webSearchName, OpenAIResponsesOutput.WebSearchResult(item)));
                 foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
                 {
                     content.Add(new GeneratedSource(generateId(), url, null));

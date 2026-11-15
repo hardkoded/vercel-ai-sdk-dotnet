@@ -14,7 +14,10 @@ public sealed class DoGenerateWebSearchSourcesSchemaResilienceTests
 {
     private const string Id = "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > web search sources schema resilience::";
 
-    private const string Note = "The port emits no tool-call part for a provider-executed web_search_call and reports the tool name web_search, so those parts are not asserted.";
+    private static readonly IReadOnlyList<LanguageModelTool> WebSearchTools =
+    [
+        LanguageModelTool.ProviderDefined("openai.web_search", "webSearch", OpenAIUpstream.Json("{}")),
+    ];
 
     private static LanguageModelGenerateResult Generate(string id, string webSearchCall, string text)
     {
@@ -49,11 +52,11 @@ public sealed class DoGenerateWebSearchSourcesSchemaResilienceTests
               "metadata": {}
             }
             """)!;
-        return OpenAIResponsesSupport.Generate(body);
+        return OpenAIResponsesSupport.Generate(body, WebSearchTools);
     }
 
     [Fact]
-    [UpstreamTest(Id + "should accept api-type sources without throwing", Coverage = UpstreamCoverage.Partial, Note = Note)]
+    [UpstreamTest(Id + "should accept api-type sources without throwing", Coverage = UpstreamCoverage.Covered)]
     public void Should_accept_api_type_sources_without_throwing()
     {
         var result = Generate(
@@ -61,22 +64,28 @@ public sealed class DoGenerateWebSearchSourcesSchemaResilienceTests
             """{"type":"web_search_call","id":"ws_api_sources","status":"completed","action":{"type":"search","query":"current price of BTC","sources":[{"type":"url","url":"https://example.com?a=1&utm_source=openai"},{"type":"api","name":"oai-finance"}]}}""",
             "BTC is trading at ...");
 
-        Assert.Equal(3, result.Content.Count);
-        var toolResult = Assert.IsType<GeneratedToolResult>(result.Content[0]);
+        Assert.Equal(4, result.Content.Count);
+        var toolCall = Assert.IsType<GeneratedToolCall>(result.Content[0]);
+        Assert.Equal("ws_api_sources", toolCall.ToolCallId);
+        Assert.Equal("webSearch", toolCall.ToolName);
+        Assert.Equal("{}", toolCall.ArgumentsJson);
+        Assert.True(toolCall.ProviderExecuted);
+        var toolResult = Assert.IsType<GeneratedToolResult>(result.Content[1]);
         Assert.Equal("ws_api_sources", toolResult.ToolCallId);
+        Assert.Equal("webSearch", toolResult.ToolName);
         Assert.True(JsonNode.DeepEquals(
             JsonNode.Parse("""{"action":{"query":"current price of BTC","type":"search"},"sources":[{"type":"url","url":"https://example.com?a=1&utm_source=openai"},{"name":"oai-finance","type":"api"}]}"""),
             JsonNode.Parse(toolResult.ResultJson)));
-        var source = Assert.IsType<GeneratedSource>(result.Content[1]);
+        var source = Assert.IsType<GeneratedSource>(result.Content[2]);
         Assert.Equal("id-0", source.Id);
         Assert.Equal("https://example.com?a=1&utm_source=openai", source.Url);
-        var text = Assert.IsType<OpenAIText>(result.Content[2]);
+        var text = Assert.IsType<OpenAIText>(result.Content[3]);
         Assert.Equal("BTC is trading at ...", text.Text);
         Assert.Equal("msg_done", text.ProviderMetadata.GetProperty("openai").GetProperty("itemId").GetString());
     }
 
     [Fact]
-    [UpstreamTest(Id + "should accept web_search_call without action", Coverage = UpstreamCoverage.Partial, Note = Note)]
+    [UpstreamTest(Id + "should accept web_search_call without action", Coverage = UpstreamCoverage.Covered)]
     public void Should_accept_web_search_call_without_action()
     {
         var result = Generate(
@@ -85,11 +94,12 @@ public sealed class DoGenerateWebSearchSourcesSchemaResilienceTests
             "No action payload was returned.");
 
         var toolResult = Assert.IsType<GeneratedToolResult>(Assert.Single(result.Content.OfType<GeneratedToolResult>()));
+        Assert.Equal("webSearch", toolResult.ToolName);
         Assert.Equal("{}", JsonNode.Parse(toolResult.ResultJson)!.ToJsonString());
     }
 
     [Fact]
-    [UpstreamTest(Id + "should forward web_search_call.action.queries to tool-result", Coverage = UpstreamCoverage.Partial, Note = Note)]
+    [UpstreamTest(Id + "should forward web_search_call.action.queries to tool-result", Coverage = UpstreamCoverage.Covered)]
     public void Should_forward_web_search_call_action_queries_to_tool_result()
     {
         var result = Generate(

@@ -47,6 +47,7 @@ internal sealed class OpenAIResponsesStream
 
     private readonly ToolNameMapping? _toolNameMapping;
     private readonly bool _store;
+    private readonly string? _webSearchToolName;
     private readonly Dictionary<string, ActiveReasoning> _activeReasoning = new(StringComparer.Ordinal);
 
     // Compatible providers can rotate item ids between events. The output index stays the same for the life of an item.
@@ -57,9 +58,11 @@ internal sealed class OpenAIResponsesStream
         IReadOnlyCollection<string>? functionToolNames = null,
         ToolNameMapping? toolNameMapping = null,
         bool store = false,
-        string providerOptionsName = "openai")
+        string providerOptionsName = "openai",
+        string? webSearchToolName = null)
     {
         _store = store;
+        _webSearchToolName = webSearchToolName;
         _providerOptionsName = providerOptionsName;
         _toolNameMapping = toolNameMapping;
         _functionToolNames = functionToolNames ?? Array.Empty<string>();
@@ -86,7 +89,15 @@ internal sealed class OpenAIResponsesStream
 
                 break;
             case "response.output_item.added":
-                if (node["item"] is JsonObject functionCall
+                if (node["item"] is JsonObject webSearchAdded
+                    && webSearchAdded["type"]?.GetValue<string>() == "web_search_call")
+                {
+                    var webSearchId = webSearchAdded["id"]?.GetValue<string>() ?? string.Empty;
+                    parts.Add(new ToolInputStartStreamPart(webSearchId, WebSearchName(), providerExecuted: true));
+                    parts.Add(new ToolInputEndStreamPart(webSearchId));
+                    parts.Add(new ToolCallStreamPart(webSearchId, WebSearchName(), "{}") { ProviderExecuted = true });
+                }
+                else if (node["item"] is JsonObject functionCall
                     && functionCall["type"]?.GetValue<string>() == "function_call"
                     && node["output_index"] is JsonValue addedIndex
                     && addedIndex.TryGetValue<int>(out var functionCallIndex))
@@ -699,7 +710,7 @@ internal sealed class OpenAIResponsesStream
         {
             parts.Add(new ToolResultStreamPart(
                 OpenAIJson.String(item, "id") ?? string.Empty,
-                "web_search",
+                WebSearchName(),
                 JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.WebSearchResult(item))));
             foreach (var url in OpenAIResponsesOutput.WebSearchUrls(item))
             {
@@ -723,6 +734,9 @@ internal sealed class OpenAIResponsesStream
             }
         }
     }
+
+    private string WebSearchName() =>
+        _toolNameMapping?.ToCustomToolName(_webSearchToolName ?? "web_search") ?? _webSearchToolName ?? "web_search";
 
     private static LanguageModelStreamPart ToSourcePart(GeneratedContent source) => source switch
     {
