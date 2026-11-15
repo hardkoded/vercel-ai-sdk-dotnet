@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Answers questions about a video with a HeyGen decision model.</Description>
+  </PropertyGroup>
+</Project>

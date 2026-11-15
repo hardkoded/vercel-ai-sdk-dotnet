@@ -216,29 +216,9 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         {
             return await ProviderExchange.SendAsync(_provider._httpClient, method, uri, content, ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers), cancellationToken).ConfigureAwait(false);
         }
-        catch (ApiException exception) when (ErrorMessage(exception.ResponseBody) is { } message)
+        catch (ApiException exception) when (HeyGenError.ErrorMessage(exception.ResponseBody) is { } message)
         {
             throw ProviderHttp.MapStatus(exception.StatusCode, message, exception.ResponseBody);
-        }
-    }
-
-    private static string? ErrorMessage(string? body)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(body ?? string.Empty);
-            if (Object(document.RootElement, "error") is not { } error || String(error, "message") is not { } message)
-            {
-                return null;
-            }
-
-            return message
-                + (String(error, "code") is { } code ? " (" + code + ")" : string.Empty)
-                + (String(error, "param") is { } param ? " [" + param + "]" : string.Empty);
-        }
-        catch (JsonException)
-        {
-            return null;
         }
     }
 

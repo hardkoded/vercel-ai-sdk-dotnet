@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Answers boolean, choice, and score questions with a HeyGen decision model.</Description>
+  </PropertyGroup>
+</Project>
