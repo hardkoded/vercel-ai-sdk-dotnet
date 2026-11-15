@@ -72,7 +72,8 @@ public string? BaseUrl { get; set; }
 ```
 
 
-Resource host, for example `https://my-resource.openai.azure.com`.
+Base URL prefix, for example `https://my-resource.openai.azure.com/openai`. Defaults to
+`https://{resourceName}.openai.azure.com/openai`. A URL that is not an Azure host is a custom gateway and is used as is.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 

@@ -14,7 +14,10 @@ namespace Vercel.AI.Azure;
 /// <summary>Azure OpenAI settings.</summary>
 public sealed class AzureOpenAIOptions
 {
-    /// <summary>Resource host, for example <c>https://my-resource.openai.azure.com</c>.</summary>
+    /// <summary>
+    /// Base URL prefix, for example <c>https://my-resource.openai.azure.com/openai</c>. Defaults to
+    /// <c>https://{resourceName}.openai.azure.com/openai</c>. A URL that is not an Azure host is a custom gateway and is used as is.
+    /// </summary>
     public string? BaseUrl { get; set; }
 
     /// <summary>
@@ -452,7 +455,32 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                 nameof(options.ResourceName));
         }
 
-        return "https://" + resource + ".openai.azure.com";
+        return "https://" + resource + ".openai.azure.com/openai";
+    }
+
+    /// <summary>
+    /// Classifies a base URL. A missing URL is Azure OpenAI. Maps to <c>getAzureOpenAIBaseURLInfo</c>.
+    /// </summary>
+    internal static AzureOpenAIBaseUrlInfo GetAzureOpenAIBaseURLInfo(string? baseUrl)
+    {
+        if (baseUrl is null)
+        {
+            return new AzureOpenAIBaseUrlInfo(true, false, false);
+        }
+
+        var url = new Uri(baseUrl, UriKind.Absolute);
+        var hostname = url.Host;
+        var isAzureOpenAI =
+            hostname.EndsWith(".openai.azure.com", StringComparison.Ordinal)
+            || hostname.EndsWith(".services.ai.azure.com", StringComparison.Ordinal)
+            || hostname.EndsWith(".cognitiveservices.azure.com", StringComparison.Ordinal);
+        var pathname = url.AbsolutePath.TrimEnd('/');
+
+        return new AzureOpenAIBaseUrlInfo(
+            isAzureOpenAI,
+            hostname.EndsWith(".services.ai.azure.com", StringComparison.Ordinal)
+                && pathname.StartsWith("/api/projects/", StringComparison.Ordinal),
+            isAzureOpenAI && pathname.EndsWith("/openai/v1", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsValidHostnamePart(string value)
@@ -461,6 +489,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return match.Success && match.Value == value;
     }
 }
+
+/// <summary>The result of <c>getAzureOpenAIBaseURLInfo</c>.</summary>
+internal readonly record struct AzureOpenAIBaseUrlInfo(bool IsAzureOpenAI, bool IsFoundryProject, bool IsVersioned);
 
 /// <summary>The Azure API a request goes to.</summary>
 internal enum AzureApi

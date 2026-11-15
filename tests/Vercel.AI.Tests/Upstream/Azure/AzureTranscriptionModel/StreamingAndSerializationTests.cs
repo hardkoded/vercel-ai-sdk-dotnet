@@ -54,7 +54,7 @@ public sealed class StreamingAndSerializationTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "restores request-time routing after a workflow serialization round trip", Coverage = UpstreamCoverage.Partial, Note = "The OpenAI route of a custom base URL is https://proxy.example/openai/v1/audio/transcriptions?api-version=v1 in this port. Upstream sends a custom gateway URL to /audio/transcriptions without the Azure path.", Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d")]
+    [UpstreamTest(Prefix + "restores request-time routing after a workflow serialization round trip", Coverage = UpstreamCoverage.Covered, Commit = "6400cf8b881c1167e97d09be7f1bc74c97781d9d")]
     public async Task Restores_request_time_routing_after_a_workflow_serialization_round_trip()
     {
         var harness = Setup(options =>
@@ -71,6 +71,6 @@ public sealed class StreamingAndSerializationTests
         await restored.DoGenerateAsync(Call(), CancellationToken.None);
         Assert.Equal("https://speech.example/speechtotext/transcriptions:transcribe?api-version=2025-10-15", harness.Request.Url);
         await restored.DoGenerateAsync(Call("{\"azure\":{\"api\":\"openai\"}}"), CancellationToken.None);
-        Assert.Equal("https://proxy.example/openai/v1/audio/transcriptions?api-version=v1", harness.Request.Url);
+        Assert.Equal("https://proxy.example/audio/transcriptions", harness.Request.Url);
     }
 }
