@@ -6,7 +6,6 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.HeyGen;
-using HeyGenProviderType = Vercel.AI.HeyGen.HeyGenProvider;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
@@ -14,6 +13,7 @@ using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.HeyGen.HeyGenDecisionModel.HeyGenDecisionModelSupport;
+using HeyGenProviderType = Vercel.AI.HeyGen.HeyGenProvider;
 
 namespace Vercel.AI.Tests.Upstream.HeyGen.HeyGenDecisionModel;
 
