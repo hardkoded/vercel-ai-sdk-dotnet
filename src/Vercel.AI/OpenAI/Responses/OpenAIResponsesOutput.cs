@@ -98,6 +98,32 @@ internal static class OpenAIResponsesOutput
     public static JsonElement ItemMetadata(JsonElement item, string providerName = "openai") =>
         OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") }, providerName);
 
+    /// <summary>The tool name of an <c>mcp_call</c> item: <c>mcp.</c> and the name of the MCP tool.</summary>
+    public static string McpToolName(JsonElement item) => "mcp." + OpenAIJson.String(item, "name");
+
+    /// <summary>The result an <c>mcp_call</c> reports, in the shape of upstream's <c>mcpOutputSchema</c> call result.</summary>
+    public static string McpCallResult(JsonElement item)
+    {
+        var result = new JsonObject
+        {
+            ["type"] = "call",
+            ["serverLabel"] = OpenAIJson.String(item, "server_label"),
+            ["name"] = OpenAIJson.String(item, "name"),
+            ["arguments"] = OpenAIJson.String(item, "arguments"),
+        };
+        if (item.TryGetProperty("output", out var output) && output.ValueKind != JsonValueKind.Null)
+        {
+            result["output"] = JsonNode.Parse(output.GetRawText());
+        }
+
+        if (item.TryGetProperty("error", out var error) && error.ValueKind != JsonValueKind.Null)
+        {
+            result["error"] = JsonNode.Parse(error.GetRawText());
+        }
+
+        return result.ToJsonString();
+    }
+
     /// <summary>Provider metadata for a text block.</summary>
     public static JsonElement TextMetadata(string? itemId, IReadOnlyList<JsonElement> annotations, string? phase = null, string providerName = "openai")
     {

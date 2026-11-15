@@ -677,6 +677,24 @@ internal sealed class OpenAIResponsesStream
                 ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName),
             });
         }
+        else if (itemType == "mcp_call")
+        {
+            var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
+            var mcpToolCallId = OpenAIJson.String(item, "id") ?? string.Empty;
+            parts.Add(new ToolCallStreamPart(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
+            {
+                ProviderExecuted = true,
+                Dynamic = true,
+            });
+            parts.Add(new ToolResultStreamPart(mcpToolCallId, mcpToolName, JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.McpCallResult(item)))
+            {
+                ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, _providerOptionsName),
+            });
+        }
+        else if (itemType == "mcp_list_tools")
+        {
+            // Skip listTools: it is not exposed and not sent back.
+        }
         else if (itemType == "web_search_call")
         {
             parts.Add(new ToolResultStreamPart(

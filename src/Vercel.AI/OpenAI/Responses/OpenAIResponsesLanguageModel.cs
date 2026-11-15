@@ -884,6 +884,24 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     }
                 }
             }
+            else if (type == "mcp_call")
+            {
+                var mcpToolName = OpenAIResponsesOutput.McpToolName(item);
+                var mcpToolCallId = OpenAIJson.String(item, "id") ?? string.Empty;
+                content.Add(new GeneratedToolCall(mcpToolCallId, mcpToolName, OpenAIJson.String(item, "arguments") ?? "{}")
+                {
+                    ProviderExecuted = true,
+                    Dynamic = true,
+                });
+                content.Add(new GeneratedToolResult(mcpToolCallId, mcpToolName, OpenAIResponsesOutput.McpCallResult(item))
+                {
+                    ProviderMetadata = OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName),
+                });
+            }
+            else if (type == "mcp_list_tools")
+            {
+                // Skip listTools: it is not exposed and not sent back.
+            }
             else if (type == "web_search_call")
             {
                 var id = OpenAIJson.String(item, "id") ?? string.Empty;
@@ -965,10 +983,9 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     reasoningValues["itemId"] = reasoningItemId;
                 }
 
-                if (item.TryGetProperty("encrypted_content", out var encryptedElement) && encryptedElement.ValueKind == JsonValueKind.String)
-                {
-                    reasoningValues["reasoningEncryptedContent"] = encryptedElement.GetString();
-                }
+                reasoningValues["reasoningEncryptedContent"] = item.TryGetProperty("encrypted_content", out var encryptedElement) && encryptedElement.ValueKind == JsonValueKind.String
+                    ? encryptedElement.GetString()
+                    : null;
 
                 JsonElement? reasoningMetadata = reasoningValues.Count > 0 ? OpenAIJson.ProviderMetadata(reasoningValues, providerOptionsName) : null;
                 if (summary.GetArrayLength() == 0)
