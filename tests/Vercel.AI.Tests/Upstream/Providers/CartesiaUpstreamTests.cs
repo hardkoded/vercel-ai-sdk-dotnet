@@ -144,7 +144,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should send volume in generation_config", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should send volume in generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
     public async Task Speech_sends_volume_in_the_generation_config()
     {
         var (model, handler) = SpeechModel();
@@ -153,7 +153,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should send emotion in generation_config", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should send emotion in generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
     public async Task Speech_sends_emotion_in_the_generation_config()
     {
         var (model, handler) = SpeechModel();
@@ -162,7 +162,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should combine speed, volume and emotion in one generation_config", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should combine speed, volume and emotion in one generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
     public async Task Speech_combines_speed_volume_and_emotion()
     {
         var (model, handler) = SpeechModel();
@@ -171,7 +171,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should keep volume when an out-of-range generic speed is ignored", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should keep volume when an out-of-range generic speed is ignored", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
     public async Task Speech_keeps_volume_when_an_out_of_range_speed_is_ignored()
     {
         var (model, handler) = SpeechModel();
@@ -186,7 +186,7 @@ public sealed class CartesiaUpstreamTests
     [InlineData("an unknown emotion", "{\"emotion\":\"banana\"}")]
     [InlineData("a null volume", "{\"volume\":null}")]
     [InlineData("a null emotion", "{\"emotion\":null}")]
-    [UpstreamTest(Speech + "should reject %s before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should reject %s before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
     public async Task Speech_rejects_invalid_volume_or_emotion_before_sending(string description, string options)
     {
         Assert.NotEmpty(description);
@@ -196,7 +196,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should pass pronunciationDictionaryId as pronunciation_dict_id", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should pass pronunciationDictionaryId as pronunciation_dict_id", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
     public async Task Speech_sends_pronunciation_dictionary_id()
     {
         var (model, handler) = SpeechModel();
@@ -205,7 +205,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should reject a null pronunciationDictionaryId before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should reject a null pronunciationDictionaryId before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
     public async Task Speech_rejects_a_null_pronunciation_dictionary_id()
     {
         var (model, handler) = SpeechModel();
@@ -214,7 +214,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should not send pronunciation_dict_id by default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should not send pronunciation_dict_id by default", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
     public async Task Speech_omits_pronunciation_dict_id_by_default()
     {
         var (model, handler) = SpeechModel();
@@ -225,7 +225,7 @@ public sealed class CartesiaUpstreamTests
     [Theory]
     [InlineData("locale")]
     [InlineData("normalization")]
-    [UpstreamTest(Speech + "rejects a null %s before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "rejects a null %s before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_rejects_a_null_locale_or_normalization(string option)
     {
         var (model, handler) = SpeechModel();
@@ -234,7 +234,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "combines locale and normalization with the other speech options", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "combines locale and normalization with the other speech options", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_combines_locale_and_normalization_with_the_other_options()
     {
         var (model, handler) = SpeechModel();
@@ -247,7 +247,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "rejects conflicting provider locale and language before sending a request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "rejects conflicting provider locale and language before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_rejects_conflicting_locale_and_language()
     {
         var (model, handler) = SpeechModel();
@@ -258,7 +258,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "preserves provider language precedence over generic language", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "preserves provider language precedence over generic language", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_preserves_provider_language_precedence()
     {
         var (model, handler) = SpeechModel();
@@ -268,7 +268,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "sends a locale alone without language or warnings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "sends a locale alone without language or warnings", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_sends_a_locale_alone()
     {
         var (model, handler) = SpeechModel();
@@ -284,7 +284,7 @@ public sealed class CartesiaUpstreamTests
     [InlineData("auto")]
     [InlineData("off")]
     [InlineData("es-MX")]
-    [UpstreamTest(Speech + "sends normalization %s independently of locale", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "sends normalization %s independently of locale", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_sends_normalization_independently_of_locale(string normalization)
     {
         var (model, handler) = SpeechModel();
@@ -297,7 +297,7 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest(Speech + "should prioritize providerOptions locale over generic language and emit a warning", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Speech + "should prioritize providerOptions locale over generic language and emit a warning", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
     public async Task Speech_prioritizes_provider_locale_over_generic_language()
     {
         var (model, handler) = SpeechModel();
