@@ -13,6 +13,7 @@ using static Vercel.AI.Tests.Upstream.Scaledown.ScaledownDecisionModel.Scaledown
 namespace Vercel.AI.Tests.Upstream.Scaledown.ScaledownDecisionModel;
 
 /// <summary>Port of the tests outside any <c>describe</c> in <c>scaledown-decision-model.test.ts</c>.</summary>
+[Collection(ScaleDownEnvironmentCollection.Name)]
 public sealed class ScaledownDecisionModelTests
 {
     private const string Prefix = "packages/scaledown/src/scaledown-decision-model.test.ts::";

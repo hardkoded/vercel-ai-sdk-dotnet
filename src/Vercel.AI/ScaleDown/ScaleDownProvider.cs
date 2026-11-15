@@ -22,11 +22,14 @@ public sealed class ScaleDownProviderSettings
     public IDictionary<string, string>? Headers { get; set; }
 }
 
-/// <summary>ScaleDown's experimental decision capability. It has no language, embedding, or image models.</summary>
+/// <summary>ScaleDown's experimental decision and extraction capabilities. It has no language, embedding, or image models.</summary>
 public sealed class ScaleDownProvider
 {
     /// <summary>Provider id of the decision model.</summary>
     public const string DecisionProviderId = "scaledown.decision";
+
+    /// <summary>Provider id of the extraction model.</summary>
+    public const string ExtractionProviderId = "scaledown.extraction";
 
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.scaledown.xyz";
@@ -66,6 +69,18 @@ public sealed class ScaleDownProvider
         return new DecisionScaleDownModel(modelId, new ScaleDownDecisionModelConfig
         {
             Provider = DecisionProviderId,
+            BaseUrl = _baseUrl,
+            Headers = Headers,
+            HttpClient = _httpClient,
+        });
+    }
+
+    /// <summary>Creates a model for ScaleDown's experimental Extract API. The id may be one this library does not know yet. Maps to <c>extractionModel</c>.</summary>
+    public ScaleDownExtractionModel ExtractionModel(string modelId)
+    {
+        return new ScaleDownExtractionModel(modelId, new ScaleDownExtractionModelConfig
+        {
+            Provider = ExtractionProviderId,
             BaseUrl = _baseUrl,
             Headers = Headers,
             HttpClient = _httpClient,
