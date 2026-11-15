@@ -1580,13 +1580,58 @@ Console.WriteLine(await result.Text);
 - **Options.** Live transcription supports `language`, `smartFormat`, `punctuate`, `diarize`, `fillerWords`, `redact`, `replace`, `search`, and `keyterm`. Batch-only options produce `unsupported` warnings, unless they are `false`. The `providerOptions.deepgram.streaming` object accepts `interimResults` (bool), `endpointing` (a number of milliseconds, or `false`), `channels` (integer), `multichannel` (bool), `vadEvents` (bool), and `utteranceEndMs` (integer, at least 1000). Batch calls (`DoGenerateAsync`) warn about `streaming`.
 - **Parts.** Revisable results are `transcript-partial` parts (`StartSecond`, `DurationInSeconds`, `ChannelIndex`). Finalized results are `transcript-final` parts (`StartSecond`, `EndSecond`, `ChannelIndex`). Both carry `ProviderMetadata.deepgram.speechFinal`. `finish` joins the finalized text and word timings in chronological order across channels, reports Deepgram's duration as `DurationInSeconds`, and reports `Usage.Seconds` when Deepgram sends `Metadata.duration`. With `IncludeRawChunks`, every provider event is also emitted as a `raw` part.
 
+## OpenAI transcription
+
+`OpenAIProvider.TranscriptionModel(id)` returns an `OpenAITranscriptionModel`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe` and `StreamTranscribe`. What a model can do comes from `OpenAIModelCatalog.GetOpenAITranscriptionModelEntry`, which resolves a dated snapshot such as `gpt-realtime-whisper-2026-01-01` to its base model:
+
+| Model | Transcription | Streaming | Delay | Language option |
+| --- | --- | --- | --- | --- |
+| `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize` | yes | no | no | `language` |
+| `gpt-transcribe` | yes | yes | no | `languages` |
+| `gpt-live-transcribe` | no | yes | yes | `languages` |
+| `gpt-realtime-whisper` | no | yes | yes | `language` |
+
+Calling `TranscribeAsync` on a model without transcription, or streaming a model without streaming, throws `UnsupportedFunctionalityException`. Unknown model ids are tried against the API.
+
+For `gpt-transcribe`, use `languages` for the expected languages and `keywords` for names, acronyms and domain vocabulary. `include`, `languages` and `keywords` are sent as repeated `include[]`, `languages[]` and `keywords[]` multipart fields. Empty arrays are not sent. Use `languages` instead of `language` with `gpt-transcribe`; do not send both.
+
+```csharp
+var result = await Transcribe.TranscribeAsync(new TranscribeRequest
+{
+    Model = (ITranscriptionCaller)provider.TranscriptionModel("gpt-transcribe"),
+    Audio = wavBytes,
+    ProviderOptions = OperationJson.Parse(@"{""openai"":{""languages"":[""en"",""fr""],""keywords"":[""premium plan"",""AC-42""],""prompt"":""A customer support call.""}}"),
+});
+```
+
+### Streaming
+
+Streaming transcription runs over the OpenAI Realtime WebSocket `{BaseUrl}/realtime?intent=transcription`. It is used with `StreamTranscribe.Start`:
+
+```csharp
+var audio = new AudioChunkStream();
+var result = StreamTranscribe.Start(new StreamTranscribeRequest
+{
+    Model = (ITranscriptionCaller)provider.TranscriptionModel("gpt-realtime-whisper"),
+    Audio = audio,
+    InputAudioFormat = new AudioFormat("audio/pcm", 24000),
+    ProviderOptions = OperationJson.Parse(@"{""openai"":{""language"":""en"",""streaming"":{""delay"":""low""}}}"),
+});
+```
+
+- **Session.** The stream sends `session.update` when the socket opens, then `input_audio_buffer.append` for each audio chunk, and `input_audio_buffer.commit` when the audio ends. `TranscriptionStreamStart.Request.Body` holds the `session.update` message. The `language` option is sent as `language`, or as a one-entry `languages` list for models whose language field is `languages`. `streaming.delay` is sent for models with a delay setting, and `streaming.include` is sent as the session `include`.
+- **Parts.** `conversation.item.input_audio_transcription.delta` becomes a `transcript-delta` part. `conversation.item.input_audio_transcription.completed` becomes a `transcript-final` part and then `finish`, with no segments and the `language` option as `Language`. An `error` event ends the stream with an `AiSdkException` that carries the server message. A close before the transcript completes ends the stream without an error. With `IncludeRawChunks`, every event is also emitted as a `raw` part.
+- **Warnings.** The REST-only options `include`, `languages`, `keywords`, `prompt`, `temperature` and `timestampGranularities` produce `unsupported` warnings named `providerOptions.openai.{option}`. `streaming.delay` on a model without a delay setting, such as `gpt-transcribe`, produces `providerOptions.openai.streaming.delay`.
+- **Authentication.** A native WebSocket cannot send headers, so the bearer token goes in the `openai-insecure-api-key.{token}` subprotocol next to `realtime`, and the `Authorization` header is removed because OpenAI rejects handshakes that send both. Other headers are passed on. The scheme is case-insensitive, and a per-call header overrides the provider header whatever its casing. Without an `Authorization` header only `realtime` is requested.
+- **Custom socket.** `OpenAIOptions.WebSocket` sets the `WebSocketFactory`. It defaults to `ClientWebSocket`. Backpressure pauses audio reads while the socket buffer is full, and cancelling the stream closes the socket and cancels the audio (`AudioChunkStream(onCancel)`).
+
 ## Azure transcription
 
 `AzureOpenAIProvider.Transcription(deploymentId)` (alias `TranscriptionModel(deploymentId)`) returns an `AzureTranscriptionModel` with provider id `azure.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe` and `StreamTranscribe`. The API is resolved for each call from the model ID and `providerOptions.azure.api`:
 
 - `speech`: the default for the MAI-Transcribe models in the Azure model catalog (`mai-transcribe-2`, `mai-transcribe-1.5`, matched case-insensitively). It posts the audio and a model definition to `{SpeechBaseUrl}/speechtotext/transcriptions:transcribe?api-version=2025-10-15` with the `Ocp-Apim-Subscription-Key` header. `SpeechBaseUrl` defaults to `https://{resourceName}.cognitiveservices.azure.com`. Speech requests ignore `BaseUrl`, `ApiVersion` and `UseDeploymentBasedUrls`. Speech does not stream, so `DoStreamAsync` throws `UnsupportedFunctionalityException`.
 - `mai`: the default for `mai-transcribe-2-streaming`. It streams over the WebSocket `{MaiBaseUrl}/realtime?intent=transcription`. `MaiBaseUrl` defaults to `https://{resourceName}.services.ai.azure.com/mai/v1`. File transcription throws `UnsupportedFunctionalityException`. Input audio must be 16-bit mono PCM (`audio/pcm`) at 16000 or 24000 Hz (24000 when the rate is omitted), otherwise the call throws `InvalidArgumentException`. The stream sends `session.update`, waits for `session.updated`, sends the audio, commits once when the input ends, and reports `transcript-delta`, `transcript-partial` and `transcript-final` parts and a `finish` part. Use `api: "mai"` for a custom deployment name.
-- `openai`: every other deployment. It calls `/openai/v1/audio/transcriptions` (or the deployment route with `UseDeploymentBasedUrls`) like `OpenAITranscriptionModel`. The streaming transcription of the OpenAI model is not ported yet, so `DoStreamAsync` returns `null` and `StreamTranscribe` reports it as unsupported.
+- `openai`: every other deployment. It calls `/openai/v1/audio/transcriptions` (or the deployment route with `UseDeploymentBasedUrls`) like `OpenAITranscriptionModel`. `DoStreamAsync` delegates to the OpenAI model unchanged, so models that stream (see [OpenAI transcription](#openai-transcription)) open the OpenAI realtime WebSocket on `{BaseUrl}/openai/v1/realtime?intent=transcription&api-version=...`. Other deployment names throw `UnsupportedFunctionalityException`. The OpenAI options `include`, `languages` and `keywords` are sent on this route and `AzureOpenAIOptions.NativeWebSocket` replaces the default `ClientWebSocket`.
 
 ```csharp
 var provider = AzureOpenAIProvider.Create(new AzureOpenAIOptions { ResourceName = "my-resource", ApiKey = key });
