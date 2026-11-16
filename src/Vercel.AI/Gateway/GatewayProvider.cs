@@ -41,6 +41,9 @@ public sealed class GatewayOptions
     /// <summary>How frequently to refresh the metadata cache of <see cref="GatewayProvider.GetAvailableModelsAsync"/>, in milliseconds. Defaults to five minutes.</summary>
     public int? MetadataCacheRefreshMillis { get; set; }
 
+    /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
     /// <summary>Maps to <c>_internal.currentDate</c>. For testing purposes only.</summary>
     internal Func<DateTimeOffset>? CurrentDate { get; set; }
 }
@@ -139,6 +142,25 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return await CreateRealtimeModel(model).DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Returns a streaming transcription model. Maps to <c>experimental_transcription(modelId)</c>.
+    /// </summary>
+    public GatewayTranscriptionModel ExperimentalTranscription(string modelId)
+    {
+        return new GatewayTranscriptionModel(this, modelId);
+    }
+
+    /// <summary>
+    /// Mints a transcription-bound short-lived client secret (<c>vcst_</c>) a browser can use to open the streaming
+    /// transcription WebSocket without holding the Gateway credential. Server-side only. Maps to
+    /// <c>experimental_transcription.getToken</c>.
+    /// </summary>
+    public async Task<GatewayTranscriptionFactoryGetTokenResult> ExperimentalTranscriptionGetTokenAsync(string model, int? expiresAfterSeconds = null, CancellationToken cancellationToken = default)
+    {
+        var secret = await MintClientSecretAsync(model, expiresAfterSeconds, "transcription", cancellationToken).ConfigureAwait(false);
+        return new GatewayTranscriptionFactoryGetTokenResult(secret.Token, GatewayTranscriptionModel.ToGatewayTranscriptionUrl(Options.BaseUrl, model), secret.ExpiresAt);
+    }
+
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
     public GatewayDecisionModel DecisionModel(string modelId)
     {
@@ -165,7 +187,7 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     }
 #pragma warning restore CS0618
 
-    private IEnumerable<KeyValuePair<string, string>> O11yHeaders()
+    internal IEnumerable<KeyValuePair<string, string>> O11yHeaders()
     {
         if (Options.O11yHeaders != null)
         {
@@ -379,7 +401,17 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// Mints a short-lived client secret (<c>vcst_</c>) through <c>/v1/realtime/client-secrets</c> on the Gateway origin
     /// (not under the <c>BaseUrl</c> path), authenticated with the long-lived Gateway credential. Maps to <c>mintClientSecret</c>.
     /// </summary>
-    internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    internal Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    {
+        return MintClientSecretAsync(modelId, expiresAfterSeconds, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Like <see cref="MintClientSecretAsync(string, int?, CancellationToken)"/>. <paramref name="routeKind"/> binds the
+    /// secret to a streaming surface (<c>speech</c> or <c>transcription</c>). It is omitted for realtime (the gateway
+    /// default) so older gateway deployments keep accepting realtime mints.
+    /// </summary>
+    internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, string? routeKind, CancellationToken cancellationToken)
     {
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -390,6 +422,11 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
 
         var url = new Uri(new Uri(Options.BaseUrl, UriKind.Absolute), "/v1/realtime/client-secrets");
         var body = new JsonObject { ["model"] = modelId };
+        if (routeKind is not null)
+        {
+            body["routeKind"] = routeKind;
+        }
+
         if (expiresAfterSeconds is { } seconds)
         {
             body["expiresIn"] = seconds;
@@ -483,6 +520,27 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
                 MintClientSecretAsync,
                 Options.TeamIdOrSlug));
     }
+}
+
+/// <summary>The result of minting a streaming transcription client secret. Maps to <c>GatewayTranscriptionFactoryGetTokenResult</c>.</summary>
+public sealed class GatewayTranscriptionFactoryGetTokenResult
+{
+    /// <summary>Creates a result.</summary>
+    public GatewayTranscriptionFactoryGetTokenResult(string token, string url, long? expiresAt = null)
+    {
+        Token = token ?? throw new ArgumentNullException(nameof(token));
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+        ExpiresAt = expiresAt;
+    }
+
+    /// <summary>The minted <c>vcst_</c> client secret.</summary>
+    public string Token { get; }
+
+    /// <summary>WebSocket URL of the streaming transcription surface for this model.</summary>
+    public string Url { get; }
+
+    /// <summary>Token expiry, epoch seconds.</summary>
+    public long? ExpiresAt { get; }
 }
 
 /// <summary>Gateway language model. The request body is the V4 call options.</summary>

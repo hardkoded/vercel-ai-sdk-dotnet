@@ -209,7 +209,7 @@ public sealed class GatewayRealtimeModel : IRealtimeModel, IServerWebSocketRealt
     }
 
     // application/x-www-form-urlencoded, as URLSearchParams serializes.
-    private static string FormEncode(string value)
+    internal static string FormEncode(string value)
     {
         var builder = new StringBuilder();
         foreach (var b in Encoding.UTF8.GetBytes(value))

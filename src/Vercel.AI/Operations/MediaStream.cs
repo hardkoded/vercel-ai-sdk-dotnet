@@ -98,6 +98,9 @@ public sealed class ModelStreamPart
     /// <summary>Error carried by an <c>error</c> part.</summary>
     public Exception? Error { get; set; }
 
+    /// <summary>The raw <c>error</c> payload of an <c>error</c> part decoded from a transcription-stream envelope. Maps to <c>error</c> typed <c>unknown</c>.</summary>
+    public JsonElement? ErrorValue { get; set; }
+
     /// <summary>Translated audio bytes.</summary>
     public byte[]? Audio { get; set; }
 
