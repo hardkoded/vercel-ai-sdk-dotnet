@@ -2,9 +2,11 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Vercel.AI.Anthropic;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
@@ -29,6 +31,13 @@ public sealed class GoogleVertexAnthropicOptions
 
     /// <summary>Returns a bearer token. Called once per request. Without it, no Authorization header is added.</summary>
     public Func<CancellationToken, Task<string>>? GenerateAuthToken { get; set; }
+
+    /// <summary>
+    /// Enables native structured output in <c>structuredOutputMode: "auto"</c> for Claude 4.5 and newer. Defaults to false.
+    /// Requires the Google Cloud organization policy to allow the <c>structured_outputs</c> feature for each model used.
+    /// This does not enable strict tool input schemas.
+    /// </summary>
+    public bool SupportsNativeStructuredOutput { get; set; }
 }
 
 /// <summary>Settings for the OpenAI-compatible MaaS and xAI endpoints on Vertex.</summary>
@@ -59,7 +68,7 @@ public sealed class GoogleVertexPartnerOptions
 
 /// <summary>
 /// Anthropic on Vertex. Sends the Anthropic Messages body to <c>rawPredict</c> with <c>anthropic_version</c> in the body.
-/// Vertex does not accept URL sources, the native output format, or strict tools.
+/// Vertex does not accept URL sources or strict tools. Native output is opt-in.
 /// </summary>
 public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
 {
@@ -104,7 +113,14 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     public string BaseUrl => Options.BaseUrl;
 
     /// <inheritdoc />
-    protected internal override bool SupportsNativeStructuredOutput => false;
+    protected internal override bool SupportsNativeStructuredOutput => _vertex.SupportsNativeStructuredOutput;
+
+    /// <inheritdoc />
+    // Native output is default-denied by GCP policy and requires Claude 4.5+.
+    protected internal override bool SupportsNativeStructuredOutputFor(string modelId)
+    {
+        return _vertex.SupportsNativeStructuredOutput && SupportsNativeStructuredOutputModel(modelId);
+    }
 
     /// <inheritdoc />
     protected internal override bool SupportsStrictTools => false;
@@ -219,6 +235,19 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
     protected internal override Uri RequestUri(string modelId, bool streaming)
     {
         return new Uri(PredictUrl(modelId, streaming));
+    }
+
+    private static bool SupportsNativeStructuredOutputModel(string modelId)
+    {
+        var match = Regex.Match(modelId, @"^claude-[a-z]+-(\d+)(?:-(\d+))?(?:@|\z)", RegexOptions.None, TimeSpan.FromSeconds(1));
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var major = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+        var minor = match.Groups[2].Success ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) : 0;
+        return major > 4 || (major == 4 && minor >= 5);
     }
 
     private static AnthropicOptions Anthropic(GoogleVertexAnthropicOptions vertex)
