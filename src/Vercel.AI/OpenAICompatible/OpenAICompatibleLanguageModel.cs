@@ -202,7 +202,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         var usage = root.TryGetProperty("usage", out var usageElement)
             ? OpenAICompatibleChat.ConvertUsage(usageElement)
             : OpenAICompatibleUsage.Missing;
-        var metadataElement = OpenAICompatibleChat.ProviderMetadata(metadataKey, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
+        var extracted = _provider.Options.MetadataExtractor?.ExtractMetadata(root);
+        var metadataElement = OpenAICompatibleChat.ProviderMetadata(metadataKey, extracted, usage.AcceptedPredictionTokens, usage.RejectedPredictionTokens);
         var finishReason = MapFinish(raw);
         if (jsonResponseToolName != null
             && raw == "tool_calls"
@@ -286,6 +287,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         var sawText = false;
         string? reasoningId = null;
         var failed = false;
+        var metadataExtractor = _provider.Options.MetadataExtractor?.CreateStreamExtractor();
 
         await foreach (var data in sse.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -331,6 +333,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 yield return new ErrorStreamPart(ErrorText(root["error"]));
                 continue;
             }
+
+            metadataExtractor?.ProcessChunk(JsonSerializer.SerializeToElement(root));
 
             if (!metadataSent)
             {
@@ -511,7 +515,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             finishReason,
             ModelUsage(usageElement, converted),
             sawFinish ? finishRaw : null,
-            OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, converted.AcceptedPredictionTokens, converted.RejectedPredictionTokens));
+            OpenAICompatibleChat.ProviderMetadata(prepared.MetadataKey, metadataExtractor?.BuildMetadata(), converted.AcceptedPredictionTokens, converted.RejectedPredictionTokens));
     }
 
     private PreparedRequest Prepare(LanguageModelCallOptions options, bool stream)
@@ -645,7 +649,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         return new PreparedRequest(
             body,
-            _provider.CreateHeaders(options.Headers),
+            _provider.CreateHeaders(_provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers),
             warnings,
             metadataKey,
             jsonResponse && _provider.Options.JsonTextOverridesToolCalls,
