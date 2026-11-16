@@ -24,8 +24,10 @@ public sealed class AnthropicPreparedRequest
         bool usedCustomProviderKey,
         bool markCodeExecutionDynamic = false,
         JsonArray? preparedTools = null,
-        string? computerToolsetName = null)
+        string? computerToolsetName = null,
+        bool includePings = false)
     {
+        IncludePings = includePings;
         MarkCodeExecutionDynamic = markCodeExecutionDynamic;
         PreparedTools = preparedTools;
         ComputerToolsetName = computerToolsetName;
@@ -36,6 +38,9 @@ public sealed class AnthropicPreparedRequest
         ProviderOptionsName = providerOptionsName;
         UsedCustomProviderKey = usedCustomProviderKey;
     }
+
+    /// <summary>True when typed <c>ping</c> stream parts are emitted. Only set for streaming requests. Never sent to the API.</summary>
+    public bool IncludePings { get; }
 
     /// <summary>JSON body.</summary>
     public JsonObject Body { get; }
@@ -693,7 +698,7 @@ public static class AnthropicMessagesRequest
             body["stream"] = true;
         }
 
-        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools)) { ToolNames = ResponseToolNames(options, inlineTools) };
+        return new AnthropicPreparedRequest(body, warnings, betas, usesJsonTool, providerOptionsName, usedCustom, HasDynamicFilteringWebToolWithoutCodeExecution(tools), preparedTools.Tools, ComputerToolsetName(tools), stream && Bool(anthropic, "includePings") == true) { ToolNames = ResponseToolNames(options, inlineTools) };
     }
 
     // Forced-choice and JSON-tool fallbacks restrict the declared tools. Inline definitions, including those

@@ -1171,6 +1171,19 @@ public sealed class RawPart : TextStreamPart
     public JsonElement RawValue { get; }
 }
 
+/// <summary>
+/// A transient provider heartbeat. It contains no generated content, does not reset model-output timeouts, and is omitted from UI message streams.
+/// Providers may require an explicit opt-in. Maps to <c>TextStreamPingPart</c>.
+/// </summary>
+public sealed class PingPart : TextStreamPart
+{
+    /// <summary>Creates a ping part.</summary>
+    public PingPart()
+        : base("ping")
+    {
+    }
+}
+
 /// <summary>A text block started. Maps to <c>text-start</c>.</summary>
 public sealed class TextStartPart : TextStreamPart
 {
