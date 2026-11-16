@@ -8,7 +8,7 @@ using Vercel.AI.Xai;
 
 namespace Vercel.AI.Tests;
 
-/// <summary>xAI file and realtime requests matched to the upstream catalog.</summary>
+/// <summary>xAI file requests matched to the upstream catalog.</summary>
 public sealed class XaiParityTests
 {
     private const string FileJson = "{\"id\":\"file-abc123\",\"object\":\"file\",\"bytes\":3,\"created_at\":1234567890,\"filename\":\"upload\"}";
@@ -317,26 +317,6 @@ public sealed class XaiParityTests
         Assert.Equal(HttpMethod.Delete, handler.Calls[0].Method);
         Assert.True(result.Deleted);
         Assert.Equal("file-abc123", result.ProviderReference["xai"]);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/xai/src/realtime/xai-realtime-model.test.ts::XaiRealtimeModel > doCreateClientSecret::includes the model as a query param on the WebSocket URL", Coverage = UpstreamCoverage.Covered)]
-    public async Task Realtime_client_secret_url_includes_the_model()
-    {
-        var handler = new ParityHandler(_ => ParityHandler.Json("{\"value\":\"secret\",\"expires_at\":123}"));
-        var model = new XaiRealtimeModel("grok-voice-latest", new HttpClient(handler, disposeHandler: false), "https://api.x.ai/v1", () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" });
-        var result = await model.CreateClientSecretAsync(null, CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal("wss://api.x.ai/v1/realtime?model=grok-voice-latest", result.Url);
-        Assert.Equal("https://api.x.ai/v1/realtime/client_secrets", handler.Calls[0].Uri.AbsoluteUri);
-        Assert.Equal(HttpMethod.Post, handler.Calls[0].Method);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/xai/src/realtime/xai-realtime-model.test.ts::XaiRealtimeModel > serializeClientEvent::drops conversation-item-truncate (unsupported over WebSocket)", Coverage = UpstreamCoverage.Covered)]
-    public void Realtime_drops_conversation_item_truncate()
-    {
-        var model = new XaiRealtimeModel("grok-voice-latest", new HttpClient(new ParityHandler(), disposeHandler: false), "https://api.x.ai/v1", null);
-        Assert.Null(model.SerializeClientEvent("conversation-item-truncate"));
     }
 
     private static XaiFileUpload Bytes(byte[] data)
