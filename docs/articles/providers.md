@@ -478,6 +478,26 @@ Submission and in-progress operation metadata exposes `videoId`, `mode`, and `re
 The HeyGen video endpoint does not document token counts or credit consumption in its generation response. The provider returns the reported duration and dimensions without estimating those quantities.
 
 
+### Video model capabilities
+
+| Model | Image input | First frame | Last frame | Reference images | Reference video | Audio | Aspect ratio | Resolution | Duration | FPS | Seed |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `heygen-video-1` | Yes | Yes | No | Yes | Yes | Conditional: Audio is always generated; disabling it is unsupported. | Conditional: Supported outside reference-to-video mode. | Conditional: Supported outside reference-to-video mode. | Yes | Conditional: Fixed at 24 fps. | Yes |
+
+`HeyGenModelCatalog.Entries` maps every known model id (`VideoModelIds` and `DecisionModelIds`) to a `ModelEntry<object>`, the shared catalog contract in `Vercel.AI`. `GetHeyGenVideoModelEntry(modelId)` and `GetHeyGenDecisionModelEntry(modelId)` return the entry of one model, and they accept any model id. `Capabilities` declares what the model supports (`Video`, `Decision`) as `ModelCapability` values. `ProviderOptions.Video` declares per-model support for the options in `HeyGenProviderOptions.Video`, each `Unknown`. The declarations are metadata; they do not validate requests.
+
+### Video provider options
+
+| Operation | Option | Description |
+| --- | --- | --- |
+| video | `mode` | Inferred from the supplied image and references when omitted. |
+| video | `resolution` | Output size class. Takes precedence over the standard resolution option. |
+| video | `promptEnhancement` | Defaults to quality. Use disabled to preserve the original prompt. |
+| video | `image` | First frame, including an existing HeyGen asset. Cannot be combined with a standard image. |
+| video | `referenceImages` | Additional references, appended after standard inputReferences of the same kind. |
+| video | `referenceVideos` | referenceVideos |
+| video | `referenceAudio` | referenceAudio |
+
 ### Decision models
 
 Use `heygen.DecisionModel(modelId)` with `Decide.DecideAsync` to call the [HeyGen Decision API](https://developers.heygen.com/docs/models/heygen-decision) (`POST {BaseUrl}/v3/models/decisions`; provider id `heygen.decision`). This API is experimental and may change in patch releases. `HeyGenProvider` implements `IDecisionProvider`, and `DecisionHeyGenModel` implements `IDecisionCaller`.
