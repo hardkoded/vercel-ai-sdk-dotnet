@@ -93,6 +93,16 @@ internal sealed class ParityHandler : HttpMessageHandler
         return response;
     }
 
+    /// <summary>
+    /// Binary response of the upstream test server (<c>type: 'binary'</c>): without an explicit
+    /// content-type header the body is served as <c>application/octet-stream</c>.
+    /// </summary>
+    public static HttpResponseMessage TestServerBinary(byte[] body, params (string Name, string Value)[] headers)
+    {
+        var hasContentType = headers.Any(h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase));
+        return Bytes(body, hasContentType ? null : "application/octet-stream", headers);
+    }
+
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
