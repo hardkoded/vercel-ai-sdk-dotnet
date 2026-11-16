@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Util;
+
 namespace Vercel.AI.Provider;
 
 /// <summary>Base exception for the community .NET port of the Vercel AI SDK.</summary>
@@ -60,10 +62,10 @@ public class ApiException : AiSdkException
     /// </summary>
     public object? ErrorData { get; init; }
 
-    /// <summary>True when the call can be retried. Defaults to 408, 429, and 500 and above.</summary>
+    /// <summary>True when the call can be retried. Defaults to 408, 409, 429, and 500 and above, like <c>APICallError.isRetryable</c>.</summary>
     public bool IsRetryable
     {
-        get => _isRetryable ?? (StatusCode == 408 || StatusCode == 429 || StatusCode >= 500);
+        get => _isRetryable ?? StreamProviderError.IsRetryableStatusCode(StatusCode);
         init => _isRetryable = value;
     }
 

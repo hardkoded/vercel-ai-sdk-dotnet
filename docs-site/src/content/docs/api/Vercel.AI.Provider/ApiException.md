@@ -108,7 +108,7 @@ public bool IsRetryable { get; init; }
 ```
 
 
-True when the call can be retried. Defaults to 408, 429, and 500 and above.
+True when the call can be retried. Defaults to 408, 409, 429, and 500 and above, like `APICallError.isRetryable`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 

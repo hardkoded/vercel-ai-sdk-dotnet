@@ -18,7 +18,7 @@ public sealed class MethodPolicyErrorsTests
     [InlineData("generate", "google")]
     [InlineData("stream", "anthropic")]
     [InlineData("stream", "google")]
-    [UpstreamTest(Prefix + "does not retry a %s-format policy rejection with tool emulation", Coverage = UpstreamCoverage.Covered, Commit = "4b8f00efff97de78e52667359aa33267a1036c46", Note = "isRetryable is not exposed on ApiException; BadRequestException is never retried.")]
+    [UpstreamTest(Prefix + "does not retry a %s-format policy rejection with tool emulation", Coverage = UpstreamCoverage.Covered, Commit = "4b8f00efff97de78e52667359aa33267a1036c46")]
     public async Task Does_not_retry_a_format_policy_rejection_with_tool_emulation(string method, string format)
     {
         var handler = new Handler(method, false, Report)
@@ -33,7 +33,7 @@ public sealed class MethodPolicyErrorsTests
         var error = await Assert.ThrowsAsync<BadRequestException>(() => Call(model, method, Options(ReportSchema))).ConfigureAwait(false);
 
         Assert.Equal(400, error.StatusCode);
-        // The port's ApiException has no IsRetryable; a 400 is BadRequestException, which the retry policy never retries.
+        Assert.False(error.IsRetryable);
         if (format == "anthropic")
         {
             Assert.Equal(Message, error.Message);
