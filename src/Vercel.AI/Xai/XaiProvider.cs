@@ -91,7 +91,15 @@ public sealed class XaiProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override IRealtimeModel RealtimeModel(string modelId)
     {
-        return new XaiRealtimeModel(modelId, _httpClient, Options.BaseUrl, () => CreateHeaders());
+        return new XaiRealtimeModel(
+            modelId,
+            new XaiRealtimeModelConfig(
+                "xai.realtime",
+                Options.BaseUrl,
+                _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(CreateHeaders()))
+            {
+                HttpClient = _httpClient,
+            });
     }
 
     /// <summary>Creates a video model. The provider id is <c>xai.video</c>.</summary>

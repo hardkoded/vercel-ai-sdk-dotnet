@@ -237,7 +237,17 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     /// <inheritdoc />
     public override IRealtimeModel RealtimeModel(string modelId)
     {
-        return new OpenAIRealtimeModel(this, modelId);
+        return RealtimeModel(modelId, null);
+    }
+
+    /// <summary>
+    /// Creates a realtime model. <c>gpt-live-1</c> routes to <see cref="OpenAIRealtimeModelLive"/> and every other id to
+    /// <see cref="OpenAIRealtimeModel"/>, unless <see cref="OpenAIRealtimeOptions.Api"/> overrides it.
+    /// Maps to <c>experimental_realtime</c>.
+    /// </summary>
+    public IRealtimeModel RealtimeModel(string modelId, OpenAIRealtimeOptions? options)
+    {
+        return OpenAIRealtimeFactory.CreateModel(this, modelId, options);
     }
 
     /// <summary>
@@ -317,123 +327,6 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
 
         return value;
     }
-}
-
-/// <summary>A realtime client secret.</summary>
-public sealed class OpenAIRealtimeClientSecret
-{
-    internal OpenAIRealtimeClientSecret(string token, string url, long? expiresAt)
-    {
-        Token = token;
-        Url = url;
-        ExpiresAt = expiresAt;
-    }
-
-    /// <summary>Client secret value.</summary>
-    public string Token { get; }
-
-    /// <summary>WebSocket URL that includes the model.</summary>
-    public string Url { get; }
-
-    /// <summary>Expiry as unix seconds, when the provider sent one.</summary>
-    public long? ExpiresAt { get; }
-}
-
-/// <summary>OpenAI Realtime session URI builder and WebSocket client.</summary>
-public sealed class OpenAIRealtimeModel : IRealtimeModel
-{
-    private readonly OpenAIProvider _provider;
-
-    /// <summary>Creates a realtime model.</summary>
-    public OpenAIRealtimeModel(OpenAIProvider provider, string modelId)
-    {
-        _provider = provider;
-        ModelId = modelId;
-    }
-
-    /// <inheritdoc />
-    public string Provider => _provider.Name;
-
-    /// <inheritdoc />
-    public string ModelId { get; }
-
-    /// <inheritdoc />
-    public Uri BuildUri()
-    {
-        var http = ApiKeys.Combine(_provider.Options.BaseUrl, "realtime");
-        var builder = new UriBuilder(http) { Scheme = http.Scheme == "https" ? "wss" : "ws", Query = "model=" + Uri.EscapeDataString(ModelId) };
-        return builder.Uri;
-    }
-
-    /// <summary>Requests a realtime client secret. <paramref name="expiresAfterSeconds"/> is omitted when null.</summary>
-    public async Task<OpenAIRealtimeClientSecret> CreateClientSecretAsync(int? expiresAfterSeconds, CancellationToken cancellationToken)
-    {
-        var body = new JsonObject
-        {
-            ["session"] = new JsonObject
-            {
-                ["type"] = "realtime",
-                ["model"] = ModelId,
-            },
-        };
-        if (expiresAfterSeconds != null)
-        {
-            body["expires_after"] = new JsonObject
-            {
-                ["anchor"] = "created_at",
-                ["seconds"] = expiresAfterSeconds.Value,
-            };
-        }
-
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "realtime/client_secrets"),
-            body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(),
-            cancellationToken).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(response.Body);
-        var token = document.RootElement.TryGetProperty("value", out var value) ? value.GetString() ?? string.Empty : string.Empty;
-        long? expires = null;
-        if (document.RootElement.TryGetProperty("expires_at", out var expiresElement) && expiresElement.TryGetInt64(out var seconds))
-        {
-            expires = seconds;
-        }
-
-        var host = new Uri(_provider.Options.BaseUrl).Host;
-        var url = "wss://" + host + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
-        return new OpenAIRealtimeClientSecret(token, url, expires);
-    }
-
-    /// <inheritdoc />
-    public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
-    {
-#if NETSTANDARD2_0
-        throw new PlatformNotSupportedException("OpenAI Realtime WebSocket headers require .NET 10.");
-#else
-        return ConnectCoreAsync(cancellationToken);
-#endif
-    }
-
-#if !NETSTANDARD2_0
-    private async Task<IRealtimeSession> ConnectCoreAsync(CancellationToken cancellationToken)
-    {
-        var socket = new System.Net.WebSockets.ClientWebSocket();
-        try
-        {
-            var headers = _provider.CreateOpenAIHeaders();
-            socket.Options.SetRequestHeader("Authorization", headers["Authorization"] ?? string.Empty);
-            socket.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
-            await socket.ConnectAsync(BuildUri(), cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            socket.Dispose();
-            throw;
-        }
-
-        return new WebSocketRealtimeSession(socket);
-    }
-#endif
 }
 
 internal sealed class OpenAIBatchModel : IBatchModel

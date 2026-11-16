@@ -30,26 +30,52 @@ public sealed class XaiClientSecret
     public long? ExpiresAt { get; }
 }
 
-/// <summary>xAI realtime voice model.</summary>
-public sealed class XaiRealtimeModel : IRealtimeModel
+/// <summary>
+/// Settings of <see cref="XaiRealtimeModel"/>. Maps to <c>XaiRealtimeModelConfig</c>.
+/// <see cref="Headers"/> maps the upstream <c>Resolvable</c>: an object, a promise, a callback or an async callback
+/// all fit a function that returns a task.
+/// </summary>
+public sealed class XaiRealtimeModelConfig
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _baseUrl;
-    private readonly Func<IReadOnlyDictionary<string, string?>> _headers;
+    /// <summary>Creates a config.</summary>
+    public XaiRealtimeModelConfig(string provider, string baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers)
+    {
+        Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        BaseUrl = string.IsNullOrEmpty(baseUrl) ? XaiProvider.DefaultBaseUrl : baseUrl;
+        Headers = headers ?? throw new ArgumentNullException(nameof(headers));
+    }
+
+    /// <summary>Provider id, for example <c>xai.realtime</c>.</summary>
+    public string Provider { get; }
+
+    /// <summary>API base URL.</summary>
+    public string BaseUrl { get; }
+
+    /// <summary>Resolves the request headers, including the credential.</summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> Headers { get; }
+
+    /// <summary>Maps <c>fetch</c>: the HTTP client used to mint client secrets. Defaults to a shared client.</summary>
+    public HttpClient? HttpClient { get; set; }
+}
+
+/// <summary>xAI realtime voice model. Maps to <c>XaiRealtimeModel</c>.</summary>
+public sealed class XaiRealtimeModel : IServerWebSocketRealtimeModel
+{
+    private static readonly Lazy<HttpClient> DefaultHttpClient = new(() => new HttpClient());
+
+    private readonly XaiRealtimeModelConfig _config;
 
     /// <summary>Creates a realtime model.</summary>
-    public XaiRealtimeModel(string modelId, HttpClient httpClient, string baseUrl, Func<IReadOnlyDictionary<string, string?>>? headers)
+    public XaiRealtimeModel(string modelId, XaiRealtimeModelConfig config)
     {
         ModelId = modelId ?? string.Empty;
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _baseUrl = string.IsNullOrEmpty(baseUrl) ? XaiProvider.DefaultBaseUrl : baseUrl;
-        _headers = headers ?? (() => new Dictionary<string, string?>());
+        _config = config ?? throw new ArgumentNullException(nameof(config));
     }
 
     /// <inheritdoc />
     public string Provider
     {
-        get { return "xai.realtime"; }
+        get { return _config.Provider; }
     }
 
     /// <inheritdoc />
@@ -58,7 +84,7 @@ public sealed class XaiRealtimeModel : IRealtimeModel
     /// <inheritdoc />
     public Uri BuildUri()
     {
-        return new Uri(WebSocketUrl());
+        return new Uri(ClientSecretWebSocketUrl());
     }
 
     /// <summary>WebSocket sessions are opened by the caller with <see cref="XaiClientSecret.Url"/>.</summary>
@@ -67,7 +93,7 @@ public sealed class XaiRealtimeModel : IRealtimeModel
         throw new AiSdkException("xAI realtime connects through the client-secret WebSocket URL.");
     }
 
-    /// <summary>Posts to <c>/realtime/client_secrets</c> and returns a WebSocket URL that includes the model.</summary>
+    /// <summary>Posts to <c>/realtime/client_secrets</c> and returns a WebSocket URL that includes the model. Maps to <c>doCreateClientSecret</c>.</summary>
     public async Task<XaiClientSecret> CreateClientSecretAsync(int? expiresAfterSeconds, CancellationToken cancellationToken)
     {
         var body = new JsonObject();
@@ -76,12 +102,13 @@ public sealed class XaiRealtimeModel : IRealtimeModel
             body["expires_after"] = new JsonObject { ["seconds"] = seconds };
         }
 
+        var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
         var response = await ProviderExchange.SendAsync(
-            _httpClient,
+            _config.HttpClient ?? DefaultHttpClient.Value,
             HttpMethod.Post,
-            ApiKeys.Combine(_baseUrl, "/realtime/client_secrets"),
+            ApiKeys.Combine(_config.BaseUrl, "/realtime/client_secrets"),
             ProviderExchange.Json(body.ToJsonString()),
-            _headers(),
+            headers,
             cancellationToken).ConfigureAwait(false);
         using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
         {
@@ -94,26 +121,74 @@ public sealed class XaiRealtimeModel : IRealtimeModel
                 expires = expiresValue.GetInt64();
             }
 
-            return new XaiClientSecret(token, WebSocketUrl(), expires);
+            return new XaiClientSecret(token, ClientSecretWebSocketUrl(), expires);
         }
+    }
+
+    /// <inheritdoc />
+    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
+    {
+        // xAI exposes only the conversational voice endpoint; fail fast instead of
+        // silently downgrading unsupported intents.
+        AssertConversationIntent(intent);
+        var url = new Uri(_config.BaseUrl);
+        var protocol = url.Scheme == "http" ? "ws:" : "wss:";
+        var path = url.AbsolutePath.TrimEnd('/');
+        var serverUrl = protocol + "//" + url.Authority + path + "/realtime?model=" + Uri.EscapeDataString(ModelId);
+        return ResolveServerConnectionAsync(serverUrl, cancellationToken);
+    }
+
+    /// <summary>Maps one xAI server event.</summary>
+    public RealtimeModelV4ServerEvent ParseServerEvent(JsonElement raw)
+    {
+        return XaiRealtimeEventMapper.ParseXaiRealtimeServerEvent(raw);
     }
 
     /// <summary>
-    /// Serializes a client event. <c>conversation-item-truncate</c> is dropped because xAI ignores it over WebSocket.
+    /// Serializes a client event. <c>conversation-item-truncate</c> is dropped (null) because xAI ignores it over
+    /// WebSocket.
     /// </summary>
-    public string? SerializeClientEvent(string type)
+    public JsonObject? SerializeClientEvent(RealtimeModelV4ClientEvent clientEvent, RealtimeModelV4SessionIntent? intent = null)
     {
-        if (string.Equals(type, "conversation-item-truncate", StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        return type ?? string.Empty;
+        AssertConversationIntent(intent);
+        return XaiRealtimeEventMapper.SerializeXaiRealtimeClientEvent(clientEvent);
     }
 
-    private string WebSocketUrl()
+    /// <summary>Builds the xAI <c>session</c> object for a normalized session config.</summary>
+    public JsonObject BuildSessionConfig(RealtimeModelV4SessionConfig config, RealtimeModelV4SessionIntent? intent = null)
     {
-        var host = new Uri(_baseUrl).Host;
-        return "wss://" + host + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
+        AssertConversationIntent(intent);
+        return XaiRealtimeEventMapper.BuildXaiSessionConfig(config);
+    }
+
+    private static void AssertConversationIntent(RealtimeModelV4SessionIntent? intent)
+    {
+        if (intent != null && intent != RealtimeModelV4SessionIntent.Conversation)
+        {
+            throw new AiSdkException($"xAI realtime does not support the '{intent.Value.ToString().ToLowerInvariant()}' session intent.");
+        }
+    }
+
+    private async Task<RealtimeModelV4ServerConnection> ResolveServerConnectionAsync(string url, CancellationToken cancellationToken)
+    {
+        var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
+        var defined = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var pair in headers)
+        {
+            if (pair.Value != null)
+            {
+                defined[pair.Key] = pair.Value;
+            }
+        }
+
+        return new RealtimeModelV4ServerConnection(url, defined);
+    }
+
+    // xAI selects the voice model from the `model` query parameter on the
+    // WebSocket URL. Without it the model choice is silently ignored and the
+    // server falls back to its default voice model.
+    private string ClientSecretWebSocketUrl()
+    {
+        return "wss://" + new Uri(_config.BaseUrl).Authority + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
     }
 }
