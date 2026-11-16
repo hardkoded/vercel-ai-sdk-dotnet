@@ -42,7 +42,24 @@ Translated audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L105)
+
+<a id="Vercel_AI_Operations_ModelStreamPart_Body_"></a>
+<a id="Vercel_AI_Operations_ModelStreamPart_Body"></a>
+
+### Body
+
+
+```csharp
+public JsonElement? Body { get; set; }
+```
+
+
+Response body carried by `response-metadata`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L90)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_ChannelIndex_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_ChannelIndex"></a>
@@ -59,7 +76,7 @@ Audio channel of a `transcript-partial` or `transcript-final` part.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L123)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Delta_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Delta"></a>
@@ -110,7 +127,7 @@ End of a `transcript-final` part, in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L120)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Error_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Error"></a>
@@ -127,7 +144,24 @@ Error carried by an `error` part.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L99)
+
+<a id="Vercel_AI_Operations_ModelStreamPart_ErrorValue_"></a>
+<a id="Vercel_AI_Operations_ModelStreamPart_ErrorValue"></a>
+
+### ErrorValue
+
+
+```csharp
+public JsonElement? ErrorValue { get; set; }
+```
+
+
+The raw `error` payload of an `error` part decoded from a transcription-stream envelope. Maps to `error` typed `unknown`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L102)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Headers_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Headers"></a>
@@ -212,7 +246,7 @@ Translated text on `finish`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L111)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_ProviderMetadata"></a>
@@ -229,7 +263,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L93)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Raw_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Raw"></a>
@@ -246,7 +280,7 @@ Raw provider chunk.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L96)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Segments_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Segments"></a>
@@ -280,7 +314,7 @@ Source transcript on `finish`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L108)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_StartSecond_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_StartSecond"></a>
@@ -297,7 +331,7 @@ Start of a `transcript-partial` or `transcript-final` part, in seconds.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L117)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Text_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Text"></a>
@@ -365,7 +399,7 @@ Usage on `finish`.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L114)
 
 <a id="Vercel_AI_Operations_ModelStreamPart_Warnings_"></a>
 <a id="Vercel_AI_Operations_ModelStreamPart_Warnings"></a>
