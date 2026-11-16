@@ -139,7 +139,27 @@ public sealed class ServerResponse
     }
 
     /// <summary>Completes when <see cref="SimulateDrain"/> runs, or at once when it already ran after the last held write.</summary>
-    public Task WaitForDrainAsync()
+    public Task WaitForDrainAsync(CancellationToken cancellationToken = default)
+    {
+        var drain = WaitForDrainCore();
+        return cancellationToken.CanBeCanceled && !drain.IsCompleted ? WaitWithCancellationAsync(drain, cancellationToken) : drain;
+    }
+
+    private static async Task WaitWithCancellationAsync(Task task, CancellationToken cancellationToken)
+    {
+        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (cancellationToken.Register(static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true), cancelled))
+        {
+            if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        await task.ConfigureAwait(false);
+    }
+
+    private Task WaitForDrainCore()
     {
         lock (_gate)
         {
@@ -191,7 +211,7 @@ public static class ServerResponseWriter
     /// A false write waits for <see cref="ServerResponse.SimulateDrain"/>.
     /// The response is ended even when reading the stream fails.
     /// </summary>
-    public static async Task WriteAsync(ServerResponse? response, ReadableStream<byte[]> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null)
+    public static async Task WriteAsync(ServerResponse? response, ReadableStream<byte[]> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null, CancellationToken cancellationToken = default)
     {
         if (response == null)
         {
@@ -235,7 +255,7 @@ public static class ServerResponseWriter
 
                 if (!canContinue)
                 {
-                    await response.WaitForDrainAsync().ConfigureAwait(false);
+                    await response.WaitForDrainAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
         }

@@ -37,6 +37,17 @@ public sealed class ErrorTextOfFailedToolCallsTests
         => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError, RedactToolErrors = false }, "Error: tool failed", "AI_NoSuchToolError: tool failed");
 
     [Fact]
+    [UpstreamTest(Prefix + "uses onError when the tool error cannot be serialized", Coverage = UpstreamCoverage.Partial, Note = "The unserializable error is an exception whose Message throws, because a .NET tool error is an exception and has no circular value.", Commit = Commit)]
+    public void Uses_onError_when_the_tool_error_cannot_be_serialized()
+    {
+        var toolError = new ToolErrorPart(new ExecutedTool("call-1", "runtimeTool", "{}", true) { Dynamic = true, Error = new UnserializableError() });
+
+        AssertJson(
+            """{"type":"tool-output-error","toolCallId":"call-1","dynamic":true,"errorText":"An error occurred."}""",
+            UIMessageStreamConverter.ToUIMessageChunk(toolError));
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "uses onError for invalid tool calls of provider-executed tools", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
     public void Uses_onError_for_invalid_tool_calls_of_provider_executed_tools()
     {
@@ -45,6 +56,11 @@ public sealed class ErrorTextOfFailedToolCallsTests
         AssertJson(
             """{"type":"tool-input-error","toolCallId":"call-1","toolName":"runtimeTool","input":"{broken","providerExecuted":true,"dynamic":true,"errorText":"An error occurred."}""",
             chunk);
+    }
+
+    internal sealed class UnserializableError : Exception
+    {
+        public override string Message => throw new InvalidOperationException("cannot serialize");
     }
 
     private static void AssertJson(string expected, JsonObject? actual)

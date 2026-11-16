@@ -149,6 +149,19 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
+    [UpstreamTest(Prefix + "does not fail the stream when the tool error cannot be serialized", Coverage = UpstreamCoverage.Partial, Note = "The unserializable error is an exception whose Message throws, because a .NET tool error is an exception and has no circular value.", Commit = Commit)]
+    public async Task Does_not_fail_the_stream_when_the_tool_error_cannot_be_serialized()
+    {
+        var unserializable = new ToolErrorPart(new ExecutedTool("call-1", "test-tool", "{}", true) { Dynamic = true, Error = new ToUiMessageChunk.ErrorTextOfFailedToolCallsTests.UnserializableError() });
+        var logged = new List<LogWarningsOptions>();
+        using var recorder = new LogWarningsRecorder((Action<LogWarningsOptions>)logged.Add);
+        var chunks = await ToUIMessageStreamTests.Convert([StartStep, ToolCall, unserializable, TestStep, StartStep, .. Reasoning, TestStep]);
+
+        Assert.Contains(chunks, chunk => (string?)chunk?["type"] == "tool-output-error" && (string?)chunk["errorText"] == "An error occurred.");
+        Assert.Empty(logged);
+    }
+
+    [Fact]
     [UpstreamTest(Prefix + "does not warn for provider-executed tool errors", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_for_provider_executed_tool_errors()
     {
