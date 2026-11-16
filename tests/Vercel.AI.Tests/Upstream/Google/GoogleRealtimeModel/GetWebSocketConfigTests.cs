@@ -15,8 +15,9 @@ public sealed class GetWebSocketConfigTests
     {
         var model = GoogleRealtimeTestSupport.CreateModel("gemini-2.0-flash-live-001", GoogleRealtimeTestSupport.ApiKeyHeaders());
 
-        var url = model.GetWebSocketUrl("my-token", "wss://example.com/ws");
+        var config = model.GetWebSocketConfig("my-token", "wss://example.com/ws");
 
-        Assert.Equal("wss://example.com/ws?access_token=my-token", url);
+        Assert.Equal("wss://example.com/ws?access_token=my-token", config.Url);
+        Assert.Null(config.Protocols);
     }
 }
