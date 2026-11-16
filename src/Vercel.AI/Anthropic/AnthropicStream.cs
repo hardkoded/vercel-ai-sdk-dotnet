@@ -24,6 +24,7 @@ public sealed class AnthropicStream
     private string? _finish;
     private JsonElement? _usage;
     private string? _stopSequence;
+    private string? _serviceTier;
     private JsonNode? _container;
     private bool _jsonTool;
 
@@ -188,6 +189,7 @@ public sealed class AnthropicStream
         _stopSequence = null;
         _container = null;
         _activeId = id;
+        _serviceTier = Text(message?["usage"]?["service_tier"]) ?? Text(message?["service_tier"]);
         var usage = message?["usage"];
         if (usage != null)
         {
@@ -454,6 +456,7 @@ public sealed class AnthropicStream
 
         if (node["usage"] is JsonObject usage)
         {
+            _serviceTier = Text(usage["service_tier"]) ?? _serviceTier;
             // The delta only reports what changed; keep the counts from message_start.
             var merged = _usage is { ValueKind: JsonValueKind.Object } current
                 ? (JsonNode.Parse(current.GetRawText()) as JsonObject ?? new JsonObject())
@@ -519,6 +522,11 @@ public sealed class AnthropicStream
             ["container"] = _container?.DeepClone(),
             ["contextManagement"] = null,
         };
+        if (_serviceTier != null)
+        {
+            anthropic["serviceTier"] = _serviceTier;
+        }
+
         var metadata = new JsonObject { ["anthropic"] = anthropic };
         if (_usedCustomProviderKey && _providerOptionsName != "anthropic")
         {
