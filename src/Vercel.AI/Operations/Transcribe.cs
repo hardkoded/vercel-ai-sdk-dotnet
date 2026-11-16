@@ -58,6 +58,34 @@ public sealed class TranscriptionModelCall
     public CancellationToken CancellationToken { get; }
 }
 
+/// <summary>Arguments for a native URL transcription <c>doGenerateFromUrl</c>. Carries no audio bytes and no media type.</summary>
+public sealed class TranscriptionModelUrlCall
+{
+    /// <summary>Creates a call.</summary>
+    public TranscriptionModelUrlCall(Uri audio, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    {
+        Audio = audio ?? throw new ArgumentNullException(nameof(audio));
+        ProviderOptions = providerOptions;
+        Headers = headers;
+        CancellationToken = cancellationToken;
+    }
+
+    /// <summary>HTTP(S) URL the provider fetches itself.</summary>
+    public Uri Audio { get; }
+
+    /// <summary>Timing granularities the caller asks for. Maps to <c>timestampGranularities</c>.</summary>
+    public IReadOnlyList<string>? TimestampGranularities { get; init; }
+
+    /// <summary>Provider options.</summary>
+    public JsonElement ProviderOptions { get; }
+
+    /// <summary>Headers including the user-agent suffix. They are for the provider API and are not forwarded to the audio host.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+
+    /// <summary>Cancellation token.</summary>
+    public CancellationToken CancellationToken { get; }
+}
+
 /// <summary>Transcription model response.</summary>
 public sealed class TranscriptionModelResult
 {
@@ -185,6 +213,21 @@ public interface ITranscriptionCaller
     Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Optional native URL transcription. Its presence signals that HTTP(S) audio URLs can be sent to the provider without
+/// downloading them locally. Maps to the optional <c>doGenerateFromUrl</c> of <c>TranscriptionModelV4</c>. It is a separate
+/// interface because <c>netstandard2.0</c> has no default interface members.
+/// </summary>
+public interface ITranscriptionUrlCaller : ITranscriptionCaller
+{
+    /// <summary>
+    /// Transcribes audio the provider fetches from <see cref="TranscriptionModelUrlCall.Audio"/>. Returns <see langword="null"/>
+    /// when the provider cannot fetch this URL and the SDK should download it locally and call <see cref="ITranscriptionCaller.DoGenerateAsync"/>.
+    /// Throws for other errors, such as authentication or invalid audio.
+    /// </summary>
+    Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(TranscriptionModelUrlCall call, CancellationToken cancellationToken);
+}
+
 /// <summary>Resolves string transcription model ids.</summary>
 public static class TranscriptionModels
 {
@@ -248,10 +291,10 @@ public sealed class TranscribeRequest : OperationRequest
     /// <summary>Audio bytes.</summary>
     public byte[]? Audio { get; set; }
 
-    /// <summary>Audio URL. Downloaded when set.</summary>
+    /// <summary>Audio URL. HTTP(S) URLs go straight to models with native URL support unless <see cref="Download"/> is set. Otherwise the audio is downloaded.</summary>
     public string? AudioUrl { get; set; }
 
-    /// <summary>Downloads URL audio.</summary>
+    /// <summary>Downloads URL audio. Setting it forces local downloading, even for models with native URL support.</summary>
     public Func<string, CancellationToken, Task<DownloadedMedia>>? Download { get; set; }
 
     /// <summary>Timing granularities to request, <c>word</c> and <c>segment</c>. Maps to <c>timestampGranularities</c>.</summary>
@@ -600,19 +643,66 @@ public static class Transcribe
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        byte[] audio;
+        byte[] audio = Array.Empty<byte>();
+        string mediaType = "audio/wav";
+        Uri? nativeUrl = null;
+        string? downloadedMediaType = null;
         if (!string.IsNullOrEmpty(request.AudioUrl))
         {
-            var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
-            audio = (await download(request.AudioUrl!, token).ConfigureAwait(false)).Data;
+            if (model is ITranscriptionUrlCaller
+                && request.Download is null
+                && Uri.TryCreate(request.AudioUrl, UriKind.Absolute, out var parsed)
+                && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
+            {
+                nativeUrl = parsed;
+            }
+            else
+            {
+                var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
+                var downloadedAudio = await download(request.AudioUrl!, token).ConfigureAwait(false);
+                audio = downloadedAudio.Data;
+                downloadedMediaType = downloadedAudio.MediaType;
+            }
         }
         else
         {
             audio = request.Audio ?? Array.Empty<byte>();
         }
 
-        var mediaType = MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
-        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct), null).ConfigureAwait(false);
+        if (nativeUrl is null)
+        {
+            mediaType = GetAudioMediaType(downloadedMediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+        }
+
+        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
+        {
+            if (nativeUrl is not null)
+            {
+                var native = await ((ITranscriptionUrlCaller)model).DoGenerateFromUrlAsync(new TranscriptionModelUrlCall(nativeUrl, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
+                if (native is not null)
+                {
+                    return native;
+                }
+
+                // A capable provider can decline an unsupported URL (for example, a redirect).
+                // Keep the existing secure download and file path, and retry only the file call.
+                DownloadedMedia downloaded;
+                try
+                {
+                    downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
+                }
+                catch (Util.DownloadError) when (ct.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(ct);
+                }
+
+                audio = downloaded.Data;
+                mediaType = GetAudioMediaType(downloaded.MediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+                nativeUrl = null;
+            }
+
+            return await model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
+        }, null).ConfigureAwait(false);
         WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
         if (result.Text is null)
         {
@@ -620,6 +710,22 @@ public static class Transcribe
         }
 
         return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
+    }
+
+    /// <summary>
+    /// Normalizes a downloaded <c>Content-Type</c> and returns it only when it is a full <c>audio/&lt;subtype&gt;</c> media type.
+    /// Generic or mislabeled types return <see langword="null"/> so the media type is detected from the bytes. Maps to <c>getAudioMediaType</c>.
+    /// </summary>
+    internal static string? GetAudioMediaType(string? contentType)
+    {
+        var mediaType = contentType?.Split(';')[0].Trim().ToLowerInvariant();
+        if (mediaType is null)
+        {
+            return null;
+        }
+
+        var slash = mediaType.IndexOf('/');
+        return mediaType.StartsWith("audio/", StringComparison.Ordinal) && slash > 0 && slash < mediaType.Length - 1 ? mediaType : null;
     }
 
     internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)

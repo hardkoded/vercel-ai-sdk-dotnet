@@ -483,7 +483,7 @@ public class OpenAICompatibleProvider : ProviderBase
         return WithQuery(ApiKeys.Combine(Options.BaseUrl, Options.RerankPath));
     }
 
-    private Uri WithQuery(Uri uri)
+    internal Uri WithQuery(Uri uri)
     {
         if (Options.QueryParameters.Count == 0)
         {
