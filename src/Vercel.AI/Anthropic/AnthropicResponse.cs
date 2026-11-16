@@ -489,6 +489,14 @@ public static class AnthropicResponse
         anthropic["stopSequence"] = root.TryGetProperty("stop_sequence", out var sequence) && sequence.ValueKind == JsonValueKind.String
             ? JsonValue.Create(sequence.GetString())
             : null;
+        var serviceTier = usage.ValueKind == JsonValueKind.Object && usage.TryGetProperty("service_tier", out var usageTier) && usageTier.ValueKind == JsonValueKind.String
+            ? usageTier.GetString()
+            : root.TryGetProperty("service_tier", out var rootTier) && rootTier.ValueKind == JsonValueKind.String ? rootTier.GetString() : null;
+        if (serviceTier != null)
+        {
+            anthropic["serviceTier"] = serviceTier;
+        }
+
         if (root.TryGetProperty("container", out var container) && container.ValueKind == JsonValueKind.Object)
         {
             var mapped = new JsonObject

@@ -4,6 +4,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Groq;
 
@@ -31,6 +32,9 @@ public sealed class GroqProvider : OpenAICompatibleProvider
         var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
         return new GroqProvider(client, options);
     }
+
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId) => new GroqTranscriptionModel(this, modelId);
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {

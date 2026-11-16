@@ -44,6 +44,8 @@ internal sealed class OpenAIResponsesStream
     private readonly IReadOnlyCollection<string> _functionToolNames;
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
+    private readonly Dictionary<int, OngoingApplyPatchCall> _ongoingApplyPatchCalls = new();
+    private readonly bool _isShellProviderExecuted;
 
     private readonly ToolNameMapping? _toolNameMapping;
     private readonly bool _store;
@@ -59,8 +61,10 @@ internal sealed class OpenAIResponsesStream
         ToolNameMapping? toolNameMapping = null,
         bool store = false,
         string providerOptionsName = "openai",
-        string? webSearchToolName = null)
+        string? webSearchToolName = null,
+        bool isShellProviderExecuted = false)
     {
+        _isShellProviderExecuted = isShellProviderExecuted;
         _store = store;
         _webSearchToolName = webSearchToolName;
         _providerOptionsName = providerOptionsName;
@@ -131,6 +135,32 @@ internal sealed class OpenAIResponsesStream
                         customCallId,
                         customCall["async"] is JsonValue asyncValue && asyncValue.TryGetValue<bool>(out var asyncMode) ? asyncMode : null);
                     parts.Add(new ToolInputStartStreamPart(customCallId, customName, inputEncoding: ToolInputEncoding.Text));
+                }
+                else if (node["item"] is JsonObject applyPatchAdded
+                    && applyPatchAdded["type"]?.GetValue<string>() == "apply_patch_call"
+                    && OutputIndex(node) is { } applyPatchIndex)
+                {
+                    var applyPatchCallId = applyPatchAdded["call_id"]?.GetValue<string>() ?? "call";
+                    var operation = applyPatchAdded["operation"] as JsonObject;
+                    var operationType = operation?["type"]?.GetValue<string>() ?? string.Empty;
+                    var isDelete = operationType == "delete_file";
+                    var applyPatchName = ToCustomToolName("apply_patch");
+
+                    // delete_file has no diff
+                    _ongoingApplyPatchCalls[applyPatchIndex] = new OngoingApplyPatchCall(applyPatchCallId) { HasDiff = isDelete, EndEmitted = isDelete };
+                    parts.Add(new ToolInputStartStreamPart(applyPatchCallId, applyPatchName));
+                    if (isDelete)
+                    {
+                        parts.Add(new ToolInputDeltaStreamPart(applyPatchCallId, ApplyPatchInput(applyPatchAdded)));
+                        parts.Add(new ToolInputEndStreamPart(applyPatchCallId));
+                    }
+                    else
+                    {
+                        parts.Add(new ToolInputDeltaStreamPart(
+                            applyPatchCallId,
+                            "{\"callId\":\"" + EscapeJsonDelta(applyPatchCallId) + "\",\"operation\":{\"type\":\"" + EscapeJsonDelta(operationType)
+                            + "\",\"path\":\"" + EscapeJsonDelta(operation?["path"]?.GetValue<string>() ?? string.Empty) + "\",\"diff\":\""));
+                    }
                 }
                 else if (node["item"] is JsonObject reasoningAdded
                     && reasoningAdded["type"]?.GetValue<string>() == "reasoning"
@@ -279,6 +309,32 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case "response.apply_patch_call_operation_diff.delta":
+                if (OutputIndex(node) is { } patchDeltaIndex
+                    && _ongoingApplyPatchCalls.TryGetValue(patchDeltaIndex, out var patchDeltaCall))
+                {
+                    parts.Add(new ToolInputDeltaStreamPart(patchDeltaCall.ToolCallId, EscapeJsonDelta(node["delta"]?.GetValue<string>() ?? string.Empty)));
+                    patchDeltaCall.HasDiff = true;
+                }
+
+                break;
+            case "response.apply_patch_call_operation_diff.done":
+                if (OutputIndex(node) is { } patchDoneIndex
+                    && _ongoingApplyPatchCalls.TryGetValue(patchDoneIndex, out var patchDoneCall)
+                    && !patchDoneCall.EndEmitted)
+                {
+                    if (!patchDoneCall.HasDiff)
+                    {
+                        parts.Add(new ToolInputDeltaStreamPart(patchDoneCall.ToolCallId, EscapeJsonDelta(node["diff"]?.GetValue<string>() ?? string.Empty)));
+                        patchDoneCall.HasDiff = true;
+                    }
+
+                    parts.Add(new ToolInputDeltaStreamPart(patchDoneCall.ToolCallId, "\"}}"));
+                    parts.Add(new ToolInputEndStreamPart(patchDoneCall.ToolCallId));
+                    patchDoneCall.EndEmitted = true;
+                }
+
+                break;
             case "response.output_item.done":
                 if (node["item"] is JsonObject functionCallDone
                     && functionCallDone["type"]?.GetValue<string>() == "function_call")
@@ -323,6 +379,57 @@ internal sealed class OpenAIResponsesStream
                     {
                         _activeOutputItemIds.Remove(finishedIndex);
                     }
+                }
+                else if (node["item"] is JsonObject applyPatchDone
+                    && applyPatchDone["type"]?.GetValue<string>() == "apply_patch_call")
+                {
+                    var applyPatchDoneIndex = OutputIndex(node) ?? -1;
+                    _ongoingApplyPatchCalls.TryGetValue(applyPatchDoneIndex, out var patchCall);
+                    _ongoingApplyPatchCalls.Remove(applyPatchDoneIndex);
+                    if (patchCall is { EndEmitted: false } && applyPatchDone["operation"]?["type"]?.GetValue<string>() != "delete_file")
+                    {
+                        if (!patchCall.HasDiff)
+                        {
+                            parts.Add(new ToolInputDeltaStreamPart(patchCall.ToolCallId, EscapeJsonDelta(applyPatchDone["operation"]?["diff"]?.GetValue<string>() ?? string.Empty)));
+                        }
+
+                        parts.Add(new ToolInputDeltaStreamPart(patchCall.ToolCallId, "\"}}"));
+                        parts.Add(new ToolInputEndStreamPart(patchCall.ToolCallId));
+                        patchCall.EndEmitted = true;
+                    }
+
+                    // Emit the final tool-call with the complete diff once the item is completed.
+                    if (patchCall != null && applyPatchDone["status"]?.GetValue<string>() == "completed")
+                    {
+                        _hasFunctionCall = true;
+                        var patchElement = JsonSerializer.Deserialize<JsonElement>(applyPatchDone.ToJsonString());
+                        parts.Add(new ToolCallStreamPart(
+                            patchCall.ToolCallId,
+                            ToCustomToolName("apply_patch"),
+                            OpenAIResponsesOutput.ApplyPatchInput(patchElement),
+                            OpenAIResponsesOutput.ItemMetadata(patchElement, _providerOptionsName)));
+                    }
+                }
+                else if (node["item"] is JsonObject shellCallDone
+                    && shellCallDone["type"]?.GetValue<string>() == "shell_call")
+                {
+                    var shellElement = JsonSerializer.Deserialize<JsonElement>(shellCallDone.ToJsonString());
+                    parts.Add(new ToolCallStreamPart(
+                        shellCallDone["call_id"]?.GetValue<string>() ?? "call",
+                        ToCustomToolName("shell"),
+                        OpenAIResponsesOutput.ShellCallInput(shellElement),
+                        OpenAIResponsesOutput.ItemMetadata(shellElement, _providerOptionsName))
+                    {
+                        ProviderExecuted = _isShellProviderExecuted,
+                    });
+                }
+                else if (node["item"] is JsonObject shellOutputDone
+                    && shellOutputDone["type"]?.GetValue<string>() == "shell_call_output")
+                {
+                    parts.Add(new ToolResultStreamPart(
+                        shellOutputDone["call_id"]?.GetValue<string>() ?? "call",
+                        ToCustomToolName("shell"),
+                        JsonSerializer.Deserialize<JsonElement>(OpenAIResponsesOutput.ShellCallOutputResult(JsonSerializer.Deserialize<JsonElement>(shellOutputDone.ToJsonString())))));
                 }
                 else if (node["item"] is JsonObject done)
                 {
@@ -581,6 +688,15 @@ internal sealed class OpenAIResponsesStream
         public List<string> BufferedInputDeltas { get; } = new();
     }
 
+    private sealed class OngoingApplyPatchCall(string toolCallId)
+    {
+        public string ToolCallId { get; } = toolCallId;
+
+        public bool HasDiff { get; set; }
+
+        public bool EndEmitted { get; set; }
+    }
+
     private sealed class OngoingCustomToolCall(string toolCallId, bool? async)
     {
         public string ToolCallId { get; } = toolCallId;
@@ -661,6 +777,18 @@ internal sealed class OpenAIResponsesStream
         parts.Add(new ToolInputEndStreamPart(callId, endMetadata));
         parts.Add(new ToolCallStreamPart(callId, name, input, OpenAIParallelToolCall.CallMetadata(item, ongoing?.Async, _providerOptionsName)));
     }
+
+    private string ToCustomToolName(string providerToolName) => _toolNameMapping?.ToCustomToolName(providerToolName) ?? providerToolName;
+
+    // JSON.stringify(delta).slice(1, -1): the delta escaped for the inside of a JSON string.
+    private static string EscapeJsonDelta(string delta)
+    {
+        var json = JsonSerializer.Serialize(delta, TextInputOptions);
+        return json.Substring(1, json.Length - 2);
+    }
+
+    private static string ApplyPatchInput(JsonObject item) =>
+        OpenAIResponsesOutput.ApplyPatchInput(JsonSerializer.Deserialize<JsonElement>(item.ToJsonString()));
 
     private void ItemDone(List<LanguageModelStreamPart> parts, JsonElement item, string? resolvedId = null)
     {

@@ -311,21 +311,42 @@ public static class OpenAICompatibleChat
         return parts;
     }
 
+    /// <summary>
+    /// Builds provider metadata for accepted and rejected prediction tokens, on top of what a metadata extractor returned.
+    /// An extractor entry replaces the default entry of the same key.
+    /// </summary>
+    public static JsonElement ProviderMetadata(string metadataKey, JsonObject? extracted, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
+    {
+        var key = metadataKey ?? string.Empty;
+        var root = new JsonObject { [key] = new JsonObject() };
+        if (extracted != null)
+        {
+            foreach (var pair in extracted)
+            {
+                root[pair.Key] = pair.Value?.DeepClone();
+            }
+        }
+
+        if (root[key] is JsonObject inner)
+        {
+            if (acceptedPredictionTokens is { } accepted)
+            {
+                inner["acceptedPredictionTokens"] = accepted;
+            }
+
+            if (rejectedPredictionTokens is { } rejected)
+            {
+                inner["rejectedPredictionTokens"] = rejected;
+            }
+        }
+
+        return ToElement(root);
+    }
+
     /// <summary>Builds provider metadata for accepted and rejected prediction tokens.</summary>
     public static JsonElement ProviderMetadata(string metadataKey, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
     {
-        var inner = new JsonObject();
-        if (acceptedPredictionTokens is { } accepted)
-        {
-            inner["acceptedPredictionTokens"] = accepted;
-        }
-
-        if (rejectedPredictionTokens is { } rejected)
-        {
-            inner["rejectedPredictionTokens"] = rejected;
-        }
-
-        return ToElement(new JsonObject { [metadataKey ?? string.Empty] = inner });
+        return ProviderMetadata(metadataKey, null, acceptedPredictionTokens, rejectedPredictionTokens);
     }
 
     /// <summary>Builds tool-call metadata that carries a Google thought signature.</summary>

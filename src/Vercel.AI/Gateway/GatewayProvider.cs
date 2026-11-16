@@ -201,6 +201,17 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return headers;
     }
 
+    /// <summary>Gets the info of one generation, including its cost breakdown.</summary>
+    public Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
+    {
+        return new GatewayGenerationInfoFetcher(new GatewayConfig
+        {
+            BaseUrl = Options.BaseUrl,
+            Headers = () => BatchHeaders(null),
+            Http = Http,
+        }).GetGenerationInfoAsync(parameters, cancellationToken);
+    }
+
     internal static Exception MapFailure(Exception exception)
     {
         return GatewayErrors.AsGatewayError(exception, "api-key");

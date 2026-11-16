@@ -146,6 +146,19 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     internal static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools) =>
         ToolNames.CreateToolNameMapping(MappedTools(tools), ProviderToolNames);
 
+    /// <summary>Whether the shell tool of the request runs in a hosted container, so its calls are provider-executed.</summary>
+    internal static bool IsShellProviderExecuted(IReadOnlyList<LanguageModelTool>? tools)
+    {
+        var shell = tools?.FirstOrDefault(tool => tool.IsProviderDefined && tool.ProviderToolId == "openai.shell");
+        if (shell is null || shell.Args.ValueKind != JsonValueKind.Object
+            || !shell.Args.TryGetProperty("environment", out var environment) || environment.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        return OpenAIJson.String(environment, "type") is "containerAuto" or "containerReference";
+    }
+
     /// <summary>The client name of the web search tool, if the request defines one.</summary>
     internal static string? WebSearchToolName(IReadOnlyList<LanguageModelTool>? tools) =>
         tools?.FirstOrDefault(tool => tool.ProviderToolId == "openai.web_search" || tool.ProviderToolId == "openai.web_search_preview")?.Name;
@@ -688,7 +701,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             options.JsonResponse || options.JsonSchema != null,
             _providerOptionsName,
             collectLogprobs,
-            WebSearchToolName(options.Tools));
+            WebSearchToolName(options.Tools),
+            IsShellProviderExecuted(options.Tools));
     }
 
     /// <inheritdoc />
@@ -716,7 +730,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             CreateToolNameMapping(options.Tools),
             prepared.Body["store"]?.GetValue<bool>() == true,
             _providerOptionsName,
-            WebSearchToolName(options.Tools));
+            WebSearchToolName(options.Tools),
+            IsShellProviderExecuted(options.Tools));
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             JsonDocument? chunkDocument = null;
@@ -802,7 +817,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         bool jsonResponse = false,
         string providerOptionsName = "openai",
         bool collectLogprobs = false,
-        string? webSearchToolName = null)
+        string? webSearchToolName = null,
+        bool isShellProviderExecuted = false)
     {
         functionToolNames ??= Array.Empty<string>();
         generateId ??= () => JsonValues.GenerateId("source_");
@@ -1000,6 +1016,33 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var name = OpenAIJson.String(item, "name") ?? string.Empty;
                 var input = OpenAIJson.String(item, "input") ?? string.Empty;
                 content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)));
+            }
+            else if (type == "shell_call")
+            {
+                content.Add(new GeneratedToolCall(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                    OpenAIResponsesOutput.ShellCallInput(item),
+                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName))
+                {
+                    ProviderExecuted = isShellProviderExecuted,
+                });
+            }
+            else if (type == "shell_call_output")
+            {
+                content.Add(new GeneratedToolResult(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    toolNameMapping?.ToCustomToolName("shell") ?? "shell",
+                    OpenAIResponsesOutput.ShellCallOutputResult(item)));
+            }
+            else if (type == "apply_patch_call")
+            {
+                hasFunctionCall = true;
+                content.Add(new GeneratedToolCall(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    toolNameMapping?.ToCustomToolName("apply_patch") ?? "apply_patch",
+                    OpenAIResponsesOutput.ApplyPatchInput(item),
+                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)));
             }
             else if (type == "reasoning" && item.TryGetProperty("summary", out var summary) && summary.ValueKind == JsonValueKind.Array)
             {

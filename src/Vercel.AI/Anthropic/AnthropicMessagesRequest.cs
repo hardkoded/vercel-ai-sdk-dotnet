@@ -147,6 +147,7 @@ public static class AnthropicMessagesRequest
         // Provider metadata is written under the custom key only when that key itself was used.
         var usedCustom = resolvedCustom.Namespaces.Count > 0 && resolvedCustom.Namespaces[0] == providerOptionsName;
         var anthropic = Merge(canonical, custom);
+        var serviceTier = ResolveServiceTier(anthropic, canonical, custom, providerOptionsName, warnings);
         var mode = String(anthropic, "structuredOutputMode") ?? "auto";
         var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
         var supportsResponseSchema = options.JsonSchema is not { } responseSchema
@@ -614,7 +615,7 @@ public static class AnthropicMessagesRequest
         }
 
         AnthropicJson.Set(body, "speed", String(anthropic, "speed"));
-        AnthropicJson.Set(body, "service_tier", String(anthropic, "serviceTier"));
+        AnthropicJson.Set(body, "service_tier", serviceTier);
         AnthropicJson.Set(body, "inference_geo", String(anthropic, "inferenceGeo"));
         if (fallbacks != null && (fallbacks.Value.ValueKind == JsonValueKind.String || (fallbacks.Value.ValueKind == JsonValueKind.Array && fallbacks.Value.GetArrayLength() > 0)))
         {
@@ -1312,6 +1313,58 @@ public static class AnthropicMessagesRequest
         return options.ProviderOptions?
             .Where(pair => pair.Value.ValueKind == JsonValueKind.Object)
             .ToDictionary(pair => pair.Key, pair => pair.Value);
+    }
+
+    private static string? ResolveServiceTier(
+        JsonElement? merged,
+        JsonElement? canonical,
+        JsonElement? custom,
+        string providerOptionsName,
+        IList<AnthropicWarning> warnings)
+    {
+        // The schema accepts every known tier; the custom namespace of MiniMax only accepts its own.
+        ValidateServiceTier(canonical, "anthropic", new[] { "auto", "standard_only", "standard", "priority" });
+        ValidateServiceTier(
+            custom,
+            providerOptionsName,
+            providerOptionsName == "minimax" ? new[] { "standard", "priority" } : new[] { "auto", "standard_only", "standard", "priority" });
+        var tier = String(merged, "serviceTier");
+        if (tier == null)
+        {
+            return null;
+        }
+
+        var supported = providerOptionsName == "anthropic"
+            ? new[] { "auto", "standard_only" }
+            : providerOptionsName == "minimax"
+                ? new[] { "standard", "priority" }
+                : null;
+        if (supported != null && Array.IndexOf(supported, tier) < 0)
+        {
+            warnings.Add(new AnthropicWarning(
+                "unsupported",
+                "serviceTier",
+                "serviceTier \"" + tier + "\" is not supported by " + providerOptionsName + ". Use " + string.Join(" or ", supported.Select(value => "\"" + value + "\"")) + "."));
+            return null;
+        }
+
+        return tier;
+    }
+
+    private static void ValidateServiceTier(JsonElement? options, string namespaceName, string[] allowed)
+    {
+        if (options == null || !options.Value.TryGetProperty("serviceTier", out var value))
+        {
+            return;
+        }
+
+        if (value.ValueKind != JsonValueKind.String || Array.IndexOf(allowed, value.GetString()) < 0)
+        {
+            throw new InvalidArgumentException(
+                "providerOptions." + namespaceName + ".serviceTier",
+                value.GetRawText(),
+                "serviceTier must be one of " + string.Join(", ", allowed) + ".");
+        }
     }
 
     private static JsonElement? ReadProvider(LanguageModelCallOptions options, string name)
