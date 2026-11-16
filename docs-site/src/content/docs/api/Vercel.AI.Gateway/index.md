@@ -16,67 +16,24 @@ Vercel AI Gateway provider.
 | --- | --- |
 | [GatewayAuthenticationError](/api/Vercel.AI.Gateway/GatewayAuthenticationError/) | Authentication failed. |
 | [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/) | AI Gateway batch API. Downloads the JSONL results of a batch. |
-| [GatewayConfig](/api/Vercel.AI.Gateway/GatewayConfig/) | Configuration shared by Gateway fetchers (GatewayConfig). |
 | [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/) | Answers questions through the Gateway /decision-model route. |
 | [GatewayEmbeddingModel](/api/Vercel.AI.Gateway/GatewayEmbeddingModel/) | Gateway embedding model. |
 | [GatewayError](/api/Vercel.AI.Gateway/GatewayError/) | Base class for AI Gateway errors. The message includes [generationId] when one was returned. |
 | [GatewayErrors](/api/Vercel.AI.Gateway/GatewayErrors/) | Parses Gateway auth headers and error bodies. |
 | [GatewayFailedDependencyError](/api/Vercel.AI.Gateway/GatewayFailedDependencyError/) | A dependency required by the Gateway request was unavailable. Status 424 is not retried. |
 | [GatewayForbiddenError](/api/Vercel.AI.Gateway/GatewayForbiddenError/) | The request was rejected by policy. |
-| [GatewayGenerationInfo](/api/Vercel.AI.Gateway/GatewayGenerationInfo/) | Information about a Gateway generation. |
-| [GatewayGenerationInfoFetcher](/api/Vercel.AI.Gateway/GatewayGenerationInfoFetcher/) | Fetches generation info (GET /v1/generation?id=) from the Gateway. |
-| [GatewayGenerationInfoParams](/api/Vercel.AI.Gateway/GatewayGenerationInfoParams/) | Parameters for CancellationToken). |
 | [GatewayImageModel](/api/Vercel.AI.Gateway/GatewayImageModel/) | Gateway image model. |
 | [GatewayInternalServerError](/api/Vercel.AI.Gateway/GatewayInternalServerError/) | The Gateway failed internally. |
 | [GatewayInvalidRequestError](/api/Vercel.AI.Gateway/GatewayInvalidRequestError/) | The Gateway rejected the request. |
 | [GatewayLanguageModel](/api/Vercel.AI.Gateway/GatewayLanguageModel/) | Gateway language model. The request body is the V4 call options. |
-| [GatewayMintedClientSecret](/api/Vercel.AI.Gateway/GatewayMintedClientSecret/) | A client secret minted through the Gateway. ExpiresAt is epoch seconds. |
 | [GatewayModelNotFoundError](/api/Vercel.AI.Gateway/GatewayModelNotFoundError/) | The requested model is not available. |
 | [GatewayNotFoundError](/api/Vercel.AI.Gateway/GatewayNotFoundError/) | A Gateway resource was not found. |
 | [GatewayOptions](/api/Vercel.AI.Gateway/GatewayOptions/) | AI Gateway settings. The default base URL is https://ai-gateway.vercel.sh/v4/ai. |
-| [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/) | Vercel AI Gateway provider. Language, embedding, image, and video calls use the Gateway V4 routes (/language-model, /embedding-model, /image-model, /video-model). |
+| [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/) | Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes (/language-model, /embedding-model, /image-model). |
 | [GatewayRateLimitError](/api/Vercel.AI.Gateway/GatewayRateLimitError/) | A Gateway rate limit. |
-| [GatewayRealtimeAuth](/api/Vercel.AI.Gateway/GatewayRealtimeAuth/) | Shared WebSocket subprotocol contract for AI Gateway realtime, streaming transcription, and streaming speech auth. Maps to gateway-realtime-auth.ts. The Gateway auth (bearer) token travels through the Sec-WebSocket-Protocol handshake because a browser WebSocket cannot set request headers. |
-| [GatewayRealtimeClientSecret](/api/Vercel.AI.Gateway/GatewayRealtimeClientSecret/) | A client secret together with the WebSocket URL to open. Maps to RealtimeModelV4ClientSecretResult. |
-| [GatewayRealtimeModel](/api/Vercel.AI.Gateway/GatewayRealtimeModel/) | Realtime model backed by the AI Gateway. The Gateway normalizes realtime like every other modality, so this model is a thin identity codec over the normalized protocol; only the connection and authentication are Gateway-specific. |
-| [GatewayRealtimeModelConfig](/api/Vercel.AI.Gateway/GatewayRealtimeModelConfig/) | Configuration of a GatewayRealtimeModel. Maps to GatewayRealtimeModelConfig. |
-| [GatewayRealtimeModelId](/api/Vercel.AI.Gateway/GatewayRealtimeModelId/) | Known AI Gateway realtime model ids. Maps to GatewayRealtimeModelId; any other string is accepted too. |
-| [GatewayRealtimeWebSocketConfig](/api/Vercel.AI.Gateway/GatewayRealtimeWebSocketConfig/) | URL and subprotocols a client opens a WebSocket with. Maps to the result of getWebSocketConfig. |
 | [GatewayResponseError](/api/Vercel.AI.Gateway/GatewayResponseError/) | The Gateway error body could not be read. |
 | [GatewayServiceCollectionExtensions](/api/Vercel.AI.Gateway/GatewayServiceCollectionExtensions/) | Registers the Gateway provider. |
 | [GatewayTakoSearch](/api/Vercel.AI.Gateway/GatewayTakoSearch/) | JSON schemas for the Gateway Tako search tool. |
-| [GatewayTakoSearchConfig](/api/Vercel.AI.Gateway/GatewayTakoSearchConfig/) | Developer-only configuration of the Gateway Tako search tool. These options are not part of the tool input, so the model cannot see or set them. The Gateway applies the defaults and validates them. Maps to TakoSearchConfig. |
 | [GatewayTimeoutError](/api/Vercel.AI.Gateway/GatewayTimeoutError/) | The client timed out before the Gateway responded. |
-| [GatewayToolError](/api/Vercel.AI.Gateway/GatewayToolError/) | Error returned as the output of a Gateway provider-executed tool instead of a result. Maps to GatewayToolError. |
-| [GatewayVideoModel](/api/Vercel.AI.Gateway/GatewayVideoModel/) | Gateway video model. CancellationToken) reads the first data event of an SSE response from /video-model. CancellationToken) and CancellationToken) use /video-model/start and /video-model/status. Maps to GatewayVideoModel in gateway-video-model.ts. |
-| [TakoCard](/api/Vercel.AI.Gateway/TakoCard/) | A card of a Tako search response. Maps to TakoCard. |
-| [TakoCardSource](/api/Vercel.AI.Gateway/TakoCardSource/) | A source of a TakoCard. |
-| [TakoCostUsage](/api/Vercel.AI.Gateway/TakoCostUsage/) | Cost of one part of a Tako search. Maps to TakoSearchResponse['usage']['compute'] and ['variablecost']. |
-| [TakoDataFreshness](/api/Vercel.AI.Gateway/TakoDataFreshness/) | Freshness of the data of a TakoCard. |
-| [TakoDataset](/api/Vercel.AI.Gateway/TakoDataset/) | Inline dataset of a result content. Maps to TakoResultContent['dataset']. |
-| [TakoDatasetColumn](/api/Vercel.AI.Gateway/TakoDatasetColumn/) | A column of a TakoDataset. |
-| [TakoDatasetSource](/api/Vercel.AI.Gateway/TakoDatasetSource/) | A source of a TakoDataset. |
-| [TakoDataSourceConfig](/api/Vercel.AI.Gateway/TakoDataSourceConfig/) | Options of the curated data source. Maps to TakoDataSourceConfig. |
-| [TakoDataUsage](/api/Vercel.AI.Gateway/TakoDataUsage/) | Data cost of a Tako search. Maps to TakoSearchResponse['usage']['data']. |
-| [TakoExportPricing](/api/Vercel.AI.Gateway/TakoExportPricing/) | Pricing of exporting a card's rows. Maps to TakoResultContent['exportpricing']. |
-| [TakoLocation](/api/Vercel.AI.Gateway/TakoLocation/) | End-user coordinates for localized results. Maps to TakoSearchConfig['location']. |
-| [TakoManifestColumn](/api/Vercel.AI.Gateway/TakoManifestColumn/) | A column of the manifest of a result content. |
-| [TakoMethodology](/api/Vercel.AI.Gateway/TakoMethodology/) | A methodology of a TakoCard. |
-| [TakoMetricDefinition](/api/Vercel.AI.Gateway/TakoMetricDefinition/) | A metric definition of a TakoCard. |
-| [TakoNode](/api/Vercel.AI.Gateway/TakoNode/) | A Data Graph node of a TakoCard. |
-| [TakoOutputSettings](/api/Vercel.AI.Gateway/TakoOutputSettings/) | Settings that control card rendering. Maps to TakoSearchConfig['outputSettings']. |
-| [TakoPlaceholder](/api/Vercel.AI.Gateway/TakoPlaceholder/) | Set when Tako withholds a card's data. Maps to TakoCard['placeholder']. |
-| [TakoResultContent](/api/Vercel.AI.Gateway/TakoResultContent/) | Content of a card or web result. Maps to TakoResultContent. |
-| [TakoSearchOutput](/api/Vercel.AI.Gateway/TakoSearchOutput/) | Output of the Tako search tool: a TakoSearchResponse or a GatewayToolError. Maps to TakoSearchOutput (TakoSearchError \| TakoSearchResponse, where TakoSearchError is GatewayToolError). |
-| [TakoSearchResponse](/api/Vercel.AI.Gateway/TakoSearchResponse/) | Output of the Tako search tool. Deserialize the tool output into it. Maps to TakoSearchResponse. |
-| [TakoSearchSourcesConfig](/api/Vercel.AI.Gateway/TakoSearchSourcesConfig/) | Sources to search. Maps to TakoSearchConfig['sources']. |
-| [TakoUsage](/api/Vercel.AI.Gateway/TakoUsage/) | Usage of a Tako search. Maps to TakoSearchResponse['usage']. |
-| [TakoWebResult](/api/Vercel.AI.Gateway/TakoWebResult/) | A web result of a Tako search response. Maps to TakoWebResult. |
-| [TakoWebSourceConfig](/api/Vercel.AI.Gateway/TakoWebSourceConfig/) | Options of the web source. Maps to TakoWebSourceConfig. |
+| [GatewayVideoModel](/api/Vercel.AI.Gateway/GatewayVideoModel/) | Gateway video model. |
 | [V4Json](/api/Vercel.AI.Gateway/V4Json/) | Serializes call options and parses results in the Language Model V4 JSON shape the Gateway expects. |
-
-## Structs
-
-| Type | Summary |
-| --- | --- |
-| [TakoDatasetCell](/api/Vercel.AI.Gateway/TakoDatasetCell/) | A dataset cell: a boolean, number, string or null. Maps to TakoDatasetCell. |

@@ -25,7 +25,7 @@ Gateway language model. The request body is the V4 call options.
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L379)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L216)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a Gateway language model.
 | `provider` | [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L384)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L221)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L234)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_Provider_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L231)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_SpecificationVersion"></a>
@@ -102,25 +102,7 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L391)
-
-<a id="Vercel_AI_Gateway_GatewayLanguageModel_SupportedUrls_"></a>
-<a id="Vercel_AI_Gateway_GatewayLanguageModel_SupportedUrls"></a>
-
-### SupportedUrls
-
-
-```csharp
-public IReadOnlyDictionary<string, string> SupportedUrls { get; }
-```
-
-
-URLs the model can read itself, keyed by media type pattern (such as `image/*`). Each value is a regular expression that a URL
-must match. Prompt file URLs that match are passed through. All others are downloaded before the call. Maps to `supportedUrls`.
-
-**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L394)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L228)
 
 ## Methods
 
@@ -146,7 +128,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L406)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L237)
 
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -170,4 +152,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L258)
