@@ -71,16 +71,16 @@ public static class XaiRealtimeEventMapper
                 return new RealtimeModelV4ServerEvent("response-created") { ResponseId = ResponseId(clone), Raw = clone };
 
             case "response.done":
-            {
-                var response = Object(clone, "response");
-                return new RealtimeModelV4ServerEvent("response-done")
                 {
-                    ResponseId = ResponseId(clone),
-                    Status = (response != null ? String(response.Value, "status") : null) ?? "completed",
-                    Usage = MapResponseUsage(Object(clone, "usage") ?? (response != null ? Object(response.Value, "usage") : null)),
-                    Raw = clone,
-                };
-            }
+                    var response = Object(clone, "response");
+                    return new RealtimeModelV4ServerEvent("response-done")
+                    {
+                        ResponseId = ResponseId(clone),
+                        Status = (response != null ? String(response.Value, "status") : null) ?? "completed",
+                        Usage = MapResponseUsage(Object(clone, "usage") ?? (response != null ? Object(response.Value, "usage") : null)),
+                        Raw = clone,
+                    };
+                }
 
             case "response.output_item.added":
                 return new RealtimeModelV4ServerEvent("output-item-added") { ResponseId = String(clone, "response_id"), ItemId = ItemId(clone), Raw = clone };
@@ -129,15 +129,15 @@ public static class XaiRealtimeEventMapper
                 return Custom(type, clone);
 
             case "error":
-            {
-                var error = Object(clone, "error");
-                return new RealtimeModelV4ServerEvent("error")
                 {
-                    Message = (error != null ? String(error.Value, "message") : null) ?? String(clone, "message") ?? "Unknown error",
-                    Code = (error != null ? String(error.Value, "code") : null) ?? String(clone, "code"),
-                    Raw = clone,
-                };
-            }
+                    var error = Object(clone, "error");
+                    return new RealtimeModelV4ServerEvent("error")
+                    {
+                        Message = (error != null ? String(error.Value, "message") : null) ?? String(clone, "message") ?? "Unknown error",
+                        Code = (error != null ? String(error.Value, "code") : null) ?? String(clone, "code"),
+                        Raw = clone,
+                    };
+                }
 
             default:
                 return Custom(type, clone);
@@ -166,25 +166,25 @@ public static class XaiRealtimeEventMapper
                 return new JsonObject { ["type"] = "input_audio_buffer.clear" };
 
             case "conversation-item-create":
-            {
-                var item = clientEvent.Item;
-                switch (item?.Type)
                 {
-                    case "text-message":
-                        return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_text", ["text"] = item.Text }));
-                    case "audio-message":
-                        return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }));
-                    case "function-call-output":
-                        return ConversationItemCreate(new JsonObject
-                        {
-                            ["type"] = "function_call_output",
-                            ["call_id"] = item.CallId,
-                            ["output"] = item.Output,
-                        });
-                    default:
-                        return null;
+                    var item = clientEvent.Item;
+                    switch (item?.Type)
+                    {
+                        case "text-message":
+                            return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_text", ["text"] = item.Text }));
+                        case "audio-message":
+                            return ConversationItemCreate(Message(item.Role, new JsonObject { ["type"] = "input_audio", ["audio"] = item.Audio }));
+                        case "function-call-output":
+                            return ConversationItemCreate(new JsonObject
+                            {
+                                ["type"] = "function_call_output",
+                                ["call_id"] = item.CallId,
+                                ["output"] = item.Output,
+                            });
+                        default:
+                            return null;
+                    }
                 }
-            }
 
             case "conversation-item-truncate":
                 // xAI does not support `conversation.item.truncate` over WebSocket (it is
@@ -194,26 +194,26 @@ public static class XaiRealtimeEventMapper
                 return null;
 
             case "response-create":
-            {
-                var create = new JsonObject { ["type"] = "response.create" };
-                if (clientEvent.Options != null)
                 {
-                    var response = new JsonObject();
-                    if (clientEvent.Options.Modalities != null)
+                    var create = new JsonObject { ["type"] = "response.create" };
+                    if (clientEvent.Options != null)
                     {
-                        response["modalities"] = new JsonArray([.. clientEvent.Options.Modalities.Select(m => (JsonNode?)JsonValue.Create(m))]);
+                        var response = new JsonObject();
+                        if (clientEvent.Options.Modalities != null)
+                        {
+                            response["modalities"] = new JsonArray([.. clientEvent.Options.Modalities.Select(m => (JsonNode?)JsonValue.Create(m))]);
+                        }
+
+                        if (clientEvent.Options.Instructions != null)
+                        {
+                            response["instructions"] = clientEvent.Options.Instructions;
+                        }
+
+                        create["response"] = response;
                     }
 
-                    if (clientEvent.Options.Instructions != null)
-                    {
-                        response["instructions"] = clientEvent.Options.Instructions;
-                    }
-
-                    create["response"] = response;
+                    return create;
                 }
-
-                return create;
-            }
 
             case "response-cancel":
                 return new JsonObject { ["type"] = "response.cancel" };

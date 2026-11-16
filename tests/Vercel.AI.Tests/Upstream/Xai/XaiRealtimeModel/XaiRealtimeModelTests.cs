@@ -33,7 +33,8 @@ public sealed class XaiRealtimeModelTests
             {
                 await Task.Yield();
                 return new Dictionary<string, string?> { ["authorization"] = "Bearer test-key", ["omitted"] = null };
-            },
+            }
+            ,
         };
 
         var model = new Model("grok-voice-latest", new XaiRealtimeModelConfig("xai.realtime", "https://api.x.ai/v1", headers));

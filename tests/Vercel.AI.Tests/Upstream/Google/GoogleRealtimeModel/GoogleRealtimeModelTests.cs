@@ -30,7 +30,8 @@ public sealed class GoogleRealtimeModelTests
             {
                 await Task.Yield();
                 return new Dictionary<string, string?> { ["authorization"] = "Bearer test-key", ["omitted"] = null };
-            },
+            }
+            ,
         };
 
         var model = GoogleRealtimeTestSupport.CreateModel("gemini-3.8-live", headers);
