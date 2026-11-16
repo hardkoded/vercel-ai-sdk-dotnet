@@ -84,7 +84,14 @@ public sealed class AnthropicFiles : Provider.IFileStore, Operations.IFileStore
         }
 
         var result = await UploadAsync(string.IsNullOrEmpty(call.Filename) ? "blob" : call.Filename!, bytes, call.MediaType, null, cancellationToken, callHeaders).ConfigureAwait(false);
-        return new UploadFileModelResult(new ProviderFileReference(result.Id, "anthropic"), filename: result.FileName);
+        return new UploadFileModelResult(
+            new ProviderFileReference(result.Id, "anthropic"),
+            result.MediaType,
+            result.FileName,
+            result.ByteSize,
+            result.CreatedAt?.UtcDateTime,
+            result.ExpiresAt?.UtcDateTime,
+            JsonSerializer.SerializeToElement(result.ProviderMetadata));
     }
 
     /// <summary>Uploads a file and returns the parsed Files API body.</summary>

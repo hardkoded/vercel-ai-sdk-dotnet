@@ -28,7 +28,7 @@ public sealed class UploadFileTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects stream data at runtime and cancels the stream", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest("packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::rejects stream data at runtime and cancels the stream", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Rejects_stream_data_at_runtime_and_cancels_the_stream()
     {
         var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
