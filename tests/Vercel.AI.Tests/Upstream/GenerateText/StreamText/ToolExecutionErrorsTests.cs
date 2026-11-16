@@ -44,9 +44,8 @@ public sealed class ToolExecutionErrorsTests
     [Fact]
     [UpstreamTest(
         RedactPrefix + "should redact the tool error in toUIMessageStream",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc",
-        Note = "Uses UIMessageStreamResult.WriteAsync, the .NET counterpart of toUIMessageStream.")]
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
     public async Task Should_redact_the_tool_error_in_toUIMessageStream()
     {
         var chunks = await SingleProviderExecutedToolCallAndResultTests.ReadUiChunks(Run(), redactToolErrors: true);
