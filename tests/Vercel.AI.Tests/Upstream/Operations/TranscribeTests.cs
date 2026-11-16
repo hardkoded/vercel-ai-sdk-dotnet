@@ -4,6 +4,8 @@
 
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -13,6 +15,7 @@ public sealed class TranscribeTests
 {
     private const string Stream = "packages/ai/src/transcribe/stream-transcribe.test.ts::experimental_streamTranscribe::";
     private const string Once = "packages/ai/src/transcribe/transcribe.test.ts::transcribe::";
+    private const string NativeUrlCommit = "36802d48afa7132420acddaeae3f601b2fccb7f1";
     private const string Error = "packages/ai/src/transcribe/transcribe.test.ts::transcribe > error handling::";
 
     [Fact]
@@ -209,6 +212,134 @@ public sealed class TranscribeTests
         Assert.Equal("fullStream can only be accessed once.", error.Message);
     }
 
+    [Theory]
+    [InlineData("http:")]
+    [InlineData("https:")]
+    [UpstreamTest(Once + "passes %s audio URLs directly to capable models with accurate telemetry", Coverage = UpstreamCoverage.Partial, Commit = NativeUrlCommit, Note = "The port has no transcribe telemetry events, so the start/end audio metadata assertions are not ported.")]
+    public async Task Partial_Passes_audio_URLs_directly_to_capable_models(string protocol)
+    {
+        var url = new Uri(protocol + "//example.com/large-audio.mp3");
+        var model = new TranscriptFake { FromUrl = _ => Task.FromResult<TranscriptionModelResult?>(new TranscriptionModelResult("hello")) };
+        using var cancellation = new CancellationTokenSource();
+        var result = await Transcribe.TranscribeAsync(new TranscribeRequest
+        {
+            Model = model,
+            AudioUrl = url.AbsoluteUri,
+            MaxRetries = 0,
+            CancellationToken = cancellation.Token,
+            Headers = new Dictionary<string, string> { ["custom-header"] = "value" },
+            ProviderOptions = OperationJson.Parse("{\"groq\":{\"language\":\"en\"}}"),
+            TimestampGranularities = new[] { "word", "segment" },
+        });
+        Assert.Equal("hello", result.Text);
+        Assert.Equal(0, model.GenerateCalls);
+        var call = model.UrlGenerated!;
+        Assert.Equal(url, call.Audio);
+        Assert.Equal(cancellation.Token, call.CancellationToken);
+        Assert.Equal("value", call.Headers["custom-header"]);
+        Assert.Equal("en", call.ProviderOptions.GetProperty("groq").GetProperty("language").GetString());
+        Assert.Equal(new[] { "word", "segment" }, call.TimestampGranularities);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "downloads locally when native URL transcription is declined and retries only the file call", Coverage = UpstreamCoverage.Partial, Commit = NativeUrlCommit, Note = "The port has no transcribe telemetry events, so the onEnd audio metadata assertion is not ported.")]
+    public async Task Partial_Downloads_locally_when_native_URL_transcription_is_declined_and_retries_only_the_file_call()
+    {
+        var audio = new byte[] { 1, 2, 3, 4 };
+        var previous = Download.Fetch;
+        var fetches = 0;
+        var fileCalls = 0;
+        try
+        {
+            Download.Fetch = (url, request) =>
+            {
+                fetches++;
+                return Task.FromResult(DownloadResponse.Bytes(audio, "Audio/MPEG; charset=binary"));
+            };
+            var model = new TranscriptFake
+            {
+                FromUrl = _ => Task.FromResult<TranscriptionModelResult?>(null),
+                Generate = call =>
+                {
+                    fileCalls++;
+                    return fileCalls == 1
+                        ? throw new Vercel.AI.Util.ApiCallError("Retry file", "https://example.com/transcriptions", new { }, 429, new Dictionary<string, string> { ["retry-after-ms"] = "0" }, isRetryable: true)
+                        : Task.FromResult(new TranscriptionModelResult("hello"));
+                },
+            };
+            var result = await Transcribe.TranscribeAsync(new TranscribeRequest
+            {
+                Model = model,
+                AudioUrl = "https://example.com/redirect",
+                MaxRetries = 1,
+                TimestampGranularities = Array.Empty<string>(),
+            });
+            Assert.Equal("hello", result.Text);
+            Assert.Equal(1, model.UrlCalls);
+            Assert.Empty(model.UrlGenerated!.TimestampGranularities!);
+            Assert.Equal(1, fetches);
+            Assert.Equal(2, fileCalls);
+            Assert.Equal(audio, model.Generated!.Audio);
+            Assert.Empty(model.Generated.TimestampGranularities!);
+        }
+        finally
+        {
+            Download.Fetch = previous;
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "retries native URL calls without switching to file upload", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Retries_native_URL_calls_without_switching_to_file_upload()
+    {
+        var audio = new Uri("https://example.com/audio.mp3");
+        var attempts = 0;
+        var model = new TranscriptFake
+        {
+            FromUrl = _ => ++attempts == 1
+                ? throw new Vercel.AI.Util.ApiCallError("Retry this request", "https://example.com/transcriptions", new { }, 429, new Dictionary<string, string> { ["retry-after-ms"] = "0" }, isRetryable: true)
+                : Task.FromResult<TranscriptionModelResult?>(new TranscriptionModelResult("hello")),
+        };
+        var result = await Transcribe.TranscribeAsync(new TranscribeRequest { Model = model, AudioUrl = audio.AbsoluteUri, MaxRetries = 1 });
+        Assert.Equal("hello", result.Text);
+        Assert.Equal(2, model.UrlCalls);
+        Assert.Equal(audio, model.UrlGenerated!.Audio);
+        Assert.Equal(0, model.GenerateCalls);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "preserves explicit custom downloads even for URL-capable models", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Preserves_explicit_custom_downloads_even_for_URL_capable_models()
+    {
+        var bytes = new byte[] { 1, 2, 3, 4 };
+        var downloads = 0;
+        var model = new TranscriptFake { FromUrl = _ => throw new InvalidOperationException("native URL must not be used") };
+        await Transcribe.TranscribeAsync(new TranscribeRequest
+        {
+            Model = model,
+            AudioUrl = "https://example.com/audio.mp3",
+            Download = (url, token) =>
+            {
+                downloads++;
+                return Task.FromResult(new DownloadedMedia(bytes, "audio/mpeg"));
+            },
+        });
+        Assert.Equal(1, downloads);
+        Assert.Equal(0, model.UrlCalls);
+        Assert.Equal(bytes, model.Generated!.Audio);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "continues sending bytes to file transcription for URL-capable models", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Continues_sending_bytes_to_file_transcription_for_URL_capable_models()
+    {
+        var bytes = new byte[] { 1, 2, 3, 4 };
+        var model = new TranscriptFake { FromUrl = _ => throw new InvalidOperationException("native URL must not be used") };
+        await Transcribe.TranscribeAsync(new TranscribeRequest { Model = model, Audio = bytes });
+        Assert.Equal(0, model.UrlCalls);
+        Assert.Equal(bytes, model.Generated!.Audio);
+    }
+
     [Fact]
     [UpstreamTest(Once + "should send args to doGenerate", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_arguments_to_do_generate()
@@ -388,8 +519,25 @@ public sealed class TranscribeTests
         return seen;
     }
 
-    private sealed class TranscriptFake : ITranscriptionCaller
+    private sealed class TranscriptFake : ITranscriptionUrlCaller
     {
+        public Func<TranscriptionModelUrlCall, Task<TranscriptionModelResult?>>? FromUrl { get; set; }
+
+        public TranscriptionModelUrlCall? UrlGenerated { get; private set; }
+
+        public int UrlCalls { get; private set; }
+
+        public int GenerateCalls { get; private set; }
+
+        public Func<TranscriptionModelCall, Task<TranscriptionModelResult>>? Generate { get; set; }
+
+        public Task<TranscriptionModelResult?> DoGenerateFromUrlAsync(TranscriptionModelUrlCall call, CancellationToken cancellationToken)
+        {
+            UrlGenerated = call;
+            UrlCalls++;
+            return FromUrl?.Invoke(call) ?? throw new InvalidOperationException("The fake has no native URL handler.");
+        }
+
         public string Provider { get; set; } = "test-provider";
 
         public string ModelId { get; set; } = "test-model";
@@ -439,6 +587,12 @@ public sealed class TranscribeTests
         public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
         {
             Generated = call;
+            GenerateCalls++;
+            if (Generate != null)
+            {
+                return Generate(call);
+            }
+
             return Task.FromResult(new TranscriptionModelResult(Text, Segments, Language, Duration, Warnings, Metadata, Response, Words));
         }
 

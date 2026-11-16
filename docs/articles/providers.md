@@ -1720,6 +1720,25 @@ Vertex Gemini transcription (`gemini-3.5-transcribe`) returns word timings only.
 
 OpenAI transcription sends the shared request as `timestamp_granularities[]`. `providerOptions.openai.timestampGranularities` wins over it, and each requested granularity it leaves out is reported as an `unsupported` warning on `timestampGranularities`. Only the `verbose_json` response format accepts timestamp granularities, so `whisper-1` (which defaults to it) sends `segment` when you ask for nothing. For `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-transcribe` and an explicit `json` response format the field is omitted and each requested granularity gets an `unsupported` warning. `gpt-4o-transcribe-diarize` returns speaker segments without a timestamp control and warns only about `word`. `Words` is filled from the response `words` even when the response also has `segments`.
 
+## Groq transcription
+
+`GroqProvider.TranscriptionModel(id)` returns a `GroqTranscriptionModel` with provider id `groq.transcription`. It implements `ITranscriptionModel`, `ITranscriptionCaller`, and `ITranscriptionUrlCaller`, so it works with `Transcribe`. It does not stream. Read the options from `providerOptions.groq`: `language`, `prompt`, `responseFormat`, `temperature` (0 to 1), and `timestampGranularities`. With `responseFormat` set to `text`, the response body is the transcript. When a response has no `segments`, the result falls back to its `words`.
+
+`ITranscriptionUrlCaller` is the optional native URL capability that upstream calls `doGenerateFromUrl`. `netstandard2.0` has no default interface members, so it is a separate interface. A model that implements it receives HTTP(S) URLs without a local download. When `TranscribeRequest.AudioUrl` is an HTTP(S) URL and `TranscribeRequest.Download` is not set, `Transcribe.TranscribeAsync` calls `DoGenerateFromUrlAsync`. Groq sends its `url` multipart field and no `file`, which avoids its attachment upload limit. Groq's overall audio size and duration limits still apply. The SDK does not download or inspect the audio.
+
+```csharp
+var result = await Transcribe.TranscribeAsync(new TranscribeRequest
+{
+    Model = groq.TranscriptionModel("whisper-large-v3-turbo"),
+    AudioUrl = "https://example.com/large-audio.mp3",
+});
+```
+
+- The URL must be reachable by Groq. Request headers configure the Groq API request and are not sent to the audio host.
+- Groq strips the URL fragment, and rejects non-HTTP(S) URLs and URLs with user info with `InvalidArgumentException` before any request.
+- Groq does not follow redirects. When it reports a `301`, `302`, `303`, `307`, or `308` fetch failure, the model returns `null` from `DoGenerateFromUrlAsync`. Core then downloads the audio with the secure downloader and uploads the bytes, so the attachment limit applies. Retries after that repeat only the file call. Every other Groq error is thrown unchanged.
+- Setting `TranscribeRequest.Download` always downloads locally, even for models with native URL support. Bytes passed as `Audio` are always uploaded as a file.
+
 ## Azure transcription
 
 `AzureOpenAIProvider.Transcription(deploymentId)` (alias `TranscriptionModel(deploymentId)`) returns an `AzureTranscriptionModel` with provider id `azure.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe` and `StreamTranscribe`. The API is resolved for each call from the model ID and `providerOptions.azure.api`:
