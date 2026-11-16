@@ -74,6 +74,33 @@ public sealed class RealtimeModelV4ServerEvent
     /// <summary>Normalized usage on completion events or provider snapshots.</summary>
     public RealtimeModelV4Usage? Usage { get; set; }
 
+    /// <summary>Delegation mode for <c>session-started</c>: <c>client</c> or <c>provider</c>.</summary>
+    public string? DelegationMode { get; set; }
+
+    /// <summary>Context window usage ratio (0 to 1) for <c>session-usage</c>.</summary>
+    public double? ContextWindowUsageRatio { get; set; }
+
+    /// <summary>Speaker for <c>transcript-fragment</c>: <c>user</c> or <c>assistant</c>.</summary>
+    public string? Speaker { get; set; }
+
+    /// <summary>Fragment start in milliseconds for <c>transcript-fragment</c>.</summary>
+    public double? StartMs { get; set; }
+
+    /// <summary>Fragment end in milliseconds for <c>transcript-fragment</c>.</summary>
+    public double? EndMs { get; set; }
+
+    /// <summary>Delegation id for <c>delegation-created</c>.</summary>
+    public string? DelegationId { get; set; }
+
+    /// <summary>Delegation target for <c>delegation-created</c>: <c>client</c> or <c>provider</c>.</summary>
+    public string? Target { get; set; }
+
+    /// <summary>Offset in milliseconds for <c>delegation-created</c>.</summary>
+    public double? OffsetMs { get; set; }
+
+    /// <summary>Acknowledged command name for <c>command-acknowledged</c>.</summary>
+    public string? Command { get; set; }
+
     /// <summary>The conversation item for <c>conversation-item-added</c>.</summary>
     public JsonElement? Item { get; set; }
 

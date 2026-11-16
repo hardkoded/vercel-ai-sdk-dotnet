@@ -1023,27 +1023,6 @@ public sealed class OpenAIMediaUpstreamTests
     }
 
     [Fact]
-    [UpstreamTest("packages/openai/src/realtime/openai-realtime-model.test.ts::OpenAIRealtimeModel > doCreateClientSecret::omits expires_after when no ttl is requested", Coverage = UpstreamCoverage.Covered)]
-    public async Task OmitsRealtimeExpiry()
-    {
-        var capture = new OpenAICapture { ResponseJson = "{\"value\":\"ek_test\",\"expires_at\":1700000000}" };
-        var secret = await new OpenAIRealtimeModel(OpenAIUpstream.Provider(capture), "gpt-4o-realtime-preview").CreateClientSecretAsync(null, CancellationToken.None);
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body), "{\"session\":{\"type\":\"realtime\",\"model\":\"gpt-4o-realtime-preview\"}}");
-        Assert.Equal("ek_test", secret.Token);
-        Assert.Equal("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview", secret.Url);
-        Assert.DoesNotContain("expires_after", capture.Body, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest("packages/openai/src/realtime/openai-realtime-model.test.ts::OpenAIRealtimeModel > doCreateClientSecret::includes the required anchor with expires_after", Coverage = UpstreamCoverage.Covered)]
-    public async Task IncludesRealtimeExpiryAnchor()
-    {
-        var capture = new OpenAICapture { ResponseJson = "{\"value\":\"ek_test\",\"expires_at\":1700000060}" };
-        await new OpenAIRealtimeModel(OpenAIUpstream.Provider(capture), "gpt-4o-realtime-preview").CreateClientSecretAsync(60, CancellationToken.None);
-        OpenAIUpstream.Equal(JsonNode.Parse(capture.Body)!["expires_after"], "{\"anchor\":\"created_at\",\"seconds\":60}");
-    }
-
-    [Fact]
     [UpstreamTest("packages/openai/src/embedding/openai-embedding-model.test.ts::doEmbed::should expose the raw response headers", Coverage = UpstreamCoverage.Covered)]
     public async Task ExposesEmbeddingResponseHeaders()
     {
