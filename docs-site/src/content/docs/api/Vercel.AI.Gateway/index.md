@@ -35,4 +35,5 @@ Vercel AI Gateway provider.
 | [GatewayServiceCollectionExtensions](/api/Vercel.AI.Gateway/GatewayServiceCollectionExtensions/) | Registers the Gateway provider. |
 | [GatewayTakoSearch](/api/Vercel.AI.Gateway/GatewayTakoSearch/) | JSON schemas for the Gateway Tako search tool. |
 | [GatewayTimeoutError](/api/Vercel.AI.Gateway/GatewayTimeoutError/) | The client timed out before the Gateway responded. |
+| [GatewayVideoModel](/api/Vercel.AI.Gateway/GatewayVideoModel/) | Gateway video model. |
 | [V4Json](/api/Vercel.AI.Gateway/V4Json/) | Serializes call options and parses results in the Language Model V4 JSON shape the Gateway expects. |

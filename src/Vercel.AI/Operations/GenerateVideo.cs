@@ -13,6 +13,8 @@ namespace Vercel.AI.Operations;
 /// <summary>A file or URL passed to a video model.</summary>
 public sealed class VideoModelFile
 {
+    private byte[]? _data;
+
     /// <summary>Creates a URL file.</summary>
     public static VideoModelFile FromUrl(string url, string? mediaType = null)
     {
@@ -25,11 +27,17 @@ public sealed class VideoModelFile
         return new VideoModelFile("file", null, data ?? Array.Empty<byte>(), mediaType);
     }
 
+    /// <summary>Creates a file from base64 text. Providers that send base64 pass the text unchanged.</summary>
+    public static VideoModelFile FromBase64(string data, string mediaType)
+    {
+        return new VideoModelFile("file", null, null, mediaType) { Base64 = data ?? string.Empty };
+    }
+
     private VideoModelFile(string type, string? url, byte[]? data, string? mediaType)
     {
         Type = type;
         Url = url;
-        Data = data;
+        _data = data;
         MediaType = mediaType;
     }
 
@@ -39,11 +47,17 @@ public sealed class VideoModelFile
     /// <summary>URL.</summary>
     public string? Url { get; }
 
-    /// <summary>Bytes.</summary>
-    public byte[]? Data { get; }
+    /// <summary>Bytes. Decoded from <see cref="Base64"/> when the file was created from base64 text.</summary>
+    public byte[]? Data => _data ??= Base64 is null ? null : Convert.FromBase64String(Base64);
+
+    /// <summary>Base64 text when the file was created with <see cref="FromBase64"/>; otherwise null.</summary>
+    public string? Base64 { get; private set; }
 
     /// <summary>Media type.</summary>
     public string? MediaType { get; }
+
+    /// <summary>Provider options for this file, keyed by provider id.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
 /// <summary>A role-tagged frame image.</summary>
