@@ -66,7 +66,8 @@ public sealed class UserMessagesTests
     [Theory]
     [InlineData("base64")]
     [InlineData("Uint8Array")]
-    [UpstreamTest(Prefix + "should convert an inline image from $name", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    [UpstreamTest(Prefix + "should convert an inline image from $name", Coverage = UpstreamCoverage.Covered, Commit = Commit,
+        Note = "Upstream's data is string | Uint8Array. The .NET file part has one byte[] type, so the base64 row decodes the string first. Both rows check the same output.")]
     public void Should_convert_an_inline_image_from_name(string name)
     {
         var data = name == "base64" ? System.Convert.FromBase64String("AQID") : new byte[] { 1, 2, 3 };

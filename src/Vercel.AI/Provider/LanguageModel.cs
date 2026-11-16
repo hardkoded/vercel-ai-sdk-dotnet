@@ -1340,7 +1340,7 @@ public sealed class ToolModelMessage : ModelMessage
     }
 
     /// <summary>
-    /// Creates a tool result whose output is a list of text and file parts, as upstream <c>output: { type: 'content' }</c>.
+    /// Creates a tool result whose output is a list of text, file, and custom parts, as upstream <c>output: { type: 'content' }</c>.
     /// <see cref="OutputType"/> is <c>json</c> and <see cref="OutputJson"/> is the JSON text of the parts, so a provider that
     /// does not read <see cref="OutputContent"/> sends the stringified parts, as upstream does by default.
     /// </summary>
@@ -1438,7 +1438,7 @@ public sealed class ToolModelMessage : ModelMessage
     /// <summary>The <c>reason</c> of an <c>execution-denied</c> output. Null when the output has no reason, which differs from an empty reason.</summary>
     public string? ExecutionDeniedReason { get; }
 
-    /// <summary>Text and file parts of a multi-part output, or null for a single value. <see cref="OutputJson"/> holds the same parts as JSON text.</summary>
+    /// <summary>Text, file, and custom parts of a multi-part output, or null for a single value. <see cref="OutputJson"/> holds the same parts as JSON text.</summary>
     public IReadOnlyList<UserContentPart>? OutputContent { get; }
 
     /// <summary>Whether the tool failed.</summary>
