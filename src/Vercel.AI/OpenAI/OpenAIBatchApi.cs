@@ -474,7 +474,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         }
 
         // Upstream converts only the Responses API shape for OpenAI batches.
-        if (OpenAIResponsesSchema.ParseResponse(body) is null)
+        if (!OpenAIResponsesSchema.IsValidResponse(body))
         {
             return InvalidResponse(id, "OpenAI returned an invalid Responses batch result.");
         }

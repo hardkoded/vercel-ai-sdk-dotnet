@@ -25,7 +25,7 @@ internal static partial class OpenAIResponsesApi
         body.Obj("incomplete_details")?.Req("reason"),
         ReadUsage(body.Obj("usage")));
 
-    /// <summary>Reads a valid chunk. A chunk of an unknown type, or with an output item of an unknown type, is an <see cref="UnknownChunk"/>.</summary>
+    /// <summary>Reads a chunk that matched a modeled variant of <c>openaiResponsesChunkSchema</c>. The caller validated it, and handles <c>unknown_chunk</c> itself.</summary>
     public static Chunk ReadChunk(JsonElement chunk)
     {
         var type = chunk.Str("type");
@@ -49,13 +49,9 @@ internal static partial class OpenAIResponsesApi
             case "response.in_progress":
                 return new ResponseInProgress(ReadHeader(chunk.Prop("response")));
             case "response.output_item.added":
-                return IsModeledItem(chunk.Prop("item"))
-                    ? new OutputItemAdded(chunk.Num("output_index") ?? 0, ReadAddedItem(chunk.Prop("item")))
-                    : new UnknownChunk(chunk);
+                return new OutputItemAdded(chunk.Num("output_index") ?? 0, ReadAddedItem(chunk.Prop("item")));
             case "response.output_item.done":
-                return IsModeledItem(chunk.Prop("item"))
-                    ? new OutputItemDone(chunk.Num("output_index") ?? 0, ReadDoneItem(chunk.Prop("item")))
-                    : new UnknownChunk(chunk);
+                return new OutputItemDone(chunk.Num("output_index") ?? 0, ReadDoneItem(chunk.Prop("item")));
             case "response.function_call_arguments.delta":
                 return new FunctionCallArgumentsDelta(chunk.Req("item_id"), chunk.Num("output_index") ?? 0, chunk.Req("delta"));
             case "response.function_call_arguments.done":
@@ -86,14 +82,9 @@ internal static partial class OpenAIResponsesApi
                     ? new ErrorChunk(chunk.Num("sequence_number") ?? 0, nested.Str("type"), nested.Str("code"), nested.Req("message"), nested.Str("param"))
                     : new ErrorChunk(chunk.Num("sequence_number") ?? 0, null, chunk.Str("code"), chunk.Req("message"), chunk.Str("param"));
             default:
-                return new UnknownChunk(chunk);
+                throw new InvalidOperationException("Chunk type " + type + " is not modeled.");
         }
     }
-
-    private static bool IsModeledItem(JsonElement item) =>
-        item.Str("type") is "apply_patch_call" or "code_interpreter_call" or "compaction" or "computer_call" or "custom_tool_call" or "file_search_call"
-            or "function_call" or "image_generation_call" or "local_shell_call" or "mcp_approval_request" or "mcp_call" or "mcp_list_tools" or "message"
-            or "program" or "program_output" or "reasoning" or "shell_call" or "shell_call_output" or "tool_search_call" or "tool_search_output" or "web_search_call";
 
     private static IOutputItem ReadOutputItem(JsonElement item) => item.Req("type") switch
     {
@@ -236,7 +227,8 @@ internal static partial class OpenAIResponsesApi
     {
         JsonValueKind.String => Text(value),
         JsonValueKind.Number => value.GetDouble(),
-        _ => value.GetBoolean(),
+        JsonValueKind.True => true,
+        _ => false,
     };
 
     private static LocalShellCall ReadLocalShellCall(JsonElement item)
@@ -437,7 +429,7 @@ internal static partial class OpenAIResponsesApi
                 switch (c)
                 {
                     case 'u':
-                        text.Append((char)int.Parse(raw.Substring(i + 1, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                        text.Append((char)int.Parse(raw.Substring(i + 1, Math.Min(4, raw.Length - i - 2)), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
                         i += 4;
                         break;
                     case 'b':
