@@ -98,6 +98,50 @@ var shellStream = Ai.StreamTextAsync(new StreamTextOptions
 
 await PrintStream(shellStream);
 
+// generate-text/azure/responses-shell-container-skills.ts
+var skillZip = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "data", "island-rescue-skill.zip")));
+
+OpenAIShellToolOptions IslandRescueShell() => new()
+{
+    Environment = new OpenAIShellEnvironment
+    {
+        Type = "containerAuto",
+        ContainerSkills =
+        [
+            new OpenAIShellInlineSkill
+            {
+                Name = "island-rescue",
+                Description = "How to be rescued from a lonely island",
+                Data = skillZip,
+            },
+        ],
+    },
+};
+
+#region azure-responses-shell-container-skills-generate
+var skills = await Ai.GenerateTextAsync(new GenerateTextOptions
+{
+    // Replace with your Azure deployment name that supports this shell mode.
+    Model = azure.ResponsesModel("gpt-5.4-mini"),
+    Tools = new[] { ToTool(AzureOpenAITools.Shell(IslandRescueShell())) },
+    StopWhen = StopWhen.IsStepCount(20),
+    Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
+});
+#endregion
+
+Console.WriteLine("Result: " + skills.Text);
+
+// stream-text/azure/responses-shell-container-skills.ts
+var skillsStream = Ai.StreamTextAsync(new StreamTextOptions
+{
+    Model = azure.ResponsesModel("gpt-5.4-mini"),
+    Tools = new[] { ToTool(AzureOpenAITools.Shell(IslandRescueShell())) },
+    StopWhen = StopWhen.IsStepCount(20),
+    Prompt = "You are trapped and lost on a lonely island in 1895. Find a way to get rescued!",
+});
+
+await PrintStream(skillsStream);
+
 static Tool ToTool(LanguageModelTool tool) => Tool.ProviderDefined(tool.ProviderToolId!, tool.Name, tool.Args);
 
 static async Task PrintStream(StreamTextResult stream)
