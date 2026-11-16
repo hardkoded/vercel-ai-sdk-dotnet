@@ -300,6 +300,18 @@ public sealed class SpeechCallOptions
 
     /// <summary>Voice id, when the provider uses one.</summary>
     public string? Voice { get; set; }
+
+    /// <summary>Desired output format such as <c>mp3</c> or <c>wav</c>. Maps to <c>outputFormat</c>.</summary>
+    public string? OutputFormat { get; set; }
+
+    /// <summary>Instructions for the speech generation, such as "Speak in a slow and steady tone". Maps to <c>instructions</c>.</summary>
+    public string? Instructions { get; set; }
+
+    /// <summary>Speed of the speech generation. Maps to <c>speed</c>.</summary>
+    public double? Speed { get; set; }
+
+    /// <summary>ISO 639-1 language code such as <c>en</c>, or <c>auto</c> for detection. Provider support varies. Maps to <c>language</c>.</summary>
+    public string? Language { get; set; }
 }
 
 /// <summary>Speech model specification.</summary>

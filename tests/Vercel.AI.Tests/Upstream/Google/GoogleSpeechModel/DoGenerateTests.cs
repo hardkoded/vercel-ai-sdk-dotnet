@@ -3,12 +3,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Google;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.Upstream.Google.GoogleSpeechModel;
 
 /// <summary>Port of <c>google-speech-model.test.ts</c> &gt; <c>doGenerate</c>.</summary>
 public sealed class DoGenerateTests
 {
+    private const string AudioResponse = "{\"candidates\":[{\"content\":{\"parts\":[{\"inlineData\":{\"mimeType\":\"audio/wav\",\"data\":\"AQID\"}}]}}]}";
+
+    private static Vercel.AI.Google.GoogleSpeechModel SpeechModel(RecordingHandler handler)
+    {
+        return new Vercel.AI.Google.GoogleSpeechModel(GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key" }, handler), "gemini-2.5-flash-preview-tts");
+    }
+
     [Fact]
     [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should send the text and the default voice", Coverage = UpstreamCoverage.Covered)]
     public void Sends_speech_text_and_the_default_Kore_voice()
@@ -28,19 +36,21 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should warn for the unsupported speed option", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb4322cc8b12a1b6cfb2d6564c90272a54770")]
-    public void Warns_for_the_unsupported_speech_speed_option()
+    public async Task Warns_for_the_unsupported_speech_speed_option()
     {
-        var prepared = Vercel.AI.Google.GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!") { Speed = 1.5, Language = "en" });
-        Assert.Contains(prepared.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "speed");
-        Assert.DoesNotContain(prepared.Warnings, warning => warning.Feature == "language");
+        var model = SpeechModel(new RecordingHandler { ResponseText = AudioResponse });
+        await model.DoGenerateAsync(new SpeechCallOptions("Hello from the AI SDK!") { Speed = 1.5, Language = "en" }, CancellationToken.None).ConfigureAwait(false);
+        Assert.Contains(model.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "speed");
+        Assert.DoesNotContain(model.Warnings, warning => warning.Feature == "language");
     }
 
     [Fact]
     [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should map language onto single-speaker speechConfig", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb4322cc8b12a1b6cfb2d6564c90272a54770")]
-    public void Maps_speech_language_onto_the_single_speaker_speech_config()
+    public async Task Maps_speech_language_onto_the_single_speaker_speech_config()
     {
-        var prepared = Vercel.AI.Google.GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!") { Language = "en-US" });
-        GoogleUpstream.JsonEqual(prepared.Body["generationConfig"]!["speechConfig"]!, "{\"languageCode\":\"en-US\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}");
+        var handler = new RecordingHandler { ResponseText = AudioResponse };
+        await SpeechModel(handler).DoGenerateAsync(new SpeechCallOptions("Hello from the AI SDK!") { Language = "en-US" }, CancellationToken.None).ConfigureAwait(false);
+        GoogleUpstream.JsonEqual(System.Text.Json.Nodes.JsonNode.Parse(handler.Body)!["generationConfig"]!["speechConfig"]!, "{\"languageCode\":\"en-US\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}");
     }
 
     [Theory]

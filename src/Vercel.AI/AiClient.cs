@@ -290,7 +290,14 @@ public sealed class AiClient : IAiClient
         }
 
         using var scope = _telemetry?.Begin("generateSpeech", options.Model.ModelId);
-        var result = await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+        var result = await options.Model.DoGenerateAsync(new SpeechCallOptions(options.Text)
+        {
+            Voice = options.Voice,
+            OutputFormat = options.OutputFormat,
+            Instructions = options.Instructions,
+            Speed = options.Speed,
+            Language = options.Language,
+        }, cancellationToken).ConfigureAwait(false);
         if (_telemetry != null && scope != null)
         {
             _telemetry.OnUsage(scope, result.Usage);
@@ -512,6 +519,18 @@ public sealed class GenerateSpeechOptions
 
     /// <summary>Voice id.</summary>
     public string? Voice { get; set; }
+
+    /// <summary>Desired output format such as <c>mp3</c> or <c>wav</c>.</summary>
+    public string? OutputFormat { get; set; }
+
+    /// <summary>Instructions for the speech generation.</summary>
+    public string? Instructions { get; set; }
+
+    /// <summary>Speed of the speech generation.</summary>
+    public double? Speed { get; set; }
+
+    /// <summary>ISO 639-1 language code, or <c>auto</c>. Provider support varies.</summary>
+    public string? Language { get; set; }
 }
 
 /// <summary>Transcription options.</summary>

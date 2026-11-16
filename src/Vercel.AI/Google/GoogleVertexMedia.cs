@@ -41,7 +41,7 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
     /// <inheritdoc />
     public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
     {
-        var prepared = Prepare(options.Text, options.Voice, null, null, null);
+        var prepared = Prepare(options.Text, options.Voice, options.Language, options.Speed, options.Instructions);
         Warnings = prepared.Warnings;
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         using var document = await _provider.Http.SendJsonAsync(HttpMethod.Post, new Uri(SynthesizeUrl), GoogleJson.Write(prepared.Body), headers, cancellationToken).ConfigureAwait(false);
