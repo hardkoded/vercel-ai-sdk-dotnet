@@ -37,8 +37,8 @@ public sealed class ZaiProvider : OpenAICompatibleProvider
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.SupportedUrls ??= new Dictionary<string, string>
         {
-            ["image/*"] = "^https?://.*\\z",
-            ["video/*"] = "^https?://.*\\z",
+            ["image/*"] = "^https?://",
+            ["video/*"] = "^https?://",
         };
 
         if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
