@@ -1345,6 +1345,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                             programmaticToolCallIds.Add(call.ToolCallId);
                         }
 
+                        // When using a conversation, skip items that already exist in the conversation context to avoid "Duplicate item found" errors.
+                        if (hasConversation && OpenAIJson.String(ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), "itemId") != null)
+                        {
+                            continue;
+                        }
+
                         if (IsProgrammaticToolName(call.ToolName, toolNameMapping))
                         {
                             AddProgramCall(input, call, ProviderOptionsFor(AssistantCallOptions(assistant, call), providerOptionsName), store, hasConversation);
