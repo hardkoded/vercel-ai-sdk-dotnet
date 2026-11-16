@@ -100,7 +100,7 @@ In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to th
 
 ### Error text in the UI message stream
 
-`PipeUIMessageStreamToResponseAsync(ServerResponse response, status, statusText, headers, keepAliveMs, onError, redactToolErrors)` is the counterpart of upstream `pipeUIMessageStreamToResponse`. It writes the same SSE stream to a `ServerResponse` byte sink and ends it. Headers you pass take precedence over the protocol headers.
+`PipeUIMessageStreamToResponseAsync(ServerResponse response, status, statusText, headers, keepAliveMs, onError, redactToolErrors, sendSources)` is the counterpart of upstream `pipeUIMessageStreamToResponse`. It writes the same SSE stream to a `ServerResponse` byte sink and ends it. Headers you pass take precedence over the protocol headers.
 
 By default, the client receives the same error text for a failed tool call as the model. This applies to tool execution errors and to invalid tool calls of tools that are not provider-executed. The UI messages are sent back to the model on the next request, so they keep the text that the model's reasoning and answers are based on. A stream `error` chunk never reaches the model, so `ToUIMessageStreamResult` and `UIMessageStreamResult` mask it with `An error occurred.` unless you pass `onError`.
 

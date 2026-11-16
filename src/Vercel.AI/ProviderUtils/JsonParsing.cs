@@ -33,8 +33,59 @@ public sealed class TypeValidationException : Exception
         Value = value;
     }
 
+    /// <summary>Creates the exception with the location of the failed value. Maps to the <c>TypeValidationError</c> constructor.</summary>
+    public TypeValidationException(JsonElement? value, Exception cause, TypeValidationContext? context)
+        : base(BuildMessage(value, cause, context), cause)
+    {
+        Value = value;
+        Context = context;
+    }
+
     /// <summary>Value that failed validation.</summary>
     public JsonElement? Value { get; }
+
+    /// <summary>Where the value was found. Maps to <c>context</c>.</summary>
+    public TypeValidationContext? Context { get; }
+
+    private static string BuildMessage(JsonElement? value, Exception cause, TypeValidationContext? context)
+    {
+        var prefix = new StringBuilder("Type validation failed");
+        if (!string.IsNullOrEmpty(context?.Field))
+        {
+            prefix.Append(" for ").Append(context!.Field);
+        }
+
+        if (!string.IsNullOrEmpty(context?.EntityName) || !string.IsNullOrEmpty(context?.EntityId))
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(context!.EntityName))
+            {
+                parts.Add(context.EntityName!);
+            }
+
+            if (!string.IsNullOrEmpty(context.EntityId))
+            {
+                parts.Add("id: \"" + context.EntityId + "\"");
+            }
+
+            prefix.Append(" (").Append(string.Join(", ", parts)).Append(')');
+        }
+
+        return prefix + ": Value: " + (value is { ValueKind: not JsonValueKind.Undefined } json ? json.GetRawText() : "undefined") + ".\nError message: " + cause.Message;
+    }
+}
+
+/// <summary>Where a value failed type validation. Maps to <c>TypeValidationContext</c>.</summary>
+public sealed class TypeValidationContext
+{
+    /// <summary>Field path in dot notation, for example <c>message.parts[3].data</c>.</summary>
+    public string? Field { get; init; }
+
+    /// <summary>Entity name, for example a tool name or a data type name.</summary>
+    public string? EntityName { get; init; }
+
+    /// <summary>Entity identifier, for example a message id or a tool call id.</summary>
+    public string? EntityId { get; init; }
 }
 
 /// <summary>Success or failure of a JSON parse, including the raw value when parsing succeeded.</summary>
@@ -202,6 +253,18 @@ public static class JsonParsing
         if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
         {
             throw new TypeValidationException(errorMessage ?? "Schema validation failed.", value);
+        }
+
+        return projected;
+    }
+
+    /// <summary>Returns <paramref name="value"/> projected through <paramref name="schema"/> and reports a failure with <paramref name="context"/>. Maps to <c>validateTypes</c> with a context.</summary>
+    /// <exception cref="TypeValidationException">The value does not match the schema.</exception>
+    public static JsonElement ValidateTypes(JsonElement value, JsonNode schema, TypeValidationContext context)
+    {
+        if (!JsonSchemaValidator.TryApply(value, schema, out var projected, out var errorMessage))
+        {
+            throw new TypeValidationException(value, new Exception(errorMessage ?? "Schema validation failed."), context);
         }
 
         return projected;

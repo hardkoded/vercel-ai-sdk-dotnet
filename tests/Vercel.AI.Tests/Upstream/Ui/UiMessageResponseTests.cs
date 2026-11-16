@@ -213,7 +213,8 @@ public sealed class UiMessageResponseTests
     private static async Task<string> Write(
         LanguageModelStreamPart[] parts,
         string? output = "{\"n\":1}",
-        bool throwOnExecute = false)
+        bool throwOnExecute = false,
+        bool sendSources = true)
     {
         var model = new TestLanguageModel { StreamParts = parts };
         var stream = Client().StreamTextAsync(new StreamTextOptions

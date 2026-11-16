@@ -55,13 +55,27 @@ public sealed class ToUIMessageChunkOptions
     /// </summary>
     public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
 
+    /// <summary>
+    /// Generates the id of the response message, unless the last original message is an assistant message, whose id is reused.
+    /// Maps to <c>generateMessageId</c>.
+    /// </summary>
+    public Func<string>? GenerateMessageId { get; init; }
+
     /// <summary>Called when each step ends during multi-step agent runs. Maps to <c>onStepEnd</c>.</summary>
     public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
+
+    /// <summary>Called when each step ends during multi-step agent runs. Maps to the deprecated <c>onStepFinish</c>. Use <see cref="OnStepEnd"/> instead.</summary>
+    [Obsolete("Use OnStepEnd instead.")]
+    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepFinish { get; init; }
 
     /// <summary>
     /// Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to <c>onEnd</c>.
     /// </summary>
     public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
+
+    /// <summary>Called when the stream ends. Maps to the deprecated <c>onFinish</c>. Use <see cref="OnEnd"/> instead.</summary>
+    [Obsolete("Use OnEnd instead.")]
+    public Func<UIMessageStreamOnEndEvent, Task>? OnFinish { get; init; }
 }
 
 /// <summary>Converts <c>streamText</c> parts into AI SDK UI message chunks.</summary>

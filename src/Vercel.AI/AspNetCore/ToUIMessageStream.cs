@@ -57,10 +57,25 @@ public static partial class UIMessageStreamConverter
 
         // upstream getResponseUIMessageId: a continued assistant message keeps its id
         var responseMessageId = options.ResponseMessageId;
-        if (options.OriginalMessages is { Count: > 0 } originalMessages && originalMessages[originalMessages.Count - 1] is { Role: UIMessageRole.Assistant } lastMessage)
+        var lastOriginal = options.OriginalMessages is { Count: > 0 } originals ? originals[originals.Count - 1] : null;
+        if (options.GenerateMessageId != null)
         {
-            responseMessageId = lastMessage.Id;
+            // when there are no original messages (no persistence), the client generates the message id
+            if (options.OriginalMessages is null)
+            {
+                responseMessageId = options.ResponseMessageId;
+            }
+            else
+            {
+                responseMessageId = lastOriginal?.Role == UIMessageRole.Assistant ? lastOriginal.Id : options.GenerateMessageId();
+            }
         }
+        else if (lastOriginal?.Role == UIMessageRole.Assistant)
+        {
+            responseMessageId = lastOriginal.Id;
+        }
+
+        var finalMessageId = responseMessageId ?? options.GenerateMessageId?.Invoke() ?? JsonValues.GenerateId("msg_");
 
         var chunkOptions = new ToUIMessageChunkOptions
         {
@@ -72,19 +87,23 @@ public static partial class UIMessageStreamConverter
             SendFinish = options.SendFinish,
             OnError = options.OnError,
             RedactToolErrors = options.RedactToolErrors,
-            ResponseMessageId = responseMessageId ?? JsonValues.GenerateId("msg_"),
+            ResponseMessageId = finalMessageId,
         };
 
         var chunks = TrackOutcome(ConvertToUIMessageChunks(stream, chunkOptions, SetSourceOutcome, cancellationToken), FailOutcome);
 
         await foreach (var chunk in HandleUIMessageStreamFinish(
             chunks,
-            chunkOptions.ResponseMessageId,
+            finalMessageId,
             options.OriginalMessages,
             options.OnStepEnd,
             options.OnEnd,
             error => (options.OnError ?? (_ => "An error occurred."))(error),
             () => outcome,
+#pragma warning disable CS0618 // the deprecated aliases are resolved by HandleUIMessageStreamFinish
+            options.OnStepFinish,
+            options.OnFinish,
+#pragma warning restore CS0618
             cancellationToken).ConfigureAwait(false))
         {
             yield return chunk;
