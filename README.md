@@ -176,6 +176,7 @@ Every code block in this README comes from a project in [examples](examples). Ea
 | [Providers](examples/Providers) | Call a model through the Gateway and through a provider directly. |
 | [StreamText](examples/StreamText) | Stream text as the model writes it. |
 | [StreamTranscribeDeepgramBasic](examples/StreamTranscribeDeepgramBasic) | Transcribe paced live audio with Deepgram streaming transcription. |
+| [TranscribeGladiaV2Options](examples/TranscribeGladiaV2Options) | Transcribe audio with Gladia solaria-3, a language config and PII redaction. |
 | [Tools](examples/Tools) | Let the model call a tool and read its result. |
 | [McpImageContent](examples/McpImageContent) | Convert an MCP image tool result into a model file part. |
 | [UIMessageStream](examples/UIMessageStream) | Stream a UI message response from ASP.NET Core to a JavaScript `useChat` client. |

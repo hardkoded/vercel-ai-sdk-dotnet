@@ -71,6 +71,9 @@ public sealed class TextUIPart : UIMessagePart
     /// <summary>The text content.</summary>
     public string Text { get; }
 
+    /// <summary>References supporting this text, separate from retrieved sources.</summary>
+    public IReadOnlyList<Citation>? Citations { get; init; }
+
     /// <summary>The state of the text part: <c>streaming</c> or <c>done</c>.</summary>
     public string? State { get; init; }
 
@@ -345,6 +348,15 @@ public sealed class ToolUIPart : UIMessagePart
     /// <summary>The title of the tool.</summary>
     public string? Title { get; init; }
 
+    /// <summary>The metadata of the tool. Maps to <c>toolMetadata</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
+
+    /// <summary>
+    /// Encoding of <see cref="RawInput"/> while the state is <see cref="ToolUIPartState.InputStreaming"/>.
+    /// Null means JSON.
+    /// </summary>
+    public ToolInputEncoding? InputEncoding { get; init; }
+
     /// <summary>Whether the provider executed the tool.</summary>
     public bool? ProviderExecuted { get; init; }
 
@@ -371,4 +383,24 @@ public sealed class ToolUIPart : UIMessagePart
 
     /// <summary>The approval of the call.</summary>
     public ToolUIApproval? Approval { get; init; }
+}
+
+/// <summary>
+/// A user message that steered the run, shown at the step that received it. Maps to <c>SteeringMessageUIPart</c>.
+/// </summary>
+public sealed class SteeringMessageUIPart : UIMessagePart
+{
+    /// <summary>Creates a steering message part.</summary>
+    public SteeringMessageUIPart(string id, IReadOnlyList<UIMessagePart> parts)
+        : base("steering-message")
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        Parts = parts ?? throw new ArgumentNullException(nameof(parts));
+    }
+
+    /// <summary>The id of the steering message.</summary>
+    public string Id { get; }
+
+    /// <summary>The content of the user message: text and file parts.</summary>
+    public IReadOnlyList<UIMessagePart> Parts { get; }
 }

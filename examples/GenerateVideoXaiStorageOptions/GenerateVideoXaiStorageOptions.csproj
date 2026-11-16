@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a video and stores it in the xAI Files API.</Description>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Shows the warnings for duration, aspectRatio and resolution on a legacy edit without a mode.</Description>
+  </PropertyGroup>
+</Project>

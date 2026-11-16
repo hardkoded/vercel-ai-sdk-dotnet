@@ -187,6 +187,18 @@ public sealed class OpenAIImageModel : IImageModel
     /// <summary>Maximum images accepted by one call for this model id.</summary>
     public int MaxImagesPerCall => MaxImages(ModelId);
 
+    /// <summary>
+    /// True when the model takes input images, false for <c>dall-e-3</c>, null when the model id is unknown. Maps to
+    /// <c>fileInput</c> of the image capabilities in <c>openai-model-catalog.ts</c>.
+    /// </summary>
+    public bool? SupportsFileInputs => EditingSupport(ModelId);
+
+    /// <summary>
+    /// True when the model takes a mask, false for <c>dall-e-3</c>, null when the model id is unknown. Maps to <c>maskInput</c>
+    /// of the image capabilities in <c>openai-model-catalog.ts</c>.
+    /// </summary>
+    public bool? SupportsMaskInputs => EditingSupport(ModelId);
+
     /// <summary>Maximum images for <paramref name="modelId"/>.</summary>
     public static int MaxImages(string modelId)
     {
@@ -240,6 +252,20 @@ public sealed class OpenAIImageModel : IImageModel
             new ImageResponseInfo(result.Timestamp, result.ModelId, result.Headers),
             usage,
             result.ProviderMetadata);
+    }
+
+    private static bool? EditingSupport(string modelId)
+    {
+        return modelId switch
+        {
+            "dall-e-2" or "gpt-image-1" or "gpt-image-1-mini" or "gpt-image-1.5" or "gpt-image-2"
+                or "gpt-image-2.6-flare" or "gpt-image-2.6-sunburst"
+                or "gpt-image-2.5-flare" or "gpt-image-2.5-flare-2026-09-08"
+                or "gpt-image-2.5-sunburst" or "gpt-image-2.5-sunburst-2026-09-08"
+                or "chatgpt-image-latest" => true,
+            "dall-e-3" => false,
+            _ => null,
+        };
     }
 
     private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
@@ -334,6 +360,13 @@ public sealed class OpenAIImageModel : IImageModel
         CancellationToken cancellationToken)
     {
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
+        var outputFormat = OpenAIJson.String(openai, "outputFormat");
+        if (outputFormat == "gif")
+        {
+            // The edit options accept png, jpeg and webp only. GIF output is generation only.
+            throw new Operations.InvalidArgumentException("providerOptions.openai.outputFormat", outputFormat, "`gif` output is only supported for image generation, not edits.");
+        }
+
         var markup = OpenAIJson.String(openai, "markup");
         if (call.Mask != null && markup != null)
         {

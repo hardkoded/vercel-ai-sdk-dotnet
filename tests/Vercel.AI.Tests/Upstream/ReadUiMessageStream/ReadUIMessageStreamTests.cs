@@ -46,6 +46,121 @@ public sealed class ReadUIMessageStreamTests
         Assert.Null(part.ProviderMetadata);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("json")]
+    [UpstreamTest(Prefix + "keeps JSON parsing for interleaved calls with encoding %s", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Keeps_JSON_parsing_for_interleaved_calls_with_encoding(string? inputEncoding)
+    {
+        var encodingField = inputEncoding == null ? string.Empty : ",\"inputEncoding\":\"" + inputEncoding + "\"";
+        var messages = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream(
+                """{"type":"start","messageId":"message-1"}""",
+                """{"type":"tool-input-start","toolCallId":"text","toolName":"exec","inputEncoding":"text"}""",
+                "{\"type\":\"tool-input-start\",\"toolCallId\":\"json\",\"toolName\":\"weather\"" + encodingField + "}",
+                "{\"type\":\"tool-input-start\",\"toolCallId\":\"encoded-string\",\"toolName\":\"legacy\"" + encodingField + "}",
+                """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\"quoted"}""",
+                """{"type":"tool-input-delta","toolCallId":"json","inputTextDelta":"{\"city\":\"Paris\"}"}""",
+                """{"type":"tool-input-delta","toolCallId":"encoded-string","inputTextDelta":"\"already encoded\""}""",
+                """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\""}"""))
+            {
+                TerminateOnError = true,
+            });
+
+        var parts = messages[messages.Count - 1].Parts.OfType<ToolUIPart>().ToList();
+        Assert.Equal(3, parts.Count);
+        Assert.Equal("text", parts[0].ToolCallId);
+        Assert.Equal("\"quoted\"", parts[0].Input!.Value.GetString());
+        Assert.Equal("json", parts[1].ToolCallId);
+        Assert.Equal("Paris", parts[1].Input!.Value.GetProperty("city").GetString());
+        Assert.Equal("encoded-string", parts[2].ToolCallId);
+        Assert.Equal("already encoded", parts[2].Input!.Value.GetString());
+    }
+
+    [Theory]
+    [InlineData("the same message id", true)]
+    [InlineData("no message id", false)]
+    [UpstreamTest(Prefix + "should preserve a seeded assistant message with $name", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Should_preserve_a_seeded_assistant_message_with_name(string name, bool hasStartChunk)
+    {
+        Assert.NotEmpty(name);
+        var seeded = new UIMessage(UIMessageRole.Assistant, [new TextUIPart("Partial response")])
+        {
+            Id = "resumed-response",
+            Metadata = JsonDocument.Parse("""{"source":"seed"}""").RootElement.Clone(),
+        };
+
+        var chunks = new List<string>();
+        if (hasStartChunk)
+        {
+            chunks.Add("""{"type":"start","messageId":"resumed-response"}""");
+        }
+
+        chunks.Add("""{"type":"text-start","id":"text-1"}""");
+        chunks.Add("""{"type":"text-delta","id":"text-1","delta":" continued"}""");
+        chunks.Add("""{"type":"text-end","id":"text-1"}""");
+        chunks.Add("""{"type":"finish"}""");
+
+        var messages = await Read(new ReadUIMessageStreamOptions(CreateUIMessageStream(chunks.ToArray())) { Message = seeded });
+
+        var last = messages[messages.Count - 1];
+        Assert.Equal("resumed-response", last.Id);
+        Assert.Equal(UIMessageRole.Assistant, last.Role);
+        Assert.Equal("seed", last.Metadata!.Value.GetProperty("source").GetString());
+        Assert.Equal(2, last.Parts.Count);
+        var first = Assert.IsType<TextUIPart>(last.Parts[0]);
+        Assert.Equal("Partial response", first.Text);
+        var second = Assert.IsType<TextUIPart>(last.Parts[1]);
+        Assert.Equal(" continued", second.Text);
+        Assert.Equal("done", second.State);
+        Assert.Null(second.ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should continue a hydrated partial static tool call", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Should_continue_a_hydrated_partial_static_tool_call()
+    {
+        await AssertHydratedPartialToolCall(JsonDocument.Parse("\"{\\\"title\\\":\\\"Hel\"").RootElement.Clone());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should accept a hydrated partial static tool call without raw input", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Should_accept_a_hydrated_partial_static_tool_call_without_raw_input()
+    {
+        await AssertHydratedPartialToolCall(null);
+    }
+
+    private static async Task AssertHydratedPartialToolCall(JsonElement? rawInput)
+    {
+        var message = new UIMessage(
+            UIMessageRole.Assistant,
+            [
+                new ToolUIPart("createDocument", "tool-1", ToolUIPartState.InputStreaming)
+                {
+                    Input = JsonDocument.Parse("""{"title":"Hel"}""").RootElement.Clone(),
+                    RawInput = rawInput,
+                },
+            ])
+        {
+            Id = "msg-123",
+        };
+
+        var messages = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream(
+                """{"type":"tool-input-delta","toolCallId":"tool-1","inputTextDelta":"lo\"}"}""",
+                """{"type":"tool-input-available","toolCallId":"tool-1","toolName":"createDocument","input":{"title":"Hello"}}"""))
+            {
+                Message = message,
+                TerminateOnError = true,
+            });
+
+        var part = Assert.IsType<ToolUIPart>(Assert.Single(messages[messages.Count - 1].Parts));
+        Assert.Equal("tool-createDocument", part.Type);
+        Assert.Equal("tool-1", part.ToolCallId);
+        Assert.Equal(ToolUIPartState.InputAvailable, part.State);
+        Assert.Equal("Hello", part.Input!.Value.GetProperty("title").GetString());
+    }
+
     [Fact]
     [UpstreamTest(Prefix + "should return a ui message object stream for a basic input stream", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
     public async Task Should_return_a_ui_message_object_stream_for_a_basic_input_stream()

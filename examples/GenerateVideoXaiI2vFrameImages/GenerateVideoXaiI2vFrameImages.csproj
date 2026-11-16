@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a video from a pinned first frame.</Description>
+  </PropertyGroup>
+</Project>

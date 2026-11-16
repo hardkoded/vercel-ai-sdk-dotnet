@@ -104,6 +104,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return new GatewayVideoModel(this, modelId);
     }
 
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new GatewayTranscriptionModel(this, modelId);
+    }
+
     /// <summary>
     /// Returns a realtime model. Maps to <c>experimental_realtime(modelId)</c>. Building the model touches no credential;
     /// only minting a client secret and server connections resolve the Gateway credential.
@@ -805,7 +811,7 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         return node;
     }
 
-    private static OperationWarning ReadWarning(JsonElement warning)
+    internal static OperationWarning ReadWarning(JsonElement warning)
     {
         string? Text(string name) => warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
         var type = Text("type") ?? "other";

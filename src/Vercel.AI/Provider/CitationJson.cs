@@ -42,6 +42,56 @@ internal static class CitationJson
         return json;
     }
 
+    public static List<Citation> FromJson(JsonArray array)
+    {
+        var citations = new List<Citation>();
+        foreach (var node in array)
+        {
+            if (node is JsonObject json && FromJson(json) is { } citation)
+            {
+                citations.Add(citation);
+            }
+        }
+
+        return citations;
+    }
+
+    public static Citation? FromJson(JsonObject json)
+    {
+        if (json["source"] is not JsonObject source)
+        {
+            return null;
+        }
+
+        var start = json["startIndex"] is JsonValue s && s.TryGetValue<int>(out var startIndex) ? startIndex : (int?)null;
+        var end = json["endIndex"] is JsonValue e && e.TryGetValue<int>(out var endIndex) ? endIndex : (int?)null;
+        var citedText = (string?)json["citedText"];
+        JsonElement? metadata = source["providerMetadata"] is { } node
+            ? JsonSerializer.SerializeToElement(node)
+            : null;
+        var id = (string?)source["id"] ?? string.Empty;
+
+        if ((string?)source["sourceType"] == "document")
+        {
+            return new Citation(
+                new GeneratedDocumentSource(
+                    id,
+                    (string?)source["mediaType"] ?? string.Empty,
+                    (string?)source["title"] ?? string.Empty,
+                    (string?)source["filename"],
+                    metadata),
+                start,
+                end,
+                citedText);
+        }
+
+        return new Citation(
+            new GeneratedSource(id, (string?)source["url"] ?? string.Empty, (string?)source["title"], metadata),
+            start,
+            end,
+            citedText);
+    }
+
     private static JsonObject SourceToJson(GeneratedContent source)
     {
         JsonObject json;

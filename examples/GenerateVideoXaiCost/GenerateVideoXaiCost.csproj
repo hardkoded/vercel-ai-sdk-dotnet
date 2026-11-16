@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a video and prints the xAI provider metadata, including the cost.</Description>
+  </PropertyGroup>
+</Project>

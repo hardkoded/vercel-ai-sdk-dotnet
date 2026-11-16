@@ -30,6 +30,9 @@ internal sealed class ProviderExchangeResult
 
     /// <summary>Response headers, including content headers.</summary>
     public IReadOnlyDictionary<string, string> Headers { get; }
+
+    /// <summary>HTTP status code of the response. A successful exchange is usually 200.</summary>
+    public int StatusCode { get; init; } = 200;
 }
 
 /// <summary>Sends one provider request and keeps the response headers.</summary>
@@ -74,7 +77,7 @@ internal static class ProviderExchange
                     throw ProviderHttp.MapStatus((int)response.StatusCode, body);
                 }
 
-                return new ProviderExchangeResult(body, bytes, Copy(response));
+                return new ProviderExchangeResult(body, bytes, Copy(response)) { StatusCode = (int)response.StatusCode };
             }
             finally
             {
@@ -151,7 +154,7 @@ internal static class ProviderExchange
                     }
 
                     var bytes = await ResponseBodies.ReadResponseWithSizeLimitAsync(response, url, null, cancellationToken).ConfigureAwait(false);
-                    return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, Copy(response));
+                    return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, Copy(response)) { StatusCode = (int)response.StatusCode };
                 }
             }
         }
@@ -200,7 +203,7 @@ internal static class ProviderExchange
             copied[header.Key] = header.Value;
         }
 
-        return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, copied);
+        return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, copied) { StatusCode = response.Status };
     }
 
     /// <summary>Client for hops off the provider origin: it never follows a redirect, so the loop can check each hop first.</summary>

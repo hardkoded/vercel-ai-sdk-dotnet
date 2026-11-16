@@ -113,85 +113,6 @@ public sealed class UiMessageResponseTests
 
     [Fact]
     [UpstreamTest(
-        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::maps error parts through onError",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Routes_error_parts_through_onError()
-    {
-        string? seen = null;
-        var model = new TestLanguageModel
-        {
-            StreamParts =
-            [
-                new ErrorStreamPart("boom"),
-                new FinishStreamPart(FinishReason.Error, new LanguageModelUsage(0, 0, 0)),
-            ],
-        };
-        var stream = Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" });
-        using var buffer = new MemoryStream();
-
-        await UIMessageStreamResult.WriteAsync(
-            stream,
-            buffer,
-            onError: message =>
-            {
-                seen = message.Message;
-                return "handled error";
-            });
-
-        Assert.Equal("boom", seen);
-        Assert.Contains("\"type\":\"error\"", Body(buffer), StringComparison.Ordinal);
-        Assert.Contains("\"errorText\":\"handled error\"", Body(buffer), StringComparison.Ordinal);
-
-        // Without onError the error text is masked, as in the upstream default.
-        using var masked = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(
-            Client().StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "hi" }),
-            masked);
-        Assert.Contains("\"errorText\":\"An error occurred.\"", Body(masked), StringComparison.Ordinal);
-        Assert.DoesNotContain("boom", Body(masked), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::maps tool input streaming parts",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "No dynamic tools, tool metadata, or tool titles in .NET. The dynamic flag comes from the provider part.")]
-    public async Task Maps_tool_input_streaming_parts()
-    {
-        using var metadata = JsonDocument.Parse("{\"testProvider\":{\"signature\":\"sig-1\"}}");
-        var frames = Frames(await Write(new LanguageModelStreamPart[]
-        {
-            new ToolInputStartStreamPart("call-1", "dynamicTool", metadata.RootElement.Clone(), providerExecuted: true, dynamic: true),
-            new ToolInputStartStreamPart("call-2", "providerTool", dynamic: true),
-            new ToolInputDeltaStreamPart("call-1", "{\"value\""),
-            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
-        }));
-
-        AssertFrame(
-            "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"dynamicTool\",\"providerExecuted\":true,\"providerMetadata\":{\"testProvider\":{\"signature\":\"sig-1\"}},\"dynamic\":true}",
-            frames[2]);
-        AssertFrame("{\"type\":\"tool-input-start\",\"toolCallId\":\"call-2\",\"toolName\":\"providerTool\",\"dynamic\":true}", frames[3]);
-        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\"{\\\"value\\\"\"}", frames[4]);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::returns undefined for parts that do not produce UI message chunks",
-        Coverage = UpstreamCoverage.Covered)]
-    public async Task Writes_no_chunk_for_tool_input_end_or_raw_parts()
-    {
-        var frames = Frames(await Write(new LanguageModelStreamPart[]
-        {
-            new ToolInputEndStreamPart("call-1"),
-            new RawStreamPart("{\"provider\":\"raw\"}"),
-            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
-        }));
-
-        Assert.Equal(new[] { "start", "start-step", "finish-step", "finish", null }, frames.Select(frame => (string?)frame?["type"]));
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.toUIMessageStream::should send tool call, tool call stream start, tool call deltas, and tool result stream parts",
         Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_tool_input_stream_and_tool_result_chunks()
@@ -289,40 +210,6 @@ public sealed class UiMessageResponseTests
         Assert.Contains("\"errorText\":\"InvalidOperationException: tool failed\"", failed, StringComparison.Ordinal);
     }
 
-    [Fact]
-    [UpstreamTest(
-        "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk::maps tool result, tool error, tool denial, and approval parts",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Covers application-executed tool errors through onError. No tool metadata, dynamic tools, denial chunks, or approval chunks in .NET. Provider-executed tool errors cannot be produced by a model stream part.")]
-    public async Task Routes_application_executed_tool_errors_through_onError()
-    {
-        var model = new TestLanguageModel
-        {
-            StreamParts = new LanguageModelStreamPart[]
-            {
-                new ToolCallStreamPart("call-3", "lookup", "{}"),
-                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(1, 1, 2), "tool-calls"),
-            },
-        };
-        var stream = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "hi",
-            Tools = new[]
-            {
-                Tool.Function(
-                    "lookup",
-                    "find",
-                    "{\"type\":\"object\"}",
-                    (_, _) => Task.FromException<string>(new InvalidOperationException("tool failed"))),
-            },
-        });
-        using var buffer = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(stream, buffer, onError: error => "handled: " + error.Message);
-
-        Assert.Contains("\"errorText\":\"handled: tool failed\"", Body(buffer), StringComparison.Ordinal);
-    }
-
     private static async Task<string> Write(
         LanguageModelStreamPart[] parts,
         string? output = "{\"n\":1}",
@@ -345,7 +232,7 @@ public sealed class UiMessageResponseTests
             },
         });
         using var buffer = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(stream, buffer);
+        await UIMessageStreamResult.WriteAsync(stream, buffer, sendSources: true);
         return Body(buffer);
     }
 

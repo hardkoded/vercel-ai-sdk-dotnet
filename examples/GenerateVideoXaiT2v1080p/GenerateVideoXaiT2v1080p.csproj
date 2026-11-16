@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a 1080p video from a text prompt.</Description>
+  </PropertyGroup>
+</Project>
