@@ -4,8 +4,8 @@
 
 using System.Net;
 using System.Text.Json.Nodes;
-using Vercel.AI.Operations;
 using Vercel.AI.OpenAI;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Live = Vercel.AI.OpenAI.OpenAIRealtimeModelLive;
 

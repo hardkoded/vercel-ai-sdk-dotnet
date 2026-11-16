@@ -2,8 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Vercel.AI.Provider;
 using Vercel.AI.Google;
+using Vercel.AI.Provider;
 using Mapper = global::Vercel.AI.Google.GoogleRealtimeEventMapper;
 
 namespace Vercel.AI.Tests.Upstream.Google;

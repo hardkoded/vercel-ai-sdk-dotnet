@@ -2,8 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using Auth = Vercel.AI.Gateway.GatewayRealtimeAuth;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel.GatewayRealtimeModelSupport;
+using Auth = Vercel.AI.Gateway.GatewayRealtimeAuth;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel;
 

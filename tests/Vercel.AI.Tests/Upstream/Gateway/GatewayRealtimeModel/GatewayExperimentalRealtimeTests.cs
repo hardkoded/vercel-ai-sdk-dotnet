@@ -4,8 +4,8 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
-using Auth = Vercel.AI.Gateway.GatewayRealtimeAuth;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel.GatewayRealtimeModelSupport;
+using Auth = Vercel.AI.Gateway.GatewayRealtimeAuth;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayRealtimeModel;
 
