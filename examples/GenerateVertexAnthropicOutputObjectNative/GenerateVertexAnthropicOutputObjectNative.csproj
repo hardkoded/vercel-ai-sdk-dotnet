@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a structured object from Claude on Vertex with native structured output.</Description>
+  </PropertyGroup>
+</Project>
