@@ -15,6 +15,16 @@ namespace Vercel.AI.GenerateText;
 /// </summary>
 public delegate string? ChunkDetector(string buffer);
 
+/// <summary>
+/// Splits text into segments, like <c>Intl.Segmenter</c>. .NET has no built-in word segmenter, so you provide one
+/// (for example a wrapper over ICU) to chunk text with locale-aware word segmentation, which suits CJK languages.
+/// </summary>
+public interface ISegmenter
+{
+    /// <summary>Segments <paramref name="input"/>. Maps to <c>Intl.Segmenter.segment</c>. Only the first segment is read.</summary>
+    IEnumerable<string> Segment(string input);
+}
+
 /// <summary>How <see cref="SmoothStream"/> chunks the text. Maps to the <c>'word' | 'line'</c> values of <c>chunking</c>.</summary>
 public enum SmoothStreamChunking
 {
@@ -33,6 +43,9 @@ public sealed class SmoothStreamOptions
 
     /// <summary>Controls how the text is chunked for streaming. Defaults to <see cref="SmoothStreamChunking.Word"/>.</summary>
     public SmoothStreamChunking Chunking { get; set; } = SmoothStreamChunking.Word;
+
+    /// <summary>A segmenter that chunks the text. Takes precedence over <see cref="ChunkDetector"/>, <see cref="ChunkingRegex"/> and <see cref="Chunking"/>.</summary>
+    public ISegmenter? Segmenter { get; set; }
 
     /// <summary>A custom pattern that does not match the empty string. Takes precedence over <see cref="Chunking"/>.</summary>
     public Regex? ChunkingRegex { get; set; }
@@ -65,6 +78,21 @@ public static class SmoothStream
 
     private static Func<string, string?> CreateDetector(SmoothStreamOptions options)
     {
+        if (options.Segmenter is { } segmenter)
+        {
+            return buffer =>
+            {
+                if (buffer.Length == 0)
+                {
+                    return null;
+                }
+
+                using var enumerator = segmenter.Segment(buffer).GetEnumerator();
+                var first = enumerator.MoveNext() ? enumerator.Current : null;
+                return string.IsNullOrEmpty(first) ? null : first;
+            };
+        }
+
         if (options.ChunkDetector is { } chunking)
         {
             return buffer =>

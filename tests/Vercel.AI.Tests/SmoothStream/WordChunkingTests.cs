@@ -8,98 +8,16 @@ using Xunit;
 
 namespace Vercel.AI.Tests.SmoothStream;
 
-public sealed class WordChunkingTests
+public sealed class WordChunkingTests : SmoothStreamTestBase
 {
-    private readonly List<object> _events = [];
-
-    private static async IAsyncEnumerable<TextStreamPart> From(params TextStreamPart[] parts)
-    {
-        foreach (var part in parts)
-        {
-            yield return part;
-            await Task.Yield();
-        }
-    }
-
-    private async Task Run(TextStreamPart[] input, int? delayInMs = 10, bool recordDelay = true)
-    {
-        var options = new Vercel.AI.GenerateText.SmoothStreamOptions
-        {
-            DelayInMs = delayInMs,
-            Delay = !recordDelay ? null : (ms, _) =>
-            {
-                _events.Add($"delay {ms}");
-                return Task.CompletedTask;
-            },
-        };
-        var transform = Vercel.AI.GenerateText.SmoothStream.Create(options)(null);
-        await foreach (var part in transform(From(input), default))
-        {
-            _events.Add(part);
-        }
-    }
-
-    private void Expect(params object[] expected)
-    {
-        Assert.Equal(expected.Length, _events.Count);
-        for (var i = 0; i < expected.Length; i++)
-        {
-            switch (expected[i])
-            {
-                case string s:
-                    Assert.Equal(s, _events[i]);
-                    break;
-                case PingPart:
-                    Assert.IsType<PingPart>(_events[i]);
-                    break;
-                case TextStartPart e:
-                    Assert.Equal(e.Id, Assert.IsType<TextStartPart>(_events[i]).Id);
-                    break;
-                case TextEndPart e:
-                    Assert.Equal(e.Id, Assert.IsType<TextEndPart>(_events[i]).Id);
-                    break;
-                case TextDeltaPart e:
-                    var actual = Assert.IsType<TextDeltaPart>(_events[i]);
-                    Assert.Equal(e.Id, actual.Id);
-                    Assert.Equal(e.Text, actual.Text);
-                    break;
-                case ToolCallPart e:
-                    var call = Assert.IsType<ToolCallPart>(_events[i]);
-                    Assert.Equal(e.ToolCall.ToolCallId, call.ToolCall.ToolCallId);
-                    Assert.Equal(e.ToolCall.ToolName, call.ToolCall.ToolName);
-                    Assert.Equal(e.ToolCall.ArgumentsJson, call.ToolCall.ArgumentsJson);
-                    break;
-                case ToolInputStartPart e:
-                    var start = Assert.IsType<ToolInputStartPart>(_events[i]);
-                    Assert.Equal(e.Id, start.Id);
-                    Assert.Equal(e.ToolName, start.ToolName);
-                    break;
-                case ToolInputDeltaPart e:
-                    var delta = Assert.IsType<ToolInputDeltaPart>(_events[i]);
-                    Assert.Equal(e.Id, delta.Id);
-                    Assert.Equal(e.Delta, delta.Delta);
-                    break;
-                case ToolInputEndPart e:
-                    Assert.Equal(e.Id, Assert.IsType<ToolInputEndPart>(_events[i]).Id);
-                    break;
-                default:
-                    throw new InvalidOperationException("Unexpected expectation.");
-            }
-        }
-    }
-
-    private static TextDeltaPart D(string text) => new("1", text);
-
     private static TextStartPart Start => new("1");
 
     private static TextEndPart End => new("1");
 
-    private static string Delay => "delay 10";
-
     [Fact]
     public async Task ForwardsPingsWithoutFlushingAPartialWord()
     {
-        await Run([Start, D("Hel"), new PingPart(), D("lo "), End], delayInMs: null, recordDelay: false);
+        await Run([Start, D("Hel"), new PingPart(), D("lo "), End], new SmoothStreamOptions { DelayInMs = null, Delay = (_, _) => Task.CompletedTask });
         Expect(Start, new PingPart(), D("Hello "), End);
     }
 
