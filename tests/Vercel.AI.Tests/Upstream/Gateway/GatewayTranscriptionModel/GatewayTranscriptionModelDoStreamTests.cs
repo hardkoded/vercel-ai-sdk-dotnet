@@ -7,8 +7,8 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.Tests.Upstream.ProviderUtils;
-using TimeoutError = Vercel.AI.Util.TimeoutError;
 using static Vercel.AI.Tests.Upstream.Gateway.GatewayTranscriptionModel.GatewayTranscriptionModelSupport;
+using TimeoutError = Vercel.AI.Util.TimeoutError;
 
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayTranscriptionModel;
 
