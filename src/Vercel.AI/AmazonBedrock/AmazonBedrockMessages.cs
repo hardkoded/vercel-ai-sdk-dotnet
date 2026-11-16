@@ -226,8 +226,8 @@ public static class AmazonBedrockMessages
 
     private static JsonObject ToolResultBlock(ToolModelMessage result, bool isMistral, string? toolCallId = null)
     {
-        var text = result.OutputType == "execution-denied" && result.OutputJson.Length == 0
-            ? "Tool call execution denied."
+        var text = result.OutputType == "execution-denied"
+            ? result.ExecutionDeniedReason ?? "Tool call execution denied."
             : result.OutputJson;
         return new JsonObject
         {

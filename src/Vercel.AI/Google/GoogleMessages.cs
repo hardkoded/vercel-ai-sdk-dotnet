@@ -581,7 +581,7 @@ public static class GoogleMessages
                     ToolCallId = tool.ToolCallId,
                     OutputKind = tool.OutputType,
                     Output = tool.OutputJson,
-                    DenialReason = tool.OutputType == "execution-denied" && tool.OutputJson.Length > 0 ? tool.OutputJson : null,
+                    DenialReason = tool.OutputType == "execution-denied" ? tool.ExecutionDeniedReason : null,
                 };
                 if (tool.OutputContent != null)
                 {

@@ -1603,7 +1603,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         ?? OpenAIJson.PromptCacheBreakpoint(tool.ProviderMetadata);
                     var toolIsCustom = customToolNames?.Contains(tool.ToolName) == true;
                     var toolHasSchema = !toolIsCustom && outputSchemaToolNames?.Contains(tool.ToolName) == true;
-                    var toolText = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputJson, toolHasSchema);
+                    var toolText = OpenAIJson.ToolOutputText(tool.OutputType, tool.OutputType == "execution-denied" ? tool.ExecutionDeniedReason : tool.OutputJson, toolHasSchema);
                     JsonNode toolOutput = toolText;
                     if (toolBreakpoint != null)
                     {
@@ -1751,7 +1751,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         foreach (var result in group.Results)
         {
             var hasSchema = outputSchemaToolNames?.Contains(result.ToolName) == true;
-            texts.Add(OpenAIJson.ToolOutputText(result.OutputType, result.OutputJson, hasSchema));
+            texts.Add(OpenAIJson.ToolOutputText(result.OutputType, result.OutputType == "execution-denied" ? result.ExecutionDeniedReason : result.OutputJson, hasSchema));
             breakpoints.Add(OpenAIJson.PromptCacheBreakpoint(result.OutputProviderOptions) ?? OpenAIJson.PromptCacheBreakpoint(result.ProviderMetadata));
         }
 

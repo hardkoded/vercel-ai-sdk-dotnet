@@ -206,8 +206,8 @@ internal static class AlibabaChatMessages
 
     private static string ToolContent(ToolModelMessage tool)
     {
-        return tool.OutputType == "execution-denied" && string.IsNullOrEmpty(tool.OutputJson)
-            ? ExecutionDeniedText
+        return tool.OutputType == "execution-denied"
+            ? tool.ExecutionDeniedReason ?? ExecutionDeniedText
             : tool.OutputJson;
     }
 }

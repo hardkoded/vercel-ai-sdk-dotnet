@@ -143,7 +143,7 @@ public static class OpenAIChatMessages
                         messages.Add(new OpenAIChatPromptMessage("tool")
                         {
                             ToolCallId = result.ToolCallId,
-                            ToolOutput = result.OutputJson,
+                            ToolOutput = result.OutputType == "execution-denied" ? result.ExecutionDeniedReason : result.OutputJson,
                             ToolOutputType = result.OutputType,
                             ProviderOptions = result.ProviderMetadata,
                             MessageProviderOptions = first ? tool.MessageProviderOptions : null,
