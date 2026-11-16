@@ -4,17 +4,25 @@
 
 using Vercel.AI.OpenAI;
 using Vercel.AI.Tests.Upstream;
+using A = Vercel.AI.OpenAI.OpenAIResponsesApi;
 
 namespace Vercel.AI.Tests.OpenAIResponsesApi;
 
 /// <summary>
 /// Port of <c>openai-responses-api.test.ts</c> &gt; <c>openaiResponses schema alignment</c>.
-/// Upstream compares inferred TypeScript types with <c>expectTypeOf</c>. The port has rule sets instead of types,
-/// so each test feeds the same valid and invalid value into the chunk and the response schema and requires the same verdict.
+/// Upstream compares inferred TypeScript types with <c>expectTypeOf</c>. Each test compares the C# types of the typed models in
+/// <see cref="OpenAIResponsesApi"/> by reflection, and also feeds the same valid and invalid value into the chunk and the response rule set and requires the same verdict.
 /// </summary>
 public sealed class OpenAIResponsesSchemaAlignmentTests
 {
     private const string Prefix = "packages/openai/src/responses/openai-responses-api.test.ts::openaiResponses schema alignment::";
+
+    private static Type PropertyType<T>(string name) =>
+        typeof(T).GetProperty(name)?.PropertyType ?? throw new InvalidOperationException(typeof(T).Name + "." + name + " does not exist.");
+
+    private static Type ElementType(Type list) => list.GetGenericArguments().Single();
+
+    private static void AssertEqualTypes(Type expected, Type actual) => Assert.Equal(expected, actual);
 
     private static bool Chunk(string json) => OpenAIResponsesSchema.IsValidChunk(OpenAIUpstream.Json(json));
 
@@ -42,9 +50,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         }
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "matches annotation shape between chunk and response schemas", Coverage = UpstreamCoverage.Partial)]
-    public void Matches_annotation_shape_between_chunk_and_response_schemas() => AssertAligned(
+    private static void Verdict_Matches_annotation_shape_between_chunk_and_response_schemas() => AssertAligned(
         [
             """{"type":"url_citation","start_index":0,"end_index":1,"url":"u","title":"t"}""",
             """{"type":"file_citation","file_id":"f","filename":"n","index":0}""",
@@ -59,9 +65,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         annotation => "{\"type\":\"response.output_text.annotation.added\",\"annotation\":" + annotation + "}",
         annotation => Output(Message("[{\"type\":\"output_text\",\"text\":\"t\",\"annotations\":[" + annotation + "]}]")));
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns web_search_call actions", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_web_search_call_actions() => AssertAligned(
+    private static void Verdict_Aligns_web_search_call_actions() => AssertAligned(
         [
             """{"type":"search","query":"q","sources":[{"type":"url","url":"u"},{"type":"api","name":"n"}]}""",
             """{"type":"open_page","url":"u"}""",
@@ -76,9 +80,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         action => Item("done", "{\"type\":\"web_search_call\",\"id\":\"w\",\"status\":\"completed\",\"action\":" + action + "}"),
         action => Output("{\"type\":\"web_search_call\",\"id\":\"w\",\"status\":\"completed\",\"action\":" + action + "}"));
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns code_interpreter outputs", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_code_interpreter_outputs() => AssertAligned(
+    private static void Verdict_Aligns_code_interpreter_outputs() => AssertAligned(
         [
             """[{"type":"logs","logs":"l"},{"type":"image","url":"u"}]""",
             "null",
@@ -91,9 +93,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         outputs => Item("done", "{\"type\":\"code_interpreter_call\",\"id\":\"c\",\"code\":null,\"container_id\":\"k\",\"outputs\":" + outputs + "}"),
         outputs => Output("{\"type\":\"code_interpreter_call\",\"id\":\"c\",\"code\":null,\"container_id\":\"k\",\"outputs\":" + outputs + "}"));
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns file_search_call results", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_file_search_call_results() => AssertAligned(
+    private static void Verdict_Aligns_file_search_call_results() => AssertAligned(
         [
             """[{"attributes":{"a":"s","b":1,"c":true},"file_id":"f","filename":"n","score":0.5,"text":"t"}]""",
             "null",
@@ -105,9 +105,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         results => Item("done", "{\"type\":\"file_search_call\",\"id\":\"s\",\"queries\":[],\"results\":" + results + "}"),
         results => Output("{\"type\":\"file_search_call\",\"id\":\"s\",\"queries\":[],\"results\":" + results + "}"));
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns message phase between added chunk, done chunk, and response schemas", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_message_phase_between_added_chunk_done_chunk_and_response_schemas()
+    private static void Verdict_Aligns_message_phase_between_added_chunk_done_chunk_and_response_schemas()
     {
         foreach (var phase in new[] { "\"commentary\"", "\"final_answer\"", "null" })
         {
@@ -124,9 +122,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         }
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns async mode between function call schemas", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_async_mode_between_function_call_schemas()
+    private static void Verdict_Aligns_async_mode_between_function_call_schemas()
     {
         const string Fields = "\"id\":\"f\",\"call_id\":\"c\",\"name\":\"n\",\"arguments\":\"{}\"";
         foreach (var async in new[] { "true", "false", "null" })
@@ -141,9 +137,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         Assert.False(Response(Output("{\"type\":\"function_call\"," + Fields + ",\"async\":\"yes\"}")));
     }
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns output_text logprobs", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_output_text_logprobs() => AssertAligned(
+    private static void Verdict_Aligns_output_text_logprobs() => AssertAligned(
         [
             """[{"token":"a","logprob":-0.1,"top_logprobs":[{"token":"a","logprob":-0.1}]}]""",
             "null",
@@ -155,9 +149,7 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
         logprobs => "{\"type\":\"response.output_text.delta\",\"item_id\":\"m\",\"delta\":\"d\",\"logprobs\":" + logprobs + "}",
         logprobs => Output(Message("[{\"type\":\"output_text\",\"text\":\"t\",\"logprobs\":" + logprobs + ",\"annotations\":[]}]")));
 
-    [Fact]
-    [UpstreamTest(Prefix + "aligns local_shell_call between added, done, and response schemas", Coverage = UpstreamCoverage.Partial)]
-    public void Aligns_local_shell_call_between_added_done_and_response_schemas()
+    private static void Verdict_Aligns_local_shell_call_between_added_done_and_response_schemas()
     {
         string[] valid =
         [
@@ -173,5 +165,72 @@ public sealed class OpenAIResponsesSchemaAlignmentTests
 
         AssertAligned(valid, invalid, item => Item("added", item), Output);
         AssertAligned(valid, invalid, item => Item("done", item), Output);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "matches annotation shape between chunk and response schemas")]
+    public void Matches_annotation_shape_between_chunk_and_response_schemas()
+    {
+        AssertEqualTypes(PropertyType<A.OutputTextAnnotationAdded>("Annotation"), ElementType(PropertyType<A.OutputText>("Annotations")));
+        Verdict_Matches_annotation_shape_between_chunk_and_response_schemas();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns web_search_call actions")]
+    public void Aligns_web_search_call_actions()
+    {
+        AssertEqualTypes(PropertyType<A.DoneWebSearchCall>("Action"), PropertyType<A.WebSearchCall>("Action"));
+        Verdict_Aligns_web_search_call_actions();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns code_interpreter outputs")]
+    public void Aligns_code_interpreter_outputs()
+    {
+        AssertEqualTypes(PropertyType<A.DoneCodeInterpreterCall>("Outputs"), PropertyType<A.CodeInterpreterCall>("Outputs"));
+        Verdict_Aligns_code_interpreter_outputs();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns file_search_call results")]
+    public void Aligns_file_search_call_results()
+    {
+        AssertEqualTypes(PropertyType<A.DoneFileSearchCall>("Results"), PropertyType<A.FileSearchCall>("Results"));
+        Verdict_Aligns_file_search_call_results();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns message phase between added chunk, done chunk, and response schemas")]
+    public void Aligns_message_phase_between_added_chunk_done_chunk_and_response_schemas()
+    {
+        AssertEqualTypes(PropertyType<A.AddedMessage>("Phase"), PropertyType<A.DoneMessage>("Phase"));
+        AssertEqualTypes(PropertyType<A.DoneMessage>("Phase"), PropertyType<A.Message>("Phase"));
+        Verdict_Aligns_message_phase_between_added_chunk_done_chunk_and_response_schemas();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns async mode between function call schemas")]
+    public void Aligns_async_mode_between_function_call_schemas()
+    {
+        AssertEqualTypes(PropertyType<A.AddedFunctionCall>("Async"), PropertyType<A.DoneFunctionCall>("Async"));
+        AssertEqualTypes(PropertyType<A.DoneFunctionCall>("Async"), PropertyType<A.FunctionCall>("Async"));
+        Verdict_Aligns_async_mode_between_function_call_schemas();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns output_text logprobs")]
+    public void Aligns_output_text_logprobs()
+    {
+        AssertEqualTypes(PropertyType<A.OutputTextDelta>("Logprobs"), PropertyType<A.OutputText>("Logprobs"));
+        Verdict_Aligns_output_text_logprobs();
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "aligns local_shell_call between added, done, and response schemas")]
+    public void Aligns_local_shell_call_between_added_done_and_response_schemas()
+    {
+        AssertEqualTypes(PropertyType<A.AddedLocalShellCall>("Call"), PropertyType<A.DoneLocalShellCall>("Call"));
+        AssertEqualTypes(PropertyType<A.DoneLocalShellCall>("Call"), PropertyType<A.LocalShellCallOutput>("Call"));
+        Verdict_Aligns_local_shell_call_between_added_done_and_response_schemas();
     }
 }
