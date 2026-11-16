@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Streams text with Cerebras using the auto service tier and a queue threshold.</Description>
+  </PropertyGroup>
+</Project>
