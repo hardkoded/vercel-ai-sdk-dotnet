@@ -13,8 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicForcedToolStructuredOutput
 public sealed class StructuredOutputsForModelsThatRejectForcedToolUseTests
 {
     private const string Prefix = "packages/anthropic/src/anthropic-forced-tool-structured-output.test.ts::structured outputs for models that reject forced tool use::";
-    private const string NestedPrefix = Prefix + "%s with native support enabled::fallback tool restrictions for %s::";
-    private const string StreamPrefix = Prefix + "%s with native support enabled::";
+    private const string NestedPrefix = "packages/anthropic/src/anthropic-forced-tool-structured-output.test.ts::structured outputs for models that reject forced tool use > %s with native support enabled > fallback tool restrictions for %s::";
+    private const string StreamPrefix = "packages/anthropic/src/anthropic-forced-tool-structured-output.test.ts::structured outputs for models that reject forced tool use > %s with native support enabled::";
 
     private const string Schema = "{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"string\"}},\"required\":[\"answer\"],\"additionalProperties\":false}";
 

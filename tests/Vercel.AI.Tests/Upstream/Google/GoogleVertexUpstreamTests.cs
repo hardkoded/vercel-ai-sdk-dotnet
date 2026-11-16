@@ -407,6 +407,55 @@ public sealed class GoogleVertexUpstreamTests
         Assert.False(model.SupportsUrl("image/*", "https://example.com/image.png"));
     }
 
+    [Theory]
+    [InlineData("claude-opus-4-5@20251101", true)]
+    [InlineData("claude-sonnet-4-5@20250929", true)]
+    [InlineData("claude-haiku-4-5@20251001", true)]
+    [InlineData("claude-sonnet-4-6", true)]
+    [InlineData("claude-opus-4-8", true)]
+    [InlineData("claude-opus-5", true)]
+    [InlineData("claude-opus-5-5", true)]
+    [InlineData("claude-fable-5-1", true)]
+    [InlineData("claude-sonnet-6", true)]
+    [InlineData("claude-sonnet-5", true)]
+    [InlineData("claude-sonnet-5-5", true)]
+    [InlineData("claude-haiku-5-5", true)]
+    [InlineData("claude-fable-5", true)]
+    [InlineData("claude-sonnet-4-5-20250929", false)]
+    [InlineData("claude-3-5-sonnet-v2@20241022", false)]
+    [InlineData("claude-opus-4-1@20250805", false)]
+    [InlineData("claude-opus-4@20250514", false)]
+    [InlineData("claude-sonnet-4@20250514", false)]
+    [InlineData("claude-3-7-sonnet@20250219", false)]
+    [InlineData("custom-deployment", false)]
+    [UpstreamTest(AnthropicTests + "should gate the native-output opt-in by Vertex model support: %s", Coverage = UpstreamCoverage.Covered, Commit = "4b8f00efff97de78e52667359aa33267a1036c46")]
+    public void Gates_the_native_output_opt_in_by_Vertex_model_support(string modelId, bool supported)
+    {
+        var provider = GoogleVertexAnthropicProvider.Create(
+            new GoogleVertexAnthropicOptions { Project = "p", Location = "global", SupportsNativeStructuredOutput = true },
+            new RecordingHandler());
+
+        Assert.Equal(supported, provider.SupportsNativeStructuredOutputFor(modelId));
+        Assert.False(provider.SupportsStrictTools);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    [UpstreamTest(AnthropicTests + "should keep native output disabled without an opt-in (%s)", Coverage = UpstreamCoverage.Covered, Commit = "4b8f00efff97de78e52667359aa33267a1036c46")]
+    public void Keeps_native_output_disabled_without_an_opt_in(bool? supportsNativeStructuredOutput)
+    {
+        var options = new GoogleVertexAnthropicOptions { Project = "p", Location = "global" };
+        if (supportsNativeStructuredOutput != null)
+        {
+            options.SupportsNativeStructuredOutput = supportsNativeStructuredOutput.Value;
+        }
+
+        var provider = GoogleVertexAnthropicProvider.Create(options, new RecordingHandler());
+
+        Assert.False(provider.SupportsNativeStructuredOutputFor("claude-sonnet-4-6"));
+    }
+
     [Fact]
     [UpstreamTest(AnthropicTests + "should support combining tools with structured outputs (inherited from Anthropic)", Coverage = UpstreamCoverage.Covered)]
     public void Creates_Anthropic_Messages_models()

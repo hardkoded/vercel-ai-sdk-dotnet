@@ -287,6 +287,9 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>False when the host does not accept the native output format. Structured output then uses the JSON tool.</summary>
     protected internal virtual bool SupportsNativeStructuredOutput => true;
 
+    /// <summary>Per-model form of <see cref="SupportsNativeStructuredOutput"/>. Hosts that decide by model id override it.</summary>
+    protected internal virtual bool SupportsNativeStructuredOutputFor(string modelId) => SupportsNativeStructuredOutput;
+
     /// <summary>False when the host does not accept <c>strict</c> on tool definitions.</summary>
     protected internal virtual bool SupportsStrictTools => true;
 
@@ -633,7 +636,7 @@ public class AnthropicLanguageModel : ILanguageModel
             PrepareCallOptions(options ?? new LanguageModelCallOptions(), callWarnings),
             stream,
             Provider,
-            _provider.SupportsNativeStructuredOutput,
+            _provider.SupportsNativeStructuredOutputFor(ModelId),
             _provider.SupportsStrictTools,
             _settings);
         var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
