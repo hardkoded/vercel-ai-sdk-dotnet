@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.Upstream.ToUiMessageChunk;
 
@@ -31,6 +32,20 @@ public sealed class ToUIMessageChunkTests
         Assert.True(JsonNode.DeepEquals(
             JsonNode.Parse($$"""{"type":"text-end","id":"text-1","providerMetadata":{{metadata}}}"""),
             UIMessageStreamConverter.ToUIMessageChunk(new TextEndPart("text-1", providerMetadata: ProviderMetadata))));
+    }
+
+    // The document source half of the upstream test is not ported: streamText does not emit document source parts yet.
+    [Fact]
+    [UpstreamTest(Prefix + "skips sources by default and sends them when enabled", Coverage = UpstreamCoverage.Partial, Note = "Only the url source is checked; TextStreamPart has no document source.", Commit = "8ba3940d3dd1f3cd3c4365bbaec505c6ef0eb1e3")]
+    public void Skips_url_sources_by_default_and_sends_them_when_enabled()
+    {
+        var urlSourcePart = new SourcePart(new GeneratedSource("source-1", "https://example.com", "Example", ProviderMetadata));
+
+        Assert.Null(UIMessageStreamConverter.ToUIMessageChunk(urlSourcePart));
+
+        Assert.True(JsonNode.DeepEquals(
+            JsonNode.Parse("""{"type":"source-url","sourceId":"source-1","url":"https://example.com","title":"Example","providerMetadata":{"testProvider":{"signature":"sig-1"}}}"""),
+            UIMessageStreamConverter.ToUIMessageChunk(urlSourcePart, new ToUIMessageChunkOptions { SendSources = true })));
     }
 
     [Fact]

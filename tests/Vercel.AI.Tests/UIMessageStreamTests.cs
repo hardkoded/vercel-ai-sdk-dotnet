@@ -40,7 +40,7 @@ public sealed class UIMessageStreamTests
             Tools = new[] { Tool.Function("lookup", "find", "{\"type\":\"object\"}", (_, _) => Task.FromResult("{\"n\":1}")) },
         });
         using var buffer = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(stream, buffer);
+        await UIMessageStreamResult.WriteAsync(stream, buffer, sendSources: true);
         var text = System.Text.Encoding.UTF8.GetString(buffer.ToArray());
         Assert.Contains("\"type\":\"start\"", text);
         Assert.Contains("\"type\":\"text-start\"", text);

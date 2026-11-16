@@ -17,6 +17,9 @@ public sealed class ToUIMessageChunkOptions
     /// <summary>Whether reasoning parts are sent. Defaults to <c>true</c>. Maps to <c>sendReasoning</c>.</summary>
     public bool SendReasoning { get; init; } = true;
 
+    /// <summary>Whether source parts are sent. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</summary>
+    public bool SendSources { get; init; }
+
     /// <summary>Whether the <c>start</c> chunk is sent. Defaults to <c>true</c>. Maps to <c>sendStart</c>.</summary>
     public bool SendStart { get; init; } = true;
 
@@ -45,13 +48,27 @@ public sealed class ToUIMessageChunkOptions
     /// </summary>
     public IReadOnlyList<UIMessage>? OriginalMessages { get; init; }
 
+    /// <summary>
+    /// Generates the id of the response message, unless the last original message is an assistant message, whose id is reused.
+    /// Maps to <c>generateMessageId</c>.
+    /// </summary>
+    public Func<string>? GenerateMessageId { get; init; }
+
     /// <summary>Called when each step ends during multi-step agent runs. Maps to <c>onStepEnd</c>.</summary>
     public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepEnd { get; init; }
+
+    /// <summary>Called when each step ends during multi-step agent runs. Maps to the deprecated <c>onStepFinish</c>. Use <see cref="OnStepEnd"/> instead.</summary>
+    [Obsolete("Use OnStepEnd instead.")]
+    public Func<UIMessageStreamOnStepEndEvent, Task>? OnStepFinish { get; init; }
 
     /// <summary>
     /// Called when the stream ends, whether it completed, failed, was aborted, or the consumer cancelled it. Maps to <c>onEnd</c>.
     /// </summary>
     public Func<UIMessageStreamOnEndEvent, Task>? OnEnd { get; init; }
+
+    /// <summary>Called when the stream ends. Maps to the deprecated <c>onFinish</c>. Use <see cref="OnEnd"/> instead.</summary>
+    [Obsolete("Use OnEnd instead.")]
+    public Func<UIMessageStreamOnEndEvent, Task>? OnFinish { get; init; }
 }
 
 /// <summary>Converts <c>streamText</c> parts into AI SDK UI message chunks.</summary>
@@ -147,6 +164,8 @@ public static partial class UIMessageStreamConverter
                 };
                 AddProviderMetadata(reasoningFileChunk, reasoningFile.ProviderMetadata);
                 return reasoningFileChunk;
+            case SourcePart when !options.SendSources:
+                return null;
             case SourcePart source:
                 var sourceChunk = new JsonObject
                 {

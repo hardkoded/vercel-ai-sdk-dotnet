@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Ui;
@@ -78,6 +80,12 @@ internal sealed class ProcessUIMessageStreamOptions
     public Func<Func<UpdateMessageJobContext, Task>, Task> RunUpdateMessageJob { get; }
 
     public Action<Exception>? OnError { get; }
+
+    /// <summary>A JSON Schema that the merged message metadata must match. Maps to <c>messageMetadataSchema</c>.</summary>
+    public JsonNode? MessageMetadataSchema { get; init; }
+
+    /// <summary>JSON Schemas of data parts, keyed by the part name without the <c>data-</c> prefix. Maps to <c>dataPartSchemas</c>.</summary>
+    public IReadOnlyDictionary<string, JsonNode>? DataPartSchemas { get; init; }
 
     /// <summary>Called for a tool call with an available input, unless the provider executed the tool.</summary>
     public Func<JsonObject, Task>? OnToolCall { get; init; }
@@ -369,16 +377,26 @@ internal static class UIMessageStreamProcessing
         return source?.DeepClone();
     }
 
-    private static void UpdateMessageMetadata(StreamingUIMessageState state, JsonNode? metadata)
+    private static void UpdateMessageMetadata(StreamingUIMessageState state, JsonNode? metadata, JsonNode? messageMetadataSchema)
     {
         if (metadata == null)
         {
             return;
         }
 
-        state.Message["metadata"] = state.Message["metadata"] != null
+        var mergedMetadata = state.Message["metadata"] != null
             ? MergeObjects(state.Message["metadata"], metadata)
             : metadata.DeepClone();
+
+        if (messageMetadataSchema != null)
+        {
+            JsonParsing.ValidateTypes(
+                JsonSerializer.SerializeToElement(mergedMetadata),
+                messageMetadataSchema,
+                new TypeValidationContext { Field = "message.metadata", EntityId = (string?)state.Message["id"] });
+        }
+
+        state.Message["metadata"] = mergedMetadata;
     }
 
     private static UIMessageStreamError Missing(string chunkType, string id, string what, string startType)
@@ -860,7 +878,7 @@ internal static class UIMessageStreamProcessing
                         state.Message["id"] = messageId;
                     }
 
-                    UpdateMessageMetadata(state, chunk["messageMetadata"]);
+                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
 
                     if (shouldReset || messageId != null || chunk["messageMetadata"] != null)
                     {
@@ -877,7 +895,7 @@ internal static class UIMessageStreamProcessing
                         state.FinishReason = finishReason;
                     }
 
-                    UpdateMessageMetadata(state, chunk["messageMetadata"]);
+                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
                     if (chunk["messageMetadata"] != null)
                     {
                         write(null);
@@ -888,7 +906,7 @@ internal static class UIMessageStreamProcessing
 
             case "message-metadata":
                 {
-                    UpdateMessageMetadata(state, chunk["messageMetadata"]);
+                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
                     if (chunk["messageMetadata"] != null)
                     {
                         write(null);
@@ -906,6 +924,35 @@ internal static class UIMessageStreamProcessing
                     if (!type.StartsWith("data-", StringComparison.Ordinal))
                     {
                         break;
+                    }
+
+                    // validate data chunk if dataPartSchemas is provided
+                    // (schemas are keyed by the part name without the 'data-' prefix)
+                    if (options.DataPartSchemas != null && options.DataPartSchemas.TryGetValue(type.Substring(5), out var dataPartSchema))
+                    {
+                        var partIndex = -1;
+                        for (var i = 0; i < parts.Count; i++)
+                        {
+                            if (parts[i] is JsonObject candidate
+                                && candidate.ContainsKey("id")
+                                && candidate.ContainsKey("data")
+                                && (string?)candidate["id"] == String(chunk, "id")
+                                && (string?)candidate["type"] == type)
+                            {
+                                partIndex = i;
+                                break;
+                            }
+                        }
+
+                        JsonParsing.ValidateTypes(
+                            JsonSerializer.SerializeToElement(chunk["data"]),
+                            dataPartSchema,
+                            new TypeValidationContext
+                            {
+                                Field = $"message.parts[{(partIndex >= 0 ? partIndex : parts.Count)}].data",
+                                EntityName = type,
+                                EntityId = String(chunk, "id"),
+                            });
                     }
 
                     // transient parts are not added to the message state

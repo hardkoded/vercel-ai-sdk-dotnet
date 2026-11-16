@@ -326,7 +326,8 @@ public sealed class UiMessageResponseTests
     private static async Task<string> Write(
         LanguageModelStreamPart[] parts,
         string? output = "{\"n\":1}",
-        bool throwOnExecute = false)
+        bool throwOnExecute = false,
+        bool sendSources = true)
     {
         var model = new TestLanguageModel { StreamParts = parts };
         var stream = Client().StreamTextAsync(new StreamTextOptions
@@ -345,7 +346,7 @@ public sealed class UiMessageResponseTests
             },
         });
         using var buffer = new MemoryStream();
-        await UIMessageStreamResult.WriteAsync(stream, buffer);
+        await UIMessageStreamResult.WriteAsync(stream, buffer, sendSources: sendSources);
         return Body(buffer);
     }
 
