@@ -98,6 +98,12 @@ foreach (var part in result.Content.OfType<GeneratedText>())
 
 In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to the id of the text block they end. `StreamTextAsync` keeps them on the matching text part in `StepResult.Content`. `SimulateStreamingMiddleware` copies `GeneratedText.Citations` onto the text-end part it emits, and emits a text block that has citations even when its text is empty. Citation-derived sources can arrive at the end of the provider stream, after the SDK knows whether the provider sent retrieval data.
 
+### Responding with a UI message stream
+
+`UIMessageStreamResponses.CreateUIMessageStreamResponse(stream, init)` is the counterpart of upstream `createUIMessageStreamResponse`. It encodes a `ReadableStream<JsonObject>` of UI message chunks as Server-Sent Events and returns a `UIMessageStreamResponse` with `Status`, `StatusText`, `Headers`, and a UTF-8 `Body`. Use `ReadableStream<JsonObject>.From(chunks)` to turn the `IAsyncEnumerable` of `UIMessageStreamConverter.ToUIMessageStream` into a stream. `UIMessageStreamResponseInit` takes `Status`, `StatusText`, `Headers`, `KeepAliveMs`, and `ConsumeSseStream`.
+
+`ConsumeSseStream` receives a `ReadableStream<string>` copy of the SSE stream (made with `ReadableStream<T>.Tee()`) and does not block the response. Pass `s => ConsumeStream.ConsumeAsync(s)` to keep the source flowing when the client disconnects. A consumer that stops reading cancels the stream, so `OnEnd` reports `IsCancelled` with an `Unknown` outcome. With a consumer that keeps reading, the source sees an abort and `OnEnd` reports `IsAborted` with an `Aborted` outcome. An abort that follows the consumer's cancellation right away (within one second) still calls `OnAbort`, because the run ends asynchronously after the consumer stops.
+
 ### Error text in the UI message stream
 
 `PipeUIMessageStreamToResponseAsync(ServerResponse response, status, statusText, headers, keepAliveMs, onError, redactToolErrors, sendSources)` is the counterpart of upstream `pipeUIMessageStreamToResponse`. It writes the same SSE stream to a `ServerResponse` byte sink and ends it. Headers you pass take precedence over the protocol headers.

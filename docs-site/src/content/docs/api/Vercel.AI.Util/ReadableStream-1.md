@@ -94,6 +94,30 @@ Cancels the stream. Throws when a reader holds the lock.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L202)
 
+<a id="Vercel_AI_Util_ReadableStream_1_From_"></a>
+<a id="Vercel_AI_Util_ReadableStream_1_From_System_Collections_Generic_IAsyncEnumerable__0__"></a>
+
+### `From(IAsyncEnumerable<T>)`
+
+
+```csharp
+public static ReadableStream<T> From(IAsyncEnumerable<T> source)
+```
+
+
+Creates a stream that reads &lt;code class="paramref"&gt;source&lt;/code&gt;. Cancelling the stream cancels the enumerator's token and disposes it.
+Mirrors `ReadableStream.from`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `source` | [IAsyncEnumerable&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) |  |
+
+**Returns:** [ReadableStream&lt;T&gt;](./)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L308)
+
 <a id="Vercel_AI_Util_ReadableStream_1_FromArray_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_FromArray_System_Collections_Generic_IReadOnlyList__0__"></a>
 
@@ -115,7 +139,7 @@ A stream that emits &lt;code class="paramref"&gt;values&lt;/code&gt; and then cl
 
 **Returns:** [ReadableStream&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L380)
 
 <a id="Vercel_AI_Util_ReadableStream_1_GetReader_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_GetReader"></a>
@@ -133,6 +157,24 @@ Locks the stream and returns its reader.
 **Returns:** `ReadableStreamReader&lt;T&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L187)
+
+<a id="Vercel_AI_Util_ReadableStream_1_Tee_"></a>
+<a id="Vercel_AI_Util_ReadableStream_1_Tee"></a>
+
+### Tee()
+
+
+```csharp
+public (ReadableStream<T> First, ReadableStream<T> Second) Tee()
+```
+
+
+Splits this stream into two branches that receive every chunk. The stream is locked, and cancelled once both branches are cancelled.
+Mirrors `ReadableStream.tee()`.
+
+**Returns:** `(ReadableStream&lt;T&gt; First, ReadableStream&lt;T&gt; Second)`
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/ReadableStream.cs#L249)
 
 <a id="Vercel_AI_Util_ReadableStream_1_ToArrayAsync_"></a>
 <a id="Vercel_AI_Util_ReadableStream_1_ToArrayAsync"></a>
