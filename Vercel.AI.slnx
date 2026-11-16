@@ -21,6 +21,7 @@
     <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
+    <Project Path="examples/GenerateTextCerebrasServiceTier/GenerateTextCerebrasServiceTier.csproj" />
     <Project Path="examples/GenerateVideoXaiBasic/GenerateVideoXaiBasic.csproj" />
     <Project Path="examples/GenerateVideoXaiCost/GenerateVideoXaiCost.csproj" />
     <Project Path="examples/GenerateVideoXaiEdit/GenerateVideoXaiEdit.csproj" />
@@ -46,6 +47,7 @@
     <Project Path="examples/McpImageContent/McpImageContent.csproj" />
     <Project Path="examples/Providers/Providers.csproj" />
     <Project Path="examples/StreamText/StreamText.csproj" />
+    <Project Path="examples/StreamTextCerebrasServiceTier/StreamTextCerebrasServiceTier.csproj" />
     <Project Path="examples/StreamTranscribeDeepgramBasic/StreamTranscribeDeepgramBasic.csproj" />
     <Project Path="examples/TranscribeGladiaV2Options/TranscribeGladiaV2Options.csproj" />
     <Project Path="examples/Tools/Tools.csproj" />

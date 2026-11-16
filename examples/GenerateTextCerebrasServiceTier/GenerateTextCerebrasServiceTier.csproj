@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates text with Cerebras using the auto service tier and a queue threshold.</Description>
+  </PropertyGroup>
+</Project>
