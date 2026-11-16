@@ -138,7 +138,7 @@ internal static class DeepSeekResponsesInput
         switch (tool.OutputType)
         {
             case "execution-denied":
-                return string.IsNullOrEmpty(tool.OutputJson) ? "Tool call execution denied." : tool.OutputJson;
+                return tool.ExecutionDeniedReason ?? "Tool call execution denied.";
             case "text":
             case "error-text":
                 return tool.OutputJson;

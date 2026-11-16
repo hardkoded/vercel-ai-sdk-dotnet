@@ -145,6 +145,8 @@ A step-start part ends a block. Each block becomes an assistant message, followe
 
 A tool result carries an output type: `text`, `json`, `error-text`, `error-json`, or `execution-denied`. `ToolModelMessage.OutputType` holds it. When you do not set it, the type comes from `isError` and from whether the output is valid JSON.
 
+For `execution-denied`, `ToolModelMessage.ExecutionDeniedReason` holds the reason. It is `null` when the output has no reason, which differs from an empty reason. A tool result built from a list of parts accepts text parts, file parts (including `FileContentPart.FromText`), and `CustomContentPart` for provider-specific content. A provider skips the parts it does not support and adds a warning.
+
 Providers keep the error status:
 
 - OpenAI Chat Completions and Responses send `error-text` and `error-json` as `{"error": <value>}`. `execution-denied` stays the reason, or `Tool call execution denied.` when there is none.
