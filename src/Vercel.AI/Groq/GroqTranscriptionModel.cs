@@ -168,7 +168,7 @@ public sealed class GroqTranscriptionModel : ITranscriptionModel, ITranscription
         var requestHeaders = _provider.CreateHeaders(headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
         var response = await _provider.Http.SendBinaryAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "audio/transcriptions"),
+            _provider.WithQuery(ApiKeys.Combine(_provider.Options.BaseUrl, "audio/transcriptions")),
             form,
             requestHeaders,
             cancellationToken).ConfigureAwait(false);

@@ -86,6 +86,7 @@ public sealed class TranscribeTests
             Assert.Equal(1, fetches);
             Assert.Equal(2, fileCalls);
             Assert.Equal(audio, model.Generated!.Audio);
+            Assert.Equal("audio/mpeg", model.Generated.MediaType);
             Assert.Empty(model.Generated.TimestampGranularities!);
         }
         finally

@@ -646,6 +646,7 @@ public static class Transcribe
         byte[] audio = Array.Empty<byte>();
         string mediaType = "audio/wav";
         Uri? nativeUrl = null;
+        string? downloadedMediaType = null;
         if (!string.IsNullOrEmpty(request.AudioUrl))
         {
             if (model is ITranscriptionUrlCaller
@@ -658,7 +659,9 @@ public static class Transcribe
             else
             {
                 var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
-                audio = (await download(request.AudioUrl!, token).ConfigureAwait(false)).Data;
+                var downloadedAudio = await download(request.AudioUrl!, token).ConfigureAwait(false);
+                audio = downloadedAudio.Data;
+                downloadedMediaType = downloadedAudio.MediaType;
             }
         }
         else
@@ -668,7 +671,7 @@ public static class Transcribe
 
         if (nativeUrl is null)
         {
-            mediaType = MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+            mediaType = GetAudioMediaType(downloadedMediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
         }
 
         var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
@@ -683,9 +686,18 @@ public static class Transcribe
 
                 // A capable provider can decline an unsupported URL (for example, a redirect).
                 // Keep the existing secure download and file path, and retry only the file call.
-                var downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
+                DownloadedMedia downloaded;
+                try
+                {
+                    downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
+                }
+                catch (Util.DownloadError) when (ct.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException(ct);
+                }
+
                 audio = downloaded.Data;
-                mediaType = MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+                mediaType = GetAudioMediaType(downloaded.MediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
                 nativeUrl = null;
             }
 
@@ -698,6 +710,22 @@ public static class Transcribe
         }
 
         return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
+    }
+
+    /// <summary>
+    /// Normalizes a downloaded <c>Content-Type</c> and returns it only when it is a full <c>audio/&lt;subtype&gt;</c> media type.
+    /// Generic or mislabeled types return <see langword="null"/> so the media type is detected from the bytes. Maps to <c>getAudioMediaType</c>.
+    /// </summary>
+    internal static string? GetAudioMediaType(string? contentType)
+    {
+        var mediaType = contentType?.Split(';')[0].Trim().ToLowerInvariant();
+        if (mediaType is null)
+        {
+            return null;
+        }
+
+        var slash = mediaType.IndexOf('/');
+        return mediaType.StartsWith("audio/", StringComparison.Ordinal) && slash > 0 && slash < mediaType.Length - 1 ? mediaType : null;
     }
 
     internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)

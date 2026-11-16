@@ -1729,14 +1729,14 @@ OpenAI transcription sends the shared request as `timestamp_granularities[]`. `p
 ```csharp
 var result = await Transcribe.TranscribeAsync(new TranscribeRequest
 {
-    Model = groq.TranscriptionModel("whisper-large-v3-turbo"),
+    Model = (ITranscriptionCaller)groq.TranscriptionModel("whisper-large-v3-turbo"),
     AudioUrl = "https://example.com/large-audio.mp3",
 });
 ```
 
 - The URL must be reachable by Groq. Request headers configure the Groq API request and are not sent to the audio host.
 - Groq strips the URL fragment, and rejects non-HTTP(S) URLs and URLs with user info with `InvalidArgumentException` before any request.
-- Groq does not follow redirects. When it reports a `301`, `302`, `303`, `307`, or `308` fetch failure, the model returns `null` from `DoGenerateFromUrlAsync`. Core then downloads the audio with the secure downloader and uploads the bytes, so the attachment limit applies. Retries after that repeat only the file call. Every other Groq error is thrown unchanged.
+- Groq does not follow redirects. When it reports a `301`, `302`, `303`, `307`, or `308` fetch failure, the model returns `null` from `DoGenerateFromUrlAsync`. Core then downloads the audio with the secure downloader and uploads the bytes, so the attachment limit applies. The media type of the file part is the downloaded `Content-Type` when it is a full `audio/*` type (parameters removed, lowercased), then the type detected from the bytes, then `audio/wav`. Retries after that repeat only the file call. Every other Groq error is thrown unchanged.
 - Setting `TranscribeRequest.Download` always downloads locally, even for models with native URL support. Bytes passed as `Audio` are always uploaded as a file.
 
 ## Azure transcription
