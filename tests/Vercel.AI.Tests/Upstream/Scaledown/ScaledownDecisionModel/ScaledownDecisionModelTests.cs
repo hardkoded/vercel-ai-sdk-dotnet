@@ -91,21 +91,22 @@ public sealed class ScaledownDecisionModelTests
     [Fact]
     [UpstreamTest(
         Prefix + "passes custom settings, call headers, abort signal, and model ID",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit,
-        Note = "HttpClient links the cancellation token, so the test cannot assert that the same token reaches the handler. It asserts that a canceled token stops the call.")]
+        Note = "HttpClient hands the handler a linked token, never the caller's own instance, so identity is asserted as propagation: canceling the caller's token cancels the token the handler received.")]
     public async Task Passes_custom_settings_call_headers_abort_signal_and_model_ID()
     {
         var server = new ScaleDownServer();
         var provider = ScaleDownProvider.Create(
             new ScaleDownProviderSettings
             {
-                ApiKey = "custom-key",
+                ApiKeyProvider = _ => Task.FromResult("custom-key"),
                 BaseUrl = "https://custom.example/",
                 Headers = new Dictionary<string, string> { ["shared"] = "provider" },
             },
             server);
-        await provider.DecisionModel("classify").DoDecideAsync(Call(headers: new Dictionary<string, string> { ["shared"] = "call" }), CancellationToken.None);
+        using var abort = new CancellationTokenSource();
+        await provider.DecisionModel("classify").DoDecideAsync(Call(headers: new Dictionary<string, string> { ["shared"] = "call" }, cancellationToken: abort.Token), abort.Token);
         var call = Assert.Single(server.Calls);
         Assert.Equal("https://custom.example/v1/scaledown", call.Url);
         Assert.Equal("custom-key", call.Headers["x-api-key"]);
@@ -113,9 +114,21 @@ public sealed class ScaledownDecisionModelTests
         Assert.Equal("call", call.Headers["shared"]);
         Assert.Equal("classify", call.Json!["model"]!.GetValue<string>());
 
+        var held = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        server.Hold = held.Task;
         using var canceled = new CancellationTokenSource();
+        var pending = provider.DecisionModel("classify").DoDecideAsync(Call(cancellationToken: canceled.Token), canceled.Token);
+        while (server.Signals.Count < 2)
+        {
+            await Task.Delay(5);
+        }
+
+        var signal = server.Signals[1];
+        Assert.True(signal.CanBeCanceled);
+        Assert.False(signal.IsCancellationRequested);
         canceled.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => provider.DecisionModel("classify").DoDecideAsync(Call(cancellationToken: canceled.Token), canceled.Token));
+        Assert.True(signal.IsCancellationRequested);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
     }
 
     [Fact]

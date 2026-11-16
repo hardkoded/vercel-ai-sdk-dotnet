@@ -34,9 +34,16 @@ internal sealed class ScaleDownServer : HttpMessageHandler
 
     public string ResponseBody { get; set; } = ScaledownDecisionModelSupport.ResponseJson;
 
+    /// <summary>Tokens the handler received, one per call. Stands in for <c>init.signal</c> of <c>fetch</c>.</summary>
+    public List<CancellationToken> Signals { get; } = new();
+
+    /// <summary>When set, the handler waits on this task, honoring the token, before it answers.</summary>
+    public Task? Hold { get; set; }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        Signals.Add(cancellationToken);
         var call = new ScaleDownServerCall
         {
             Url = request.RequestUri!.AbsoluteUri,
@@ -48,6 +55,11 @@ internal sealed class ScaleDownServer : HttpMessageHandler
         }
 
         Calls.Add(call);
+        if (Hold != null)
+        {
+            await Hold.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         return new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, Encoding.UTF8, "application/json") };
     }
 }

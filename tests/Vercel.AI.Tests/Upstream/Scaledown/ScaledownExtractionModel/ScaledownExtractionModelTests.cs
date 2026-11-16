@@ -286,24 +286,25 @@ public sealed class ScaledownExtractionModelTests
     [Fact]
     [UpstreamTest(
         Prefix + "passes custom configuration and warns about unsupported settings",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit,
-        Note = "HttpClient links the cancellation token, so the test cannot assert that the same token reaches the handler. It asserts that a canceled token stops the call. ApiKey is a string, not an async function.")]
+        Note = "HttpClient hands the handler a linked token, never the caller's own instance, so identity is asserted as propagation: canceling the caller's token cancels the token the handler received.")]
     public async Task Passes_custom_configuration_and_warns_about_unsupported_settings()
     {
         var server = NewServer();
         var provider = ScaleDownProvider.Create(
             new ScaleDownProviderSettings
             {
-                ApiKey = "custom-key",
+                ApiKeyProvider = _ => Task.FromResult("custom-key"),
                 BaseUrl = "https://custom.example/",
                 Headers = new Dictionary<string, string> { ["shared"] = "provider" },
             },
             server);
         var model = provider.ExtractionModel("extract");
+        using var abort = new CancellationTokenSource();
         var result = await model.DoExtractAsync(
-            Call(headers: new Dictionary<string, string> { ["shared"] = "call" }, referenceDate: "2026-11-12", reasoning: "high", maxOutputTokens: 10),
-            CancellationToken.None);
+            Call(headers: new Dictionary<string, string> { ["shared"] = "call" }, referenceDate: "2026-11-12", reasoning: "high", maxOutputTokens: 10, cancellationToken: abort.Token),
+            abort.Token);
         var call = Assert.Single(server.Calls);
         Assert.Equal("https://custom.example/v1/chat/completions", call.Url);
         Assert.Equal("custom-key", call.Headers["x-api-key"]);
@@ -314,9 +315,21 @@ public sealed class ScaledownExtractionModelTests
             warning => Assert.Equal(("unsupported", "maxOutputTokens"), (warning.Type, warning.Feature)),
             warning => Assert.Equal(("unsupported", "reasoning"), (warning.Type, warning.Feature)));
 
+        var held = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        server.Hold = held.Task;
         using var canceled = new CancellationTokenSource();
+        var pending = model.DoExtractAsync(Call(cancellationToken: canceled.Token), canceled.Token);
+        while (server.Signals.Count < 2)
+        {
+            await Task.Delay(5);
+        }
+
+        var signal = server.Signals[1];
+        Assert.True(signal.CanBeCanceled);
+        Assert.False(signal.IsCancellationRequested);
         canceled.Cancel();
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => model.DoExtractAsync(Call(cancellationToken: canceled.Token), canceled.Token));
+        Assert.True(signal.IsCancellationRequested);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
     }
 
     [Fact]

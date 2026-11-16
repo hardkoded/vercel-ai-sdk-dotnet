@@ -22,6 +22,7 @@ var result = await Decide.DecideAsync(new DecideRequest
 | Setting | Meaning |
 | --- | --- |
 | `ApiKey` | API key, sent as `x-api-key`. Defaults to `SCALEDOWN_API_KEY`. |
+| `ApiKeyProvider` | Resolves the API key on every request, as an async `apiKey` does upstream. Takes precedence over `ApiKey`. Models built with it cannot be serialized. |
 | `BaseUrl` | Defaults to `https://api.scaledown.xyz`. A trailing slash is removed. |
 | `Headers` | Sent with every request. Headers on the call win over them. |
 
