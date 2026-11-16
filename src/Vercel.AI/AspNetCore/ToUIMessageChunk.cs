@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenTelemetry;
@@ -14,6 +15,9 @@ namespace Vercel.AI.AspNetCore;
 /// <summary>Options of <see cref="UIMessageStreamConverter.ToUIMessageChunk"/> and <see cref="UIMessageStreamConverter.ToUIMessageStream"/>. Maps to <c>ToUIMessageChunkOptions</c>.</summary>
 public sealed class ToUIMessageChunkOptions
 {
+    /// <summary>The tools of the call. A call, input, result or error of a dynamic tool is marked as dynamic. Maps to <c>tools</c>.</summary>
+    public IReadOnlyList<Tool>? Tools { get; init; }
+
     /// <summary>Whether reasoning parts are sent. Defaults to <c>true</c>. Maps to <c>sendReasoning</c>.</summary>
     public bool SendReasoning { get; init; } = true;
 
@@ -38,6 +42,9 @@ public sealed class ToUIMessageChunkOptions
     /// Defaults to <c>true</c> when <see cref="OnError"/> is provided and to <c>false</c> otherwise.
     /// </summary>
     public bool? RedactToolErrors { get; init; }
+
+    /// <summary>Metadata of the response message, sent with the <c>start</c> and <c>finish</c> chunks. Maps to <c>messageMetadata</c>.</summary>
+    public JsonElement? MessageMetadata { get; init; }
 
     /// <summary>Id of the response message sent with the <c>start</c> chunk. Maps to <c>responseMessageId</c>.</summary>
     public string? ResponseMessageId { get; init; }
@@ -94,6 +101,18 @@ public static partial class UIMessageStreamConverter
 
         // an existing `onError` keeps handling tool errors, as it did before tool errors stopped being redacted by default
         var redactToolErrors = options.RedactToolErrors ?? options.OnError != null;
+
+        // provider-executed, dynamic tools are not listed in the tools. Maps to isDynamic.
+        bool? IsDynamic(string toolName, bool dynamic)
+        {
+            var tool = options.Tools?.FirstOrDefault(candidate => string.Equals(candidate.Name, toolName, StringComparison.Ordinal));
+            if (tool is null)
+            {
+                return dynamic ? true : null;
+            }
+
+            return tool.IsDynamic ? true : null;
+        }
 
         switch (part)
         {
@@ -164,9 +183,43 @@ public static partial class UIMessageStreamConverter
                 };
                 AddProviderMetadata(reasoningFileChunk, reasoningFile.ProviderMetadata);
                 return reasoningFileChunk;
-            case SourcePart when !options.SendSources:
-                return null;
+            case DocumentSourcePart documentSource:
+                if (!options.SendSources)
+                {
+                    return null;
+                }
+
+                var documentSourceChunk = new JsonObject
+                {
+                    ["type"] = "source-document",
+                    ["sourceId"] = documentSource.Source.Id,
+                    ["mediaType"] = documentSource.Source.MediaType,
+                    ["title"] = documentSource.Source.Title,
+                };
+                if (documentSource.Source.Filename != null)
+                {
+                    documentSourceChunk["filename"] = documentSource.Source.Filename;
+                }
+
+                AddProviderMetadata(documentSourceChunk, documentSource.Source.ProviderMetadata);
+                return documentSourceChunk;
+            case CustomPart custom:
+                var customChunk = new JsonObject { ["type"] = "custom", ["kind"] = custom.Kind };
+                AddProviderMetadata(customChunk, custom.ProviderMetadata);
+                return customChunk;
+            case SteeringMessagePart steering:
+                return new JsonObject
+                {
+                    ["type"] = "steering-message",
+                    ["id"] = steering.Id,
+                    ["parts"] = ConvertUserMessageToUIParts(steering.Message),
+                };
             case SourcePart source:
+                if (!options.SendSources)
+                {
+                    return null;
+                }
+
                 var sourceChunk = new JsonObject
                 {
                     ["type"] = "source-url",
@@ -199,9 +252,9 @@ public static partial class UIMessageStreamConverter
 
                 AddProviderMetadata(inputStartChunk, inputStart.ProviderMetadata);
                 AddToolMetadata(inputStartChunk, inputStart.ToolMetadata);
-                if (inputStart.Dynamic)
+                if (IsDynamic(inputStart.ToolName, inputStart.Dynamic) is { } inputStartDynamic)
                 {
-                    inputStartChunk["dynamic"] = true;
+                    inputStartChunk["dynamic"] = inputStartDynamic;
                 }
 
                 if (inputStart.Title != null)
@@ -233,11 +286,9 @@ public static partial class UIMessageStreamConverter
                 AddProviderMetadata(toolInput, call.ToolCall.ProviderMetadata);
                 AddToolMetadata(toolInput, call.ToolCall.ToolMetadata);
 
-                // Every invalid call is dynamic, but upstream marks it only when its tool is unknown. This converter has no tool list,
-                // so a call whose tool exists but whose input is invalid is not marked.
-                if (call.ToolCall.Dynamic && (!call.ToolCall.Invalid || call.ToolCall.Error is NoSuchToolError))
+                if (IsDynamic(call.ToolCall.ToolName, call.ToolCall.Dynamic) is { } callDynamic)
                 {
-                    toolInput["dynamic"] = true;
+                    toolInput["dynamic"] = callDynamic;
                 }
 
                 if (call.ToolCall.Invalid)
@@ -256,18 +307,61 @@ public static partial class UIMessageStreamConverter
 
                 return toolInput;
             case ToolApprovalRequestPart approvalRequest:
-                return new JsonObject
+                var approvalRequestChunk = new JsonObject
                 {
                     ["type"] = "tool-approval-request",
                     ["approvalId"] = approvalRequest.ApprovalId,
                     ["toolCallId"] = approvalRequest.ToolCall.ToolCallId,
                 };
+                if (approvalRequest.ToolCall.InputSchemaInput is { } inputSchemaInput
+                    && !JsonNode.DeepEquals(JsonNode.Parse(inputSchemaInput.GetRawText()), ParseJson(approvalRequest.ToolCall.ArgumentsJson)))
+                {
+                    approvalRequestChunk["inputSchemaInput"] = JsonNode.Parse(inputSchemaInput.GetRawText());
+                }
+
+                if (approvalRequest.Reason != null)
+                {
+                    approvalRequestChunk["reason"] = approvalRequest.Reason;
+                }
+
+                if (approvalRequest.IsAutomatic)
+                {
+                    approvalRequestChunk["isAutomatic"] = true;
+                }
+
+                if (approvalRequest.Signature != null)
+                {
+                    approvalRequestChunk["signature"] = approvalRequest.Signature;
+                }
+
+                return approvalRequestChunk;
+            case ToolApprovalResponsePart approvalResponse:
+                var approvalResponseChunk = new JsonObject
+                {
+                    ["type"] = "tool-approval-response",
+                    ["approvalId"] = approvalResponse.ApprovalId,
+                    ["approved"] = approvalResponse.Approved,
+                };
+                if (approvalResponse.Reason != null)
+                {
+                    approvalResponseChunk["reason"] = approvalResponse.Reason;
+                }
+
+                if (approvalResponse.ProviderExecuted)
+                {
+                    approvalResponseChunk["providerExecuted"] = true;
+                }
+
+                return approvalResponseChunk;
+            case ToolOutputDeniedPart outputDenied:
+                return new JsonObject { ["type"] = "tool-output-denied", ["toolCallId"] = outputDenied.ToolCallId };
             case ToolResultPart toolResult:
                 var toolOutput = new JsonObject
                 {
                     ["type"] = "tool-output-available",
                     ["toolCallId"] = toolResult.Result.ToolCallId,
-                    ["output"] = ParseJson(toolResult.Result.OutputJson),
+                    // UI stream chunks are serialized as JSON, which drops undefined properties. Use null so tool outputs always keep the output field.
+                    ["output"] = string.IsNullOrWhiteSpace(toolResult.Result.OutputJson) ? null : ParseJson(toolResult.Result.OutputJson),
                 };
                 if (toolResult.Result.ProviderExecuted)
                 {
@@ -276,9 +370,14 @@ public static partial class UIMessageStreamConverter
                 }
 
                 AddToolMetadata(toolOutput, toolResult.Result.ToolMetadata);
-                if (toolResult.Result.Dynamic)
+                if (toolResult.Result.Preliminary is { } preliminary)
                 {
-                    toolOutput["dynamic"] = true;
+                    toolOutput["preliminary"] = preliminary;
+                }
+
+                if (IsDynamic(toolResult.Result.ToolName, toolResult.Result.Dynamic) is { } resultDynamic)
+                {
+                    toolOutput["dynamic"] = resultDynamic;
                 }
 
                 return toolOutput;
@@ -301,9 +400,9 @@ public static partial class UIMessageStreamConverter
                 }
 
                 AddToolMetadata(errorOutput, toolError.Result.ToolMetadata);
-                if (toolError.Result.Dynamic)
+                if (IsDynamic(toolError.Result.ToolName, toolError.Result.Dynamic) is { } errorDynamic)
                 {
-                    errorOutput["dynamic"] = true;
+                    errorOutput["dynamic"] = errorDynamic;
                 }
 
                 return errorOutput;
@@ -320,6 +419,7 @@ public static partial class UIMessageStreamConverter
                 }
 
                 var start = new JsonObject { ["type"] = "start" };
+                AddMessageMetadata(start, options.MessageMetadata);
                 if (options.ResponseMessageId != null)
                 {
                     start["messageId"] = options.ResponseMessageId;
@@ -327,14 +427,89 @@ public static partial class UIMessageStreamConverter
 
                 return start;
             case FinishPart finish:
-                return options.SendFinish
-                    ? new JsonObject { ["type"] = "finish", ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason) }
-                    : null;
+                if (!options.SendFinish)
+                {
+                    return null;
+                }
+
+                var finishChunk = new JsonObject { ["type"] = "finish", ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason) };
+                AddMessageMetadata(finishChunk, options.MessageMetadata);
+                return finishChunk;
             case AbortPart abort:
                 return new JsonObject { ["type"] = "abort", ["reason"] = abort.Reason };
-            default:
+            case ToolInputEndPart:
+            case PingPart:
+            case RawPart:
                 // tool-input-end, ping and raw parts do not produce UI message chunks
                 return null;
+            default:
+                throw new InvalidOperationException("Unknown chunk type: " + part.Type);
+        }
+    }
+
+    // Maps to convertUserMessageToUIParts.
+    private static JsonArray ConvertUserMessageToUIParts(UserModelMessage message)
+    {
+        var parts = new JsonArray();
+        foreach (var part in message.Content)
+        {
+            JsonObject uiPart;
+            switch (part)
+            {
+                case TextContentPart text:
+                    uiPart = new JsonObject { ["type"] = "text", ["text"] = text.Text };
+                    break;
+                case FileContentPart file:
+                    uiPart = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType };
+                    if (file.FileName != null)
+                    {
+                        uiPart["filename"] = file.FileName;
+                    }
+
+                    if (file.ProviderReference != null)
+                    {
+                        // the provider reference takes precedence over the url in model messages:
+                        uiPart["url"] = string.Empty;
+                        uiPart["providerReference"] = JsonSerializer.SerializeToNode(file.ProviderReference);
+                    }
+                    else if (file.Url != null)
+                    {
+                        uiPart["url"] = file.Url;
+                    }
+                    else if (file.Data != null)
+                    {
+                        uiPart["url"] = "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data);
+                    }
+                    else
+                    {
+                        uiPart["url"] = "data:" + file.MediaType + ";base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(file.Text ?? string.Empty));
+                    }
+
+                    break;
+                default:
+                    continue;
+            }
+
+            AddProviderMetadata(uiPart, OptionsToElement(part switch
+            {
+                TextContentPart t => t.ProviderOptions,
+                FileContentPart f => f.ProviderOptions,
+                _ => null,
+            }));
+            parts.Add(uiPart);
+        }
+
+        return parts;
+    }
+
+    private static JsonElement? OptionsToElement(IReadOnlyDictionary<string, JsonElement>? options)
+        => options is null ? null : JsonSerializer.SerializeToElement(options);
+
+    private static void AddMessageMetadata(JsonObject payload, JsonElement? metadata)
+    {
+        if (metadata is { ValueKind: not (JsonValueKind.Null or JsonValueKind.Undefined) } element)
+        {
+            payload["messageMetadata"] = JsonNode.Parse(element.GetRawText());
         }
     }
 

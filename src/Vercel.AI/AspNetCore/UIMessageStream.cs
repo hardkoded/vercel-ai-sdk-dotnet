@@ -66,8 +66,8 @@ public static class UIMessageStreamExtensions
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
     /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
-    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
+    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
     /// <returns>A task that completes when the stream has been written and the response has ended.</returns>
     public static Task PipeUIMessageStreamToResponseAsync(
         this StreamTextResult result,
@@ -94,7 +94,7 @@ public static class UIMessageStreamExtensions
         UIMessageStreamResult.ValidateKeepAlive(keepAliveMs);
         var prepared = PrepareHeaders.Apply(headers, UIMessageStreamResult.ProtocolHeaders);
         var sse = UIMessageStreamResult.CreateSseStreamWithKeepAlive(
-            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, sendSources, cancellationToken),
+            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources),
             keepAliveMs,
             cancellationToken);
         return WriteEncodedAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared, cancellationToken);
@@ -200,7 +200,7 @@ public sealed class UIMessageStreamResult : IResult
         // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
         // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
         var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, sendSources, cancellationToken), keepAliveMs, cancellationToken);
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -322,10 +322,10 @@ public sealed class UIMessageStreamResult : IResult
         StreamTextResult result,
         Func<Exception, string>? onError,
         bool? redactToolErrors,
-        bool sendSources,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        bool sendSources = false)
     {
-        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors, SendSources = sendSources };
+        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors, SendSources = sendSources, Tools = result.Tools };
         await foreach (var chunk in UIMessageStreamConverter.ToUIMessageStream(result.Stream(cancellationToken), options, cancellationToken).ConfigureAwait(false))
         {
             yield return Frame(chunk);

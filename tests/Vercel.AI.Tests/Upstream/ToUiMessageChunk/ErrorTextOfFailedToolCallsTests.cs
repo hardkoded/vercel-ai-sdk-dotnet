@@ -14,27 +14,26 @@ public sealed class ErrorTextOfFailedToolCallsTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-chunk.test.ts::toUIMessageChunk > error text of failed tool calls::";
     private const string Commit = "ceeee29f9a7b7ca8c12a9270a542581bd760bdc7";
-    private const string PartialNote = "The invalid tool call has a NoSuchToolError, because the converter has no tool list and marks only calls of unknown tools as dynamic. The expected text of the invalid call is the error string of that error.";
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps the text that the model received by default", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "keeps the text that the model received by default", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Keeps_the_text_that_the_model_received_by_default()
-        => AssertErrorText(new ToUIMessageChunkOptions(), "Error: tool failed", "AI_NoSuchToolError: tool failed");
+        => AssertErrorText(new ToUIMessageChunkOptions(), "Error: tool failed");
 
     [Fact]
-    [UpstreamTest(Prefix + "uses the default onError when tool errors are redacted", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "uses the default onError when tool errors are redacted", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Uses_the_default_onError_when_tool_errors_are_redacted()
-        => AssertErrorText(new ToUIMessageChunkOptions { RedactToolErrors = true }, "An error occurred.", "An error occurred.");
+        => AssertErrorText(new ToUIMessageChunkOptions { RedactToolErrors = true }, "An error occurred.");
 
     [Fact]
-    [UpstreamTest(Prefix + "uses a provided onError", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "uses a provided onError", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Uses_a_provided_onError()
-        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError }, "handled: tool failed", "handled: tool failed");
+        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError }, "handled: tool failed");
 
     [Fact]
-    [UpstreamTest(Prefix + "keeps the text that the model received when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "keeps the text that the model received when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Keeps_the_text_that_the_model_received_when_a_provided_onError_does_not_redact_tool_errors()
-        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError, RedactToolErrors = false }, "Error: tool failed", "AI_NoSuchToolError: tool failed");
+        => AssertErrorText(new ToUIMessageChunkOptions { OnError = FormatError, RedactToolErrors = false }, "Error: tool failed");
 
     [Fact]
     [UpstreamTest(Prefix + "uses onError when the tool error cannot be serialized", Coverage = UpstreamCoverage.Partial, Note = "The unserializable error is an exception whose Message throws, because a .NET tool error is an exception and has no circular value.", Commit = Commit)]
@@ -48,7 +47,7 @@ public sealed class ErrorTextOfFailedToolCallsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses onError for invalid tool calls of provider-executed tools", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "uses onError for invalid tool calls of provider-executed tools", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public void Uses_onError_for_invalid_tool_calls_of_provider_executed_tools()
     {
         var chunk = UIMessageStreamConverter.ToUIMessageChunk(new ToolCallPart(InvalidToolCall(providerExecuted: true)));
@@ -69,9 +68,9 @@ public sealed class ErrorTextOfFailedToolCallsTests
     private static string FormatError(Exception error) => "handled: " + error.Message;
 
     private static GeneratedToolCall InvalidToolCall(bool providerExecuted = false)
-        => new("call-1", "runtimeTool", "{broken") { Dynamic = true, Invalid = true, Error = new NoSuchToolError("runtimeTool", message: "tool failed"), ProviderExecuted = providerExecuted };
+        => new("call-1", "runtimeTool", "{broken") { Dynamic = true, Invalid = true, Error = new JsError("tool failed"), ProviderExecuted = providerExecuted };
 
-    private static void AssertErrorText(ToUIMessageChunkOptions options, string expectedErrorText, string expectedInvalidErrorText)
+    private static void AssertErrorText(ToUIMessageChunkOptions options, string expectedErrorText)
     {
         var toolError = new ToolErrorPart(new ExecutedTool("call-1", "runtimeTool", "{\"error\":\"tool failed\"}", true)
         {
@@ -84,7 +83,7 @@ public sealed class ErrorTextOfFailedToolCallsTests
             $$"""{"type":"tool-output-error","toolCallId":"call-1","errorText":"{{expectedErrorText}}","dynamic":true}""",
             UIMessageStreamConverter.ToUIMessageChunk(toolError, options));
         AssertJson(
-            $$"""{"type":"tool-input-error","toolCallId":"call-1","toolName":"runtimeTool","input":"{broken","dynamic":true,"errorText":"{{expectedInvalidErrorText}}"}""",
+            $$"""{"type":"tool-input-error","toolCallId":"call-1","toolName":"runtimeTool","input":"{broken","dynamic":true,"errorText":"{{expectedErrorText}}"}""",
             UIMessageStreamConverter.ToUIMessageChunk(new ToolCallPart(InvalidToolCall()), options));
     }
 }

@@ -79,8 +79,10 @@ public static partial class UIMessageStreamConverter
 
         var chunkOptions = new ToUIMessageChunkOptions
         {
+            Tools = options.Tools,
             SendReasoning = options.SendReasoning,
             SendSources = options.SendSources,
+            MessageMetadata = options.MessageMetadata,
             SendStart = options.SendStart,
             SendFinish = options.SendFinish,
             OnError = options.OnError,

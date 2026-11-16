@@ -215,8 +215,8 @@ internal static class XaiResponsesInput
 
     private static string ToolOutput(ToolModelMessage tool)
     {
-        return tool.OutputType == "execution-denied" && string.IsNullOrEmpty(tool.OutputJson)
-            ? "tool execution denied"
+        return tool.OutputType == "execution-denied"
+            ? tool.ExecutionDeniedReason ?? "tool execution denied"
             : tool.OutputJson;
     }
 }

@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Ui;
 
@@ -100,6 +101,11 @@ internal static class UIMessageJson
         {
             case TextUIPart text:
                 json = new JsonObject { ["type"] = "text", ["text"] = text.Text };
+                if (text.Citations != null)
+                {
+                    json["citations"] = CitationJson.ToJson(text.Citations);
+                }
+
                 Set(json, "state", text.State);
                 SetMetadata(json, "providerMetadata", text.ProviderMetadata);
                 break;
@@ -156,6 +162,15 @@ internal static class UIMessageJson
                 json = new JsonObject { ["type"] = data.Type, ["data"] = ToNode(data.Data) };
                 Set(json, "id", data.Id);
                 break;
+            case SteeringMessageUIPart steering:
+                var steeringParts = new JsonArray();
+                foreach (var steeringPart in steering.Parts)
+                {
+                    steeringParts.Add(PartToJson(steeringPart));
+                }
+
+                json = new JsonObject { ["type"] = "steering-message", ["id"] = steering.Id, ["parts"] = steeringParts };
+                break;
             case ToolUIPart tool:
                 json = new JsonObject { ["type"] = tool.Type, ["toolCallId"] = tool.ToolCallId, ["state"] = ToolStates[(int)tool.State] };
                 if (tool.IsDynamic)
@@ -164,6 +179,7 @@ internal static class UIMessageJson
                 }
 
                 Set(json, "title", tool.Title);
+                SetMetadata(json, "toolMetadata", tool.ToolMetadata);
                 if (tool.ProviderExecuted is { } providerExecuted)
                 {
                     json["providerExecuted"] = providerExecuted;
@@ -177,6 +193,11 @@ internal static class UIMessageJson
                 if (tool.RawInput is { } rawInput)
                 {
                     json["rawInput"] = ToNode(rawInput);
+                }
+
+                if (tool.InputEncoding is { } inputEncoding)
+                {
+                    json["inputEncoding"] = inputEncoding == ToolInputEncoding.Text ? "text" : "json";
                 }
 
                 if (tool.Output is { } output)
@@ -213,6 +234,7 @@ internal static class UIMessageJson
             case "text":
                 return new TextUIPart((string?)json["text"] ?? string.Empty)
                 {
+                    Citations = json["citations"] is JsonArray citations ? CitationJson.FromJson(citations) : null,
                     State = (string?)json["state"],
                     ProviderMetadata = GetMetadata(json["providerMetadata"]),
                 };
@@ -261,6 +283,20 @@ internal static class UIMessageJson
                 };
             case "step-start":
                 return new StepStartUIPart();
+            case "steering-message":
+                var steeringParts = new List<UIMessagePart>();
+                if (json["parts"] is JsonArray steeringArray)
+                {
+                    foreach (var node in steeringArray)
+                    {
+                        if (node is JsonObject steeringJson && PartFromJson(steeringJson) is { } steeringPart)
+                        {
+                            steeringParts.Add(steeringPart);
+                        }
+                    }
+                }
+
+                return new SteeringMessageUIPart((string?)json["id"] ?? string.Empty, steeringParts);
             case "dynamic-tool":
                 return ToolFromJson(json, (string?)json["toolName"] ?? string.Empty, true);
         }
@@ -275,7 +311,7 @@ internal static class UIMessageJson
             return ToolFromJson(json, type.Substring(5), false);
         }
 
-        // Parts that have no .NET type, such as steering-message, are not part of the typed message.
+        // Parts that have no .NET type are not part of the typed message.
         return null;
     }
 
@@ -286,6 +322,13 @@ internal static class UIMessageJson
         return new ToolUIPart(toolName, (string?)json["toolCallId"] ?? string.Empty, state, isDynamic)
         {
             Title = (string?)json["title"],
+            ToolMetadata = GetMetadata(json["toolMetadata"]),
+            InputEncoding = (string?)json["inputEncoding"] switch
+            {
+                "text" => ToolInputEncoding.Text,
+                "json" => ToolInputEncoding.Json,
+                _ => null,
+            },
             ProviderExecuted = json["providerExecuted"] is JsonValue pe && pe.TryGetValue<bool>(out var executed) ? executed : null,
             Input = Element(json, "input"),
             RawInput = Element(json, "rawInput"),
