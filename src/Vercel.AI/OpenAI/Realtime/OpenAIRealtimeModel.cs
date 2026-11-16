@@ -29,23 +29,69 @@ public sealed class OpenAIRealtimeClientSecret
     public long? ExpiresAt { get; }
 }
 
+/// <summary>
+/// Settings of <see cref="OpenAIRealtimeModel"/>. Maps to <c>OpenAIRealtimeModelConfig</c>.
+/// <see cref="Headers"/> maps the upstream <c>Resolvable</c>: an object, a promise, a callback or an async callback
+/// all fit a function that returns a task.
+/// </summary>
+public sealed class OpenAIRealtimeModelConfig
+{
+    /// <summary>Creates a config.</summary>
+    public OpenAIRealtimeModelConfig(string provider, string baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers)
+    {
+        Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
+        Headers = headers ?? throw new ArgumentNullException(nameof(headers));
+    }
+
+    /// <summary>Provider id, for example <c>openai.realtime</c>.</summary>
+    public string Provider { get; }
+
+    /// <summary>API base URL.</summary>
+    public string BaseUrl { get; }
+
+    /// <summary>Resolves the request headers, including the credential.</summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> Headers { get; }
+
+    /// <summary>Maps <c>fetch</c>: the HTTP client used to mint client secrets. Defaults to a shared client.</summary>
+    public HttpClient? HttpClient { get; set; }
+
+    internal ProviderHttp? Http { get; set; }
+}
+
 /// <summary>OpenAI Realtime session URI builder and WebSocket client.</summary>
 public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
 {
-    private readonly OpenAIProvider _provider;
+    private static readonly Lazy<HttpClient> DefaultHttpClient = new(() => new HttpClient());
+
+    private readonly OpenAIRealtimeModelConfig _config;
+    private readonly ProviderHttp _http;
+
+    /// <summary>Creates a realtime model from a provider.</summary>
+    public OpenAIRealtimeModel(OpenAIProvider provider, string modelId)
+        : this(modelId, new OpenAIRealtimeModelConfig(
+            (provider ?? throw new ArgumentNullException(nameof(provider))).Name + ".realtime",
+            provider.Options.BaseUrl,
+            _ => Task.FromResult<IReadOnlyDictionary<string, string?>>(provider.CreateOpenAIHeaders()))
+        {
+            Http = provider.Http,
+        })
+    {
+    }
 
     /// <summary>Creates a realtime model.</summary>
-    public OpenAIRealtimeModel(OpenAIProvider provider, string modelId)
+    public OpenAIRealtimeModel(string modelId, OpenAIRealtimeModelConfig config)
     {
-        _provider = provider;
+        _config = config ?? throw new ArgumentNullException(nameof(config));
         ModelId = modelId;
+        _http = config.Http ?? new ProviderHttp(config.HttpClient ?? DefaultHttpClient.Value);
     }
 
     /// <summary>The realtime model specification version. Maps to <c>specificationVersion</c>.</summary>
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public string Provider => _provider.Name + ".realtime";
+    public string Provider => _config.Provider;
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -63,7 +109,7 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
     /// <inheritdoc />
     public Uri BuildUri()
     {
-        var http = ApiKeys.Combine(_provider.Options.BaseUrl, "realtime");
+        var http = ApiKeys.Combine(_config.BaseUrl, "realtime");
         var builder = new UriBuilder(http) { Scheme = http.Scheme == "https" ? "wss" : "ws", Query = "model=" + Uri.EscapeDataString(ModelId) };
         return builder.Uri;
     }
@@ -95,11 +141,12 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
             };
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
+        var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
+        var response = await _http.SendJsonStringAsync(
             HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "realtime/client_secrets"),
+            ApiKeys.Combine(_config.BaseUrl, "realtime/client_secrets"),
             body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(),
+            headers,
             cancellationToken).ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var token = document.RootElement.TryGetProperty("value", out var value) ? value.GetString() ?? string.Empty : string.Empty;
@@ -109,16 +156,17 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
             expires = seconds;
         }
 
-        var host = new Uri(_provider.Options.BaseUrl).Host;
+        var host = new Uri(_config.BaseUrl).Host;
         var url = "wss://" + host + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
         return new OpenAIRealtimeClientSecret(token, url, expires);
     }
 
     /// <inheritdoc />
-    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
+    public async Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(RealtimeModelV4SessionIntent? intent, CancellationToken cancellationToken)
     {
-        var url = BuildServerUrl(_provider.Options.BaseUrl, ModelId, intent ?? RealtimeModelV4SessionIntent.Conversation);
-        return Task.FromResult(new RealtimeModelV4ServerConnection(url, ResolveHeaders(_provider)));
+        var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
+        var url = BuildServerUrl(_config.BaseUrl, ModelId, intent ?? RealtimeModelV4SessionIntent.Conversation);
+        return new RealtimeModelV4ServerConnection(url, RemoveUndefinedEntries(headers));
     }
 
     /// <summary>Parses a raw provider event into a normalized event. Maps to <c>parseServerEvent</c>.</summary>
@@ -152,8 +200,13 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
     /// <summary>Resolves the provider headers, dropping entries without a value. Maps to <c>removeUndefinedEntries(headers)</c>.</summary>
     internal static Dictionary<string, string> ResolveHeaders(OpenAIProvider provider)
     {
+        return RemoveUndefinedEntries(provider.CreateOpenAIHeaders());
+    }
+
+    private static Dictionary<string, string> RemoveUndefinedEntries(IReadOnlyDictionary<string, string?> source)
+    {
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pair in provider.CreateOpenAIHeaders())
+        foreach (var pair in source)
         {
             if (pair.Value != null)
             {
@@ -196,7 +249,7 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
         var socket = new System.Net.WebSockets.ClientWebSocket();
         try
         {
-            var headers = _provider.CreateOpenAIHeaders();
+            var headers = await _config.Headers(cancellationToken).ConfigureAwait(false);
             socket.Options.SetRequestHeader("Authorization", headers["Authorization"] ?? string.Empty);
             socket.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
             await socket.ConnectAsync(BuildUri(), cancellationToken).ConfigureAwait(false);
