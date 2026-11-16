@@ -300,7 +300,7 @@ public static partial class UIMessageStreamConverter
             case AbortPart abort:
                 return new JsonObject { ["type"] = "abort", ["reason"] = abort.Reason };
             default:
-                // tool-input-end and raw parts do not produce UI message chunks
+                // tool-input-end, ping and raw parts do not produce UI message chunks
                 return null;
         }
     }

@@ -1251,6 +1251,16 @@ public sealed class AssistantToolResultPart : AssistantContentPart
     public ToolModelMessage Output { get; }
 }
 
+/// <summary>A transient provider heartbeat that keeps the stream connection alive. It carries no generated content or usage. Maps to <c>ping</c>.</summary>
+public sealed class PingStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a ping part.</summary>
+    public PingStreamPart()
+        : base("ping")
+    {
+    }
+}
+
 /// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
 public sealed class AssistantCustomPart : AssistantContentPart
 {

@@ -601,6 +601,9 @@ internal static class Generation
                                 }
 
                                 break;
+                            case PingStreamPart:
+                                buffer.Add(new PingPart());
+                                break;
                             case ErrorStreamPart error:
                                 buffer.Add(new ErrorPart(error.Message) { Error = error.Exception });
                                 if (options.OnError != null)

@@ -78,6 +78,7 @@ public sealed class StreamTextFirstChunkTimeoutTests
                     new ToolInputStartStreamPart("call-1", "tool1"),
                     new ToolInputDeltaStreamPart("call-1", string.Empty),
                     new RawStreamPart("\": ping\""),
+                    new PingStreamPart(),
                 },
                 AbortedTask(options.AbortSignal!)))),
         };

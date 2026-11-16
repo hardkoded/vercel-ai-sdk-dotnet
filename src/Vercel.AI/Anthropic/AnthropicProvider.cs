@@ -597,6 +597,7 @@ public class AnthropicLanguageModel : ILanguageModel
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
+            IncludePings = prepared.IncludePings,
         };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -656,7 +657,8 @@ public class AnthropicLanguageModel : ILanguageModel
             prepared.UsedCustomProviderKey,
             prepared.MarkCodeExecutionDynamic,
             prepared.PreparedTools,
-            prepared.ComputerToolsetName)
+            prepared.ComputerToolsetName,
+            prepared.IncludePings)
         {
             ToolNames = prepared.ToolNames,
         };
