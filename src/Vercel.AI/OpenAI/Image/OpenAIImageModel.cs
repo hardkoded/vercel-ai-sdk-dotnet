@@ -268,6 +268,24 @@ public sealed class OpenAIImageModel : IImageModel
         };
     }
 
+    // Maps to the z.number().int().min().max() bounds of openaiImageModelGenerationOptionsShape.
+    private static void ValidateRange(int? value, string name, int min, int max)
+    {
+        if (value is { } number && (number < min || number > max))
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai." + name, number, name + " must be between " + min + " and " + max + ".");
+        }
+    }
+
+    // Maps to z.string().max(128) of safetyIdentifier.
+    private static void ValidateSafetyIdentifier(string? safetyIdentifier)
+    {
+        if (safetyIdentifier is { Length: > 128 })
+        {
+            throw new Operations.InvalidArgumentException("providerOptions.openai.safetyIdentifier", safetyIdentifier, "safetyIdentifier must be at most 128 characters.");
+        }
+    }
+
     private static JsonElement? OpenAIProviderOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
     {
         return providerOptions != null && providerOptions.TryGetValue("openai", out var openai) ? openai : null;
@@ -304,6 +322,9 @@ public sealed class OpenAIImageModel : IImageModel
         }
 
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
+        ValidateRange(OpenAIJson.Int(openai, "frameCount"), "frameCount", 2, 64);
+        ValidateRange(OpenAIJson.Int(openai, "frameDurationMs"), "frameDurationMs", 20, 2000);
+        ValidateSafetyIdentifier(OpenAIJson.String(openai, "safetyIdentifier"));
         var body = new JsonObject
         {
             ["model"] = ModelId,
@@ -360,6 +381,7 @@ public sealed class OpenAIImageModel : IImageModel
         CancellationToken cancellationToken)
     {
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
+        ValidateSafetyIdentifier(OpenAIJson.String(openai, "safetyIdentifier"));
         var outputFormat = OpenAIJson.String(openai, "outputFormat");
         if (outputFormat == "gif")
         {
