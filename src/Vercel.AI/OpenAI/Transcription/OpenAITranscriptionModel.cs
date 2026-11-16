@@ -71,8 +71,10 @@ public sealed class OpenAITranscriptionResult
         JsonElement? providerMetadata,
         IReadOnlyList<OpenAICallWarning> warnings,
         OpenAITranscriptionResponse response,
-        IReadOnlyList<TranscriptSegment>? words = null)
+        IReadOnlyList<TranscriptSegment>? words = null,
+        JsonElement? usage = null)
     {
+        Usage = usage;
         Text = text;
         Segments = segments;
         Words = words;
@@ -100,6 +102,9 @@ public sealed class OpenAITranscriptionResult
 
     /// <summary>Speaker segments under <c>openai.segments</c> for diarized responses and detected languages under <c>openai.languages</c>.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>The raw <c>usage</c> object of the response, when OpenAI reports one. Maps to <c>usage</c>.</summary>
+    public JsonElement? Usage { get; }
 
     /// <summary>Warnings produced while preparing the request, such as timestamp granularities the response format cannot satisfy.</summary>
     public IReadOnlyList<OpenAICallWarning> Warnings { get; }
@@ -340,6 +345,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             segments.AddRange(wordTimings);
         }
 
+        JsonElement? usage = root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object ? usageElement : null;
         var languages = DetectedLanguages(root);
         var languageName = OpenAIJson.String(root, "language");
         var language = IsLanguageCode(languageName)
@@ -355,11 +361,28 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             OpenAIJson.String(root, "text") ?? string.Empty,
             segments,
             language,
-            root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
+            DurationInSeconds(root, usage),
             speakers.Count > 0 || languages != null ? ProviderMetadata(speakers, languages) : null,
             warnings,
             new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body),
-            wordTimings.Count > 0 ? wordTimings : null);
+            wordTimings.Count > 0 ? wordTimings : null,
+            usage?.Clone());
+    }
+
+    // Duration-billed json responses report the duration only in `usage`.
+    private static double? DurationInSeconds(JsonElement root, JsonElement? usage)
+    {
+        if (root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number)
+        {
+            return duration.GetDouble();
+        }
+
+        return usage is { ValueKind: JsonValueKind.Object } u
+            && OpenAIJson.String(u, "type") == "duration"
+            && u.TryGetProperty("seconds", out var seconds)
+            && seconds.ValueKind == JsonValueKind.Number
+                ? seconds.GetDouble()
+                : null;
     }
 
     /// <summary>Builds the multipart body so tests can inspect field names.</summary>
@@ -378,15 +401,15 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         content.Add(file, "file", "audio." + OpenAIJson.Extension(mediaType));
         content.Add(new StringContent(ModelId), "model");
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
-        var diarize = ModelId == "gpt-4o-transcribe-diarize";
+        var entry = OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId);
         var responseFormat = (openai != null ? OpenAIJson.String(openai, "responseFormat") : null)
-            ?? OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId).ResponseFormat;
+            ?? entry.ResponseFormat;
         if (responseFormat != null)
         {
             content.Add(new StringContent(responseFormat), "response_format");
         }
 
-        var chunking = Chunking(openai, diarize);
+        var chunking = Chunking(openai, entry.ChunkingStrategy);
 
         // Only verbose_json accepts timestamp_granularities. Diarized JSON always returns segment timings without a timestamp control.
         var providerGranularities = openai != null ? Granularities(openai.Value) : null;
@@ -459,7 +482,8 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             result.Warnings.Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)).ToList(),
             result.ProviderMetadata,
             new ProviderResponse(result.Response.Headers, OpenAIJson.Parse(result.Response.Body), timestamp: result.Response.Timestamp.UtcDateTime, modelId: result.Response.ModelId),
-            result.Words);
+            result.Words,
+            result.Usage);
     }
 
     /// <summary>Starts a realtime streaming transcription over the OpenAI Realtime WebSocket. Maps to <c>doStream</c>.</summary>
@@ -671,12 +695,12 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         }
     }
 
-    private static string? Chunking(JsonElement? openai, bool diarize)
+    private static string? Chunking(JsonElement? openai, string? defaultStrategy)
     {
         var chunking = OpenAIJson.Child(openai, "chunkingStrategy");
         if (chunking == null)
         {
-            return diarize ? "auto" : null;
+            return defaultStrategy;
         }
 
         if (chunking.Value.ValueKind == JsonValueKind.String)
@@ -686,7 +710,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
 
         if (chunking.Value.ValueKind != JsonValueKind.Object)
         {
-            return diarize ? "auto" : null;
+            return defaultStrategy;
         }
 
         var json = new System.Text.Json.Nodes.JsonObject();
