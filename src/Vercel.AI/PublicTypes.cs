@@ -1171,6 +1171,19 @@ public sealed class RawPart : TextStreamPart
     public JsonElement RawValue { get; }
 }
 
+/// <summary>
+/// A transient provider heartbeat. It contains no generated content, does not reset model-output timeouts, and is omitted from UI message streams.
+/// Providers may require an explicit opt-in. Maps to <c>TextStreamPingPart</c>.
+/// </summary>
+public sealed class PingPart : TextStreamPart
+{
+    /// <summary>Creates a ping part.</summary>
+    public PingPart()
+        : base("ping")
+    {
+    }
+}
+
 /// <summary>A text block started. Maps to <c>text-start</c>.</summary>
 public sealed class TextStartPart : TextStreamPart
 {
@@ -1438,6 +1451,24 @@ public sealed class FilePart : TextStreamPart
     /// <summary>Creates a file part.</summary>
     public FilePart(GeneratedFile file, JsonElement? providerMetadata = null)
         : base("file")
+    {
+        File = file ?? throw new ArgumentNullException(nameof(file));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>The file, with its bytes.</summary>
+    public GeneratedFile File { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>A file the model generated as part of its reasoning. A URL has been downloaded by the time this part is emitted. Maps to the <c>reasoning-file</c> stream part.</summary>
+public sealed class ReasoningFilePart : TextStreamPart
+{
+    /// <summary>Creates a reasoning-file part.</summary>
+    public ReasoningFilePart(GeneratedFile file, JsonElement? providerMetadata = null)
+        : base("reasoning-file")
     {
         File = file ?? throw new ArgumentNullException(nameof(file));
         ProviderMetadata = providerMetadata;

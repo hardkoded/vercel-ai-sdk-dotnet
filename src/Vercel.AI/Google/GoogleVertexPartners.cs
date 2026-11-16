@@ -407,6 +407,7 @@ public sealed class GoogleVertexXaiProvider
                 ProviderName = "googleVertex.xai",
                 IncludeUsage = true,
                 SupportsStructuredOutputs = true,
+                SupportedUrls = new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" },
                 TransformRequestBody = (body, _) => TransformBody(body),
             }, _options, Handler);
         }

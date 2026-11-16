@@ -12,9 +12,11 @@ namespace Vercel.AI.Tests.StreamTextTimeout;
 /// <summary>Port of <c>stream-text-timeout.test.ts</c> &gt; <c>streamText chunk timeout</c>.</summary>
 public sealed class StreamTextChunkTimeoutTests
 {
-    [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output chunks", Coverage = UpstreamCoverage.Covered, Note = "Real timers with a longer chunkMs, because the test cannot advance fake time.")]
-    public async Task Should_not_reset_chunkMs_for_non_output_chunks()
+    [Theory]
+    [InlineData("raw")]
+    [InlineData("ping")]
+    [UpstreamTest("packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output %s chunks", Coverage = UpstreamCoverage.Covered, Note = "Real timers with a longer chunkMs, because the test cannot advance fake time.", Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    public async Task Should_not_reset_chunkMs_for_non_output_chunks(string heartbeatType)
     {
         var clock = Stopwatch.StartNew();
         var deltaSentAt = 0L;
@@ -36,7 +38,7 @@ public sealed class StreamTextChunkTimeoutTests
                     await Task.Delay(150);
                     yield return new ResponseMetadataStreamPart("response-1", null, null);
                     await Task.Delay(150);
-                    yield return new RawStreamPart("\": ping\"");
+                    yield return heartbeatType == "ping" ? new PingStreamPart() : new RawStreamPart("\": ping\"");
                     await Task.Delay(TimeSpan.FromSeconds(30));
                 }
             },

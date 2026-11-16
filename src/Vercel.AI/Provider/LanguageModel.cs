@@ -512,6 +512,28 @@ public class GeneratedFile : GeneratedContent
     public string MediaType { get; }
 }
 
+/// <summary>A file the model produced as part of its reasoning. Maps to the <c>reasoning-file</c> content part.</summary>
+public sealed class GeneratedReasoningFile : GeneratedContent
+{
+    /// <summary>Creates reasoning-file content.</summary>
+    public GeneratedReasoningFile(byte[] data, string mediaType, JsonElement? providerMetadata = null)
+        : base("reasoning-file")
+    {
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+        MediaType = mediaType;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>File bytes.</summary>
+    public byte[] Data { get; }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Provider metadata for this part, keyed by provider name.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>How the model should choose tools. Maps to <c>toolChoice</c>.</summary>
 public abstract class ToolChoice
 {
@@ -1111,6 +1133,9 @@ public sealed class AssistantModelMessage : ModelMessage
                 case GeneratedCustom custom:
                     parts.Add(new AssistantCustomPart(custom.Kind, MetadataToOptions(custom.ProviderMetadata)));
                     break;
+                case GeneratedReasoningFile reasoningFile:
+                    parts.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, null, reasoningFile.Data, MetadataToOptions(reasoningFile.ProviderMetadata)));
+                    break;
             }
         }
 
@@ -1249,6 +1274,16 @@ public sealed class AssistantToolResultPart : AssistantContentPart
 
     /// <summary>The output, as a tool message with the same call id and name. Use its <see cref="ToolModelMessage.OutputType"/> and <see cref="ToolModelMessage.OutputJson"/>.</summary>
     public ToolModelMessage Output { get; }
+}
+
+/// <summary>A transient provider heartbeat that keeps the stream connection alive. It carries no generated content or usage. Maps to <c>ping</c>.</summary>
+public sealed class PingStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a ping part.</summary>
+    public PingStreamPart()
+        : base("ping")
+    {
+    }
 }
 
 /// <summary>A provider-specific part, identified by <see cref="Kind"/>.</summary>
@@ -1818,6 +1853,43 @@ public sealed class FileStreamPart : LanguageModelStreamPart
     /// <summary>Creates a file part that points at a URL.</summary>
     public FileStreamPart(Uri url, string mediaType, JsonElement? providerMetadata = null)
         : base("file")
+    {
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Inline bytes, or null when the file is a URL.</summary>
+    public byte[]? Data { get; }
+
+    /// <summary>File URL, or null when the bytes are inline.</summary>
+    public Uri? Url { get; }
+
+    /// <summary>IANA media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>
+/// A file the model produced as part of its reasoning, in a model stream. The data is inline bytes or a URL the SDK downloads
+/// before it emits the file. Maps to the <c>reasoning-file</c> stream part.
+/// </summary>
+public sealed class ReasoningFileStreamPart : LanguageModelStreamPart
+{
+    /// <summary>Creates a reasoning-file part with inline bytes.</summary>
+    public ReasoningFileStreamPart(byte[] data, string mediaType, JsonElement? providerMetadata = null)
+        : base("reasoning-file")
+    {
+        Data = data ?? throw new ArgumentNullException(nameof(data));
+        MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Creates a reasoning-file part that points at a URL.</summary>
+    public ReasoningFileStreamPart(Uri url, string mediaType, JsonElement? providerMetadata = null)
+        : base("reasoning-file")
     {
         Url = url ?? throw new ArgumentNullException(nameof(url));
         MediaType = mediaType ?? throw new ArgumentNullException(nameof(mediaType));

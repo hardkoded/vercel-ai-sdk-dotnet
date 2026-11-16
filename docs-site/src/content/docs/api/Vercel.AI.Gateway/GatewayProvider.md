@@ -1,6 +1,6 @@
 ---
 title: "GatewayProvider"
-description: "Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes (/language-model, /embedding-model, /image-model)."
+description: "Vercel AI Gateway provider. Language, embedding, image, and video calls use the Gateway V4 routes (/language-model, /embedding-model, /image-model, /video-mo..."
 editUrl: false
 prev: false
 next: false
@@ -19,8 +19,8 @@ public sealed class GatewayProvider : ProviderBase, IBatchProvider, IDecisionPro
 ```
 
 
-Vercel AI Gateway provider. Language, embedding, and image calls use the Gateway V4 routes
-(`/language-model`, `/embedding-model`, `/image-model`).
+Vercel AI Gateway provider. Language, embedding, image, and video calls use the Gateway V4 routes
+(`/language-model`, `/embedding-model`, `/image-model`, `/video-model`).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
@@ -169,7 +169,7 @@ Decision model routed through `/decision-model`.
 
 **Returns:** [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L102)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_System_String_"></a>
@@ -220,7 +220,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_Gateway_GatewayProvider_D
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L114)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch"></a>
@@ -238,6 +238,30 @@ Gateway batch API. Downloads batch results.
 **Returns:** [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L62)
+
+<a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_"></a>
+<a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_Vercel_AI_Gateway_GatewayGenerationInfoParams_System_Threading_CancellationToken_"></a>
+
+### GetGenerationInfoAsync(GatewayGenerationInfoParams, CancellationToken)
+
+
+```csharp
+public Task<GatewayGenerationInfo> GetGenerationInfoAsync(GatewayGenerationInfoParams parameters, CancellationToken cancellationToken = default)
+```
+
+
+Gets the info of one generation, including its cost breakdown.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `parameters` | [GatewayGenerationInfoParams](/api/Vercel.AI.Gateway/GatewayGenerationInfoParams/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;GatewayGenerationInfo&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L211)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_System_String_"></a>
@@ -284,3 +308,26 @@ Returns a language model.
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L78)
+
+<a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_"></a>
+<a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Returns a video model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L96)

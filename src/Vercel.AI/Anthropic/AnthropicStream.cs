@@ -34,6 +34,9 @@ public sealed class AnthropicStream
     /// </summary>
     public bool MarkCodeExecutionDynamic { get; init; }
 
+    /// <summary>Emits a <see cref="PingStreamPart"/> for each <c>ping</c> event. Maps to <c>includePings</c>.</summary>
+    public bool IncludePings { get; init; }
+
     /// <summary>The effective prepared tool definitions that computer toolset member calls are checked against.</summary>
     public JsonArray? PreparedTools { get; init; }
 
@@ -105,6 +108,11 @@ public sealed class AnthropicStream
         var type = Text(node["type"]);
         if (type == "ping")
         {
+            if (IncludePings)
+            {
+                yield return new PingStreamPart();
+            }
+
             yield break;
         }
 

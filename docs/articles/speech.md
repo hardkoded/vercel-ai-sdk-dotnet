@@ -74,3 +74,24 @@ var result = await model.GenerateAsync(
     new GoogleSpeechCall("Guten Morgen! Willkommen beim AI SDK.") { Language = "de-DE" },
     CancellationToken.None);
 ```
+
+## Transcription telemetry
+
+`Transcribe.TranscribeAsync` accepts a `TranscribeRequest.Telemetry` object. Its `OnStart`, `OnEnd` and `OnError` callbacks receive start, end and error events. They carry the provider and model, the audio byte length and media type, the transcript, warnings, response metadata, provider metadata and the provider's usage when it reports one. The start event also carries the `TimestampGranularities` you asked for. The end event carries the provider's `Words`, whether you requested them or the provider returned them by default.
+
+```csharp
+var transcript = await Transcribe.TranscribeAsync(new TranscribeRequest
+{
+    Model = model,
+    Audio = await File.ReadAllBytesAsync("audio.mp3"),
+    Telemetry = new TranscribeTelemetry
+    {
+        FunctionId = "transcribe-customer-call",
+        OnEnd = e => { Console.WriteLine(e.Audio.ByteLength); return Task.CompletedTask; },
+    },
+});
+```
+
+Raw audio is never part of an event. Set `RecordInputs = false` or `RecordOutputs = false` to hide sensitive fields. With `RecordOutputs = false`, the end event sends `Text` as `""`, and `Segments` and `Words` as empty lists. `ProviderMetadata` is hidden when either flag is `false`. The result you get back keeps the full transcript.
+
+For URL audio that the SDK downloads, the downloaded media type is passed to the provider and reported on the events. When the provider fetches the URL itself, `Audio.ByteLength` and `Audio.MediaType` are `null`, because the SDK never inspects the audio. If downloading the audio fails, the start event is still emitted before the error event, with `null` audio metadata.

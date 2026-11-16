@@ -302,6 +302,60 @@ public sealed class DoStreamTests
         Assert.Equal(JsonValueKind.Null, anthropic.GetProperty("container").ValueKind);
     }
 
+    [Theory]
+    [InlineData(null, false, "anthropic")]
+    [InlineData(null, true, "anthropic")]
+    [InlineData(null, false, "vertex")]
+    [InlineData(null, true, "vertex")]
+    [InlineData(false, false, "anthropic")]
+    [InlineData(false, true, "anthropic")]
+    [InlineData(false, false, "vertex")]
+    [InlineData(false, true, "vertex")]
+    [InlineData(true, false, "anthropic")]
+    [InlineData(true, true, "anthropic")]
+    [InlineData(true, false, "vertex")]
+    [InlineData(true, true, "vertex")]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doStream::only emits typed pings when enabled ($includePings, raw: $includeRawChunks, key: $providerKey)",
+        Coverage = UpstreamCoverage.Covered, Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3")]
+    public async Task Only_emits_typed_pings_when_enabled(bool? includePings, bool includeRawChunks, string providerKey)
+    {
+        var handler = new CaptureHandler
+        {
+            ContentType = "text/event-stream",
+            ResponseBody =
+                "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_01KfpJoAEabmH2iHRRFjQMAG\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-3-haiku-20240307\",\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":17,\"output_tokens\":1}}}\n\n" +
+                "data: {\"type\":\"ping\"}\n\n" +
+                "data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n" +
+                "data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n" +
+                "data: {\"type\":\"content_block_stop\",\"index\":0}\n\n" +
+                "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"output_tokens\":2}}\n\n" +
+                "data: {\"type\":\"message_stop\"}\n\n",
+        };
+        var provider = AnthropicProvider.Create(
+            new AnthropicOptions { ApiKey = "test-api-key", Name = providerKey == "anthropic" ? null : "vertex.anthropic" },
+            handler);
+        var options = AnthropicParity.Hello();
+        options.IncludeRawChunks = includeRawChunks;
+        options.ProviderOptions = new Dictionary<string, JsonElement>
+        {
+            [providerKey] = AnthropicParity.Json(includePings == null ? "{}" : "{\"includePings\":" + (includePings.Value ? "true" : "false") + "}"),
+        };
+
+        var parts = new List<LanguageModelStreamPart>();
+        await foreach (var part in await provider.LanguageModel("claude-3-haiku-20240307").DoStreamAsync(options, CancellationToken.None))
+        {
+            parts.Add(part);
+        }
+
+        Assert.Equal(includePings == true ? 1 : 0, parts.OfType<PingStreamPart>().Count());
+        using var body = JsonDocument.Parse(handler.Body);
+        Assert.False(body.RootElement.TryGetProperty("includePings", out _));
+        Assert.Equal(
+            includeRawChunks ? 1 : 0,
+            parts.OfType<RawStreamPart>().Count(raw => raw.RawJson == "{\"type\":\"ping\"}"));
+    }
+
     private static async Task<List<LanguageModelStreamPart>> StreamAsync(string sse)
     {
         var handler = new CaptureHandler { ContentType = "text/event-stream", ResponseBody = sse };

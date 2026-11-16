@@ -57,7 +57,7 @@ Not emitted yet, because the core stream does not surface them:
 
 ## Provider notes
 
-- Gateway language, embedding, and image calls use `https://ai-gateway.vercel.sh/v4/ai`, the V4 specification headers, `ai-gateway-protocol-version: 0.0.1`, and `ai-gateway-auth-method: api-key`. They are not only the OpenAI-compatible `/v1/chat/completions` route.
+- Gateway language, embedding, image, and video calls use `https://ai-gateway.vercel.sh/v4/ai`, the V4 specification headers, `ai-gateway-protocol-version: 0.0.1`, and `ai-gateway-auth-method: api-key`. They are not only the OpenAI-compatible `/v1/chat/completions` route.
 - OpenResponses defaults to `https://ai-gateway.vercel.sh/v1/responses`.
 - Azure OpenAI uses the `/openai/v1` URLs with API version `v1` and the `api-key` header. `UseDeploymentBasedUrls` switches to the deployments URLs.
 - Amazon Bedrock uses the Converse API and Signature Version 4. Streaming calls `/converse-stream` and decodes the AWS event stream.

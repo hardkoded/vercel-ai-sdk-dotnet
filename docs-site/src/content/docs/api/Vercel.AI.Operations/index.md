@@ -15,7 +15,9 @@ Speech, image, video, embeddings, transcription, and other operations.
 | Type | Summary |
 | --- | --- |
 | [AiSdkVersion](/api/Vercel.AI.Operations/AiSdkVersion/) | Package version used in the ai/ user-agent suffix. |
-| [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/) | Audio the model may take ownership of. |
+| [AudioChunkReader](/api/Vercel.AI.Operations/AudioChunkReader/) | The reader of an AudioChunkStream. |
+| [AudioChunkStream](/api/Vercel.AI.Operations/AudioChunkStream/) | Audio the model may take ownership of. Chunks are written with Byte%5b%5d) or Write(string) (base64) and read through GetReader(). |
+| [AudioFormat](/api/Vercel.AI.Operations/AudioFormat/) | The format of raw input audio. Maps to SharedV4AudioFormat. |
 | [Batch](/api/Vercel.AI.Operations/Batch/) | Batch operations. Maps to startBatch, getBatchStatus, getBatchResults, listBatches, and cancelBatch. |
 | [BatchCancelResult](/api/Vercel.AI.Operations/BatchCancelResult/) | Cancellation result. |
 | [BatchContentPart](/api/Vercel.AI.Operations/BatchContentPart/) | One content part inside a batch text result. |
@@ -63,7 +65,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [DecisionResult](/api/Vercel.AI.Operations/DecisionResult/) | Decision result. |
 | [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/) | Declared rounding precision. |
 | [DecisionScoreCriteria](/api/Vercel.AI.Operations/DecisionScoreCriteria/) | Criteria of a score question: at least two ordered levels, indexed from zero. A null description means none. |
-| [DecisionState](/api/Vercel.AI.Operations/DecisionState/) | Shared state of a decision: text, a JSON object, or ordered parts. Maps to DecisionState. A JSON array is not valid state. Wrap it in an object or in a DecisionJsonPart. CancellationToken) maps to prepareDecisionState. |
+| [DecisionState](/api/Vercel.AI.Operations/DecisionState/) | Shared state of a decision: text, a JSON object, or ordered parts. Maps to DecisionState. A JSON array is not valid state. Wrap it in an object or in a DecisionJsonPart. DownloadResult%7d%7d%7d) maps to prepareDecisionState. |
 | [DecisionStatePart](/api/Vercel.AI.Operations/DecisionStatePart/) | A part of decision state as the caller passes it. Maps to DecisionStatePart. |
 | [DecisionTextPart](/api/Vercel.AI.Operations/DecisionTextPart/) | A text part of decision state. |
 | [DecisionUnsupportedQuestionTypeException](/api/Vercel.AI.Operations/DecisionUnsupportedQuestionTypeException/) | The decision model does not support a question type. It carries the ErrorMarker marker, so IsInstance(object) recognizes it. |
@@ -149,6 +151,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [PartQueue&lt;T&gt;](/api/Vercel.AI.Operations/PartQueue-1/) | Async queue used to hand stream parts to one consumer. |
 | [PendingPromise&lt;T&gt;](/api/Vercel.AI.Operations/PendingPromise-1/) | A promise that can be resolved once. |
 | [ProviderFileReference](/api/Vercel.AI.Operations/ProviderFileReference/) | A provider file reference. |
+| [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/) | Request metadata returned by a provider call. |
 | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) | Headers and body returned by one provider call. |
 | [RankedDocument](/api/Vercel.AI.Operations/RankedDocument/) | One document in the reranked order. |
 | [Rerank](/api/Vercel.AI.Operations/Rerank/) | Reranks documents. Maps to rerank. |
@@ -205,9 +208,14 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [Transcribe](/api/Vercel.AI.Operations/Transcribe/) | Transcribes audio. Maps to transcribe. |
 | [TranscribeRequest](/api/Vercel.AI.Operations/TranscribeRequest/) | Options for CancellationToken). |
 | [TranscribeResult](/api/Vercel.AI.Operations/TranscribeResult/) | Transcription result. |
+| [TranscribeTelemetry](/api/Vercel.AI.Operations/TranscribeTelemetry/) | Telemetry callbacks for CancellationToken). |
+| [TranscriptionAudioInfo](/api/Vercel.AI.Operations/TranscriptionAudioInfo/) | Metadata about the input audio on a transcription telemetry event. |
+| [TranscriptionEndEvent](/api/Vercel.AI.Operations/TranscriptionEndEvent/) | Event passed to telemetry when CancellationToken) completes. Raw audio is not included. Maps to TranscriptionEndEvent. |
 | [TranscriptionModelCall](/api/Vercel.AI.Operations/TranscriptionModelCall/) | Arguments for a transcription doGenerate. |
 | [TranscriptionModelResult](/api/Vercel.AI.Operations/TranscriptionModelResult/) | Transcription model response. |
 | [TranscriptionModels](/api/Vercel.AI.Operations/TranscriptionModels/) | Resolves string transcription model ids. |
+| [TranscriptionModelUrlCall](/api/Vercel.AI.Operations/TranscriptionModelUrlCall/) | Arguments for a native URL transcription doGenerateFromUrl. Carries no audio bytes and no media type. |
+| [TranscriptionStartEvent](/api/Vercel.AI.Operations/TranscriptionStartEvent/) | Event passed to telemetry when CancellationToken) begins. Maps to TranscriptionStartEvent. |
 | [TranscriptionStreamCall](/api/Vercel.AI.Operations/TranscriptionStreamCall/) | Arguments for streaming transcription. |
 | [TranscriptionStreamStart](/api/Vercel.AI.Operations/TranscriptionStreamStart/) | A started transcription stream. |
 | [TranscriptSegment](/api/Vercel.AI.Operations/TranscriptSegment/) | One timed transcript segment. |
@@ -265,4 +273,5 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [ISpeechTranslationCaller](/api/Vercel.AI.Operations/ISpeechTranslationCaller/) | Speech translation model used by StreamTranslate. |
 | [IStreamingSpeechCaller](/api/Vercel.AI.Operations/IStreamingSpeechCaller/) | A speech model that can also stream speech audio for streamed text input. Maps to ExperimentalStreamingSpeechModelV4. |
 | [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/) | Transcription model used by Transcribe. |
+| [ITranscriptionUrlCaller](/api/Vercel.AI.Operations/ITranscriptionUrlCaller/) | Optional native URL transcription. Its presence signals that HTTP(S) audio URLs can be sent to the provider without downloading them locally. Maps to the optional doGenerateFromUrl of TranscriptionModelV4. It is a separate interface because netstandard2.0 has no default interface members. |
 | [IVideoCaller](/api/Vercel.AI.Operations/IVideoCaller/) | Video model used by generate, start, and status. |
