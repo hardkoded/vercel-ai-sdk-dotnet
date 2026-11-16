@@ -46,6 +46,9 @@ internal sealed class MockWebSocket : IWebSocketLike
     /// <summary>Runs for each sent text frame before it is recorded. A throw reaches the sender. Maps to <c>ws.send.mockImplementation</c>.</summary>
     public Action<string>? SendHook { get; set; }
 
+    /// <summary>Runs for each sent binary frame before it is recorded. A throw reaches the sender. Maps to <c>ws.send.mockImplementation</c> for a <c>Uint8Array</c>.</summary>
+    public Action<byte[]>? BinarySendHook { get; set; }
+
     public IReadOnlyList<object> Sent
     {
         get
@@ -104,6 +107,7 @@ internal sealed class MockWebSocket : IWebSocketLike
 
     public void Send(byte[] data)
     {
+        BinarySendHook?.Invoke(data);
         lock (_gate)
         {
             _sent.Add(data);

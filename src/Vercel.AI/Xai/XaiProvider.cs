@@ -4,9 +4,21 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.OpenResponses;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Xai;
+
+/// <summary>xAI settings. Maps to <c>XaiProviderSettings</c>.</summary>
+public class XaiOptions : OpenAICompatibleOptions
+{
+    /// <summary>
+    /// Custom WebSocket implementation. Required in runtimes whose default WebSocket does not support headers for xAI
+    /// streaming STT. Maps to <c>webSocket</c>.
+    /// </summary>
+    public WebSocketFactory? WebSocket { get; set; }
+}
 
 /// <summary>
 /// xAI provider at <c>https://api.x.ai/v1</c>. <see cref="LanguageModel(string)"/> returns the Responses API model, as upstream does.
@@ -64,6 +76,18 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         return Files();
     }
 
+    /// <summary>Creates an xAI model for speech-to-text transcription. An empty <paramref name="modelId"/> selects xAI's default transcription model.</summary>
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new XaiTranscriptionModel(this, modelId);
+    }
+
+    /// <summary>Creates an xAI model for speech-to-text transcription. xAI's default transcription model is used.</summary>
+    public XaiTranscriptionModel TranscriptionModel()
+    {
+        return new XaiTranscriptionModel(this);
+    }
+
     /// <inheritdoc />
     public override IRealtimeModel RealtimeModel(string modelId)
     {
@@ -97,6 +121,10 @@ public sealed class XaiProvider : OpenAICompatibleProvider
 
         options.SupportsEmbeddings = false;
         options.SupportsImages = true;
+        if (string.IsNullOrEmpty(options.UserAgent))
+        {
+            options.UserAgent = ProviderExchange.UserAgent(ProviderId);
+        }
 
         return options;
     }

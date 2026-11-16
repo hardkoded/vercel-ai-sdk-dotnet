@@ -169,7 +169,7 @@ Decision model routed through `/decision-model`.
 
 **Returns:** [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L108)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_EmbeddingModel_System_String_"></a>
@@ -220,7 +220,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_Gateway_GatewayProvider_D
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L120)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ExperimentalBatch"></a>
@@ -261,7 +261,7 @@ Gets the info of one generation, including its cost breakdown.
 
 **Returns:** [Task&lt;GatewayGenerationInfo&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L217)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_System_String_"></a>
@@ -308,6 +308,29 @@ Returns a language model.
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L78)
+
+<a id="Vercel_AI_Gateway_GatewayProvider_TranscriptionModel_"></a>
+<a id="Vercel_AI_Gateway_GatewayProvider_TranscriptionModel_System_String_"></a>
+
+### TranscriptionModel(string)
+
+
+```csharp
+public override ITranscriptionModel TranscriptionModel(string modelId)
+```
+
+
+Returns a transcription model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L102)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_VideoModel_System_String_"></a>

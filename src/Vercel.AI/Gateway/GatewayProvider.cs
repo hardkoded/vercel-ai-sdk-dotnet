@@ -98,6 +98,12 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         return new GatewayVideoModel(this, modelId);
     }
 
+    /// <inheritdoc />
+    public override ITranscriptionModel TranscriptionModel(string modelId)
+    {
+        return new GatewayTranscriptionModel(this, modelId);
+    }
+
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
     public GatewayDecisionModel DecisionModel(string modelId)
     {
@@ -659,7 +665,7 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         return node;
     }
 
-    private static OperationWarning ReadWarning(JsonElement warning)
+    internal static OperationWarning ReadWarning(JsonElement warning)
     {
         string? Text(string name) => warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
         var type = Text("type") ?? "other";
