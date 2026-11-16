@@ -414,6 +414,16 @@ internal sealed class OpenAIResponsesStream
                             OpenAIResponsesOutput.ItemMetadata(patchElement, _providerOptionsName)));
                     }
                 }
+                else if (node["item"] is JsonObject localShellDone
+                    && localShellDone["type"]?.GetValue<string>() == "local_shell_call")
+                {
+                    var localShellElement = JsonSerializer.Deserialize<JsonElement>(localShellDone.ToJsonString());
+                    parts.Add(new ToolCallStreamPart(
+                        localShellDone["call_id"]?.GetValue<string>() ?? "call",
+                        ToCustomToolName("local_shell"),
+                        OpenAIResponsesOutput.LocalShellStreamCallInput(localShellElement),
+                        OpenAIResponsesOutput.ItemMetadata(localShellElement, _providerOptionsName)));
+                }
                 else if (node["item"] is JsonObject shellCallDone
                     && shellCallDone["type"]?.GetValue<string>() == "shell_call")
                 {

@@ -115,6 +115,56 @@ internal static class OpenAIResponsesOutput
         return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
     }
 
+    /// <summary>The input of a <c>local_shell_call</c> item: the action with the fields of upstream's <c>localShellInputSchema</c> parse, in snake_case as the API returned them.</summary>
+    public static string LocalShellCallInput(JsonElement item)
+    {
+        var action = new JsonObject();
+        if (item.TryGetProperty("action", out var source) && source.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var name in new[] { "type", "command", "timeout_ms", "user", "working_directory", "env" })
+            {
+                if (source.TryGetProperty(name, out var value))
+                {
+                    action[name] = JsonNode.Parse(value.GetRawText());
+                }
+            }
+        }
+
+        return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
+    }
+
+    /// <summary>The input of a streamed <c>local_shell_call</c> item: an exec action with camelCase fields, as upstream's stream builds it.</summary>
+    public static string LocalShellStreamCallInput(JsonElement item)
+    {
+        var source = item.TryGetProperty("action", out var actionElement) && actionElement.ValueKind == JsonValueKind.Object ? actionElement : default;
+        var action = new JsonObject { ["type"] = "exec" };
+        if (source.ValueKind == JsonValueKind.Object)
+        {
+            action["command"] = source.TryGetProperty("command", out var command) ? JsonNode.Parse(command.GetRawText()) : null;
+            if (OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs)
+            {
+                action["timeoutMs"] = timeoutMs;
+            }
+
+            if (OpenAIJson.String(source, "user") is { } user)
+            {
+                action["user"] = user;
+            }
+
+            if (OpenAIJson.String(source, "working_directory") is { } workingDirectory)
+            {
+                action["workingDirectory"] = workingDirectory;
+            }
+
+            if (source.TryGetProperty("env", out var env) && env.ValueKind == JsonValueKind.Object)
+            {
+                action["env"] = JsonNode.Parse(env.GetRawText());
+            }
+        }
+
+        return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
+    }
+
     /// <summary>The result of a <c>shell_call_output</c> item, in the shape of upstream's <c>shellOutputSchema</c>.</summary>
     public static string ShellCallOutputResult(JsonElement item)
     {

@@ -1068,6 +1068,14 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 var input = OpenAIJson.String(item, "input") ?? string.Empty;
                 content.Add(new GeneratedToolCall(id, name, JsonSerializer.Serialize(input, CustomToolInputOptions), OpenAIParallelToolCall.CallMetadata(item, providerName: providerOptionsName)));
             }
+            else if (type == "local_shell_call")
+            {
+                content.Add(new GeneratedToolCall(
+                    OpenAIJson.String(item, "call_id") ?? "call",
+                    toolNameMapping?.ToCustomToolName("local_shell") ?? "local_shell",
+                    OpenAIResponsesOutput.LocalShellCallInput(item),
+                    OpenAIResponsesOutput.ItemMetadata(item, providerOptionsName)));
+            }
             else if (type == "shell_call")
             {
                 content.Add(new GeneratedToolCall(
