@@ -198,6 +198,9 @@ public sealed class ExecutedTool
     /// <summary>Metadata of the tool. It stays apart from <see cref="ProviderMetadata"/>. Maps to the result's <c>toolMetadata</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ToolMetadata { get; init; }
 
+    /// <summary>True when the result is preliminary: a tool streamed it before its final result. Maps to the result's <c>preliminary</c>.</summary>
+    public bool? Preliminary { get; init; }
+
     /// <summary>The output type sent to the model. Null means it is inferred from <see cref="OutputJson"/>.</summary>
     internal string? ModelOutputType { get; init; }
 
@@ -1318,7 +1321,7 @@ public sealed class ToolCallPart : TextStreamPart
     public GeneratedToolCall ToolCall { get; }
 }
 
-/// <summary>A provider-executed tool call needs approval before the provider runs it.</summary>
+/// <summary>A tool call needs approval before it runs. Maps to the <c>tool-approval-request</c> stream part.</summary>
 public sealed class ToolApprovalRequestPart : TextStreamPart
 {
     /// <summary>Creates a tool-approval-request part.</summary>
@@ -1327,6 +1330,9 @@ public sealed class ToolApprovalRequestPart : TextStreamPart
     {
         ApprovalId = request.ApprovalId;
         ToolCall = request.ToolCall ?? throw new ArgumentException("The request has no tool call.", nameof(request));
+        Reason = request.Reason;
+        IsAutomatic = request.IsAutomatic;
+        Signature = request.Signature;
     }
 
     /// <summary>Approval id the response must carry.</summary>
@@ -1334,6 +1340,111 @@ public sealed class ToolApprovalRequestPart : TextStreamPart
 
     /// <summary>The tool call that needs approval.</summary>
     public GeneratedToolCall ToolCall { get; }
+
+    /// <summary>Why the tool call needs approval.</summary>
+    public string? Reason { get; }
+
+    /// <summary>True when the request was approved or denied automatically, so nobody needs to answer it.</summary>
+    public bool IsAutomatic { get; }
+
+    /// <summary>HMAC-SHA256 signature that binds the request to its tool call.</summary>
+    public string? Signature { get; }
+}
+
+/// <summary>A tool approval request was answered. Maps to the <c>tool-approval-response</c> stream part.</summary>
+public sealed class ToolApprovalResponsePart : TextStreamPart
+{
+    /// <summary>Creates a tool-approval-response part.</summary>
+    public ToolApprovalResponsePart(GeneratedToolApprovalResponse response)
+        : base("tool-approval-response")
+    {
+        if (response is null)
+        {
+            throw new ArgumentNullException(nameof(response));
+        }
+
+        ApprovalId = response.ApprovalId;
+        ToolCall = response.ToolCall;
+        Approved = response.Approved;
+        Reason = response.Reason;
+        ProviderExecuted = response.ProviderExecuted;
+    }
+
+    /// <summary>Id of the approval request this answers.</summary>
+    public string ApprovalId { get; }
+
+    /// <summary>The tool call the response is for.</summary>
+    public GeneratedToolCall ToolCall { get; }
+
+    /// <summary>Whether the approval was granted or denied.</summary>
+    public bool Approved { get; }
+
+    /// <summary>Reason for the approval or denial.</summary>
+    public string? Reason { get; }
+
+    /// <summary>True when the tool call is provider-executed.</summary>
+    public bool ProviderExecuted { get; }
+}
+
+/// <summary>A tool call was denied, so its tool did not run. Maps to the <c>tool-output-denied</c> stream part.</summary>
+public sealed class ToolOutputDeniedPart : TextStreamPart
+{
+    /// <summary>Creates a tool-output-denied part.</summary>
+    public ToolOutputDeniedPart(string toolCallId, string toolName)
+        : base("tool-output-denied")
+    {
+        ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
+        ToolName = toolName ?? throw new ArgumentNullException(nameof(toolName));
+    }
+
+    /// <summary>Id of the denied tool call.</summary>
+    public string ToolCallId { get; }
+
+    /// <summary>Name of the denied tool.</summary>
+    public string ToolName { get; }
+}
+
+/// <summary>Content that only the provider understands, such as a compaction. Maps to the <c>custom</c> stream part.</summary>
+public sealed class CustomPart : TextStreamPart
+{
+    /// <summary>Creates a custom part.</summary>
+    public CustomPart(string kind, JsonElement? providerMetadata = null)
+        : base("custom")
+    {
+        Kind = kind ?? throw new ArgumentNullException(nameof(kind));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>The kind of the content, in the form <c>{provider}.{provider-type}</c>.</summary>
+    public string Kind { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>
+/// Experimental. A steering message that was added to the run before the step with the given number. Streamed before the output of that step.
+/// Maps to the <c>steering-message</c> stream part. <c>streamText</c> does not emit it yet (issue #1189). Build it to convert your own streams.
+/// </summary>
+public sealed class SteeringMessagePart : TextStreamPart
+{
+    /// <summary>Creates a steering-message part.</summary>
+    public SteeringMessagePart(string id, UserModelMessage message, int stepNumber)
+        : base("steering-message")
+    {
+        Id = id ?? throw new ArgumentNullException(nameof(id));
+        Message = message ?? throw new ArgumentNullException(nameof(message));
+        StepNumber = stepNumber;
+    }
+
+    /// <summary>The id of the steering message.</summary>
+    public string Id { get; }
+
+    /// <summary>The user message that was added to the run.</summary>
+    public UserModelMessage Message { get; }
+
+    /// <summary>The number of the step whose model call received the message.</summary>
+    public int StepNumber { get; }
 }
 
 /// <summary>The model started streaming tool input.</summary>
@@ -1493,6 +1604,20 @@ public sealed class SourcePart : TextStreamPart
 
     /// <summary>Source.</summary>
     public GeneratedSource Source { get; }
+}
+
+/// <summary>A cited document. Maps to the <c>source</c> stream part of source type <c>document</c>.</summary>
+public sealed class DocumentSourcePart : TextStreamPart
+{
+    /// <summary>Creates a document source part.</summary>
+    public DocumentSourcePart(GeneratedDocumentSource source)
+        : base("source")
+    {
+        Source = source ?? throw new ArgumentNullException(nameof(source));
+    }
+
+    /// <summary>Source.</summary>
+    public GeneratedDocumentSource Source { get; }
 }
 
 /// <summary>A step finished.</summary>

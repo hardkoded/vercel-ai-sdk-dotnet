@@ -38,18 +38,20 @@ public static class UIMessageStreamExtensions
     /// for example Anthropic models with preserved thinking. To keep error details away from the model and the client, throw a safe error from the tool.
     /// Defaults to <c>true</c> when <c>onError</c> is provided, so that an existing <c>onError</c> keeps handling tool errors, and to <c>false</c> otherwise.
     /// </param>
+    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
     public static IResult ToUIMessageStreamResult(
         this StreamTextResult result,
         int? keepAliveMs = null,
         Func<Exception, string>? onError = null,
-        bool? redactToolErrors = null)
+        bool? redactToolErrors = null,
+        bool sendSources = false)
     {
         if (result is null)
         {
             throw new ArgumentNullException(nameof(result));
         }
 
-        return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors);
+        return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors, sendSources);
     }
 
     /// <summary>
@@ -65,6 +67,7 @@ public static class UIMessageStreamExtensions
     /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
+    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
     /// <returns>A task that completes when the stream has been written and the response has ended.</returns>
     public static Task PipeUIMessageStreamToResponseAsync(
         this StreamTextResult result,
@@ -75,7 +78,8 @@ public static class UIMessageStreamExtensions
         int? keepAliveMs = null,
         Func<Exception, string>? onError = null,
         bool? redactToolErrors = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool sendSources = false)
     {
         if (result is null)
         {
@@ -90,7 +94,7 @@ public static class UIMessageStreamExtensions
         UIMessageStreamResult.ValidateKeepAlive(keepAliveMs);
         var prepared = PrepareHeaders.Apply(headers, UIMessageStreamResult.ProtocolHeaders);
         var sse = UIMessageStreamResult.CreateSseStreamWithKeepAlive(
-            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken),
+            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources),
             keepAliveMs,
             cancellationToken);
         return WriteEncodedAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared, cancellationToken);
@@ -131,19 +135,22 @@ public sealed class UIMessageStreamResult : IResult
     private readonly int? _keepAliveMs;
     private readonly Func<Exception, string>? _onError;
     private readonly bool? _redactToolErrors;
+    private readonly bool _sendSources;
 
     /// <summary>Creates a result that writes <paramref name="result"/>.</summary>
     /// <param name="result">The stream to write.</param>
     /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
     /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
-    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<Exception, string>? onError = null, bool? redactToolErrors = null)
+    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
+    public UIMessageStreamResult(StreamTextResult result, int? keepAliveMs = null, Func<Exception, string>? onError = null, bool? redactToolErrors = null, bool sendSources = false)
     {
         _result = result ?? throw new ArgumentNullException(nameof(result));
         ValidateKeepAlive(keepAliveMs);
         _keepAliveMs = keepAliveMs;
         _onError = onError;
         _redactToolErrors = redactToolErrors;
+        _sendSources = sendSources;
     }
 
     /// <inheritdoc />
@@ -155,7 +162,7 @@ public sealed class UIMessageStreamResult : IResult
         }
 
         ApplyProtocolHeaders(httpContext.Response);
-        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError, _redactToolErrors).ConfigureAwait(false);
+        await WriteAsync(_result, httpContext.Response.Body, _keepAliveMs, httpContext.RequestAborted, _onError, _redactToolErrors, _sendSources).ConfigureAwait(false);
     }
 
     /// <summary>Writes the UI message stream to <paramref name="destination"/>.</summary>
@@ -168,13 +175,15 @@ public sealed class UIMessageStreamResult : IResult
     /// <param name="cancellationToken">Cancels the write and stops keep-alive comments. ASP.NET Core passes <c>HttpContext.RequestAborted</c>.</param>
     /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>. It also formats failed tool calls when <c>redactToolErrors</c> is enabled.</param>
     /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
+    /// <param name="sendSources">Whether source parts are sent to the client. Defaults to <c>false</c>. Maps to <c>sendSources</c>.</param>
     public static async Task WriteAsync(
         StreamTextResult result,
         Stream destination,
         int? keepAliveMs = null,
         CancellationToken cancellationToken = default,
         Func<Exception, string>? onError = null,
-        bool? redactToolErrors = null)
+        bool? redactToolErrors = null,
+        bool sendSources = false)
     {
         if (result is null)
         {
@@ -191,7 +200,7 @@ public sealed class UIMessageStreamResult : IResult
         // Not disposed on purpose: every chunk is flushed asynchronously, and StreamWriter.Dispose flushes the
         // destination synchronously, which Kestrel rejects. The writer owns no other resources (leaveOpen).
         var writer = new StreamWriter(destination, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true);
-        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken), keepAliveMs, cancellationToken);
+        var chunks = CreateSseStreamWithKeepAlive(ReadSseChunks(result, onError, redactToolErrors, cancellationToken, sendSources), keepAliveMs, cancellationToken);
         await foreach (var chunk in chunks.ConfigureAwait(false))
         {
             await writer.WriteAsync(chunk.AsMemory(), cancellationToken).ConfigureAwait(false);
@@ -313,9 +322,10 @@ public sealed class UIMessageStreamResult : IResult
         StreamTextResult result,
         Func<Exception, string>? onError,
         bool? redactToolErrors,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        bool sendSources = false)
     {
-        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors };
+        var options = new ToUIMessageChunkOptions { OnError = onError, RedactToolErrors = redactToolErrors, SendSources = sendSources, Tools = result.Tools };
         await foreach (var chunk in UIMessageStreamConverter.ToUIMessageStream(result.Stream(cancellationToken), options, cancellationToken).ConfigureAwait(false))
         {
             yield return Frame(chunk);

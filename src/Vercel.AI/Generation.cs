@@ -288,7 +288,7 @@ internal static class Generation
 
         buffer.OnConsumerStop = abort.Stop;
         _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource, outputSource));
-        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, outputSource.Task);
+        return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, outputSource.Task) { Tools = options.Tools };
     }
 
     private static async Task ProduceAsync(
@@ -486,6 +486,7 @@ internal static class Generation
                                     documentSource.Title,
                                     documentSource.Filename,
                                     documentSource.ProviderMetadata));
+                                buffer.Add(new DocumentSourcePart(documentSources[documentSources.Count - 1]));
                                 break;
                             case ReasoningStartStreamPart reasoningStart:
                                 var startedReasoning = ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id, reasoningPartIds);
@@ -611,6 +612,9 @@ internal static class Generation
                             case PingStreamPart:
                                 buffer.Add(new PingPart());
                                 break;
+                            case CustomStreamPart custom:
+                                buffer.Add(new CustomPart(custom.Kind, custom.ProviderMetadata));
+                                break;
                             case ErrorStreamPart error:
                                 buffer.Add(new ErrorPart(error.Message) { Error = error.Exception });
                                 if (options.OnError != null)
@@ -703,7 +707,13 @@ internal static class Generation
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null).ConfigureAwait(false);
+                var approvalParts = new List<TextStreamPart>();
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts).ConfigureAwait(false);
+                foreach (var approvalPart in approvalParts)
+                {
+                    buffer.Add(approvalPart);
+                }
+
                 foreach (var toolResult in step.ToolResults)
                 {
                     if (emittedResultIds.Contains(toolResult.ToolCallId))
@@ -1163,7 +1173,8 @@ internal static class Generation
         StepTiming timing,
         LanguageModelRequestMetadata stepRequest,
         LanguageModelResponseMetadata responseInfo,
-        JsonElement? responseBody)
+        JsonElement? responseBody,
+        List<TextStreamPart>? approvalParts = null)
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
         var toolCalls = new List<GeneratedToolCall>();
@@ -1239,6 +1250,21 @@ internal static class Generation
         var (approvalRequests, approvalResponses, blockedToolCallIds) = await ResolveStepApprovalsAsync(options, toolCalls, stepInputMessages.Skip(instructionCount).ToArray()).ConfigureAwait(false);
         foreach (var request in approvalRequests)
         {
+            // streamText emits the request, its response, and the denial of a call that an automatic decision settled
+            if (approvalParts != null)
+            {
+                approvalParts.Add(new ToolApprovalRequestPart(request));
+                var requestResponse = approvalResponses.FirstOrDefault(response => string.Equals(response.ApprovalId, request.ApprovalId, StringComparison.Ordinal));
+                if (requestResponse != null)
+                {
+                    approvalParts.Add(new ToolApprovalResponsePart(requestResponse));
+                    if (!requestResponse.Approved)
+                    {
+                        approvalParts.Add(new ToolOutputDeniedPart(requestResponse.ToolCall.ToolCallId, requestResponse.ToolCall.ToolName));
+                    }
+                }
+            }
+
             assistantParts.Add(new AssistantToolApprovalRequestPart(request.ApprovalId, request.ToolCallId, request.IsAutomatic ? true : null) { Reason = request.Reason, Signature = request.Signature });
         }
 
@@ -2517,6 +2543,9 @@ internal sealed class PartBuffer
 public sealed class StreamTextResult
 {
     private readonly PartBuffer _buffer;
+
+    // The tools of the call. The UI message stream marks the parts of dynamic tools with them.
+    internal IReadOnlyList<Tool>? Tools { get; init; }
 
     internal StreamTextResult(
         PartBuffer buffer,
