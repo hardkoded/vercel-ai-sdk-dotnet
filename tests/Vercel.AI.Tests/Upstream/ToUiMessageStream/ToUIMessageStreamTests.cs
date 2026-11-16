@@ -194,18 +194,20 @@ public sealed class ToUIMessageStreamTests
         var onStepEndCalls = 0;
         var onStepFinishCalls = 0;
 
+        Func<UIMessageStreamOnStepEndEvent, Task>? onStepEnd = hasOnStepEnd
+            ? _ =>
+            {
+                onStepEndCalls++;
+                return Task.CompletedTask;
+            }
+        : null;
+
 #pragma warning disable CS0618 // the test calls the deprecated alias
         await Convert(
             [new StartPart(), TestStep],
             new ToUIMessageChunkOptions
             {
-                OnStepEnd = hasOnStepEnd
-                    ? _ =>
-                    {
-                        onStepEndCalls++;
-                        return Task.CompletedTask;
-                    }
-                    : null,
+                OnStepEnd = onStepEnd,
                 OnStepFinish = _ =>
                 {
                     onStepFinishCalls++;
