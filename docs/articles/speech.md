@@ -60,6 +60,10 @@ Use `FullStream` instead of `AudioStream` when you need per-chunk metadata: each
 
 A stream that finishes without audio fails with a `NoSpeechGeneratedException` whose `InnerException` is the last provider error part. A stream that ends after audio without a `finish` part fails with the last provider error, or a `StreamProviderError`.
 
+### Per-call provider options and headers
+
+`GenerateSpeechOptions` and `SpeechCallOptions` take `ProviderOptions` (keyed by provider name) and `Headers` (per-call headers that override the provider headers; a `null` value removes nothing and is ignored by providers that read them). `GoogleSpeechModel.DoGenerateAsync(SpeechCallOptions, ...)` forwards both to `GoogleSpeechCall`, so `GenerateSpeech` reaches the same behavior as `GoogleSpeechModel.GenerateAsync`.
+
 ### Implementing a streaming speech model
 
 Implement `IStreamingSpeechCaller.DoStreamAsync`, which receives a `SpeechModelStreamCall` and returns a `SpeechModelStreamResult` over an `IAsyncEnumerable<SpeechModelStreamPart>`. The call's `Text` is owned by the model once `DoStreamAsync` is called: enumerate it to the end or dispose its enumerator on every terminal path.

@@ -297,6 +297,8 @@ public sealed class AiClient : IAiClient
             Instructions = options.Instructions,
             Speed = options.Speed,
             Language = options.Language,
+            ProviderOptions = options.ProviderOptions,
+            Headers = options.Headers,
         }, cancellationToken).ConfigureAwait(false);
         if (_telemetry != null && scope != null)
         {
@@ -531,6 +533,12 @@ public sealed class GenerateSpeechOptions
 
     /// <summary>ISO 639-1 language code, or <c>auto</c>. Provider support varies.</summary>
     public string? Language { get; set; }
+
+    /// <summary>Additional provider-specific options, keyed by provider name.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Transcription options.</summary>
