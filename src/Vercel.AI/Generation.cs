@@ -2056,7 +2056,7 @@ internal static class Generation
             {
                 // Like upstream's executeTool, each streamed value is a preliminary result and the last one is the final result.
                 var last = default(string);
-                await foreach (var part in Vercel.AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(tool.ExecuteStream(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken))).ConfigureAwait(false))
+                await foreach (var part in Vercel.AI.ProviderUtils.ToolExecution.ExecuteStreamAsync(tool.ExecuteStream(input, new ToolExecutionOptions(call.ToolCallId, stepMessages, toolToken)), toolToken).ConfigureAwait(false))
                 {
                     if (part.Type == "preliminary")
                     {
