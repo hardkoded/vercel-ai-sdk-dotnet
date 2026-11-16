@@ -46,4 +46,66 @@ public sealed class CustomDownloadFunctionTests
         Assert.Null(file.Url);
         Assert.Equal(new byte[] { 72, 101, 108, 108, 111 }, file.Data);
     }
+
+    [Fact]
+    [UpstreamTest(Id + "should download URL content in tool results", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Should_download_url_content_in_tool_results()
+    {
+        var calls = new List<IReadOnlyList<DownloadRequestItem>>();
+        Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> mockDownload = requests =>
+        {
+            calls.Add(requests);
+            return Task.FromResult<IReadOnlyList<DownloadResult>>(new[] { new DownloadResult(new byte[] { 0, 1, 2, 3 }, "image/png") });
+        };
+
+        var result = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+            new ModelMessage[]
+            {
+                new AssistantModelMessage(new AssistantContentPart[] { new AssistantToolCallPart(new GeneratedToolCall("toolCallId", "toolName", "{}")) }),
+                new ToolModelMessage("toolCallId", "toolName", new UserContentPart[] { new FileContentPart("image/png", "https://example.com/image.png", null, null) }),
+            },
+            new Dictionary<string, string>(),
+            mockDownload);
+
+        var call = Assert.Single(calls);
+        var request = Assert.Single(call);
+        Assert.Equal(new Uri("https://example.com/image.png"), request.Url);
+        Assert.False(request.IsUrlSupportedByModel);
+
+        Assert.Equal(2, result.Count);
+        var tool = Assert.IsType<ToolModelMessage>(result[1]);
+        var file = Assert.IsType<FileContentPart>(Assert.Single(tool.OutputContent!));
+        Assert.Equal("image/png", file.MediaType);
+        Assert.Null(file.Url);
+        Assert.Equal(new byte[] { 0, 1, 2, 3 }, file.Data);
+    }
+
+    [Fact]
+    [UpstreamTest(Id + "should download URL content in assistant tool results", Coverage = UpstreamCoverage.Covered, Commit = "2ebc78b65435926718879f85a1a85687b053c542")]
+    public async Task Should_download_url_content_in_assistant_tool_results()
+    {
+        var calls = new List<IReadOnlyList<DownloadRequestItem>>();
+        Func<IReadOnlyList<DownloadRequestItem>, Task<IReadOnlyList<DownloadResult>>> mockDownload = requests =>
+        {
+            calls.Add(requests);
+            return Task.FromResult<IReadOnlyList<DownloadResult>>(new[] { new DownloadResult(new byte[] { 4, 5, 6, 7 }, "image/png") });
+        };
+
+        var output = new ToolModelMessage("toolCallId", "toolName", new UserContentPart[] { new FileContentPart("image/png", "https://example.com/assistant-image.png", null, null) });
+        var result = await LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+            new ModelMessage[] { new AssistantModelMessage(new AssistantContentPart[] { new AssistantToolResultPart("toolCallId", "toolName", output) }) },
+            new Dictionary<string, string>(),
+            mockDownload);
+
+        var request = Assert.Single(Assert.Single(calls));
+        Assert.Equal(new Uri("https://example.com/assistant-image.png"), request.Url);
+        Assert.False(request.IsUrlSupportedByModel);
+
+        var assistant = Assert.IsType<AssistantModelMessage>(Assert.Single(result));
+        var toolResult = Assert.IsType<AssistantToolResultPart>(Assert.Single(assistant.Parts));
+        var file = Assert.IsType<FileContentPart>(Assert.Single(toolResult.Output.OutputContent!));
+        Assert.Equal("image/png", file.MediaType);
+        Assert.Null(file.Url);
+        Assert.Equal(new byte[] { 4, 5, 6, 7 }, file.Data);
+    }
 }

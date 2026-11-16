@@ -42,7 +42,13 @@ public static class LanguageModelPrompts
         var converted = new List<ModelMessage>(messages.Count);
         foreach (var message in messages)
         {
-            converted.Add(message is UserModelMessage user ? ConvertUserMessage(user, downloaded) : message);
+            converted.Add(message switch
+            {
+                UserModelMessage user => ConvertUserMessage(user, downloaded),
+                ToolModelMessage tool => ConvertToolMessage(tool, downloaded),
+                AssistantModelMessage assistant => ConvertAssistantMessage(assistant, downloaded),
+                _ => message,
+            });
         }
 
         return converted;
@@ -59,16 +65,28 @@ public static class LanguageModelPrompts
         var planned = new List<DownloadRequestItem>();
         foreach (var message in messages)
         {
-            if (message is not UserModelMessage user)
+            if (message is UserModelMessage user)
             {
-                continue;
-            }
-
-            foreach (var part in user.Content)
-            {
-                if (part is FileContentPart file && TryGetUrl(file, out var url))
+                foreach (var part in user.Content)
                 {
-                    planned.Add(new DownloadRequestItem(url, UrlSupport.IsUrlSupported(file.MediaType, url.ToString(), supportedUrls)) { AbortSignal = abortSignal });
+                    PlanDownload(part, planned, supportedUrls, abortSignal);
+                }
+            }
+            else if (message is ToolModelMessage tool)
+            {
+                foreach (var toolResult in tool.Results)
+                {
+                    PlanToolResultDownloads(toolResult, planned, supportedUrls, abortSignal);
+                }
+            }
+            else if (message is AssistantModelMessage assistant)
+            {
+                foreach (var part in assistant.Parts)
+                {
+                    if (part is AssistantToolResultPart assistantResult)
+                    {
+                        PlanToolResultDownloads(assistantResult.Output, planned, supportedUrls, abortSignal);
+                    }
                 }
             }
         }
@@ -90,6 +108,101 @@ public static class LanguageModelPrompts
         }
 
         return result;
+    }
+
+    private static void PlanDownload(UserContentPart part, List<DownloadRequestItem> planned, IReadOnlyDictionary<string, string> supportedUrls, CancellationToken abortSignal)
+    {
+        if (part is FileContentPart file && TryGetUrl(file, out var url))
+        {
+            planned.Add(new DownloadRequestItem(url, UrlSupport.IsUrlSupported(file.MediaType, url.ToString(), supportedUrls)) { AbortSignal = abortSignal });
+        }
+    }
+
+    // Tool results (and provider-executed tool results in assistant messages) with output type "content" carry files that are downloaded like user files.
+    private static void PlanToolResultDownloads(ToolModelMessage result, List<DownloadRequestItem> planned, IReadOnlyDictionary<string, string> supportedUrls, CancellationToken abortSignal)
+    {
+        if (result.OutputContent is null)
+        {
+            return;
+        }
+
+        foreach (var part in result.OutputContent)
+        {
+            PlanDownload(part, planned, supportedUrls, abortSignal);
+        }
+    }
+
+    private static ToolModelMessage ConvertToolResult(ToolModelMessage result, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    {
+        if (result.OutputContent is null)
+        {
+            return result;
+        }
+
+        var changed = false;
+        var content = new List<UserContentPart>(result.OutputContent.Count);
+        foreach (var part in result.OutputContent)
+        {
+            var converted = part is FileContentPart file ? ConvertFilePart(file, downloaded) : part;
+            changed |= !ReferenceEquals(converted, part);
+            content.Add(converted);
+        }
+
+        if (!changed)
+        {
+            return result;
+        }
+
+        return new ToolModelMessage(result.ToolCallId, result.ToolName, content, result.ProviderMetadata)
+        {
+            ProviderOptions = result.ProviderOptions,
+            OutputProviderOptions = result.OutputProviderOptions,
+            MessageProviderOptions = result.MessageProviderOptions,
+        };
+    }
+
+    private static ToolModelMessage ConvertToolMessage(ToolModelMessage tool, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    {
+        if (tool.Results.Count == 1 && ReferenceEquals(tool.Results[0], tool))
+        {
+            return ConvertToolResult(tool, downloaded);
+        }
+
+        var results = new List<ToolModelMessage>(tool.Results.Count);
+        var changed = false;
+        foreach (var result in tool.Results)
+        {
+            var converted = ConvertToolResult(result, downloaded);
+            changed |= !ReferenceEquals(converted, result);
+            results.Add(converted);
+        }
+
+        return changed ? new ToolModelMessage(results) { MessageProviderOptions = tool.MessageProviderOptions } : tool;
+    }
+
+    private static AssistantModelMessage ConvertAssistantMessage(AssistantModelMessage assistant, IReadOnlyDictionary<string, DownloadResult> downloaded)
+    {
+        var changed = false;
+        var parts = new List<AssistantContentPart>(assistant.Parts.Count);
+        foreach (var part in assistant.Parts)
+        {
+            if (part is AssistantToolResultPart toolResult)
+            {
+                var output = ConvertToolResult(toolResult.Output, downloaded);
+                if (!ReferenceEquals(output, toolResult.Output))
+                {
+                    changed = true;
+                    parts.Add(new AssistantToolResultPart(toolResult.ToolCallId, toolResult.ToolName, output, toolResult.ProviderOptions));
+                    continue;
+                }
+            }
+
+            parts.Add(part);
+        }
+
+        return changed
+            ? new AssistantModelMessage(assistant.Text, assistant.ToolCalls, assistant.Reasoning, assistant.ReasoningProviderOptions, parts) { ProviderOptions = assistant.ProviderOptions }
+            : assistant;
     }
 
     private static bool TryGetUrl(FileContentPart file, out Uri url)

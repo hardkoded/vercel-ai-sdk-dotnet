@@ -133,6 +133,20 @@ public static partial class UIMessageStreamConverter
                 };
                 AddProviderMetadata(fileChunk, file.ProviderMetadata);
                 return fileChunk;
+            case ReasoningFilePart reasoningFile:
+                if (!options.SendReasoning)
+                {
+                    return null;
+                }
+
+                var reasoningFileChunk = new JsonObject
+                {
+                    ["type"] = "reasoning-file",
+                    ["mediaType"] = reasoningFile.File.MediaType,
+                    ["url"] = "data:" + reasoningFile.File.MediaType + ";base64," + Convert.ToBase64String(reasoningFile.File.Data),
+                };
+                AddProviderMetadata(reasoningFileChunk, reasoningFile.ProviderMetadata);
+                return reasoningFileChunk;
             case SourcePart source:
                 var sourceChunk = new JsonObject
                 {

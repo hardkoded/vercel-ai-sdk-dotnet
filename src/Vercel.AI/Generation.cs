@@ -587,6 +587,13 @@ internal static class Generation
                                 toolContent.Add(generatedFile);
                                 buffer.Add(new FilePart(generatedFile, filePart.ProviderMetadata));
                                 break;
+                            case ReasoningFileStreamPart reasoningFilePart:
+                                var generatedReasoningFile = reasoningFilePart.Url is null
+                                    ? new GeneratedFile(reasoningFilePart.Data!, reasoningFilePart.MediaType)
+                                    : await ResolveGeneratedFileDataAsync(new GeneratedFileUrl(reasoningFilePart.Url, reasoningFilePart.MediaType), options.ExperimentalDownload, cancellationToken).ConfigureAwait(false);
+                                toolContent.Add(new GeneratedReasoningFile(generatedReasoningFile.Data, generatedReasoningFile.MediaType, reasoningFilePart.ProviderMetadata));
+                                buffer.Add(new ReasoningFilePart(generatedReasoningFile, reasoningFilePart.ProviderMetadata));
+                                break;
                             case FinishStreamPart done:
                                 finish = done.FinishReason;
                                 rawFinish = done.RawFinishReason;
@@ -1200,6 +1207,9 @@ internal static class Generation
                     break;
                 case GeneratedFile file:
                     files.Add(file);
+                    break;
+                case GeneratedReasoningFile reasoningFile:
+                    assistantParts.Add(new AssistantReasoningFilePart(reasoningFile.MediaType, null, reasoningFile.Data, ToProviderOptions(reasoningFile.ProviderMetadata)));
                     break;
             }
         }
