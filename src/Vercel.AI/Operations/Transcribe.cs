@@ -196,10 +196,11 @@ public static class TranscriptionModels
 public sealed class TranscribeResult
 {
     /// <summary>Creates a result.</summary>
-    public TranscribeResult(string text, IReadOnlyList<TranscriptSegment> segments, string? language, double? durationInSeconds, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata)
+    public TranscribeResult(string text, IReadOnlyList<TranscriptSegment> segments, string? language, double? durationInSeconds, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, IReadOnlyList<TranscriptSegment>? words = null)
     {
         Text = text;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
+        Words = words;
         Language = language;
         DurationInSeconds = durationInSeconds;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
@@ -210,8 +211,14 @@ public sealed class TranscribeResult
     /// <summary>Transcript.</summary>
     public string Text { get; }
 
-    /// <summary>Segments.</summary>
+    /// <summary>Segments. They keep the provider's behavior and may represent individual words.</summary>
     public IReadOnlyList<TranscriptSegment> Segments { get; }
+
+    /// <summary>
+    /// Word-level timings returned by the provider, whether explicitly requested or returned by default.
+    /// <see langword="null"/> when the provider does not return them. Maps to <c>words</c>.
+    /// </summary>
+    public IReadOnlyList<TranscriptSegment>? Words { get; }
 
     /// <summary>Language.</summary>
     public string? Language { get; }
@@ -246,6 +253,9 @@ public sealed class TranscribeRequest : OperationRequest
 
     /// <summary>Downloads URL audio.</summary>
     public Func<string, CancellationToken, Task<DownloadedMedia>>? Download { get; set; }
+
+    /// <summary>Timing granularities to request, <c>word</c> and <c>segment</c>. Maps to <c>timestampGranularities</c>.</summary>
+    public IReadOnlyList<string>? TimestampGranularities { get; set; }
 }
 
 /// <summary>Options for <see cref="StreamTranscribe.Start"/>.</summary>
@@ -602,14 +612,14 @@ public static class Transcribe
         }
 
         var mediaType = MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
-        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct), ct), null).ConfigureAwait(false);
+        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct), null).ConfigureAwait(false);
         WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
         if (result.Text is null)
         {
             throw new NoTranscriptGeneratedException(new[] { result.Response });
         }
 
-        return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"));
+        return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
     }
 
     internal static ITranscriptionCaller Resolve(ITranscriptionCaller? model, string? modelId)

@@ -294,6 +294,40 @@ public sealed class TranscribeTests
     }
 
     [Fact]
+    [UpstreamTest(Once + "should return provider word timings with $timestampGranularities", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Returns_provider_word_timings_for_each_granularity()
+    {
+        var words = new[] { new TranscriptSegment("Hello", 0, 0.4), new TranscriptSegment("world", 0.4, 1) };
+        foreach (var granularities in new IReadOnlyList<string>?[] { null, Array.Empty<string>(), new[] { "word" } })
+        {
+            var model = new TranscriptFake { Words = words };
+            var result = await Transcribe.TranscribeAsync(new TranscribeRequest { Model = model, Audio = new byte[] { 1 }, TimestampGranularities = granularities });
+            Assert.Equal(granularities, model.Generated!.TimestampGranularities);
+            Assert.Empty(result.Segments);
+            Assert.Equal(words, result.Words);
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should preserve an empty array of provider word timings", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Preserves_an_empty_array_of_provider_word_timings()
+    {
+        var result = await Transcribe.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Words = Array.Empty<TranscriptSegment>() }, Audio = new byte[] { 1 } });
+        Assert.NotNull(result.Words);
+        Assert.Empty(result.Words);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should preserve word-level segments returned by the provider", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Preserves_word_level_segments_returned_by_the_provider()
+    {
+        var segments = new[] { new TranscriptSegment("Hello", 0, 0.4), new TranscriptSegment("world", 0.4, 1) };
+        var result = await Transcribe.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Segments = segments }, Audio = new byte[] { 1 } });
+        Assert.Equal(segments, result.Segments);
+        Assert.Null(result.Words);
+    }
+
+    [Fact]
     [UpstreamTest(Once + "should return an empty transcript", Coverage = UpstreamCoverage.Covered)]
     public async Task Returns_an_empty_transcript()
     {
@@ -368,6 +402,10 @@ public sealed class TranscribeTests
 
         public string? Language { get; set; }
 
+        public IReadOnlyList<TranscriptSegment>? Segments { get; set; }
+
+        public IReadOnlyList<TranscriptSegment>? Words { get; set; }
+
         public double? Duration { get; set; }
 
         public IReadOnlyList<OperationWarning>? Warnings { get; set; }
@@ -401,7 +439,7 @@ public sealed class TranscribeTests
         public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
         {
             Generated = call;
-            return Task.FromResult(new TranscriptionModelResult(Text, language: Language, durationInSeconds: Duration, warnings: Warnings, providerMetadata: Metadata, response: Response));
+            return Task.FromResult(new TranscriptionModelResult(Text, Segments, Language, Duration, Warnings, Metadata, Response, Words));
         }
 
         public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)

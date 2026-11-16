@@ -29,6 +29,9 @@ public sealed class OpenAITranscriptionCall
     /// <summary>Provider options. The <c>openai</c> object is read.</summary>
     public JsonElement? ProviderOptions { get; set; }
 
+    /// <summary>Timing granularities the caller asks for, <c>word</c> and <c>segment</c>. Maps to <c>timestampGranularities</c>.</summary>
+    public IReadOnlyList<string>? TimestampGranularities { get; set; }
+
     /// <summary>Extra HTTP headers.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
@@ -67,10 +70,12 @@ public sealed class OpenAITranscriptionResult
         double? durationInSeconds,
         JsonElement? providerMetadata,
         IReadOnlyList<OpenAICallWarning> warnings,
-        OpenAITranscriptionResponse response)
+        OpenAITranscriptionResponse response,
+        IReadOnlyList<TranscriptSegment>? words = null)
     {
         Text = text;
         Segments = segments;
+        Words = words;
         Language = language;
         DurationInSeconds = durationInSeconds;
         ProviderMetadata = providerMetadata;
@@ -84,6 +89,9 @@ public sealed class OpenAITranscriptionResult
     /// <summary>Segments, or words when the response has no segments.</summary>
     public IReadOnlyList<TranscriptSegment> Segments { get; }
 
+    /// <summary>Word timings, when the response has them. Kept next to <see cref="Segments"/>. Maps to <c>words</c>.</summary>
+    public IReadOnlyList<TranscriptSegment>? Words { get; }
+
     /// <summary>ISO-639-1 code, when OpenAI reports a two-letter code, a known language name, or a single detected language.</summary>
     public string? Language { get; }
 
@@ -93,7 +101,7 @@ public sealed class OpenAITranscriptionResult
     /// <summary>Speaker segments under <c>openai.segments</c> for diarized responses and detected languages under <c>openai.languages</c>.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>Warnings produced while preparing the request. OpenAI transcription reports none today.</summary>
+    /// <summary>Warnings produced while preparing the request, such as timestamp granularities the response format cannot satisfy.</summary>
     public IReadOnlyList<OpenAICallWarning> Warnings { get; }
 
     /// <summary>Response metadata.</summary>
@@ -292,10 +300,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         }
 
         var timestamp = OpenAIClock.Now(_clock);
+        var warnings = new List<OpenAICallWarning>();
         var response = await _http.SendBinaryAsync(
             HttpMethod.Post,
             _url(),
-            Build(call),
+            Build(call, warnings),
             _headers(call.Headers),
             cancellationToken).ConfigureAwait(false);
         var body = Encoding.UTF8.GetString(response.Body);
@@ -303,6 +312,15 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         var root = document.RootElement;
         var segments = new List<TranscriptSegment>();
         var speakers = new JsonArray();
+        var wordTimings = new List<TranscriptSegment>();
+        if (root.TryGetProperty("words", out var wordItems) && wordItems.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var word in wordItems.EnumerateArray())
+            {
+                wordTimings.Add(new TranscriptSegment(OpenAIJson.String(word, "word") ?? string.Empty, word.GetProperty("start").GetDouble(), word.GetProperty("end").GetDouble()));
+            }
+        }
+
         if (root.TryGetProperty("segments", out var segmentItems) && segmentItems.ValueKind == JsonValueKind.Array)
         {
             foreach (var segment in segmentItems.EnumerateArray())
@@ -317,12 +335,9 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
                 }
             }
         }
-        else if (root.TryGetProperty("words", out var words) && words.ValueKind == JsonValueKind.Array)
+        else
         {
-            foreach (var word in words.EnumerateArray())
-            {
-                segments.Add(new TranscriptSegment(OpenAIJson.String(word, "word") ?? string.Empty, word.GetProperty("start").GetDouble(), word.GetProperty("end").GetDouble()));
-            }
+            segments.AddRange(wordTimings);
         }
 
         var languages = DetectedLanguages(root);
@@ -342,12 +357,19 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             language,
             root.TryGetProperty("duration", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
             speakers.Count > 0 || languages != null ? ProviderMetadata(speakers, languages) : null,
-            Array.Empty<OpenAICallWarning>(),
-            new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body));
+            warnings,
+            new OpenAITranscriptionResponse(timestamp, ModelId, response.Headers, body),
+            wordTimings.Count > 0 ? wordTimings : null);
     }
 
     /// <summary>Builds the multipart body so tests can inspect field names.</summary>
     public MultipartFormDataContent Build(OpenAITranscriptionCall call)
+    {
+        return Build(call, new List<OpenAICallWarning>());
+    }
+
+    /// <summary>Builds the multipart body and collects the warnings for the request. Maps to <c>getArgs</c>.</summary>
+    internal MultipartFormDataContent Build(OpenAITranscriptionCall call, List<OpenAICallWarning> warnings)
     {
         var content = new MultipartFormDataContent();
         var mediaType = string.IsNullOrEmpty(call.Audio.MediaType) ? "audio/mpeg" : call.Audio.MediaType;
@@ -357,27 +379,37 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         content.Add(new StringContent(ModelId), "model");
         var openai = OpenAIJson.OpenAIObject(call.ProviderOptions);
         var diarize = ModelId == "gpt-4o-transcribe-diarize";
-        if (ModelId == "whisper-1")
+        var responseFormat = (openai != null ? OpenAIJson.String(openai, "responseFormat") : null)
+            ?? OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId).ResponseFormat;
+        if (responseFormat != null)
         {
-            content.Add(new StringContent("verbose_json"), "response_format");
+            content.Add(new StringContent(responseFormat), "response_format");
         }
 
         var chunking = Chunking(openai, diarize);
-        if (openai != null && ModelId != "whisper-1")
-        {
-            var format = OpenAIJson.String(openai, "responseFormat");
-            if (format == null)
-            {
-                format = diarize
-                    ? "diarized_json"
-                    : ModelId == "gpt-4o-transcribe" || ModelId == "gpt-4o-mini-transcribe" ? "json" : "verbose_json";
-            }
 
-            content.Add(new StringContent(format), "response_format");
-        }
-        else if (openai == null && diarize)
+        // Only verbose_json accepts timestamp_granularities. Diarized JSON always returns segment timings without a timestamp control.
+        var providerGranularities = openai != null ? Granularities(openai.Value) : null;
+        var granularities = providerGranularities
+            ?? call.TimestampGranularities
+            ?? (responseFormat == "verbose_json" ? new[] { "segment" } : null);
+        foreach (var granularity in call.TimestampGranularities ?? Array.Empty<string>())
         {
-            content.Add(new StringContent("diarized_json"), "response_format");
+            if (providerGranularities != null && !providerGranularities.Contains(granularity))
+            {
+                warnings.Add(new OpenAICallWarning("unsupported", "timestampGranularities", "The \"" + granularity + "\" timestamp granularity is excluded by providerOptions.openai.timestampGranularities."));
+            }
+        }
+
+        foreach (var granularity in granularities ?? Array.Empty<string>())
+        {
+            if (responseFormat != "verbose_json" && !(responseFormat == "diarized_json" && granularity == "segment"))
+            {
+                warnings.Add(new OpenAICallWarning(
+                    "unsupported",
+                    providerGranularities != null ? "providerOptions.openai.timestampGranularities" : "timestampGranularities",
+                    "OpenAI transcription with the " + (responseFormat ?? "default JSON") + " response format does not support " + granularity + " timestamps."));
+            }
         }
 
         if (openai != null)
@@ -389,7 +421,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             Add(content, "prompt", OpenAIJson.String(openai, "prompt"));
             var temperature = OpenAIJson.Double(openai, "temperature") ?? 0d;
             content.Add(new StringContent(temperature.ToString(CultureInfo.InvariantCulture)), "temperature");
-            foreach (var granularity in Granularities(openai.Value))
+        }
+
+        if (responseFormat == "verbose_json")
+        {
+            foreach (var granularity in granularities ?? Array.Empty<string>())
             {
                 content.Add(new StringContent(granularity), "timestamp_granularities[]");
             }
@@ -411,6 +447,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             new OpenAITranscriptionCall(new AudioInput(call.Audio, call.MediaType, null))
             {
                 ProviderOptions = call.ProviderOptions,
+                TimestampGranularities = call.TimestampGranularities,
                 Headers = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
             },
             cancellationToken).ConfigureAwait(false);
@@ -421,7 +458,8 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             result.DurationInSeconds,
             result.Warnings.Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details)).ToList(),
             result.ProviderMetadata,
-            new ProviderResponse(result.Response.Headers, OpenAIJson.Parse(result.Response.Body), timestamp: result.Response.Timestamp.UtcDateTime, modelId: result.Response.ModelId));
+            new ProviderResponse(result.Response.Headers, OpenAIJson.Parse(result.Response.Body), timestamp: result.Response.Timestamp.UtcDateTime, modelId: result.Response.ModelId),
+            result.Words);
     }
 
     /// <summary>Starts a realtime streaming transcription over the OpenAI Realtime WebSocket. Maps to <c>doStream</c>.</summary>
@@ -675,12 +713,12 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         return json.ToJsonString();
     }
 
-    private static IReadOnlyList<string> Granularities(JsonElement openai)
+    private static IReadOnlyList<string>? Granularities(JsonElement openai)
     {
         var granularities = OpenAIJson.Child(openai, "timestampGranularities");
         if (granularities == null || granularities.Value.ValueKind != JsonValueKind.Array)
         {
-            return new[] { "segment" };
+            return null;
         }
 
         var values = new List<string>();
