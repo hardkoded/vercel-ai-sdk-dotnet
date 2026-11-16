@@ -19,6 +19,9 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
 {
     private const string Grok15 = "grok-imagine-video-1.5";
 
+    // Generous bound for a `{status, progress}` payload of ~50 bytes.
+    private const long MaxPendingBodyBytes = 1024 * 1024;
+
     private static readonly Dictionary<string, string> ResolutionMap = new(StringComparer.Ordinal)
     {
         ["1920x1080"] = "1080p",
@@ -168,7 +171,9 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                 headers,
                 cancellationToken,
                 ProviderExchange.DownloadClient(_provider.Options),
-                ProviderExchange.UserAgentOnly(headers)).ConfigureAwait(false);
+                ProviderExchange.UserAgentOnly(headers),
+                failedResponseHandler: XaiError.FailedResponseHandler,
+                maxPendingBodyBytes: MaxPendingBodyBytes).ConfigureAwait(false);
         }
         catch (ApiException exception) when (hasUploadUrl)
         {
