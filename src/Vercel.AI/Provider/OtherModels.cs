@@ -312,6 +312,12 @@ public sealed class SpeechCallOptions
 
     /// <summary>ISO 639-1 language code such as <c>en</c>, or <c>auto</c> for detection. Provider support varies. Maps to <c>language</c>.</summary>
     public string? Language { get; set; }
+
+    /// <summary>Additional provider-specific options, keyed by provider name. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers for this call. They override the provider headers. Maps to <c>headers</c>.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 }
 
 /// <summary>Speech model specification.</summary>

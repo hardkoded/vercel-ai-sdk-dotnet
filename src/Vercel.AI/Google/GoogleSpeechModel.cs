@@ -158,6 +158,8 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
             Speed = options.Speed,
             Language = options.Language,
             OutputFormat = options.OutputFormat,
+            ProviderOptions = options.ProviderOptions,
+            Headers = options.Headers,
         }, cancellationToken).ConfigureAwait(false);
         return new SpeechResult(result.Audio, result.MediaType, null);
     }
