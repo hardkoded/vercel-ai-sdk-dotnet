@@ -37,6 +37,8 @@ public sealed class PingForwardingTests
         var chunks = await ReadAsync(result);
 
         Assert.Single(chunks.OfType<PingPart>());
+        Assert.Empty(chunks.OfType<RawPart>());
+        Assert.False(model.Calls[0].IncludeRawChunks);
         Assert.Equal("ping", chunks.OfType<PingPart>().Single().Type);
         Assert.Empty((await result.Steps)[0].Content);
         var uiChunks = new List<System.Text.Json.Nodes.JsonObject>();
