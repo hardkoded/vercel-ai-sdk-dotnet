@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Anthropic;
+using Vercel.AI.Operations;
 using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests.Anthropic.AnthropicFiles;
@@ -24,6 +25,17 @@ public sealed class UploadFileTests
         Assert.Equal(HttpMethod.Post, handler.Calls[0].Method);
         Assert.Equal("https://api.anthropic.com/v1/files", handler.Calls[0].Uri.AbsoluteUri);
         Assert.Equal("files-api-2025-04-14", handler.Calls[0].Header("anthropic-beta"));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "rejects stream data at runtime and cancels the stream", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
+    public async Task Rejects_stream_data_at_runtime_and_cancels_the_stream()
+    {
+        var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
+        var stream = new UploadStream();
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => files.UploadFileAsync(new UploadFileCall(new UploadData("stream", stream), "application/octet-stream", null, CancellationToken.None, null, null), CancellationToken.None)).ConfigureAwait(false);
+        Assert.True(stream.Cancelled);
+        Assert.Empty(handler.Calls);
     }
 
     [Fact]
