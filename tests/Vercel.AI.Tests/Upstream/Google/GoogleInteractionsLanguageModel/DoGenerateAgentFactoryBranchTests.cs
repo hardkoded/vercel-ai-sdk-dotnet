@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Google;
 using Vercel.AI.Provider;
@@ -10,8 +11,7 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel.doGenerate</c> &gt; <c>agent factory branch</c>.
-/// Not ported: the <c>agentConfig</c> tests, <c>emits file_search tools when an agent is set</c>, and the <c>environment</c> tests, because the port
-/// has no <c>agentConfig</c> or <c>environment</c> provider option.
+/// The nested <c>environment</c> describe is <see cref="DoGenerateAgentFactoryBranchEnvironmentTests"/>.
 /// </summary>
 public sealed class DoGenerateAgentFactoryBranchTests
 {
@@ -74,6 +74,46 @@ public sealed class DoGenerateAgentFactoryBranchTests
         await Agent(handler).DoGenerateAsync(Options(), CancellationToken.None);
 
         Assert.False(JsonNode.Parse(handler.Bodies[0])!.AsObject().ContainsKey("generation_config"));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "emits agent_config with type \"deep-research\" and the renamed snake_case fields", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_agent_config_with_type_deep_research_and_the_renamed_snake_case_fields()
+    {
+        var handler = Basic();
+
+        await Agent(handler).DoGenerateAsync(Options("{\"google\":{\"agentConfig\":{\"type\":\"deep-research\",\"thinkingSummaries\":\"auto\",\"visualization\":\"auto\",\"collaborativePlanning\":true}}}"), CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"type\":\"deep-research\",\"thinking_summaries\":\"auto\",\"visualization\":\"auto\",\"collaborative_planning\":true}"), body["agent_config"]));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "emits agent_config with type \"dynamic\" verbatim", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_agent_config_with_type_dynamic_verbatim()
+    {
+        var handler = Basic();
+
+        await Agent(handler).DoGenerateAsync(Options("{\"google\":{\"agentConfig\":{\"type\":\"dynamic\"}}}"), CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"type\":\"dynamic\"}"), body["agent_config"]));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "emits file_search tools when an agent is set", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_file_search_tools_when_an_agent_is_set()
+    {
+        var handler = Basic();
+        var options = Options("{\"google\":{\"background\":true}}");
+        options.Tools = [LanguageModelTool.ProviderDefined("google.file_search", "file_search", JsonDocument.Parse("{\"fileSearchStoreNames\":[\"fileSearchStores/x\"]}").RootElement.Clone())];
+
+        var result = await Agent(handler).DoGenerateAsync(options, CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("[{\"type\":\"file_search\",\"file_search_store_names\":[\"fileSearchStores/x\"]}]"), body["tools"]));
+        Assert.True((bool?)body["background"]);
+        Assert.DoesNotContain(result.Warnings, warning => warning.Type == "other" && warning.Message.Contains("tools"));
     }
 
     [Fact]

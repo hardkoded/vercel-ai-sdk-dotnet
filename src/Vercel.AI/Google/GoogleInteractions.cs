@@ -349,6 +349,13 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
         }
 
+        PrepareGoogleInteractionsToolsResult? preparedTools = null;
+        if (options.Tools is { Count: > 0 })
+        {
+            preparedTools = GoogleInteractionsTools.Prepare(options.Tools, options.ToolChoice);
+            warnings.AddRange(preparedTools.ToolWarnings);
+        }
+
         // `response_format` is an array of entries. A JSON call-level response format adds one text entry.
         JsonArray? responseFormat = null;
         if (options.JsonResponse)
@@ -377,15 +384,11 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
         input[_isAgent ? "agent" : "model"] = ModelId;
         GoogleJson.Set(input, "labels", labels);
+        GoogleJson.Set(input, "tools", preparedTools?.Tools);
         GoogleJson.Set(input, "response_format", responseFormat);
         GoogleJson.Set(input, "previous_interaction_id", previousInteractionId);
         GoogleJson.Set(input, "service_tier", serviceTier);
         GoogleJson.Set(input, "store", store);
-        if (Background(options))
-        {
-            input["background"] = true;
-        }
-
         if (_isAgent)
         {
             var dropped = new List<string>();
@@ -428,13 +431,160 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
             GoogleJson.Set(generationConfig, "thinking_level", mappedLevel);
             GoogleJson.Set(generationConfig, "thinking_summaries", thinkingSummaries);
+            GoogleJson.Set(generationConfig, "tool_choice", preparedTools?.ToolChoice);
             if (generationConfig.Count > 0)
             {
                 input["generation_config"] = generationConfig;
             }
         }
 
+        if (_isAgent && GoogleOption(options, "agentConfig") is { } agentConfig)
+        {
+            GoogleJson.Set(input, "agent_config", AgentConfig(agentConfig));
+        }
+
+        if (GoogleOption(options, "environment") is { } environment)
+        {
+            if (!_isAgent)
+            {
+                warnings.Add(new CallWarning("other", "google.interactions: environment is only supported when an agent is set; environment will be omitted from the request body."));
+            }
+            else
+            {
+                GoogleJson.Set(input, "environment", Environment(environment));
+            }
+        }
+
+        if (Background(options))
+        {
+            input["background"] = true;
+        }
+
         return (input, warnings);
+    }
+
+    // `providerOptions.google.agentConfig`: a `deep-research` config renames its fields to snake_case, a `dynamic` config is `{ type: 'dynamic' }`.
+    private static JsonObject? AgentConfig(JsonElement config)
+    {
+        if (config.ValueKind != JsonValueKind.Object)
+        {
+            throw new AiSdkException("providerOptions.google.agentConfig must be an object.");
+        }
+
+        var type = config.TryGetProperty("type", out var typeValue) && typeValue.ValueKind == JsonValueKind.String ? typeValue.GetString() : null;
+        switch (type)
+        {
+            case "deep-research":
+                var result = new JsonObject { ["type"] = "deep-research" };
+                CopyOption(result, "thinking_summaries", config, "thinkingSummaries", "auto", "none");
+                CopyOption(result, "visualization", config, "visualization", "off", "auto");
+                if (config.TryGetProperty("collaborativePlanning", out var planning) && planning.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                {
+                    result["collaborative_planning"] = planning.GetBoolean();
+                }
+
+                return result;
+            case "dynamic":
+                return new JsonObject { ["type"] = "dynamic" };
+            default:
+                throw new AiSdkException("providerOptions.google.agentConfig.type must be one of: dynamic, deep-research.");
+        }
+    }
+
+    private static void CopyOption(JsonObject target, string key, JsonElement source, string name, params string[] allowed)
+    {
+        if (source.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
+        {
+            var text = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            if (text == null || Array.IndexOf(allowed, text) < 0)
+            {
+                throw new AiSdkException("providerOptions.google.agentConfig." + name + " must be one of: " + string.Join(", ", allowed) + ".");
+            }
+
+            target[key] = text;
+        }
+    }
+
+    // `providerOptions.google.environment`: a string is `remote` or an existing environment id; an object provisions a remote sandbox.
+    private static JsonNode? Environment(JsonElement environment)
+    {
+        if (environment.ValueKind == JsonValueKind.String)
+        {
+            return environment.GetString();
+        }
+
+        if (environment.ValueKind != JsonValueKind.Object
+            || !environment.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String || type.GetString() != "remote")
+        {
+            throw new AiSdkException("providerOptions.google.environment must be a string or an object with type \"remote\".");
+        }
+
+        var result = new JsonObject { ["type"] = "remote" };
+        if (environment.TryGetProperty("sources", out var sources) && sources.ValueKind == JsonValueKind.Array)
+        {
+            var list = new JsonArray();
+            foreach (var source in sources.EnumerateArray())
+            {
+                var kind = source.ValueKind == JsonValueKind.Object ? Str(source, "type") : null;
+                var entry = new JsonObject { ["type"] = kind };
+                if (kind == "inline")
+                {
+                    entry["content"] = Str(source, "content");
+                    entry["target"] = Str(source, "target");
+                }
+                else if (kind is "gcs" or "repository")
+                {
+                    entry["source"] = Str(source, "source");
+                    GoogleJson.Set(entry, "target", Str(source, "target"));
+                }
+                else
+                {
+                    throw new AiSdkException("providerOptions.google.environment.sources[].type must be one of: gcs, repository, inline.");
+                }
+
+                list.Add(entry);
+            }
+
+            if (list.Count > 0)
+            {
+                result["sources"] = list;
+            }
+        }
+
+        if (environment.TryGetProperty("network", out var network) && network.ValueKind != JsonValueKind.Null)
+        {
+            if (network.ValueKind == JsonValueKind.String && network.GetString() == "disabled")
+            {
+                result["network"] = "disabled";
+            }
+            else if (network.ValueKind == JsonValueKind.Object && network.TryGetProperty("allowlist", out var allowlist) && allowlist.ValueKind == JsonValueKind.Array)
+            {
+                var entries = new JsonArray();
+                foreach (var item in allowlist.EnumerateArray())
+                {
+                    var entry = new JsonObject { ["domain"] = item.ValueKind == JsonValueKind.Object ? Str(item, "domain") : null };
+                    if (item.TryGetProperty("transform", out var transform) && transform.ValueKind != JsonValueKind.Null)
+                    {
+                        entry["transform"] = JsonNode.Parse(transform.GetRawText());
+                    }
+
+                    entries.Add(entry);
+                }
+
+                result["network"] = new JsonObject { ["allowlist"] = entries };
+            }
+            else
+            {
+                throw new AiSdkException("providerOptions.google.environment.network must be \"disabled\" or an object with an allowlist.");
+            }
+        }
+
+        return result;
+    }
+
+    private static string? Str(JsonElement node, string name)
+    {
+        return node.ValueKind == JsonValueKind.Object && node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     }
 
     private static void AddIf(List<string> list, bool condition, string name)
