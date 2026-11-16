@@ -79,11 +79,15 @@ internal static class Generation
         Instructions? initialInstructions,
         IReadOnlyList<ModelMessage> initialMessages,
         IReadOnlyList<ModelMessage> responseMessages,
+        IReadOnlyList<UserModelMessage> steeringMessages,
         ref Instructions? instructions,
         ref List<ModelMessage> messages,
         ref int instructionCount)
     {
-        var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.Skip(instructionCount).ToArray(), model, instructions, initialInstructions, initialMessages, responseMessages.ToArray()));
+        var update = options.PrepareStep?.Invoke(new PrepareStepContext(steps.Count, steps, messages.Skip(instructionCount).ToArray(), model, instructions, initialInstructions, initialMessages, responseMessages.ToArray())
+        {
+            ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
+        });
         if (update?.Instructions != null || update?.Messages != null)
         {
             instructions = update.Instructions ?? instructions;
@@ -96,6 +100,51 @@ internal static class Generation
         }
 
         return update;
+    }
+
+    // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
+    // only for a waiting steering message, and `endReason` says why the waiting messages are not delivered when the loop ends.
+    private static bool ShouldStartNextStep(StepResult step, List<StepResult> steps, StopCondition stop, SteeringRun? steeringRun, ref SteeringNotDeliveredReason endReason)
+    {
+        if (step.FinishReason == FinishReason.Interrupted)
+        {
+            return false;
+        }
+
+        if (HasClientToolCall(step))
+        {
+            // Continue only after all client tool calls have been executed or denied:
+            if (!ToolExecution.IsToolExecutionAllowedFinishReason(step.FinishReason) || HasUnsettledToolCall(step))
+            {
+                endReason = SteeringNotDeliveredReason.WaitingForToolResults;
+                return false;
+            }
+        }
+        else
+        {
+            // queued messages wait for a task that was not cut off:
+            var isTruncated = step.FinishReason is FinishReason.Length or FinishReason.ContentFilter;
+            if (steeringRun?.HasPendingMessages() != true && (isTruncated || steeringRun?.PromoteQueuedMessage() != true))
+            {
+                return false;
+            }
+
+            // steering messages do not continue a failed step:
+            if (step.FinishReason == FinishReason.Error)
+            {
+                endReason = SteeringNotDeliveredReason.Error;
+                return false;
+            }
+        }
+
+        // continue until a stop condition is met:
+        if (stop.ShouldStop(steps))
+        {
+            endReason = SteeringNotDeliveredReason.StopCondition;
+            return false;
+        }
+
+        return true;
     }
 
     public static LanguageModelCallOptions CallOptions(GenerateTextOptions options, IReadOnlyList<ModelMessage> prompt)
@@ -131,6 +180,7 @@ internal static class Generation
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
         var cancellationToken = timeouts?.Token ?? callerToken;
+        var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         try
         {
             ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
@@ -146,15 +196,22 @@ internal static class Generation
             var steps = new List<StepResult>();
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
+            // why waiting steering messages are not delivered when the loop ends:
+            var steeringEndReason = SteeringNotDeliveredReason.Finished;
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, ref instructions, ref messages, ref instructionCount);
+                var steeringMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                messages.AddRange(steeringMessages);
+                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, steeringMessages, ref instructions, ref messages, ref instructionCount);
                 if (update?.Model != null)
                 {
                     current = update.Model;
                 }
+
+                // steering messages are delivered when they are in the messages that are sent to the model after prepareStep:
+                var deliveredSteeringMessages = steeringRun?.ResolveTakenMessages(steps.Count, messages).Select(delivered => delivered.Message).ToArray();
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
                 var callOptions = CallOptions(options, messages.ToArray());
@@ -190,19 +247,20 @@ internal static class Generation
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse)).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()), LanguageModelRequestMetadata.Empty, GeneratedResponseInfo(generated, current), ParseResponseBody(generated.RawResponse), steeringMessages: deliveredSteeringMessages).ConfigureAwait(false);
                 steps.Add(step);
                 if (options.OnStepEnd != null)
                 {
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasUnsettledToolCall(step) || stop.ShouldStop(steps))
+                if (!ShouldStartNextStep(step, steps, stop, steeringRun, ref steeringEndReason))
                 {
                     break;
                 }
             }
 
+            steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
             var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
             if (telemetry != null && scope != null)
@@ -218,8 +276,15 @@ internal static class Generation
 
             return result;
         }
-        catch (Exception exception) when (exception is not ApiUserAbortException)
+        catch (ApiUserAbortException)
         {
+            steeringRun?.End(SteeringNotDeliveredReason.Aborted);
+            throw;
+        }
+        catch (Exception exception)
+        {
+            steeringRun?.End(callerToken.IsCancellationRequested || timeouts?.Token.IsCancellationRequested == true ? SteeringNotDeliveredReason.Aborted : SteeringNotDeliveredReason.Error);
+
             // An expired timeout aborts the call. Like upstream, the call fails with the timeout reason.
             var error = exception is OperationCanceledException or ApiTimeoutException && !callerToken.IsCancellationRequested && timeouts?.Expired is { } expired ? expired : exception;
             if (options.OnError != null)
@@ -264,6 +329,26 @@ internal static class Generation
         IAiTelemetry? telemetry,
         CancellationToken cancellationToken)
     {
+        var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
+        try
+        {
+            return StartStream(model, options, telemetry, steeringRun, cancellationToken);
+        }
+        catch
+        {
+            // the call can fail before the stream starts, e.g. for invalid settings:
+            steeringRun?.End(SteeringNotDeliveredReason.Error);
+            throw;
+        }
+    }
+
+    private static StreamTextResult StartStream(
+        ILanguageModel model,
+        StreamTextOptions options,
+        IAiTelemetry? telemetry,
+        SteeringRun? steeringRun,
+        CancellationToken cancellationToken)
+    {
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         var buffer = new PartBuffer();
         var textSource = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -271,7 +356,7 @@ internal static class Generation
         var usageSource = new TaskCompletionSource<LanguageModelUsage>(TaskCreationOptions.RunContinuationsAsynchronously);
         var stepsSource = new TaskCompletionSource<IReadOnlyList<StepResult>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var outputSource = new TaskCompletionSource<JsonElement?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var abort = new StreamAbort();
+        var abort = new StreamAbort { SteeringRun = steeringRun };
         var timeouts = CallTimeouts.Create(options.Timeout, options.AbortSignal, true, cancellationToken);
         var signal = timeouts?.Signal ?? options.AbortSignal;
         if (signal != null)
@@ -287,7 +372,7 @@ internal static class Generation
         }
 
         buffer.OnConsumerStop = abort.Stop;
-        _ = Task.Run(() => ProduceAsync(model, options, telemetry, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource, outputSource));
+        _ = Task.Run(() => ProduceAsync(model, options, telemetry, steeringRun, buffer, abort, timeouts, textSource, finishSource, usageSource, stepsSource, outputSource));
         return new StreamTextResult(buffer, textSource.Task, finishSource.Task, usageSource.Task, stepsSource.Task, outputSource.Task) { Tools = options.Tools };
     }
 
@@ -295,6 +380,7 @@ internal static class Generation
         ILanguageModel model,
         StreamTextOptions options,
         IAiTelemetry? telemetry,
+        SteeringRun? steeringRun,
         PartBuffer buffer,
         StreamAbort abort,
         CallTimeouts? timeouts,
@@ -320,14 +406,26 @@ internal static class Generation
             buffer.Add(new StartPart());
             var textPartIds = new PartIdReserver();
             var reasoningPartIds = new PartIdReserver();
+            // why waiting steering messages are not delivered when the stream ends:
+            var steeringEndReason = SteeringNotDeliveredReason.Finished;
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 timeouts?.StartStep();
-                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, ref instructions, ref messages, ref instructionCount);
+                var steeringMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
+                messages.AddRange(steeringMessages);
+                var update = PrepareStep(options, steps, current, initialInstructions, initialMessages, responseMessages, steeringMessages, ref instructions, ref messages, ref instructionCount);
                 if (update?.Model != null)
                 {
                     current = update.Model;
+                }
+
+                // steering messages are delivered when they are in the messages that are sent to the model after prepareStep,
+                // and they are streamed before the step output:
+                var deliveredSteeringMessages = steeringRun?.ResolveTakenMessages(steps.Count, messages) ?? Array.Empty<DeliveredSteeringMessage>();
+                foreach (var delivered in deliveredSteeringMessages)
+                {
+                    buffer.Add(new SteeringMessagePart(delivered.Id, delivered.Message, steps.Count));
                 }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
@@ -382,6 +480,7 @@ internal static class Generation
                         await options.OnError(exception, cancellationToken).ConfigureAwait(false);
                     }
 
+                    steeringRun?.End(SteeringNotDeliveredReason.Error);
                     if (steps.Count == 0)
                     {
                         var noOutput = new NoOutputGeneratedException("No output generated. Check the stream for errors.");
@@ -710,7 +809,7 @@ internal static class Generation
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
                 var stepResponse = new LanguageModelResponseMetadata(stepResponseId, stepResponseTimestamp, stepResponseModelId, streamResult.Response?.Headers);
                 var approvalParts = new List<TextStreamPart>();
-                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts, preliminary => buffer.Add(new ToolResultPart(preliminary))).ConfigureAwait(false);
+                var step = await FinishStepAsync(generated, options, messages, instructionCount, responseMessages, current, cancellationToken, new StepTiming(now, stepStartMs, responseTimeMs, outputChunkTimes), stepRequest, stepResponse, null, approvalParts, deliveredSteeringMessages.Select(delivered => delivered.Message).ToArray(), preliminary => buffer.Add(new ToolResultPart(preliminary))).ConfigureAwait(false);
                 foreach (var approvalPart in approvalParts)
                 {
                     buffer.Add(approvalPart);
@@ -733,12 +832,13 @@ internal static class Generation
                     await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!ToolExecution.IsToolExecutionAllowedFinishReason(generated.FinishReason) || !HasClientToolCall(step) || HasUnsettledToolCall(step) || stop.ShouldStop(steps))
+                if (!ShouldStartNextStep(step, steps, stop, steeringRun, ref steeringEndReason))
                 {
                     break;
                 }
             }
 
+            steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
             var result = await ToResultAsync(steps, responseMessages, options, cancellationToken).ConfigureAwait(false);
             if (telemetry != null && scope != null)
@@ -768,6 +868,7 @@ internal static class Generation
         catch (Exception exception)
         {
             abort.TryFinish();
+            steeringRun?.End(abort.Stopped || abort.Error != null ? SteeringNotDeliveredReason.Aborted : SteeringNotDeliveredReason.Error);
             if (abort.Stopped)
             {
                 // The consumer stopped reading. Nobody waits for the stream, so there is nothing to report.
@@ -1181,6 +1282,7 @@ internal static class Generation
         LanguageModelResponseMetadata responseInfo,
         JsonElement? responseBody,
         List<TextStreamPart>? approvalParts = null,
+        IReadOnlyList<UserModelMessage>? steeringMessages = null,
         Action<ExecutedTool>? onPreliminaryToolResult = null)
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -1394,7 +1496,7 @@ internal static class Generation
             responseMessages.Skip(stepResponseStart).ToArray(),
             responseBody);
         var performance = StepPerformanceCalculator.Create(timing.Now() - timing.StartMs, timing.ResponseTimeMs, timing.OutputChunkTimesMs, toolExecutionMs, generated.Usage);
-        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason) { StructuredOutputText = generated.StructuredOutputText };
+        return new StepResult(generated.Text, reasoning, toolCalls, toolResults, generated.FinishReason, generated.Usage, sources, generated.ProviderMetadata, generated.Warnings, files, model.Provider, model.ModelId, content, performance, stepRequest, response, generated.RawFinishReason) { StructuredOutputText = generated.StructuredOutputText, ExperimentalSteeringMessages = steeringMessages is { Count: > 0 } ? steeringMessages : null };
     }
 
     // Parses the tool calls of a model response with the call's tools, repair function, and input refinements. A call that
@@ -2332,6 +2434,9 @@ internal sealed class StreamAbort
 
     public Action? SignalCleanup { get; set; }
 
+    // The steering messages that are still waiting cannot be delivered once the stream is aborted or stopped.
+    public SteeringRun? SteeringRun { get; set; }
+
     public Exception? Error => _outcome as Exception;
 
     public bool Stopped { get; private set; }
@@ -2357,6 +2462,7 @@ internal sealed class StreamAbort
         }
         finally
         {
+            SteeringRun?.End(SteeringNotDeliveredReason.Aborted);
             Volatile.Read(ref _disposal)?.Abandon();
             _signal.TrySetResult(true);
         }
@@ -2398,6 +2504,7 @@ internal sealed class StreamAbort
         }
         finally
         {
+            SteeringRun?.End(SteeringNotDeliveredReason.Aborted);
             Volatile.Read(ref _disposal)?.Abandon();
             _signal.TrySetResult(true);
         }

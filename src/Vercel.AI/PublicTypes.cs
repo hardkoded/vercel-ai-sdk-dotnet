@@ -266,6 +266,12 @@ public sealed class StepResult
     /// <summary>Text generated in this step.</summary>
     public string Text { get; }
 
+    /// <summary>
+    /// Experimental. The user messages that were sent with <see cref="GenerateTextOptions.ExperimentalSteering"/> and added to the input of this step.
+    /// Null when the step received no steering messages. Maps to <c>experimental_steeringMessages</c>.
+    /// </summary>
+    public IReadOnlyList<UserModelMessage>? ExperimentalSteeringMessages { get; internal init; }
+
     // The model call result's StructuredOutputText: the text a JSON output parses instead of Text.
     internal string? StructuredOutputText { get; init; }
 
@@ -598,6 +604,14 @@ public sealed class PrepareStepContext
 
     /// <summary>Steps already completed.</summary>
     public IReadOnlyList<StepResult> Steps { get; }
+
+    /// <summary>
+    /// Experimental. The user messages that were sent with <see cref="GenerateTextOptions.ExperimentalSteering"/> and added to <see cref="Messages"/> for the current step.
+    /// Null when the step received no steering messages. <see cref="Messages"/> already contains them. If you return a <see cref="PrepareStepUpdate.Messages"/>
+    /// override that is rebuilt from other fields, e.g. <see cref="InitialMessages"/> and <see cref="ResponseMessages"/>, add them back together with the
+    /// steering messages of previous steps from <see cref="Steps"/>. Maps to <c>experimental_steeringMessages</c>.
+    /// </summary>
+    public IReadOnlyList<UserModelMessage>? ExperimentalSteeringMessages { get; init; }
 }
 
 /// <summary>Optional changes applied before a step.</summary>
@@ -733,6 +747,12 @@ public class GenerateTextOptions
 
     /// <summary>Called before each step. Maps to <c>prepareStep</c>.</summary>
     public Func<PrepareStepContext, PrepareStepUpdate?>? PrepareStep { get; set; }
+
+    /// <summary>
+    /// Experimental. A steering object created with <see cref="Vercel.AI.GenerateText.Steering.ExperimentalCreateSteering"/> that adds user messages to the generation
+    /// at the next step boundary. A steering object can only be used for one generation. Maps to <c>experimental_steering</c>.
+    /// </summary>
+    public Vercel.AI.GenerateText.ISteering? ExperimentalSteering { get; set; }
 
     /// <summary>
     /// Called after each provider model call returns, before tools run and before <see cref="OnStepEnd"/>.
@@ -1434,7 +1454,7 @@ public sealed class CustomPart : TextStreamPart
 
 /// <summary>
 /// Experimental. A steering message that was added to the run before the step with the given number. Streamed before the output of that step.
-/// Maps to the <c>steering-message</c> stream part. <c>streamText</c> does not emit it yet (issue #1189). Build it to convert your own streams.
+/// Maps to the <c>steering-message</c> stream part. <c>StreamText</c> emits it when it delivers a message sent with <see cref="GenerateTextOptions.ExperimentalSteering"/>.
 /// </summary>
 public sealed class SteeringMessagePart : TextStreamPart
 {

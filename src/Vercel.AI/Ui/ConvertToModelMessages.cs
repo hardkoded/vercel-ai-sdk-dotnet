@@ -177,6 +177,13 @@ public static class UIMessageConversion
                 ProcessBlock(block, options, modelMessages);
                 block = new List<UIMessagePart>();
             }
+            else if (part is SteeringMessageUIPart steering)
+            {
+                // steering messages were added to the run between two steps:
+                ProcessBlock(block, options, modelMessages);
+                block = new List<UIMessagePart>();
+                modelMessages.Add(new UserModelMessage(ConvertUserContentUIParts(steering.Parts)));
+            }
             else if (part is CustomContentUIPart or TextUIPart or ReasoningUIPart or ReasoningFileUIPart or FileUIPart or ToolUIPart or DataUIPart)
             {
                 block.Add(part);
@@ -184,6 +191,25 @@ public static class UIMessageConversion
         }
 
         ProcessBlock(block, options, modelMessages);
+    }
+
+    private static List<UserContentPart> ConvertUserContentUIParts(IReadOnlyList<UIMessagePart> parts)
+    {
+        var content = new List<UserContentPart>();
+        foreach (var part in parts)
+        {
+            switch (part)
+            {
+                case TextUIPart text:
+                    content.Add(new TextContentPart(text.Text) { ProviderOptions = text.ProviderMetadata });
+                    break;
+                case FileUIPart file:
+                    content.Add(ToFileContentPart(file));
+                    break;
+            }
+        }
+
+        return content;
     }
 
     private static void ProcessBlock(List<UIMessagePart> block, ConvertToModelMessagesOptions? options, List<ModelMessage> modelMessages)

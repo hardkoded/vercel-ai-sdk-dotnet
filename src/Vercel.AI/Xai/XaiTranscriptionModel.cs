@@ -227,7 +227,7 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     {
         return new List<(string, string[]?)>
         {
-            ("model", modelId.Length > 0 ? new[] { modelId } : null),
+            ("model", XaiModelCatalog.GetXaiTranscriptionModelEntry(modelId).Model is { } model ? new[] { model } : null),
             ("sample_rate", options?.SampleRate is { } rate ? new[] { rate.ToString(CultureInfo.InvariantCulture) } : null),
             ("language", options?.Language is { } language ? new[] { language } : null),
             ("multichannel", options?.Multichannel is { } multichannel ? new[] { Bool(multichannel) } : null),
