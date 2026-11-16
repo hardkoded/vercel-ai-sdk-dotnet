@@ -117,7 +117,13 @@ public sealed class GladiaTranscriptionRequest
     /// <summary>Headers merged over the provider headers.</summary>
     public IDictionary<string, string>? Headers { get; set; }
 
-    /// <summary>Extra JSON fields sent with <c>audio_url</c>.</summary>
+    /// <summary>Provider options. The <c>gladia</c> object is read, with camelCase keys.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// Extra JSON fields sent with <c>audio_url</c>, in the snake_case names of the Gladia API. .NET-only: they are
+    /// merged over the fields built from <see cref="ProviderOptions"/>.
+    /// </summary>
     public JsonObject? Body { get; set; }
 
     /// <summary>
@@ -185,7 +191,7 @@ public sealed class GladiaTranscriptionResult
         string? language,
         double? durationInSeconds,
         JsonElement providerMetadata,
-        IReadOnlyList<string> warnings,
+        IReadOnlyList<ModelWarning> warnings,
         GladiaTranscriptionResponse response)
     {
         Text = text ?? string.Empty;
@@ -193,7 +199,7 @@ public sealed class GladiaTranscriptionResult
         Language = language;
         DurationInSeconds = durationInSeconds;
         ProviderMetadata = providerMetadata;
-        Warnings = warnings ?? Array.Empty<string>();
+        Warnings = warnings ?? Array.Empty<ModelWarning>();
         Response = response;
     }
 
@@ -213,7 +219,7 @@ public sealed class GladiaTranscriptionResult
     public JsonElement ProviderMetadata { get; }
 
     /// <summary>Warnings produced while building the request.</summary>
-    public IReadOnlyList<string> Warnings { get; }
+    public IReadOnlyList<ModelWarning> Warnings { get; }
 
     /// <summary>Response metadata.</summary>
     public GladiaTranscriptionResponse Response { get; }
@@ -399,6 +405,9 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
 
             var options = _provider.Options as GladiaOptions;
             ValidatePollingSettings(request?.PollIntervalMs, request?.PollTimeoutMs);
+
+            // Options are validated before the audio is uploaded.
+            var (args, warnings) = GetArgs(request);
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = Headers(request, includeKey: true);
             var form = new MultipartFormDataContent();
@@ -428,19 +437,20 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         null,
                         null,
                         uploaded.RootElement.Clone(),
-                        Array.Empty<string>(),
+                        warnings,
                         new GladiaTranscriptionResponse(started, ModelId, upload.Headers));
                 }
 
-                var body = request?.Body == null ? new JsonObject() : JsonNode.Parse(request.Body.ToJsonString()) as JsonObject ?? new JsonObject();
-                body["audio_url"] = audioUrl;
-
-                // `default` is the placeholder used when no model id is passed: omit the field
-                // and let the Gladia API fall back to its own default.
-                if (ModelId != "default" && !body.ContainsKey("model"))
+                var body = args;
+                if (request?.Body != null)
                 {
-                    body["model"] = ModelId;
+                    foreach (var pair in request.Body)
+                    {
+                        body[pair.Key] = pair.Value?.DeepClone();
+                    }
                 }
+
+                body["audio_url"] = audioUrl;
 
                 var initiated = await ProviderExchange.SendAsync(
                     _provider._httpClient,
@@ -458,12 +468,217 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                     }
 
                     var result = await PollAsync(resultUrl!, headers, request, cancellationToken).ConfigureAwait(false);
-                    return Parse(result.Body, result.Headers, started);
+                    return Parse(result.Body, result.Headers, started, warnings);
                 }
             }
         }
 
-        private GladiaTranscriptionResult Parse(string body, IReadOnlyDictionary<string, string> headers, DateTimeOffset started)
+        private (JsonObject Body, List<ModelWarning> Warnings) GetArgs(GladiaTranscriptionRequest? request)
+        {
+            var warnings = new List<ModelWarning>();
+            var body = new JsonObject();
+
+            // `default` is the placeholder used when no model id is passed: omit the field
+            // and let the Gladia API fall back to its own default (`solaria-1`).
+            if (ModelId != "default")
+            {
+                body["model"] = ModelId;
+            }
+
+            JsonElement? gladia = request?.ProviderOptions != null
+                && request.ProviderOptions.TryGetValue(ProviderId, out var provided)
+                && provided.ValueKind != JsonValueKind.Null
+                    ? provided
+                    : null;
+            if (gladia is { } options)
+            {
+                var error = ProviderOptionShape.Validate(options, GladiaTranscriptionModelOptions.GladiaTranscriptionModelOptionsShape(), false);
+                if (error != null)
+                {
+                    throw new InvalidArgumentError("providerOptions", options.GetRawText(), "invalid gladia provider options: " + error);
+                }
+
+                AddOptions(body, options, warnings);
+            }
+
+            if (ModelId == "solaria-3")
+            {
+                var languageConfig = body["language_config"] as JsonObject;
+                if ((languageConfig?["languages"] as JsonArray)?.Count != 1)
+                {
+                    warnings.Add(new OtherWarning(
+                        "The \"solaria-3\" model supports a single language only. Pass exactly one language in languageConfig.languages; Gladia may reject the request."));
+                }
+
+                if (languageConfig?["code_switching"]?.GetValue<bool>() == true)
+                {
+                    warnings.Add(new OtherWarning(
+                        "The \"solaria-3\" model does not support code switching; Gladia may reject the request."));
+                }
+            }
+
+            return (body, warnings);
+        }
+
+        private static void AddOptions(JsonObject body, JsonElement options, List<ModelWarning> warnings)
+        {
+            foreach (var feature in new[] { "contextPrompt", "moderation", "chapterization", "nameConsistency", "structuredDataExtraction", "structuredDataExtractionConfig", "displayMode" })
+            {
+                if (Has(options, feature))
+                {
+                    warnings.Add(new UnsupportedWarning(feature, "No longer supported by the Gladia v2 pre-recorded API; ignored."));
+                }
+            }
+
+            if (Has(options, "diarizationConfig") && Has(options.GetProperty("diarizationConfig"), "enhanced"))
+            {
+                warnings.Add(new UnsupportedWarning("diarizationConfig.enhanced", "No longer supported by the Gladia v2 pre-recorded API; ignored."));
+            }
+
+            foreach (var setting in new[] { "language", "detectLanguage", "enableCodeSwitching", "codeSwitchingConfig" })
+            {
+                if (Has(options, setting))
+                {
+                    warnings.Add(new DeprecatedWarning(
+                        setting,
+                        Has(options, "languageConfig")
+                            ? "Ignored because languageConfig is provided; remove this deprecated option."
+                            : "Use languageConfig instead."));
+                }
+            }
+
+            var resolved = GladiaTranscriptionOptionsResolution.ResolveCustomVocabulary(options, warnings);
+            if (resolved.CustomVocabulary is { } customVocabulary)
+            {
+                body["custom_vocabulary"] = customVocabulary;
+            }
+
+            Copy(body, options, "callback", "callback");
+            Copy(body, options, "subtitles", "subtitles");
+            Copy(body, options, "diarization", "diarization");
+            Copy(body, options, "translation", "translation");
+            Copy(body, options, "summarization", "summarization");
+            Copy(body, options, "namedEntityRecognition", "named_entity_recognition");
+            Copy(body, options, "customSpelling", "custom_spelling");
+            Copy(body, options, "sentimentAnalysis", "sentiment_analysis");
+            Copy(body, options, "audioToLlm", "audio_to_llm");
+            Copy(body, options, "piiRedaction", "pii_redaction");
+            Copy(body, options, "customMetadata", "custom_metadata");
+            Copy(body, options, "sentences", "sentences");
+            Copy(body, options, "punctuationEnhanced", "punctuation_enhanced");
+
+            JsonNode? vocabulary = null;
+            JsonElement? vocabularyConfig = Has(options, "customVocabularyConfig") ? options.GetProperty("customVocabularyConfig") : null;
+            if (vocabularyConfig is { } configured && Has(configured, "vocabulary"))
+            {
+                vocabulary = JsonNode.Parse(configured.GetProperty("vocabulary").GetRawText());
+            }
+            else if (resolved.Vocabulary != null)
+            {
+                vocabulary = resolved.Vocabulary;
+            }
+
+            if (vocabulary != null)
+            {
+                var config = new JsonObject { ["vocabulary"] = vocabulary };
+                if (vocabularyConfig is { } source)
+                {
+                    Copy(config, source, "defaultIntensity", "default_intensity");
+                }
+
+                body["custom_vocabulary_config"] = config;
+            }
+
+            var languageConfig = GladiaTranscriptionOptionsResolution.ResolveLanguageConfig(options);
+            if (languageConfig != null)
+            {
+                var language = new JsonObject();
+                if (languageConfig.Languages != null)
+                {
+                    language["languages"] = new JsonArray(languageConfig.Languages.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray());
+                }
+
+                if (languageConfig.CodeSwitching is { } codeSwitching)
+                {
+                    language["code_switching"] = codeSwitching;
+                }
+
+                body["language_config"] = language;
+            }
+
+            Nested(body, options, "callbackConfig", "callback_config", ["url", "url"], ["method", "method"]);
+            Nested(
+                body,
+                options,
+                "subtitlesConfig",
+                "subtitles_config",
+                ["formats", "formats"],
+                ["minimumDuration", "minimum_duration"],
+                ["maximumDuration", "maximum_duration"],
+                ["maximumCharactersPerRow", "maximum_characters_per_row"],
+                ["maximumRowsPerCaption", "maximum_rows_per_caption"],
+                ["style", "style"]);
+            Nested(body, options, "diarizationConfig", "diarization_config", ["numberOfSpeakers", "number_of_speakers"], ["minSpeakers", "min_speakers"], ["maxSpeakers", "max_speakers"]);
+            Nested(
+                body,
+                options,
+                "translationConfig",
+                "translation_config",
+                ["targetLanguages", "target_languages"],
+                ["model", "model"],
+                ["matchOriginalUtterances", "match_original_utterances"],
+                ["lipsync", "lipsync"],
+                ["contextAdaptation", "context_adaptation"],
+                ["context", "context"],
+                ["informal", "informal"]);
+            Nested(body, options, "summarizationConfig", "summarization_config", ["type", "type"]);
+            Nested(body, options, "customSpellingConfig", "custom_spelling_config", ["spellingDictionary", "spelling_dictionary"]);
+            Nested(body, options, "audioToLlmConfig", "audio_to_llm_config", ["prompts", "prompts"], ["model", "model"]);
+
+            if (Has(options, "piiRedactionConfig"))
+            {
+                if (!(Has(options, "piiRedaction") && options.GetProperty("piiRedaction").GetBoolean()))
+                {
+                    warnings.Add(new OtherWarning("piiRedactionConfig has no effect unless piiRedaction is true."));
+                }
+
+                Nested(body, options, "piiRedactionConfig", "pii_redaction_config", ["entityTypes", "entity_types"], ["processedTextType", "processed_text_type"]);
+            }
+        }
+
+        private static bool Has(JsonElement element, string name)
+        {
+            return element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null;
+        }
+
+        private static void Copy(JsonObject target, JsonElement source, string name, string key)
+        {
+            if (Has(source, name))
+            {
+                target[key] = JsonNode.Parse(source.GetProperty(name).GetRawText());
+            }
+        }
+
+        private static void Nested(JsonObject body, JsonElement options, string name, string key, params string[][] fields)
+        {
+            if (!Has(options, name))
+            {
+                return;
+            }
+
+            var source = options.GetProperty(name);
+            var nested = new JsonObject();
+            foreach (var field in fields)
+            {
+                Copy(nested, source, field[0], field[1]);
+            }
+
+            body[key] = nested;
+        }
+
+        private GladiaTranscriptionResult Parse(string body, IReadOnlyDictionary<string, string> headers, DateTimeOffset started, IReadOnlyList<ModelWarning> warnings)
         {
             using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body))
             {
@@ -512,7 +727,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                         language,
                         duration,
                         wrapped.RootElement.Clone(),
-                        Array.Empty<string>(),
+                        warnings,
                         new GladiaTranscriptionResponse(started, ModelId, headers));
                 }
             }
@@ -541,8 +756,8 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 callHeaders = stripped;
             }
 
-            var timeoutMs = request?.PollTimeoutMs ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
-            var intervalMs = request?.PollIntervalMs ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
+            var timeoutMs = request?.PollTimeoutMs ?? ProviderPollSetting(request, "pollTimeoutMs") ?? options?.PollTimeoutMs ?? DefaultPollTimeoutMs;
+            var intervalMs = request?.PollIntervalMs ?? ProviderPollSetting(request, "pollIntervalMs") ?? options?.PollIntervalMs ?? DefaultPollIntervalMs;
             var started = Now(options);
             while (true)
             {
@@ -598,6 +813,17 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                     await Task.Delay(intervalMs, cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        private static int? ProviderPollSetting(GladiaTranscriptionRequest? request, string name)
+        {
+            return request?.ProviderOptions != null
+                && request.ProviderOptions.TryGetValue(ProviderId, out var gladia)
+                && gladia.ValueKind == JsonValueKind.Object
+                && gladia.TryGetProperty(name, out var value)
+                && value.ValueKind == JsonValueKind.Number
+                    ? value.GetInt32()
+                    : null;
         }
 
         private static DateTimeOffset Now(GladiaOptions? options)

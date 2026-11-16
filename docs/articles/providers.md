@@ -1149,6 +1149,35 @@ DeepSeek bills successful searches and page reads per operation. The counts are 
 
 A failed response (`status: "failed"` or an `error` object) throws an `ApiException` with the DeepSeek message. Its status code comes from the error code: `rate_limit_exceeded` and `rate_limit_error` are 429 and retryable, `insufficient_quota` is 429, `authentication_error` and `invalid_api_key` are 401, `permission_error` is 403, `bad_request`, `context_length_exceeded`, and `invalid_request_error` are 400, `timeout` and `timeout_error` are 504 and retryable, and every other code is 500 and retryable. A stream reports the same failure as an `error` part and ends with the `error` finish reason.
 
+## Gladia transcription options
+
+`GladiaProvider.Transcription()` uses the default Gladia model. Pass a model id to pick another one: `provider.TranscriptionModel("solaria-3")`. The id is forwarded as `model` in the pre-recorded request, kept in `Response.ModelId`, and kept through `Serialize()` and `Deserialize()`. The `default` id sends no `model` field, so Gladia chooses its own default (`solaria-1`). The provider also sends an `x-gladia-version: ai-sdk/<version>` header on every request. A header you set yourself wins.
+
+Set the Gladia pre-recorded options on `GladiaTranscriptionRequest.ProviderOptions["gladia"]`, with camelCase keys like upstream. The port maps them to the snake_case fields of the Gladia v2 API. Invalid options throw `InvalidArgumentError` (`invalid gladia provider options`) before the audio is uploaded.
+
+```csharp
+var options = JsonDocument.Parse("""
+    {
+      "languageConfig": { "languages": ["en"], "codeSwitching": false },
+      "piiRedaction": true,
+      "piiRedactionConfig": { "processedTextType": "MARKER" }
+    }
+    """).RootElement;
+
+var model = (GladiaProvider.GladiaTranscriptionModel)provider.TranscriptionModel("solaria-3");
+var result = await model.TranscribeAsync(
+    audio,
+    new GladiaTranscriptionRequest { ProviderOptions = new Dictionary<string, JsonElement> { ["gladia"] = options } },
+    cancellationToken);
+```
+
+- `languageConfig` (`languages`, `codeSwitching`) sets the language. `piiRedaction`, `piiRedactionConfig` (`entityTypes`, `processedTextType` of `MARKER` or `MASK`), the `batch` translation model with `lipsync`, `contextAdaptation`, `context`, and `informal`, and `audioToLlmConfig.model` are sent as given.
+- `language`, `detectLanguage`, `enableCodeSwitching`, and `codeSwitchingConfig` still work. They are translated to `languageConfig` and add a `DeprecatedWarning`. When `languageConfig` is set it wins, and the warning says so.
+- A `customVocabulary` array is translated to `customVocabulary: true` plus `customVocabularyConfig.vocabulary` with a `DeprecatedWarning`. Entries that are not a string or an object with a string `value` and correctly typed optional fields are dropped with a warning. An explicit `customVocabularyConfig.vocabulary` wins over the array.
+- `contextPrompt`, `moderation`, `chapterization`, `nameConsistency`, `structuredDataExtraction`, `structuredDataExtractionConfig`, `displayMode`, and `diarizationConfig.enhanced` are no longer in the Gladia v2 API. They are not sent and add an `UnsupportedWarning`.
+- `piiRedactionConfig` without `piiRedaction: true` adds a warning. The `solaria-3` model supports one language and no code switching, so other settings add a warning. The request is not changed.
+- All warnings are in `GladiaTranscriptionResult.Warnings`. `GladiaTranscriptionRequest.Body` (snake_case fields) remains a .NET-only way to add raw fields. It is merged over the fields built from the options.
+
 ## Gladia transcription polling
 
 `GladiaProvider.Transcription()` uploads the audio, starts a pre-recorded job, and polls its result URL until the job reports `done`. The polling budget defaults to 10 minutes (`600000` ms) and the interval between status checks to 1 second (`1000` ms). Long audio files and audio intelligence add-ons can need more than a minute, so raise the budget when you need to.

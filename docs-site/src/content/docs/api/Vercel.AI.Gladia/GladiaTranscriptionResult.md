@@ -28,13 +28,13 @@ Gladia transcription, including utterance metadata.
 ## Constructors
 
 <a id="Vercel_AI_Gladia_GladiaTranscriptionResult__ctor_"></a>
-<a id="Vercel_AI_Gladia_GladiaTranscriptionResult__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Gladia_GladiaTranscriptionSegment__System_String_System_Nullable_System_Double__System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyList_System_String__Vercel_AI_Gladia_GladiaTranscriptionResponse_"></a>
+<a id="Vercel_AI_Gladia_GladiaTranscriptionResult__ctor_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Gladia_GladiaTranscriptionSegment__System_String_System_Nullable_System_Double__System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_ModelWarning__Vercel_AI_Gladia_GladiaTranscriptionResponse_"></a>
 
 ### `GladiaTranscriptionResult(string, IReadOnlyList<GladiaTranscriptionSegment>, string?, double?, JsonElement, IReadOnlyList<string>, GladiaTranscriptionResponse)`
 
 
 ```csharp
-public GladiaTranscriptionResult(string text, IReadOnlyList<GladiaTranscriptionSegment> segments, string? language, double? durationInSeconds, JsonElement providerMetadata, IReadOnlyList<string> warnings, GladiaTranscriptionResponse response)
+public GladiaTranscriptionResult(string text, IReadOnlyList<GladiaTranscriptionSegment> segments, string? language, double? durationInSeconds, JsonElement providerMetadata, IReadOnlyList<ModelWarning> warnings, GladiaTranscriptionResponse response)
 ```
 
 
@@ -49,7 +49,7 @@ Creates a transcription result.
 | `language` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `durationInSeconds` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `providerMetadata` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
-| `warnings` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+| `warnings` | [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `response` | [GladiaTranscriptionResponse](/api/Vercel.AI.Gladia/GladiaTranscriptionResponse/) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L134)
@@ -165,12 +165,12 @@ Full transcript.
 
 
 ```csharp
-public IReadOnlyList<string> Warnings { get; }
+public IReadOnlyList<ModelWarning> Warnings { get; }
 ```
 
 
 Warnings produced while building the request.
 
-**Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+**Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L168)

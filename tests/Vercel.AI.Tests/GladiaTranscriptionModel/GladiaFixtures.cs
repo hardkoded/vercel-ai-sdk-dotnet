@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Gladia;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 
@@ -16,6 +17,25 @@ internal static class GladiaFixtures
     public static AudioInput Audio()
     {
         return new AudioInput(new byte[] { 1, 2, 3, 4 }, "audio/wav", "audio.wav");
+    }
+
+    public static GladiaTranscriptionRequest Options(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return new GladiaTranscriptionRequest
+        {
+            ProviderOptions = new Dictionary<string, JsonElement> { ["gladia"] = document.RootElement.Clone() },
+        };
+    }
+
+    public static GladiaProvider Provider(ParityHandler handler)
+    {
+        return GladiaProvider.Create(new GladiaOptions { ApiKey = "test-api-key", PollDelay = _ => Task.CompletedTask }, handler);
+    }
+
+    public static JsonObject InitBody(ParityHandler handler)
+    {
+        return JsonNode.Parse(handler.Calls[1].Text)!.AsObject();
     }
 
     public static JsonObject Result(bool metadata = false)

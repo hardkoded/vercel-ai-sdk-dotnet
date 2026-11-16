@@ -105,7 +105,7 @@ public sealed class PollingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves polling settings from providerOptions.gladia before provider settings", Coverage = UpstreamCoverage.Partial, Note = "The port passes the per-call settings as GladiaTranscriptionRequest properties; it has no providerOptions bag.", Commit = Commit)]
+    [UpstreamTest(Prefix + "resolves polling settings from providerOptions.gladia before provider settings", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Resolves_polling_settings_from_providerOptions_gladia_before_provider_settings()
     {
         var now = 0;
@@ -121,7 +121,7 @@ public sealed class PollingTests
             handler);
 
         var error = Assert.IsType<AiSdkError>(await Record.ExceptionAsync(() =>
-            provider.Transcription().TranscribeAsync(Audio(), new GladiaTranscriptionRequest { PollIntervalMs = 1, PollTimeoutMs = 20 }, CancellationToken.None)));
+            provider.Transcription().TranscribeAsync(Audio(), GladiaFixtures.Options("""{"pollIntervalMs":1,"pollTimeoutMs":20}"""), CancellationToken.None)));
 
         Assert.Equal("TranscriptionJobPollingTimedOut", error.ErrorName);
         Assert.Equal("Transcription job polling timed out after 20 ms", error.Message);
