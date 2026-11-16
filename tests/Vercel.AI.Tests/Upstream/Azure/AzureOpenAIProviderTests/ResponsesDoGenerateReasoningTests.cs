@@ -80,6 +80,7 @@ public sealed class ResponsesDoGenerateReasoningTests
         Assert.Null(result.Usage.CacheWriteTokens);
         Assert.Equal(64, result.Usage.ReasoningTokens);
         Assert.Equal(101, result.Usage.OutputTokens);
+        Assert.Equal(37, result.Usage.TextTokens);
         Assert.Equal(665, result.Usage.TotalTokens);
         Assert.True(JsonNode.DeepEquals(fixture["usage"], JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())));
     }
