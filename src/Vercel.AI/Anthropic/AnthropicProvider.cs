@@ -628,8 +628,9 @@ public class AnthropicLanguageModel : ILanguageModel
                     continue;
                 }
 
-                if (type == "error" && node!["error"] is JsonObject error)
+                if (type == "error")
                 {
+                    var error = node!["error"] as JsonObject ?? new JsonObject();
                     var errorType = error["type"] is JsonValue kind && kind.TryGetValue<string>(out var kindText) ? kindText : null;
                     var message = error["message"] is JsonValue messageValue && messageValue.TryGetValue<string>(out var messageText) ? messageText : "Unknown provider error.";
                     var statusCode = AnthropicStreamError.StatusCode(errorType) ?? 500;
