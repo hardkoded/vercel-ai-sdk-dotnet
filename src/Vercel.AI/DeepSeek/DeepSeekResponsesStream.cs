@@ -54,10 +54,10 @@ internal sealed class DeepSeekResponsesStream
         using (document)
         {
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || OpenAIJson.String(root, "type") is not { } type)
+            if (!DeepSeekResponsesApi.IsValidChunk(root) || OpenAIJson.String(root, "type") is not { } type)
             {
                 _finish = FinishReason.Error;
-                parts.Add(new ErrorStreamPart("Invalid DeepSeek Responses stream chunk."));
+                parts.Add(new ErrorStreamPart(new ProviderUtils.TypeValidationException("Type validation failed: Value: " + data + ".", root.Clone())));
                 return parts;
             }
 
