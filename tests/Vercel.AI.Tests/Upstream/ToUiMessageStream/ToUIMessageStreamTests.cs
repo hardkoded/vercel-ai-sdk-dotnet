@@ -2,9 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
-using System.Text.Json;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Ui;
