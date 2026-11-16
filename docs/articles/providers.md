@@ -304,6 +304,35 @@ Keys that Cohere omits are absent from the metadata. Citations that only referen
 
 Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `generateId`).
 
+## Mistral Conversations API
+
+`MistralProvider.Conversation(modelId)` creates a `MistralConversationLanguageModel` that calls Mistral's Conversations API (`POST {base}/conversations`, provider id `mistral.conversation`). It works with `GenerateTextAsync` and `StreamTextAsync`, and it adds Mistral's built-in web search. `MistralProvider.LanguageModel(id)` and the default chat model keep using Chat Completions, which has no web search.
+
+### Web search
+
+`MistralTools.WebSearch(name)` (`mistral.web_search`) searches the web. `MistralTools.WebSearchPremium(name)` (`mistral.web_search_premium`) also searches verified news through Mistral's news providers. `name` is the name the tool goes by in the call and its result. It defaults to `web_search` and `web_search_premium`. Mistral runs both tools on the server, so they need no `Execute` function.
+
+```csharp
+var provider = MistralProvider.Create();
+var result = await AiClient.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = provider.Conversation("mistral-medium-latest"),
+    Tools = new[] { MistralTools.WebSearch() },
+    Prompt = "Use web search to find Mistral AI's official website. Cite your source.",
+});
+
+Console.WriteLine(result.Text);
+Console.WriteLine(result.Sources.Count);
+```
+
+Each search comes back as a `GeneratedToolCall` with `ProviderExecuted` set (input `{ "arguments": "<query>" }`, provider metadata `mistral.type`, `mistral.name`, and `mistral.function` when Mistral reports it) and a `GeneratedToolResult` whose result is `{ "info": ... }`. URL citations (`tool_reference` chunks) become `GeneratedSource` parts, once per URL, titled with the URL when Mistral sends no title. A function tool next to a search tool finishes with `FinishReason.ToolCalls`. A stream ends with `FinishReason.Error` when Mistral sends an error event, an event this port cannot read, or no `conversation.response.done`, or when a search never finishes.
+
+The model keeps no history between calls. Pass the previous messages, including the search calls and results, with the next question. A later call replays each search as a function call and result, so it works when the search tool is no longer in `Tools`. `ToolChoice.Required` is sent as `any`, and `ToolChoice.Tool(name)` keeps only that tool and sends `any`.
+
+### Request mapping and options
+
+System messages become `instructions`, joined with a blank line. The sampling settings go in `completion_args` (`max_tokens`, `temperature`, `top_p`, `frequency_penalty`, `presence_penalty`, `stop`, `random_seed`, `reasoning_effort`, `response_format`, `tool_choice`). `TopK` is reported as an `unsupported` warning. The request sets `store` to `false`. Mistral accepts `reasoning_effort` `none` and `high` here, and only on the models listed for the Conversations API, so other models get an `unsupported` warning when `Reasoning` is set. The `mistral` provider options `reasoningEffort`, `structuredOutputs`, and `strictJsonSchema` apply. `safePrompt`, `documentImageLimit`, `documentPageLimit`, `promptCacheKey`, and `parallelToolCalls` are Chat API options: they are not sent and each adds an `unsupported` warning. User images and PDFs are kept as `image_url` and `document_url` parts, and `SupportedUrls` is `application/pdf` for `https` URLs. `OpenAICompatibleOptions.GenerateId` sets the id generator for sources, as upstream `generateId` does.
+
 ## Baseten
 
 ### DeepSeek V4 Pro structured output

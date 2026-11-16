@@ -186,6 +186,9 @@ public class OpenAICompatibleOptions
     /// </summary>
     public HttpClient? DownloadHttpClient { get; set; }
 
+    /// <summary>Generates ids for sources and for streamed tool calls that have none. Maps to the provider setting <c>generateId</c>. Used by the Mistral Conversations model.</summary>
+    public Func<string>? GenerateId { get; set; }
+
     /// <summary>
     /// URLs the chat model reads itself, as regular expression text per media type. Maps to the <c>supportedUrls</c> config.
     /// When it is null, no URL is supported and prompt file URLs are downloaded.
