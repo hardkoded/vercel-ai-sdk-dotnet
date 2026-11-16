@@ -727,7 +727,10 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
                     output.Id,
                     toolName,
                     new JsonObject { ["arguments"] = output.Arguments }.ToJsonString(CompactOptions),
-                    providerMetadata) { ProviderExecuted = true },
+                    providerMetadata)
+                {
+                    ProviderExecuted = true,
+                },
                 new GeneratedToolResult(output.Id, toolName, result.ToJsonString(CompactOptions)));
         }
     }
