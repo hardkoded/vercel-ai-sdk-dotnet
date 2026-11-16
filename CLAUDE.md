@@ -41,6 +41,6 @@ Also check these points. Upstream parity, the last but one point, wins over the 
 - **Upstream parity.** Check each fix against upstream first. If upstream behaves the same on purpose, report it. Do not "fix" it in the port.
 - **Modern C#.** Match the file you edit. Use collection expressions, primary constructors, and `field` in new code where `netstandard2.0` allows. Do not rewrite untouched code to modernize it.
 
-# Formatting
+# Before you push
 
-- CSharpier owns formatting. `IDE0055` is off. Run `dotnet csharpier format .` before you push. The Husky.Net pre-push hook runs `dotnet csharpier check .` and blocks unformatted pushes. Do not run `dotnet format whitespace`, because it fights CSharpier.
+- CSharpier owns formatting. Run `dotnet csharpier format .` from the repo root before every commit/push. The Husky.Net pre-push hook runs `dotnet csharpier check .` and blocks unformatted pushes. Do not run `dotnet format whitespace` or a plain `dotnet format`, because their whitespace pass fights CSharpier. Use `dotnet format style` / `dotnet format analyzers` only.
