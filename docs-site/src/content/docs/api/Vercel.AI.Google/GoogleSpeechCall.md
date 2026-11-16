@@ -23,7 +23,7 @@ Speech request settings beyond the shared text and voice fields.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L16)
 
 ## Constructors
 
@@ -46,9 +46,26 @@ Creates a speech call.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L19)
 
 ## Properties
+
+<a id="Vercel_AI_Google_GoogleSpeechCall_Headers_"></a>
+<a id="Vercel_AI_Google_GoogleSpeechCall_Headers"></a>
+
+### Headers
+
+
+```csharp
+public IReadOnlyDictionary<string, string?>? Headers { get; set; }
+```
+
+
+Extra request headers.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L46)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_Instructions_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_Instructions"></a>
@@ -65,7 +82,7 @@ Style directions.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L31)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_Language_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_Language"></a>
@@ -82,7 +99,7 @@ Language code forwarded as `speechConfig.languageCode`. `auto` lets Gemini detec
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L37)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_OutputFormat_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_OutputFormat"></a>
@@ -99,7 +116,7 @@ Output format such as `wav` or `pcm`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L40)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_ProviderOptions_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_ProviderOptions"></a>
@@ -116,7 +133,7 @@ Provider options under `google`, `googleVertex`, or `vertex`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L43)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_Speed_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_Speed"></a>
@@ -133,7 +150,7 @@ Speaking rate. Gemini TTS ignores it.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L34)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_Text_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_Text"></a>
@@ -150,7 +167,7 @@ Transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L25)
 
 <a id="Vercel_AI_Google_GoogleSpeechCall_Voice_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechCall_Voice"></a>
@@ -167,4 +184,4 @@ Prebuilt voice. Defaults to Kore.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L28)
