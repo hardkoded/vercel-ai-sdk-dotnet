@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates German speech with Gemini TTS and an explicit language code.</Description>
+  </PropertyGroup>
+</Project>

@@ -63,3 +63,14 @@ A stream that finishes without audio fails with a `NoSpeechGeneratedException` w
 ### Implementing a streaming speech model
 
 Implement `IStreamingSpeechCaller.DoStreamAsync`, which receives a `SpeechModelStreamCall` and returns a `SpeechModelStreamResult` over an `IAsyncEnumerable<SpeechModelStreamPart>`. The call's `Text` is owned by the model once `DoStreamAsync` is called: enumerate it to the end or dispose its enumerator on every terminal path.
+
+### Gemini speech language
+
+`GoogleSpeechCall.Language` takes a supported BCP-47 code such as `en-US` or `de-DE`. `GoogleSpeechModel` forwards an explicit code unchanged as `speechConfig.languageCode`, for single-speaker and multi-speaker (`multiSpeakerVoiceConfig`) requests, including through the Vertex Gemini adapter. Omit `Language` or set it to `"auto"` to let Gemini detect the language from the input text. Gemini TTS does not support `Speed`: passing it adds an `unsupported` warning.
+
+```csharp
+var model = (GoogleSpeechModel)GoogleProvider.Create().SpeechModel("gemini-3.8-flash-tts");
+var result = await model.GenerateAsync(
+    new GoogleSpeechCall("Guten Morgen! Willkommen beim AI SDK.") { Language = "de-DE" },
+    CancellationToken.None);
+```
