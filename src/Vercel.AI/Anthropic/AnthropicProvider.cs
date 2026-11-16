@@ -296,8 +296,8 @@ public class AnthropicProvider : ProviderBase, Operations.IBatchProvider, Operat
     /// <summary>URL patterns that models of this provider accept for images and PDFs.</summary>
     protected internal virtual IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
     {
-        ["image/*"] = "^https?://",
-        ["application/pdf"] = "^https?://",
+        ["image/*"] = "^https?://.*\\z",
+        ["application/pdf"] = "^https?://.*\\z",
     };
 
     /// <summary>Resolved API origin, including <c>/v1</c> when the host is the public Anthropic API or a regional AWS host.</summary>

@@ -640,6 +640,17 @@ public sealed class GoogleVertexUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google-vertex/src/xai/google-vertex-xai-provider.test.ts::google-vertex-xai-provider::should support HTTP image URLs", Coverage = UpstreamCoverage.Covered)]
+    public void Supports_HTTP_image_URLs_for_xAI()
+    {
+        var model = new GoogleVertexXaiProvider("test-project", "global").LanguageModel("xai/grok-4.1-fast-reasoning");
+
+        var urls = Assert.Single(model.SupportedUrls);
+        Assert.Equal("image/*", urls.Key);
+        Assert.Equal("^https?://.*\\z", urls.Value);
+    }
+
+    [Fact]
     [UpstreamTest("packages/google-vertex/src/xai/google-vertex-xai-provider.test.ts::google-vertex-xai-provider::should strip reasoning_effort from request bodies", Coverage = UpstreamCoverage.Covered)]
     public void Strips_reasoning_effort_from_xAI_requests()
     {

@@ -56,8 +56,8 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.SupportedUrls ??= new Dictionary<string, string>
         {
-            ["image/*"] = "^ms://.*\\z",
-            ["video/*"] = "^ms://.*\\z",
+            ["image/*"] = "^ms://",
+            ["video/*"] = "^ms://",
         };
 
         if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
