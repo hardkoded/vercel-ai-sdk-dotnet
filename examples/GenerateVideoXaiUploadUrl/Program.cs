@@ -2,9 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Xai;
-using System.Text.Json.Nodes;
 
 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XAI_API_KEY")))
 {
