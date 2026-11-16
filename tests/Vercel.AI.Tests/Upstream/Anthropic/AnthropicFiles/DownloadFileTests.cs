@@ -52,6 +52,7 @@ public sealed class DownloadFileTests
     {
         var (files, _) = FilesFixture.Create(_ => ParityHandler.TestServerBinary(Encoding.UTF8.GetBytes("test file content")));
         var result = await files.DownloadFileAsync(FilesFixture.Ref("file-abc123"), CancellationToken.None).ConfigureAwait(false);
+        using var content = result.Content;
         Assert.Equal("application/octet-stream", result.MediaType);
     }
 
