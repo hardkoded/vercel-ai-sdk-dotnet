@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Vercel.AI.Util;
 
@@ -43,7 +44,12 @@ public static class ValidateExtraction
                 throw new InvalidArgumentException(parameter, field, "field must not be null");
             }
 
-            if (field.Decimals is { } decimals && !(decimals >= 0 && decimals <= 6))
+            if (field.Instructions != null && !IsSerializableJson(field.Instructions.Value))
+            {
+                throw new InvalidArgumentException(parameter, field, "instructions must not contain non-finite numbers, cycles, or array holes");
+            }
+
+            if (field.Decimals is { } decimals && !(Math.Floor(decimals) == decimals && decimals >= 0 && decimals <= 6))
             {
                 throw new InvalidArgumentException(parameter, field, "decimals must be an integer from 0 to 6");
             }
@@ -149,6 +155,22 @@ public static class ValidateExtraction
         return new InvalidResponseDataException(answers, message);
     }
 
+    // Maps to isSerializableJSON. Out-of-range numbers such as 1e999 are infinite on .NET Core, so JSON text can still carry them.
+    private static bool IsSerializableJson(JsonElement value)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Number:
+                return value.TryGetDouble(out var number) && !double.IsInfinity(number) && !double.IsNaN(number);
+            case JsonValueKind.Array:
+                return value.EnumerateArray().All(IsSerializableJson);
+            case JsonValueKind.Object:
+                return value.EnumerateObject().All(property => IsSerializableJson(property.Value));
+            default:
+                return true;
+        }
+    }
+
     private static bool IsProbability(double value)
     {
         return !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0 && value <= 1;
@@ -195,7 +217,7 @@ public static class ValidateExtraction
 
         // Number(value.toFixed(decimals)) === value
         return field.Decimals is not { } decimals
-            || double.Parse(value.ToString("F" + decimals.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), CultureInfo.InvariantCulture) == value;
+            || double.Parse(value.ToString("F" + ((int)decimals).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), CultureInfo.InvariantCulture) == value;
     }
 
     private static bool IsValue(ExtractionField field, double value)

@@ -28,13 +28,13 @@ The wrapped model, provider id, and field limit that cross a workflow boundary f
 ## Constructors
 
 <a id="Vercel_AI_Operations_ExtractionLanguageModelOptions__ctor_"></a>
-<a id="Vercel_AI_Operations_ExtractionLanguageModelOptions__ctor_Vercel_AI_Provider_ILanguageModel_System_String_System_Nullable_System_Int32__"></a>
+<a id="Vercel_AI_Operations_ExtractionLanguageModelOptions__ctor_Vercel_AI_Provider_ILanguageModel_System_String_System_Double_"></a>
 
-### ExtractionLanguageModelOptions(ILanguageModel, string, int?)
+### ExtractionLanguageModelOptions(ILanguageModel, string, double)
 
 
 ```csharp
-public ExtractionLanguageModelOptions(ILanguageModel model, string provider, int? maxFieldsPerCall = null)
+public ExtractionLanguageModelOptions(ILanguageModel model, string provider, double maxFieldsPerCall = Infinity)
 ```
 
 
@@ -46,7 +46,7 @@ Creates the options.
 | --- | --- | --- |
 | `model` | [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `maxFieldsPerCall` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `maxFieldsPerCall` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L21)
 
@@ -59,13 +59,13 @@ Creates the options.
 
 
 ```csharp
-public int? MaxFieldsPerCall { get; }
+public double MaxFieldsPerCall { get; }
 ```
 
 
-Most fields per language-model call. Null means no limit.
+Most fields per language-model call. [PositiveInfinity](https://learn.microsoft.com/dotnet/api/system.double.positiveinfinity) means no limit.
 
-**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionLanguageModel.cs#L35)
 

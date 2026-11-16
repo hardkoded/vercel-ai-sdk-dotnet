@@ -20,8 +20,10 @@ public sealed class InputValidationTests
         {
             "an empty field map",
             "decimals above 6",
+            "fractional decimals",
             "an unknown duration unit",
             "an unknown list item type",
+            "non-finite instructions",
             "a malformed reference date",
             "an impossible reference date",
         };
@@ -31,17 +33,19 @@ public sealed class InputValidationTests
     [MemberData(nameof(InvalidInputs))]
     [UpstreamTest(
         "packages/ai/src/extract/extract.test.ts::input validation::rejects %s before any provider I/O",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit,
-        Note = "ExtractionField.Decimals is an int and Instructions is a JSON value, so the 'fractional decimals' (1.5) and 'non-finite instructions' ({ max: Infinity }) cases cannot be built.")]
+        Note = "The non-finite instruction is the JSON text {\"max\":1e999}, which is infinite on .NET Core.")]
     public async Task Rejects_before_any_provider_IO(string name)
     {
         var (input, referenceDate) = name switch
         {
             "an empty field map" => (new Dictionary<string, ExtractionField>(), (string?)null),
             "decimals above 6" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("number") { Decimals = 7 } }, null),
+            "fractional decimals" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("duration") { Decimals = 1.5 } }, null),
             "an unknown duration unit" => (new Dictionary<string, ExtractionField> { ["wait"] = new ExtractionField("duration") { Unit = "fortnights" } }, null),
             "an unknown list item type" => (new Dictionary<string, ExtractionField> { ["names"] = new ExtractionField("list") { Items = "time" } }, null),
+            "non-finite instructions" => (new Dictionary<string, ExtractionField> { ["total"] = new ExtractionField("number", DecisionInput.Parse("{\"max\":1e999}")) }, null),
             "a malformed reference date" => (new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") }, "11/11/2026"),
             "an impossible reference date" => (new Dictionary<string, ExtractionField> { ["name"] = new ExtractionField("text") }, "2026-02-30"),
             _ => throw new ArgumentOutOfRangeException(nameof(name)),

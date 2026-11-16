@@ -318,7 +318,7 @@ public sealed class ExtractionLanguageModelTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "round-trips through workflow serialization", Coverage = UpstreamCoverage.Covered, Note = "maxFieldsPerCall Infinity is null here.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
+    [UpstreamTest(Prefix + "round-trips through workflow serialization", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
     public void Round_trips_through_workflow_serialization()
     {
         var (model, language, _) = Setup();
@@ -327,7 +327,7 @@ public sealed class ExtractionLanguageModelTests
 
         Assert.Same(language, serialized.Model);
         Assert.Equal("test.language.extraction", serialized.Provider);
-        Assert.Null(serialized.MaxFieldsPerCall);
+        Assert.Equal(double.PositiveInfinity, serialized.MaxFieldsPerCall);
         var restored = ExtractionLanguageModel.Deserialize(serialized);
         Assert.Equal(model.Provider, restored.Provider);
         Assert.Equal(model.ModelId, restored.ModelId);

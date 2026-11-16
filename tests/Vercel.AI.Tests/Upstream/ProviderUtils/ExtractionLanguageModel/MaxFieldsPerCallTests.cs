@@ -16,7 +16,7 @@ public sealed class MaxFieldsPerCallTests
 {
     private const string Describe = Prefix + "maxFieldsPerCall::";
 
-    public static TheoryData<int> InvalidMaxFieldsPerCall => new() { 0, -1 };
+    public static TheoryData<double> InvalidMaxFieldsPerCall => new() { 0, -1, 1.5, double.NaN };
 
     [Fact]
     [UpstreamTest(Describe + "sends every field in one call by default", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
@@ -154,8 +154,8 @@ public sealed class MaxFieldsPerCallTests
 
     [Theory]
     [MemberData(nameof(InvalidMaxFieldsPerCall))]
-    [UpstreamTest(Describe + "rejects maxFieldsPerCall %s", Coverage = UpstreamCoverage.Partial, Note = "maxFieldsPerCall is an int?, so the 1.5 and NaN cases cannot be expressed. 0 and -1 are checked.", Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
-    public void Rejects_maxFieldsPerCall(int maxFieldsPerCall)
+    [UpstreamTest(Describe + "rejects maxFieldsPerCall %s", Coverage = UpstreamCoverage.Covered, Commit = "6d5094711e57f0ccf62fd60270865a74863bbb08")]
+    public void Rejects_maxFieldsPerCall(double maxFieldsPerCall)
     {
         Assert.Throws<InvalidArgumentException>(() => Setup(maxFieldsPerCall: maxFieldsPerCall));
     }

@@ -85,7 +85,7 @@ internal static class ExtractionLanguageModelSupport
     public static (ExtractionLanguageModel Model, RecordingLanguageModel Language, LanguageModelGenerateResult Result) Setup(
         IReadOnlyList<GeneratedContent>? content = null,
         FinishReason finishReason = FinishReason.Stop,
-        int? maxFieldsPerCall = null)
+        double maxFieldsPerCall = double.PositiveInfinity)
     {
         var result = Result(content, finishReason);
         var language = new RecordingLanguageModel { OnGenerate = (_, _) => Task.FromResult(result) };
