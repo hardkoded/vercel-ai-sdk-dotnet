@@ -1623,6 +1623,28 @@ Each add-on reports `success`, `is_empty`, `exec_time`, and `error` next to its 
 
 When Gladia reports `status: "error"`, `TranscribeAsync` throws `AiSdkException`. If the response has `error_code` (the HTTP status code of the failed request), the message is `Transcription job failed with error code <code>.`, otherwise `Transcription job failed.`
 
+## Cartesia streaming transcription
+
+`CartesiaProvider.TranscriptionModel(id)` streams live audio with Ink 2 over Cartesia's WebSocket API (`/stt/turns/websocket`, or `/stt/websocket` when turn detection is off). Pass the model to `StreamTranscribe.Start`. Ink Whisper (and dated snapshots such as `ink-whisper-2025-06-04`) is batch-only: streaming it throws `UnsupportedFunctionalityException`. Any other id streams, and calling `DoGenerateAsync` on a streaming id throws `UnsupportedFunctionalityException`. `CartesiaModelCatalog.GetCartesiaTranscriptionModelEntry(id).Streaming` reports which.
+
+```csharp
+var provider = CartesiaProvider.Create(new CartesiaOptions { ApiKey = key });
+var audio = new AudioChunkStream();
+var result = StreamTranscribe.Start(new StreamTranscribeRequest
+{
+    Model = (ITranscriptionCaller)provider.TranscriptionModel("ink-2"),
+    Audio = audio,
+    InputAudioFormat = new AudioFormat("audio/pcm", 24000),
+    ProviderOptions = OperationJson.Parse(@"{""cartesia"":{""language"":""en"",""streaming"":{""keyterms"":[""Cartesia"",""Sonic""],""turnEndTimeoutMs"":800}}}"),
+});
+```
+
+- **Access token.** The provider creates a short-lived, STT-scoped access token (`POST /access-token`) before it opens the socket, so the API key is not in the WebSocket URL. `ProviderRequest.Body` is the socket URL without the token. Send audio at about its playback rate.
+- **Options.** Ink 2 supports English only (`language` other than `en` throws `InvalidArgumentException`). `timestampGranularities` warns. `streaming.turnDetection` (default true) uses Cartesia's native turn detection; with `false` the transcript is finalized when the audio stream ends. `streaming.keyterms` takes up to 100 terms. `turnStartThreshold`, `turnEagerEndThreshold`, `turnEndThreshold`, and `turnEndTimeoutMs` (an integer) tune turn detection and warn when `turnDetection` is `false`. Invalid options throw `InvalidArgumentException` before any request.
+- **Encoding.** `audio/pcm`, `audio/pcmu`, and `audio/pcma` map to `pcm_s16le`, `pcm_mulaw`, and `pcm_alaw`; any other type throws. `streaming.encoding` (`pcm_s16le`, `pcm_s32le`, `pcm_f16le`, `pcm_f32le`, `pcm_mulaw`, `pcm_alaw`) overrides it. Widening `audio/pcm` to another linear encoding is silent; any other override that contradicts the declared type adds an `other` warning.
+- **Settings.** `CartesiaOptions.Version` sets the `Cartesia-Version` header and the socket's `cartesia_version` (default `2026-03-01`). `CartesiaOptions.WebSocket` takes a `WebSocketFactory`.
+- **Parts.** Turn updates are `transcript-partial` parts and turn ends are `transcript-final` parts, both with `Id` set to Cartesia's `request_id`. `finish` joins the final text (with a space when turn detection is on) and sums the reported duration.
+
 ## Deepgram streaming transcription
 
 `DeepgramProvider.TranscriptionModel(id)` also streams live audio over Deepgram's [`/v1/listen` WebSocket API](https://developers.deepgram.com/reference/speech-to-text/listen-streaming). Pass the model to `StreamTranscribe.Start`. Nova models stream. Flux models use a separate `/v2/listen` protocol, and `DeepgramModelCatalog.GetDeepgramTranscriptionModelEntry(id).Streaming` is `false` for them, so streaming one throws `UnsupportedFunctionalityException`.

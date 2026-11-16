@@ -14,6 +14,16 @@ using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Cartesia;
 
+/// <summary>Cartesia settings.</summary>
+public class CartesiaOptions : OpenAICompatibleOptions
+{
+    /// <summary>The Cartesia API version, sent as the <c>Cartesia-Version</c> header. Defaults to <c>2026-03-01</c>.</summary>
+    public string? Version { get; set; }
+
+    /// <summary>Custom WebSocket implementation for Ink 2 streaming transcription. Defaults to <c>ClientWebSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+}
+
 /// <summary>Cartesia provider.</summary>
 public sealed class CartesiaProvider : OpenAICompatibleProvider
 {
@@ -22,6 +32,9 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
 
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.cartesia.ai";
+
+    /// <summary>Default Cartesia API version. Maps to <c>CARTESIA_API_VERSION</c>.</summary>
+    public const string DefaultVersion = "2026-03-01";
 
     private readonly HttpClient _httpClient;
 
@@ -69,7 +82,7 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
-        options.Headers["Cartesia-Version"] = "2026-03-01";
+        options.Headers["Cartesia-Version"] = (options as CartesiaOptions)?.Version ?? DefaultVersion;
         options.UserAgent = ProviderExchange.UserAgent("cartesia");
         return options;
     }
@@ -88,6 +101,12 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         var result = await model.DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
         return new SpeechResult(result.Audio, "audio/mpeg");
     }
+
+    /// <summary>The Cartesia API version sent with every request.</summary>
+    internal string Version => (Options as CartesiaOptions)?.Version ?? DefaultVersion;
+
+    /// <summary>The WebSocket factory for streaming transcription.</summary>
+    internal WebSocketFactory? WebSocket => (Options as CartesiaOptions)?.WebSocket;
 
     internal async Task<ProviderExchangeResult> SendAsync(string path, HttpContent content, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
@@ -406,7 +425,7 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public bool CanStream => false;
+    public bool CanStream => true;
 
     /// <inheritdoc />
     public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
@@ -429,8 +448,14 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
             throw new ArgumentNullException(nameof(call));
         }
 
+        if (IsStreamingModel)
+        {
+            throw Unsupported("non-streaming transcription with " + ModelId);
+        }
+
         var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
         var cartesia = CartesiaProvider.CartesiaOptions(call.ProviderOptions);
+        CartesiaStreamingTranscription.ValidateProviderOptions(cartesia);
         var warnings = new List<OperationWarning>();
         if (cartesia is { } options && options.TryGetProperty("streaming", out var streaming) && streaming.ValueKind != JsonValueKind.Null)
         {
@@ -477,9 +502,44 @@ public sealed class CartesiaTranscriptionModel : ITranscriptionModel, ITranscrip
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
     {
-        return Task.FromResult<TranscriptionStreamStart?>(null);
+        if (call is null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        if (!IsStreamingModel)
+        {
+            throw Unsupported("streaming transcription with " + ModelId);
+        }
+
+        var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
+        return await CartesiaStreamingTranscription.StreamAsync(ModelId, _provider, call, timestamp, CreateStreamingAccessTokenAsync, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Creates a short-lived, STT-scoped access token so the API key stays out of the WebSocket URL.</summary>
+    internal async Task<string> CreateStreamingAccessTokenAsync(IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+    {
+        var request = headers.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value!);
+        var response = await _provider.SendAsync("/access-token", ProviderExchange.Json("{\"grants\":{\"stt\":true}}"), request, cancellationToken).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(response.Body);
+        if (document.RootElement.ValueKind == JsonValueKind.Object
+            && document.RootElement.TryGetProperty("token", out var token)
+            && token.ValueKind == JsonValueKind.String
+            && !string.IsNullOrEmpty(token.GetString()))
+        {
+            return token.GetString()!;
+        }
+
+        throw new AiSdkException("Cartesia access token response is missing a token.");
+    }
+
+    private bool IsStreamingModel => CartesiaModelCatalog.GetCartesiaTranscriptionModelEntry(ModelId).Streaming;
+
+    private static UnsupportedFunctionalityException Unsupported(string functionality)
+    {
+        return new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
     }
 }
 
