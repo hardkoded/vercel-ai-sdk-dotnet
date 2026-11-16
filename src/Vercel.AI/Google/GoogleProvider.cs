@@ -409,10 +409,13 @@ public sealed class GoogleRealtimeModel : IServerWebSocketRealtimeModel
             expiresAt);
     }
 
-    /// <summary>The URL a client opens with a token from <see cref="CreateClientSecretAsync"/>. Maps to <c>getWebSocketConfig</c>.</summary>
-    public string GetWebSocketUrl(string token, string url)
+    /// <summary>
+    /// The URL a client opens with a token from <see cref="CreateClientSecretAsync"/>. The token travels in the query
+    /// string, so there are no subprotocols. Maps to <c>getWebSocketConfig</c>.
+    /// </summary>
+    public RealtimeModelV4WebSocketConfig GetWebSocketConfig(string token, string url)
     {
-        return url + "?access_token=" + Uri.EscapeDataString(token);
+        return new RealtimeModelV4WebSocketConfig(url + "?access_token=" + Uri.EscapeDataString(token));
     }
 
     /// <inheritdoc />

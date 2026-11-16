@@ -1313,6 +1313,8 @@ The model follows the transcription-stream envelope (`TranscriptionStreamEnvelop
 
 `GatewayProvider.ExperimentalTranscriptionGetTokenAsync(model, expiresAfterSeconds)` mints a transcription-bound short-lived client secret (`vcst_`) through `/v1/realtime/client-secrets` with `routeKind: "transcription"`, and returns `GatewayTranscriptionFactoryGetTokenResult` (`Token`, `Url`, `ExpiresAt`). Call it on the server. A browser then connects with `GatewayProvider.Create(new GatewayOptions { ApiKey = token }).ExperimentalTranscription(model)`, without holding the Gateway credential. `ExpiresAt` stays `null` when the endpoint sends none.
 
+Minting needs the Gateway credential, so it must run on a server. In a browser runtime (Blazor WebAssembly, where `OperatingSystem.IsBrowser()` is true) `ExperimentalRealtimeGetTokenAsync` and `ExperimentalTranscriptionGetTokenAsync` throw an `AiSdkException` ("must be minted server-side"). Building the realtime model with `RealtimeModel(id)` touches no credential and works in a browser, so a client can drive the transport with a token minted on the server.
+
 ## Gladia transcription options
 
 `GladiaProvider.Transcription()` uses the default Gladia model. Pass a model id to pick another one: `provider.TranscriptionModel("solaria-3")`. The id is forwarded as `model` in the pre-recorded request, kept in `Response.ModelId`, and kept through `Serialize()` and `Deserialize()`. The `default` id sends no `model` field, so Gladia chooses its own default (`solaria-1`). The provider also sends an `x-gladia-version: ai-sdk/<version>` header on every request. A header you set yourself wins.
@@ -1919,6 +1921,31 @@ var result = await Transcribe.TranscribeAsync(new TranscribeRequest
 - Groq strips the URL fragment, and rejects non-HTTP(S) URLs and URLs with user info with `InvalidArgumentException` before any request.
 - Groq does not follow redirects. When it reports a `301`, `302`, `303`, `307`, or `308` fetch failure, the model returns `null` from `DoGenerateFromUrlAsync`. Core then downloads the audio with the secure downloader and uploads the bytes, so the attachment limit applies. The media type of the file part is the downloaded `Content-Type` when it is a full `audio/*` type (parameters removed, lowercased), then the type detected from the bytes, then `audio/wav`. Retries after that repeat only the file call. Every other Groq error is thrown unchanged.
 - Setting `TranscribeRequest.Download` always downloads locally, even for models with native URL support. Bytes passed as `Audio` are always uploaded as a file.
+
+## Google realtime
+
+`GoogleProvider.RealtimeModel(id)` returns a `GoogleRealtimeModel` for Gemini Live. Realtime is experimental. `GetWebSocketConfig(token, url)` returns a `RealtimeModelV4WebSocketConfig` with the URL (`?access_token=` carries the token) and `Protocols` set to `null`, because Google does not authenticate through subprotocols.
+
+Typed provider options are `GoogleRealtimeModelOptions`. Call `ToJsonObject()` and put the result under the `google` key of `RealtimeModelV4SessionConfig.ProviderOptions`:
+
+- `TranslationConfig` (`TargetLanguageCode`, `EchoTargetLanguage`) configures `gemini-3.5-live-translate-preview`. `TargetLanguageCode` is a BCP-47 code and defaults to `en`. With `EchoTargetLanguage` set to `true`, input audio already in the target language is echoed instead of producing silence.
+- `ThinkingConfig` (`ThinkingLevel` of `low`, `medium` or `high`, `ThinkingBudget`, `IncludeThoughts`) configures background-reasoning models such as `gemini-3.8-live-extended-thinking`. They need exactly one of `ThinkingLevel` or `ThinkingBudget`; the provider sends `thinkingLevel: "low"` when you set neither.
+- `DefaultToolBehavior` (`BLOCKING` or `NON_BLOCKING`) is stamped onto every function declaration. Gemini 3.8 Live models default to `NON_BLOCKING`. Set `BLOCKING` on `gemini-3.8-live` to wait for the tool result. Background-reasoning models accept only `NON_BLOCKING`.
+
+```csharp
+var options = new GoogleRealtimeModelOptions
+{
+    TranslationConfig = new GoogleRealtimeTranslationConfig { TargetLanguageCode = "pl", EchoTargetLanguage = true },
+};
+var config = new RealtimeModelV4SessionConfig
+{
+    ProviderOptions = new JsonObject { ["google"] = options.ToJsonObject() },
+};
+```
+
+## xAI realtime
+
+`XaiProvider.RealtimeModel(id)` returns an `XaiRealtimeModel`. `GetWebSocketConfig(token, url)` returns a `RealtimeModelV4WebSocketConfig` with the URL and the `xai-client-secret.{token}` subprotocol. `XaiRealtimeModelOptions` has no members yet, like upstream's empty options type.
 
 ## xAI transcription
 

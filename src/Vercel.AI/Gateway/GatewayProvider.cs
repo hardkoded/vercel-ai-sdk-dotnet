@@ -413,6 +413,7 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     /// </summary>
     internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, string? routeKind, CancellationToken cancellationToken)
     {
+        AssertGatewayClientSecretServerEnvironment();
         var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var pair in CreateAuthHeaders(auth))
@@ -455,6 +456,27 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
+        }
+    }
+
+    /// <summary>
+    /// Tells whether the code runs in a browser, where a Gateway credential must never be used. .NET has no
+    /// <c>window</c> global, so this maps <c>typeof globalThis.window !== 'undefined'</c> to the Blazor WebAssembly
+    /// runtime. Tests replace it.
+    /// </summary>
+    internal Func<bool> IsBrowserEnvironment { get; set; } = static () =>
+#if NET
+        OperatingSystem.IsBrowser();
+#else
+        false;
+#endif
+
+    /// <summary>Throws when called in a browser. Maps to <c>assertGatewayClientSecretServerEnvironment</c>.</summary>
+    private void AssertGatewayClientSecretServerEnvironment()
+    {
+        if (IsBrowserEnvironment())
+        {
+            throw new AiSdkException("AI Gateway client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.ExperimentalRealtimeGetTokenAsync() or gateway.ExperimentalTranscriptionGetTokenAsync() from your server and pass the returned token to the client.");
         }
     }
 
