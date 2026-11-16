@@ -12,7 +12,7 @@ public sealed class DoGenerateGptImage26OptionsTests
     private const string Id = "packages/openai/src/image/openai-image-model.test.ts::doGenerate - GPT Image 2.6 options::";
 
     [Fact]
-    [UpstreamTest(Id + "should map complexity, gif and safety options for /images/generations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should map complexity, gif and safety options for /images/generations", Coverage = UpstreamCoverage.Covered, Commit = "6549344e0a446c3b87c7c41fc13ab350af776a26")]
     public async Task Should_map_complexity_gif_and_safety_options_for_images_generations()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
@@ -33,7 +33,7 @@ public sealed class DoGenerateGptImage26OptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should reject gif for edits", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should reject gif for edits", Coverage = UpstreamCoverage.Covered, Commit = "6549344e0a446c3b87c7c41fc13ab350af776a26")]
     public async Task Should_reject_gif_for_edits()
     {
         var model = new Vercel.AI.OpenAI.OpenAIImageModel(OpenAIUpstream.Provider(new OpenAICapture()), "gpt-image-2.6-flare");
@@ -49,7 +49,7 @@ public sealed class DoGenerateGptImage26OptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should send complexity, safety identifier and markup for /images/edits", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Id + "should send complexity, safety identifier and markup for /images/edits", Coverage = UpstreamCoverage.Covered, Commit = "6549344e0a446c3b87c7c41fc13ab350af776a26")]
     public async Task Should_send_complexity_safety_identifier_and_markup_for_images_edits()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"data\":[{\"b64_json\":\"AQID\"}]}" };
