@@ -50,7 +50,7 @@ public sealed class PrepareGoogleInteractionsToolsProviderDefinedToolsTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "omits ${title} when toolChoice is none", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "omits ${title} when toolChoice is none", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
     public void Omits_title_when_toolChoice_is_none(string title, string id, string args, string expected)
     {
         Assert.NotEmpty(title);

@@ -31,7 +31,7 @@ public sealed class PrepareGoogleInteractionsToolsToolChoiceMappingTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits function tools when toolChoice is none", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(Prefix + "omits function tools when toolChoice is none", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
     public void Omits_function_tools_when_toolChoice_is_none()
     {
         PrepareGoogleInteractionsToolsTests.AssertEmpty(GoogleInteractionsTools.Prepare([PrepareGoogleInteractionsToolsTests.FunctionTool()], ToolChoice.None));
