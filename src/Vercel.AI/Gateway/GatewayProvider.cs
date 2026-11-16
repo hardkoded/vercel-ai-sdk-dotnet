@@ -31,6 +31,12 @@ public sealed class GatewayOptions
     /// (<c>ai-o11y-region</c>), and <c>VERCEL_PROJECT_ID</c> (<c>ai-o11y-project-id</c>).
     /// </summary>
     public IReadOnlyDictionary<string, string>? O11yHeaders { get; set; }
+
+    /// <summary>Vercel team ID or slug sent as <c>x-vercel-ai-gateway-team</c> and carried in realtime WebSocket subprotocols.</summary>
+    public string? TeamIdOrSlug { get; set; }
+
+    /// <summary>Custom headers merged into the auth headers of realtime requests.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; set; }
 }
 
 /// <summary>
@@ -96,6 +102,24 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     public override IVideoModel VideoModel(string modelId)
     {
         return new GatewayVideoModel(this, modelId);
+    }
+
+    /// <summary>
+    /// Returns a realtime model. Maps to <c>experimental_realtime(modelId)</c>. Building the model touches no credential;
+    /// only minting a client secret and server connections resolve the Gateway credential.
+    /// </summary>
+    public override IRealtimeModel RealtimeModel(string modelId)
+    {
+        return CreateRealtimeModel(modelId);
+    }
+
+    /// <summary>
+    /// Mints a client secret for a realtime model and returns it with the WebSocket URL. Maps to
+    /// <c>experimental_realtime.getToken</c>.
+    /// </summary>
+    public async Task<GatewayRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(string model, int? expiresAfterSeconds = null, CancellationToken cancellationToken = default)
+    {
+        return await CreateRealtimeModel(model).DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Decision model routed through <c>/decision-model</c>.</summary>
@@ -218,6 +242,116 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
         }).GetGenerationInfoAsync(parameters, cancellationToken);
     }
 
+    /// <summary>Resolves the Gateway credential: an explicit key, <c>AI_GATEWAY_API_KEY</c>, then the Vercel OIDC token.</summary>
+    internal async Task<(string Token, string AuthMethod)> GetGatewayAuthTokenAsync(CancellationToken cancellationToken)
+    {
+        var apiKey = !string.IsNullOrWhiteSpace(Options.ApiKey) ? Options.ApiKey : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            return (apiKey!, "api-key");
+        }
+
+        var oidcToken = await VercelEnvironment.GetVercelOidcTokenAsync(cancellationToken).ConfigureAwait(false);
+        return (oidcToken, "oidc");
+    }
+
+    /// <summary>Resolves the credential, wrapping a failure in a <see cref="GatewayAuthenticationError"/>.</summary>
+    internal async Task<(string Token, string AuthMethod)> GetRealtimeAuthTokenAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await GetGatewayAuthTokenAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw GatewayAuthenticationError.CreateContextual(apiKeyProvided: false, oidcTokenProvided: false, statusCode: 401, cause: exception);
+        }
+    }
+
+    /// <summary>Builds the auth headers for a resolved credential. Maps to <c>createAuthHeaders</c>.</summary>
+    internal Dictionary<string, string> CreateAuthHeaders((string Token, string AuthMethod) auth)
+    {
+        var headers = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["Authorization"] = "Bearer " + auth.Token,
+            ["ai-gateway-protocol-version"] = "0.0.1",
+            [GatewayErrors.AuthMethodHeader] = auth.AuthMethod,
+        };
+        if (Options.TeamIdOrSlug is not null)
+        {
+            headers[GatewayErrors.TeamHeader] = Options.TeamIdOrSlug;
+        }
+
+        if (Options.Headers is not null)
+        {
+            foreach (var pair in Options.Headers)
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        return ProviderValues.WithUserAgentSuffix(headers, "ai-sdk-gateway/" + AiSdkVersion.Version);
+    }
+
+    /// <summary>Resolves the credential and builds the auth headers. Maps to <c>getHeaders</c>.</summary>
+    internal async Task<IReadOnlyDictionary<string, string?>> GetHeadersAsync(CancellationToken cancellationToken)
+    {
+        var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
+        var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var pair in CreateAuthHeaders(auth))
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        return headers;
+    }
+
+    /// <summary>
+    /// Mints a short-lived client secret (<c>vcst_</c>) through <c>/v1/realtime/client-secrets</c> on the Gateway origin
+    /// (not under the <c>BaseUrl</c> path), authenticated with the long-lived Gateway credential. Maps to <c>mintClientSecret</c>.
+    /// </summary>
+    internal async Task<GatewayMintedClientSecret> MintClientSecretAsync(string modelId, int? expiresAfterSeconds, CancellationToken cancellationToken)
+    {
+        var auth = await GetRealtimeAuthTokenAsync(cancellationToken).ConfigureAwait(false);
+        var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var pair in CreateAuthHeaders(auth))
+        {
+            headers[pair.Key] = pair.Value;
+        }
+
+        var url = new Uri(new Uri(Options.BaseUrl, UriKind.Absolute), "/v1/realtime/client-secrets");
+        var body = new JsonObject { ["model"] = modelId };
+        if (expiresAfterSeconds is { } seconds)
+        {
+            body["expiresIn"] = seconds;
+        }
+
+        try
+        {
+            using var document = await Http.SendJsonAsync(HttpMethod.Post, url, body.ToJsonString(), headers, cancellationToken).ConfigureAwait(false);
+            var root = document.RootElement;
+            var token = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("token", out var tokenValue) && tokenValue.ValueKind == JsonValueKind.String
+                ? tokenValue.GetString()
+                : null;
+            if (token is null)
+            {
+                throw new AiSdkException("AI Gateway client secret response did not include a token.");
+            }
+
+            long? expiresAt = null;
+            if (root.TryGetProperty("expiresAt", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number)
+            {
+                expiresAt = expiresValue.GetInt64();
+            }
+
+            return new GatewayMintedClientSecret(token, expiresAt);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            throw GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
+        }
+    }
+
     internal static Exception MapFailure(Exception exception)
     {
         return GatewayErrors.AsGatewayError(exception, "api-key");
@@ -226,6 +360,18 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
     internal Uri Route(string path)
     {
         return ApiKeys.Combine(Options.BaseUrl, path);
+    }
+
+    private GatewayRealtimeModel CreateRealtimeModel(string modelId)
+    {
+        return new GatewayRealtimeModel(
+            modelId,
+            new GatewayRealtimeModelConfig(
+                "gateway.realtime",
+                Options.BaseUrl.TrimEnd('/'),
+                GetHeadersAsync,
+                MintClientSecretAsync,
+                Options.TeamIdOrSlug));
     }
 }
 
