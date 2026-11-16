@@ -159,10 +159,9 @@ public static partial class UIMessageStreamConverter
                 {
                     // streamText sends the model a tool result for an invalid tool call only when the tool is not provider-executed
                     var invalidError = call.ToolCall.Error!;
-                    var invalidModelText = ErrorMessage.ToErrorString(invalidError);
                     toolInput["errorText"] = call.ToolCall.ProviderExecuted
                         ? onError(invalidError)
-                        : ToolErrorText(invalidModelText, invalidError, redactToolErrors, onError);
+                        : ToolErrorText(ModelToolErrorText(invalidError), invalidError, redactToolErrors, onError);
                 }
 
                 if (call.ToolCall.Title != null)
@@ -208,7 +207,7 @@ public static partial class UIMessageStreamConverter
                     ["toolCallId"] = toolError.Result.ToolCallId,
                     ["errorText"] = providerError
                         ? ProviderErrorText(toolError.Result.OutputJson)
-                        : ToolErrorText(ModelToolErrorText(toolError.Result), toolError.Result.Error ?? new JsError(ModelToolErrorText(toolError.Result)), redactToolErrors, onError),
+                        : ToolErrorText(ModelToolErrorText(toolError.Result), toolError.Result.Error ?? new JsError(toolError.Result.OutputJson), redactToolErrors, onError),
                 };
                 if (providerError)
                 {
@@ -258,14 +257,37 @@ public static partial class UIMessageStreamConverter
 
     internal const string ReasoningId = "reasoning";
 
-    // The text that the model receives for a failed tool call.
-    internal static string ModelToolErrorText(ExecutedTool result)
-        => result.ModelOutput ?? result.Error?.Message ?? result.OutputJson;
+    // The error text that the model receives for a failed tool call, or null when the error cannot be serialized. In that case the model
+    // did not receive an error text either, because creating the tool result fails the same way. Maps to getModelToolErrorText.
+    internal static string? ModelToolErrorText(ExecutedTool result)
+    {
+        try
+        {
+            return result.ModelOutput ?? result.Error?.Message ?? result.OutputJson;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    internal static string? ModelToolErrorText(Exception error)
+    {
+        try
+        {
+            return ErrorMessage.ToErrorString(error);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     // The error text of a failed tool call is not altered by default. The UI message is the record that ConvertToModelMessages sends back
-    // to the model on the next request, so a replaced text changes the history after the model has received the original.
-    private static string ToolErrorText(string modelErrorText, Exception onErrorInput, bool redactToolErrors, Func<Exception, string> onError)
-        => redactToolErrors ? onError(onErrorInput) : modelErrorText;
+    // to the model on the next request, so a replaced text changes the history after the model has received the original. When the text
+    // cannot be serialized, onError formats the error.
+    private static string ToolErrorText(string? modelErrorText, Exception onErrorInput, bool redactToolErrors, Func<Exception, string> onError)
+        => redactToolErrors ? onError(onErrorInput) : modelErrorText ?? onError(onErrorInput);
 
     private static void AddToolMetadata(JsonObject payload, IReadOnlyDictionary<string, JsonElement>? metadata)
     {

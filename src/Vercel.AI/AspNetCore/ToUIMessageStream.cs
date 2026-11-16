@@ -103,13 +103,15 @@ public static partial class UIMessageStreamConverter
 
             if (part is ToolCallPart { ToolCall: { Invalid: true, ProviderExecuted: false } } mismatchedCall
                 && chunk != null
-                && (string?)chunk["errorText"] != ErrorMessage.ToErrorString(mismatchedCall.ToolCall.Error!))
+                && ModelToolErrorText(mismatchedCall.ToolCall.Error!) is { } invalidModelText
+                && (string?)chunk["errorText"] != invalidModelText)
             {
                 mismatchedToolCallIdInCurrentStep ??= mismatchedCall.ToolCall.ToolCallId;
             }
             else if (part is ToolErrorPart { Result.ProviderExecuted: false } mismatchedError
                 && chunk != null
-                && (string?)chunk["errorText"] != ModelToolErrorText(mismatchedError.Result))
+                && ModelToolErrorText(mismatchedError.Result) is { } modelErrorText
+                && (string?)chunk["errorText"] != modelErrorText)
             {
                 mismatchedToolCallIdInCurrentStep ??= mismatchedError.Result.ToolCallId;
             }
