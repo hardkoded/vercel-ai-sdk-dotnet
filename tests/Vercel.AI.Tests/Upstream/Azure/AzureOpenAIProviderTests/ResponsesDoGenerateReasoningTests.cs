@@ -29,18 +29,13 @@ public sealed class ResponsesDoGenerateReasoningTests
             azureOptions: "{\"reasoningEffort\":\"high\",\"maxCompletionTokens\":32000,\"store\":false,\"include\":[\"reasoning.encrypted_content\"],\"reasoningSummary\":\"auto\",\"forceReasoning\":true}");
         var result = await Generate(capture, options);
 
-        // Request body of the snapshot.
+        // Request body of the snapshot (undefined fields are omitted).
+        var expectedBody = JsonNode.Parse(
+            "{\"model\":\"test-deployment\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Hello\"}]}],"
+            + "\"include\":[\"reasoning.encrypted_content\"],\"reasoning\":{\"effort\":\"high\",\"summary\":\"auto\"},\"store\":false,"
+            + "\"tools\":[{\"type\":\"function\",\"name\":\"calculator\",\"parameters\":" + Calculator + ",\"strict\":false}]}")!;
         var body = RequestBody(capture);
-        Assert.Equal("test-deployment", body["model"]!.GetValue<string>());
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("[\"reasoning.encrypted_content\"]"), body["include"]));
-        Assert.True(JsonNode.DeepEquals(JsonNode.Parse("{\"effort\":\"high\",\"summary\":\"auto\"}"), body["reasoning"]));
-        Assert.False(body["store"]!.GetValue<bool>());
-        Assert.True(JsonNode.DeepEquals(
-            JsonNode.Parse("[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Hello\"}]}]"),
-            body["input"]));
-        Assert.True(JsonNode.DeepEquals(
-            JsonNode.Parse("[{\"type\":\"function\",\"name\":\"calculator\",\"parameters\":" + Calculator + ",\"strict\":false}]"),
-            body["tools"]));
+        Assert.True(JsonNode.DeepEquals(expectedBody, body), body.ToJsonString());
 
         // Content of the snapshot.
         var output = fixture["output"]!;
@@ -75,10 +70,17 @@ public sealed class ResponsesDoGenerateReasoningTests
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(1765587000), result.ResponseTimestamp);
         Assert.StartsWith("application/json", result.ResponseHeaders["content-type"]);
 
+        // Response body of the snapshot.
+        Assert.True(JsonNode.DeepEquals(fixture, JsonNode.Parse(result.RawResponse!)));
+
         // Usage of the snapshot.
+        Assert.Equal(564, result.Usage.NoCacheInputTokens);
         Assert.Equal(564, result.Usage.InputTokens);
         Assert.Equal(0, result.Usage.CacheReadTokens);
+        Assert.Null(result.Usage.CacheWriteTokens);
+        Assert.Equal(64, result.Usage.ReasoningTokens);
         Assert.Equal(101, result.Usage.OutputTokens);
         Assert.Equal(665, result.Usage.TotalTokens);
+        Assert.True(JsonNode.DeepEquals(fixture["usage"], JsonNode.Parse(result.Usage.Raw!.Value.GetRawText())));
     }
 }
