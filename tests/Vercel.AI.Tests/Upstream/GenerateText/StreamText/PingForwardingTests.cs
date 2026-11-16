@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.AspNetCore;
-using Vercel.AI.GenerateText;
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 
