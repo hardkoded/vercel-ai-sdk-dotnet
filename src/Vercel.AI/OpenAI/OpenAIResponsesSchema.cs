@@ -476,6 +476,13 @@ internal static class OpenAIResponsesSchema
     /// <summary>Checks a Responses API response body.</summary>
     public static bool IsValidResponse(JsonElement body) => Response(body);
 
+    /// <summary>
+    /// Validates a response body (<paramref name="isResponse"/>) or a stream chunk and returns the validated value.
+    /// The rules never transform a value, so unknown keys survive untouched, like the loose objects of <c>openaiResponsesResponseSchema</c> and <c>openaiResponsesChunkSchema</c>.
+    /// </summary>
+    public static (bool Success, JsonElement Value) SafeValidateTypes(JsonElement value, bool isResponse) =>
+        ((isResponse ? IsValidResponse(value) : IsValidChunk(value)), value);
+
     /// <summary>Checks one stream event: a modeled chunk, or an unknown chunk type that falls back to <c>unknown_chunk</c>.</summary>
     public static bool IsValidChunk(JsonElement chunk) => Chunk(chunk) || IsUnknownChunk(chunk);
 

@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Tests.Upstream;
 
@@ -51,8 +52,15 @@ public sealed class OpenAIResponsesUsageSchemasTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "preserves complete usage for $name", Coverage = UpstreamCoverage.Partial)]
-    public void Accepts_complete_usage_for_(string name) => Assert.True(Validate(name, UsageJson));
+    [UpstreamTest(Prefix + "preserves complete usage for $name", Coverage = UpstreamCoverage.Covered)]
+    public void Preserves_complete_usage_for_(string name)
+    {
+        var result = OpenAIResponsesSchema.SafeValidateTypes(OpenAIUpstream.Json(Wrap(name, UsageJson)), name == "normal response");
+
+        Assert.True(result.Success);
+        var usage = name == "normal response" ? result.Value.GetProperty("usage") : result.Value.GetProperty("response").GetProperty("usage");
+        Assert.True(JsonNode.DeepEquals(JsonNode.Parse(UsageJson), JsonNode.Parse(usage.GetRawText())));
+    }
 
     [Theory]
     [MemberData(nameof(Cases))]
