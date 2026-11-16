@@ -186,7 +186,7 @@ internal static class AzureImageTestSupport
 
     public static readonly object OpenAIResponse = new { data = new[] { new { b64_json = "aGk=" } } };
 
-    public static AzureOpenAIProvider CreateProvider(AzureImageHandler handler, Action<AzureOpenAIOptions>? configure = null)
+    public static AzureOpenAIProvider CreateProvider(AzureImageHandler? handler, Action<AzureOpenAIOptions>? configure = null)
     {
         var options = new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-key" };
         configure?.Invoke(options);

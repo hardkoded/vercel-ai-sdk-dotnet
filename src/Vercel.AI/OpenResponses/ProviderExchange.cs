@@ -38,7 +38,7 @@ internal static class ProviderExchange
     private const long MaxErrorBodyBytes = 1024 * 1024;
     private const int MaxRedirects = 10;
 
-    private static readonly Lazy<HttpClient> NoRedirectClient = new Lazy<HttpClient>(() => new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }));
+    private static readonly Lazy<HttpClient> NoRedirectClient = new Lazy<HttpClient>(() => new HttpClient(new GlobalFetchHandler(allowAutoRedirect: false)));
 
     /// <summary>Sends <paramref name="content"/> and returns the body when the status is successful.</summary>
     public static async Task<ProviderExchangeResult> SendAsync(
@@ -338,5 +338,60 @@ internal static class ProviderExchange
         }
 
         return headers;
+    }
+}
+
+/// <summary>
+/// Transport of the default download client. It sends through <see cref="Vercel.AI.Util.Download.Fetch"/> when one is set,
+/// like upstream's global <c>fetch</c>, and otherwise through a client that never follows a redirect.
+/// </summary>
+internal sealed class GlobalFetchHandler : DelegatingHandler
+{
+    public GlobalFetchHandler(bool allowAutoRedirect)
+        : base(new HttpClientHandler { AllowAutoRedirect = allowAutoRedirect })
+    {
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var fetch = Vercel.AI.Util.Download.Fetch;
+        if (fetch == null)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        var headers = new Vercel.AI.Util.HeaderCollection();
+        foreach (var header in request.Headers)
+        {
+            headers.Add(header.Key, string.Join(",", header.Value));
+        }
+
+        byte[]? body = null;
+        if (request.Content != null)
+        {
+            body = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+            foreach (var header in request.Content.Headers)
+            {
+                headers.Add(header.Key, string.Join(",", header.Value));
+            }
+        }
+
+        var redirect = ((HttpClientHandler)InnerHandler!).AllowAutoRedirect ? "follow" : "manual";
+        var downloadRequest = new Vercel.AI.Util.DownloadRequest(headers, cancellationToken, redirect) { Method = request.Method.Method, Body = body };
+        var result = await fetch(request.RequestUri!.AbsoluteUri, downloadRequest).ConfigureAwait(false);
+        var message = new HttpResponseMessage((System.Net.HttpStatusCode)result.Status)
+        {
+            Content = new ByteArrayContent(result.Body ?? Array.Empty<byte>()),
+            RequestMessage = request,
+        };
+        foreach (var header in result.Headers.Entries())
+        {
+            if (!message.Headers.TryAddWithoutValidation(header.Key, header.Value))
+            {
+                message.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        }
+
+        return message;
     }
 }

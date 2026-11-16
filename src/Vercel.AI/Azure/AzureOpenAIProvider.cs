@@ -259,10 +259,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         HttpMessageHandler? transport = handler;
         if (options.TokenProvider != null && string.IsNullOrEmpty(options.ApiKey))
         {
-            transport = new AzureEntraTokenHandler(options.TokenProvider, handler ?? new HttpClientHandler());
+            transport = new AzureEntraTokenHandler(options.TokenProvider, handler ?? new GlobalFetchHandler(allowAutoRedirect: true));
         }
 
-        var client = transport is null ? new HttpClient() : new HttpClient(transport, disposeHandler: false);
+        var client = transport is null ? new HttpClient(new GlobalFetchHandler(allowAutoRedirect: true)) : new HttpClient(transport, disposeHandler: false);
 
         // Downloads skip the token-injecting handler. A caller-supplied handler stays the transport, like a custom `fetch`;
         // without one, the shared client that never follows a redirect is used.
