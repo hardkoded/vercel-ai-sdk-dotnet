@@ -144,6 +144,171 @@ public sealed class CartesiaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest(Speech + "should send volume in generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
+    public async Task Speech_sends_volume_in_the_generation_config()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"volume\":1.5}}"), CancellationToken.None);
+        JsonAssert.Equal(Body(handler).GetProperty("generation_config"), "{\"volume\":1.5}");
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should send emotion in generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
+    public async Task Speech_sends_emotion_in_the_generation_config()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"emotion\":\"calm\"}}"), CancellationToken.None);
+        JsonAssert.Equal(Body(handler).GetProperty("generation_config"), "{\"emotion\":\"calm\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should combine speed, volume and emotion in one generation_config", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
+    public async Task Speech_combines_speed_volume_and_emotion()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(speed: 1.2, providerOptions: "{\"cartesia\":{\"volume\":0.8,\"emotion\":\"sad\"}}"), CancellationToken.None);
+        JsonAssert.Equal(Body(handler).GetProperty("generation_config"), "{\"speed\":1.2,\"volume\":0.8,\"emotion\":\"sad\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should keep volume when an out-of-range generic speed is ignored", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
+    public async Task Speech_keeps_volume_when_an_out_of_range_speed_is_ignored()
+    {
+        var (model, handler) = SpeechModel();
+        var result = await model.DoGenerateAsync(SpeechCall(speed: 2, providerOptions: "{\"cartesia\":{\"volume\":1.5}}"), CancellationToken.None);
+        JsonAssert.Equal(Body(handler).GetProperty("generation_config"), "{\"volume\":1.5}");
+        AssertWarning(result.Warnings, "speed", "Cartesia speed must be between 0.6 and 1.5. The speed option was ignored.");
+    }
+
+    [Theory]
+    [InlineData("volume below the range", "{\"volume\":0.4}")]
+    [InlineData("volume above the range", "{\"volume\":2.1}")]
+    [InlineData("an unknown emotion", "{\"emotion\":\"banana\"}")]
+    [InlineData("a null volume", "{\"volume\":null}")]
+    [InlineData("a null emotion", "{\"emotion\":null}")]
+    [UpstreamTest(Speech + "should reject %s before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "392d2fa3a4feb69c1660c1ad1c25c4b21fdf45df")]
+    public async Task Speech_rejects_invalid_volume_or_emotion_before_sending(string description, string options)
+    {
+        Assert.NotEmpty(description);
+        var (model, handler) = SpeechModel();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":" + options + "}"), CancellationToken.None));
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should pass pronunciationDictionaryId as pronunciation_dict_id", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
+    public async Task Speech_sends_pronunciation_dictionary_id()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"pronunciationDictionaryId\":\"pdict_test\"}}"), CancellationToken.None);
+        Assert.Equal("pdict_test", Body(handler).GetProperty("pronunciation_dict_id").GetString());
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should reject a null pronunciationDictionaryId before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
+    public async Task Speech_rejects_a_null_pronunciation_dictionary_id()
+    {
+        var (model, handler) = SpeechModel();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"pronunciationDictionaryId\":null}}"), CancellationToken.None));
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should not send pronunciation_dict_id by default", Coverage = UpstreamCoverage.Covered, Commit = "f10414f247eff151d0315d70837530778affa81b")]
+    public async Task Speech_omits_pronunciation_dict_id_by_default()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(), CancellationToken.None);
+        Assert.False(Body(handler).TryGetProperty("pronunciation_dict_id", out _));
+    }
+
+    [Theory]
+    [InlineData("locale")]
+    [InlineData("normalization")]
+    [UpstreamTest(Speech + "rejects a null %s before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_rejects_a_null_locale_or_normalization(string option)
+    {
+        var (model, handler) = SpeechModel();
+        await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"" + option + "\":null}}"), CancellationToken.None));
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "combines locale and normalization with the other speech options", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_combines_locale_and_normalization_with_the_other_options()
+    {
+        var (model, handler) = SpeechModel();
+        await model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"locale\":\"en-GB\",\"normalization\":\"off\",\"pronunciationDictionaryId\":\"test-dictionary\",\"volume\":1.2,\"emotion\":\"excited\"}}"), CancellationToken.None);
+        var body = Body(handler);
+        Assert.Equal("en-GB", body.GetProperty("locale").GetString());
+        Assert.Equal("off", body.GetProperty("normalization").GetString());
+        Assert.Equal("test-dictionary", body.GetProperty("pronunciation_dict_id").GetString());
+        JsonAssert.Equal(body.GetProperty("generation_config"), "{\"volume\":1.2,\"emotion\":\"excited\"}");
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "rejects conflicting provider locale and language before sending a request", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_rejects_conflicting_locale_and_language()
+    {
+        var (model, handler) = SpeechModel();
+        var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"locale\":\"en-GB\",\"language\":\"en\"}}"), CancellationToken.None));
+        Assert.Equal("providerOptions", error.Parameter);
+        Assert.Contains("providerOptions.cartesia.locale cannot be combined with providerOptions.cartesia.language", error.Message);
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "preserves provider language precedence over generic language", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_preserves_provider_language_precedence()
+    {
+        var (model, handler) = SpeechModel();
+        var result = await model.DoGenerateAsync(SpeechCall(language: "en", providerOptions: "{\"cartesia\":{\"language\":\"es\"}}"), CancellationToken.None);
+        Assert.Equal("es", Body(handler).GetProperty("language").GetString());
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "sends a locale alone without language or warnings", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_sends_a_locale_alone()
+    {
+        var (model, handler) = SpeechModel();
+        var result = await model.DoGenerateAsync(SpeechCall(providerOptions: "{\"cartesia\":{\"locale\":\"en-GB\"}}"), CancellationToken.None);
+        var body = Body(handler);
+        Assert.Equal("en-GB", body.GetProperty("locale").GetString());
+        Assert.False(body.TryGetProperty("language", out _));
+        Assert.False(body.TryGetProperty("normalization", out _));
+        Assert.Empty(result.Warnings);
+    }
+
+    [Theory]
+    [InlineData("auto")]
+    [InlineData("off")]
+    [InlineData("es-MX")]
+    [UpstreamTest(Speech + "sends normalization %s independently of locale", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_sends_normalization_independently_of_locale(string normalization)
+    {
+        var (model, handler) = SpeechModel();
+        var result = await model.DoGenerateAsync(SpeechCall(language: "en", providerOptions: "{\"cartesia\":{\"normalization\":\"" + normalization + "\"}}"), CancellationToken.None);
+        var body = Body(handler);
+        Assert.Equal("en", body.GetProperty("language").GetString());
+        Assert.Equal(normalization, body.GetProperty("normalization").GetString());
+        Assert.False(body.TryGetProperty("locale", out _));
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(Speech + "should prioritize providerOptions locale over generic language and emit a warning", Coverage = UpstreamCoverage.Covered, Commit = "47b666b6c7c6b671489ec10e7111e95f32bed5ff")]
+    public async Task Speech_prioritizes_provider_locale_over_generic_language()
+    {
+        var (model, handler) = SpeechModel();
+        var result = await model.DoGenerateAsync(SpeechCall(language: "en", providerOptions: "{\"cartesia\":{\"locale\":\"en-GB\"}}"), CancellationToken.None);
+        var body = Body(handler);
+        Assert.Equal("en-GB", body.GetProperty("locale").GetString());
+        Assert.False(body.TryGetProperty("language", out _));
+        AssertWarning(result.Warnings, "language", "Cartesia does not support both locale and language. The language option was ignored in favor of providerOptions.cartesia.locale.");
+    }
+
+    [Fact]
     [UpstreamTest(Speech + "should return audio data", Coverage = UpstreamCoverage.Covered)]
     public async Task Speech_returns_the_audio_bytes()
     {

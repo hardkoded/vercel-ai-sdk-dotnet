@@ -127,6 +127,16 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
 {
     private static readonly int[] SampleRates = { 8000, 16000, 22050, 24000, 44100, 48000 };
 
+    private static readonly string[] Emotions =
+    {
+        "neutral", "happy", "excited", "enthusiastic", "elated", "euphoric", "triumphant", "amazed", "surprised", "flirtatious",
+        "curious", "content", "peaceful", "serene", "calm", "grateful", "affectionate", "trust", "sympathetic", "anticipation",
+        "mysterious", "angry", "mad", "outraged", "frustrated", "agitated", "threatened", "disgusted", "contempt", "envious",
+        "sarcastic", "ironic", "sad", "dejected", "melancholic", "disappointed", "hurt", "guilty", "bored", "tired",
+        "rejected", "nostalgic", "wistful", "apologetic", "hesitant", "insecure", "confused", "resigned", "anxious", "panicked",
+        "alarmed", "scared", "proud", "confident", "distant", "skeptical", "contemplative", "determined",
+    };
+
     private readonly CartesiaProvider _provider;
     private readonly Func<DateTime>? _clock;
 
@@ -167,6 +177,7 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             throw new AiSdkException("Cartesia speech models require a `voice` to be set.");
         }
 
+        ValidateOptions(cartesia);
         var warnings = new List<OperationWarning>();
         var body = new JsonObject
         {
@@ -175,22 +186,69 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
             ["voice"] = new JsonObject { ["mode"] = "id", ["id"] = call.Voice },
             ["output_format"] = OutputFormat(call.OutputFormat ?? "mp3", cartesia, warnings),
         };
-        var language = CartesiaProvider.ReadString(cartesia, "language") ?? (string.IsNullOrEmpty(call.Language) ? null : call.Language);
-        if (language != null)
+        var providerLocale = CartesiaProvider.ReadString(cartesia, "locale");
+        var providerLanguage = CartesiaProvider.ReadString(cartesia, "language");
+        if (providerLocale != null && providerLanguage != null)
         {
-            body["language"] = language;
+            throw new InvalidArgumentException(
+                "providerOptions",
+                cartesia?.GetRawText(),
+                "providerOptions.cartesia.locale cannot be combined with providerOptions.cartesia.language");
         }
 
+        if (providerLocale != null)
+        {
+            body["locale"] = providerLocale;
+            if (!string.IsNullOrEmpty(call.Language))
+            {
+                warnings.Add(OperationWarning.Unsupported("language", "Cartesia does not support both locale and language. The language option was ignored in favor of providerOptions.cartesia.locale."));
+            }
+        }
+        else if (providerLanguage != null)
+        {
+            body["language"] = providerLanguage;
+        }
+        else if (!string.IsNullOrEmpty(call.Language))
+        {
+            body["language"] = call.Language;
+        }
+
+        if (CartesiaProvider.ReadString(cartesia, "normalization") is { } normalization)
+        {
+            body["normalization"] = normalization;
+        }
+
+        if (CartesiaProvider.ReadString(cartesia, "pronunciationDictionaryId") is { } pronunciationDictionaryId)
+        {
+            body["pronunciation_dict_id"] = pronunciationDictionaryId;
+        }
+
+        var generationConfig = new JsonObject();
         if ((CartesiaProvider.ReadNumber(cartesia, "speed") ?? call.Speed) is { } speed)
         {
             if (speed >= 0.6 && speed <= 1.5)
             {
-                body["generation_config"] = new JsonObject { ["speed"] = speed };
+                generationConfig["speed"] = speed;
             }
             else
             {
                 warnings.Add(OperationWarning.Unsupported("speed", "Cartesia speed must be between 0.6 and 1.5. The speed option was ignored."));
             }
+        }
+
+        if (CartesiaProvider.ReadNumber(cartesia, "volume") is { } volume)
+        {
+            generationConfig["volume"] = volume;
+        }
+
+        if (CartesiaProvider.ReadString(cartesia, "emotion") is { } emotion)
+        {
+            generationConfig["emotion"] = emotion;
+        }
+
+        if (generationConfig.Count > 0)
+        {
+            body["generation_config"] = generationConfig;
         }
 
         if (!string.IsNullOrEmpty(call.Instructions))
@@ -200,6 +258,30 @@ public sealed class CartesiaSpeechModel : ISpeechModel, ISpeechCaller
 
         var response = await _provider.SendAsync("/tts/bytes", ProviderExchange.Json(body.ToJsonString()), call.Headers, cancellationToken).ConfigureAwait(false);
         return new SpeechModelResult(response.Bytes, warnings, response: new ProviderResponse(response.Headers, timestamp: timestamp, modelId: ModelId));
+    }
+
+    private static void ValidateOptions(JsonElement? cartesia)
+    {
+        if (cartesia is not { } values)
+        {
+            return;
+        }
+
+        foreach (var property in values.EnumerateObject())
+        {
+            var value = property.Value;
+            var valid = property.Name switch
+            {
+                "volume" => value.ValueKind == JsonValueKind.Number && value.GetDouble() is >= 0.5 and <= 2,
+                "emotion" => value.ValueKind == JsonValueKind.String && Array.IndexOf(Emotions, value.GetString()) >= 0,
+                "locale" or "normalization" or "pronunciationDictionaryId" => value.ValueKind == JsonValueKind.String,
+                _ => true,
+            };
+            if (!valid)
+            {
+                throw new InvalidArgumentException("providerOptions", values.GetRawText(), "Invalid cartesia provider options: " + property.Name + ".");
+            }
+        }
     }
 
     private static JsonObject OutputFormat(string outputFormat, JsonElement? cartesia, List<OperationWarning> warnings)
