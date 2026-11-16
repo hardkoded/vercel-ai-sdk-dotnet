@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace Vercel.AI.Operations;
 
@@ -145,7 +146,7 @@ public sealed class VideoOutput
         MediaType = mediaType;
     }
 
-    /// <summary><c>url</c>, <c>base64</c>, or <c>binary</c>.</summary>
+    /// <summary><c>url</c>, <c>base64</c>, <c>binary</c>, or <c>uploaded</c>. An <c>uploaded</c> output confirms the provider delivered the video to caller-managed storage. It has no URL or bytes, and its URL must never contain a signed upload URL.</summary>
     public string Type { get; }
 
     /// <summary>URL for <c>url</c> outputs.</summary>
@@ -424,25 +425,41 @@ public sealed class VideoCallInputs
 }
 
 /// <summary>Result of <see cref="GenerateVideo.GenerateVideoAsync"/>.</summary>
+[JsonConverter(typeof(GenerateVideoResultConverter))]
 public sealed class GenerateVideoResult
 {
     /// <summary>Creates a result.</summary>
-    public GenerateVideoResult(IReadOnlyList<GeneratedVideo> videos, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata)
+    public GenerateVideoResult(IReadOnlyList<GeneratedVideo> videos, IReadOnlyList<OperationWarning> warnings, IReadOnlyList<ProviderResponse> responses, JsonElement providerMetadata, int uploadedVideos = 0)
     {
         Videos = videos ?? Array.Empty<GeneratedVideo>();
+        UploadedVideos = uploadedVideos;
         Warnings = warnings ?? Array.Empty<OperationWarning>();
         Responses = responses ?? Array.Empty<ProviderResponse>();
         ProviderMetadata = providerMetadata;
     }
 
-    /// <summary>First video.</summary>
+    /// <summary>
+    /// The first video available to the SDK.
+    /// Throws <see cref="NoVideoGeneratedException"/> when all videos were delivered directly to caller-managed storage. Use <see cref="UploadedVideos"/> for upload-only results.
+    /// </summary>
     public GeneratedVideo Video
     {
-        get { return Videos[0]; }
+        get
+        {
+            if (Videos.Count == 0)
+            {
+                throw new NoVideoGeneratedException(Responses, "Videos were delivered to the upload destination. Use uploadedVideos instead of video.");
+            }
+
+            return Videos[0];
+        }
     }
 
-    /// <summary>All videos.</summary>
+    /// <summary>All videos available to the SDK, excluding videos uploaded by the provider.</summary>
     public IReadOnlyList<GeneratedVideo> Videos { get; }
+
+    /// <summary>Number of videos delivered directly to caller-managed storage. They are not downloaded and are not in <see cref="Videos"/>.</summary>
+    public int UploadedVideos { get; }
 
     /// <summary>Warnings.</summary>
     public IReadOnlyList<OperationWarning> Warnings { get; }
@@ -596,6 +613,7 @@ public static class GenerateVideo
         }).ToArray()).ConfigureAwait(false);
 
         var videos = new List<GeneratedVideo>();
+        var uploadedVideos = 0;
         var warnings = new List<OperationWarning>(inputs.Warnings);
         var responses = new List<ProviderResponse>();
         var metadata = new JsonObject();
@@ -603,6 +621,12 @@ public static class GenerateVideo
         {
             foreach (var video in result.Videos)
             {
+                if (video.Type == "uploaded")
+                {
+                    uploadedVideos++;
+                    continue;
+                }
+
                 videos.Add(await MaterializeAsync(video, request.Download, token).ConfigureAwait(false));
             }
 
@@ -611,7 +635,7 @@ public static class GenerateVideo
             MergeMetadata(metadata, result.ProviderMetadata);
         }
 
-        if (videos.Count == 0)
+        if (videos.Count == 0 && uploadedVideos == 0)
         {
             throw new NoVideoGeneratedException(responses);
         }
@@ -621,7 +645,7 @@ public static class GenerateVideo
             WarningLog.Write(warnings, model.Provider, model.ModelId);
         }
 
-        return new GenerateVideoResult(videos, warnings, responses, OperationJson.Parse(metadata.ToJsonString()));
+        return new GenerateVideoResult(videos, warnings, responses, OperationJson.Parse(metadata.ToJsonString()), uploadedVideos);
     }
 
     /// <summary>Normalizes prompt, frames, and references.</summary>
@@ -1054,5 +1078,39 @@ public static class GetVideoStatus
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         return await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, ct => model.DoStatusAsync(new VideoModelCall(null, 0, null, null, null, null, null, null, null, null, null, OperationJson.Parse("{}"), headers, ct, operation: request.Operation), ct), null).ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Writes a <see cref="GenerateVideoResult"/> without evaluating the throwing <see cref="GenerateVideoResult.Video"/> getter on upload-only results.
+/// The <c>video</c> property is written only when <see cref="GenerateVideoResult.Videos"/> is not empty, as upstream keeps it non-enumerable then.
+/// </summary>
+internal sealed class GenerateVideoResultConverter : JsonConverter<GenerateVideoResult>
+{
+    public override GenerateVideoResult Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        throw new NotSupportedException("GenerateVideoResult is write-only for JSON.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, GenerateVideoResult value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        if (value.Videos.Count > 0)
+        {
+            Property(writer, options, "Video", value.Video);
+        }
+
+        Property(writer, options, "Videos", value.Videos);
+        Property(writer, options, "UploadedVideos", value.UploadedVideos);
+        Property(writer, options, "Warnings", value.Warnings);
+        Property(writer, options, "Responses", value.Responses);
+        Property(writer, options, "ProviderMetadata", value.ProviderMetadata);
+        writer.WriteEndObject();
+    }
+
+    private static void Property<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
+    {
+        writer.WritePropertyName(options.PropertyNamingPolicy?.ConvertName(name) ?? name);
+        JsonSerializer.Serialize(writer, value, options);
     }
 }
