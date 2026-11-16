@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Streams a structured object from Claude on Vertex with native structured output.</Description>
+  </PropertyGroup>
+</Project>

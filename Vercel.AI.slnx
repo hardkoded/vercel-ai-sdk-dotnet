@@ -20,6 +20,8 @@
     <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
     <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
     <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
+    <Project Path="examples/GenerateVertexAnthropicOutputObjectNative/GenerateVertexAnthropicOutputObjectNative.csproj" />
+    <Project Path="examples/StreamVertexAnthropicOutputObjectNative/StreamVertexAnthropicOutputObjectNative.csproj" />
     <Project Path="examples/GenerateText/GenerateText.csproj" />
     <Project Path="examples/GenerateTextCerebrasServiceTier/GenerateTextCerebrasServiceTier.csproj" />
     <Project Path="examples/GenerateVideoXaiBasic/GenerateVideoXaiBasic.csproj" />

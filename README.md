@@ -172,6 +172,8 @@ Every code block in this README comes from a project in [examples](examples). Ea
 | --- | --- |
 | [GenerateText](examples/GenerateText) | Generate text with a Gateway model string. |
 | [GenerateStructuredData](examples/GenerateStructuredData) | Generate a JSON object that matches a schema. |
+| [GenerateVertexAnthropicOutputObjectNative](examples/GenerateVertexAnthropicOutputObjectNative) | Generate a structured object from Claude on Vertex with native structured output. |
+| [StreamVertexAnthropicOutputObjectNative](examples/StreamVertexAnthropicOutputObjectNative) | Stream a structured object from Claude on Vertex with native structured output. |
 | [Agent](examples/Agent) | Run an agent that calls a tool. |
 | [Providers](examples/Providers) | Call a model through the Gateway and through a provider directly. |
 | [StreamText](examples/StreamText) | Stream text as the model writes it. |
