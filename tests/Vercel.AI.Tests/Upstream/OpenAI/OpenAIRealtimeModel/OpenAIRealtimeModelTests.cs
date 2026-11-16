@@ -32,7 +32,8 @@ public sealed class OpenAIRealtimeModelTests
             {
                 await Task.Yield();
                 return new Dictionary<string, string?> { ["authorization"] = "Bearer test-key", ["omitted"] = null };
-            },
+            }
+            ,
         };
 
         var model = new RealtimeModel("gpt-realtime", new OpenAIRealtimeModelConfig("openai.realtime", "https://api.openai.com/v1", headers));
