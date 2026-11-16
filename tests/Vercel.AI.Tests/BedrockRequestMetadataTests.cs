@@ -15,14 +15,19 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        var result = await model.DoGenerateAsync(Call(@"{
+        var result = await model.DoGenerateAsync(
+            Call(
+                @"{
             ""amazon-bedrock"": {
                 ""requestMetadata"": { ""team"": ""search"", ""environment"": ""prod"" },
                 ""reasoningConfig"": { ""type"": ""enabled"", ""budgetTokens"": 1024 },
                 ""serviceTier"": ""default"",
                 ""additionalModelRequestFields"": { ""topK"": 1 }
             }
-        }"), CancellationToken.None);
+        }"
+            ),
+            CancellationToken.None
+        );
 
         Assert.Equal("ok", result.Text);
         Assert.Contains("/converse", handler.Uri);
@@ -34,7 +39,10 @@ public sealed class BedrockRequestMetadataTests
         Assert.Equal("prod", metadata.GetProperty("environment").GetString());
         Assert.Equal(1, CountOf(handler.Body, "\"requestMetadata\""));
         Assert.False(document.RootElement.TryGetProperty("reasoningConfig", out _));
-        Assert.Equal("default", document.RootElement.GetProperty("serviceTier").GetProperty("type").GetString());
+        Assert.Equal(
+            "default",
+            document.RootElement.GetProperty("serviceTier").GetProperty("type").GetString()
+        );
         var fields = document.RootElement.GetProperty("additionalModelRequestFields");
         Assert.False(fields.TryGetProperty("serviceTier", out _));
         Assert.Equal(1, fields.GetProperty("topK").GetInt32());
@@ -48,10 +56,13 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        await model.DoGenerateAsync(new LanguageModelCallOptions
-        {
-            Prompt = new ModelMessage[] { new UserModelMessage("hi") },
-        }, CancellationToken.None);
+        await model.DoGenerateAsync(
+            new LanguageModelCallOptions
+            {
+                Prompt = new ModelMessage[] { new UserModelMessage("hi") },
+            },
+            CancellationToken.None
+        );
 
         using var document = JsonDocument.Parse(handler.Body);
         Assert.False(document.RootElement.TryGetProperty("requestMetadata", out _));
@@ -63,9 +74,16 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        await Assert.ThrowsAsync<ArgumentException>(() => model.DoGenerateAsync(Call(@"{
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            model.DoGenerateAsync(
+                Call(
+                    @"{
             ""amazon-bedrock"": { ""requestMetadata"": { ""team"": 42 } }
-        }"), CancellationToken.None));
+        }"
+                ),
+                CancellationToken.None
+            )
+        );
 
         Assert.Equal(0, handler.Calls);
         Assert.Equal(string.Empty, handler.Body);
@@ -76,9 +94,14 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        var result = await model.DoGenerateAsync(Call(@"{
+        var result = await model.DoGenerateAsync(
+            Call(
+                @"{
             ""amazon-bedrock"": { ""requestMetadata"": { ""team"": ""search"", ""environment"": ""prod"" } }
-        }"), CancellationToken.None);
+        }"
+            ),
+            CancellationToken.None
+        );
 
         Assert.Equal("ok", result.Text);
         using var document = JsonDocument.Parse(handler.Body);
@@ -93,7 +116,10 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        var result = await model.DoGenerateAsync(Call(@"{ ""amazon-bedrock"": {} }"), CancellationToken.None);
+        var result = await model.DoGenerateAsync(
+            Call(@"{ ""amazon-bedrock"": {} }"),
+            CancellationToken.None
+        );
 
         Assert.Equal("ok", result.Text);
         using var document = JsonDocument.Parse(handler.Body);
@@ -108,7 +134,14 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        await model.DoGenerateAsync(Call("{\"" + key + "\": { \"requestMetadata\": { \"team\": \"search\", \"environment\": \"prod\" } }}"), CancellationToken.None);
+        await model.DoGenerateAsync(
+            Call(
+                "{\""
+                    + key
+                    + "\": { \"requestMetadata\": { \"team\": \"search\", \"environment\": \"prod\" } }}"
+            ),
+            CancellationToken.None
+        );
 
         using var document = JsonDocument.Parse(handler.Body);
         var metadata = document.RootElement.GetProperty("requestMetadata");
@@ -121,11 +154,16 @@ public sealed class BedrockRequestMetadataTests
     {
         var handler = new ScriptedHandler();
         var model = CreateModel(handler);
-        await model.DoGenerateAsync(Call(@"{
+        await model.DoGenerateAsync(
+            Call(
+                @"{
             ""amazon-bedrock"": { ""reasoningConfig"": { ""type"": ""enabled"" } },
             ""amazonBedrock"": { ""requestMetadata"": { ""team"": ""later"" } },
             ""bedrock"": { ""requestMetadata"": { ""team"": ""legacy"" } }
-        }"), CancellationToken.None);
+        }"
+            ),
+            CancellationToken.None
+        );
 
         using var document = JsonDocument.Parse(handler.Body);
         Assert.False(document.RootElement.TryGetProperty("requestMetadata", out _));
@@ -133,23 +171,34 @@ public sealed class BedrockRequestMetadataTests
 
         handler = new ScriptedHandler();
         model = CreateModel(handler);
-        await model.DoGenerateAsync(Call(@"{
+        await model.DoGenerateAsync(
+            Call(
+                @"{
             ""amazonBedrock"": { ""requestMetadata"": { ""team"": ""primary"" } },
             ""bedrock"": { ""requestMetadata"": { ""team"": ""legacy"" } }
-        }"), CancellationToken.None);
+        }"
+            ),
+            CancellationToken.None
+        );
 
         using var second = JsonDocument.Parse(handler.Body);
-        Assert.Equal("primary", second.RootElement.GetProperty("requestMetadata").GetProperty("team").GetString());
+        Assert.Equal(
+            "primary",
+            second.RootElement.GetProperty("requestMetadata").GetProperty("team").GetString()
+        );
     }
 
     private static AmazonBedrockLanguageModel CreateModel(HttpMessageHandler handler)
     {
-        var provider = AmazonBedrockProvider.Create(new AmazonBedrockOptions
-        {
-            AccessKeyId = "AKIA",
-            SecretAccessKey = "secret",
-            UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        }, handler);
+        var provider = AmazonBedrockProvider.Create(
+            new AmazonBedrockOptions
+            {
+                AccessKeyId = "AKIA",
+                SecretAccessKey = "secret",
+                UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            },
+            handler
+        );
         return (AmazonBedrockLanguageModel)provider.LanguageModel("anthropic.claude-3-haiku");
     }
 

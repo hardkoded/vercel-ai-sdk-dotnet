@@ -13,16 +13,19 @@ namespace Vercel.AI.Xai;
 internal static class XaiResponsesTools
 {
     /// <summary>Arguments of <c>xai.web_search</c>. Maps to <c>webSearchArgsSchema</c>.</summary>
-    internal static readonly JsonNode WebSearchArgsSchema = JsonNode.Parse("""
+    internal static readonly JsonNode WebSearchArgsSchema = JsonNode.Parse(
+        """
         {"type":"object","properties":{
           "allowedDomains":{"type":"array","items":{"type":"string"},"maxItems":5},
           "excludedDomains":{"type":"array","items":{"type":"string"},"maxItems":5},
           "enableImageSearch":{"type":"boolean"},
           "enableImageUnderstanding":{"type":"boolean"}}}
-        """)!;
+        """
+    )!;
 
     /// <summary>Arguments of <c>xai.x_search</c>. Maps to <c>xSearchArgsSchema</c>.</summary>
-    internal static readonly JsonNode XSearchArgsSchema = JsonNode.Parse("""
+    internal static readonly JsonNode XSearchArgsSchema = JsonNode.Parse(
+        """
         {"type":"object","properties":{
           "allowedXHandles":{"type":"array","items":{"type":"string"},"maxItems":20},
           "excludedXHandles":{"type":"array","items":{"type":"string"},"maxItems":20},
@@ -30,23 +33,29 @@ internal static class XaiResponsesTools
           "toDate":{"type":"string"},
           "enableImageUnderstanding":{"type":"boolean"},
           "enableVideoUnderstanding":{"type":"boolean"}}}
-        """)!;
+        """
+    )!;
 
     /// <summary>Arguments of <c>xai.image_generation</c>. Maps to <c>imageGenerationArgsSchema</c>.</summary>
-    internal static readonly JsonNode ImageGenerationArgsSchema = JsonNode.Parse("""
+    internal static readonly JsonNode ImageGenerationArgsSchema = JsonNode.Parse(
+        """
         {"type":"object","properties":{"action":{"type":"string","enum":["auto","generate","edit"]}}}
-        """)!;
+        """
+    )!;
 
     /// <summary>Arguments of <c>xai.file_search</c>. Maps to <c>fileSearchArgsSchema</c>.</summary>
-    internal static readonly JsonNode FileSearchArgsSchema = JsonNode.Parse("""
+    internal static readonly JsonNode FileSearchArgsSchema = JsonNode.Parse(
+        """
         {"type":"object","properties":{
           "vectorStoreIds":{"type":"array","items":{"type":"string"}},
           "maxNumResults":{"type":"number"}},
          "required":["vectorStoreIds"]}
-        """)!;
+        """
+    )!;
 
     /// <summary>Arguments of <c>xai.mcp</c>. Maps to <c>mcpServerArgsSchema</c>.</summary>
-    internal static readonly JsonNode McpServerArgsSchema = JsonNode.Parse("""
+    internal static readonly JsonNode McpServerArgsSchema = JsonNode.Parse(
+        """
         {"type":"object","properties":{
           "serverUrl":{"type":"string"},
           "serverLabel":{"type":"string"},
@@ -55,7 +64,8 @@ internal static class XaiResponsesTools
           "headers":{"type":"object","properties":{},"additionalProperties":{"type":"string"}},
           "authorization":{"type":"string"}},
          "required":["serverUrl"]}
-        """)!;
+        """
+    )!;
 
     internal sealed class Prepared
     {
@@ -95,7 +105,9 @@ internal static class XaiResponsesTools
                 }
                 else
                 {
-                    warnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.Name, null));
+                    warnings.Add(
+                        new CallWarning("unsupported", "provider-defined tool " + tool.Name, null)
+                    );
                 }
 
                 continue;
@@ -107,9 +119,10 @@ internal static class XaiResponsesTools
                 function["description"] = tool.Description;
             }
 
-            function["parameters"] = tool.InputSchema.ValueKind == JsonValueKind.Undefined
-                ? new JsonObject()
-                : JsonNode.Parse(tool.InputSchema.GetRawText());
+            function["parameters"] =
+                tool.InputSchema.ValueKind == JsonValueKind.Undefined
+                    ? new JsonObject()
+                    : JsonNode.Parse(tool.InputSchema.GetRawText());
             if (tool.Strict is { } strict)
             {
                 function["strict"] = strict;
@@ -132,28 +145,30 @@ internal static class XaiResponsesTools
         switch (tool.ProviderToolId)
         {
             case "xai.web_search":
-                {
-                    var args = Validate(tool, WebSearchArgsSchema);
-                    return Wire(
-                        "web_search",
-                        ("allowed_domains", args["allowedDomains"]),
-                        ("excluded_domains", args["excludedDomains"]),
-                        ("enable_image_search", args["enableImageSearch"]),
-                        ("enable_image_understanding", args["enableImageUnderstanding"]));
-                }
+            {
+                var args = Validate(tool, WebSearchArgsSchema);
+                return Wire(
+                    "web_search",
+                    ("allowed_domains", args["allowedDomains"]),
+                    ("excluded_domains", args["excludedDomains"]),
+                    ("enable_image_search", args["enableImageSearch"]),
+                    ("enable_image_understanding", args["enableImageUnderstanding"])
+                );
+            }
 
             case "xai.x_search":
-                {
-                    var args = Validate(tool, XSearchArgsSchema);
-                    return Wire(
-                        "x_search",
-                        ("allowed_x_handles", args["allowedXHandles"]),
-                        ("excluded_x_handles", args["excludedXHandles"]),
-                        ("from_date", args["fromDate"]),
-                        ("to_date", args["toDate"]),
-                        ("enable_image_understanding", args["enableImageUnderstanding"]),
-                        ("enable_video_understanding", args["enableVideoUnderstanding"]));
-                }
+            {
+                var args = Validate(tool, XSearchArgsSchema);
+                return Wire(
+                    "x_search",
+                    ("allowed_x_handles", args["allowedXHandles"]),
+                    ("excluded_x_handles", args["excludedXHandles"]),
+                    ("from_date", args["fromDate"]),
+                    ("to_date", args["toDate"]),
+                    ("enable_image_understanding", args["enableImageUnderstanding"]),
+                    ("enable_video_understanding", args["enableVideoUnderstanding"])
+                );
+            }
 
             case "xai.code_execution":
                 return Wire("code_interpreter");
@@ -162,28 +177,33 @@ internal static class XaiResponsesTools
             case "xai.view_x_video":
                 return Wire("view_x_video");
             case "xai.image_generation":
-                return Wire("image_generation", ("action", Validate(tool, ImageGenerationArgsSchema)["action"]));
+                return Wire(
+                    "image_generation",
+                    ("action", Validate(tool, ImageGenerationArgsSchema)["action"])
+                );
             case "xai.file_search":
-                {
-                    var args = Validate(tool, FileSearchArgsSchema);
-                    return Wire(
-                        "file_search",
-                        ("vector_store_ids", args["vectorStoreIds"]),
-                        ("max_num_results", args["maxNumResults"]));
-                }
+            {
+                var args = Validate(tool, FileSearchArgsSchema);
+                return Wire(
+                    "file_search",
+                    ("vector_store_ids", args["vectorStoreIds"]),
+                    ("max_num_results", args["maxNumResults"])
+                );
+            }
 
             case "xai.mcp":
-                {
-                    var args = Validate(tool, McpServerArgsSchema);
-                    return Wire(
-                        "mcp",
-                        ("server_url", args["serverUrl"]),
-                        ("server_label", args["serverLabel"]),
-                        ("server_description", args["serverDescription"]),
-                        ("allowed_tools", args["allowedTools"]),
-                        ("headers", args["headers"]),
-                        ("authorization", args["authorization"]));
-                }
+            {
+                var args = Validate(tool, McpServerArgsSchema);
+                return Wire(
+                    "mcp",
+                    ("server_url", args["serverUrl"]),
+                    ("server_label", args["serverLabel"]),
+                    ("server_description", args["serverDescription"]),
+                    ("allowed_tools", args["allowedTools"]),
+                    ("headers", args["headers"]),
+                    ("authorization", args["authorization"])
+                );
+            }
 
             default:
                 return null;
@@ -192,7 +212,10 @@ internal static class XaiResponsesTools
 
     private static JsonObject Validate(LanguageModelTool tool, JsonNode schema)
     {
-        var args = tool.Args.ValueKind == JsonValueKind.Undefined ? OpenAI.OpenAIJson.Parse("{}") : tool.Args;
+        var args =
+            tool.Args.ValueKind == JsonValueKind.Undefined
+                ? OpenAI.OpenAIJson.Parse("{}")
+                : tool.Args;
         return (JsonObject)JsonNode.Parse(JsonParsing.ValidateTypes(args, schema).GetRawText())!;
     }
 
@@ -211,7 +234,11 @@ internal static class XaiResponsesTools
         return wire;
     }
 
-    private static JsonNode? MapToolChoice(ToolChoice? toolChoice, IReadOnlyList<LanguageModelTool> tools, List<CallWarning> warnings)
+    private static JsonNode? MapToolChoice(
+        ToolChoice? toolChoice,
+        IReadOnlyList<LanguageModelTool> tools,
+        List<CallWarning> warnings
+    )
     {
         switch (toolChoice)
         {
@@ -228,7 +255,13 @@ internal static class XaiResponsesTools
                 if (selected.IsProviderDefined)
                 {
                     // xAI can force only function tools.
-                    warnings.Add(new CallWarning("unsupported", "toolChoice for server-side tool \"" + selected.Name + "\"", null));
+                    warnings.Add(
+                        new CallWarning(
+                            "unsupported",
+                            "toolChoice for server-side tool \"" + selected.Name + "\"",
+                            null
+                        )
+                    );
                     return null;
                 }
 

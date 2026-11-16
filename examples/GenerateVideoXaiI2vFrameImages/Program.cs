@@ -21,17 +21,20 @@ if (!File.Exists(path))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-i2v-frame-images
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt(
-        "The comic cat stretches, yawns, and pads off across a sunlit room. "
-        + "Cinematic, warm afternoon light."),
-    FrameImages = [new VideoFrameImage(File.ReadAllBytes(path), "first_frame")],
-    Duration = 8,
-    AspectRatio = "16:9",
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "The comic cat stretches, yawns, and pads off across a sunlit room. "
+                + "Cinematic, warm afternoon light."
+        ),
+        FrameImages = [new VideoFrameImage(File.ReadAllBytes(path), "first_frame")],
+        Duration = 8,
+        AspectRatio = "16:9",
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 #endregion
 
 await File.WriteAllBytesAsync("video.mp4", result.Video.Data);

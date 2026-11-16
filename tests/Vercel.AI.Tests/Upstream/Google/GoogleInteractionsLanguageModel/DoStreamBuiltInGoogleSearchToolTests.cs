@@ -11,11 +11,14 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 /// </summary>
 public sealed class DoStreamBuiltInGoogleSearchToolTests
 {
-    private const string Prefix = "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream > built-in google_search tool::";
+    private const string Prefix =
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doStream > built-in google_search tool::";
 
     private static async Task<List<LanguageModelStreamPart>> Parts()
     {
-        var model = GoogleInteractionsStreamSupport.Model(GoogleInteractionsStreamSupport.FixtureHandler("google-search"));
+        var model = GoogleInteractionsStreamSupport.Model(
+            GoogleInteractionsStreamSupport.FixtureHandler("google-search")
+        );
         var options = GoogleUpstream.Prompt(new UserModelMessage("Hello, how are you?"));
         // Upstream also passes the google_search tool. The port does not send Interactions tools yet, and the stream does not depend on them.
         options.IncludeRawChunks = false;
@@ -23,16 +26,24 @@ public sealed class DoStreamBuiltInGoogleSearchToolTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits provider-executed tool-call/tool-result and source parts for google_search results", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "emits provider-executed tool-call/tool-result and source parts for google_search results",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_provider_executed_tool_call_tool_result_and_source_parts_for_google_search_results()
     {
         var parts = await Parts();
 
-        var toolCall = Assert.IsType<ToolCallStreamPart>(parts.First(part => part is ToolCallStreamPart));
+        var toolCall = Assert.IsType<ToolCallStreamPart>(
+            parts.First(part => part is ToolCallStreamPart)
+        );
         Assert.Equal("google_search", toolCall.ToolName);
         Assert.True(toolCall.ProviderExecuted);
 
-        var toolResult = Assert.IsType<ToolResultStreamPart>(parts.First(part => part is ToolResultStreamPart));
+        var toolResult = Assert.IsType<ToolResultStreamPart>(
+            parts.First(part => part is ToolResultStreamPart)
+        );
         Assert.Equal("google_search", toolResult.ToolName);
 
         var sourceUrls = parts.OfType<SourceStreamPart>().Select(source => source.Url).ToList();
@@ -47,7 +58,11 @@ public sealed class DoStreamBuiltInGoogleSearchToolTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "de-duplicates source urls when the same url appears in tool-result and text_annotation", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "de-duplicates source urls when the same url appears in tool-result and text_annotation",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task De_duplicates_source_urls_when_the_same_url_appears_in_tool_result_and_text_annotation()
     {
         var parts = await Parts();

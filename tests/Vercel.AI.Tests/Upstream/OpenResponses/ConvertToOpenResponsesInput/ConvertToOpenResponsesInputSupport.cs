@@ -16,7 +16,10 @@ internal static class ConvertToOpenResponsesInputSupport
         return OpenResponsesInput.Convert(prompt);
     }
 
-    internal static OpenResponsesInputResult Convert(string providerOptionsName, params ModelMessage[] prompt)
+    internal static OpenResponsesInputResult Convert(
+        string providerOptionsName,
+        params ModelMessage[] prompt
+    )
     {
         return OpenResponsesInput.Convert(prompt, providerOptionsName);
     }
@@ -41,19 +44,42 @@ internal static class ConvertToOpenResponsesInputSupport
         return new AssistantModelMessage(parts);
     }
 
-    internal static AssistantModelMessage AssistantToolCalls(string? text, params GeneratedToolCall[] calls)
+    internal static AssistantModelMessage AssistantToolCalls(
+        string? text,
+        params GeneratedToolCall[] calls
+    )
     {
         return new AssistantModelMessage(text, calls, null);
     }
 
-    internal static FileContentPart File(string mediaType, string base64, string? fileName = null, string? providerOptions = null)
+    internal static FileContentPart File(
+        string mediaType,
+        string base64,
+        string? fileName = null,
+        string? providerOptions = null
+    )
     {
-        return new FileContentPart(mediaType, null, System.Convert.FromBase64String(base64), fileName) { ProviderOptions = Options(providerOptions) };
+        return new FileContentPart(
+            mediaType,
+            null,
+            System.Convert.FromBase64String(base64),
+            fileName
+        )
+        {
+            ProviderOptions = Options(providerOptions),
+        };
     }
 
-    internal static FileContentPart UrlFile(string mediaType, string url, string? providerOptions = null)
+    internal static FileContentPart UrlFile(
+        string mediaType,
+        string url,
+        string? providerOptions = null
+    )
     {
-        return new FileContentPart(mediaType, url, null, null) { ProviderOptions = Options(providerOptions) };
+        return new FileContentPart(mediaType, url, null, null)
+        {
+            ProviderOptions = Options(providerOptions),
+        };
     }
 
     private static Dictionary<string, JsonElement>? Options(string? json)

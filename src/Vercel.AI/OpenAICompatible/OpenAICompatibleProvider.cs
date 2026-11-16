@@ -76,9 +76,14 @@ public class OpenAICompatibleProvider : ProviderBase
     }
 
     /// <summary>Creates a provider with an <see cref="HttpClient"/> that uses <paramref name="handler"/>.</summary>
-    public static OpenAICompatibleProvider Create(OpenAICompatibleOptions options, HttpMessageHandler? handler = null)
+    public static OpenAICompatibleProvider Create(
+        OpenAICompatibleOptions options,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             // The configured transport also serves untrusted downloads: upstream uses `downloadFetch ?? config.fetch`.
@@ -96,7 +101,9 @@ public class OpenAICompatibleProvider : ProviderBase
     }
 
     /// <summary>Builds headers and lets <paramref name="callHeaders"/> override them.</summary>
-    public Dictionary<string, string?> CreateHeaders(IReadOnlyDictionary<string, string?>? callHeaders)
+    public Dictionary<string, string?> CreateHeaders(
+        IReadOnlyDictionary<string, string?>? callHeaders
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         var key = ResolveApiKey();
@@ -184,7 +191,10 @@ public class OpenAICompatibleProvider : ProviderBase
         if (Options.RequireApiKey)
         {
             throw new AiSdkException(
-                "API key is required. Pass it explicitly or set the " + Options.ApiKeyEnvironmentVariable + " environment variable.");
+                "API key is required. Pass it explicitly or set the "
+                    + Options.ApiKeyEnvironmentVariable
+                    + " environment variable."
+            );
         }
 
         return null;
@@ -195,15 +205,24 @@ public class OpenAICompatibleProvider : ProviderBase
         Uri uri,
         string json,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            return await Http.SendJsonStringAsync(HttpMethod.Post, uri, json, headers, cancellationToken).ConfigureAwait(false);
+            return await Http.SendJsonStringAsync(
+                    HttpMethod.Post,
+                    uri,
+                    json,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
-            var message = Options.SelectErrorMessage?.Invoke(exception.ResponseBody) ?? OpenAICompatibleChat.ReadErrorMessage(exception.ResponseBody);
+            var message = Options.SelectErrorMessage?.Invoke(exception.ResponseBody)
+                ?? OpenAICompatibleChat.ReadErrorMessage(exception.ResponseBody);
             if (string.IsNullOrEmpty(message) || message == exception.Message)
             {
                 throw;
@@ -218,7 +237,8 @@ public class OpenAICompatibleProvider : ProviderBase
         Uri uri,
         string json,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
@@ -228,9 +248,12 @@ public class OpenAICompatibleProvider : ProviderBase
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            response = await _httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested)
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
@@ -244,7 +267,9 @@ public class OpenAICompatibleProvider : ProviderBase
             string body;
             try
             {
-                body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+                body = await CancellableReads
+                    .ReadAsStringAsync(response.Content, cancellationToken)
+                    .ConfigureAwait(false);
             }
             finally
             {
@@ -252,7 +277,8 @@ public class OpenAICompatibleProvider : ProviderBase
             }
 
             var error = ProviderHttp.MapStatus((int)response.StatusCode, body);
-            var message = Options.SelectErrorMessage?.Invoke(body) ?? OpenAICompatibleChat.ReadErrorMessage(body);
+            var message = Options.SelectErrorMessage?.Invoke(body)
+                ?? OpenAICompatibleChat.ReadErrorMessage(body);
             if (!string.IsNullOrEmpty(message) && message != error.Message)
             {
                 throw OpenAICompatibleChat.WithMessage(error, message!);
@@ -269,7 +295,8 @@ public class OpenAICompatibleProvider : ProviderBase
         Uri uri,
         MultipartFormDataContent content,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
         ApplyHeaders(request, headers);
@@ -280,7 +307,8 @@ public class OpenAICompatibleProvider : ProviderBase
     public Task<OpenAICompatibleBinaryResponse> GetBinaryAsync(
         Uri uri,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var request = new HttpRequestMessage(HttpMethod.Get, uri);
         ApplyHeaders(request, headers);
@@ -292,7 +320,8 @@ public class OpenAICompatibleProvider : ProviderBase
         Uri uri,
         string json,
         IReadOnlyDictionary<string, string?>? headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
@@ -302,15 +331,21 @@ public class OpenAICompatibleProvider : ProviderBase
         return await ReadBinaryAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<OpenAICompatibleBinaryResponse> ReadBinaryAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    private async Task<OpenAICompatibleBinaryResponse> ReadBinaryAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         using var ownedRequest = request;
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            response = await _httpClient
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested)
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
@@ -325,7 +360,9 @@ public class OpenAICompatibleProvider : ProviderBase
         bool success;
         try
         {
-            bytes = await CancellableReads.ReadAsByteArrayAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            bytes = await CancellableReads
+                .ReadAsByteArrayAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
             copied = CopyHeaders(response);
             status = (int)response.StatusCode;
             success = response.IsSuccessStatusCode;
@@ -339,7 +376,8 @@ public class OpenAICompatibleProvider : ProviderBase
         {
             var body = Encoding.UTF8.GetString(bytes);
             var error = ProviderHttp.MapStatus(status, body);
-            var message = Options.SelectErrorMessage?.Invoke(body) ?? OpenAICompatibleChat.ReadErrorMessage(body);
+            var message = Options.SelectErrorMessage?.Invoke(body)
+                ?? OpenAICompatibleChat.ReadErrorMessage(body);
             if (!string.IsNullOrEmpty(message) && message != error.Message)
             {
                 throw OpenAICompatibleChat.WithMessage(error, message!);
@@ -351,15 +389,21 @@ public class OpenAICompatibleProvider : ProviderBase
         return new OpenAICompatibleBinaryResponse(bytes, copied, status);
     }
 
-    private async Task<ProviderTextResponse> ReadTextAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    private async Task<ProviderTextResponse> ReadTextAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         using var ownedRequest = request;
         HttpResponseMessage response;
         try
         {
-            response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response = await _httpClient
+                .SendAsync(request, cancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception)
+            when (cancellationToken.IsCancellationRequested)
         {
             throw new ApiUserAbortException(exception, cancellationToken);
         }
@@ -374,7 +418,9 @@ public class OpenAICompatibleProvider : ProviderBase
         bool success;
         try
         {
-            body = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+            body = await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
             copied = CopyHeaders(response);
             status = (int)response.StatusCode;
             success = response.IsSuccessStatusCode;
@@ -387,7 +433,8 @@ public class OpenAICompatibleProvider : ProviderBase
         if (!success)
         {
             var error = ProviderHttp.MapStatus(status, body);
-            var message = Options.SelectErrorMessage?.Invoke(body) ?? OpenAICompatibleChat.ReadErrorMessage(body);
+            var message = Options.SelectErrorMessage?.Invoke(body)
+                ?? OpenAICompatibleChat.ReadErrorMessage(body);
             if (!string.IsNullOrEmpty(message) && message != error.Message)
             {
                 throw OpenAICompatibleChat.WithMessage(error, message!);
@@ -422,7 +469,10 @@ public class OpenAICompatibleProvider : ProviderBase
             full = prefix + "/v1/" + path;
         }
 
-        if (Options.AzureUseDeploymentBasedUrls || (info.IsAzureOpenAI && !info.IsVersioned && !info.IsFoundryProject))
+        if (
+            Options.AzureUseDeploymentBasedUrls
+            || (info.IsAzureOpenAI && !info.IsVersioned && !info.IsFoundryProject)
+        )
         {
             full += "?api-version=" + Uri.EscapeDataString(Options.AzureApiVersion!);
         }
@@ -466,14 +516,18 @@ public class OpenAICompatibleProvider : ProviderBase
     /// <summary>Images URL.</summary>
     public Uri ImagesUri()
     {
-        var origin = string.IsNullOrEmpty(Options.ImageBaseUrl) ? Options.BaseUrl : Options.ImageBaseUrl!;
+        var origin = string.IsNullOrEmpty(Options.ImageBaseUrl)
+            ? Options.BaseUrl
+            : Options.ImageBaseUrl!;
         return WithQuery(ApiKeys.Combine(origin, Options.ImagesPath));
     }
 
     /// <summary>Image edits URL.</summary>
     public Uri ImagesEditsUri()
     {
-        var origin = string.IsNullOrEmpty(Options.ImageBaseUrl) ? Options.BaseUrl : Options.ImageBaseUrl!;
+        var origin = string.IsNullOrEmpty(Options.ImageBaseUrl)
+            ? Options.BaseUrl
+            : Options.ImageBaseUrl!;
         return WithQuery(ApiKeys.Combine(origin, "images/edits"));
     }
 
@@ -512,7 +566,10 @@ public class OpenAICompatibleProvider : ProviderBase
         return builder.Uri;
     }
 
-    private static void ApplyHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string?>? headers)
+    private static void ApplyHeaders(
+        HttpRequestMessage request,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
         if (headers == null)
         {
@@ -521,7 +578,10 @@ public class OpenAICompatibleProvider : ProviderBase
 
         foreach (var pair in headers)
         {
-            if (string.IsNullOrEmpty(pair.Value) || pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            if (
+                string.IsNullOrEmpty(pair.Value)
+                || pair.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 continue;
             }
@@ -532,9 +592,11 @@ public class OpenAICompatibleProvider : ProviderBase
                 var space = value.IndexOf(' ');
                 if (space > 0)
                 {
-                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
-                        value.Substring(0, space),
-                        value.Substring(space + 1));
+                    request.Headers.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue(
+                            value.Substring(0, space),
+                            value.Substring(space + 1)
+                        );
                 }
                 else
                 {
@@ -585,7 +647,8 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     public string SpecificationVersion => "V4";
 
     /// <inheritdoc />
-    public string Provider => OpenAICompatibleChat.Qualify(_provider.Options.ProviderName, "embedding");
+    public string Provider =>
+        OpenAICompatibleChat.Qualify(_provider.Options.ProviderName, "embedding");
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -597,35 +660,78 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     public Uri? Endpoint { get; set; }
 
     /// <inheritdoc />
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        return EmbedAsync(new EmbeddingCallOptions(values) { ProviderOptions = providerOptions, Dimensions = dimensions, Headers = headers }, cancellationToken);
+        return EmbedAsync(
+            new EmbeddingCallOptions(values)
+            {
+                ProviderOptions = providerOptions,
+                Dimensions = dimensions,
+                Headers = headers,
+            },
+            cancellationToken
+        );
     }
 
     /// <summary>Embeds values with per-call options. Nothing is kept on the model, so concurrent calls do not see each other.</summary>
-    public Task<EmbeddingResult> DoEmbedAsync(EmbeddingCallOptions options, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        EmbeddingCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        return EmbedAsync(options ?? throw new ArgumentNullException(nameof(options)), cancellationToken);
+        return EmbedAsync(
+            options ?? throw new ArgumentNullException(nameof(options)),
+            cancellationToken
+        );
     }
 
     /// <summary>Embeds values, sending <paramref name="dimensions"/> and <paramref name="user"/> when they are set. A <c>dimensions</c> provider option wins over <paramref name="dimensions"/>.</summary>
-    public Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, int? dimensions, string? user, CancellationToken cancellationToken)
+    public Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        int? dimensions,
+        string? user,
+        CancellationToken cancellationToken
+    )
     {
-        return EmbedAsync(new EmbeddingCallOptions(values ?? Array.Empty<string>()) { Dimensions = dimensions, User = user }, cancellationToken);
+        return EmbedAsync(
+            new EmbeddingCallOptions(values ?? Array.Empty<string>())
+            {
+                Dimensions = dimensions,
+                User = user,
+            },
+            cancellationToken
+        );
     }
 
-    private async Task<EmbeddingResult> EmbedAsync(EmbeddingCallOptions call, CancellationToken cancellationToken)
+    private async Task<EmbeddingResult> EmbedAsync(
+        EmbeddingCallOptions call,
+        CancellationToken cancellationToken
+    )
     {
         var values = call.Values ?? Array.Empty<string>();
         var providerOptions = call.ProviderOptions;
         var dimensions = call.Dimensions;
         var user = call.User;
 
-        var limit = MaxEmbeddingsPerCall > 0 ? MaxEmbeddingsPerCall : _provider.Options.MaxEmbeddingsPerCall;
+        var limit =
+            MaxEmbeddingsPerCall > 0
+                ? MaxEmbeddingsPerCall
+                : _provider.Options.MaxEmbeddingsPerCall;
         if (limit > 0 && values.Count > limit)
         {
             throw new AiSdkException(
-                "Too many embedding values for a single call to '" + Provider + "'. The maximum is " + limit.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".");
+                "Too many embedding values for a single call to '"
+                    + Provider
+                    + "'. The maximum is "
+                    + limit.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
 
         var input = new JsonArray();
@@ -666,14 +772,22 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             body["user"] = endUser;
         }
 
-        var response = await _provider.PostJsonAsync(
-            Endpoint ?? _provider.EmbeddingsUri(ModelId),
-            body.ToJsonString(),
-            _provider.CreateHeaders(call.Headers),
-            cancellationToken).ConfigureAwait(false);
-        using var parsed = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        var response = await _provider
+            .PostJsonAsync(
+                Endpoint ?? _provider.EmbeddingsUri(ModelId),
+                body.ToJsonString(),
+                _provider.CreateHeaders(call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using var parsed = System.Text.Json.JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var vectors = new List<float[]>();
-        if (parsed.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+        if (
+            parsed.RootElement.TryGetProperty("data", out var data)
+            && data.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var item in data.EnumerateArray())
             {
@@ -690,25 +804,49 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         }
 
         int? tokens = null;
-        if (parsed.RootElement.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
+        if (
+            parsed.RootElement.TryGetProperty("usage", out var usage)
+            && usage.ValueKind == JsonValueKind.Object
+        )
         {
-            if (usage.TryGetProperty("prompt_tokens", out var prompt) && prompt.ValueKind == JsonValueKind.Number && prompt.TryGetInt32(out var promptTokens))
+            if (
+                usage.TryGetProperty("prompt_tokens", out var prompt)
+                && prompt.ValueKind == JsonValueKind.Number
+                && prompt.TryGetInt32(out var promptTokens)
+            )
             {
                 tokens = promptTokens;
             }
-            else if (usage.TryGetProperty("total_tokens", out var total) && total.ValueKind == JsonValueKind.Number && total.TryGetInt32(out var totalTokens))
+            else if (
+                usage.TryGetProperty("total_tokens", out var total)
+                && total.ValueKind == JsonValueKind.Number
+                && total.TryGetInt32(out var totalTokens)
+            )
             {
                 tokens = totalTokens;
             }
         }
 
-        return new EmbeddingResult(vectors, tokens, warnings, new EmbeddingResponseInfo(response.Headers, response.Body));
+        return new EmbeddingResult(
+            vectors,
+            tokens,
+            warnings,
+            new EmbeddingResponseInfo(response.Headers, response.Body)
+        );
     }
 
-    private static int? MistralOutputDimension(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static int? MistralOutputDimension(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
-        if (providerOptions != null && providerOptions.TryGetValue("mistral", out var bag) && bag.ValueKind == JsonValueKind.Object
-            && bag.TryGetProperty("outputDimension", out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var parsed))
+        if (
+            providerOptions != null
+            && providerOptions.TryGetValue("mistral", out var bag)
+            && bag.ValueKind == JsonValueKind.Object
+            && bag.TryGetProperty("outputDimension", out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var parsed)
+        )
         {
             return parsed;
         }
@@ -716,14 +854,20 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         return null;
     }
 
-    private ProviderEmbeddingOptions ReadEmbeddingOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions, List<CallWarning> warnings)
+    private ProviderEmbeddingOptions ReadEmbeddingOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        List<CallWarning> warnings
+    )
     {
         var rawName = OpenAICompatibleChat.BaseProviderName(Provider);
         if (OpenAICompatibleChat.HasOptions(providerOptions, "openai-compatible"))
         {
-            warnings.Add(new CallWarning(
-                "deprecated",
-                "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."));
+            warnings.Add(
+                new CallWarning(
+                    "deprecated",
+                    "providerOptions key 'openai-compatible'. Use 'openaiCompatible' instead."
+                )
+            );
         }
 
         var camel = OpenAICompatibleChat.ToCamelCase(rawName);
@@ -745,7 +889,8 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
         IReadOnlyDictionary<string, JsonElement>? providerOptions,
         string key,
         ref int? dimensions,
-        ref string? user)
+        ref string? user
+    )
     {
         if (!OpenAICompatibleChat.HasOptions(providerOptions, key))
         {
@@ -758,12 +903,19 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             return;
         }
 
-        if (bag.TryGetProperty("dimensions", out var width) && width.ValueKind == JsonValueKind.Number && width.TryGetInt32(out var parsed))
+        if (
+            bag.TryGetProperty("dimensions", out var width)
+            && width.ValueKind == JsonValueKind.Number
+            && width.TryGetInt32(out var parsed)
+        )
         {
             dimensions = parsed;
         }
 
-        if (bag.TryGetProperty("user", out var endUser) && endUser.ValueKind == JsonValueKind.String)
+        if (
+            bag.TryGetProperty("user", out var endUser)
+            && endUser.ValueKind == JsonValueKind.String
+        )
         {
             user = endUser.GetString();
         }
@@ -790,7 +942,11 @@ public sealed class OpenAICompatibleImageModel : IImageModel
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates an image model.</summary>
-    public OpenAICompatibleImageModel(OpenAICompatibleProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public OpenAICompatibleImageModel(
+        OpenAICompatibleProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -804,14 +960,23 @@ public sealed class OpenAICompatibleImageModel : IImageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken)
+    public async Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var timestamp = _clock?.Invoke() ?? DateTimeOffset.UtcNow;
         var warnings = new List<CallWarning>();
         if (!string.IsNullOrEmpty(options.AspectRatio))
         {
-            warnings.Add(new CallWarning("unsupported", "aspectRatio", "This model does not support aspect ratio. Use `size` instead."));
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "aspectRatio",
+                    "This model does not support aspect ratio. Use `size` instead."
+                )
+            );
         }
 
         if (options.Seed != null)
@@ -825,24 +990,28 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         if (options.Files != null && options.Files.Count > 0)
         {
             requestUri = _provider.ImagesEditsUri();
-            response = await _provider.PostMultipartAsync(
-                requestUri,
-                BuildEditForm(options),
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .PostMultipartAsync(requestUri, BuildEditForm(options), headers, cancellationToken)
+                .ConfigureAwait(false);
         }
         else
         {
             var body = BuildGenerationBody(options, warnings);
             requestUri = _provider.ImagesUri();
-            response = await _provider.PostJsonAsync(
-                requestUri,
-                body.ToJsonString(),
-                headers,
-                cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .PostJsonAsync(requestUri, body.ToJsonString(), headers, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        return await ReadImagesAsync(response.Body, warnings, new ImageResponseInfo(timestamp, ModelId, response.Headers), requestUri, headers, cancellationToken).ConfigureAwait(false);
+        return await ReadImagesAsync(
+                response.Body,
+                warnings,
+                new ImageResponseInfo(timestamp, ModelId, response.Headers),
+                requestUri,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private JsonObject BuildGenerationBody(ImageCallOptions options, List<CallWarning> warnings)
@@ -867,7 +1036,12 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         var form = new MultipartFormDataContent();
         form.Add(new StringContent(ModelId), "model");
         form.Add(new StringContent(options.Prompt ?? string.Empty), "prompt");
-        form.Add(new StringContent(options.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)), "n");
+        form.Add(
+            new StringContent(
+                options.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            ),
+            "n"
+        );
         if (!string.IsNullOrEmpty(options.Size))
         {
             form.Add(new StringContent(options.Size!), "size");
@@ -876,13 +1050,26 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         var index = 0;
         foreach (var file in options.Files!)
         {
-            form.Add(OpenAICompatibleImages.FileContent(file), "image", file.FileName ?? ("image-" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".png"));
+            form.Add(
+                OpenAICompatibleImages.FileContent(file),
+                "image",
+                file.FileName
+                    ?? (
+                        "image-"
+                        + index.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        + ".png"
+                    )
+            );
             index++;
         }
 
         if (options.Mask != null)
         {
-            form.Add(OpenAICompatibleImages.FileContent(options.Mask), "mask", options.Mask.FileName ?? "mask.png");
+            form.Add(
+                OpenAICompatibleImages.FileContent(options.Mask),
+                "mask",
+                options.Mask.FileName ?? "mask.png"
+            );
         }
 
         return form;
@@ -894,9 +1081,12 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         ImageResponseInfo responseInfo,
         Uri requestUri,
         IReadOnlyDictionary<string, string?> headers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        using var document = System.Text.Json.JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json!);
+        using var document = System.Text.Json.JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(json) ? "{}" : json!
+        );
         var root = document.RootElement;
         LanguageModelUsage? imageUsage = null;
         if (root.TryGetProperty("usage", out var usage) && usage.ValueKind == JsonValueKind.Object)
@@ -904,7 +1094,8 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             imageUsage = new LanguageModelUsage(
                 OpenAICompatibleImages.ReadInt(usage, "input_tokens"),
                 OpenAICompatibleImages.ReadInt(usage, "output_tokens"),
-                OpenAICompatibleImages.ReadInt(usage, "total_tokens"));
+                OpenAICompatibleImages.ReadInt(usage, "total_tokens")
+            );
         }
 
         var items = new List<(byte[]? Bytes, string? Url)>();
@@ -912,18 +1103,26 @@ public sealed class OpenAICompatibleImageModel : IImageModel
         {
             foreach (var item in data.EnumerateArray())
             {
-                var url = item.TryGetProperty("url", out var urlElement) && urlElement.ValueKind == JsonValueKind.String
-                    ? urlElement.GetString()
-                    : null;
+                var url =
+                    item.TryGetProperty("url", out var urlElement)
+                    && urlElement.ValueKind == JsonValueKind.String
+                        ? urlElement.GetString()
+                        : null;
                 byte[]? bytes = null;
-                if (item.TryGetProperty("b64_json", out var b64) && b64.ValueKind == JsonValueKind.String)
+                if (
+                    item.TryGetProperty("b64_json", out var b64)
+                    && b64.ValueKind == JsonValueKind.String
+                )
                 {
                     bytes = Convert.FromBase64String(b64.GetString() ?? string.Empty);
                 }
 
                 if (bytes == null && url == null)
                 {
-                    throw new Vercel.AI.Operations.InvalidResponseDataException(item.GetRawText(), "Expected b64_json or url in the image response");
+                    throw new Vercel.AI.Operations.InvalidResponseDataException(
+                        item.GetRawText(),
+                        "Expected b64_json or url in the image response"
+                    );
                 }
 
                 items.Add((bytes, url));
@@ -932,26 +1131,35 @@ public sealed class OpenAICompatibleImageModel : IImageModel
 
         // Base64 wins over a URL. A URL-only image is downloaded, and the images keep their order.
         var origin = requestUri.AbsoluteUri;
-        var images = await Task.WhenAll(items.Select(async item =>
-        {
-            if (item.Bytes != null)
-            {
-                return new GeneratedImage("image/png", item.Bytes, item.Url);
-            }
+        var images = await Task.WhenAll(
+                items.Select(async item =>
+                {
+                    if (item.Bytes != null)
+                    {
+                        return new GeneratedImage("image/png", item.Bytes, item.Url);
+                    }
 
-            var download = await ProviderExchange.GetResponseUrlAsync(
-                _provider.SharedHttpClient,
-                item.Url!,
-                origin,
-                Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
-                headers,
-                cancellationToken,
-                ProviderExchange.DownloadClient(_provider.Options),
-                ProviderExchange.UserAgentOnly(headers),
-                _provider.Options.DownloadHttpClient == null ? Vercel.AI.Util.Download.Fetch : null).ConfigureAwait(false);
-            var mediaType = MediaTypes.DetectMediaType(download.Bytes, "image") ?? "image/png";
-            return new GeneratedImage(mediaType, download.Bytes, item.Url);
-        })).ConfigureAwait(false);
+                    var download = await ProviderExchange
+                        .GetResponseUrlAsync(
+                            _provider.SharedHttpClient,
+                            item.Url!,
+                            origin,
+                            Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
+                            headers,
+                            cancellationToken,
+                            ProviderExchange.DownloadClient(_provider.Options),
+                            ProviderExchange.UserAgentOnly(headers),
+                            _provider.Options.DownloadHttpClient == null
+                                ? Vercel.AI.Util.Download.Fetch
+                                : null
+                        )
+                        .ConfigureAwait(false);
+                    var mediaType = MediaTypes.DetectMediaType(download.Bytes, "image")
+                        ?? "image/png";
+                    return new GeneratedImage(mediaType, download.Bytes, item.Url);
+                })
+            )
+            .ConfigureAwait(false);
 
         return new ImageGenerationResult(images, warnings, responseInfo, imageUsage);
     }
@@ -961,13 +1169,26 @@ public sealed class OpenAICompatibleImageModel : IImageModel
 public static class OpenAICompatibleImages
 {
     /// <summary>Merges provider options into an image body. Camel-case keys win.</summary>
-    public static void MergeOptions(JsonObject body, string providerId, IReadOnlyDictionary<string, JsonElement>? providerOptions, IList<CallWarning> warnings)
+    public static void MergeOptions(
+        JsonObject body,
+        string providerId,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        IList<CallWarning> warnings
+    )
     {
         var raw = OpenAICompatibleChat.BaseProviderName(providerId);
         var camel = OpenAICompatibleChat.ToCamelCase(raw);
-        if (!string.Equals(camel, raw, StringComparison.Ordinal) && OpenAICompatibleChat.HasOptions(providerOptions, raw))
+        if (
+            !string.Equals(camel, raw, StringComparison.Ordinal)
+            && OpenAICompatibleChat.HasOptions(providerOptions, raw)
+        )
         {
-            warnings.Add(new CallWarning("deprecated", "providerOptions key '" + raw + "'. Use '" + camel + "' instead."));
+            warnings.Add(
+                new CallWarning(
+                    "deprecated",
+                    "providerOptions key '" + raw + "'. Use '" + camel + "' instead."
+                )
+            );
         }
 
         Copy(body, providerOptions, raw);
@@ -982,14 +1203,20 @@ public static class OpenAICompatibleImages
     {
         var bytes = file.Data ?? Array.Empty<byte>();
         var content = new ByteArrayContent(bytes);
-        content.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrEmpty(file.MediaType) ? "application/octet-stream" : file.MediaType);
+        content.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrEmpty(file.MediaType) ? "application/octet-stream" : file.MediaType
+        );
         return content;
     }
 
     /// <summary>Reads an optional integer field.</summary>
     public static int? ReadInt(JsonElement obj, string name)
     {
-        if (!obj.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number))
+        if (
+            !obj.TryGetProperty(name, out var value)
+            || value.ValueKind != JsonValueKind.Number
+            || !value.TryGetInt32(out var number)
+        )
         {
             return null;
         }
@@ -997,7 +1224,11 @@ public static class OpenAICompatibleImages
         return number;
     }
 
-    private static void Copy(JsonObject body, IReadOnlyDictionary<string, JsonElement>? providerOptions, string key)
+    private static void Copy(
+        JsonObject body,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        string key
+    )
     {
         if (!OpenAICompatibleChat.HasOptions(providerOptions, key))
         {
@@ -1021,7 +1252,11 @@ public static class OpenAICompatibleImages
 public sealed class OpenAICompatibleBinaryResponse
 {
     /// <summary>Creates a binary response.</summary>
-    public OpenAICompatibleBinaryResponse(byte[] body, IReadOnlyDictionary<string, string> headers, int statusCode)
+    public OpenAICompatibleBinaryResponse(
+        byte[] body,
+        IReadOnlyDictionary<string, string> headers,
+        int statusCode
+    )
     {
         Body = body ?? Array.Empty<byte>();
         Headers = headers ?? new Dictionary<string, string>();
@@ -1068,10 +1303,14 @@ public sealed class OpenAICompatibleSseResponse : IDisposable
     public IReadOnlyDictionary<string, string> Headers { get; }
 
     /// <summary>Reads SSE <c>data</c> payloads until <c>[DONE]</c>.</summary>
-    public async IAsyncEnumerable<string> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> ReadAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         var stream = await _response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        await foreach (var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var data in SseParser.ReadDataAsync(stream, cancellationToken).ConfigureAwait(false)
+        )
         {
             yield return data;
         }

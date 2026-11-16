@@ -19,13 +19,30 @@ namespace Vercel.AI.Prodia;
 /// </summary>
 public sealed class ProdiaLanguageModel : ILanguageModel
 {
-    private static readonly string[] AspectRatios = { "1:1", "2:3", "3:2", "4:5", "5:4", "4:7", "7:4", "9:16", "16:9", "9:21", "21:9" };
+    private static readonly string[] AspectRatios =
+    {
+        "1:1",
+        "2:3",
+        "3:2",
+        "4:5",
+        "5:4",
+        "4:7",
+        "7:4",
+        "9:16",
+        "16:9",
+        "9:21",
+        "21:9",
+    };
 
     private readonly ProdiaProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ProdiaLanguageModel(ProdiaProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public ProdiaLanguageModel(
+        ProdiaProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -45,25 +62,42 @@ public sealed class ProdiaLanguageModel : ILanguageModel
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
         var warnings = Warnings(options);
-        var config = new JsonObject { ["prompt"] = Prompt(options.Prompt), ["include_messages"] = true };
-        if (options.ProviderOptions != null
+        var config = new JsonObject
+        {
+            ["prompt"] = Prompt(options.Prompt),
+            ["include_messages"] = true,
+        };
+        if (
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue("prodia", out var prodia)
             && prodia.ValueKind == JsonValueKind.Object
-            && prodia.TryGetProperty("aspectRatio", out var aspectRatio))
+            && prodia.TryGetProperty("aspectRatio", out var aspectRatio)
+        )
         {
-            if (aspectRatio.ValueKind != JsonValueKind.String || Array.IndexOf(AspectRatios, aspectRatio.GetString()) < 0)
+            if (
+                aspectRatio.ValueKind != JsonValueKind.String
+                || Array.IndexOf(AspectRatios, aspectRatio.GetString()) < 0
+            )
             {
-                throw new InvalidArgumentException("providerOptions", null, "Invalid Prodia provider option aspectRatio.");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    null,
+                    "Invalid Prodia provider option aspectRatio."
+                );
             }
 
             config["aspect_ratio"] = aspectRatio.GetString();
         }
 
-        var (image, imageMediaType) = await InputImageAsync(options.Prompt, cancellationToken).ConfigureAwait(false);
+        var (image, imageMediaType) = await InputImageAsync(options.Prompt, cancellationToken)
+            .ConfigureAwait(false);
         var extension = imageMediaType switch
         {
             "image/png" => ".png",
@@ -72,12 +106,17 @@ public sealed class ProdiaLanguageModel : ILanguageModel
             _ => string.Empty,
         };
         var timestamp = _clock();
-        var (parts, headers) = await ProdiaApi.PostJobAsync(
-            _provider,
-            ProdiaApi.Form(ProdiaApi.Job(ModelId, config), image, imageMediaType, extension),
-            "multipart/form-data",
-            options.Headers?.Where(pair => pair.Value != null).Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value!)),
-            cancellationToken).ConfigureAwait(false);
+        var (parts, headers) = await ProdiaApi
+            .PostJobAsync(
+                _provider,
+                ProdiaApi.Form(ProdiaApi.Job(ModelId, config), image, imageMediaType, extension),
+                "multipart/form-data",
+                options
+                    .Headers?.Where(pair => pair.Value != null)
+                    .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value!)),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var job = ProdiaApi.ReadJob(parts);
         string? text = null;
         var files = new List<GeneratedContent>();
@@ -88,7 +127,10 @@ public sealed class ProdiaLanguageModel : ILanguageModel
                 continue;
             }
 
-            if (part.ContentType.StartsWith("text/", StringComparison.Ordinal) || part.ContentDisposition.Contains(".txt"))
+            if (
+                part.ContentType.StartsWith("text/", StringComparison.Ordinal)
+                || part.ContentDisposition.Contains(".txt")
+            )
             {
                 text = Encoding.UTF8.GetString(part.Body);
             }
@@ -110,28 +152,39 @@ public sealed class ProdiaLanguageModel : ILanguageModel
             FinishReason.Stop,
             new LanguageModelUsage(null, null, null),
             warnings: warnings,
-            providerMetadata: OperationJson.Parse(new JsonObject { ["prodia"] = ProdiaApi.Metadata(job) }.ToJsonString()),
+            providerMetadata: OperationJson.Parse(
+                new JsonObject { ["prodia"] = ProdiaApi.Metadata(job) }.ToJsonString()
+            ),
             responseModelId: ModelId,
             responseTimestamp: timestamp,
-            responseHeaders: headers);
+            responseHeaders: headers
+        );
     }
 
     /// <summary>Runs <see cref="DoGenerateAsync"/> and replays the result as stream parts. Generated images are not streamed.</summary>
     public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var result = await DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             Parts(result),
-            response: new LanguageModelStreamResponse(result.ResponseHeaders));
+            response: new LanguageModelStreamResponse(result.ResponseHeaders)
+        );
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(LanguageModelGenerateResult result)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> Parts(
+        LanguageModelGenerateResult result
+    )
     {
         await Task.CompletedTask.ConfigureAwait(false);
         yield return new StreamStartStreamPart(result.Warnings);
-        yield return new ResponseMetadataStreamPart(null, result.ResponseModelId, result.ResponseTimestamp);
+        yield return new ResponseMetadataStreamPart(
+            null,
+            result.ResponseModelId,
+            result.ResponseTimestamp
+        );
         foreach (var part in result.Content.OfType<GeneratedText>())
         {
             var id = IdGenerator.Generate();
@@ -140,7 +193,11 @@ public sealed class ProdiaLanguageModel : ILanguageModel
             yield return new TextEndStreamPart(id);
         }
 
-        yield return new FinishStreamPart(result.FinishReason, result.Usage, providerMetadata: result.ProviderMetadata);
+        yield return new FinishStreamPart(
+            result.FinishReason,
+            result.Usage,
+            providerMetadata: result.ProviderMetadata
+        );
     }
 
     private static List<CallWarning> Warnings(LanguageModelCallOptions options)
@@ -160,8 +217,15 @@ public sealed class ProdiaLanguageModel : ILanguageModel
             ("responseFormat", options.JsonSchema != null),
             ("reasoning", ReasoningMap.IsCustomReasoning(options.Reasoning)),
         };
-        return unsupported.Where(item => item.Present)
-            .Select(item => new CallWarning("unsupported", item.Feature, item.Feature == "reasoning" ? "This provider does not support reasoning configuration." : null))
+        return unsupported
+            .Where(item => item.Present)
+            .Select(item => new CallWarning(
+                "unsupported",
+                item.Feature,
+                item.Feature == "reasoning"
+                    ? "This provider does not support reasoning configuration."
+                    : null
+            ))
             .ToList();
     }
 
@@ -170,15 +234,26 @@ public sealed class ProdiaLanguageModel : ILanguageModel
     {
         var system = messages.OfType<SystemModelMessage>().LastOrDefault()?.Content ?? string.Empty;
         var user = messages.OfType<UserModelMessage>().LastOrDefault();
-        var prompt = user == null ? string.Empty : string.Join("\n", user.Content.OfType<TextContentPart>().Select(part => part.Text));
+        var prompt =
+            user == null
+                ? string.Empty
+                : string.Join(
+                    "\n",
+                    user.Content.OfType<TextContentPart>().Select(part => part.Text)
+                );
         return system.Length > 0 ? system + "\n" + prompt : prompt;
     }
 
     /// <summary>The first image in the last user message, with a full media type.</summary>
-    private async Task<(byte[]? Data, string MediaType)> InputImageAsync(IReadOnlyList<ModelMessage> messages, CancellationToken cancellationToken)
+    private async Task<(byte[]? Data, string MediaType)> InputImageAsync(
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken
+    )
     {
-        var file = messages.OfType<UserModelMessage>().LastOrDefault()?.Content
-            .OfType<FileContentPart>()
+        var file = messages
+            .OfType<UserModelMessage>()
+            .LastOrDefault()
+            ?.Content.OfType<FileContentPart>()
             .FirstOrDefault(part => MediaTypes.GetTopLevelMediaType(part.MediaType) == "image");
         if (file == null)
         {
@@ -188,13 +263,24 @@ public sealed class ProdiaLanguageModel : ILanguageModel
         var data = file.Data;
         if (data == null)
         {
-            var response = await ProviderExchange.GetResponseUrlAsync(_provider.HttpClient, file.Url!, null, Download.ValidateDownloadUrl, null, cancellationToken, ProviderExchange.DownloadClient(_provider.Options)).ConfigureAwait(false);
+            var response = await ProviderExchange
+                .GetResponseUrlAsync(
+                    _provider.HttpClient,
+                    file.Url!,
+                    null,
+                    Download.ValidateDownloadUrl,
+                    null,
+                    cancellationToken,
+                    ProviderExchange.DownloadClient(_provider.Options)
+                )
+                .ConfigureAwait(false);
             data = response.Bytes;
         }
 
         var mediaType = MediaTypes.IsFullMediaType(file.MediaType)
             ? file.MediaType
-            : MediaTypes.DetectMediaType(data, MediaTypes.GetTopLevelMediaType(file.MediaType)) ?? "image/png";
+            : MediaTypes.DetectMediaType(data, MediaTypes.GetTopLevelMediaType(file.MediaType))
+                ?? "image/png";
         return (data, mediaType);
     }
 }

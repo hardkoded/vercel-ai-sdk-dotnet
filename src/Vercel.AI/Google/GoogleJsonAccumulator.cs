@@ -101,7 +101,10 @@ public sealed class GoogleJsonAccumulator
     public GooglePartialArgumentsFinal Finalize()
     {
         var finalJson = Write(_root);
-        var closing = finalJson.Length >= _jsonText.Length ? finalJson.Substring(_jsonText.Length) : string.Empty;
+        var closing =
+            finalJson.Length >= _jsonText.Length
+                ? finalJson.Substring(_jsonText.Length)
+                : string.Empty;
         return new GooglePartialArgumentsFinal(finalJson, closing);
     }
 
@@ -150,7 +153,11 @@ public sealed class GoogleJsonAccumulator
         return Emit(segments, arg, valueJson);
     }
 
-    private string Emit(IReadOnlyList<Segment> segments, GooglePartialArgument arg, string valueJson)
+    private string Emit(
+        IReadOnlyList<Segment> segments,
+        GooglePartialArgument arg,
+        string valueJson
+    )
     {
         var fragment = string.Empty;
         if (_stringOpen)
@@ -345,7 +352,14 @@ public sealed class GoogleJsonAccumulator
                     break;
                 }
 
-                if (int.TryParse(part.Substring(open + 1, close - open - 1), NumberStyles.None, CultureInfo.InvariantCulture, out var index))
+                if (
+                    int.TryParse(
+                        part.Substring(open + 1, close - open - 1),
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out var index
+                    )
+                )
                 {
                     segments.Add(Segment.At(index));
                 }
@@ -383,7 +397,11 @@ public sealed class GoogleJsonAccumulator
         for (var i = 0; i < segments.Count; i++)
         {
             var segment = segments[i];
-            if (current is { Kind: BagKind.Array } && segment.Name != null && TryCanonicalIndex(segment.Name, out var canonical))
+            if (
+                current is { Kind: BagKind.Array }
+                && segment.Name != null
+                && TryCanonicalIndex(segment.Name, out var canonical)
+            )
             {
                 if (canonical < 0)
                 {
@@ -397,9 +415,10 @@ public sealed class GoogleJsonAccumulator
 
             if (segment.Index is { } index)
             {
-                int? length = current == null || current.Kind == BagKind.Null
-                    ? 0
-                    : current.Kind == BagKind.Array ? current.ItemCount : null;
+                int? length =
+                    current == null || current.Kind == BagKind.Null ? 0
+                    : current.Kind == BagKind.Array ? current.ItemCount
+                    : null;
                 if (length is { } known && index > known)
                 {
                     return false;
@@ -540,7 +559,10 @@ public sealed class GoogleJsonAccumulator
         public Bag Ensure(Segment segment, bool nextIsArray)
         {
             var existing = Child(segment);
-            if (existing != null && (existing.Kind == BagKind.Object || existing.Kind == BagKind.Array))
+            if (
+                existing != null
+                && (existing.Kind == BagKind.Object || existing.Kind == BagKind.Array)
+            )
             {
                 return existing;
             }
@@ -615,7 +637,9 @@ public sealed class GoogleJsonAccumulator
                     builder.Append(']');
                     break;
                 case BagKind.String:
-                    builder.Append(JsonSerializer.Serialize(String ?? string.Empty, GoogleJson.Options));
+                    builder.Append(
+                        JsonSerializer.Serialize(String ?? string.Empty, GoogleJson.Options)
+                    );
                     break;
                 case BagKind.Number:
                     builder.Append(NumberJson);

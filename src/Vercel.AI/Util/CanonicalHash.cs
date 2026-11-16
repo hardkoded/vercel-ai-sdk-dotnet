@@ -48,7 +48,10 @@ public static class CanonicalHash
             var keys = new List<string>();
             foreach (var key in dictionary.Keys)
             {
-                keys.Add(Convert.ToString(key, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
+                keys.Add(
+                    Convert.ToString(key, System.Globalization.CultureInfo.InvariantCulture)
+                        ?? string.Empty
+                );
             }
 
             keys.Sort(StringComparer.Ordinal);
@@ -90,9 +93,18 @@ public static class CanonicalHash
 
     private static bool IsPrimitive(object value)
     {
-        return value is string || value is bool || value is byte || value is sbyte
-            || value is short || value is ushort || value is int || value is uint
-            || value is long || value is ulong || value is float || value is double
+        return value is string
+            || value is bool
+            || value is byte
+            || value is sbyte
+            || value is short
+            || value is ushort
+            || value is int
+            || value is uint
+            || value is long
+            || value is ulong
+            || value is float
+            || value is double
             || value is decimal;
     }
 }

@@ -21,7 +21,10 @@ public sealed class FunctionToolsStrictModeTests
         $$$"""{"type":"function","name":"{{{name}}}","description":"{{{description}}}","parameters":{"type":"object","properties":{}},"strict":{{{(strict ? "true" : "false")}}}}""";
 
     [Fact]
-    [UpstreamTest(Id + "should pass through strict mode when strict is true", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should pass through strict mode when strict is true",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_pass_through_strict_mode_when_strict_is_true()
     {
         var result = Prepare(null, Tool("testFunction", "A test function", true));
@@ -31,7 +34,10 @@ public sealed class FunctionToolsStrictModeTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should pass through strict mode when strict is false", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should pass through strict mode when strict is false",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_pass_through_strict_mode_when_strict_is_false()
     {
         var result = Prepare(null, Tool("testFunction", "A test function", false));
@@ -41,7 +47,10 @@ public sealed class FunctionToolsStrictModeTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should default strict mode to false when strict is undefined", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should default strict mode to false when strict is undefined",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_default_strict_mode_to_false_when_strict_is_undefined()
     {
         var result = Prepare(null, Tool("testFunction", "A test function"));
@@ -51,18 +60,29 @@ public sealed class FunctionToolsStrictModeTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should pass through strict mode for multiple tools with different strict settings", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should pass through strict mode for multiple tools with different strict settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_pass_through_strict_mode_for_multiple_tools_with_different_strict_settings()
     {
         var result = Prepare(
             null,
             Tool("strictTool", "A strict tool", true),
             Tool("nonStrictTool", "A non-strict tool", false),
-            Tool("defaultTool", "A tool without strict setting"));
+            Tool("defaultTool", "A tool without strict setting")
+        );
 
         AssertTools(
             result,
-            "[" + Expected("strictTool", "A strict tool", true) + "," + Expected("nonStrictTool", "A non-strict tool", false) + "," + Expected("defaultTool", "A tool without strict setting", false) + "]");
+            "["
+                + Expected("strictTool", "A strict tool", true)
+                + ","
+                + Expected("nonStrictTool", "A non-strict tool", false)
+                + ","
+                + Expected("defaultTool", "A tool without strict setting", false)
+                + "]"
+        );
         AssertNoToolChoice(result);
     }
 }

@@ -17,19 +17,28 @@ public sealed class PrepareToolCallConcurrencyTests
     [UpstreamTest(
         "packages/ai/src/generate-text/tool-call-concurrency.test.ts::prepareToolCallConcurrency::should reject invalid concurrency %s",
         Coverage = UpstreamCoverage.Covered,
-        Note = "Upstream also rejects 1.5 and NaN. An int? cannot hold them, so the type enforces that check.")]
+        Note = "Upstream also rejects 1.5 and NaN. An int? cannot hold them, so the type enforces that check."
+    )]
     public void Should_reject_invalid_concurrency(int value)
     {
-        Assert.Throws<InvalidArgumentError>(() => ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(value));
+        Assert.Throws<InvalidArgumentError>(() =>
+            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(value)
+        );
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData(1)]
     [InlineData(2)]
-    [UpstreamTest("packages/ai/src/generate-text/tool-call-concurrency.test.ts::prepareToolCallConcurrency::should accept concurrency %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/tool-call-concurrency.test.ts::prepareToolCallConcurrency::should accept concurrency %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_accept_concurrency(int? concurrency)
     {
-        Assert.Equal(concurrency, ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(concurrency));
+        Assert.Equal(
+            concurrency,
+            ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(concurrency)
+        );
     }
 }

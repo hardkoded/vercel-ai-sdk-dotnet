@@ -95,7 +95,8 @@ internal static class UpstreamCatalog
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public static string ParityDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "parity");
+    public static string ParityDirectory { get; } =
+        Path.Combine(AppContext.BaseDirectory, "parity");
 
     public static IReadOnlyList<UpstreamTestCase> LoadTests()
     {
@@ -144,18 +145,27 @@ internal static class UpstreamCatalog
         var links = new List<UpstreamLink>();
         foreach (var type in assembly.GetTypes())
         {
-            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            foreach (
+                var method in type.GetMethods(
+                    BindingFlags.Instance
+                        | BindingFlags.Static
+                        | BindingFlags.Public
+                        | BindingFlags.DeclaredOnly
+                )
+            )
             {
                 foreach (var attribute in method.GetCustomAttributes<UpstreamTestAttribute>())
                 {
-                    links.Add(new UpstreamLink
-                    {
-                        UpstreamId = attribute.UpstreamId,
-                        DotnetTest = type.FullName + "." + method.Name,
-                        Coverage = attribute.Coverage.ToString(),
-                        Note = attribute.Note,
-                        Commit = attribute.Commit,
-                    });
+                    links.Add(
+                        new UpstreamLink
+                        {
+                            UpstreamId = attribute.UpstreamId,
+                            DotnetTest = type.FullName + "." + method.Name,
+                            Coverage = attribute.Coverage.ToString(),
+                            Note = attribute.Note,
+                            Commit = attribute.Commit,
+                        }
+                    );
                 }
             }
         }
@@ -163,7 +173,11 @@ internal static class UpstreamCatalog
         return links;
     }
 
-    public static CoverageSummary Summarize(IReadOnlyList<UpstreamTestCase> tests, IReadOnlyList<UpstreamLink> links, string commit)
+    public static CoverageSummary Summarize(
+        IReadOnlyList<UpstreamTestCase> tests,
+        IReadOnlyList<UpstreamLink> links,
+        string commit
+    )
     {
         var linked = new Dictionary<string, UpstreamLink>(StringComparer.Ordinal);
         foreach (var link in links)
@@ -200,7 +214,13 @@ internal static class UpstreamCatalog
                 continue;
             }
 
-            if (string.Equals(link.Coverage, nameof(UpstreamCoverage.Covered), StringComparison.Ordinal))
+            if (
+                string.Equals(
+                    link.Coverage,
+                    nameof(UpstreamCoverage.Covered),
+                    StringComparison.Ordinal
+                )
+            )
             {
                 feature.Covered++;
                 covered++;
@@ -221,7 +241,9 @@ internal static class UpstreamCatalog
             Covered = covered,
             Partial = partial,
             Missing = missing,
-            Features = features.Values.OrderBy(feature => feature.Feature, StringComparer.Ordinal).ToList(),
+            Features = features
+                .Values.OrderBy(feature => feature.Feature, StringComparer.Ordinal)
+                .ToList(),
         };
     }
 }

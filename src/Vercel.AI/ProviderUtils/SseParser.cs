@@ -13,19 +13,29 @@ public static class SseParser
     /// </summary>
     public static async IAsyncEnumerable<string> ReadDataAsync(
         Stream stream,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default
+    )
     {
         if (stream is null)
         {
             throw new ArgumentNullException(nameof(stream));
         }
 
-        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+        using var reader = new StreamReader(
+            stream,
+            System.Text.Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true,
+            bufferSize: 1024,
+            leaveOpen: true
+        );
         var data = new System.Text.StringBuilder();
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var line = await CancellableReads.ReadLineAsync(reader, cancellationToken).ConfigureAwait(false);
+            var line = await CancellableReads
+                .ReadLineAsync(reader, cancellationToken)
+                .ConfigureAwait(false);
             if (line is null)
             {
                 if (data.Length > 0 && data.ToString() != "[DONE]")
@@ -55,7 +65,8 @@ public static class SseParser
 
             if (StartsWithOrdinal(line, "data:"))
             {
-                var value = line.Length > 5 && line[5] == ' ' ? line.Substring(6) : line.Substring(5);
+                var value =
+                    line.Length > 5 && line[5] == ' ' ? line.Substring(6) : line.Substring(5);
                 if (data.Length > 0)
                 {
                     data.Append('\n');

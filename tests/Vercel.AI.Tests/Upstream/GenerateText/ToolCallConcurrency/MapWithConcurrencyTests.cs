@@ -12,10 +12,19 @@ namespace Vercel.AI.Tests.Upstream.GenerateText.ToolCallConcurrency;
 /// <summary>Port of <c>tool-call-concurrency.test.ts</c> &gt; <c>mapWithConcurrency</c>.</summary>
 public sealed class MapWithConcurrencyTests
 {
-    private static DelayedPromise<bool>[] Releases() => new[] { new DelayedPromise<bool>(), new DelayedPromise<bool>(), new DelayedPromise<bool>() };
+    private static DelayedPromise<bool>[] Releases() =>
+        new[]
+        {
+            new DelayedPromise<bool>(),
+            new DelayedPromise<bool>(),
+            new DelayedPromise<bool>(),
+        };
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should execute all items concurrently by default", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should execute all items concurrently by default",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_execute_all_items_concurrently_by_default()
     {
         var releases = Releases();
@@ -29,7 +38,8 @@ public sealed class MapWithConcurrencyTests
                 started.Enqueue(item);
                 await releases[item].Promise;
                 return item;
-            });
+            }
+        );
 
         await WaitForStarted(started, 0, 1, 2);
         foreach (var release in releases)
@@ -41,7 +51,10 @@ public sealed class MapWithConcurrencyTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should execute items sequentially in input order with concurrency 1", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should execute items sequentially in input order with concurrency 1",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_execute_items_sequentially_in_input_order_with_concurrency_1()
     {
         var releases = Releases();
@@ -56,7 +69,8 @@ public sealed class MapWithConcurrencyTests
                 await releases[item].Promise;
                 events.Enqueue(item + ":end");
                 return item;
-            });
+            }
+        );
 
         await WaitForEvents(events, "0:start");
         releases[0].Resolve(true);
@@ -69,7 +83,10 @@ public sealed class MapWithConcurrencyTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should limit concurrent executions and preserve result order", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should limit concurrent executions and preserve result order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_limit_concurrent_executions_and_preserve_result_order()
     {
         var releases = Releases();
@@ -83,7 +100,8 @@ public sealed class MapWithConcurrencyTests
                 started.Enqueue(item);
                 await releases[item].Promise;
                 return item;
-            });
+            }
+        );
 
         await WaitForStarted(started, 0, 1);
         releases[1].Resolve(true);
@@ -95,7 +113,10 @@ public sealed class MapWithConcurrencyTests
     }
 
     [Fact]
-    [UpstreamTest("packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should not start queued items after abort", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/tool-call-concurrency.test.ts::mapWithConcurrency::should not start queued items after abort",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_start_queued_items_after_abort()
     {
         using var abort = new CancellationTokenSource();
@@ -111,7 +132,8 @@ public sealed class MapWithConcurrencyTests
                 await release.Promise;
                 return item;
             },
-            abort.Token);
+            abort.Token
+        );
 
         await WaitForStarted(started, 0);
         abort.Cancel();

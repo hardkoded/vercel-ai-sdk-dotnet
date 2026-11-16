@@ -16,27 +16,45 @@ public sealed class OptionsOnStepStartTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.onStepStart::should pass initialInstructions, initialMessages, and responseMessages to prepareStep",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_initialInstructions_initialMessages_and_responseMessages_to_prepareStep()
     {
         var calls = new List<PrepareStepContext>();
         var model = new TestLanguageModel();
-        model.OnGenerate = _ => model.Calls.Count == 1 ? ToolCallResponse("{ \"value\": \"test\" }") : TestLanguageModel.Text("Done.");
+        model.OnGenerate = _ =>
+            model.Calls.Count == 1
+                ? ToolCallResponse("{ \"value\": \"test\" }")
+                : TestLanguageModel.Text("Done.");
         var initialMessage = new UserModelMessage("test-input");
 
-        await new AiClient(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })).GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            Tools = new[] { Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}", (_, _) => Task.FromResult("\"test-result\"")) },
-            Instructions = "test instructions",
-            Messages = new ModelMessage[] { initialMessage },
-            StopWhen = StopWhen.IsStepCount(3),
-            PrepareStep = context =>
+        await new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).GenerateTextAsync(
+            new GenerateTextOptions
             {
-                calls.Add(context);
-                return context.StepNumber == 0 ? new PrepareStepUpdate { Instructions = "prepared instructions" } : null;
-            },
-        });
+                Model = model,
+                Tools = new[]
+                {
+                    Tool.Function(
+                        "tool1",
+                        null,
+                        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
+                        (_, _) => Task.FromResult("\"test-result\"")
+                    ),
+                },
+                Instructions = "test instructions",
+                Messages = new ModelMessage[] { initialMessage },
+                StopWhen = StopWhen.IsStepCount(3),
+                PrepareStep = context =>
+                {
+                    calls.Add(context);
+                    return context.StepNumber == 0
+                        ? new PrepareStepUpdate { Instructions = "prepared instructions" }
+                        : null;
+                },
+            }
+        );
 
         Assert.Equal(2, calls.Count);
         Assert.Equal("test instructions", calls[0].Instructions!.Text);

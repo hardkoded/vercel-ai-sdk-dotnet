@@ -15,36 +15,50 @@ public sealed class CreateJsonResponseHandlerTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonResponseHandler::should return both parsed value and rawValue",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_response_keeps_the_raw_value_and_projects_known_properties()
     {
         var schema = JsonSchemas.Object(
-            new[]
-            {
-                Pair("name", JsonSchemas.String()),
-                Pair("age", JsonSchemas.Number()),
-            },
+            new[] { Pair("name", JsonSchemas.String()), Pair("age", JsonSchemas.Number()) },
             new[] { "name", "age" },
-            additionalPropertiesFlag: false);
+            additionalPropertiesFlag: false
+        );
         var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
         {
-            Content = new StringContent("{\"name\":\"John\",\"age\":30,\"extraField\":\"ignored\"}", Encoding.UTF8, "application/json"),
+            Content = new StringContent(
+                "{\"name\":\"John\",\"age\":30,\"extraField\":\"ignored\"}",
+                Encoding.UTF8,
+                "application/json"
+            ),
         };
         var body = await JsonStreams.ReadJsonAsync(response, schema);
         JsonAssert.Equal(body.Value, "{\"name\":\"John\",\"age\":30}");
-        JsonAssert.Equal(body.RawValue, "{\"name\":\"John\",\"age\":30,\"extraField\":\"ignored\"}");
+        JsonAssert.Equal(
+            body.RawValue,
+            "{\"name\":\"John\",\"age\":30,\"extraField\":\"ignored\"}"
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/response-handler.test.ts::createJsonResponseHandler::should reject oversized responses before reading the body",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Json_response_rejects_oversized_responses_before_reading_the_body()
     {
         var content = new OversizedContent("{}");
-        using var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content };
-        var schema = JsonSchemas.Object(Array.Empty<KeyValuePair<string, JsonNode>>(), Array.Empty<string>());
-        var error = await Assert.ThrowsAsync<DownloadError>(() => JsonStreams.ReadJsonAsync(response, schema));
+        using var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = content,
+        };
+        var schema = JsonSchemas.Object(
+            Array.Empty<KeyValuePair<string, JsonNode>>(),
+            Array.Empty<string>()
+        );
+        var error = await Assert.ThrowsAsync<DownloadError>(() =>
+            JsonStreams.ReadJsonAsync(response, schema)
+        );
         Assert.Contains("exceeded maximum size", error.Message);
         Assert.False(content.BodyRead);
         Assert.True(content.Disposed);
@@ -69,7 +83,10 @@ public sealed class CreateJsonResponseHandlerTests
 
         public bool Disposed { get; private set; }
 
-        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+        protected override Task SerializeToStreamAsync(
+            Stream stream,
+            System.Net.TransportContext? context
+        )
         {
             BodyRead = true;
             return stream.WriteAsync(_bytes, 0, _bytes.Length);

@@ -94,19 +94,22 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     // $ can succeed before a trailing newline, so the match must cover the whole value.
     private static readonly Regex HostnamePart = new(
         "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled
+    );
 
     private readonly AzureOpenAIOptions _azure;
 
     /// <summary>Creates a provider.</summary>
     public AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options = null)
-        : this(httpClient, options, null)
-    {
-    }
+        : this(httpClient, options, null) { }
 
     // The download client is the transport for untrusted file URLs: it never carries the provider credentials.
     // It maps to the raw `downloadFetch` delegate that upstream hands to the image models.
-    private AzureOpenAIProvider(HttpClient httpClient, AzureOpenAIOptions? options, HttpClient? downloadClient)
+    private AzureOpenAIProvider(
+        HttpClient httpClient,
+        AzureOpenAIOptions? options,
+        HttpClient? downloadClient
+    )
         : base(Prepare(options, downloadClient), httpClient)
     {
         _azure = options ?? new AzureOpenAIOptions();
@@ -140,7 +143,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Headers for the Azure Speech API (<c>Ocp-Apim-Subscription-Key</c>) or the MAI API (<c>api-key</c>).
     /// With a token provider, no key header is added; callers add the bearer token. Maps to <c>getHeaders('speech' | 'mai')</c>.
     /// </summary>
-    internal Dictionary<string, string?> CreateHeaders(AzureApi api, IReadOnlyDictionary<string, string?>? callHeaders = null)
+    internal Dictionary<string, string?> CreateHeaders(
+        AzureApi api,
+        IReadOnlyDictionary<string, string?>? callHeaders = null
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (_azure.TokenProvider == null)
@@ -173,7 +179,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// key and the token provider are not part of the serialized config. Maps to <c>serializeModelOptions</c> over
     /// <c>{ modelId, config }</c> in <c>[WORKFLOW_SERIALIZE]</c>.
     /// </summary>
-    internal static SerializedModelOptions SerializeModel(string modelId, AzureOpenAIOptions options)
+    internal static SerializedModelOptions SerializeModel(
+        string modelId,
+        AzureOpenAIOptions options
+    )
     {
         var config = new Dictionary<string, object?>();
         void Add(string name, object? value)
@@ -195,7 +204,11 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates the provider that <c>[WORKFLOW_DESERIALIZE]</c> builds with <c>createAzure(options.config)</c>.</summary>
-    internal static AzureOpenAIProvider DeserializeProvider(SerializedModelOptions serialized, string? apiKey, HttpMessageHandler? handler)
+    internal static AzureOpenAIProvider DeserializeProvider(
+        SerializedModelOptions serialized,
+        string? apiKey,
+        HttpMessageHandler? handler
+    )
     {
         if (serialized is null)
         {
@@ -203,7 +216,8 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         }
 
         var options = new AzureOpenAIOptions { ApiKey = apiKey };
-        string? Text(string name) => serialized.Config.TryGetValue(name, out var value) ? value as string : null;
+        string? Text(string name) =>
+            serialized.Config.TryGetValue(name, out var value) ? value as string : null;
         options.BaseUrl = Text("baseURL");
         options.ResourceName = Text("resourceName");
         options.SpeechBaseUrl = Text("speechBaseURL");
@@ -213,12 +227,18 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             options.ApiVersion = apiVersion;
         }
 
-        if (serialized.Config.TryGetValue("useDeploymentBasedUrls", out var deployment) && deployment is bool useDeploymentBasedUrls)
+        if (
+            serialized.Config.TryGetValue("useDeploymentBasedUrls", out var deployment)
+            && deployment is bool useDeploymentBasedUrls
+        )
         {
             options.UseDeploymentBasedUrls = useDeploymentBasedUrls;
         }
 
-        if (serialized.Config.TryGetValue("headers", out var headers) && headers is System.Collections.IDictionary map)
+        if (
+            serialized.Config.TryGetValue("headers", out var headers)
+            && headers is System.Collections.IDictionary map
+        )
         {
             foreach (System.Collections.DictionaryEntry entry in map)
             {
@@ -234,39 +254,53 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 
     private string ResourceName()
     {
-        var resource = !string.IsNullOrEmpty(_azure.ResourceName) ? _azure.ResourceName : Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME");
+        var resource = !string.IsNullOrEmpty(_azure.ResourceName)
+            ? _azure.ResourceName
+            : Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME");
         if (string.IsNullOrEmpty(resource))
         {
             throw new ArgumentException(
                 "Azure OpenAI resource name is missing. Pass it in AzureOpenAIOptions.ResourceName or set the AZURE_RESOURCE_NAME environment variable.",
-                nameof(AzureOpenAIOptions.ResourceName));
+                nameof(AzureOpenAIOptions.ResourceName)
+            );
         }
 
         if (!IsValidHostnamePart(resource))
         {
             throw new ArgumentException(
                 "An Azure resource name must be a single DNS label (letters, digits, and hyphens). Custom endpoints belong in BaseUrl.",
-                nameof(AzureOpenAIOptions.ResourceName));
+                nameof(AzureOpenAIOptions.ResourceName)
+            );
         }
 
         return resource;
     }
 
     /// <summary>Creates a provider.</summary>
-    public static AzureOpenAIProvider Create(AzureOpenAIOptions? options = null, HttpMessageHandler? handler = null)
+    public static AzureOpenAIProvider Create(
+        AzureOpenAIOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
         options ??= new AzureOpenAIOptions();
         HttpMessageHandler? transport = handler;
         if (options.TokenProvider != null && string.IsNullOrEmpty(options.ApiKey))
         {
-            transport = new AzureEntraTokenHandler(options.TokenProvider, handler ?? new GlobalFetchHandler(allowAutoRedirect: true));
+            transport = new AzureEntraTokenHandler(
+                options.TokenProvider,
+                handler ?? new GlobalFetchHandler(allowAutoRedirect: true)
+            );
         }
 
-        var client = transport is null ? new HttpClient(new GlobalFetchHandler(allowAutoRedirect: true)) : new HttpClient(transport, disposeHandler: false);
+        var client = transport is null
+            ? new HttpClient(new GlobalFetchHandler(allowAutoRedirect: true))
+            : new HttpClient(transport, disposeHandler: false);
 
         // Downloads skip the token-injecting handler. A caller-supplied handler stays the transport, like a custom `fetch`;
         // without one, the shared client that never follows a redirect is used.
-        var downloadClient = handler is null ? null : new HttpClient(handler, disposeHandler: false);
+        var downloadClient = handler is null
+            ? null
+            : new HttpClient(handler, disposeHandler: false);
         return new AzureOpenAIProvider(client, options, downloadClient);
     }
 
@@ -274,7 +308,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Responses API model, like <see cref="ResponsesModel(string)"/>. The optional model ID in
     /// <paramref name="settings"/> is used for reported identity and capability detection.
     /// </summary>
-    public OpenAI.OpenAIResponsesLanguageModel LanguageModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    public OpenAI.OpenAIResponsesLanguageModel LanguageModel(
+        string deploymentId,
+        AzureOpenAILanguageModelSettings? settings
+    )
     {
         return new OpenAI.OpenAIResponsesLanguageModel(this, deploymentId, settings);
     }
@@ -298,7 +335,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Responses API model for a deployment. The optional model ID is used for reported identity and
     /// capability detection; requests always use the deployment ID.
     /// </summary>
-    public OpenAI.OpenAIResponsesLanguageModel ResponsesModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    public OpenAI.OpenAIResponsesLanguageModel ResponsesModel(
+        string deploymentId,
+        AzureOpenAILanguageModelSettings? settings
+    )
     {
         return new OpenAI.OpenAIResponsesLanguageModel(this, deploymentId, settings);
     }
@@ -307,7 +347,10 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Chat model for a deployment. The optional model ID is used for reported identity and capability
     /// detection; requests always use the deployment ID.
     /// </summary>
-    public OpenAI.OpenAIChatLanguageModel ChatModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    public OpenAI.OpenAIChatLanguageModel ChatModel(
+        string deploymentId,
+        AzureOpenAILanguageModelSettings? settings
+    )
     {
         return new OpenAI.OpenAIChatLanguageModel(this, deploymentId, settings);
     }
@@ -319,29 +362,34 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     public OpenAICompatibleLanguageModel DeepSeek(string deploymentName)
     {
         var options = Options.Copy();
-        options.SupportedUrls = new Dictionary<string, string>
-        {
-            ["image/*"] = "^https?://.*\\z",
-        };
+        options.SupportedUrls = new Dictionary<string, string> { ["image/*"] = "^https?://.*\\z" };
         options.SupportsStructuredOutputs = true;
         options.InterruptedWithoutFinish = true;
         options.IncludeUsage = true;
         options.MetadataExtractor = new DeepSeek.DeepSeekChatMetadataExtractor(ProviderId);
         var deepSeek = new OpenAICompatibleProvider(options, SharedHttpClient);
-        return new OpenAICompatibleLanguageModel(deepSeek, deploymentName, ProviderId + ".deepseek");
+        return new OpenAICompatibleLanguageModel(
+            deepSeek,
+            deploymentName,
+            ProviderId + ".deepseek"
+        );
     }
 
     /// <summary>
     /// Completion model for a deployment. The optional model ID is used for reported identity;
     /// requests always use the deployment ID.
     /// </summary>
-    public OpenAICompatibleCompletionLanguageModel CompletionModel(string deploymentId, AzureOpenAILanguageModelSettings? settings)
+    public OpenAICompatibleCompletionLanguageModel CompletionModel(
+        string deploymentId,
+        AzureOpenAILanguageModelSettings? settings
+    )
     {
         return new OpenAICompatibleCompletionLanguageModel(
             this,
             settings?.ModelId ?? deploymentId,
             null,
-            deploymentId);
+            deploymentId
+        );
     }
 
     /// <summary>
@@ -373,7 +421,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                 deploymentId,
                 Http,
                 () => new Uri(SpeechBaseUrl() + "/tts/cognitiveservices/v1"),
-                () => CreateHeaders(AzureApi.Speech)));
+                () => CreateHeaders(AzureApi.Speech)
+            )
+        );
     }
 
     /// <summary>Speech model. Alias of <see cref="Speech(string)"/>.</summary>
@@ -391,12 +441,21 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return new AzureTranscriptionModel(
             deploymentId,
             _azure,
-            new OpenAI.OpenAITranscriptionModel(this, deploymentId, webSocket: _azure.NativeWebSocket),
+            new OpenAI.OpenAITranscriptionModel(
+                this,
+                deploymentId,
+                webSocket: _azure.NativeWebSocket
+            ),
             new AzureSpeechTranscriptionModel(
                 deploymentId,
                 Http,
-                () => new Uri(SpeechBaseUrl() + "/speechtotext/transcriptions:transcribe?api-version=2025-10-15"),
-                callHeaders => CreateHeaders(AzureApi.Speech, callHeaders)),
+                () =>
+                    new Uri(
+                        SpeechBaseUrl()
+                            + "/speechtotext/transcriptions:transcribe?api-version=2025-10-15"
+                    ),
+                callHeaders => CreateHeaders(AzureApi.Speech, callHeaders)
+            ),
             new AzureMaiTranscriptionModel(
                 deploymentId,
                 () => new Uri(MaiBaseUrl() + "/realtime?intent=transcription"),
@@ -408,7 +467,12 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                         return headers;
                     }
 
-                    var withToken = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["authorization"] = "Bearer " + _azure.TokenProvider() };
+                    var withToken = new Dictionary<string, string?>(
+                        StringComparer.OrdinalIgnoreCase
+                    )
+                    {
+                        ["authorization"] = "Bearer " + _azure.TokenProvider(),
+                    };
                     foreach (var pair in headers)
                     {
                         withToken[pair.Key] = pair.Value;
@@ -417,7 +481,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                     return withToken;
                 },
                 _azure.WebSocket,
-                _azure.NativeWebSocket));
+                _azure.NativeWebSocket
+            )
+        );
     }
 
     /// <summary>Transcription model. Alias of <see cref="Transcription(string)"/>. Maps to <c>transcriptionModel</c>.</summary>
@@ -426,12 +492,17 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         return Transcription(modelId);
     }
 
-    private static OpenAICompatibleOptions Prepare(AzureOpenAIOptions? options, HttpClient? downloadClient)
+    private static OpenAICompatibleOptions Prepare(
+        AzureOpenAIOptions? options,
+        HttpClient? downloadClient
+    )
     {
         options ??= new AzureOpenAIOptions();
         if (!string.IsNullOrEmpty(options.ApiKey) && options.TokenProvider != null)
         {
-            throw new ArgumentException("Both apiKey and tokenProvider were provided. Please use only one authentication method.");
+            throw new ArgumentException(
+                "Both apiKey and tokenProvider were provided. Please use only one authentication method."
+            );
         }
 
         var baseUrl = ResolveBaseUrl(options);
@@ -439,9 +510,13 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         {
             ProviderName = ProviderId,
             BaseUrl = baseUrl,
-            ApiKey = options.TokenProvider == null ? options.ApiKey : AzureEntraTokenHandler.PlaceholderToken,
+            ApiKey =
+                options.TokenProvider == null
+                    ? options.ApiKey
+                    : AzureEntraTokenHandler.PlaceholderToken,
             ApiKeyEnvironmentVariable = "AZURE_API_KEY",
-            ApiKeyStyle = options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
+            ApiKeyStyle =
+                options.TokenProvider == null ? ApiKeyStyle.ApiKeyHeader : ApiKeyStyle.Bearer,
             ApiKeyHeaderName = "api-key",
             AzureApiVersion = string.IsNullOrEmpty(options.ApiVersion) ? "v1" : options.ApiVersion,
             AzureUseDeploymentBasedUrls = options.UseDeploymentBasedUrls,
@@ -471,7 +546,8 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
         {
             throw new ArgumentException(
                 "An Azure resource name must be a single DNS label (letters, digits, and hyphens). Custom endpoints belong in BaseUrl.",
-                nameof(options.ResourceName));
+                nameof(options.ResourceName)
+            );
         }
 
         return "https://" + resource + ".openai.azure.com/openai";
@@ -499,7 +575,8 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             isAzureOpenAI,
             hostname.EndsWith(".services.ai.azure.com", StringComparison.Ordinal)
                 && pathname.StartsWith("/api/projects/", StringComparison.Ordinal),
-            isAzureOpenAI && pathname.EndsWith("/openai/v1", StringComparison.OrdinalIgnoreCase));
+            isAzureOpenAI && pathname.EndsWith("/openai/v1", StringComparison.OrdinalIgnoreCase)
+        );
     }
 
     private static bool IsValidHostnamePart(string value)
@@ -510,7 +587,11 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 }
 
 /// <summary>The result of <c>getAzureOpenAIBaseURLInfo</c>.</summary>
-internal readonly record struct AzureOpenAIBaseUrlInfo(bool IsAzureOpenAI, bool IsFoundryProject, bool IsVersioned);
+internal readonly record struct AzureOpenAIBaseUrlInfo(
+    bool IsAzureOpenAI,
+    bool IsFoundryProject,
+    bool IsVersioned
+);
 
 /// <summary>The Azure API a request goes to.</summary>
 internal enum AzureApi
@@ -540,13 +621,22 @@ internal sealed class AzureEntraTokenHandler : DelegatingHandler
     }
 
     /// <inheritdoc />
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         request.Headers.Remove("api-key");
         // A bearer token the caller supplied stays. Only the placeholder or a missing header gets a fresh token.
-        if (request.Headers.Authorization is null || request.Headers.Authorization is { Scheme: "Bearer", Parameter: PlaceholderToken })
+        if (
+            request.Headers.Authorization is null
+            || request.Headers.Authorization is { Scheme: "Bearer", Parameter: PlaceholderToken }
+        )
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenProvider());
+            request.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                _tokenProvider()
+            );
         }
 
         return base.SendAsync(request, cancellationToken);
@@ -557,7 +647,10 @@ internal sealed class AzureEntraTokenHandler : DelegatingHandler
 public static class AzureOpenAIServiceCollectionExtensions
 {
     /// <summary>Adds <see cref="AzureOpenAIProvider"/>.</summary>
-    public static IServiceCollection AddAzureOpenAI(this IServiceCollection services, Action<AzureOpenAIOptions>? configure = null)
+    public static IServiceCollection AddAzureOpenAI(
+        this IServiceCollection services,
+        Action<AzureOpenAIOptions>? configure = null
+    )
     {
         services.AddHttpClient(AzureOpenAIProvider.ProviderId);
         services.AddSingleton(sp =>
@@ -569,7 +662,11 @@ public static class AzureOpenAIServiceCollectionExtensions
                 return AzureOpenAIProvider.Create(options);
             }
 
-            return new AzureOpenAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(AzureOpenAIProvider.ProviderId), options);
+            return new AzureOpenAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(AzureOpenAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

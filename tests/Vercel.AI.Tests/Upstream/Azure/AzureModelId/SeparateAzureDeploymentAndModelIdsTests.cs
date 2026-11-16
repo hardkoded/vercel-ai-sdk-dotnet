@@ -16,10 +16,17 @@ public sealed class SeparateAzureDeploymentAndModelIdsTests
 
     private static AzureOpenAIProvider CreateProvider(HttpMessageHandler handler)
     {
-        return AzureOpenAIProvider.Create(new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-api-key" }, handler);
+        return AzureOpenAIProvider.Create(
+            new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-api-key" },
+            handler
+        );
     }
 
-    private static ILanguageModel CreateModel(AzureOpenAIProvider provider, string factory, AzureOpenAILanguageModelSettings? settings)
+    private static ILanguageModel CreateModel(
+        AzureOpenAIProvider provider,
+        string factory,
+        AzureOpenAILanguageModelSettings? settings
+    )
     {
         return factory switch
         {
@@ -36,14 +43,34 @@ public sealed class SeparateAzureDeploymentAndModelIdsTests
     [InlineData("responses")]
     [InlineData("chat")]
     [InlineData("completion")]
-    [UpstreamTest("packages/azure/src/azure-model-id.test.ts::separate Azure deployment and model IDs::%s reports the supplied model ID and falls back to the deployment ID", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/azure/src/azure-model-id.test.ts::separate Azure deployment and model IDs::%s reports the supplied model ID and falls back to the deployment ID",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ReportsTheSuppliedModelIdAndFallsBackToTheDeploymentId(string factory)
     {
         var provider = CreateProvider(new UpstreamRecordingHandler("{}"));
 
-        Assert.Equal(ModelId, CreateModel(provider, factory, new AzureOpenAILanguageModelSettings { ModelId = ModelId }).ModelId);
-        Assert.Equal(DeploymentId, CreateModel(provider, factory, new AzureOpenAILanguageModelSettings()).ModelId);
-        Assert.Equal(DeploymentId, CreateModel(provider, factory, new AzureOpenAILanguageModelSettings { ModelId = null }).ModelId);
+        Assert.Equal(
+            ModelId,
+            CreateModel(
+                provider,
+                factory,
+                new AzureOpenAILanguageModelSettings { ModelId = ModelId }
+            ).ModelId
+        );
+        Assert.Equal(
+            DeploymentId,
+            CreateModel(provider, factory, new AzureOpenAILanguageModelSettings()).ModelId
+        );
+        Assert.Equal(
+            DeploymentId,
+            CreateModel(
+                provider,
+                factory,
+                new AzureOpenAILanguageModelSettings { ModelId = null }
+            ).ModelId
+        );
         Assert.Equal(DeploymentId, CreateModel(provider, factory, null).ModelId);
     }
 }

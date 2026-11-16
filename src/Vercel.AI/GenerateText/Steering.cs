@@ -71,7 +71,11 @@ public sealed class DeliveredSteeringOutcome : SteeringOutcome
 public sealed class NotDeliveredSteeringOutcome : SteeringOutcome
 {
     /// <summary>Creates the outcome.</summary>
-    public NotDeliveredSteeringOutcome(string id, UserModelMessage message, SteeringNotDeliveredReason reason)
+    public NotDeliveredSteeringOutcome(
+        string id,
+        UserModelMessage message,
+        SteeringNotDeliveredReason reason
+    )
         : base("not-delivered", id, message)
     {
         Reason = reason;
@@ -131,7 +135,10 @@ internal abstract class SteeringRun
     public abstract IReadOnlyList<UserModelMessage> TakeMessages();
 
     /// <summary>Resolves the taken messages as delivered when they are part of the messages sent to the model, and returns the delivered messages with their ids.</summary>
-    public abstract IReadOnlyList<DeliveredSteeringMessage> ResolveTakenMessages(int stepNumber, IReadOnlyList<ModelMessage> sentMessages);
+    public abstract IReadOnlyList<DeliveredSteeringMessage> ResolveTakenMessages(
+        int stepNumber,
+        IReadOnlyList<ModelMessage> sentMessages
+    );
 
     public abstract void End(SteeringNotDeliveredReason reason);
 }
@@ -154,7 +161,11 @@ public static class Steering
 
         if (steering is not DefaultSteering defaultSteering)
         {
-            throw new InvalidArgumentError("experimental_steering", steering, "The steering object must be created with experimental_createSteering().");
+            throw new InvalidArgumentError(
+                "experimental_steering",
+                steering,
+                "The steering object must be created with experimental_createSteering()."
+            );
         }
 
         return defaultSteering.StartRun();
@@ -162,7 +173,11 @@ public static class Steering
 
     internal static string GenerateSteeringId() => JsonValues.GenerateId("steer-");
 
-    private sealed class PendingSteer(string id, UserModelMessage message, TaskCompletionSource<SteeringOutcome> completion)
+    private sealed class PendingSteer(
+        string id,
+        UserModelMessage message,
+        TaskCompletionSource<SteeringOutcome> completion
+    )
     {
         public string Id { get; } = id;
 
@@ -182,19 +197,29 @@ public static class Steering
     {
         // Steering messages can be sent from tool executions on other threads.
         private readonly object _gate = new();
-        private readonly Dictionary<string, Task<SteeringOutcome>> _outcomes = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Task<SteeringOutcome>> _outcomes = new(
+            StringComparer.Ordinal
+        );
         private readonly List<PendingSteer> _queued = [];
         private RunState _state = RunState.Idle;
         private List<PendingSteer> _pending = [];
         private List<PendingSteer> _taken = [];
 
-        public Task<SteeringOutcome> SteerAsync(string message, SteerOptions? options = null) => Add(ToUserMessage(message), options?.Id, queue: false);
+        public Task<SteeringOutcome> SteerAsync(string message, SteerOptions? options = null) =>
+            Add(ToUserMessage(message), options?.Id, queue: false);
 
-        public Task<SteeringOutcome> SteerAsync(UserModelMessage message, SteerOptions? options = null) => Add(message, options?.Id, queue: false);
+        public Task<SteeringOutcome> SteerAsync(
+            UserModelMessage message,
+            SteerOptions? options = null
+        ) => Add(message, options?.Id, queue: false);
 
-        public Task<SteeringOutcome> QueueAsync(string message, SteerOptions? options = null) => Add(ToUserMessage(message), options?.Id, queue: true);
+        public Task<SteeringOutcome> QueueAsync(string message, SteerOptions? options = null) =>
+            Add(ToUserMessage(message), options?.Id, queue: true);
 
-        public Task<SteeringOutcome> QueueAsync(UserModelMessage message, SteerOptions? options = null) => Add(message, options?.Id, queue: true);
+        public Task<SteeringOutcome> QueueAsync(
+            UserModelMessage message,
+            SteerOptions? options = null
+        ) => Add(message, options?.Id, queue: true);
 
         internal SteeringRun StartRun()
         {
@@ -202,7 +227,11 @@ public static class Steering
             {
                 if (_state != RunState.Idle)
                 {
-                    throw new InvalidArgumentError("experimental_steering", this, "The steering object was already used by a generation. Create a new one with experimental_createSteering() for each call.");
+                    throw new InvalidArgumentError(
+                        "experimental_steering",
+                        this,
+                        "The steering object was already used by a generation. Create a new one with experimental_createSteering() for each call."
+                    );
                 }
 
                 _state = RunState.Running;
@@ -211,7 +240,8 @@ public static class Steering
             return new Run(this);
         }
 
-        private static UserModelMessage ToUserMessage(string message) => new(message ?? throw new ArgumentNullException(nameof(message)));
+        private static UserModelMessage ToUserMessage(string message) =>
+            new(message ?? throw new ArgumentNullException(nameof(message)));
 
         private Task<SteeringOutcome> Add(UserModelMessage message, string? id, bool queue)
         {
@@ -231,11 +261,19 @@ public static class Steering
                 Task<SteeringOutcome> outcome;
                 if (_state == RunState.Ended)
                 {
-                    outcome = Task.FromResult<SteeringOutcome>(new NotDeliveredSteeringOutcome(id, message, SteeringNotDeliveredReason.Finished));
+                    outcome = Task.FromResult<SteeringOutcome>(
+                        new NotDeliveredSteeringOutcome(
+                            id,
+                            message,
+                            SteeringNotDeliveredReason.Finished
+                        )
+                    );
                 }
                 else
                 {
-                    var completion = new TaskCompletionSource<SteeringOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var completion = new TaskCompletionSource<SteeringOutcome>(
+                        TaskCreationOptions.RunContinuationsAsynchronously
+                    );
                     (queue ? _queued : _pending).Add(new PendingSteer(id, message, completion));
                     outcome = completion.Task;
                 }
@@ -285,7 +323,10 @@ public static class Steering
                 }
             }
 
-            public override IReadOnlyList<DeliveredSteeringMessage> ResolveTakenMessages(int stepNumber, IReadOnlyList<ModelMessage> sentMessages)
+            public override IReadOnlyList<DeliveredSteeringMessage> ResolveTakenMessages(
+                int stepNumber,
+                IReadOnlyList<ModelMessage> sentMessages
+            )
             {
                 List<PendingSteer> taken;
                 lock (owner._gate)
@@ -300,11 +341,19 @@ public static class Steering
                     if (IsSent(steer.Message, sentMessages))
                     {
                         delivered.Add(new DeliveredSteeringMessage(steer.Id, steer.Message));
-                        steer.Completion.TrySetResult(new DeliveredSteeringOutcome(steer.Id, steer.Message, stepNumber));
+                        steer.Completion.TrySetResult(
+                            new DeliveredSteeringOutcome(steer.Id, steer.Message, stepNumber)
+                        );
                     }
                     else
                     {
-                        steer.Completion.TrySetResult(new NotDeliveredSteeringOutcome(steer.Id, steer.Message, SteeringNotDeliveredReason.RemovedByPrepareStep));
+                        steer.Completion.TrySetResult(
+                            new NotDeliveredSteeringOutcome(
+                                steer.Id,
+                                steer.Message,
+                                SteeringNotDeliveredReason.RemovedByPrepareStep
+                            )
+                        );
                     }
                 }
 
@@ -330,13 +379,18 @@ public static class Steering
 
                 foreach (var steer in notDelivered)
                 {
-                    steer.Completion.TrySetResult(new NotDeliveredSteeringOutcome(steer.Id, steer.Message, reason));
+                    steer.Completion.TrySetResult(
+                        new NotDeliveredSteeringOutcome(steer.Id, steer.Message, reason)
+                    );
                 }
             }
 
             // prepareStep can map messages to new objects, e.g. to add provider options,
             // so a message also counts as sent when a user message has the same content:
-            private static bool IsSent(UserModelMessage message, IReadOnlyList<ModelMessage> sentMessages)
+            private static bool IsSent(
+                UserModelMessage message,
+                IReadOnlyList<ModelMessage> sentMessages
+            )
             {
                 string? content = null;
                 foreach (var sent in sentMessages)
@@ -349,7 +403,13 @@ public static class Steering
                     if (sent is UserModelMessage sentUser)
                     {
                         content ??= SerializeContent(message);
-                        if (string.Equals(SerializeContent(sentUser), content, StringComparison.Ordinal))
+                        if (
+                            string.Equals(
+                                SerializeContent(sentUser),
+                                content,
+                                StringComparison.Ordinal
+                            )
+                        )
                         {
                             return true;
                         }

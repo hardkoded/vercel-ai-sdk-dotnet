@@ -46,7 +46,14 @@ public sealed class XaiFileUpload
 public sealed class XaiFileMetadata
 {
     /// <summary>Creates metadata from the fields the response returned.</summary>
-    public XaiFileMetadata(string? fileName, string? purpose, long? bytes, long? createdAt, string? status, long? expiresAt)
+    public XaiFileMetadata(
+        string? fileName,
+        string? purpose,
+        long? bytes,
+        long? createdAt,
+        string? status,
+        long? expiresAt
+    )
     {
         FileName = fileName;
         Purpose = purpose;
@@ -86,7 +93,8 @@ public sealed class XaiFileResult
         string? mediaType,
         long? byteSize,
         DateTimeOffset? createdAt,
-        DateTimeOffset? expiresAt)
+        DateTimeOffset? expiresAt
+    )
     {
         ProviderReference = providerReference ?? new Dictionary<string, string>();
         Metadata = metadata ?? new XaiFileMetadata(null, null, null, null, null, null);
@@ -179,7 +187,12 @@ public sealed class XaiFiles : IFileStore
     private readonly Func<IReadOnlyDictionary<string, string?>> _headers;
 
     /// <summary>Creates a file client.</summary>
-    public XaiFiles(HttpClient httpClient, string baseUrl, Func<IReadOnlyDictionary<string, string?>>? headers, string? provider = null)
+    public XaiFiles(
+        HttpClient httpClient,
+        string baseUrl,
+        Func<IReadOnlyDictionary<string, string?>>? headers,
+        string? provider = null
+    )
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _baseUrl = string.IsNullOrEmpty(baseUrl) ? XaiProvider.DefaultBaseUrl : baseUrl;
@@ -197,16 +210,33 @@ public sealed class XaiFiles : IFileStore
     public string Provider { get; }
 
     /// <inheritdoc />
-    public async Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken)
+    public async Task<UploadedFile> UploadFileAsync(
+        string fileName,
+        byte[] data,
+        string mediaType,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await UploadAsync(new XaiFileUpload { Bytes = data, FileName = fileName, MediaType = mediaType }, cancellationToken).ConfigureAwait(false);
+        var result = await UploadAsync(
+                new XaiFileUpload
+                {
+                    Bytes = data,
+                    FileName = fileName,
+                    MediaType = mediaType,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         string? id = null;
         result.ProviderReference.TryGetValue("xai", out id);
         return new UploadedFile(id ?? string.Empty, result.FileName);
     }
 
     /// <summary>Posts multipart file contents to <c>/files</c>.</summary>
-    public async Task<XaiFileResult> UploadAsync(XaiFileUpload upload, CancellationToken cancellationToken)
+    public async Task<XaiFileResult> UploadAsync(
+        XaiFileUpload upload,
+        CancellationToken cancellationToken
+    )
     {
         if (upload == null)
         {
@@ -232,7 +262,12 @@ public sealed class XaiFiles : IFileStore
         var parts = new List<MultipartPart>();
         if (upload.ExpiresAfter is { } expires)
         {
-            parts.Add(MultipartPart.Field("expires_after", ((long)expires).ToString(CultureInfo.InvariantCulture)));
+            parts.Add(
+                MultipartPart.Field(
+                    "expires_after",
+                    ((long)expires).ToString(CultureInfo.InvariantCulture)
+                )
+            );
         }
 
         if (upload.TeamId != null)
@@ -240,47 +275,72 @@ public sealed class XaiFiles : IFileStore
             parts.Add(MultipartPart.Field("team_id", upload.TeamId));
         }
 
-        parts.Add(MultipartPart.File("file", fileName, upload.MediaType ?? "application/octet-stream", bytes));
+        parts.Add(
+            MultipartPart.File(
+                "file",
+                fileName,
+                upload.MediaType ?? "application/octet-stream",
+                bytes
+            )
+        );
         var body = MultipartPart.Encode(parts);
         var headers = ProviderExchange.Merge(_headers(), upload.Headers);
-        var response = await ProviderExchange.SendAsync(
-            _httpClient,
-            HttpMethod.Post,
-            ApiKeys.Combine(_baseUrl, "/files"),
-            body,
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(_baseUrl, "/files"),
+                body,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return ReadFile(response.Body, fileName, upload.MediaType);
     }
 
     /// <summary>Reads file metadata.</summary>
-    public async Task<XaiFileResult> GetMetadataAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken)
+    public async Task<XaiFileResult> GetMetadataAsync(
+        IReadOnlyDictionary<string, string?> file,
+        CancellationToken cancellationToken
+    )
     {
         var id = RequireId(file);
-        var response = await ProviderExchange.SendAsync(
-            _httpClient,
-            HttpMethod.Get,
-            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
-            null,
-            _headers(),
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Get,
+                ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
+                null,
+                _headers(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return ReadFile(response.Body, null, null);
     }
 
     /// <summary>Downloads file bytes.</summary>
-    public async Task<XaiFileDownload> DownloadAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken)
+    public async Task<XaiFileDownload> DownloadAsync(
+        IReadOnlyDictionary<string, string?> file,
+        CancellationToken cancellationToken
+    )
     {
         var id = RequireId(file);
-        var response = await ProviderExchange.SendAsync(
-            _httpClient,
-            HttpMethod.Get,
-            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id) + "/content"),
-            null,
-            _headers(),
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Get,
+                ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id) + "/content"),
+                null,
+                _headers(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         string? contentType = null;
         string? mediaType = null;
-        if (response.Headers.TryGetValue("Content-Type", out contentType) && !string.IsNullOrWhiteSpace(contentType))
+        if (
+            response.Headers.TryGetValue("Content-Type", out contentType)
+            && !string.IsNullOrWhiteSpace(contentType)
+        )
         {
             var separator = contentType.IndexOf(';');
             mediaType = (separator >= 0 ? contentType.Substring(0, separator) : contentType).Trim();
@@ -294,21 +354,36 @@ public sealed class XaiFiles : IFileStore
     }
 
     /// <summary>Deletes a file.</summary>
-    public async Task<XaiFileDeleteResult> DeleteAsync(IReadOnlyDictionary<string, string?> file, CancellationToken cancellationToken)
+    public async Task<XaiFileDeleteResult> DeleteAsync(
+        IReadOnlyDictionary<string, string?> file,
+        CancellationToken cancellationToken
+    )
     {
         var id = RequireId(file);
-        var response = await ProviderExchange.SendAsync(
-            _httpClient,
-            HttpMethod.Delete,
-            ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
-            null,
-            _headers(),
-            cancellationToken).ConfigureAwait(false);
-        using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body))
+        var response = await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Delete,
+                ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
+                null,
+                _headers(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        using (
+            var document = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+            )
+        )
         {
             var deletedId = ReadString(document.RootElement, "id") ?? id;
-            var deleted = document.RootElement.TryGetProperty("deleted", out var flag) && flag.ValueKind == JsonValueKind.True;
-            return new XaiFileDeleteResult(new Dictionary<string, string> { ["xai"] = deletedId }, deleted);
+            var deleted =
+                document.RootElement.TryGetProperty("deleted", out var flag)
+                && flag.ValueKind == JsonValueKind.True;
+            return new XaiFileDeleteResult(
+                new Dictionary<string, string> { ["xai"] = deletedId },
+                deleted
+            );
         }
     }
 
@@ -320,9 +395,19 @@ public sealed class XaiFiles : IFileStore
         }
 
         var value = expiresAfter.Value;
-        if (value != Math.Truncate(value) || value < MinimumExpiresAfter || value > MaximumExpiresAfter)
+        if (
+            value != Math.Truncate(value)
+            || value < MinimumExpiresAfter
+            || value > MaximumExpiresAfter
+        )
         {
-            throw new ArgumentException("expiresAfter must be an integer number of seconds from " + MinimumExpiresAfter.ToString(CultureInfo.InvariantCulture) + " through " + MaximumExpiresAfter.ToString(CultureInfo.InvariantCulture) + ".");
+            throw new ArgumentException(
+                "expiresAfter must be an integer number of seconds from "
+                    + MinimumExpiresAfter.ToString(CultureInfo.InvariantCulture)
+                    + " through "
+                    + MaximumExpiresAfter.ToString(CultureInfo.InvariantCulture)
+                    + "."
+            );
         }
     }
 
@@ -342,13 +427,18 @@ public sealed class XaiFiles : IFileStore
         return id!;
     }
 
-    private static async Task<byte[]> ReadAsync(XaiFileUpload upload, CancellationToken cancellationToken)
+    private static async Task<byte[]> ReadAsync(
+        XaiFileUpload upload,
+        CancellationToken cancellationToken
+    )
     {
         if (upload.Stream != null)
         {
             using (var buffer = new MemoryStream())
             {
-                await upload.Stream.CopyToAsync(buffer, 81920, cancellationToken).ConfigureAwait(false);
+                await upload
+                    .Stream.CopyToAsync(buffer, 81920, cancellationToken)
+                    .ConfigureAwait(false);
                 return buffer.ToArray();
             }
         }
@@ -370,13 +460,19 @@ public sealed class XaiFiles : IFileStore
             var purpose = ReadString(root, "purpose");
 
             long? bytes = null;
-            if (root.TryGetProperty("bytes", out var bytesValue) && bytesValue.ValueKind == JsonValueKind.Number)
+            if (
+                root.TryGetProperty("bytes", out var bytesValue)
+                && bytesValue.ValueKind == JsonValueKind.Number
+            )
             {
                 bytes = bytesValue.GetInt64();
             }
 
             long? created = null;
-            if (root.TryGetProperty("created_at", out var createdValue) && createdValue.ValueKind == JsonValueKind.Number)
+            if (
+                root.TryGetProperty("created_at", out var createdValue)
+                && createdValue.ValueKind == JsonValueKind.Number
+            )
             {
                 created = createdValue.GetInt64();
             }
@@ -384,7 +480,10 @@ public sealed class XaiFiles : IFileStore
             var status = ReadString(root, "status");
 
             long? expires = null;
-            if (root.TryGetProperty("expires_at", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number)
+            if (
+                root.TryGetProperty("expires_at", out var expiresValue)
+                && expiresValue.ValueKind == JsonValueKind.Number
+            )
             {
                 expires = expiresValue.GetInt64();
             }
@@ -396,16 +495,23 @@ public sealed class XaiFiles : IFileStore
                 fileName ?? uploadedName,
                 mediaType,
                 bytes,
-                created == null ? (DateTimeOffset?)null : DateTimeOffset.FromUnixTimeSeconds(created.Value),
-                expires == null ? (DateTimeOffset?)null : DateTimeOffset.FromUnixTimeSeconds(expires.Value));
+                created == null
+                    ? (DateTimeOffset?)null
+                    : DateTimeOffset.FromUnixTimeSeconds(created.Value),
+                expires == null
+                    ? (DateTimeOffset?)null
+                    : DateTimeOffset.FromUnixTimeSeconds(expires.Value)
+            );
         }
     }
 
     private static string? ReadString(JsonElement element, string name)
     {
-        if (element.ValueKind == JsonValueKind.Object
+        if (
+            element.ValueKind == JsonValueKind.Object
             && element.TryGetProperty(name, out var value)
-            && value.ValueKind == JsonValueKind.String)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             return value.GetString();
         }
@@ -433,10 +539,20 @@ public sealed class XaiFiles : IFileStore
 
         public static MultipartPart Field(string name, string value)
         {
-            return new MultipartPart(name, null, null, Encoding.UTF8.GetBytes(value ?? string.Empty));
+            return new MultipartPart(
+                name,
+                null,
+                null,
+                Encoding.UTF8.GetBytes(value ?? string.Empty)
+            );
         }
 
-        public static MultipartPart File(string name, string fileName, string mediaType, byte[] bytes)
+        public static MultipartPart File(
+            string name,
+            string fileName,
+            string mediaType,
+            byte[] bytes
+        )
         {
             return new MultipartPart(name, fileName, mediaType, bytes ?? Array.Empty<byte>());
         }
@@ -448,7 +564,13 @@ public sealed class XaiFiles : IFileStore
             {
                 foreach (var part in parts)
                 {
-                    WriteAscii(stream, "--" + boundary + "\r\nContent-Disposition: form-data; name=" + MultipartForm.Quote(part.Name));
+                    WriteAscii(
+                        stream,
+                        "--"
+                            + boundary
+                            + "\r\nContent-Disposition: form-data; name="
+                            + MultipartForm.Quote(part.Name)
+                    );
                     if (part.FileName != null)
                     {
                         WriteAscii(stream, "; filename=" + MultipartForm.Quote(part.FileName));
@@ -467,8 +589,12 @@ public sealed class XaiFiles : IFileStore
 
                 WriteAscii(stream, "--" + boundary + "--\r\n");
                 var content = new ByteArrayContent(stream.ToArray());
-                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data");
-                content.Headers.ContentType.Parameters.Add(new System.Net.Http.Headers.NameValueHeaderValue("boundary", boundary));
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    "multipart/form-data"
+                );
+                content.Headers.ContentType.Parameters.Add(
+                    new System.Net.Http.Headers.NameValueHeaderValue("boundary", boundary)
+                );
                 return content;
             }
         }

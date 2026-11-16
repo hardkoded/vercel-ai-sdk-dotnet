@@ -12,12 +12,16 @@ namespace Vercel.AI.Tests.Upstream.Registry.DecisionModel;
 [Collection("DecisionDefaultProvider")]
 public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
 {
-    private const string Prefix = "packages/ai/src/registry/decision-model.test.ts::custom decision models::";
+    private const string Prefix =
+        "packages/ai/src/registry/decision-model.test.ts::custom decision models::";
 
     private readonly DecisionMockModel _model = new();
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves an alias before consulting the fallback", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "resolves an alias before consulting the fallback",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Resolves_an_alias_before_consulting_the_fallback()
     {
         var calls = 0;
@@ -34,7 +38,10 @@ public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves string aliases through the configured default provider", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "resolves string aliases through the configured default provider",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Resolves_string_aliases_through_the_configured_default_provider()
     {
         DecisionModels.DefaultProvider = new DecisionTestProvider(_model);
@@ -55,8 +62,13 @@ public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
     [InlineData("toString")]
     [InlineData("constructor")]
     [InlineData("__proto__")]
-    [UpstreamTest(Prefix + "reports missing alias %s without treating inherited properties as models", Coverage = UpstreamCoverage.Covered)]
-    public void Reports_missing_alias_without_treating_inherited_properties_as_models(string modelId)
+    [UpstreamTest(
+        Prefix + "reports missing alias %s without treating inherited properties as models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Reports_missing_alias_without_treating_inherited_properties_as_models(
+        string modelId
+    )
     {
         var provider = new CustomProvider().AddDecisionModel("known", _model);
         var error = Assert.Throws<NoSuchModelError>(() => provider.DecisionModel(modelId));
@@ -66,10 +78,16 @@ public sealed class CustomDecisionModelsTests : DecisionDefaultProviderFixture
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "reports an unavailable fallback model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "reports an unavailable fallback model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Reports_an_unavailable_fallback_model()
     {
-        var provider = new CustomProvider { FallbackProvider = new DecisionFactoryProvider(_ => null) };
+        var provider = new CustomProvider
+        {
+            FallbackProvider = new DecisionFactoryProvider(_ => null),
+        };
         var error = Assert.Throws<NoSuchModelError>(() => provider.DecisionModel("missing"));
         Assert.Equal("missing", error.ModelId);
         Assert.Equal("decisionModel", error.ModelType);

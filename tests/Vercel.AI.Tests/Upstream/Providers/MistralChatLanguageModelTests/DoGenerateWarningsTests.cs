@@ -10,45 +10,62 @@ namespace Vercel.AI.Tests.MistralChatLanguageModelTests;
 /// <summary>Port of <c>mistral-chat-language-model.test.ts</c> &gt; <c>doGenerate &gt; warnings</c>.</summary>
 public sealed class DoGenerateWarningsTests
 {
-    private const string Prefix = "packages/mistral/src/mistral-chat-language-model.test.ts::doGenerate > warnings::";
+    private const string Prefix =
+        "packages/mistral/src/mistral-chat-language-model.test.ts::doGenerate > warnings::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported reasoning for non-supporting models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported reasoning for non-supporting models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_warn_about_unsupported_reasoning_for_non_supporting_models()
     {
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.Reasoning = "medium";
 
-        var result = await Model(capture, "mistral-large-latest").DoGenerateAsync(options, CancellationToken.None);
+        var result = await Model(capture, "mistral-large-latest")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Contains(result.Warnings, warning => warning.Type == "unsupported"
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "unsupported"
             && warning.Feature == "reasoning"
-            && warning.Message == "This model does not support reasoning configuration.");
+            && warning.Message == "This model does not support reasoning configuration."
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should emit compatibility warning for reasoning medium on supporting model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should emit compatibility warning for reasoning medium on supporting model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_emit_compatibility_warning_for_reasoning_medium_on_supporting_model()
     {
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.Reasoning = "medium";
 
-        var result = await Model(capture, "mistral-small-latest").DoGenerateAsync(options, CancellationToken.None);
+        var result = await Model(capture, "mistral-small-latest")
+            .DoGenerateAsync(options, CancellationToken.None);
 
-        Assert.Contains(result.Warnings, warning => warning.Type == "compatibility" && warning.Feature == "reasoning");
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility" && warning.Feature == "reasoning"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should not warn for reasoning high on supporting model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should not warn for reasoning high on supporting model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_warn_for_reasoning_high_on_supporting_model()
     {
         var capture = new UpstreamCapture();
         var options = UpstreamChat.Prompt();
         options.Reasoning = "high";
 
-        var result = await Model(capture, "mistral-small-latest").DoGenerateAsync(options, CancellationToken.None);
+        var result = await Model(capture, "mistral-small-latest")
+            .DoGenerateAsync(options, CancellationToken.None);
 
         Assert.Empty(result.Warnings);
     }
@@ -62,7 +79,10 @@ public sealed class DoGenerateWarningsTests
     [InlineData("zai-glm-5-2")]
     [InlineData("glm-5-2")]
     [InlineData("labs-leanstral-1-5")]
-    [UpstreamTest(Prefix + "should not warn about reasoning for %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should not warn about reasoning for %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_not_warn_about_reasoning_for_model(string modelId)
     {
         var capture = new UpstreamCapture();
@@ -76,6 +96,9 @@ public sealed class DoGenerateWarningsTests
 
     private static OpenAICompatibleLanguageModel Model(UpstreamCapture capture, string modelId)
     {
-        return (OpenAICompatibleLanguageModel)MistralProvider.Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture).LanguageModel(modelId);
+        return (OpenAICompatibleLanguageModel)
+            MistralProvider
+                .Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture)
+                .LanguageModel(modelId);
     }
 }

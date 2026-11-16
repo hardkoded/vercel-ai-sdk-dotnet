@@ -20,7 +20,12 @@ public sealed class AzureSpeechModel : ISpeechModel
     private readonly OpenAISpeechModel _openai;
     private readonly AzureSpeechSpeechModel _speech;
 
-    internal AzureSpeechModel(string modelId, AzureOpenAIOptions config, OpenAISpeechModel openai, AzureSpeechSpeechModel speech)
+    internal AzureSpeechModel(
+        string modelId,
+        AzureOpenAIOptions config,
+        OpenAISpeechModel openai,
+        AzureSpeechSpeechModel speech
+    )
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -48,20 +53,33 @@ public sealed class AzureSpeechModel : ISpeechModel
     /// <param name="serialized">The serialized model id and config.</param>
     /// <param name="apiKey">API key. Defaults to the <c>AZURE_API_KEY</c> environment variable.</param>
     /// <param name="handler">HTTP handler. Pass one from tests.</param>
-    public static AzureSpeechModel Deserialize(SerializedModelOptions serialized, string? apiKey = null, HttpMessageHandler? handler = null)
+    public static AzureSpeechModel Deserialize(
+        SerializedModelOptions serialized,
+        string? apiKey = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        return AzureOpenAIProvider.DeserializeProvider(serialized, apiKey, handler).Speech(serialized.ModelId);
+        return AzureOpenAIProvider
+            .DeserializeProvider(serialized, apiKey, handler)
+            .Speech(serialized.ModelId);
     }
 
     /// <inheritdoc />
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+    public async Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (options is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
 
-        var result = await GenerateAsync(new OpenAISpeechCall(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateAsync(
+                new OpenAISpeechCall(options.Text) { Voice = options.Voice },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new SpeechResult(result.Audio, result.MediaType);
     }
 
@@ -70,7 +88,10 @@ public sealed class AzureSpeechModel : ISpeechModel
     /// Maps to <c>doGenerate</c>.
     /// </summary>
     /// <exception cref="Util.InvalidArgumentError">An <c>azure</c> provider option is unknown or out of range.</exception>
-    public async Task<OpenAISpeechResult> GenerateAsync(OpenAISpeechCall call, CancellationToken cancellationToken)
+    public async Task<OpenAISpeechResult> GenerateAsync(
+        OpenAISpeechCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -78,24 +99,50 @@ public sealed class AzureSpeechModel : ISpeechModel
         }
 
         var parsed = AzureSpeechModelOptions.Parse(call.ProviderOptions);
-        var speechOptions = new AzureSpeechSpeechModelOptions { Style = parsed?.Style, StyleDegree = parsed?.StyleDegree };
-        var openaiOptions = AzureProviderOptions.PickAzureOptions(call.ProviderOptions, OpenAISpeechModelOptions.Shape());
-        var api = parsed?.Api ?? (AzureSpeechModelOptions.GetMAIVoiceModel(ModelId) != null ? "speech" : "openai");
+        var speechOptions = new AzureSpeechSpeechModelOptions
+        {
+            Style = parsed?.Style,
+            StyleDegree = parsed?.StyleDegree,
+        };
+        var openaiOptions = AzureProviderOptions.PickAzureOptions(
+            call.ProviderOptions,
+            OpenAISpeechModelOptions.Shape()
+        );
+        var api = parsed?.Api
+            ?? (AzureSpeechModelOptions.GetMAIVoiceModel(ModelId) != null ? "speech" : "openai");
         if (api == "speech")
         {
-            var result = await _speech.GenerateAsync(call, speechOptions, cancellationToken).ConfigureAwait(false);
+            var result = await _speech
+                .GenerateAsync(call, speechOptions, cancellationToken)
+                .ConfigureAwait(false);
             var warnings = new List<OpenAICallWarning>(result.Warnings);
-            warnings.AddRange(AzureProviderOptions.UnsupportedOptionWarnings(openaiOptions, "This option requires the OpenAI speech API."));
+            warnings.AddRange(
+                AzureProviderOptions.UnsupportedOptionWarnings(
+                    openaiOptions,
+                    "This option requires the OpenAI speech API."
+                )
+            );
             return result.WithWarnings(warnings);
         }
 
-        var openaiResult = await _openai.GenerateAsync(
-            call.WithProviderOptions(AzureProviderOptions.WithAzureOptionsForOpenAI(call.ProviderOptions, openaiOptions)),
-            cancellationToken).ConfigureAwait(false);
+        var openaiResult = await _openai
+            .GenerateAsync(
+                call.WithProviderOptions(
+                    AzureProviderOptions.WithAzureOptionsForOpenAI(
+                        call.ProviderOptions,
+                        openaiOptions
+                    )
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var openaiWarnings = new List<OpenAICallWarning>(openaiResult.Warnings);
-        openaiWarnings.AddRange(AzureProviderOptions.UnsupportedOptionWarnings(
-            SpeechOnlyOptions(speechOptions),
-            "This option requires the Azure Speech API."));
+        openaiWarnings.AddRange(
+            AzureProviderOptions.UnsupportedOptionWarnings(
+                SpeechOnlyOptions(speechOptions),
+                "This option requires the Azure Speech API."
+            )
+        );
         return openaiResult.WithWarnings(openaiWarnings);
     }
 

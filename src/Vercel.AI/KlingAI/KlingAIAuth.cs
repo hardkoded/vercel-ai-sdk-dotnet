@@ -28,7 +28,11 @@ public static class KlingAIAuth
     /// Resolves the bearer token. Explicit values win over environment variables, and the API key wins over the access key / secret key pair:
     /// <c>apiKey</c>, then <c>accessKey</c> with <c>secretKey</c>, then <c>KLINGAI_API_KEY</c>, then <c>KLINGAI_ACCESS_KEY</c> with <c>KLINGAI_SECRET_KEY</c>.
     /// </summary>
-    public static string ResolveAuthToken(string? apiKey = null, string? accessKey = null, string? secretKey = null)
+    public static string ResolveAuthToken(
+        string? apiKey = null,
+        string? accessKey = null,
+        string? secretKey = null
+    )
     {
         var explicitApiKey = apiKey?.Trim();
         if (!string.IsNullOrEmpty(explicitApiKey))
@@ -47,15 +51,17 @@ public static class KlingAIAuth
             return environmentApiKey;
         }
 
-        var hasLegacyCredentials = LoadTrimmed(accessKey, AccessKeyEnvironmentVariable) != null
+        var hasLegacyCredentials =
+            LoadTrimmed(accessKey, AccessKeyEnvironmentVariable) != null
             || LoadTrimmed(secretKey, SecretKeyEnvironmentVariable) != null;
         if (!hasLegacyCredentials)
         {
             throw new AiSdkException(
                 "KlingAI API key is missing. Pass it using the 'apiKey' parameter "
-                + "or the KLINGAI_API_KEY environment variable. Alternatively, pass the "
-                + "legacy 'accessKey' and 'secretKey' parameters or the "
-                + "KLINGAI_ACCESS_KEY and KLINGAI_SECRET_KEY environment variables.");
+                    + "or the KLINGAI_API_KEY environment variable. Alternatively, pass the "
+                    + "legacy 'accessKey' and 'secretKey' parameters or the "
+                    + "KLINGAI_ACCESS_KEY and KLINGAI_SECRET_KEY environment variables."
+            );
         }
 
         return GenerateAuthToken(accessKey, secretKey);
@@ -67,15 +73,33 @@ public static class KlingAIAuth
     /// </summary>
     public static string GenerateAuthToken(string? accessKey = null, string? secretKey = null)
     {
-        var ak = LoadSetting(accessKey, "accessKey", AccessKeyEnvironmentVariable, "KlingAI access key");
-        var sk = LoadSetting(secretKey, "secretKey", SecretKeyEnvironmentVariable, "KlingAI secret key");
+        var ak = LoadSetting(
+            accessKey,
+            "accessKey",
+            AccessKeyEnvironmentVariable,
+            "KlingAI access key"
+        );
+        var sk = LoadSetting(
+            secretKey,
+            "secretKey",
+            SecretKeyEnvironmentVariable,
+            "KlingAI secret key"
+        );
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         var header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-        var payload = "{\"iss\":" + System.Text.Json.JsonSerializer.Serialize(ak)
-            + ",\"exp\":" + (now + 1800).ToString(CultureInfo.InvariantCulture)
-            + ",\"nbf\":" + (now - 5).ToString(CultureInfo.InvariantCulture) + "}";
-        var signingInput = Base64Url(Encoding.UTF8.GetBytes(header)) + "." + Base64Url(Encoding.UTF8.GetBytes(payload));
+        var payload =
+            "{\"iss\":"
+            + System.Text.Json.JsonSerializer.Serialize(ak)
+            + ",\"exp\":"
+            + (now + 1800).ToString(CultureInfo.InvariantCulture)
+            + ",\"nbf\":"
+            + (now - 5).ToString(CultureInfo.InvariantCulture)
+            + "}";
+        var signingInput =
+            Base64Url(Encoding.UTF8.GetBytes(header))
+            + "."
+            + Base64Url(Encoding.UTF8.GetBytes(payload));
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(sk));
         var signature = hmac.ComputeHash(Encoding.UTF8.GetBytes(signingInput));
         return signingInput + "." + Base64Url(signature);
@@ -93,7 +117,12 @@ public static class KlingAIAuth
         return string.IsNullOrEmpty(resolved) ? null : resolved;
     }
 
-    private static string LoadSetting(string? value, string name, string environmentVariable, string description)
+    private static string LoadSetting(
+        string? value,
+        string name,
+        string environmentVariable,
+        string description
+    )
     {
         if (value != null)
         {
@@ -103,7 +132,14 @@ public static class KlingAIAuth
         var fromEnvironment = Environment.GetEnvironmentVariable(environmentVariable);
         if (fromEnvironment == null)
         {
-            throw new AiSdkException(description + " is missing. Pass it using the '" + name + "' parameter or the " + environmentVariable + " environment variable.");
+            throw new AiSdkException(
+                description
+                    + " is missing. Pass it using the '"
+                    + name
+                    + "' parameter or the "
+                    + environmentVariable
+                    + " environment variable."
+            );
         }
 
         return fromEnvironment;

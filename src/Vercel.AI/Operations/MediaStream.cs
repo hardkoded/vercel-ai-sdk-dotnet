@@ -259,15 +259,23 @@ public sealed class AudioChunkReader
     /// <summary>Reads the next chunk. Returns null when the stream ends or the reader is cancelled. Base64 chunks are decoded.</summary>
     public async Task<byte[]?> ReadAsync(CancellationToken cancellationToken = default)
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancelled.Token);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            _cancelled.Token
+        );
         try
         {
-            if (_stream.IsCancelled || !await _stream.Chunks.WaitAsync(linked.Token).ConfigureAwait(false) || _stream.IsCancelled)
+            if (
+                _stream.IsCancelled
+                || !await _stream.Chunks.WaitAsync(linked.Token).ConfigureAwait(false)
+                || _stream.IsCancelled
+            )
             {
                 return null;
             }
         }
-        catch (OperationCanceledException) when (_cancelled.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
+            when (_cancelled.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
             return null;
         }
@@ -299,7 +307,11 @@ public sealed class ModelPartStream
     private readonly Action? _onCancel;
 
     /// <summary>Creates a scripted stream.</summary>
-    public ModelPartStream(IReadOnlyList<ModelStreamPart> parts, bool completes = true, Exception? failure = null)
+    public ModelPartStream(
+        IReadOnlyList<ModelStreamPart> parts,
+        bool completes = true,
+        Exception? failure = null
+    )
     {
         _parts = parts ?? Array.Empty<ModelStreamPart>();
         Completes = completes;
@@ -339,7 +351,10 @@ public sealed class ModelPartStream
     }
 
     /// <summary>Reads the scripted parts, then waits when the stream stays open.</summary>
-    public async IAsyncEnumerable<ModelStreamPart> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<ModelStreamPart> ReadAsync(
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default
+    )
     {
         if (_live is not null)
         {
@@ -382,9 +397,7 @@ public sealed class OperationFullStream<T> : IAsyncEnumerable<T>
 
     /// <summary>Creates a stream.</summary>
     public OperationFullStream(Func<IAsyncEnumerator<T>> open, Action cancel)
-        : this(_ => open(), cancel)
-    {
-    }
+        : this(_ => open(), cancel) { }
 
     /// <summary>Creates a stream whose enumerator observes the token passed to <see cref="GetAsyncEnumerator"/>.</summary>
     public OperationFullStream(Func<CancellationToken, IAsyncEnumerator<T>> open, Action cancel)
@@ -453,7 +466,8 @@ public sealed class PendingPromise<T>
 public sealed class PartQueue<T>
 {
     private readonly Queue<T> _items = new Queue<T>();
-    private readonly Queue<TaskCompletionSource<bool>> _waiters = new Queue<TaskCompletionSource<bool>>();
+    private readonly Queue<TaskCompletionSource<bool>> _waiters =
+        new Queue<TaskCompletionSource<bool>>();
     private Exception? _error;
     private bool _completed;
 

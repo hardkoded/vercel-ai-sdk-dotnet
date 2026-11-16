@@ -16,7 +16,8 @@ namespace Vercel.AI.Tests.E2e.OpenAI;
 [Trait("Category", "RealModel")]
 public sealed class PruneMessagesReasoningTests
 {
-    private const string WeatherSchema = "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"]}";
+    private const string WeatherSchema =
+        "{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"]}";
 
     [SkippableFact]
     public async Task Should_generate_text_after_the_reasoning_has_been_pruned_from_the_history()
@@ -30,33 +31,41 @@ public sealed class PruneMessagesReasoningTests
         };
         var tools = new[]
         {
-            Tool.Function("weather", "Get the weather in a location", WeatherSchema, (_, _) => Task.FromResult("{\"temperature\":72}")),
+            Tool.Function("weather", "Get the weather in a location", WeatherSchema, (_, _) =>
+                Task.FromResult("{\"temperature\":72}")
+            ),
         };
         var messages = new List<ModelMessage>
         {
-            new UserModelMessage("Use the weather tool to get the weather in San Francisco and New York, then compare them."),
+            new UserModelMessage(
+                "Use the weather tool to get the weather in San Francisco and New York, then compare them."
+            ),
         };
 
         // step 1: reasoning + tool calls
-        var toolStep = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.Required,
-            Messages = messages,
-        });
+        var toolStep = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.Required,
+                Messages = messages,
+            }
+        );
         messages.AddRange(toolStep.ResponseMessages);
 
         // step 2: reasoning + final answer
-        var answerStep = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.None,
-            Messages = messages,
-        });
+        var answerStep = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.None,
+                Messages = messages,
+            }
+        );
         messages.AddRange(answerStep.ResponseMessages);
         messages.Add(new UserModelMessage("Which city should I visit this weekend?"));
 
@@ -79,14 +88,16 @@ public sealed class PruneMessagesReasoningTests
             }
         }
 
-        var result = await client.GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = model,
-            ProviderOptions = providerOptions,
-            Tools = tools,
-            ToolChoice = ToolChoice.None,
-            Messages = pruned,
-        });
+        var result = await client.GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = model,
+                ProviderOptions = providerOptions,
+                Tools = tools,
+                ToolChoice = ToolChoice.None,
+                Messages = pruned,
+            }
+        );
 
         Assert.False(string.IsNullOrWhiteSpace(result.Text));
     }

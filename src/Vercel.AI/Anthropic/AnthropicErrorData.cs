@@ -11,7 +11,15 @@ namespace Vercel.AI.Anthropic;
 public sealed class AnthropicErrorData
 {
     /// <summary>Creates a parsed error.</summary>
-    public AnthropicErrorData(bool success, string? type, string? errorType, string? message, string rawValue, JsonObject? details = null, bool hasDetails = false)
+    public AnthropicErrorData(
+        bool success,
+        string? type,
+        string? errorType,
+        string? message,
+        string rawValue,
+        JsonObject? details = null,
+        bool hasDetails = false
+    )
     {
         Details = details;
         HasDetails = hasDetails;
@@ -46,7 +54,15 @@ public sealed class AnthropicErrorData
     /// <summary>The <c>error.details.error_code</c> value, such as <c>thread_not_found</c>.</summary>
     public string? ErrorCode
     {
-        get { return Details != null && Details["error_code"] is JsonValue value && value.TryGetValue<string>(out var code) ? code : null; }
+        get
+        {
+            return
+                Details != null
+                && Details["error_code"] is JsonValue value
+                && value.TryGetValue<string>(out var code)
+                ? code
+                : null;
+        }
     }
 
     /// <summary>Original JSON.</summary>
@@ -59,12 +75,14 @@ public sealed class AnthropicErrorData
         {
             using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object
+            if (
+                root.ValueKind != JsonValueKind.Object
                 || AnthropicJson.String(root, "type") != "error"
                 || !root.TryGetProperty("error", out var error)
                 || error.ValueKind != JsonValueKind.Object
                 || AnthropicJson.String(error, "type") == null
-                || AnthropicJson.String(error, "message") == null)
+                || AnthropicJson.String(error, "message") == null
+            )
             {
                 return new AnthropicErrorData(false, null, null, null, json);
             }
@@ -99,7 +117,12 @@ public sealed class AnthropicErrorData
                         {
                             details["unsupported"] = null;
                         }
-                        else if (unsupported.ValueKind == JsonValueKind.Array && unsupported.EnumerateArray().All(item => item.ValueKind == JsonValueKind.String))
+                        else if (
+                            unsupported.ValueKind == JsonValueKind.Array
+                            && unsupported
+                                .EnumerateArray()
+                                .All(item => item.ValueKind == JsonValueKind.String)
+                        )
                         {
                             var items = new JsonArray();
                             foreach (var item in unsupported.EnumerateArray())
@@ -113,7 +136,15 @@ public sealed class AnthropicErrorData
                 }
             }
 
-            return new AnthropicErrorData(true, "error", AnthropicJson.String(error, "type"), AnthropicJson.String(error, "message"), json, details, hasDetails);
+            return new AnthropicErrorData(
+                true,
+                "error",
+                AnthropicJson.String(error, "type"),
+                AnthropicJson.String(error, "message"),
+                json,
+                details,
+                hasDetails
+            );
         }
         catch (JsonException)
         {
@@ -129,21 +160,13 @@ public sealed class AnthropicErrorData
             return null;
         }
 
-        var error = new JsonObject
-        {
-            ["type"] = ErrorType,
-            ["message"] = Message,
-        };
+        var error = new JsonObject { ["type"] = ErrorType, ["message"] = Message };
         if (HasDetails)
         {
             error["details"] = Details?.DeepClone();
         }
 
-        return new JsonObject
-        {
-            ["type"] = Type,
-            ["error"] = error,
-        };
+        return new JsonObject { ["type"] = Type, ["error"] = error };
     }
 }
 

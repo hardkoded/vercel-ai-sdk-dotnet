@@ -71,7 +71,11 @@ public sealed class OpenAIOptions : OpenAICompatibleOptions
 public sealed class PreparedResponsesTools
 {
     /// <summary>Creates a prepared tool list.</summary>
-    public PreparedResponsesTools(JsonArray? tools, JsonNode? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
+    public PreparedResponsesTools(
+        JsonArray? tools,
+        JsonNode? toolChoice,
+        IReadOnlyList<CallWarning> toolWarnings
+    )
     {
         Tools = tools;
         ToolChoice = toolChoice;
@@ -114,10 +118,15 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
     public HttpClient HttpClient { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static OpenAIProvider Create(OpenAIOptions? options = null, HttpMessageHandler? handler = null)
+    public static OpenAIProvider Create(
+        OpenAIOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
         options ??= new OpenAIOptions();
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             // The configured transport also serves untrusted downloads: upstream uses `downloadFetch ?? config.fetch`.
@@ -259,18 +268,32 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         OpenAIRealtimeOptions? options = null,
         RealtimeModelV4SessionConfig? sessionConfig = null,
         int? expiresAfterSeconds = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        return OpenAIRealtimeFactory.GetTokenAsync(this, model, options, sessionConfig, expiresAfterSeconds, cancellationToken);
+        return OpenAIRealtimeFactory.GetTokenAsync(
+            this,
+            model,
+            options,
+            sessionConfig,
+            expiresAfterSeconds,
+            cancellationToken
+        );
     }
 
     /// <summary>
     /// Builds request headers. Custom provider headers override the API key, organization, and project.
     /// The user-agent suffix is appended after that, and per-call headers override the result.
     /// </summary>
-    public Dictionary<string, string?> CreateOpenAIHeaders(IReadOnlyDictionary<string, string?>? callHeaders = null)
+    public Dictionary<string, string?> CreateOpenAIHeaders(
+        IReadOnlyDictionary<string, string?>? callHeaders = null
+    )
     {
-        var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable, Options.AdditionalApiKeyEnvironmentVariables);
+        var key = ApiKeys.Require(
+            Options.ApiKey,
+            Options.ApiKeyEnvironmentVariable,
+            Options.AdditionalApiKeyEnvironmentVariables
+        );
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] = "Bearer " + key,
@@ -291,7 +314,9 @@ public sealed class OpenAIProvider : OpenAICompatibleProvider, Operations.IBatch
         }
 
         headers.TryGetValue("User-Agent", out var current);
-        headers["user-agent"] = string.IsNullOrEmpty(current) ? UserAgentSuffix : current + " " + UserAgentSuffix;
+        headers["user-agent"] = string.IsNullOrEmpty(current)
+            ? UserAgentSuffix
+            : current + " " + UserAgentSuffix;
         if (callHeaders != null)
         {
             foreach (var pair in callHeaders)
@@ -354,7 +379,11 @@ internal sealed class OpenAIBatchModel : IBatchModel
 
     public string Provider => _provider.Name + ".batch";
 
-    public async Task<BatchJob> SubmitAsync(string inputFileId, string endpoint, CancellationToken cancellationToken)
+    public async Task<BatchJob> SubmitAsync(
+        string inputFileId,
+        string endpoint,
+        CancellationToken cancellationToken
+    )
     {
         var body = new JsonObject
         {
@@ -362,23 +391,29 @@ internal sealed class OpenAIBatchModel : IBatchModel
             ["endpoint"] = endpoint,
             ["completion_window"] = "24h",
         };
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "batches"),
-            body.ToJsonString(),
-            _provider.CreateOpenAIHeaders(),
-            cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "batches"),
+                body.ToJsonString(),
+                _provider.CreateOpenAIHeaders(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return Read(document.RootElement);
     }
 
     public async Task<BatchJob> GetAsync(string id, CancellationToken cancellationToken)
     {
-        using var document = await _provider.Http.SendJsonAsync(
-            HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + id),
-            null,
-            _provider.CreateOpenAIHeaders(),
-            cancellationToken).ConfigureAwait(false);
+        using var document = await _provider
+            .Http.SendJsonAsync(
+                HttpMethod.Get,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + id),
+                null,
+                _provider.CreateOpenAIHeaders(),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return Read(document.RootElement);
     }
 
@@ -386,7 +421,10 @@ internal sealed class OpenAIBatchModel : IBatchModel
     {
         return new BatchJob(
             root.GetProperty("id").GetString() ?? string.Empty,
-            root.TryGetProperty("status", out var status) ? status.GetString() ?? "unknown" : "unknown");
+            root.TryGetProperty("status", out var status)
+                ? status.GetString() ?? "unknown"
+                : "unknown"
+        );
     }
 }
 
@@ -399,7 +437,9 @@ internal sealed class WebSocketRealtimeSession : IRealtimeSession
         _socket = socket;
     }
 
-    public async IAsyncEnumerable<string> Events([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> Events(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         var buffer = new byte[8192];
         while (_socket.State == System.Net.WebSockets.WebSocketState.Open)
@@ -408,15 +448,16 @@ internal sealed class WebSocketRealtimeSession : IRealtimeSession
             System.Net.WebSockets.WebSocketReceiveResult result;
             do
             {
-                result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken).ConfigureAwait(false);
+                result = await _socket
+                    .ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken)
+                    .ConfigureAwait(false);
                 if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
                 {
                     yield break;
                 }
 
                 builder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-            }
-            while (!result.EndOfMessage);
+            } while (!result.EndOfMessage);
 
             yield return builder.ToString();
         }
@@ -427,7 +468,12 @@ internal sealed class WebSocketRealtimeSession : IRealtimeSession
     public Task SendAsync(string json, CancellationToken cancellationToken)
     {
         var bytes = Encoding.UTF8.GetBytes(json);
-        return _socket.SendAsync(new ArraySegment<byte>(bytes), System.Net.WebSockets.WebSocketMessageType.Text, true, cancellationToken);
+        return _socket.SendAsync(
+            new ArraySegment<byte>(bytes),
+            System.Net.WebSockets.WebSocketMessageType.Text,
+            true,
+            cancellationToken
+        );
     }
 
     public ValueTask DisposeAsync()
@@ -441,14 +487,20 @@ internal sealed class WebSocketRealtimeSession : IRealtimeSession
 public static class OpenAIServiceCollectionExtensions
 {
     /// <summary>Adds the OpenAI provider.</summary>
-    public static IServiceCollection AddOpenAI(this IServiceCollection services, Action<OpenAIOptions>? configure = null)
+    public static IServiceCollection AddOpenAI(
+        this IServiceCollection services,
+        Action<OpenAIOptions>? configure = null
+    )
     {
         services.AddHttpClient(OpenAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAIOptions();
             configure?.Invoke(options);
-            return new OpenAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(OpenAIProvider.ProviderId), options);
+            return new OpenAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(OpenAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

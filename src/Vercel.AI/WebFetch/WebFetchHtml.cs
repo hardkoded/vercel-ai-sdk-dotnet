@@ -38,18 +38,60 @@ internal static class WebFetchHtml
     /// </summary>
     private const int MaxDomDepth = 512;
 
-    private static readonly string[] AlwaysRemoved = { "script", "style", "noscript", "template", "iframe", "object", "embed", "svg", "canvas", "link", "meta" };
+    private static readonly string[] AlwaysRemoved =
+    {
+        "script",
+        "style",
+        "noscript",
+        "template",
+        "iframe",
+        "object",
+        "embed",
+        "svg",
+        "canvas",
+        "link",
+        "meta",
+    };
 
     private static readonly string[] BoilerplateSelectors =
     {
-        "nav", "footer", "aside", "form", "dialog", "[role=navigation]", "[role=banner]", "[role=contentinfo]", "[role=complementary]", "body > header",
+        "nav",
+        "footer",
+        "aside",
+        "form",
+        "dialog",
+        "[role=navigation]",
+        "[role=banner]",
+        "[role=contentinfo]",
+        "[role=complementary]",
+        "body > header",
     };
 
-    private static readonly string[] HiddenSelectors = { "[hidden]", "[aria-hidden=true]", "[style*='display:none']", "[style*='display: none']" };
+    private static readonly string[] HiddenSelectors =
+    {
+        "[hidden]",
+        "[aria-hidden=true]",
+        "[style*='display:none']",
+        "[style*='display: none']",
+    };
 
-    private static readonly string[] ContentCandidates = { "article", "main", "[role=main]", "#content", ".post-content", ".entry-content", ".article-body", ".content" };
+    private static readonly string[] ContentCandidates =
+    {
+        "article",
+        "main",
+        "[role=main]",
+        "#content",
+        ".post-content",
+        ".entry-content",
+        ".article-body",
+        ".content",
+    };
 
-    public static (string? Title, string Content) ToMarkdown(string html, string url, WebFetchDefuddleOptions? options)
+    public static (string? Title, string Content) ToMarkdown(
+        string html,
+        string url,
+        WebFetchDefuddleOptions? options
+    )
     {
         var truncated = false;
         if (html.Length > MaxHtmlLength)
@@ -77,7 +119,10 @@ internal static class WebFetchHtml
 
         if (truncated)
         {
-            content += "\n\n[The page exceeded " + MaxHtmlLength.ToString(CultureInfo.InvariantCulture) + " characters of HTML and was truncated before conversion.]";
+            content +=
+                "\n\n[The page exceeded "
+                + MaxHtmlLength.ToString(CultureInfo.InvariantCulture)
+                + " characters of HTML and was truncated before conversion.]";
         }
 
         return (title, content.Trim());
@@ -107,7 +152,11 @@ internal static class WebFetchHtml
                 }
             }
 
-            for (var child = element.FirstElementChild; child != null; child = child.NextElementSibling)
+            for (
+                var child = element.FirstElementChild;
+                child != null;
+                child = child.NextElementSibling
+            )
             {
                 stack.Push((child, depth + 1));
             }
@@ -201,7 +250,13 @@ internal static class WebFetchHtml
         }
 
         var heading = document.QuerySelector("h1")?.TextContent;
-        heading = heading == null ? null : string.Join(" ", heading.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        heading =
+            heading == null
+                ? null
+                : string.Join(
+                    " ",
+                    heading.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+                );
         if (string.IsNullOrEmpty(heading))
         {
             return title;
@@ -226,7 +281,11 @@ internal static class WebFetchHtml
         return title;
     }
 
-    private static string ExtractContent(IDocument document, string url, WebFetchDefuddleOptions options)
+    private static string ExtractContent(
+        IDocument document,
+        string url,
+        WebFetchDefuddleOptions options
+    )
     {
         RemoveAll(document, string.Join(",", AlwaysRemoved));
         if (options.RemoveHiddenElements)
@@ -403,7 +462,10 @@ internal static class WebFetchHtml
 
         private void Wrap(IElement element, string marker)
         {
-            if (string.IsNullOrWhiteSpace(element.TextContent) && element.QuerySelector("img") == null)
+            if (
+                string.IsNullOrWhiteSpace(element.TextContent)
+                && element.QuerySelector("img") == null
+            )
             {
                 return;
             }
@@ -422,7 +484,8 @@ internal static class WebFetchHtml
             }
 
             // Collapse whitespace like a browser does. Linear: one pass, no regular expression.
-            var previousWasSpace = _output.Length > 0 && char.IsWhiteSpace(_output[_output.Length - 1]);
+            var previousWasSpace =
+                _output.Length > 0 && char.IsWhiteSpace(_output[_output.Length - 1]);
             foreach (var character in text)
             {
                 if (char.IsWhiteSpace(character) && character != ' ')
@@ -455,7 +518,9 @@ internal static class WebFetchHtml
                 return null;
             }
 
-            return resolved.Scheme == "http" || resolved.Scheme == "https" ? resolved.AbsoluteUri : null;
+            return resolved.Scheme == "http" || resolved.Scheme == "https"
+                ? resolved.AbsoluteUri
+                : null;
         }
 
         private static string FormatDestination(string url) =>
@@ -483,28 +548,49 @@ internal static class WebFetchHtml
                 return;
             }
 
-            _output.Append("![").Append(element.GetAttribute("alt") ?? string.Empty).Append("](").Append(FormatDestination(source)).Append(')');
+            _output
+                .Append("![")
+                .Append(element.GetAttribute("alt") ?? string.Empty)
+                .Append("](")
+                .Append(FormatDestination(source))
+                .Append(')');
         }
 
         private void RenderList(IElement list)
         {
             var ordered = list.LocalName == "ol";
             var number = 1;
-            if (ordered && int.TryParse(list.GetAttribute("start"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var start))
+            if (
+                ordered
+                && int.TryParse(
+                    list.GetAttribute("start"),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out var start
+                )
+            )
             {
                 number = start;
             }
 
             _output.Append(_listDepth == 0 ? "\n\n" : "\n");
             _listDepth++;
-            for (var child = list.FirstElementChild; child != null; child = child.NextElementSibling)
+            for (
+                var child = list.FirstElementChild;
+                child != null;
+                child = child.NextElementSibling
+            )
             {
                 if (child.LocalName != "li")
                 {
                     continue;
                 }
 
-                _output.Append(new string(' ', (_listDepth - 1) * 2)).Append(ordered ? number++.ToString(CultureInfo.InvariantCulture) + ". " : "- ");
+                _output
+                    .Append(new string(' ', (_listDepth - 1) * 2))
+                    .Append(
+                        ordered ? number++.ToString(CultureInfo.InvariantCulture) + ". " : "- "
+                    );
                 RenderChildren(child);
                 _output.Append('\n');
             }
@@ -521,26 +607,34 @@ internal static class WebFetchHtml
             var inner = new MarkdownWriter(_baseUri, _removeImages);
             inner.RenderChildren(element);
             var lines = inner.ToString().Split('\n');
-            Block(() => _output.Append(string.Join("\n", lines.Select(line => line.Length == 0 ? ">" : "> " + line))));
+            Block(() =>
+                _output.Append(
+                    string.Join("\n", lines.Select(line => line.Length == 0 ? ">" : "> " + line))
+                )
+            );
         }
 
         private void RenderTable(IElement table)
         {
-            var rows = table.QuerySelectorAll("tr").Where(row => row.Closest("table") == table).ToList();
+            var rows = table
+                .QuerySelectorAll("tr")
+                .Where(row => row.Closest("table") == table)
+                .ToList();
             if (rows.Count == 0)
             {
                 return;
             }
 
-            var cells = rows
-                .Select(row => row.Children.Where(cell => cell.LocalName == "th" || cell.LocalName == "td")
-                    .Select(cell =>
-                    {
-                        var inner = new MarkdownWriter(_baseUri, _removeImages);
-                        inner.RenderChildren(cell);
-                        return inner.ToString().Replace("\n", " ").Replace("|", "\\|");
-                    })
-                    .ToList())
+            var cells = rows.Select(row =>
+                    row.Children.Where(cell => cell.LocalName == "th" || cell.LocalName == "td")
+                        .Select(cell =>
+                        {
+                            var inner = new MarkdownWriter(_baseUri, _removeImages);
+                            inner.RenderChildren(cell);
+                            return inner.ToString().Replace("\n", " ").Replace("|", "\\|");
+                        })
+                        .ToList()
+                )
                 .Where(row => row.Count > 0)
                 .ToList();
             if (cells.Count == 0)
@@ -562,7 +656,10 @@ internal static class WebFetchHtml
                     _output.Append("| ").Append(string.Join(" | ", row)).Append(" |\n");
                     if (index == 0)
                     {
-                        _output.Append("| ").Append(string.Join(" | ", Enumerable.Repeat("---", width))).Append(" |\n");
+                        _output
+                            .Append("| ")
+                            .Append(string.Join(" | ", Enumerable.Repeat("---", width)))
+                            .Append(" |\n");
                     }
                 }
             });

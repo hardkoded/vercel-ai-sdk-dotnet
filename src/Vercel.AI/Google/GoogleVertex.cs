@@ -11,7 +11,8 @@ namespace Vercel.AI.Google;
 public static class GoogleVertexEndpoints
 {
     /// <summary>Express Mode origin used when an API key is supplied.</summary>
-    public const string ExpressModeBaseUrl = "https://aiplatform.googleapis.com/v1/publishers/google";
+    public const string ExpressModeBaseUrl =
+        "https://aiplatform.googleapis.com/v1/publishers/google";
 
     /// <summary>
     /// Returns the Vertex AI host for <paramref name="location"/>.
@@ -41,13 +42,21 @@ public static class GoogleVertexEndpoints
     }
 
     /// <summary>Publisher base URL for Gemini on Vertex. Tuned <c>endpoints/</c> ids omit <c>/publishers/google</c>.</summary>
-    public static string GeminiBaseUrl(string project, string location, string? baseUrl, bool expressMode, bool endpointModel)
+    public static string GeminiBaseUrl(
+        string project,
+        string location,
+        string? baseUrl,
+        bool expressMode,
+        bool endpointModel
+    )
     {
         if (expressMode)
         {
             if (endpointModel)
             {
-                throw new InvalidOperationException("Google Vertex tuned models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+                throw new InvalidOperationException(
+                    "Google Vertex tuned models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+                );
             }
 
             return Trim(baseUrl) ?? ExpressModeBaseUrl;
@@ -61,7 +70,13 @@ public static class GoogleVertexEndpoints
 
         var label = RequireLabel(location, "location");
         var suffix = endpointModel ? string.Empty : "/publishers/google";
-        return "https://" + Host(label) + "/v1beta1/projects/" + project + "/locations/" + label + suffix;
+        return "https://"
+            + Host(label)
+            + "/v1beta1/projects/"
+            + project
+            + "/locations/"
+            + label
+            + suffix;
     }
 
     /// <summary>Anthropic on Vertex publisher URL.</summary>
@@ -74,7 +89,13 @@ public static class GoogleVertexEndpoints
         }
 
         var label = RequireLabel(location ?? string.Empty, "location");
-        return "https://" + Host(label) + "/v1/projects/" + (project ?? string.Empty) + "/locations/" + label + "/publishers/anthropic/models";
+        return "https://"
+            + Host(label)
+            + "/v1/projects/"
+            + (project ?? string.Empty)
+            + "/locations/"
+            + label
+            + "/publishers/anthropic/models";
     }
 
     /// <summary>OpenAI-compatible MaaS URL. An empty base URL is rebuilt from the project and location.</summary>
@@ -87,7 +108,13 @@ public static class GoogleVertexEndpoints
         }
 
         var label = string.IsNullOrEmpty(location) ? "global" : RequireLabel(location!, "location");
-        return "https://" + Host(label) + "/v1/projects/" + project + "/locations/" + label + "/endpoints/openapi";
+        return "https://"
+            + Host(label)
+            + "/v1/projects/"
+            + project
+            + "/locations/"
+            + label
+            + "/endpoints/openapi";
     }
 
     /// <summary>xAI on Vertex always uses the global AI Platform host.</summary>
@@ -100,14 +127,24 @@ public static class GoogleVertexEndpoints
         }
 
         var label = string.IsNullOrEmpty(location) ? "global" : RequireLabel(location!, "location");
-        return "https://aiplatform.googleapis.com/v1/projects/" + project + "/locations/" + label + "/endpoints/openapi";
+        return "https://aiplatform.googleapis.com/v1/projects/"
+            + project
+            + "/locations/"
+            + label
+            + "/endpoints/openapi";
     }
 
     /// <summary>Cloud Speech-to-Text recognize URL.</summary>
     public static string RecognizeUrl(string project, string location)
     {
         var label = RequireLabel(location, "location");
-        return "https://" + SpeechHost(label) + "/v2/projects/" + project + "/locations/" + label + "/recognizers/_:recognize";
+        return "https://"
+            + SpeechHost(label)
+            + "/v2/projects/"
+            + project
+            + "/locations/"
+            + label
+            + "/recognizers/_:recognize";
     }
 
     /// <summary>True when the model id addresses a deployed endpoint.</summary>
@@ -142,7 +179,10 @@ public static class GoogleVertexEndpoints
 public static class GoogleVertexAuth
 {
     /// <summary>Bearer header for an access token that the caller already obtained.</summary>
-    public static IReadOnlyDictionary<string, string?> Bearer(string accessToken, IReadOnlyDictionary<string, string?>? headers = null)
+    public static IReadOnlyDictionary<string, string?> Bearer(
+        string accessToken,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
         var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (headers != null)
@@ -162,7 +202,10 @@ public static class GoogleVertexAuth
     }
 
     /// <summary>Express Mode sends the API key and does not add a bearer token.</summary>
-    public static IReadOnlyDictionary<string, string?> Express(string apiKey, IReadOnlyDictionary<string, string?>? headers = null)
+    public static IReadOnlyDictionary<string, string?> Express(
+        string apiKey,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
         var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (headers != null)
@@ -262,30 +305,46 @@ public sealed class GoogleVertexProvider : GoogleProvider
     public VertexOptions Vertex { get; }
 
     /// <summary>Tool-result file downloads. The size limit defaults to 7 MiB. Direct Google Cloud Storage URLs are forwarded.</summary>
-    internal override GoogleToolResultDownloadSettings? ToolResultDownloadSettings => new GoogleToolResultDownloadSettings(
-        Vertex.ToolResultDownloads?.MaxBytes ?? 7L * 1024 * 1024,
-        true,
-        Vertex.DownloadFetch);
+    internal override GoogleToolResultDownloadSettings? ToolResultDownloadSettings =>
+        new GoogleToolResultDownloadSettings(
+            Vertex.ToolResultDownloads?.MaxBytes ?? 7L * 1024 * 1024,
+            true,
+            Vertex.DownloadFetch
+        );
 
     /// <summary>Vertex models read any http(s) URL and Google Cloud Storage URLs themselves.</summary>
     internal override IReadOnlyDictionary<string, string> GetSupportedUrls(string? modelId)
     {
-        return new Dictionary<string, string>(StringComparer.Ordinal) { ["*"] = "^https?://.*\\z|^gs://.*\\z" };
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["*"] = "^https?://.*\\z|^gs://.*\\z",
+        };
     }
 
     /// <summary>Creates a provider.</summary>
-    public static GoogleVertexProvider Create(VertexOptions? options = null, HttpMessageHandler? handler = null)
+    public static GoogleVertexProvider Create(
+        VertexOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new GoogleVertexProvider(client, options);
     }
 
     /// <summary>Tuned <c>endpoints/</c> models reject Express Mode and omit <c>/publishers/google</c>.</summary>
     public override ILanguageModel LanguageModel(string modelId)
     {
-        if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey) && GoogleVertexEndpoints.IsEndpointModel(modelId))
+        if (
+            Vertex.UpstreamRoutes
+            && !string.IsNullOrEmpty(Options.ApiKey)
+            && GoogleVertexEndpoints.IsEndpointModel(modelId)
+        )
         {
-            throw new InvalidOperationException("Google Vertex tuned models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+            throw new InvalidOperationException(
+                "Google Vertex tuned models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+            );
         }
 
         return base.LanguageModel(modelId);
@@ -296,7 +355,9 @@ public sealed class GoogleVertexProvider : GoogleProvider
     {
         if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
         {
-            throw new InvalidOperationException("Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+            throw new InvalidOperationException(
+                "Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+            );
         }
 
         return base.Interactions(modelId);
@@ -307,7 +368,9 @@ public sealed class GoogleVertexProvider : GoogleProvider
     {
         if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
         {
-            throw new InvalidOperationException("Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+            throw new InvalidOperationException(
+                "Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+            );
         }
 
         return base.Interactions(agent);
@@ -320,7 +383,9 @@ public sealed class GoogleVertexProvider : GoogleProvider
         {
             if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
             {
-                throw new InvalidOperationException("Google Vertex Chirp speech models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+                throw new InvalidOperationException(
+                    "Google Vertex Chirp speech models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+                );
             }
 
             return new GoogleVertexCloudSpeechModel(this, modelId);
@@ -334,7 +399,9 @@ public sealed class GoogleVertexProvider : GoogleProvider
     {
         if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
         {
-            throw new InvalidOperationException("Google Vertex transcription models do not support Express Mode API keys. Use standard Google Cloud credentials instead.");
+            throw new InvalidOperationException(
+                "Google Vertex transcription models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
+            );
         }
 
         if (modelId != null && modelId.StartsWith("gemini", StringComparison.Ordinal))
@@ -362,7 +429,8 @@ public sealed class GoogleVertexProvider : GoogleProvider
         options.UseBearerToken = true;
         if (string.IsNullOrEmpty(options.Project))
         {
-            options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT") ?? string.Empty;
+            options.Project = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_PROJECT")
+                ?? string.Empty;
         }
 
         if (!string.IsNullOrEmpty(options.BaseUrl))
@@ -373,18 +441,28 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
         if (options.Region != null && !HostnameParts.IsValidHostnamePart(options.Region))
         {
-            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
+            throw new ArgumentException(
+                "A Vertex location must be a single DNS label.",
+                nameof(VertexOptions.Region)
+            );
         }
 
         if (string.IsNullOrEmpty(options.Region))
         {
-            options.Region = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_LOCATION") ?? "us-central1";
+            options.Region = Environment.GetEnvironmentVariable("GOOGLE_VERTEX_LOCATION")
+                ?? "us-central1";
         }
 
         if (options.UpstreamRoutes)
         {
             var express = !string.IsNullOrEmpty(options.ApiKey);
-            options.BaseUrl = GoogleVertexEndpoints.GeminiBaseUrl(options.Project, options.Region, null, express, false);
+            options.BaseUrl = GoogleVertexEndpoints.GeminiBaseUrl(
+                options.Project,
+                options.Region,
+                null,
+                express,
+                false
+            );
             if (express)
             {
                 options.UseBearerToken = false;
@@ -395,11 +473,20 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
         if (!HostnameParts.IsValidHostnamePart(options.Region))
         {
-            throw new ArgumentException("A Vertex location must be a single DNS label.", nameof(VertexOptions.Region));
+            throw new ArgumentException(
+                "A Vertex location must be a single DNS label.",
+                nameof(VertexOptions.Region)
+            );
         }
 
-        options.BaseUrl = "https://" + options.Region + "-aiplatform.googleapis.com/v1/projects/" + options.Project
-            + "/locations/" + options.Region + "/publishers/google";
+        options.BaseUrl =
+            "https://"
+            + options.Region
+            + "-aiplatform.googleapis.com/v1/projects/"
+            + options.Project
+            + "/locations/"
+            + options.Region
+            + "/publishers/google";
         return options;
     }
 }

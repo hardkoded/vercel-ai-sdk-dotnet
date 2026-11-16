@@ -39,11 +39,14 @@ internal sealed class StreamingUIMessageState
     /// <summary>The message in its JSON form.</summary>
     public JsonObject Message { get; set; }
 
-    public Dictionary<string, JsonObject> ActiveTextParts { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, JsonObject> ActiveTextParts { get; set; } =
+        new(StringComparer.Ordinal);
 
-    public Dictionary<string, JsonObject> ActiveReasoningParts { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, JsonObject> ActiveReasoningParts { get; set; } =
+        new(StringComparer.Ordinal);
 
-    public Dictionary<string, PartialToolCall> PartialToolCalls { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, PartialToolCall> PartialToolCalls { get; set; } =
+        new(StringComparer.Ordinal);
 
     public string? FinishReason { get; set; }
 }
@@ -57,7 +60,10 @@ internal sealed class UIMessageStreamWriteOptions
 /// <summary>The state and the write callback that an update job receives.</summary>
 internal sealed class UpdateMessageJobContext
 {
-    public UpdateMessageJobContext(StreamingUIMessageState state, Action<UIMessageStreamWriteOptions?> write)
+    public UpdateMessageJobContext(
+        StreamingUIMessageState state,
+        Action<UIMessageStreamWriteOptions?> write
+    )
     {
         State = state;
         Write = write;
@@ -71,7 +77,10 @@ internal sealed class UpdateMessageJobContext
 /// <summary>Options of <see cref="UIMessageStreamProcessing.ProcessUIMessageStream"/>.</summary>
 internal sealed class ProcessUIMessageStreamOptions
 {
-    public ProcessUIMessageStreamOptions(Func<Func<UpdateMessageJobContext, Task>, Task> runUpdateMessageJob, Action<Exception>? onError)
+    public ProcessUIMessageStreamOptions(
+        Func<Func<UpdateMessageJobContext, Task>, Task> runUpdateMessageJob,
+        Action<Exception>? onError
+    )
     {
         RunUpdateMessageJob = runUpdateMessageJob;
         OnError = onError;
@@ -104,11 +113,20 @@ internal sealed class ProcessUIMessageStreamOptions
 internal static class UIMessageStreamProcessing
 {
     /// <summary>Maps to <c>createStreamingUIMessageState</c>.</summary>
-    public static StreamingUIMessageState CreateStreamingUIMessageState(JsonObject? lastMessage, string messageId)
+    public static StreamingUIMessageState CreateStreamingUIMessageState(
+        JsonObject? lastMessage,
+        string messageId
+    )
     {
-        var message = (string?)lastMessage?["role"] == "assistant"
-            ? lastMessage!
-            : new JsonObject { ["id"] = messageId, ["role"] = "assistant", ["parts"] = new JsonArray() };
+        var message =
+            (string?)lastMessage?["role"] == "assistant"
+                ? lastMessage!
+                : new JsonObject
+                {
+                    ["id"] = messageId,
+                    ["role"] = "assistant",
+                    ["parts"] = new JsonArray(),
+                };
         var state = new StreamingUIMessageState(message);
         var parts = (JsonArray)message["parts"]!;
 
@@ -143,10 +161,15 @@ internal static class UIMessageStreamProcessing
             var isDynamic = (string?)part["type"] == "dynamic-tool";
             state.PartialToolCalls[(string)part["toolCallId"]!] = new PartialToolCall
             {
-                Text = part["rawInput"] is JsonValue raw && raw.TryGetValue<string>(out var rawText) ? rawText : string.Empty,
+                Text =
+                    part["rawInput"] is JsonValue raw && raw.TryGetValue<string>(out var rawText)
+                        ? rawText
+                        : string.Empty,
                 InputEncoding = (string?)part["inputEncoding"],
                 Index = index,
-                ToolName = isDynamic ? (string?)part["toolName"] ?? string.Empty : ((string?)part["type"] ?? string.Empty).Substring(5),
+                ToolName = isDynamic
+                    ? (string?)part["toolName"] ?? string.Empty
+                    : ((string?)part["type"] ?? string.Empty).Substring(5),
                 Dynamic = isDynamic,
                 Title = (string?)part["title"],
                 ToolMetadata = part["toolMetadata"]?.DeepClone(),
@@ -160,29 +183,42 @@ internal static class UIMessageStreamProcessing
     public static async IAsyncEnumerable<JsonObject> ProcessUIMessageStream(
         IAsyncEnumerable<JsonObject> stream,
         ProcessUIMessageStreamOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         var isFirstMessageStart = true;
 
-        await foreach (var chunk in stream.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var chunk in stream.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
         {
-            await options.RunUpdateMessageJob(async context =>
-            {
-                var isStart = (string?)chunk["type"] == "start";
-                var wasFirstMessageStart = isFirstMessageStart;
-                if (isStart)
+            await options
+                .RunUpdateMessageJob(async context =>
                 {
-                    isFirstMessageStart = false;
-                }
+                    var isStart = (string?)chunk["type"] == "start";
+                    var wasFirstMessageStart = isFirstMessageStart;
+                    if (isStart)
+                    {
+                        isFirstMessageStart = false;
+                    }
 
-                await ProcessChunkAsync(chunk, context.State, context.Write, options, wasFirstMessageStart).ConfigureAwait(false);
-            }).ConfigureAwait(false);
+                    await ProcessChunkAsync(
+                            chunk,
+                            context.State,
+                            context.Write,
+                            options,
+                            wasFirstMessageStart
+                        )
+                        .ConfigureAwait(false);
+                })
+                .ConfigureAwait(false);
 
             yield return chunk;
         }
     }
 
-    private static JsonArray Parts(StreamingUIMessageState state) => (JsonArray)state.Message["parts"]!;
+    private static JsonArray Parts(StreamingUIMessageState state) =>
+        (JsonArray)state.Message["parts"]!;
 
     private static List<JsonObject> GetCurrentStepParts(StreamingUIMessageState state)
     {
@@ -207,14 +243,19 @@ internal static class UIMessageStreamProcessing
 
     private static JsonObject GetToolInvocation(StreamingUIMessageState state, string toolCallId)
     {
-        var invocation = GetCurrentStepParts(state).Find(p => UIMessageJson.IsToolPart(p) && (string?)p["toolCallId"] == toolCallId);
+        var invocation = GetCurrentStepParts(state)
+            .Find(p => UIMessageJson.IsToolPart(p) && (string?)p["toolCallId"] == toolCallId);
 
         if (invocation == null)
         {
             var parts = Parts(state);
             for (var i = parts.Count - 1; i >= 0; i--)
             {
-                if (parts[i] is JsonObject part && UIMessageJson.IsToolPart(part) && (string?)part["toolCallId"] == toolCallId)
+                if (
+                    parts[i] is JsonObject part
+                    && UIMessageJson.IsToolPart(part)
+                    && (string?)part["toolCallId"] == toolCallId
+                )
                 {
                     invocation = part;
                     break;
@@ -222,17 +263,26 @@ internal static class UIMessageStreamProcessing
             }
         }
 
-        return invocation ?? throw new UIMessageStreamError(
-            "tool-invocation",
-            toolCallId,
-            $"No tool invocation found for tool call ID \"{toolCallId}\".");
+        return invocation
+            ?? throw new UIMessageStreamError(
+                "tool-invocation",
+                toolCallId,
+                $"No tool invocation found for tool call ID \"{toolCallId}\"."
+            );
     }
 
-    private static JsonObject GetToolInvocationByApprovalId(StreamingUIMessageState state, string approvalId)
+    private static JsonObject GetToolInvocationByApprovalId(
+        StreamingUIMessageState state,
+        string approvalId
+    )
     {
         foreach (var node in Parts(state))
         {
-            if (node is JsonObject part && UIMessageJson.IsToolPart(part) && (string?)(part["approval"] as JsonObject)?["id"] == approvalId)
+            if (
+                node is JsonObject part
+                && UIMessageJson.IsToolPart(part)
+                && (string?)(part["approval"] as JsonObject)?["id"] == approvalId
+            )
             {
                 return part;
             }
@@ -241,7 +291,8 @@ internal static class UIMessageStreamProcessing
         throw new UIMessageStreamError(
             "tool-approval-response",
             approvalId,
-            $"No tool invocation found for approval ID \"{approvalId}\".");
+            $"No tool invocation found for approval ID \"{approvalId}\"."
+        );
     }
 
     // Copies the listed fields of a chunk that are defined (a JSON null counts as defined).
@@ -270,13 +321,26 @@ internal static class UIMessageStreamProcessing
     }
 
     // Maps to updateToolPart and updateDynamicToolPart. The options carry the defined fields only.
-    private static void UpdateToolPart(StreamingUIMessageState state, bool dynamic, JsonObject options, JsonObject? existingPart = null)
+    private static void UpdateToolPart(
+        StreamingUIMessageState state,
+        bool dynamic,
+        JsonObject options,
+        JsonObject? existingPart = null
+    )
     {
         var toolCallId = (string)options["toolCallId"]!;
         var toolName = (string)options["toolName"]!;
         var toolState = (string)options["state"]!;
-        var part = existingPart ?? GetCurrentStepParts(state).Find(p =>
-            (dynamic ? (string?)p["type"] == "dynamic-tool" : UIMessageJson.IsStaticToolPart(p)) && (string?)p["toolCallId"] == toolCallId);
+        var part = existingPart
+            ?? GetCurrentStepParts(state)
+                .Find(p =>
+                    (
+                        dynamic
+                            ? (string?)p["type"] == "dynamic-tool"
+                            : UIMessageJson.IsStaticToolPart(p)
+                    )
+                    && (string?)p["toolCallId"] == toolCallId
+                );
 
         var isResultState = toolState is "output-available" or "output-error";
 
@@ -325,7 +389,8 @@ internal static class UIMessageStreamProcessing
 
             if (options["providerMetadata"] is { } providerMetadata)
             {
-                part[isResultState ? "resultProviderMetadata" : "callProviderMetadata"] = providerMetadata.DeepClone();
+                part[isResultState ? "resultProviderMetadata" : "callProviderMetadata"] =
+                    providerMetadata.DeepClone();
             }
 
             return;
@@ -343,9 +408,25 @@ internal static class UIMessageStreamProcessing
             created["toolName"] = toolName;
         }
 
-        foreach (var key in new[] { "title", "toolMetadata", "input", "inputEncoding", "output", "rawInput", "errorText", "providerExecuted", "preliminary" })
+        foreach (
+            var key in new[]
+            {
+                "title",
+                "toolMetadata",
+                "input",
+                "inputEncoding",
+                "output",
+                "rawInput",
+                "errorText",
+                "providerExecuted",
+                "preliminary",
+            }
+        )
         {
-            if (options.ContainsKey(key) && (options[key] != null || key is "input" or "output" or "rawInput"))
+            if (
+                options.ContainsKey(key)
+                && (options[key] != null || key is "input" or "output" or "rawInput")
+            )
             {
                 created[key] = options[key]?.DeepClone();
             }
@@ -353,7 +434,8 @@ internal static class UIMessageStreamProcessing
 
         if (options["providerMetadata"] is { } metadata)
         {
-            created[isResultState ? "resultProviderMetadata" : "callProviderMetadata"] = metadata.DeepClone();
+            created[isResultState ? "resultProviderMetadata" : "callProviderMetadata"] =
+                metadata.DeepClone();
         }
 
         Parts(state).Add(created);
@@ -366,9 +448,12 @@ internal static class UIMessageStreamProcessing
             var merged = (JsonObject)targetObject.DeepClone();
             foreach (var pair in sourceObject)
             {
-                merged[pair.Key] = merged.TryGetPropertyValue(pair.Key, out var existing) && existing is JsonObject && pair.Value is JsonObject
-                    ? MergeObjects(existing, pair.Value)
-                    : pair.Value?.DeepClone();
+                merged[pair.Key] =
+                    merged.TryGetPropertyValue(pair.Key, out var existing)
+                    && existing is JsonObject
+                    && pair.Value is JsonObject
+                        ? MergeObjects(existing, pair.Value)
+                        : pair.Value?.DeepClone();
             }
 
             return merged;
@@ -377,46 +462,63 @@ internal static class UIMessageStreamProcessing
         return source?.DeepClone();
     }
 
-    private static void UpdateMessageMetadata(StreamingUIMessageState state, JsonNode? metadata, JsonNode? messageMetadataSchema)
+    private static void UpdateMessageMetadata(
+        StreamingUIMessageState state,
+        JsonNode? metadata,
+        JsonNode? messageMetadataSchema
+    )
     {
         if (metadata == null)
         {
             return;
         }
 
-        var mergedMetadata = state.Message["metadata"] != null
-            ? MergeObjects(state.Message["metadata"], metadata)
-            : metadata.DeepClone();
+        var mergedMetadata =
+            state.Message["metadata"] != null
+                ? MergeObjects(state.Message["metadata"], metadata)
+                : metadata.DeepClone();
 
         if (messageMetadataSchema != null)
         {
             JsonParsing.ValidateTypes(
                 JsonSerializer.SerializeToElement(mergedMetadata),
                 messageMetadataSchema,
-                new TypeValidationContext { Field = "message.metadata", EntityId = (string?)state.Message["id"] });
+                new TypeValidationContext
+                {
+                    Field = "message.metadata",
+                    EntityId = (string?)state.Message["id"],
+                }
+            );
         }
 
         state.Message["metadata"] = mergedMetadata;
     }
 
-    private static UIMessageStreamError Missing(string chunkType, string id, string what, string startType)
-        => new UIMessageStreamError(
+    private static UIMessageStreamError Missing(
+        string chunkType,
+        string id,
+        string what,
+        string startType
+    ) =>
+        new UIMessageStreamError(
             chunkType,
             id,
-            $"Received {chunkType} for missing {what} with ID \"{id}\". Ensure a \"{startType}\" chunk is sent before any \"{chunkType}\" chunks.");
+            $"Received {chunkType} for missing {what} with ID \"{id}\". Ensure a \"{startType}\" chunk is sent before any \"{chunkType}\" chunks."
+        );
 
-    private static string? String(JsonObject chunk, string key)
-        => chunk[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+    private static string? String(JsonObject chunk, string key) =>
+        chunk[key] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
-    private static bool IsTrue(JsonObject chunk, string key)
-        => chunk[key] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
+    private static bool IsTrue(JsonObject chunk, string key) =>
+        chunk[key] is JsonValue value && value.TryGetValue<bool>(out var flag) && flag;
 
     private static async Task ProcessChunkAsync(
         JsonObject chunk,
         StreamingUIMessageState state,
         Action<UIMessageStreamWriteOptions?> write,
         ProcessUIMessageStreamOptions options,
-        bool isFirstMessageStart)
+        bool isFirstMessageStart
+    )
     {
         var type = (string?)chunk["type"] ?? string.Empty;
         var parts = Parts(state);
@@ -426,404 +528,477 @@ internal static class UIMessageStreamProcessing
         switch (type)
         {
             case "text-start":
+            {
+                var textPart = new JsonObject
                 {
-                    var textPart = new JsonObject { ["type"] = "text", ["text"] = string.Empty, ["state"] = "streaming" };
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    state.ActiveTextParts[id] = textPart;
-                    parts.Add(textPart);
-                    write(null);
-                    break;
+                    ["type"] = "text",
+                    ["text"] = string.Empty,
+                    ["state"] = "streaming",
+                };
+                if (chunk["providerMetadata"] != null)
+                {
+                    textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
                 }
+
+                state.ActiveTextParts[id] = textPart;
+                parts.Add(textPart);
+                write(null);
+                break;
+            }
 
             case "text-delta":
+            {
+                if (!state.ActiveTextParts.TryGetValue(id, out var textPart))
                 {
-                    if (!state.ActiveTextParts.TryGetValue(id, out var textPart))
-                    {
-                        throw Missing("text-delta", id, "text part", "text-start");
-                    }
-
-                    textPart["text"] = ((string?)textPart["text"] ?? string.Empty) + String(chunk, "delta");
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    write(null);
-                    break;
+                    throw Missing("text-delta", id, "text part", "text-start");
                 }
+
+                textPart["text"] =
+                    ((string?)textPart["text"] ?? string.Empty) + String(chunk, "delta");
+                if (chunk["providerMetadata"] != null)
+                {
+                    textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                write(null);
+                break;
+            }
 
             case "text-end":
+            {
+                if (!state.ActiveTextParts.TryGetValue(id, out var textPart))
                 {
-                    if (!state.ActiveTextParts.TryGetValue(id, out var textPart))
-                    {
-                        throw Missing("text-end", id, "text part", "text-start");
-                    }
-
-                    textPart["state"] = "done";
-                    if (chunk["citations"] != null)
-                    {
-                        textPart["citations"] = chunk["citations"]!.DeepClone();
-                    }
-
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    state.ActiveTextParts.Remove(id);
-                    write(null);
-                    break;
+                    throw Missing("text-end", id, "text part", "text-start");
                 }
+
+                textPart["state"] = "done";
+                if (chunk["citations"] != null)
+                {
+                    textPart["citations"] = chunk["citations"]!.DeepClone();
+                }
+
+                if (chunk["providerMetadata"] != null)
+                {
+                    textPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                state.ActiveTextParts.Remove(id);
+                write(null);
+                break;
+            }
 
             case "custom":
+            {
+                var customPart = new JsonObject
                 {
-                    var customPart = new JsonObject { ["type"] = "custom", ["kind"] = String(chunk, "kind") };
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        customPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    parts.Add(customPart);
-                    write(null);
-                    break;
+                    ["type"] = "custom",
+                    ["kind"] = String(chunk, "kind"),
+                };
+                if (chunk["providerMetadata"] != null)
+                {
+                    customPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
                 }
+
+                parts.Add(customPart);
+                write(null);
+                break;
+            }
 
             case "reasoning-start":
+            {
+                var reasoningPart = new JsonObject
                 {
-                    var reasoningPart = new JsonObject { ["type"] = "reasoning", ["id"] = id, ["text"] = string.Empty, ["state"] = "streaming" };
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    state.ActiveReasoningParts[id] = reasoningPart;
-                    parts.Add(reasoningPart);
-                    write(null);
-                    break;
+                    ["type"] = "reasoning",
+                    ["id"] = id,
+                    ["text"] = string.Empty,
+                    ["state"] = "streaming",
+                };
+                if (chunk["providerMetadata"] != null)
+                {
+                    reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
                 }
+
+                state.ActiveReasoningParts[id] = reasoningPart;
+                parts.Add(reasoningPart);
+                write(null);
+                break;
+            }
 
             case "reasoning-delta":
+            {
+                if (!state.ActiveReasoningParts.TryGetValue(id, out var reasoningPart))
                 {
-                    if (!state.ActiveReasoningParts.TryGetValue(id, out var reasoningPart))
-                    {
-                        throw Missing("reasoning-delta", id, "reasoning part", "reasoning-start");
-                    }
-
-                    reasoningPart["text"] = ((string?)reasoningPart["text"] ?? string.Empty) + String(chunk, "delta");
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    write(null);
-                    break;
+                    throw Missing("reasoning-delta", id, "reasoning part", "reasoning-start");
                 }
+
+                reasoningPart["text"] =
+                    ((string?)reasoningPart["text"] ?? string.Empty) + String(chunk, "delta");
+                if (chunk["providerMetadata"] != null)
+                {
+                    reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                write(null);
+                break;
+            }
 
             case "reasoning-end":
+            {
+                if (!state.ActiveReasoningParts.TryGetValue(id, out var reasoningPart))
                 {
-                    if (!state.ActiveReasoningParts.TryGetValue(id, out var reasoningPart))
-                    {
-                        throw Missing("reasoning-end", id, "reasoning part", "reasoning-start");
-                    }
-
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    reasoningPart["state"] = "done";
-                    state.ActiveReasoningParts.Remove(id);
-                    write(null);
-                    break;
+                    throw Missing("reasoning-end", id, "reasoning part", "reasoning-start");
                 }
+
+                if (chunk["providerMetadata"] != null)
+                {
+                    reasoningPart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                reasoningPart["state"] = "done";
+                state.ActiveReasoningParts.Remove(id);
+                write(null);
+                break;
+            }
 
             case "file":
             case "reasoning-file":
+            {
+                var filePart = new JsonObject
                 {
-                    var filePart = new JsonObject { ["type"] = type, ["mediaType"] = String(chunk, "mediaType"), ["url"] = String(chunk, "url") };
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        filePart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    parts.Add(filePart);
-                    write(null);
-                    break;
+                    ["type"] = type,
+                    ["mediaType"] = String(chunk, "mediaType"),
+                    ["url"] = String(chunk, "url"),
+                };
+                if (chunk["providerMetadata"] != null)
+                {
+                    filePart["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
                 }
 
+                parts.Add(filePart);
+                write(null);
+                break;
+            }
+
             case "source-url":
-                {
-                    parts.Add(With(
+            {
+                parts.Add(
+                    With(
                         new JsonObject { ["type"] = "source-url" },
                         ("sourceId", chunk["sourceId"]),
                         ("url", chunk["url"]),
                         ("title", chunk["title"]),
-                        ("providerMetadata", chunk["providerMetadata"])));
-                    write(null);
-                    break;
-                }
+                        ("providerMetadata", chunk["providerMetadata"])
+                    )
+                );
+                write(null);
+                break;
+            }
 
             case "source-document":
-                {
-                    parts.Add(With(
+            {
+                parts.Add(
+                    With(
                         new JsonObject { ["type"] = "source-document" },
                         ("sourceId", chunk["sourceId"]),
                         ("mediaType", chunk["mediaType"]),
                         ("title", chunk["title"]),
                         ("filename", chunk["filename"]),
-                        ("providerMetadata", chunk["providerMetadata"])));
-                    write(null);
-                    break;
-                }
+                        ("providerMetadata", chunk["providerMetadata"])
+                    )
+                );
+                write(null);
+                break;
+            }
 
             case "tool-input-start":
+            {
+                var dynamic = IsTrue(chunk, "dynamic");
+                var toolName = String(chunk, "toolName") ?? string.Empty;
+                state.PartialToolCalls[toolCallId] = new PartialToolCall
                 {
-                    var dynamic = IsTrue(chunk, "dynamic");
-                    var toolName = String(chunk, "toolName") ?? string.Empty;
-                    state.PartialToolCalls[toolCallId] = new PartialToolCall
-                    {
-                        Text = string.Empty,
-                        InputEncoding = String(chunk, "inputEncoding"),
-                        ToolName = toolName,
-                        Index = GetCurrentStepParts(state).FindAll(UIMessageJson.IsStaticToolPart).Count,
-                        Dynamic = dynamic,
-                        Title = String(chunk, "title"),
-                        ToolMetadata = chunk["toolMetadata"]?.DeepClone(),
-                    };
+                    Text = string.Empty,
+                    InputEncoding = String(chunk, "inputEncoding"),
+                    ToolName = toolName,
+                    Index = GetCurrentStepParts(state)
+                        .FindAll(UIMessageJson.IsStaticToolPart)
+                        .Count,
+                    Dynamic = dynamic,
+                    Title = String(chunk, "title"),
+                    ToolMetadata = chunk["toolMetadata"]?.DeepClone(),
+                };
 
-                    var update = Pick(chunk, "toolCallId", "toolName", "inputEncoding", "providerExecuted", "title", "toolMetadata", "providerMetadata");
-                    update["state"] = "input-streaming";
-                    UpdateToolPart(state, dynamic, update);
-                    write(null);
-                    break;
-                }
+                var update = Pick(
+                    chunk,
+                    "toolCallId",
+                    "toolName",
+                    "inputEncoding",
+                    "providerExecuted",
+                    "title",
+                    "toolMetadata",
+                    "providerMetadata"
+                );
+                update["state"] = "input-streaming";
+                UpdateToolPart(state, dynamic, update);
+                write(null);
+                break;
+            }
 
             case "tool-input-delta":
+            {
+                if (!state.PartialToolCalls.TryGetValue(toolCallId, out var partialToolCall))
                 {
-                    if (!state.PartialToolCalls.TryGetValue(toolCallId, out var partialToolCall))
-                    {
-                        throw Missing("tool-input-delta", toolCallId, "tool call", "tool-input-start");
-                    }
-
-                    partialToolCall.Text += String(chunk, "inputTextDelta");
-
-                    JsonNode? partialArgs;
-                    if (partialToolCall.InputEncoding == "text")
-                    {
-                        partialArgs = partialToolCall.Text;
-                    }
-                    else
-                    {
-                        partialArgs = (await PartialJson.ParseAsync(partialToolCall.Text).ConfigureAwait(false)).Value;
-                    }
-
-                    var update = new JsonObject
-                    {
-                        ["toolCallId"] = toolCallId,
-                        ["toolName"] = partialToolCall.ToolName,
-                        ["state"] = "input-streaming",
-                        ["input"] = partialArgs?.DeepClone(),
-                        ["rawInput"] = partialToolCall.Text,
-                    };
-                    if (partialToolCall.InputEncoding != null)
-                    {
-                        update["inputEncoding"] = partialToolCall.InputEncoding;
-                    }
-
-                    if (partialToolCall.Title != null)
-                    {
-                        update["title"] = partialToolCall.Title;
-                    }
-
-                    if (partialToolCall.ToolMetadata != null)
-                    {
-                        update["toolMetadata"] = partialToolCall.ToolMetadata.DeepClone();
-                    }
-
-                    UpdateToolPart(state, partialToolCall.Dynamic, update);
-                    write(null);
-                    break;
+                    throw Missing("tool-input-delta", toolCallId, "tool call", "tool-input-start");
                 }
+
+                partialToolCall.Text += String(chunk, "inputTextDelta");
+
+                JsonNode? partialArgs;
+                if (partialToolCall.InputEncoding == "text")
+                {
+                    partialArgs = partialToolCall.Text;
+                }
+                else
+                {
+                    partialArgs = (
+                        await PartialJson.ParseAsync(partialToolCall.Text).ConfigureAwait(false)
+                    ).Value;
+                }
+
+                var update = new JsonObject
+                {
+                    ["toolCallId"] = toolCallId,
+                    ["toolName"] = partialToolCall.ToolName,
+                    ["state"] = "input-streaming",
+                    ["input"] = partialArgs?.DeepClone(),
+                    ["rawInput"] = partialToolCall.Text,
+                };
+                if (partialToolCall.InputEncoding != null)
+                {
+                    update["inputEncoding"] = partialToolCall.InputEncoding;
+                }
+
+                if (partialToolCall.Title != null)
+                {
+                    update["title"] = partialToolCall.Title;
+                }
+
+                if (partialToolCall.ToolMetadata != null)
+                {
+                    update["toolMetadata"] = partialToolCall.ToolMetadata.DeepClone();
+                }
+
+                UpdateToolPart(state, partialToolCall.Dynamic, update);
+                write(null);
+                break;
+            }
 
             case "tool-input-available":
+            {
+                var update = Pick(
+                    chunk,
+                    "toolCallId",
+                    "toolName",
+                    "input",
+                    "providerExecuted",
+                    "providerMetadata",
+                    "title",
+                    "toolMetadata"
+                );
+                update["state"] = "input-available";
+                UpdateToolPart(state, IsTrue(chunk, "dynamic"), update);
+                write(null);
+
+                // The callback is blocking. Tools that the provider executed are skipped because they already ran.
+                if (options.OnToolCall != null && !IsTrue(chunk, "providerExecuted"))
                 {
-                    var update = Pick(chunk, "toolCallId", "toolName", "input", "providerExecuted", "providerMetadata", "title", "toolMetadata");
-                    update["state"] = "input-available";
-                    UpdateToolPart(state, IsTrue(chunk, "dynamic"), update);
-                    write(null);
-
-                    // The callback is blocking. Tools that the provider executed are skipped because they already ran.
-                    if (options.OnToolCall != null && !IsTrue(chunk, "providerExecuted"))
-                    {
-                        await options.OnToolCall(chunk).ConfigureAwait(false);
-                    }
-
-                    break;
+                    await options.OnToolCall(chunk).ConfigureAwait(false);
                 }
+
+                break;
+            }
 
             case "tool-input-error":
-                {
-                    // When a part already exists for this toolCallId (for example from tool-input-start), honour its type
-                    // so the part updates in place instead of creating a duplicate with a mismatched type.
-                    var existingPart = GetCurrentStepParts(state).Find(p => UIMessageJson.IsToolPart(p) && (string?)p["toolCallId"] == toolCallId);
-                    var isDynamic = existingPart != null ? (string?)existingPart["type"] == "dynamic-tool" : IsTrue(chunk, "dynamic");
+            {
+                // When a part already exists for this toolCallId (for example from tool-input-start), honour its type
+                // so the part updates in place instead of creating a duplicate with a mismatched type.
+                var existingPart = GetCurrentStepParts(state)
+                    .Find(p =>
+                        UIMessageJson.IsToolPart(p) && (string?)p["toolCallId"] == toolCallId
+                    );
+                var isDynamic =
+                    existingPart != null
+                        ? (string?)existingPart["type"] == "dynamic-tool"
+                        : IsTrue(chunk, "dynamic");
 
-                    var update = Pick(chunk, "toolCallId", "toolName", "input", "errorText", "providerExecuted", "providerMetadata", "toolMetadata");
-                    update["state"] = "output-error";
-                    UpdateToolPart(state, isDynamic, update);
-                    write(null);
-                    break;
-                }
+                var update = Pick(
+                    chunk,
+                    "toolCallId",
+                    "toolName",
+                    "input",
+                    "errorText",
+                    "providerExecuted",
+                    "providerMetadata",
+                    "toolMetadata"
+                );
+                update["state"] = "output-error";
+                UpdateToolPart(state, isDynamic, update);
+                write(null);
+                break;
+            }
 
             case "tool-approval-request":
+            {
+                var toolInvocation = GetToolInvocation(state, toolCallId);
+                toolInvocation["state"] = "approval-requested";
+                var approval = new JsonObject { ["id"] = chunk["approvalId"]?.DeepClone() };
+                if (chunk["approvalDescriptor"] != null)
                 {
-                    var toolInvocation = GetToolInvocation(state, toolCallId);
-                    toolInvocation["state"] = "approval-requested";
-                    var approval = new JsonObject { ["id"] = chunk["approvalId"]?.DeepClone() };
-                    if (chunk["approvalDescriptor"] != null)
-                    {
-                        approval["descriptor"] = chunk["approvalDescriptor"]!.DeepClone();
-                    }
-
-                    if (chunk.ContainsKey("inputSchemaInput"))
-                    {
-                        approval["inputSchemaInput"] = chunk["inputSchemaInput"]?.DeepClone();
-                    }
-
-                    if (chunk["reason"] != null)
-                    {
-                        approval["requestReason"] = chunk["reason"]!.DeepClone();
-                    }
-
-                    if (IsTrue(chunk, "isAutomatic"))
-                    {
-                        approval["isAutomatic"] = true;
-                    }
-
-                    if (chunk["signature"] != null)
-                    {
-                        approval["signature"] = chunk["signature"]!.DeepClone();
-                    }
-
-                    toolInvocation["approval"] = approval;
-                    write(null);
-                    break;
+                    approval["descriptor"] = chunk["approvalDescriptor"]!.DeepClone();
                 }
+
+                if (chunk.ContainsKey("inputSchemaInput"))
+                {
+                    approval["inputSchemaInput"] = chunk["inputSchemaInput"]?.DeepClone();
+                }
+
+                if (chunk["reason"] != null)
+                {
+                    approval["requestReason"] = chunk["reason"]!.DeepClone();
+                }
+
+                if (IsTrue(chunk, "isAutomatic"))
+                {
+                    approval["isAutomatic"] = true;
+                }
+
+                if (chunk["signature"] != null)
+                {
+                    approval["signature"] = chunk["signature"]!.DeepClone();
+                }
+
+                toolInvocation["approval"] = approval;
+                write(null);
+                break;
+            }
 
             case "tool-approval-response":
+            {
+                var approvalId = String(chunk, "approvalId") ?? string.Empty;
+                var toolInvocation = GetToolInvocationByApprovalId(state, approvalId);
+                var approval = toolInvocation["approval"] is JsonObject existing
+                    ? (JsonObject)existing.DeepClone()
+                    : new JsonObject { ["id"] = approvalId };
+
+                toolInvocation["state"] = "approval-responded";
+                approval["id"] = approvalId;
+                approval["approved"] = chunk["approved"]?.DeepClone();
+                if (chunk["reason"] != null)
                 {
-                    var approvalId = String(chunk, "approvalId") ?? string.Empty;
-                    var toolInvocation = GetToolInvocationByApprovalId(state, approvalId);
-                    var approval = toolInvocation["approval"] is JsonObject existing
-                        ? (JsonObject)existing.DeepClone()
-                        : new JsonObject { ["id"] = approvalId };
-
-                    toolInvocation["state"] = "approval-responded";
-                    approval["id"] = approvalId;
-                    approval["approved"] = chunk["approved"]?.DeepClone();
-                    if (chunk["reason"] != null)
-                    {
-                        approval["reason"] = chunk["reason"]!.DeepClone();
-                    }
-
-                    toolInvocation["approval"] = approval;
-                    if (chunk["providerExecuted"] != null)
-                    {
-                        toolInvocation["providerExecuted"] = chunk["providerExecuted"]!.DeepClone();
-                    }
-
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        toolInvocation["callProviderMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    write(null);
-                    break;
+                    approval["reason"] = chunk["reason"]!.DeepClone();
                 }
+
+                toolInvocation["approval"] = approval;
+                if (chunk["providerExecuted"] != null)
+                {
+                    toolInvocation["providerExecuted"] = chunk["providerExecuted"]!.DeepClone();
+                }
+
+                if (chunk["providerMetadata"] != null)
+                {
+                    toolInvocation["callProviderMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                write(null);
+                break;
+            }
 
             case "tool-output-denied":
-                {
-                    GetToolInvocation(state, toolCallId)["state"] = "output-denied";
-                    write(null);
-                    break;
-                }
+            {
+                GetToolInvocation(state, toolCallId)["state"] = "output-denied";
+                write(null);
+                break;
+            }
 
             case "tool-output-available":
             case "tool-output-error":
+            {
+                var toolInvocation = GetToolInvocation(state, toolCallId);
+                var isDynamic = (string?)toolInvocation["type"] == "dynamic-tool";
+                var isOutput = type == "tool-output-available";
+
+                var update = new JsonObject
                 {
-                    var toolInvocation = GetToolInvocation(state, toolCallId);
-                    var isDynamic = (string?)toolInvocation["type"] == "dynamic-tool";
-                    var isOutput = type == "tool-output-available";
+                    ["toolCallId"] = toolCallId,
+                    ["toolName"] = isDynamic
+                        ? (string?)toolInvocation["toolName"]
+                        : ((string?)toolInvocation["type"] ?? string.Empty).Substring(5),
+                    ["state"] = isOutput ? "output-available" : "output-error",
+                };
 
-                    var update = new JsonObject
-                    {
-                        ["toolCallId"] = toolCallId,
-                        ["toolName"] = isDynamic ? (string?)toolInvocation["toolName"] : ((string?)toolInvocation["type"] ?? string.Empty).Substring(5),
-                        ["state"] = isOutput ? "output-available" : "output-error",
-                    };
-
-                    if (toolInvocation.ContainsKey("input"))
-                    {
-                        update["input"] = toolInvocation["input"]?.DeepClone();
-                    }
-
-                    if (isOutput)
-                    {
-                        if (chunk.ContainsKey("output"))
-                        {
-                            update["output"] = chunk["output"]?.DeepClone();
-                        }
-
-                        if (chunk.ContainsKey("preliminary"))
-                        {
-                            update["preliminary"] = chunk["preliminary"]?.DeepClone();
-                        }
-                    }
-                    else
-                    {
-                        update["errorText"] = chunk["errorText"]?.DeepClone();
-                        if (!isDynamic && toolInvocation.ContainsKey("rawInput"))
-                        {
-                            update["rawInput"] = toolInvocation["rawInput"]?.DeepClone();
-                        }
-                    }
-
-                    if (chunk["providerExecuted"] != null)
-                    {
-                        update["providerExecuted"] = chunk["providerExecuted"]!.DeepClone();
-                    }
-
-                    if (chunk["providerMetadata"] != null)
-                    {
-                        update["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
-                    }
-
-                    if (toolInvocation["title"] != null)
-                    {
-                        update["title"] = toolInvocation["title"]!.DeepClone();
-                    }
-
-                    var toolMetadata = chunk["toolMetadata"] ?? toolInvocation["toolMetadata"];
-                    if (toolMetadata != null)
-                    {
-                        update["toolMetadata"] = toolMetadata.DeepClone();
-                    }
-
-                    UpdateToolPart(state, isDynamic, update, toolInvocation);
-                    write(null);
-                    break;
+                if (toolInvocation.ContainsKey("input"))
+                {
+                    update["input"] = toolInvocation["input"]?.DeepClone();
                 }
+
+                if (isOutput)
+                {
+                    if (chunk.ContainsKey("output"))
+                    {
+                        update["output"] = chunk["output"]?.DeepClone();
+                    }
+
+                    if (chunk.ContainsKey("preliminary"))
+                    {
+                        update["preliminary"] = chunk["preliminary"]?.DeepClone();
+                    }
+                }
+                else
+                {
+                    update["errorText"] = chunk["errorText"]?.DeepClone();
+                    if (!isDynamic && toolInvocation.ContainsKey("rawInput"))
+                    {
+                        update["rawInput"] = toolInvocation["rawInput"]?.DeepClone();
+                    }
+                }
+
+                if (chunk["providerExecuted"] != null)
+                {
+                    update["providerExecuted"] = chunk["providerExecuted"]!.DeepClone();
+                }
+
+                if (chunk["providerMetadata"] != null)
+                {
+                    update["providerMetadata"] = chunk["providerMetadata"]!.DeepClone();
+                }
+
+                if (toolInvocation["title"] != null)
+                {
+                    update["title"] = toolInvocation["title"]!.DeepClone();
+                }
+
+                var toolMetadata = chunk["toolMetadata"] ?? toolInvocation["toolMetadata"];
+                if (toolMetadata != null)
+                {
+                    update["toolMetadata"] = toolMetadata.DeepClone();
+                }
+
+                UpdateToolPart(state, isDynamic, update, toolInvocation);
+                write(null);
+                break;
+            }
 
             case "steering-message":
-                {
-                    parts.Add(With(new JsonObject { ["type"] = "steering-message" }, ("id", chunk["id"]), ("parts", chunk["parts"])));
-                    write(null);
-                    break;
-                }
+            {
+                parts.Add(
+                    With(
+                        new JsonObject { ["type"] = "steering-message" },
+                        ("id", chunk["id"]),
+                        ("parts", chunk["parts"])
+                    )
+                );
+                write(null);
+                break;
+            }
 
             case "start-step":
                 // add a step boundary part to the message
@@ -835,160 +1010,198 @@ internal static class UIMessageStreamProcessing
                 break;
 
             case "reset-step":
+            {
+                var currentStepParts = GetCurrentStepParts(state);
+
+                state.ActiveTextParts = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
+                state.ActiveReasoningParts = new Dictionary<string, JsonObject>(
+                    StringComparer.Ordinal
+                );
+                state.PartialToolCalls = new Dictionary<string, PartialToolCall>(
+                    StringComparer.Ordinal
+                );
+
+                if (currentStepParts.Count > 0)
                 {
-                    var currentStepParts = GetCurrentStepParts(state);
-
-                    state.ActiveTextParts = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
-                    state.ActiveReasoningParts = new Dictionary<string, JsonObject>(StringComparer.Ordinal);
-                    state.PartialToolCalls = new Dictionary<string, PartialToolCall>(StringComparer.Ordinal);
-
-                    if (currentStepParts.Count > 0)
+                    for (var i = 0; i < currentStepParts.Count; i++)
                     {
-                        for (var i = 0; i < currentStepParts.Count; i++)
-                        {
-                            parts.RemoveAt(parts.Count - 1);
-                        }
-
-                        write(null);
+                        parts.RemoveAt(parts.Count - 1);
                     }
 
-                    break;
+                    write(null);
                 }
+
+                break;
+            }
 
             case "start":
+            {
+                var messageId = String(chunk, "messageId");
+                var shouldReset =
+                    (options.ResetStateOnFirstMessageStart && isFirstMessageStart)
+                    || (
+                        options.ResetStateOnMessageIdChange
+                        && messageId != null
+                        && messageId != (string?)state.Message["id"]
+                    );
+
+                if (shouldReset)
                 {
-                    var messageId = String(chunk, "messageId");
-                    var shouldReset = (options.ResetStateOnFirstMessageStart && isFirstMessageStart)
-                        || (options.ResetStateOnMessageIdChange && messageId != null && messageId != (string?)state.Message["id"]);
-
-                    if (shouldReset)
-                    {
-                        // Rebuild a replay or separate response from empty state. Only reset a replay once: merged streams can emit more starts.
-                        // Keep the state object for its callers and preserve the id when the replay does not include one.
-                        var fresh = CreateStreamingUIMessageState(null, messageId ?? (string?)state.Message["id"] ?? string.Empty);
-                        state.Message = fresh.Message;
-                        state.ActiveTextParts = fresh.ActiveTextParts;
-                        state.ActiveReasoningParts = fresh.ActiveReasoningParts;
-                        state.PartialToolCalls = fresh.PartialToolCalls;
-                        state.FinishReason = null;
-                    }
-
-                    if (messageId != null)
-                    {
-                        state.Message["id"] = messageId;
-                    }
-
-                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
-
-                    if (shouldReset || messageId != null || chunk["messageMetadata"] != null)
-                    {
-                        write(new UIMessageStreamWriteOptions { UpdateStatus = false });
-                    }
-
-                    break;
+                    // Rebuild a replay or separate response from empty state. Only reset a replay once: merged streams can emit more starts.
+                    // Keep the state object for its callers and preserve the id when the replay does not include one.
+                    var fresh = CreateStreamingUIMessageState(
+                        null,
+                        messageId ?? (string?)state.Message["id"] ?? string.Empty
+                    );
+                    state.Message = fresh.Message;
+                    state.ActiveTextParts = fresh.ActiveTextParts;
+                    state.ActiveReasoningParts = fresh.ActiveReasoningParts;
+                    state.PartialToolCalls = fresh.PartialToolCalls;
+                    state.FinishReason = null;
                 }
+
+                if (messageId != null)
+                {
+                    state.Message["id"] = messageId;
+                }
+
+                UpdateMessageMetadata(
+                    state,
+                    chunk["messageMetadata"],
+                    options.MessageMetadataSchema
+                );
+
+                if (shouldReset || messageId != null || chunk["messageMetadata"] != null)
+                {
+                    write(new UIMessageStreamWriteOptions { UpdateStatus = false });
+                }
+
+                break;
+            }
 
             case "finish":
+            {
+                if (String(chunk, "finishReason") is { } finishReason)
                 {
-                    if (String(chunk, "finishReason") is { } finishReason)
-                    {
-                        state.FinishReason = finishReason;
-                    }
-
-                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
-                    if (chunk["messageMetadata"] != null)
-                    {
-                        write(null);
-                    }
-
-                    break;
+                    state.FinishReason = finishReason;
                 }
+
+                UpdateMessageMetadata(
+                    state,
+                    chunk["messageMetadata"],
+                    options.MessageMetadataSchema
+                );
+                if (chunk["messageMetadata"] != null)
+                {
+                    write(null);
+                }
+
+                break;
+            }
 
             case "message-metadata":
+            {
+                UpdateMessageMetadata(
+                    state,
+                    chunk["messageMetadata"],
+                    options.MessageMetadataSchema
+                );
+                if (chunk["messageMetadata"] != null)
                 {
-                    UpdateMessageMetadata(state, chunk["messageMetadata"], options.MessageMetadataSchema);
-                    if (chunk["messageMetadata"] != null)
-                    {
-                        write(null);
-                    }
-
-                    break;
+                    write(null);
                 }
+
+                break;
+            }
 
             case "error":
                 options.OnError?.Invoke(new Exception(String(chunk, "errorText")));
                 break;
 
             default:
+            {
+                if (!type.StartsWith("data-", StringComparison.Ordinal))
                 {
-                    if (!type.StartsWith("data-", StringComparison.Ordinal))
-                    {
-                        break;
-                    }
-
-                    // validate data chunk if dataPartSchemas is provided
-                    // (schemas are keyed by the part name without the 'data-' prefix)
-                    if (options.DataPartSchemas != null && options.DataPartSchemas.TryGetValue(type.Substring(5), out var dataPartSchema))
-                    {
-                        var partIndex = -1;
-                        for (var i = 0; i < parts.Count; i++)
-                        {
-                            if (parts[i] is JsonObject candidate
-                                && candidate.ContainsKey("id")
-                                && candidate.ContainsKey("data")
-                                && (string?)candidate["id"] == String(chunk, "id")
-                                && (string?)candidate["type"] == type)
-                            {
-                                partIndex = i;
-                                break;
-                            }
-                        }
-
-                        JsonParsing.ValidateTypes(
-                            JsonSerializer.SerializeToElement(chunk["data"]),
-                            dataPartSchema,
-                            new TypeValidationContext
-                            {
-                                Field = $"message.parts[{(partIndex >= 0 ? partIndex : parts.Count)}].data",
-                                EntityName = type,
-                                EntityId = String(chunk, "id"),
-                            });
-                    }
-
-                    // transient parts are not added to the message state
-                    if (IsTrue(chunk, "transient"))
-                    {
-                        options.OnData?.Invoke(chunk);
-                        break;
-                    }
-
-                    var dataId = String(chunk, "id");
-                    JsonObject? existingUiPart = null;
-                    if (dataId != null)
-                    {
-                        foreach (var node in parts)
-                        {
-                            if (node is JsonObject candidate && (string?)candidate["type"] == type && (string?)candidate["id"] == dataId)
-                            {
-                                existingUiPart = candidate;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (existingUiPart != null)
-                    {
-                        existingUiPart["data"] = chunk["data"]?.DeepClone();
-                    }
-                    else
-                    {
-                        parts.Add(chunk.DeepClone());
-                    }
-
-                    options.OnData?.Invoke(chunk);
-                    write(null);
                     break;
                 }
+
+                // validate data chunk if dataPartSchemas is provided
+                // (schemas are keyed by the part name without the 'data-' prefix)
+                if (
+                    options.DataPartSchemas != null
+                    && options.DataPartSchemas.TryGetValue(
+                        type.Substring(5),
+                        out var dataPartSchema
+                    )
+                )
+                {
+                    var partIndex = -1;
+                    for (var i = 0; i < parts.Count; i++)
+                    {
+                        if (
+                            parts[i] is JsonObject candidate
+                            && candidate.ContainsKey("id")
+                            && candidate.ContainsKey("data")
+                            && (string?)candidate["id"] == String(chunk, "id")
+                            && (string?)candidate["type"] == type
+                        )
+                        {
+                            partIndex = i;
+                            break;
+                        }
+                    }
+
+                    JsonParsing.ValidateTypes(
+                        JsonSerializer.SerializeToElement(chunk["data"]),
+                        dataPartSchema,
+                        new TypeValidationContext
+                        {
+                            Field =
+                                $"message.parts[{(partIndex >= 0 ? partIndex : parts.Count)}].data",
+                            EntityName = type,
+                            EntityId = String(chunk, "id"),
+                        }
+                    );
+                }
+
+                // transient parts are not added to the message state
+                if (IsTrue(chunk, "transient"))
+                {
+                    options.OnData?.Invoke(chunk);
+                    break;
+                }
+
+                var dataId = String(chunk, "id");
+                JsonObject? existingUiPart = null;
+                if (dataId != null)
+                {
+                    foreach (var node in parts)
+                    {
+                        if (
+                            node is JsonObject candidate
+                            && (string?)candidate["type"] == type
+                            && (string?)candidate["id"] == dataId
+                        )
+                        {
+                            existingUiPart = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                if (existingUiPart != null)
+                {
+                    existingUiPart["data"] = chunk["data"]?.DeepClone();
+                }
+                else
+                {
+                    parts.Add(chunk.DeepClone());
+                }
+
+                options.OnData?.Invoke(chunk);
+                write(null);
+                break;
+            }
         }
     }
 }

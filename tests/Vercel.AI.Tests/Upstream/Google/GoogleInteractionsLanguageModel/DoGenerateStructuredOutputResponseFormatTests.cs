@@ -16,9 +16,11 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 /// </summary>
 public sealed class DoGenerateStructuredOutputResponseFormatTests
 {
-    private const string Prefix = "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doGenerate > structured output (responseFormat)::";
+    private const string Prefix =
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel.doGenerate > structured output (responseFormat)::";
 
-    private const string Schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Full name of the person.\"},\"age\":{\"type\":\"number\",\"description\":\"Age of the person in years.\"}},\"required\":[\"name\",\"age\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
+    private const string Schema =
+        "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\",\"description\":\"Full name of the person.\"},\"age\":{\"type\":\"number\",\"description\":\"Age of the person in years.\"}},\"required\":[\"name\",\"age\"],\"additionalProperties\":false,\"$schema\":\"http://json-schema.org/draft-07/schema#\"}";
 
     private static LanguageModelCallOptions Options(bool json, bool schema)
     {
@@ -34,45 +36,70 @@ public sealed class DoGenerateStructuredOutputResponseFormatTests
 
     private static SequencedHandler Handler()
     {
-        return new SequencedHandler().Json(GoogleInteractionsStreamSupport.JsonFixture("structured-output"));
+        return new SequencedHandler().Json(
+            GoogleInteractionsStreamSupport.JsonFixture("structured-output")
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits response_format on the request body when responseFormat is json with a schema", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "emits response_format on the request body when responseFormat is json with a schema",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_response_format_on_the_request_body_when_responseFormat_is_json_with_a_schema()
     {
         var handler = Handler();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options(true, true), CancellationToken.None);
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(Options(true, true), CancellationToken.None);
 
         GoogleUpstream.JsonEqual(
             JsonNode.Parse(handler.Bodies[0]),
             "{\"input\":[{\"content\":[{\"text\":\"Hello, how are you?\",\"type\":\"text\"}],\"type\":\"user_input\"}],"
-            + "\"model\":\"gemini-2.5-flash\","
-            + "\"response_format\":[{\"mime_type\":\"application/json\",\"schema\":" + Schema + ",\"type\":\"text\"}]}");
+                + "\"model\":\"gemini-2.5-flash\","
+                + "\"response_format\":[{\"mime_type\":\"application/json\",\"schema\":"
+                + Schema
+                + ",\"type\":\"text\"}]}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "emits a single text response_format entry when responseFormat is json without a schema", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "emits a single text response_format entry when responseFormat is json without a schema",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Emits_a_single_text_response_format_entry_when_responseFormat_is_json_without_a_schema()
     {
         var handler = Handler();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options(true, false), CancellationToken.None);
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(Options(true, false), CancellationToken.None);
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         // mime_type lives inside the polymorphic response_format entry; no top-level response_mime_type field on the wire.
         Assert.False(body.ContainsKey("response_mime_type"));
-        GoogleUpstream.JsonEqual(body["response_format"], "[{\"type\":\"text\",\"mime_type\":\"application/json\"}]");
+        GoogleUpstream.JsonEqual(
+            body["response_format"],
+            "[{\"type\":\"text\",\"mime_type\":\"application/json\"}]"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits response_format when responseFormat is text", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "omits response_format when responseFormat is text",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Omits_response_format_when_responseFormat_is_text()
     {
         var handler = Handler();
 
-        await GoogleInteractionsStreamSupport.Model(handler).DoGenerateAsync(Options(false, false), CancellationToken.None);
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(Options(false, false), CancellationToken.None);
 
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.False(body.ContainsKey("response_mime_type"));
@@ -80,11 +107,18 @@ public sealed class DoGenerateStructuredOutputResponseFormatTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns and drops responseFormat when an agent is set", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "warns and drops responseFormat when an agent is set",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Warns_and_drops_responseFormat_when_an_agent_is_set()
     {
         var handler = Handler();
-        var model = GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" }, handler)
+        var model = GoogleProvider
+            .Create(
+                new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" },
+                handler
+            )
             .Interactions(new GoogleInteractionsAgent("deep-research-pro-preview-12-2025"));
 
         await model.DoGenerateAsync(Options(true, true), CancellationToken.None);

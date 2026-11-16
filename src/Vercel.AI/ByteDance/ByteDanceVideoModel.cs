@@ -18,8 +18,18 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 {
     private static readonly HashSet<string> HandledOptions = new(StringComparer.Ordinal)
     {
-        "watermark", "generateAudio", "cameraFixed", "returnLastFrame", "serviceTier", "draft",
-        "lastFrameImage", "referenceImages", "referenceVideos", "referenceAudio", "pollIntervalMs", "pollTimeoutMs",
+        "watermark",
+        "generateAudio",
+        "cameraFixed",
+        "returnLastFrame",
+        "serviceTier",
+        "draft",
+        "lastFrameImage",
+        "referenceImages",
+        "referenceVideos",
+        "referenceAudio",
+        "pollIntervalMs",
+        "pollTimeoutMs",
     };
 
     private static readonly Dictionary<string, string> Resolutions = new(StringComparer.Ordinal)
@@ -66,13 +76,25 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
         ["928x2176"] = "1080p",
     };
 
-    private static readonly string[] StatusFields = { "id", "model", "status", "content", "usage", "error" };
+    private static readonly string[] StatusFields =
+    {
+        "id",
+        "model",
+        "status",
+        "content",
+        "usage",
+        "error",
+    };
 
     private readonly ByteDanceProvider _provider;
     private readonly Func<DateTimeOffset> _clock;
 
     /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp.</summary>
-    public ByteDanceVideoModel(ByteDanceProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public ByteDanceVideoModel(
+        ByteDanceProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -110,21 +132,40 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <summary>Starts a task and polls it until the video is ready.</summary>
-    public async Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken)
+    public async Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest { Model = this, Prompt = new VideoPrompt(options.Prompt), Duration = options.DurationSeconds }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateVideo
+            .GenerateVideoAsync(
+                new GenerateVideoRequest
+                {
+                    Model = this,
+                    Prompt = new VideoPrompt(options.Prompt),
+                    Duration = options.DurationSeconds,
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new VideoResult(null, result.Video.Data, result.Video.MediaType);
     }
 
     /// <inheritdoc />
-    public Task<VideoModelResult> DoGenerateAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public Task<VideoModelResult> DoGenerateAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         throw new NotSupportedException("ByteDance generates videos with doStart and doStatus.");
     }
 
     /// <inheritdoc />
-    public async Task<VideoStartResult> DoStartAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStartResult> DoStartAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
@@ -135,13 +176,16 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             body["callback_url"] = call.WebhookUrl;
         }
 
-        var response = await ProviderExchange.SendAsync(
-            _provider._httpClient,
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks"),
-            ProviderExchange.Json(body.ToJsonString()),
-            ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _provider._httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks"),
+                ProviderExchange.Json(body.ToJsonString()),
+                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var taskId = String(document.RootElement, "id");
         if (string.IsNullOrEmpty(taskId))
@@ -154,29 +198,46 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
     }
 
     /// <inheritdoc />
-    public async Task<VideoStatusResult> DoStatusAsync(VideoModelCall call, CancellationToken cancellationToken)
+    public async Task<VideoStatusResult> DoStatusAsync(
+        VideoModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = _clock();
-        var taskId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation ? String(operation, "taskId") : null;
+        var taskId = call.Operation is JsonElement { ValueKind: JsonValueKind.Object } operation
+            ? String(operation, "taskId")
+            : null;
         if (taskId == null)
         {
-            throw new InvalidArgumentException("operation", call.Operation, "ByteDance operations are objects with a taskId.");
+            throw new InvalidArgumentException(
+                "operation",
+                call.Operation,
+                "ByteDance operations are objects with a taskId."
+            );
         }
 
-        var response = await ProviderExchange.SendAsync(
-            _provider._httpClient,
-            HttpMethod.Get,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks/" + PathSegments.Encode(taskId)),
-            null,
-            ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await ProviderExchange
+            .SendAsync(
+                _provider._httpClient,
+                HttpMethod.Get,
+                ApiKeys.Combine(
+                    _provider.Options.BaseUrl,
+                    "contents/generations/tasks/" + PathSegments.Encode(taskId)
+                ),
+                null,
+                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);
         var root = document.RootElement;
         var status = String(root, "status");
         if (status == "succeeded")
         {
-            var content = root.TryGetProperty("content", out var contentElement) ? contentElement : default;
+            var content = root.TryGetProperty("content", out var contentElement)
+                ? contentElement
+                : default;
             var videoUrl = String(content, "video_url");
             if (string.IsNullOrEmpty(videoUrl))
             {
@@ -184,7 +245,10 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             }
 
             var metadata = new JsonObject { ["taskId"] = taskId };
-            if (root.TryGetProperty("usage", out var usage) && usage.ValueKind != JsonValueKind.Null)
+            if (
+                root.TryGetProperty("usage", out var usage)
+                && usage.ValueKind != JsonValueKind.Null
+            )
             {
                 metadata["usage"] = JsonNode.Parse(usage.GetRawText());
             }
@@ -197,30 +261,45 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             return new VideoStatusResult(
                 "completed",
                 new[] { new VideoOutput("url", videoUrl, mediaType: "video/mp4") },
-                providerMetadata: OperationJson.Parse(new JsonObject { ["bytedance"] = metadata }.ToJsonString()),
-                response: Response(response, timestamp));
+                providerMetadata: OperationJson.Parse(
+                    new JsonObject { ["bytedance"] = metadata }.ToJsonString()
+                ),
+                response: Response(response, timestamp)
+            );
         }
 
         // ModelArk documents "cancelled"; "canceled" is accepted too.
         if (status is "failed" or "expired" or "cancelled" or "canceled")
         {
             var error = root.TryGetProperty("error", out var errorElement) ? errorElement : default;
-            var details = String(error, "message") ?? String(error, "code") ?? KnownStatusFields(root);
-            return new VideoStatusResult("error", error: "Video generation " + status + ". Task ID: " + taskId + ". " + details, response: Response(response, timestamp));
+            var details = String(error, "message")
+                ?? String(error, "code")
+                ?? KnownStatusFields(root);
+            return new VideoStatusResult(
+                "error",
+                error: "Video generation " + status + ". Task ID: " + taskId + ". " + details,
+                response: Response(response, timestamp)
+            );
         }
 
         return new VideoStatusResult("pending", response: Response(response, timestamp));
     }
 
     /// <inheritdoc />
-    public Task<VideoWebhook> HandleWebhookAsync(Func<Task<VideoWebhook>> webhook, CancellationToken cancellationToken)
+    public Task<VideoWebhook> HandleWebhookAsync(
+        Func<Task<VideoWebhook>> webhook,
+        CancellationToken cancellationToken
+    )
     {
-        throw new NotSupportedException("ByteDance forwards a webhook URL as callback_url but does not handle webhooks.");
+        throw new NotSupportedException(
+            "ByteDance forwards a webhook URL as callback_url but does not handle webhooks."
+        );
     }
 
     private JsonObject Build(VideoModelCall call, List<OperationWarning> warnings)
     {
-        var options = call.ProviderOptions.ValueKind == JsonValueKind.Object
+        var options =
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
             && call.ProviderOptions.TryGetProperty(ByteDanceProvider.ProviderId, out var bytedance)
             && bytedance.ValueKind == JsonValueKind.Object
                 ? bytedance
@@ -231,18 +310,36 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
         {
             if (Option(options, setting) != null)
             {
-                warnings.Add(new OperationWarning("deprecated", message: "`" + setting + "` is ignored. Polling is orchestrated by the AI SDK: pass `poll: { intervalMs, timeoutMs }` to `generateVideo` instead.", setting: setting));
+                warnings.Add(
+                    new OperationWarning(
+                        "deprecated",
+                        message: "`"
+                            + setting
+                            + "` is ignored. Polling is orchestrated by the AI SDK: pass `poll: { intervalMs, timeoutMs }` to `generateVideo` instead.",
+                        setting: setting
+                    )
+                );
             }
         }
 
         if (call.Fps != null)
         {
-            warnings.Add(OperationWarning.Unsupported("fps", "ByteDance video models do not support custom FPS. Frame rate is fixed at 24 fps."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "fps",
+                    "ByteDance video models do not support custom FPS. Frame rate is fixed at 24 fps."
+                )
+            );
         }
 
         if (call.N > 1)
         {
-            warnings.Add(OperationWarning.Unsupported("n", "ByteDance video models do not support generating multiple videos per call. Only 1 video will be generated."));
+            warnings.Add(
+                OperationWarning.Unsupported(
+                    "n",
+                    "ByteDance video models do not support generating multiple videos per call. Only 1 video will be generated."
+                )
+            );
         }
 
         var content = new JsonArray();
@@ -252,7 +349,9 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
         }
 
         var startImage = Frame(call, "first_frame") ?? call.Image;
-        var lastFrame = Frame(call, "last_frame") is { } frame ? DataUri(frame) : Option(options, "lastFrameImage")?.GetString();
+        var lastFrame = Frame(call, "last_frame") is { } frame
+            ? DataUri(frame)
+            : Option(options, "lastFrameImage")?.GetString();
         var references = References(call, options, warnings);
         if (startImage != null)
         {
@@ -302,7 +401,9 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
         if (call.Resolution != null)
         {
-            body["resolution"] = Resolutions.TryGetValue(call.Resolution, out var mapped) ? mapped : call.Resolution;
+            body["resolution"] = Resolutions.TryGetValue(call.Resolution, out var mapped)
+                ? mapped
+                : call.Resolution;
         }
 
         // The top-level setting wins over the older provider option.
@@ -322,7 +423,11 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             Copy(options, "returnLastFrame", body, "return_last_frame");
             Copy(options, "serviceTier", body, "service_tier");
             Copy(options, "draft", body, "draft");
-            foreach (var option in options.EnumerateObject().Where(option => !HandledOptions.Contains(option.Name)))
+            foreach (
+                var option in options
+                    .EnumerateObject()
+                    .Where(option => !HandledOptions.Contains(option.Name))
+            )
             {
                 body[option.Name] = JsonNode.Parse(option.Value.GetRawText());
             }
@@ -332,7 +437,11 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
     }
 
     // Frames replace every reference. Input references replace the provider reference lists.
-    private static List<JsonObject> References(VideoModelCall call, JsonElement options, List<OperationWarning> warnings)
+    private static List<JsonObject> References(
+        VideoModelCall call,
+        JsonElement options,
+        List<OperationWarning> warnings
+    )
     {
         var references = new List<JsonObject>();
         if (call.FrameImages is { Count: > 0 })
@@ -346,19 +455,33 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             {
                 if (input.Type == "url" && input.MediaType == null)
                 {
-                    warnings.Add(OperationWarning.Unsupported("inputReferences", "ByteDance requires an explicit mediaType to route URL references as video or image. Pass { data: url, mediaType: \"video/mp4\" } for video references. The reference was treated as an image."));
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "inputReferences",
+                            "ByteDance requires an explicit mediaType to route URL references as video or image. Pass { data: url, mediaType: \"video/mp4\" } for video references. The reference was treated as an image."
+                        )
+                    );
                 }
 
-                references.Add(input.MediaType != null && MediaTypes.GetTopLevelMediaType(input.MediaType) == "video"
-                    ? Part("video_url", DataUri(input), "reference_video")
-                    : Part("image_url", DataUri(input), "reference_image"));
+                references.Add(
+                    input.MediaType != null
+                    && MediaTypes.GetTopLevelMediaType(input.MediaType) == "video"
+                        ? Part("video_url", DataUri(input), "reference_video")
+                        : Part("image_url", DataUri(input), "reference_image")
+                );
             }
 
             return references;
         }
 
-        references.AddRange(Strings(options, "referenceImages").Select(url => Part("image_url", url, "reference_image")));
-        references.AddRange(Strings(options, "referenceVideos").Select(url => Part("video_url", url, "reference_video")));
+        references.AddRange(
+            Strings(options, "referenceImages")
+                .Select(url => Part("image_url", url, "reference_image"))
+        );
+        references.AddRange(
+            Strings(options, "referenceVideos")
+                .Select(url => Part("video_url", url, "reference_video"))
+        );
         return references;
     }
 
@@ -369,7 +492,11 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
     private static JsonObject Part(string type, string url, string? role)
     {
-        var part = new JsonObject { ["type"] = type, [type] = new JsonObject { ["url"] = url } };
+        var part = new JsonObject
+        {
+            ["type"] = type,
+            [type] = new JsonObject { ["url"] = url },
+        };
         if (role != null)
         {
             part["role"] = role;
@@ -380,7 +507,11 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
     private static string DataUri(VideoModelFile file)
     {
-        return file.Url ?? "data:" + file.MediaType + ";base64," + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+        return file.Url
+            ?? "data:"
+                + file.MediaType
+                + ";base64,"
+                + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
     }
 
     // The status body as the documented fields only, for failures that carry no reason.
@@ -400,7 +531,11 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
     private ProviderResponse Response(ProviderExchangeResult response, DateTimeOffset timestamp)
     {
-        return new ProviderResponse(response.Headers, timestamp: timestamp.UtcDateTime, modelId: ModelId);
+        return new ProviderResponse(
+            response.Headers,
+            timestamp: timestamp.UtcDateTime,
+            modelId: ModelId
+        );
     }
 
     private static void Copy(JsonElement options, string name, JsonObject body, string field)
@@ -413,7 +548,12 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
     private static JsonElement? Option(JsonElement options, string name)
     {
-        return options.ValueKind == JsonValueKind.Object && options.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+        return
+            options.ValueKind == JsonValueKind.Object
+            && options.TryGetProperty(name, out var value)
+            && value.ValueKind != JsonValueKind.Null
+            ? value
+            : null;
     }
 
     private static IEnumerable<string> Strings(JsonElement options, string name)
@@ -425,7 +565,10 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
 
     private static string? String(JsonElement element, string name)
     {
-        return element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
     }

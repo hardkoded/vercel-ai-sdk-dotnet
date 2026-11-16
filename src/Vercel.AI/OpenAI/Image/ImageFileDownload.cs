@@ -21,17 +21,26 @@ internal static class ImageFileDownload
         OpenAICompatibleProvider provider,
         IReadOnlyDictionary<string, string?> providerHeaders,
         string url,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var download = await ProviderExchange.GetResponseUrlAsync(
-            provider.SharedHttpClient,
-            url,
-            null,
-            Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
-            null,
-            cancellationToken,
-            ProviderExchange.DownloadClient(provider.Options),
-            ProviderExchange.UserAgentOnly(providerHeaders)).ConfigureAwait(false);
-        return (download.Bytes, download.Headers.TryGetValue("content-type", out var type) ? type : "application/octet-stream");
+        var download = await ProviderExchange
+            .GetResponseUrlAsync(
+                provider.SharedHttpClient,
+                url,
+                null,
+                Vercel.AI.GenerateText.DownloadUrls.ValidateDownloadUrl,
+                null,
+                cancellationToken,
+                ProviderExchange.DownloadClient(provider.Options),
+                ProviderExchange.UserAgentOnly(providerHeaders)
+            )
+            .ConfigureAwait(false);
+        return (
+            download.Bytes,
+            download.Headers.TryGetValue("content-type", out var type)
+                ? type
+                : "application/octet-stream"
+        );
     }
 }

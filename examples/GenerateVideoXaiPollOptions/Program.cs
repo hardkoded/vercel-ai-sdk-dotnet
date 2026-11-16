@@ -16,20 +16,29 @@ var xai = XaiProvider.Create();
 var startTime = DateTime.UtcNow;
 
 #region generate-video-xai-poll-options
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("A yorkie among dandelions at Crissy Field in San Francisco."),
-    AspectRatio = "16:9",
-    Duration = 5,
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-    Poll = true,
-    PollIntervalMs = 1000,
-    PollTimeoutMs = 60_000,
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt("A yorkie among dandelions at Crissy Field in San Francisco."),
+        AspectRatio = "16:9",
+        Duration = 5,
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+        Poll = true,
+        PollIntervalMs = 1000,
+        PollTimeoutMs = 60_000,
+    }
+);
 #endregion
 
-Console.WriteLine("Video generation complete in " + (DateTime.UtcNow - startTime).TotalSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "s");
+Console.WriteLine(
+    "Video generation complete in "
+        + (DateTime.UtcNow - startTime).TotalSeconds.ToString(
+            "0.0",
+            System.Globalization.CultureInfo.InvariantCulture
+        )
+        + "s"
+);
 
 await File.WriteAllBytesAsync("video.mp4", result.Video.Data);
 Console.WriteLine("Saved video.mp4");

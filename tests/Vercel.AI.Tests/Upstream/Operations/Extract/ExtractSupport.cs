@@ -10,7 +10,8 @@ namespace Vercel.AI.Tests.Upstream.Operations.Extract;
 /// <summary>Shared fixtures for the <c>extract.test.ts</c> ports: <c>state</c>, <c>fields</c>, <c>answers</c>, and <c>setup</c>.</summary>
 internal static class ExtractSupport
 {
-    internal const string State = "Invoice INV-2041, total due $1,250.00 by March 3, 2027 at 17:30. Call Ana or Bo within 2 hours.";
+    internal const string State =
+        "Invoice INV-2041, total due $1,250.00 by March 3, 2027 at 17:30. Call Ana or Bo within 2 hours.";
 
     internal static Dictionary<string, ExtractionField> Fields()
     {
@@ -30,7 +31,12 @@ internal static class ExtractSupport
     {
         return new Dictionary<string, ExtractionAnswer>
         {
-            ["invoiceNumber"] = new ExtractionAnswer("text", text: "INV-2041", confidence: 0.98, source: new ExtractionSource("text", 0, 8, 16)),
+            ["invoiceNumber"] = new ExtractionAnswer(
+                "text",
+                text: "INV-2041",
+                confidence: 0.98,
+                source: new ExtractionSource("text", 0, 8, 16)
+            ),
             ["total"] = new ExtractionAnswer("number", number: 1250, pNull: 0.01),
             ["dueDate"] = new ExtractionAnswer("date", text: "2027-03-03"),
             ["dueTime"] = new ExtractionAnswer("time", text: "17:30"),
@@ -39,7 +45,12 @@ internal static class ExtractSupport
             ["contacts"] = new ExtractionAnswer(
                 "list",
                 textItems: ["Ana", "Bo"],
-                items: [new ExtractionItem(0.9, new ExtractionSource("text", 0, 70, 73)), new ExtractionItem(0.8)]),
+                items:
+                [
+                    new ExtractionItem(0.9, new ExtractionSource("text", 0, 70, 73)),
+                    new ExtractionItem(0.8),
+                ]
+            ),
         };
     }
 
@@ -89,13 +100,19 @@ internal static class ExtractSupport
 
     private static JsonObject Canon(ExtractionAnswer answer)
     {
-        var node = new SortedDictionary<string, JsonNode?>(StringComparer.Ordinal) { ["type"] = answer.Type };
+        var node = new SortedDictionary<string, JsonNode?>(StringComparer.Ordinal)
+        {
+            ["type"] = answer.Type,
+        };
         if (answer.Type != "refusal")
         {
-            node["value"] = answer.Text is { } text ? text
+            node["value"] =
+                answer.Text is { } text ? text
                 : answer.Number is { } number ? number
-                : answer.TextItems is { } textItems ? new JsonArray(textItems.Select(item => (JsonNode?)item).ToArray())
-                : answer.NumberItems is { } numberItems ? new JsonArray(numberItems.Select(item => (JsonNode?)item).ToArray())
+                : answer.TextItems is { } textItems
+                    ? new JsonArray(textItems.Select(item => (JsonNode?)item).ToArray())
+                : answer.NumberItems is { } numberItems
+                    ? new JsonArray(numberItems.Select(item => (JsonNode?)item).ToArray())
                 : null;
         }
 
@@ -125,21 +142,25 @@ internal static class ExtractSupport
 
         if (answer.Items is { } items)
         {
-            node["items"] = new JsonArray(items.Select(item =>
-            {
-                var entry = new JsonObject();
-                if (item.Confidence is { } itemConfidence)
-                {
-                    entry["confidence"] = itemConfidence;
-                }
+            node["items"] = new JsonArray(
+                items
+                    .Select(item =>
+                    {
+                        var entry = new JsonObject();
+                        if (item.Confidence is { } itemConfidence)
+                        {
+                            entry["confidence"] = itemConfidence;
+                        }
 
-                if (item.Source is { } itemSource)
-                {
-                    entry["source"] = Canon(itemSource);
-                }
+                        if (item.Source is { } itemSource)
+                        {
+                            entry["source"] = Canon(itemSource);
+                        }
 
-                return (JsonNode?)entry;
-            }).ToArray());
+                        return (JsonNode?)entry;
+                    })
+                    .ToArray()
+            );
         }
 
         var result = new JsonObject();

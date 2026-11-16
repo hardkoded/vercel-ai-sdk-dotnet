@@ -19,11 +19,17 @@ public sealed class ChatModelErrorHandlingTests
     public async Task Should_throw_error_on_generate_text_attempt_with_invalid_model_ID()
     {
         AnthropicFeatureSuite.SkipWithoutApiKey();
-        var error = await Assert.ThrowsAnyAsync<ApiException>(() => AnthropicFeatureSuite.Client().GenerateTextAsync(new GenerateTextOptions
-        {
-            Model = AnthropicFeatureSuite.Chat("no-such-model"),
-            Prompt = "This should fail",
-        }));
+        var error = await Assert.ThrowsAnyAsync<ApiException>(() =>
+            AnthropicFeatureSuite
+                .Client()
+                .GenerateTextAsync(
+                    new GenerateTextOptions
+                    {
+                        Model = AnthropicFeatureSuite.Chat("no-such-model"),
+                        Prompt = "This should fail",
+                    }
+                )
+        );
 
         ErrorValidator(error);
     }
@@ -34,15 +40,17 @@ public sealed class ChatModelErrorHandlingTests
         AnthropicFeatureSuite.SkipWithoutApiKey();
         var error = await Assert.ThrowsAnyAsync<ApiException>(async () =>
         {
-            var result = AnthropicFeatureSuite.Client().StreamTextAsync(new StreamTextOptions
-            {
-                Model = AnthropicFeatureSuite.Chat("no-such-model"),
-                Prompt = "This should fail",
-            });
+            var result = AnthropicFeatureSuite
+                .Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = AnthropicFeatureSuite.Chat("no-such-model"),
+                        Prompt = "This should fail",
+                    }
+                );
 
-            await foreach (var _ in result.TextStream())
-            {
-            }
+            await foreach (var _ in result.TextStream()) { }
         });
 
         ErrorValidator(error);

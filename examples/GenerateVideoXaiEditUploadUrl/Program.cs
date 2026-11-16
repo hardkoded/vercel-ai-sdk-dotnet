@@ -25,21 +25,24 @@ var xai = XaiProvider.Create();
 try
 {
     #region generate-video-xai-edit-upload-url
-    var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-    {
-        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-        Prompt = new VideoPrompt("Make the scene look like a watercolor painting."),
-        ProviderOptions = OperationJson.Parse(
-            new JsonObject
-            {
-                ["xai"] = new JsonObject
+    var result = await GenerateVideo.GenerateVideoAsync(
+        new GenerateVideoRequest
+        {
+            Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+            Prompt = new VideoPrompt("Make the scene look like a watercolor painting."),
+            ProviderOptions = OperationJson.Parse(
+                new JsonObject
                 {
-                    ["mode"] = "edit-video",
-                    ["videoUrl"] = videoUrl,
-                    ["output"] = new JsonObject { ["uploadUrl"] = uploadUrl },
-                },
-            }.ToJsonString()),
-    });
+                    ["xai"] = new JsonObject
+                    {
+                        ["mode"] = "edit-video",
+                        ["videoUrl"] = videoUrl,
+                        ["output"] = new JsonObject { ["uploadUrl"] = uploadUrl },
+                    },
+                }.ToJsonString()
+            ),
+        }
+    );
     #endregion
 
     Console.WriteLine("Edited videos delivered by xAI: " + result.UploadedVideos);

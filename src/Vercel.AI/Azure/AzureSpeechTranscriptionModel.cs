@@ -16,14 +16,18 @@ namespace Vercel.AI.Azure;
 /// <summary>Azure Speech file transcription (MAI-Transcribe). Maps to <c>AzureSpeechTranscriptionModel</c>.</summary>
 internal sealed class AzureSpeechTranscriptionModel
 {
-    private static readonly Dictionary<string, OptionValidator> WordShape = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, OptionValidator> WordShape = new(
+        StringComparer.Ordinal
+    )
     {
         ["text"] = ProviderOptionShape.String(),
         ["offsetMilliseconds"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
         ["durationMilliseconds"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
     };
 
-    private static readonly Dictionary<string, OptionValidator> PhraseShape = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, OptionValidator> PhraseShape = new(
+        StringComparer.Ordinal
+    )
     {
         ["text"] = ProviderOptionShape.String(),
         ["offsetMilliseconds"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
@@ -31,29 +35,45 @@ internal sealed class AzureSpeechTranscriptionModel
         ["locale"] = ProviderOptionShape.Nullish(ProviderOptionShape.String()),
         ["speaker"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
         ["confidence"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
-        ["words"] = ProviderOptionShape.Nullish(ProviderOptionShape.ArrayOf(ProviderOptionShape.ObjectOf(WordShape, false, "text"))),
+        ["words"] = ProviderOptionShape.Nullish(
+            ProviderOptionShape.ArrayOf(ProviderOptionShape.ObjectOf(WordShape, false, "text"))
+        ),
     };
 
-    private static readonly Dictionary<string, OptionValidator> ResponseShape = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, OptionValidator> ResponseShape = new(
+        StringComparer.Ordinal
+    )
     {
-        ["combinedPhrases"] = ProviderOptionShape.ArrayOf(ProviderOptionShape.ObjectOf(
-            new Dictionary<string, OptionValidator>(StringComparer.Ordinal) { ["text"] = ProviderOptionShape.String() },
-            false,
-            "text")),
+        ["combinedPhrases"] = ProviderOptionShape.ArrayOf(
+            ProviderOptionShape.ObjectOf(
+                new Dictionary<string, OptionValidator>(StringComparer.Ordinal)
+                {
+                    ["text"] = ProviderOptionShape.String(),
+                },
+                false,
+                "text"
+            )
+        ),
         ["durationMilliseconds"] = ProviderOptionShape.Nullish(ProviderOptionShape.Number()),
-        ["phrases"] = ProviderOptionShape.Nullish(ProviderOptionShape.ArrayOf(ProviderOptionShape.ObjectOf(PhraseShape, false, "text"))),
+        ["phrases"] = ProviderOptionShape.Nullish(
+            ProviderOptionShape.ArrayOf(ProviderOptionShape.ObjectOf(PhraseShape, false, "text"))
+        ),
     };
 
     private readonly ProviderHttp _http;
     private readonly Func<Uri> _url;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
 
     /// <summary>Creates a Speech transcription model.</summary>
     public AzureSpeechTranscriptionModel(
         string modelId,
         ProviderHttp http,
         Func<Uri> url,
-        Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> headers)
+        Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> headers
+    )
     {
         ModelId = modelId;
         _http = http;
@@ -71,7 +91,8 @@ internal sealed class AzureSpeechTranscriptionModel
     public async Task<TranscriptionModelResult> DoGenerateAsync(
         TranscriptionModelCall call,
         AzureTranscriptionModelSpeechOptions azureOptions,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var timestamp = DateTime.UtcNow;
@@ -84,7 +105,12 @@ internal sealed class AzureSpeechTranscriptionModel
             var wantsSegment = call.TimestampGranularities.Contains("segment");
             if (maiModel is { SupportsTimestamps: false } && (wantsWord || wantsSegment))
             {
-                warnings.Add(OperationWarning.Unsupported("timestampGranularities", maiModel.Name + " cannot return word or segment timings."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "timestampGranularities",
+                        maiModel.Name + " cannot return word or segment timings."
+                    )
+                );
             }
             else if (timestamps == null)
             {
@@ -99,14 +125,20 @@ internal sealed class AzureSpeechTranscriptionModel
             }
             else if ((wantsWord && timestamps != "word") || (wantsSegment && timestamps == "none"))
             {
-                warnings.Add(OperationWarning.Unsupported(
-                    "timestampGranularities",
-                    "providerOptions.azure.timestamps is \"" + timestamps + "\" and overrides the requested timestamp granularities."));
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "timestampGranularities",
+                        "providerOptions.azure.timestamps is \""
+                            + timestamps
+                            + "\" and overrides the requested timestamp granularities."
+                    )
+                );
             }
         }
 
         var modelOptions = new JsonObject();
-        var effectiveTimestamps = timestamps ?? (maiModel is { SupportsTimestamps: false } ? null : "segment");
+        var effectiveTimestamps = timestamps
+            ?? (maiModel is { SupportsTimestamps: false } ? null : "segment");
         if (effectiveTimestamps != null)
         {
             modelOptions["timestamps"] = effectiveTimestamps;
@@ -160,7 +192,15 @@ internal sealed class AzureSpeechTranscriptionModel
             callHeaders[pair.Key] = pair.Value;
         }
 
-        var response = await _http.SendBinaryAsync(HttpMethod.Post, _url(), formData, _headers(callHeaders), cancellationToken).ConfigureAwait(false);
+        var response = await _http
+            .SendBinaryAsync(
+                HttpMethod.Post,
+                _url(),
+                formData,
+                _headers(callHeaders),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var body = Encoding.UTF8.GetString(response.Body);
         using var document = OpenAIJson.ParseResponse(body);
         var root = document.RootElement;
@@ -170,9 +210,11 @@ internal sealed class AzureSpeechTranscriptionModel
             throw new ApiException("Invalid JSON response: " + error, 200, body);
         }
 
-        var phrases = root.TryGetProperty("phrases", out var phraseItems) && phraseItems.ValueKind == JsonValueKind.Array
-            ? phraseItems.EnumerateArray().ToList()
-            : new List<JsonElement>();
+        var phrases =
+            root.TryGetProperty("phrases", out var phraseItems)
+            && phraseItems.ValueKind == JsonValueKind.Array
+                ? phraseItems.EnumerateArray().ToList()
+                : new List<JsonElement>();
 
         // Consider every reported locale so mixed results (for example en + fil) are not collapsed to one language;
         // only ISO-639-1 codes are reported.
@@ -190,9 +232,12 @@ internal sealed class AzureSpeechTranscriptionModel
             }
         }
 
-        var reportedLanguage = languages.Count == 1 && languages[0].Length == 2 && languages[0].All(letter => letter is >= 'a' and <= 'z')
-            ? languages[0]
-            : null;
+        var reportedLanguage =
+            languages.Count == 1
+            && languages[0].Length == 2
+            && languages[0].All(letter => letter is >= 'a' and <= 'z')
+                ? languages[0]
+                : null;
 
         var words = new List<TranscriptSegment>();
         var segments = new List<TranscriptSegment>();
@@ -200,26 +245,49 @@ internal sealed class AzureSpeechTranscriptionModel
         {
             if (Timing(phrase) is { } phraseTiming)
             {
-                segments.Add(new TranscriptSegment(OpenAIJson.String(phrase, "text") ?? string.Empty, phraseTiming.Start, phraseTiming.End));
+                segments.Add(
+                    new TranscriptSegment(
+                        OpenAIJson.String(phrase, "text") ?? string.Empty,
+                        phraseTiming.Start,
+                        phraseTiming.End
+                    )
+                );
             }
 
-            if (phrase.TryGetProperty("words", out var wordItems) && wordItems.ValueKind == JsonValueKind.Array)
+            if (
+                phrase.TryGetProperty("words", out var wordItems)
+                && wordItems.ValueKind == JsonValueKind.Array
+            )
             {
                 foreach (var word in wordItems.EnumerateArray())
                 {
                     if (Timing(word) is { } wordTiming)
                     {
-                        words.Add(new TranscriptSegment(OpenAIJson.String(word, "text") ?? string.Empty, wordTiming.Start, wordTiming.End));
+                        words.Add(
+                            new TranscriptSegment(
+                                OpenAIJson.String(word, "text") ?? string.Empty,
+                                wordTiming.Start,
+                                wordTiming.End
+                            )
+                        );
                     }
                 }
             }
         }
 
-        var text = string.Join(" ", root.GetProperty("combinedPhrases").EnumerateArray().Select(phrase => phrase.GetProperty("text").GetString()));
+        var text = string.Join(
+            " ",
+            root.GetProperty("combinedPhrases")
+                .EnumerateArray()
+                .Select(phrase => phrase.GetProperty("text").GetString())
+        );
         var duration = OpenAIJson.Double(root, "durationMilliseconds");
         var metadata = new JsonObject
         {
-            ["azure"] = new JsonObject { ["phrases"] = new JsonArray(phrases.Select(Phrase).ToArray()) },
+            ["azure"] = new JsonObject
+            {
+                ["phrases"] = new JsonArray(phrases.Select(Phrase).ToArray()),
+            },
         };
         return new TranscriptionModelResult(
             text,
@@ -228,22 +296,40 @@ internal sealed class AzureSpeechTranscriptionModel
             duration is { } milliseconds ? milliseconds / 1000 : null,
             warnings,
             OpenAIJson.Element(metadata),
-            new ProviderResponse(response.Headers, root.Clone(), timestamp: timestamp, modelId: ModelId),
-            words.Count > 0 ? words : null);
+            new ProviderResponse(
+                response.Headers,
+                root.Clone(),
+                timestamp: timestamp,
+                modelId: ModelId
+            ),
+            words.Count > 0 ? words : null
+        );
     }
 
     private static (double Start, double End)? Timing(JsonElement element)
     {
         var offset = OpenAIJson.Double(element, "offsetMilliseconds");
         var duration = OpenAIJson.Double(element, "durationMilliseconds");
-        return offset is { } start && duration is { } length ? (start / 1000, (start + length) / 1000) : null;
+        return offset is { } start && duration is { } length
+            ? (start / 1000, (start + length) / 1000)
+            : null;
     }
 
     // Zod strips unknown keys, so only the documented phrase fields reach the provider metadata.
     private static JsonNode Phrase(JsonElement phrase)
     {
         var projected = new JsonObject();
-        foreach (var name in new[] { "text", "offsetMilliseconds", "durationMilliseconds", "locale", "speaker", "confidence" })
+        foreach (
+            var name in new[]
+            {
+                "text",
+                "offsetMilliseconds",
+                "durationMilliseconds",
+                "locale",
+                "speaker",
+                "confidence",
+            }
+        )
         {
             if (phrase.TryGetProperty(name, out var value))
             {
@@ -259,7 +345,9 @@ internal sealed class AzureSpeechTranscriptionModel
                 foreach (var word in words.EnumerateArray())
                 {
                     var item = new JsonObject();
-                    foreach (var name in new[] { "text", "offsetMilliseconds", "durationMilliseconds" })
+                    foreach (
+                        var name in new[] { "text", "offsetMilliseconds", "durationMilliseconds" }
+                    )
                     {
                         if (word.TryGetProperty(name, out var value))
                         {

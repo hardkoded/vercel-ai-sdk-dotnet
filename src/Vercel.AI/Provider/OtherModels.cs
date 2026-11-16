@@ -29,7 +29,12 @@ public sealed class EmbeddingResponseInfo
 public sealed class EmbeddingResult
 {
     /// <summary>Creates an embedding result.</summary>
-    public EmbeddingResult(IReadOnlyList<float[]> embeddings, int? tokens, IReadOnlyList<CallWarning>? warnings = null, EmbeddingResponseInfo? response = null)
+    public EmbeddingResult(
+        IReadOnlyList<float[]> embeddings,
+        int? tokens,
+        IReadOnlyList<CallWarning>? warnings = null,
+        EmbeddingResponseInfo? response = null
+    )
     {
         Embeddings = embeddings ?? throw new ArgumentNullException(nameof(embeddings));
         Tokens = tokens;
@@ -88,7 +93,13 @@ public interface IEmbeddingModel
     string ModelId { get; }
 
     /// <summary>Embeds each value. Maps to <c>doEmbed</c>. <paramref name="providerOptions"/> is keyed by provider id. <paramref name="dimensions"/> is the requested vector width. A provider option for the same setting wins. <paramref name="headers"/> are sent with this call and override the provider headers.</summary>
-    Task<EmbeddingResult> DoEmbedAsync(IReadOnlyList<string> values, IReadOnlyDictionary<string, JsonElement>? providerOptions, CancellationToken cancellationToken, int? dimensions = null, IReadOnlyDictionary<string, string?>? headers = null);
+    Task<EmbeddingResult> DoEmbedAsync(
+        IReadOnlyList<string> values,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        CancellationToken cancellationToken,
+        int? dimensions = null,
+        IReadOnlyDictionary<string, string?>? headers = null
+    );
 }
 
 /// <summary>One generated image.</summary>
@@ -116,7 +127,11 @@ public sealed class GeneratedImage
 public sealed class ImageResponseInfo
 {
     /// <summary>Creates response info.</summary>
-    public ImageResponseInfo(DateTimeOffset timestamp, string? modelId, IReadOnlyDictionary<string, string>? headers)
+    public ImageResponseInfo(
+        DateTimeOffset timestamp,
+        string? modelId,
+        IReadOnlyDictionary<string, string>? headers
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId;
@@ -137,7 +152,14 @@ public sealed class ImageResponseInfo
 public class ImageGenerationResult
 {
     /// <summary>Creates an image result.</summary>
-    public ImageGenerationResult(IReadOnlyList<GeneratedImage> images, IReadOnlyList<CallWarning>? warnings = null, ImageResponseInfo? response = null, LanguageModelUsage? usage = null, JsonElement? providerMetadata = null, bool? isRetryable = null)
+    public ImageGenerationResult(
+        IReadOnlyList<GeneratedImage> images,
+        IReadOnlyList<CallWarning>? warnings = null,
+        ImageResponseInfo? response = null,
+        LanguageModelUsage? usage = null,
+        JsonElement? providerMetadata = null,
+        bool? isRetryable = null
+    )
     {
         Images = images ?? Array.Empty<GeneratedImage>();
         CallWarnings = warnings ?? Array.Empty<CallWarning>();
@@ -176,7 +198,10 @@ public interface IImageModel
     string ModelId { get; }
 
     /// <summary>Generates images. Maps to <c>doGenerate</c> on an image model.</summary>
-    Task<ImageGenerationResult> DoGenerateAsync(ImageCallOptions options, CancellationToken cancellationToken);
+    Task<ImageGenerationResult> DoGenerateAsync(
+        ImageCallOptions options,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Image call settings.</summary>
@@ -215,15 +240,30 @@ public sealed class ImageCallOptions
     /// <summary>Headers for this call. They override the provider headers.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
 
-    internal JsonElement? ProviderOptionsElement => ProviderOptions == null ? null : JsonSerializer.SerializeToElement(ProviderOptions);
+    internal JsonElement? ProviderOptionsElement =>
+        ProviderOptions == null ? null : JsonSerializer.SerializeToElement(ProviderOptions);
 
-    internal Dictionary<string, string> NonNullHeaders => Headers == null
-        ? new Dictionary<string, string>()
-        : Headers.Where(pair => pair.Value != null).ToDictionary(pair => pair.Key, pair => pair.Value!);
+    internal Dictionary<string, string> NonNullHeaders =>
+        Headers == null
+            ? new Dictionary<string, string>()
+            : Headers
+                .Where(pair => pair.Value != null)
+                .ToDictionary(pair => pair.Key, pair => pair.Value!);
 
     internal Operations.ImageModelCall ToModelCall(CancellationToken cancellationToken)
     {
-        return new Operations.ImageModelCall(Prompt, Files, Mask, Count, Size, AspectRatio, Seed, ProviderOptionsElement, NonNullHeaders, cancellationToken);
+        return new Operations.ImageModelCall(
+            Prompt,
+            Files,
+            Mask,
+            Count,
+            Size,
+            AspectRatio,
+            Seed,
+            ProviderOptionsElement,
+            NonNullHeaders,
+            cancellationToken
+        );
     }
 }
 
@@ -234,7 +274,13 @@ public sealed class ImageCallOptions
 public sealed class AudioUsage
 {
     /// <summary>Creates usage. Counts that the provider did not report stay null.</summary>
-    public AudioUsage(int? characters = null, double? seconds = null, int? inputTokens = null, int? outputTokens = null, int? totalTokens = null)
+    public AudioUsage(
+        int? characters = null,
+        double? seconds = null,
+        int? inputTokens = null,
+        int? outputTokens = null,
+        int? totalTokens = null
+    )
     {
         Characters = characters;
         Seconds = seconds;
@@ -264,9 +310,7 @@ public sealed class SpeechResult
 {
     /// <summary>Creates a speech result with no usage.</summary>
     public SpeechResult(byte[] audio, string mediaType)
-        : this(audio, mediaType, null)
-    {
-    }
+        : this(audio, mediaType, null) { }
 
     /// <summary>Creates a speech result.</summary>
     public SpeechResult(byte[] audio, string mediaType, AudioUsage? usage)
@@ -330,7 +374,10 @@ public interface ISpeechModel
     string ModelId { get; }
 
     /// <summary>Synthesizes speech.</summary>
-    Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken);
+    Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Transcription result.</summary>
@@ -338,9 +385,7 @@ public sealed class TranscriptionResult
 {
     /// <summary>Creates a transcription with no usage.</summary>
     public TranscriptionResult(string text)
-        : this(text, null)
-    {
-    }
+        : this(text, null) { }
 
     /// <summary>Creates a transcription.</summary>
     public TranscriptionResult(string text, AudioUsage? usage)
@@ -387,7 +432,10 @@ public interface ITranscriptionModel
     string ModelId { get; }
 
     /// <summary>Transcribes audio.</summary>
-    Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken);
+    Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Speech translation model specification.</summary>
@@ -400,7 +448,10 @@ public interface ISpeechTranslationModel
     string ModelId { get; }
 
     /// <summary>Translates speech into text.</summary>
-    Task<TranscriptionResult> DoTranslateAsync(AudioInput audio, CancellationToken cancellationToken);
+    Task<TranscriptionResult> DoTranslateAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Video generation result.</summary>
@@ -453,7 +504,10 @@ public interface IVideoModel
     string ModelId { get; }
 
     /// <summary>Generates a video.</summary>
-    Task<VideoResult> DoGenerateAsync(VideoCallOptions options, CancellationToken cancellationToken);
+    Task<VideoResult> DoGenerateAsync(
+        VideoCallOptions options,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>One reranked document.</summary>
@@ -496,7 +550,13 @@ public interface IRerankingModel
     string ModelId { get; }
 
     /// <summary>Reranks documents for a query. <paramref name="headers"/> are sent with this call and override the provider headers.</summary>
-    Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null);
+    Task<RerankResult> DoRerankAsync(
+        string query,
+        IReadOnlyList<string> documents,
+        int? topN,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string?>? headers = null
+    );
 }
 
 /// <summary>Score of a candidate against a rubric. Returned by <see cref="IRubricModel"/>.</summary>
@@ -526,7 +586,11 @@ public interface IRubricModel
     string ModelId { get; }
 
     /// <summary>Scores a candidate against a rubric.</summary>
-    Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken);
+    Task<RubricResult> DoEvaluateAsync(
+        string rubric,
+        string candidate,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Deprecated name of <see cref="RubricResult"/>.</summary>
@@ -558,7 +622,11 @@ public interface IEvaluationModel
     string ModelId { get; }
 
     /// <summary>Scores a candidate against a rubric.</summary>
-    Task<EvaluationResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken);
+    Task<EvaluationResult> DoEvaluateAsync(
+        string rubric,
+        string candidate,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>Helpers for <see cref="IRubricModel"/>.</summary>
@@ -594,9 +662,15 @@ internal sealed class LegacyRubricModel : IRubricModel
 
     public string ModelId => Inner.ModelId;
 
-    public async Task<RubricResult> DoEvaluateAsync(string rubric, string candidate, CancellationToken cancellationToken)
+    public async Task<RubricResult> DoEvaluateAsync(
+        string rubric,
+        string candidate,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await Inner.DoEvaluateAsync(rubric, candidate, cancellationToken).ConfigureAwait(false);
+        var result = await Inner
+            .DoEvaluateAsync(rubric, candidate, cancellationToken)
+            .ConfigureAwait(false);
         return new RubricResult(result.Score, result.Reason);
     }
 }
@@ -626,7 +700,11 @@ public interface IBatchModel
     string Provider { get; }
 
     /// <summary>Submits a batch and returns the job.</summary>
-    Task<BatchJob> SubmitAsync(string inputFileId, string endpoint, CancellationToken cancellationToken);
+    Task<BatchJob> SubmitAsync(
+        string inputFileId,
+        string endpoint,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>Reads a batch job.</summary>
     Task<BatchJob> GetAsync(string id, CancellationToken cancellationToken);
@@ -653,7 +731,12 @@ public sealed class UploadedFile
 public interface IFileStore
 {
     /// <summary>Uploads a file.</summary>
-    Task<UploadedFile> UploadFileAsync(string fileName, byte[] data, string mediaType, CancellationToken cancellationToken);
+    Task<UploadedFile> UploadFileAsync(
+        string fileName,
+        byte[] data,
+        string mediaType,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>An uploaded skill.</summary>
@@ -677,7 +760,11 @@ public sealed class UploadedSkill
 public interface ISkillStore
 {
     /// <summary>Uploads a skill document.</summary>
-    Task<UploadedSkill> UploadSkillAsync(string name, string instructions, CancellationToken cancellationToken);
+    Task<UploadedSkill> UploadSkillAsync(
+        string name,
+        string instructions,
+        CancellationToken cancellationToken
+    );
 }
 
 /// <summary>A realtime session.</summary>
@@ -801,6 +888,8 @@ public abstract class ProviderBase
 
     private AiSdkException Unsupported(string modelId, string modality)
     {
-        return new AiSdkException($"Provider '{Name}' does not support {modality} model '{modelId}'.");
+        return new AiSdkException(
+            $"Provider '{Name}' does not support {modality} model '{modelId}'."
+        );
     }
 }

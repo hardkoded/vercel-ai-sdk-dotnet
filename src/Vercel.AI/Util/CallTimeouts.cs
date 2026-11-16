@@ -30,7 +30,15 @@ internal sealed class CallTimeouts : IDisposable
 
     private readonly List<KeyValuePair<AbortSignal, Action>> _registrations;
 
-    private CallTimeouts(AbortSignal signal, List<KeyValuePair<AbortSignal, Action>> registrations, TimeoutConfiguration timeout, AbortController? stepController, AbortController? firstChunkController, AbortController? chunkController, Timer? totalTimer)
+    private CallTimeouts(
+        AbortSignal signal,
+        List<KeyValuePair<AbortSignal, Action>> registrations,
+        TimeoutConfiguration timeout,
+        AbortController? stepController,
+        AbortController? firstChunkController,
+        AbortController? chunkController,
+        Timer? totalTimer
+    )
     {
         Signal = signal;
         _registrations = registrations;
@@ -53,13 +61,21 @@ internal sealed class CallTimeouts : IDisposable
     /// Returns the abort sources for a call, or <c>null</c> when the call has no timeout that applies.
     /// Without a timeout the caller's <paramref name="signal"/> and <paramref name="token"/> stay as they are.
     /// </summary>
-    public static CallTimeouts? Create(TimeoutConfiguration? timeout, AbortSignal? signal, bool streaming, CancellationToken token = default)
+    public static CallTimeouts? Create(
+        TimeoutConfiguration? timeout,
+        AbortSignal? signal,
+        bool streaming,
+        CancellationToken token = default
+    )
     {
         var totalMs = timeout?.TotalMs;
         var stepMs = timeout?.StepMs;
         var firstChunkMs = streaming ? timeout?.FirstChunkMs : null;
         var chunkMs = streaming ? timeout?.ChunkMs : null;
-        if (timeout == null || (totalMs == null && stepMs == null && firstChunkMs == null && chunkMs == null))
+        if (
+            timeout == null
+            || (totalMs == null && stepMs == null && firstChunkMs == null && chunkMs == null)
+        )
         {
             return null;
         }
@@ -70,7 +86,17 @@ internal sealed class CallTimeouts : IDisposable
         var chunkController = chunkMs != null ? new AbortController() : null;
         var tokenController = token.CanBeCanceled ? new AbortController() : null;
         var sources = new List<AbortSignal>();
-        foreach (var source in new[] { signal, tokenController?.Signal, totalController?.Signal, stepController?.Signal, firstChunkController?.Signal, chunkController?.Signal })
+        foreach (
+            var source in new[]
+            {
+                signal,
+                tokenController?.Signal,
+                totalController?.Signal,
+                stepController?.Signal,
+                firstChunkController?.Signal,
+                chunkController?.Signal,
+            }
+        )
         {
             if (source != null)
             {
@@ -98,13 +124,28 @@ internal sealed class CallTimeouts : IDisposable
         if (totalController != null)
         {
             var reason = new TimeoutError("The operation was aborted due to timeout");
-            totalTimer = new Timer(_ => SetAbortTimeout.AbortQuietly(totalController, reason), null, totalMs!.Value, System.Threading.Timeout.Infinite);
+            totalTimer = new Timer(
+                _ => SetAbortTimeout.AbortQuietly(totalController, reason),
+                null,
+                totalMs!.Value,
+                System.Threading.Timeout.Infinite
+            );
         }
 
-        var timeouts = new CallTimeouts(merged, registrations, timeout, stepController, firstChunkController, chunkController, totalTimer);
+        var timeouts = new CallTimeouts(
+            merged,
+            registrations,
+            timeout,
+            stepController,
+            firstChunkController,
+            chunkController,
+            totalTimer
+        );
         if (tokenController != null)
         {
-            timeouts._tokenRegistration = token.Register(() => tokenController.Abort(new OperationCanceledException(token)));
+            timeouts._tokenRegistration = token.Register(() =>
+                tokenController.Abort(new OperationCanceledException(token))
+            );
         }
 
         return timeouts;
@@ -127,7 +168,8 @@ internal sealed class CallTimeouts : IDisposable
                         {
                             cancellation.Cancel();
                         }
-                        catch (Exception exception) when (exception is AggregateException or ObjectDisposedException)
+                        catch (Exception exception)
+                            when (exception is AggregateException or ObjectDisposedException)
                         {
                             // A callback of the token threw, or the call ended. The token is cancelled either way.
                         }
@@ -181,7 +223,11 @@ internal sealed class CallTimeouts : IDisposable
             }
 
             _firstChunkTimer?.Dispose();
-            _firstChunkTimer = SetAbortTimeout.Schedule(_firstChunkController, "First chunk", _firstChunkMs);
+            _firstChunkTimer = SetAbortTimeout.Schedule(
+                _firstChunkController,
+                "First chunk",
+                _firstChunkMs
+            );
         }
     }
 

@@ -15,13 +15,16 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleVertexAnthropicLabels;
 /// <summary>Port of <c>google-vertex-anthropic-labels.test.ts</c>.</summary>
 public sealed class GoogleVertexAnthropicLabelsTests
 {
-    private const string Response = "{\"type\":\"message\",\"id\":\"msg_1\",\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
+    private const string Response =
+        "{\"type\":\"message\",\"id\":\"msg_1\",\"content\":[{\"type\":\"text\",\"text\":\"ok\"}],\"stop_reason\":\"end_turn\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}";
 
-    private const string Sse = "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n"
+    private const string Sse =
+        "data: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_1\",\"model\":\"claude\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n"
         + "data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}\n\n"
         + "data: {\"type\":\"message_stop\"}\n\n";
 
-    private const string DataPlatform = "eyJ0ZWFtIjoiZGF0YS1wbGF0Zm9ybSIsImZlYXR1cmUiOiJteS1hcHAifQ==";
+    private const string DataPlatform =
+        "eyJ0ZWFtIjoiZGF0YS1wbGF0Zm9ybSIsImZlYXR1cmUiOiJteS1hcHAifQ==";
 
     private sealed class Handler : HttpMessageHandler
     {
@@ -36,7 +39,10 @@ public sealed class GoogleVertexAnthropicLabelsTests
 
         public List<string> Bodies { get; } = new();
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var header in request.Headers)
@@ -47,18 +53,29 @@ public sealed class GoogleVertexAnthropicLabelsTests
             lock (Headers)
             {
                 Headers.Add(headers);
-                Bodies.Add(request.Content == null ? string.Empty : request.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                Bodies.Add(
+                    request.Content == null
+                        ? string.Empty
+                        : request.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                );
             }
 
             await Task.Yield();
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(_stream ? Sse : Response, Encoding.UTF8, _stream ? "text/event-stream" : "application/json"),
+                Content = new StringContent(
+                    _stream ? Sse : Response,
+                    Encoding.UTF8,
+                    _stream ? "text/event-stream" : "application/json"
+                ),
             };
         }
     }
 
-    private static (ILanguageModel Model, Handler Handler) Create(string mode, Action<GoogleVertexAnthropicOptions>? configure = null)
+    private static (ILanguageModel Model, Handler Handler) Create(
+        string mode,
+        Action<GoogleVertexAnthropicOptions>? configure = null
+    )
     {
         var handler = new Handler(mode == "stream");
         var options = new GoogleVertexAnthropicOptions
@@ -73,14 +90,21 @@ public sealed class GoogleVertexAnthropicLabelsTests
         return (provider.LanguageModel("claude-sonnet-4-6@default"), handler);
     }
 
-    private static async Task Run(ILanguageModel model, string mode, IReadOnlyDictionary<string, JsonElement>? providerOptions, IReadOnlyDictionary<string, string?>? headers = null)
+    private static async Task Run(
+        ILanguageModel model,
+        string mode,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
         var options = GoogleUpstream.Hello();
         options.ProviderOptions = providerOptions;
         options.Headers = headers;
         if (mode == "stream")
         {
-            var result = await model.DoStreamAsync(options, CancellationToken.None).ConfigureAwait(false);
+            var result = await model
+                .DoStreamAsync(options, CancellationToken.None)
+                .ConfigureAwait(false);
             await foreach (var part in result.Stream.ConfigureAwait(false))
             {
                 Assert.IsNotType<ErrorStreamPart>(part);
@@ -100,11 +124,27 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::sends labels in the header and preserves authentication and other headers", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
-    public async Task Sends_labels_in_the_header_and_preserves_authentication_and_other_headers(string mode)
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::sends labels in the header and preserves authentication and other headers",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
+    public async Task Sends_labels_in_the_header_and_preserves_authentication_and_other_headers(
+        string mode
+    )
     {
         var (model, handler) = Create(mode);
-        await Run(model, mode, Vertex("{\"labels\":{\"team\":\"data-platform\",\"feature\":\"my-app\"}}"), new Dictionary<string, string?> { ["anthropic-beta"] = "test-beta", ["x-request-header"] = "preserved" }).ConfigureAwait(false);
+        await Run(
+                model,
+                mode,
+                Vertex("{\"labels\":{\"team\":\"data-platform\",\"feature\":\"my-app\"}}"),
+                new Dictionary<string, string?>
+                {
+                    ["anthropic-beta"] = "test-beta",
+                    ["x-request-header"] = "preserved",
+                }
+            )
+            .ConfigureAwait(false);
 
         var headers = Assert.Single(handler.Headers);
         Assert.Equal(DataPlatform, headers["x-vertex-ai-labels"]);
@@ -112,7 +152,12 @@ public sealed class GoogleVertexAnthropicLabelsTests
         Assert.Equal("preserved", headers["x-custom-header"]);
         Assert.Equal("test-beta", headers["anthropic-beta"]);
         Assert.Equal("preserved", headers["x-request-header"]);
-        Assert.False(System.Text.Json.Nodes.JsonNode.Parse(Assert.Single(handler.Bodies))!.AsObject().ContainsKey("labels"));
+        Assert.False(
+            System
+                .Text.Json.Nodes.JsonNode.Parse(Assert.Single(handler.Bodies))!
+                .AsObject()
+                .ContainsKey("labels")
+        );
     }
 
     [Theory]
@@ -120,11 +165,16 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("generate", "{}")]
     [InlineData("stream", "")]
     [InlineData("stream", "{}")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::omits the header when labels are absent (%j)", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::omits the header when labels are absent (%j)",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Omits_the_header_when_labels_are_absent(string mode, string providerOptions)
     {
         var (model, handler) = Create(mode);
-        await Run(model, mode, providerOptions.Length == 0 ? null : Vertex(providerOptions)).ConfigureAwait(false);
+        await Run(model, mode, providerOptions.Length == 0 ? null : Vertex(providerOptions))
+            .ConfigureAwait(false);
 
         Assert.False(Assert.Single(handler.Headers).ContainsKey("x-vertex-ai-labels"));
     }
@@ -132,7 +182,11 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::encodes an empty labels map", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::encodes an empty labels map",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Encodes_an_empty_labels_map(string mode)
     {
         var (model, handler) = Create(mode);
@@ -144,13 +198,20 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::encodes labels as UTF-8", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::encodes labels as UTF-8",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Encodes_labels_as_UTF8(string mode)
     {
         var (model, handler) = Create(mode);
         await Run(model, mode, Vertex("{\"labels\":{\"team\":\"équipe\"}}")).ConfigureAwait(false);
 
-        Assert.Equal("eyJ0ZWFtIjoiw6lxdWlwZSJ9", Assert.Single(handler.Headers)["x-vertex-ai-labels"]);
+        Assert.Equal(
+            "eyJ0ZWFtIjoiw6lxdWlwZSJ9",
+            Assert.Single(handler.Headers)["x-vertex-ai-labels"]
+        );
     }
 
     [Theory]
@@ -158,11 +219,21 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("generate", "X-Vertex-AI-Labels")]
     [InlineData("stream", "x-vertex-ai-labels")]
     [InlineData("stream", "X-Vertex-AI-Labels")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::preserves an explicit %s request header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::preserves an explicit %s request header",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Preserves_an_explicit_request_header(string mode, string headerName)
     {
         var (model, handler) = Create(mode);
-        await Run(model, mode, Vertex("{\"labels\":{\"team\":\"data-platform\"}}"), new Dictionary<string, string?> { [headerName] = "explicit-labels" }).ConfigureAwait(false);
+        await Run(
+                model,
+                mode,
+                Vertex("{\"labels\":{\"team\":\"data-platform\"}}"),
+                new Dictionary<string, string?> { [headerName] = "explicit-labels" }
+            )
+            .ConfigureAwait(false);
 
         Assert.Equal("explicit-labels", Assert.Single(handler.Headers)["x-vertex-ai-labels"]);
     }
@@ -170,11 +241,18 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::preserves an explicit provider labels header", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::preserves an explicit provider labels header",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Preserves_an_explicit_provider_labels_header(string mode)
     {
-        var (model, handler) = Create(mode, options => options.Headers["X-Vertex-AI-Labels"] = "provider-labels");
-        await Run(model, mode, Vertex("{\"labels\":{\"team\":\"data-platform\"}}")).ConfigureAwait(false);
+        var (model, handler) = Create(mode, options =>
+            options.Headers["X-Vertex-AI-Labels"] = "provider-labels"
+        );
+        await Run(model, mode, Vertex("{\"labels\":{\"team\":\"data-platform\"}}"))
+            .ConfigureAwait(false);
 
         Assert.Equal("provider-labels", Assert.Single(handler.Headers)["x-vertex-ai-labels"]);
     }
@@ -188,11 +266,19 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [InlineData("stream", "\"invalid\"")]
     [InlineData("stream", "{\"team\":123}")]
     [InlineData("stream", "[\"team\"]")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::rejects invalid labels ($labels) before sending a request", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::rejects invalid labels ($labels) before sending a request",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Rejects_invalid_labels_before_sending_a_request(string mode, string labels)
     {
         var (model, handler) = Create(mode);
-        await Assert.ThrowsAsync<InvalidArgumentError>(() => Run(model, mode, Vertex("{\"labels\":" + labels + "}"))).ConfigureAwait(false);
+        await Assert
+            .ThrowsAsync<InvalidArgumentError>(() =>
+                Run(model, mode, Vertex("{\"labels\":" + labels + "}"))
+            )
+            .ConfigureAwait(false);
 
         Assert.Empty(handler.Headers);
     }
@@ -200,18 +286,37 @@ public sealed class GoogleVertexAnthropicLabelsTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
-    [UpstreamTest("packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::keeps labels isolated across concurrent and subsequent calls", Coverage = UpstreamCoverage.Covered, Note = "Edge runs the same HttpClient.")]
+    [UpstreamTest(
+        "packages/google-vertex/src/anthropic/google-vertex-anthropic-labels.test.ts::%s Vertex Anthropic labels > %s::keeps labels isolated across concurrent and subsequent calls",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Edge runs the same HttpClient."
+    )]
     public async Task Keeps_labels_isolated_across_concurrent_and_subsequent_calls(string mode)
     {
         var (model, handler) = Create(mode);
         await Task.WhenAll(
-            Run(model, mode, Vertex("{\"labels\":{\"team\":\"data-platform\",\"feature\":\"my-app\"}}")),
-            Run(model, mode, Vertex("{\"labels\":{\"team\":\"other\"}}"))).ConfigureAwait(false);
+                Run(
+                    model,
+                    mode,
+                    Vertex("{\"labels\":{\"team\":\"data-platform\",\"feature\":\"my-app\"}}")
+                ),
+                Run(model, mode, Vertex("{\"labels\":{\"team\":\"other\"}}"))
+            )
+            .ConfigureAwait(false);
         await Run(model, mode, null).ConfigureAwait(false);
 
         Assert.Equal(3, handler.Headers.Count);
-        var sent = handler.Headers.Take(2).Select(h => h["x-vertex-ai-labels"]).OrderBy(v => v, StringComparer.Ordinal).ToArray();
-        Assert.Equal(new[] { DataPlatform, "eyJ0ZWFtIjoib3RoZXIifQ==" }.OrderBy(v => v, StringComparer.Ordinal).ToArray(), sent);
+        var sent = handler
+            .Headers.Take(2)
+            .Select(h => h["x-vertex-ai-labels"])
+            .OrderBy(v => v, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(
+            new[] { DataPlatform, "eyJ0ZWFtIjoib3RoZXIifQ==" }
+                .OrderBy(v => v, StringComparer.Ordinal)
+                .ToArray(),
+            sent
+        );
         Assert.False(handler.Headers[2].ContainsKey("x-vertex-ai-labels"));
     }
 }

@@ -10,22 +10,33 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.FetchWithValidatedRedirects;
 [Collection("DownloadFetch")]
 public sealed class FetchWithValidatedRedirectsTests
 {
-    private const string Prefix = "packages/provider-utils/src/fetch-with-validated-redirects.test.ts::fetchWithValidatedRedirects::";
+    private const string Prefix =
+        "packages/provider-utils/src/fetch-with-validated-redirects.test.ts::fetchWithValidatedRedirects::";
 
     [Theory]
     [InlineData(null)]
     [InlineData("https://example.com")]
     [InlineData("https://provider.example.com")]
-    [UpstreamTest(Prefix + "preserves legacy first-hop credentials and custom headers with trustedOrigin %s", Coverage = UpstreamCoverage.Covered)]
-    public async Task Preserves_legacy_first_hop_credentials_and_custom_headers_with_trustedOrigin(string? trustedOrigin)
+    [UpstreamTest(
+        Prefix + "preserves legacy first-hop credentials and custom headers with trustedOrigin %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Preserves_legacy_first_hop_credentials_and_custom_headers_with_trustedOrigin(
+        string? trustedOrigin
+    )
     {
         var fetch = new FetchMock(OkResponse());
 
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
-            Headers(("authorization", "Bearer secret"), ("x-jfrog-art-api", "vendor-secret"), ("x-custom-metadata", "custom-value")),
+            Headers(
+                ("authorization", "Bearer secret"),
+                ("x-jfrog-art-api", "vendor-secret"),
+                ("x-custom-metadata", "custom-value")
+            ),
             fetch: fetch.Fetch,
-            trustedOrigin: trustedOrigin);
+            trustedOrigin: trustedOrigin
+        );
 
         Assert.Equal(
             new[]
@@ -34,29 +45,44 @@ public sealed class FetchWithValidatedRedirectsTests
                 new KeyValuePair<string, string>("x-jfrog-art-api", "vendor-secret"),
                 new KeyValuePair<string, string>("x-custom-metadata", "custom-value"),
             },
-            fetch.Calls[0].Request.Headers.Entries());
+            fetch.Calls[0].Request.Headers.Entries()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "validates the initial URL before requesting it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "validates the initial URL before requesting it",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Validates_the_initial_URL_before_requesting_it()
     {
         var fetch = new FetchMock();
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("http://localhost/file", fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "http://localhost/file",
+                    fetch: fetch.Fetch
+                );
+            }
+        );
         Assert.Empty(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses redirect: manual and omits headers when none are provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses redirect: manual and omits headers when none are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_redirect_manual_and_omits_headers_when_none_are_provided()
     {
         var fetch = new FetchMock(OkResponse());
 
-        await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+        await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         var call = Assert.Single(fetch.Calls);
         Assert.Equal("https://example.com/file", call.Url);
@@ -65,12 +91,18 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "follows a redirect to a safe URL, validating the hop", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "follows a redirect to a safe URL, validating the hop",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Follows_a_redirect_to_a_safe_URL_validating_the_hop()
     {
         var fetch = new FetchMock(RedirectResponse("https://cdn.example.com/file"), OkResponse());
 
-        var response = await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+        var response = await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         Assert.True(response.Ok);
         Assert.Equal(2, fetch.Calls.Count);
@@ -84,25 +116,39 @@ public sealed class FetchWithValidatedRedirectsTests
     [InlineData(303)]
     [InlineData(307)]
     [InlineData(308)]
-    [UpstreamTest(Prefix + "rejects HTTPS to HTTP downgrades for a %d redirect before requesting the target", Coverage = UpstreamCoverage.Covered, Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03")]
-    public async Task Rejects_HTTPS_to_HTTP_downgrades_for_a_redirect_before_requesting_the_target(int status)
+    [UpstreamTest(
+        Prefix + "rejects HTTPS to HTTP downgrades for a %d redirect before requesting the target",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03"
+    )]
+    public async Task Rejects_HTTPS_to_HTTP_downgrades_for_a_redirect_before_requesting_the_target(
+        int status
+    )
     {
-        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var cancelCount = 0;
         Action onCancel = delegate
         {
             Interlocked.Increment(ref cancelCount);
             cancelled.TrySetResult(true);
         };
-        var fetch = new FetchMock(RedirectResponse("http://example.com/file", status, onCancel), OkResponse());
+        var fetch = new FetchMock(
+            RedirectResponse("http://example.com/file", status, onCancel),
+            OkResponse()
+        );
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync(
-                "https://example.com/file",
-                Headers(("authorization", "Bearer secret")),
-                fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://example.com/file",
+                    Headers(("authorization", "Bearer secret")),
+                    fetch: fetch.Fetch
+                );
+            }
+        );
 
         Assert.Single(fetch.Calls);
         await cancelled.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -112,67 +158,110 @@ public sealed class FetchWithValidatedRedirectsTests
     [Theory]
     [InlineData(null)]
     [InlineData("http://cdn.example.com")]
-    [UpstreamTest(Prefix + "rejects cross-host HTTPS downgrades even with trustedOrigin %s and no caller headers", Coverage = UpstreamCoverage.Covered, Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03")]
-    public async Task Rejects_cross_host_HTTPS_downgrades_even_with_trustedOrigin_and_no_caller_headers(string? trustedOrigin)
+    [UpstreamTest(
+        Prefix
+            + "rejects cross-host HTTPS downgrades even with trustedOrigin %s and no caller headers",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03"
+    )]
+    public async Task Rejects_cross_host_HTTPS_downgrades_even_with_trustedOrigin_and_no_caller_headers(
+        string? trustedOrigin
+    )
     {
         var fetch = new FetchMock(RedirectResponse("http://cdn.example.com/file"), OkResponse());
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch, trustedOrigin: trustedOrigin);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://example.com/file",
+                    fetch: fetch.Fetch,
+                    trustedOrigin: trustedOrigin
+                );
+            }
+        );
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects a downgrade after an HTTP request upgrades to HTTPS", Coverage = UpstreamCoverage.Covered, Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03")]
+    [UpstreamTest(
+        Prefix + "rejects a downgrade after an HTTP request upgrades to HTTPS",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03"
+    )]
     public async Task Rejects_a_downgrade_after_an_HTTP_request_upgrades_to_HTTPS()
     {
         var fetch = new FetchMock(
             RedirectResponse("https://example.com/secure"),
             RedirectResponse("http://example.com/file"),
-            OkResponse());
+            OkResponse()
+        );
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("http://example.com/file", fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "http://example.com/file",
+                    fetch: fetch.Fetch
+                );
+            }
+        );
         Assert.Equal(2, fetch.Calls.Count);
     }
 
     [Theory]
     [InlineData("http://example.com/next")]
     [InlineData("https://example.com/next")]
-    [UpstreamTest(Prefix + "allows an initial HTTP URL to redirect to %s", Coverage = UpstreamCoverage.Covered, Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03")]
+    [UpstreamTest(
+        Prefix + "allows an initial HTTP URL to redirect to %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "f608c056a2c1bf0c9497043302dd9606641c5d03"
+    )]
     public async Task Allows_an_initial_HTTP_URL_to_redirect_to(string location)
     {
         var fetch = new FetchMock(RedirectResponse(location), OkResponse());
 
-        var response = await Download.FetchWithValidatedRedirectsAsync("http://example.com/file", fetch: fetch.Fetch);
+        var response = await Download.FetchWithValidatedRedirectsAsync(
+            "http://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         Assert.True(response.Ok);
         Assert.Equal(2, fetch.Calls.Count);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects a redirect to a private address without requesting it", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects a redirect to a private address without requesting it",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_a_redirect_to_a_private_address_without_requesting_it()
     {
         var fetch = new FetchMock(RedirectResponse("https://169.254.169.254/"));
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("https://evil.com/redirect", fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://evil.com/redirect",
+                    fetch: fetch.Fetch
+                );
+            }
+        );
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "starts cancelling redirect response bodies to prevent socket leaks", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "starts cancelling redirect response bodies to prevent socket leaks",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Starts_cancelling_redirect_response_bodies_to_prevent_socket_leaks()
     {
         var cancelled = 0;
-        var bothCancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bothCancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         Action onCancel = delegate
         {
             if (Interlocked.Increment(ref cancelled) == 2)
@@ -182,12 +271,18 @@ public sealed class FetchWithValidatedRedirectsTests
         };
         var fetch = new FetchMock(
             RedirectResponse("https://cdn.example.com/file", onCancel: onCancel),
-            RedirectResponse("https://169.254.169.254/", onCancel: onCancel));
+            RedirectResponse("https://169.254.169.254/", onCancel: onCancel)
+        );
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://example.com/file",
+                    fetch: fetch.Fetch
+                );
+            }
+        );
 
         // Both the followed hop and the hop rejected by the SSRF guard must have their bodies cancelled.
         // Cancellation is started without being awaited, so wait for it to run.
@@ -201,12 +296,19 @@ public sealed class FetchWithValidatedRedirectsTests
     [InlineData(303)]
     [InlineData(307)]
     [InlineData(308)]
-    [UpstreamTest(Prefix + "does not wait for cancellation before following a %d redirect", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not wait for cancellation before following a %d redirect",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Does_not_wait_for_cancellation_before_following_a_redirect(int status)
     {
-        var cancelEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelEntered = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var finishCancellation = new ManualResetEventSlim(false);
-        var secondRequest = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondRequest = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var redirect = RedirectResponse(
             "https://cdn.example.com/file",
             status,
@@ -214,9 +316,10 @@ public sealed class FetchWithValidatedRedirectsTests
             {
                 cancelEntered.SetResult(true);
                 finishCancellation.Wait();
-            });
+            }
+        );
         var fetch = new FetchMock(redirect, OkResponse());
-        fetch.OnCall = delegate (int count)
+        fetch.OnCall = delegate(int count)
         {
             if (count == 2)
             {
@@ -224,7 +327,10 @@ public sealed class FetchWithValidatedRedirectsTests
             }
         };
 
-        var download = Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+        var download = Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         await cancelEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
@@ -241,12 +347,18 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "resolves relative redirect targets against the current URL", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "resolves relative redirect targets against the current URL",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Resolves_relative_redirect_targets_against_the_current_URL()
     {
         var fetch = new FetchMock(RedirectResponse("/internal"), OkResponse());
 
-        await Download.FetchWithValidatedRedirectsAsync("https://example.com/start", fetch: fetch.Fetch);
+        await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/start",
+            fetch: fetch.Fetch
+        );
 
         Assert.Equal("https://example.com/internal", fetch.Calls[1].Url);
         Assert.Equal("manual", fetch.Calls[1].Request.Redirect);
@@ -261,9 +373,15 @@ public sealed class FetchWithValidatedRedirectsTests
     [UpstreamTest(Prefix + "follows a %d redirect", Coverage = UpstreamCoverage.Covered)]
     public async Task Follows_a_redirect(int status)
     {
-        var fetch = new FetchMock(RedirectResponse("https://cdn.example.com/file", status), OkResponse());
+        var fetch = new FetchMock(
+            RedirectResponse("https://cdn.example.com/file", status),
+            OkResponse()
+        );
 
-        await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+        await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         Assert.Equal(2, fetch.Calls.Count);
     }
@@ -271,46 +389,72 @@ public sealed class FetchWithValidatedRedirectsTests
     [Theory]
     [InlineData(300)]
     [InlineData(304)]
-    [UpstreamTest(Prefix + "returns a %d response as final even when it carries a Location header", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "returns a %d response as final even when it carries a Location header",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Returns_a_response_as_final_even_when_it_carries_a_Location_header(int status)
     {
         // Per the fetch spec, only 301/302/303/307/308 are redirect statuses.
         // A hostile Location on a non-redirect status must not be followed, not even to a private address.
         var fetch = new FetchMock(RedirectResponse("http://169.254.169.254/", status));
 
-        var response = await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+        var response = await Download.FetchWithValidatedRedirectsAsync(
+            "https://example.com/file",
+            fetch: fetch.Fetch
+        );
 
         Assert.Equal(status, response.Status);
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "rejects once the redirect limit is exceeded", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects once the redirect limit is exceeded",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_once_the_redirect_limit_is_exceeded()
     {
         var fetch = new FetchMock(() => RedirectResponse("https://example.com/next"));
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("https://example.com/start", maxRedirects: 2, fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://example.com/start",
+                    maxRedirects: 2,
+                    fetch: fetch.Fetch
+                );
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "fails closed on an opaque redirect outside the browser", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "fails closed on an opaque redirect outside the browser",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Fails_closed_on_an_opaque_redirect_outside_the_browser()
     {
         var fetch = new FetchMock(OpaqueRedirectResponse());
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync("https://example.com/redirect", fetch: fetch.Fetch);
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "https://example.com/redirect",
+                    fetch: fetch.Fetch
+                );
+            }
+        );
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "follows redirects natively on an opaque redirect in the browser", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "follows redirects natively on an opaque redirect in the browser",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Follows_redirects_natively_on_an_opaque_redirect_in_the_browser()
     {
         var previous = Download.IsBrowser;
@@ -319,7 +463,10 @@ public sealed class FetchWithValidatedRedirectsTests
         {
             var fetch = new FetchMock(OpaqueRedirectResponse(), OkResponse());
 
-            var response = await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: fetch.Fetch);
+            var response = await Download.FetchWithValidatedRedirectsAsync(
+                "https://example.com/file",
+                fetch: fetch.Fetch
+            );
 
             Assert.True(response.Ok);
             Assert.Equal("https://example.com/file", fetch.Calls[1].Url);
@@ -332,7 +479,11 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "passes each hop an independent header snapshot (later hops must not mutate earlier ones)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "passes each hop an independent header snapshot (later hops must not mutate earlier ones)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_each_hop_an_independent_header_snapshot()
     {
         var fetch = new FetchMock(RedirectResponse("https://other.example.net/a"), OkResponse());
@@ -340,7 +491,8 @@ public sealed class FetchWithValidatedRedirectsTests
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
             Headers(("authorization", "Bearer secret")),
-            fetch: fetch.Fetch);
+            fetch: fetch.Fetch
+        );
 
         var firstHop = fetch.Calls[0].Request.Headers;
         var secondHop = fetch.Calls[1].Request.Headers;
@@ -351,16 +503,35 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Theory]
-    [InlineData("http://localhost:5000", "http://localhost:5000/predictions/123", "http://localhost:5000/final")]
-    [InlineData("https://service.internal", "https://service.internal/predictions/123", "https://service.internal/final")]
-    [UpstreamTest(Prefix + "skips validation for hops same-origin with trustedOrigin", Coverage = UpstreamCoverage.Covered)]
-    public async Task Skips_validation_for_hops_same_origin_with_trustedOrigin(string trustedOrigin, string url, string redirectTarget)
+    [InlineData(
+        "http://localhost:5000",
+        "http://localhost:5000/predictions/123",
+        "http://localhost:5000/final"
+    )]
+    [InlineData(
+        "https://service.internal",
+        "https://service.internal/predictions/123",
+        "https://service.internal/final"
+    )]
+    [UpstreamTest(
+        Prefix + "skips validation for hops same-origin with trustedOrigin",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Skips_validation_for_hops_same_origin_with_trustedOrigin(
+        string trustedOrigin,
+        string url,
+        string redirectTarget
+    )
     {
         // A self-hosted deployment: the configured origin is private, and its response URLs
         // (and same-origin redirects) point back at it.
         var fetch = new FetchMock(RedirectResponse(redirectTarget), OkResponse());
 
-        var response = await Download.FetchWithValidatedRedirectsAsync(url, fetch: fetch.Fetch, trustedOrigin: trustedOrigin);
+        var response = await Download.FetchWithValidatedRedirectsAsync(
+            url,
+            fetch: fetch.Fetch,
+            trustedOrigin: trustedOrigin
+        );
 
         Assert.True(response.Ok);
         Assert.Equal(2, fetch.Calls.Count);
@@ -369,23 +540,34 @@ public sealed class FetchWithValidatedRedirectsTests
     [Theory]
     [InlineData("http://169.254.169.254/")]
     [InlineData("https://other.internal/file")]
-    [UpstreamTest(Prefix + "validates hops on other origins even when trustedOrigin is set", Coverage = UpstreamCoverage.Covered)]
-    public async Task Validates_hops_on_other_origins_even_when_trustedOrigin_is_set(string redirectTarget)
+    [UpstreamTest(
+        Prefix + "validates hops on other origins even when trustedOrigin is set",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Validates_hops_on_other_origins_even_when_trustedOrigin_is_set(
+        string redirectTarget
+    )
     {
         var fetch = new FetchMock(RedirectResponse(redirectTarget));
 
-        await Assert.ThrowsAsync<DownloadError>(delegate
-        {
-            return Download.FetchWithValidatedRedirectsAsync(
-                "http://localhost:5000/predictions/123",
-                fetch: fetch.Fetch,
-                trustedOrigin: "http://localhost:5000");
-        });
+        await Assert.ThrowsAsync<DownloadError>(
+            delegate
+            {
+                return Download.FetchWithValidatedRedirectsAsync(
+                    "http://localhost:5000/predictions/123",
+                    fetch: fetch.Fetch,
+                    trustedOrigin: "http://localhost:5000"
+                );
+            }
+        );
         Assert.Single(fetch.Calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "uses the injected fetch instead of the global one", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "uses the injected fetch instead of the global one",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_the_injected_fetch_instead_of_the_global_one()
     {
         var previous = Download.Fetch;
@@ -399,7 +581,10 @@ public sealed class FetchWithValidatedRedirectsTests
         {
             var injected = new FetchMock(OkResponse());
 
-            await Download.FetchWithValidatedRedirectsAsync("https://example.com/file", fetch: injected.Fetch);
+            await Download.FetchWithValidatedRedirectsAsync(
+                "https://example.com/file",
+                fetch: injected.Fetch
+            );
 
             Assert.Single(injected.Calls);
             Assert.Equal(0, globalCalls);
@@ -411,15 +596,24 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "strips blocked request headers before sending", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "strips blocked request headers before sending",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Strips_blocked_request_headers_before_sending()
     {
         var fetch = new FetchMock(OkResponse());
 
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
-            Headers(("authorization", "Bearer secret"), ("metadata-flavor", "Google"), ("x-forwarded-for", "10.0.0.1"), ("cookie", "session=abc")),
-            fetch: fetch.Fetch);
+            Headers(
+                ("authorization", "Bearer secret"),
+                ("metadata-flavor", "Google"),
+                ("x-forwarded-for", "10.0.0.1"),
+                ("cookie", "session=abc")
+            ),
+            fetch: fetch.Fetch
+        );
 
         var sent = fetch.Calls[0].Request.Headers;
         Assert.Null(sent.Get("metadata-flavor"));
@@ -429,17 +623,29 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "drops all caller headers except user-agent on a cross-origin redirect but keeps them same-origin", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "drops all caller headers except user-agent on a cross-origin redirect but keeps them same-origin",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Drops_all_caller_headers_except_user_agent_on_a_cross_origin_redirect_but_keeps_them_same_origin()
     {
         // Cross-origin: no caller header, including custom API-key headers the fetch spec would let through,
         // may follow to a different host.
-        var crossOrigin = new FetchMock(RedirectResponse("https://other.example.net/a"), OkResponse());
+        var crossOrigin = new FetchMock(
+            RedirectResponse("https://other.example.net/a"),
+            OkResponse()
+        );
 
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
-            Headers(("authorization", "Bearer secret"), ("x-key", "provider-api-key"), ("user-agent", "ai-sdk/test")),
-            fetch: crossOrigin.Fetch);
+            Headers(
+                ("authorization", "Bearer secret"),
+                ("x-key", "provider-api-key"),
+                ("user-agent", "ai-sdk/test")
+            ),
+            fetch: crossOrigin.Fetch
+        );
 
         var secondHop = crossOrigin.Calls[1].Request.Headers;
         Assert.Null(secondHop.Get("authorization"));
@@ -452,7 +658,8 @@ public sealed class FetchWithValidatedRedirectsTests
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
             Headers(("authorization", "Bearer secret"), ("x-key", "provider-api-key")),
-            fetch: sameOrigin.Fetch);
+            fetch: sameOrigin.Fetch
+        );
 
         var sameOriginHop = sameOrigin.Calls[1].Request.Headers;
         Assert.Equal("Bearer secret", sameOriginHop.Get("authorization"));
@@ -460,18 +667,24 @@ public sealed class FetchWithValidatedRedirectsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not re-attach dropped headers when a later hop returns to the original origin", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "does not re-attach dropped headers when a later hop returns to the original origin",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Does_not_re_attach_dropped_headers_when_a_later_hop_returns_to_the_original_origin()
     {
         var fetch = new FetchMock(
             RedirectResponse("https://other.example.net/a"),
             RedirectResponse("https://example.com/back"),
-            OkResponse());
+            OkResponse()
+        );
 
         await Download.FetchWithValidatedRedirectsAsync(
             "https://example.com/file",
             Headers(("authorization", "Bearer secret"), ("x-key", "provider-api-key")),
-            fetch: fetch.Fetch);
+            fetch: fetch.Fetch
+        );
 
         var thirdHop = fetch.Calls[2].Request.Headers;
         Assert.Null(thirdHop.Get("authorization"));
@@ -494,7 +707,11 @@ public sealed class FetchWithValidatedRedirectsTests
         return DownloadResponse.Bytes(null, "image/png");
     }
 
-    private static DownloadResponse RedirectResponse(string location, int status = 302, Action? onCancel = null)
+    private static DownloadResponse RedirectResponse(
+        string location,
+        int status = 302,
+        Action? onCancel = null
+    )
     {
         var headers = new HeaderCollection();
         headers.Add("location", location);
@@ -503,7 +720,13 @@ public sealed class FetchWithValidatedRedirectsTests
 
     private static DownloadResponse OpaqueRedirectResponse()
     {
-        return new DownloadResponse(0, string.Empty, new HeaderCollection(), null, "opaqueredirect");
+        return new DownloadResponse(
+            0,
+            string.Empty,
+            new HeaderCollection(),
+            null,
+            "opaqueredirect"
+        );
     }
 
     private sealed record FetchCall(string Url, DownloadRequest Request);

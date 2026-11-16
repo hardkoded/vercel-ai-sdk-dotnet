@@ -15,7 +15,8 @@ public sealed class McpTests
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should return serializable tool definitions via listTools()",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Lists one tool and calls it. Does not cover pagination.")]
+        Note = "Lists one tool and calls it. Does not cover pagination."
+    )]
     public async Task List_tools_adapts_tools_call()
     {
         var transport = new FakeTransport();
@@ -23,7 +24,10 @@ public sealed class McpTests
         Assert.Single(tools);
         using var arguments = JsonDocument.Parse("{\"city\":\"Paris\"}");
         var output = await tools[0].Execute!(arguments.RootElement, CancellationToken.None);
-        Assert.Equal("{\"content\":[{\"type\":\"text\",\"text\":\"sunny\"}],\"isError\":false}", output);
+        Assert.Equal(
+            "{\"content\":[{\"type\":\"text\",\"text\":\"sunny\"}],\"isError\":false}",
+            output
+        );
         Assert.Equal("tools/call", transport.Methods[1]);
     }
 
@@ -31,13 +35,21 @@ public sealed class McpTests
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-http-transport.test.ts::HttpMCPTransport::should handle text/event-stream responses",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Reads one SSE JSON-RPC result.")]
+        Note = "Reads one SSE JSON-RPC result."
+    )]
     public async Task Http_transport_reads_an_sse_result()
     {
         var handler = new SseMcpHandler();
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
-        var result = await transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None);
+        var result = await transport.CallAsync(
+            "tools/list",
+            parameters.RootElement,
+            CancellationToken.None
+        );
         Assert.True(result.TryGetProperty("tools", out var tools));
         Assert.Equal(0, tools.GetArrayLength());
     }
@@ -45,11 +57,20 @@ public sealed class McpTests
     [Fact]
     public async Task Http_transport_throws_mcp_client_error_with_http_metadata()
     {
-        var handler = new ScriptedMcpHandler(HttpStatusCode.ServiceUnavailable, "text/plain", "Service Unavailable");
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var handler = new ScriptedMcpHandler(
+            HttpStatusCode.ServiceUnavailable,
+            "text/plain",
+            "Service Unavailable"
+        );
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
 
-        var error = await Assert.ThrowsAsync<MCPClientError>(() => transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<MCPClientError>(() =>
+            transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None)
+        );
 
         Assert.Equal(503, error.StatusCode);
         Assert.Equal("https://example.test/mcp", error.Url);
@@ -60,12 +81,18 @@ public sealed class McpTests
     [Fact]
     public async Task Http_transport_throws_mcp_client_error_with_json_rpc_code()
     {
-        var body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Method not found\",\"data\":{\"method\":\"tools/list\"}}}";
+        var body =
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"Method not found\",\"data\":{\"method\":\"tools/list\"}}}";
         var handler = new ScriptedMcpHandler(HttpStatusCode.OK, "application/json", body);
-        var transport = new HttpMcpTransport(new HttpClient(handler), new Uri("https://example.test/mcp"));
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("https://example.test/mcp")
+        );
         using var parameters = JsonDocument.Parse("{}");
 
-        var error = await Assert.ThrowsAsync<MCPClientError>(() => transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None));
+        var error = await Assert.ThrowsAsync<MCPClientError>(() =>
+            transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None)
+        );
 
         Assert.Equal("Method not found", error.Message);
         Assert.Equal(-32601, error.Code);
@@ -77,12 +104,17 @@ public sealed class McpTests
     {
         public List<string> Methods { get; } = new();
 
-        public Task<JsonElement> CallAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+        public Task<JsonElement> CallAsync(
+            string method,
+            JsonElement parameters,
+            CancellationToken cancellationToken
+        )
         {
             Methods.Add(method);
-            var json = method == "tools/call"
-                ? "{\"content\":[{\"type\":\"text\",\"text\":\"sunny\"}]}"
-                : "{\"tools\":[{\"name\":\"weather\",\"description\":\"Forecast\",\"inputSchema\":{\"type\":\"object\"}}]}";
+            var json =
+                method == "tools/call"
+                    ? "{\"content\":[{\"type\":\"text\",\"text\":\"sunny\"}]}"
+                    : "{\"tools\":[{\"name\":\"weather\",\"description\":\"Forecast\",\"inputSchema\":{\"type\":\"object\"}}]}";
             using var document = JsonDocument.Parse(json);
             return Task.FromResult(document.RootElement.Clone());
         }
@@ -90,9 +122,13 @@ public sealed class McpTests
 
     private sealed class SseMcpHandler : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
-            var body = "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[]}}\n\n";
+            var body =
+                "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[]}}\n\n";
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8, "text/event-stream"),
@@ -101,9 +137,13 @@ public sealed class McpTests
         }
     }
 
-    private sealed class ScriptedMcpHandler(HttpStatusCode status, string mediaType, string body) : HttpMessageHandler
+    private sealed class ScriptedMcpHandler(HttpStatusCode status, string mediaType, string body)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
         {
             var response = new HttpResponseMessage(status)
             {

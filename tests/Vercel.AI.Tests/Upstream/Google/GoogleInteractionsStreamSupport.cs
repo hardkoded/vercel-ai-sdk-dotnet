@@ -13,15 +13,29 @@ namespace Vercel.AI.Tests.Upstream.Google;
 internal static class GoogleInteractionsStreamSupport
 {
     /// <summary>The model upstream builds with <c>generateId: () =&gt; 'test-id'</c>.</summary>
-    public static ILanguageModel Model(SequencedHandler handler, string modelId = "gemini-2.5-flash")
+    public static ILanguageModel Model(
+        SequencedHandler handler,
+        string modelId = "gemini-2.5-flash"
+    )
     {
-        return GoogleProvider.Create(new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" }, handler).Interactions(modelId);
+        return GoogleProvider
+            .Create(
+                new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" },
+                handler
+            )
+            .Interactions(modelId);
     }
 
     /// <summary>The events of a <c>__fixtures__/*.chunks.txt</c> file, one JSON object per line.</summary>
     public static List<JsonObject> FixtureEvents(string name)
     {
-        return File.ReadAllLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-interactions-" + name + ".chunks.txt"))
+        return File.ReadAllLines(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "google-interactions-" + name + ".chunks.txt"
+                )
+            )
             .Where(line => line.Trim().Length > 0)
             .Select(line => JsonNode.Parse(line)!.AsObject())
             .ToList();
@@ -30,7 +44,13 @@ internal static class GoogleInteractionsStreamSupport
     /// <summary>The text of a <c>__fixtures__/*.json</c> file.</summary>
     public static string JsonFixture(string name)
     {
-        return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "google-interactions-" + name + ".json"));
+        return File.ReadAllText(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "Fixtures",
+                "google-interactions-" + name + ".json"
+            )
+        );
     }
 
     /// <summary>The body of an event stream response that sends each event as one <c>data:</c> line.</summary>
@@ -44,7 +64,10 @@ internal static class GoogleInteractionsStreamSupport
         return new SequencedHandler().Sse(Sse(FixtureEvents(name)));
     }
 
-    public static async Task<List<LanguageModelStreamPart>> Stream(ILanguageModel model, LanguageModelCallOptions options)
+    public static async Task<List<LanguageModelStreamPart>> Stream(
+        ILanguageModel model,
+        LanguageModelCallOptions options
+    )
     {
         var result = await model.DoStreamAsync(options, CancellationToken.None);
         return await GoogleUpstream.Collect(result.Stream);
@@ -53,7 +76,9 @@ internal static class GoogleInteractionsStreamSupport
     /// <summary>Runs events through a transform the way upstream's <c>runTransform</c> does: stream-start, one transform per event, then flush.</summary>
     public static List<LanguageModelStreamPart> Run(params string[] events)
     {
-        var transform = new GoogleInteractionsStreamTransform(new List<CallWarning>(), false, () => "test-id");
+        var transform = new GoogleInteractionsStreamTransform(new List<CallWarning>(), false, () =>
+            "test-id"
+        );
         var parts = new List<LanguageModelStreamPart>(transform.Start());
         foreach (var json in events)
         {
@@ -82,7 +107,11 @@ internal static class GoogleInteractionsStreamSupport
         switch (part)
         {
             case StreamStartStreamPart start:
-                node["warnings"] = new JsonArray(start.Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message)).ToArray());
+                node["warnings"] = new JsonArray(
+                    start
+                        .Warnings.Select(warning => (JsonNode?)JsonValue.Create(warning.Message))
+                        .ToArray()
+                );
                 break;
             case ResponseMetadataStreamPart metadata:
                 node["id"] = metadata.Id;
@@ -167,24 +196,31 @@ internal static class GoogleInteractionsStreamSupport
                 node["finishReason"] = new JsonObject
                 {
                     ["raw"] = finish.RawFinishReason,
-                    ["unified"] = finish.FinishReason == FinishReason.ToolCalls ? "tool-calls" : finish.FinishReason.ToString().ToLowerInvariant(),
+                    ["unified"] =
+                        finish.FinishReason == FinishReason.ToolCalls
+                            ? "tool-calls"
+                            : finish.FinishReason.ToString().ToLowerInvariant(),
                 };
                 Metadata(node, finish.ProviderMetadata);
                 node["usage"] = new JsonObject
                 {
-                    ["inputTokens"] = Without(new JsonObject
-                    {
-                        ["cacheRead"] = finish.Usage.CacheReadTokens,
-                        ["cacheWrite"] = finish.Usage.CacheWriteTokens,
-                        ["noCache"] = finish.Usage.NoCacheInputTokens,
-                        ["total"] = finish.Usage.InputTokens,
-                    }),
-                    ["outputTokens"] = Without(new JsonObject
-                    {
-                        ["reasoning"] = finish.Usage.ReasoningTokens,
-                        ["text"] = finish.Usage.TextTokens,
-                        ["total"] = finish.Usage.OutputTokens,
-                    }),
+                    ["inputTokens"] = Without(
+                        new JsonObject
+                        {
+                            ["cacheRead"] = finish.Usage.CacheReadTokens,
+                            ["cacheWrite"] = finish.Usage.CacheWriteTokens,
+                            ["noCache"] = finish.Usage.NoCacheInputTokens,
+                            ["total"] = finish.Usage.InputTokens,
+                        }
+                    ),
+                    ["outputTokens"] = Without(
+                        new JsonObject
+                        {
+                            ["reasoning"] = finish.Usage.ReasoningTokens,
+                            ["text"] = finish.Usage.TextTokens,
+                            ["total"] = finish.Usage.OutputTokens,
+                        }
+                    ),
                     ["raw"] = JsonNode.Parse(finish.Usage.Raw!.Value.GetRawText()),
                 };
                 break;
@@ -205,7 +241,9 @@ internal static class GoogleInteractionsStreamSupport
 
     private static JsonObject Without(JsonObject node)
     {
-        foreach (var name in node.Where(pair => pair.Value == null).Select(pair => pair.Key).ToList())
+        foreach (
+            var name in node.Where(pair => pair.Value == null).Select(pair => pair.Key).ToList()
+        )
         {
             node.Remove(name);
         }

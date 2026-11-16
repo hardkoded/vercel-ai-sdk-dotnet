@@ -10,10 +10,12 @@ namespace Vercel.AI.MiniMax;
 public sealed class MiniMaxVideoModelOptions
 {
     /// <summary>Aspect ratios supported by the MiniMax video models (<c>minimaxVideoRatios</c>).</summary>
-    public static IReadOnlyList<string> MiniMaxVideoRatios { get; } = new[] { "adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16" };
+    public static IReadOnlyList<string> MiniMaxVideoRatios { get; } =
+        new[] { "adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16" };
 
     /// <summary>Output resolutions supported by MiniMax video models (<c>minimaxVideoResolutions</c>). Availability depends on the selected model.</summary>
-    public static IReadOnlyList<string> MiniMaxVideoResolutions { get; } = new[] { "480P", "768P", "2K" };
+    public static IReadOnlyList<string> MiniMaxVideoResolutions { get; } =
+        new[] { "480P", "768P", "2K" };
 
     /// <summary>Output resolution. One of <see cref="MiniMaxVideoResolutions"/>.</summary>
     [JsonPropertyName("resolution")]

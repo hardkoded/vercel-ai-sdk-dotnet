@@ -14,24 +14,34 @@ namespace Vercel.AI.Tests.Upstream.ReadUiMessageStream;
 /// <summary>Port of <c>read-ui-message-stream.test.ts</c> &gt; <c>readUIMessageStream</c>.</summary>
 public sealed class ReadUIMessageStreamTests
 {
-    private const string Prefix = "packages/ai/src/ui-message-stream/read-ui-message-stream.test.ts::readUIMessageStream::";
+    private const string Prefix =
+        "packages/ai/src/ui-message-stream/read-ui-message-stream.test.ts::readUIMessageStream::";
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [UpstreamTest(Prefix + "resumes raw text input after persistence (dynamic: %s)", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "resumes raw text input after persistence (dynamic: %s)",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Resumes_raw_text_input_after_persistence_dynamic(bool dynamic)
     {
         var dynamicField = dynamic ? "true" : "false";
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"message-1"}""",
-                "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"exec\",\"inputEncoding\":\"text\",\"dynamic\":" + dynamicField + "}",
-                """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"text(\""}""")));
-        var validated = await Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions
-        {
-            Messages = [messages[messages.Count - 1]],
-        });
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"message-1"}""",
+                    "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"exec\",\"inputEncoding\":\"text\",\"dynamic\":"
+                        + dynamicField
+                        + "}",
+                    """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"text(\""}"""
+                )
+            )
+        );
+        var validated = await Ai.ValidateUIMessagesAsync(
+            new ValidateUIMessagesOptions { Messages = [messages[messages.Count - 1]] }
+        );
         var persisted = validated[0];
         var persistedPart = Assert.IsType<ToolUIPart>(persisted.Parts[0]);
         Assert.Equal(ToolUIPartState.InputStreaming, persistedPart.State);
@@ -40,12 +50,16 @@ public sealed class ReadUIMessageStreamTests
         Assert.Equal("text(\"", persistedPart.RawInput!.Value.GetString());
 
         var resumed = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"probe\");\n"}"""))
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"probe\");\n"}"""
+                )
+            )
             {
                 Message = persisted,
                 TerminateOnError = true,
-            });
+            }
+        );
 
         var resumedPart = Assert.IsType<ToolUIPart>(resumed[resumed.Count - 1].Parts[0]);
         Assert.Equal(ToolUIPartState.InputStreaming, resumedPart.State);
@@ -55,7 +69,12 @@ public sealed class ReadUIMessageStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should discard a seeded assistant message when the stream starts with a different message id", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix
+            + "should discard a seeded assistant message when the stream starts with a different message id",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_discard_a_seeded_assistant_message_when_the_stream_starts_with_a_different_message_id()
     {
         var seeded = new UIMessage(UIMessageRole.Assistant, [new TextUIPart("Previous response")])
@@ -65,15 +84,19 @@ public sealed class ReadUIMessageStreamTests
         };
 
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"resumed-response"}""",
-                """{"type":"text-start","id":"text-1"}""",
-                """{"type":"text-delta","id":"text-1","delta":"Resumed response"}""",
-                """{"type":"text-end","id":"text-1"}""",
-                """{"type":"finish"}"""))
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"resumed-response"}""",
+                    """{"type":"text-start","id":"text-1"}""",
+                    """{"type":"text-delta","id":"text-1","delta":"Resumed response"}""",
+                    """{"type":"text-end","id":"text-1"}""",
+                    """{"type":"finish"}"""
+                )
+            )
             {
                 Message = seeded,
-            });
+            }
+        );
 
         var last = messages[messages.Count - 1];
         Assert.Equal("resumed-response", last.Id);
@@ -88,23 +111,36 @@ public sealed class ReadUIMessageStreamTests
     [Theory]
     [InlineData(null)]
     [InlineData("json")]
-    [UpstreamTest(Prefix + "keeps JSON parsing for interleaved calls with encoding %s", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "keeps JSON parsing for interleaved calls with encoding %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Keeps_JSON_parsing_for_interleaved_calls_with_encoding(string? inputEncoding)
     {
-        var encodingField = inputEncoding == null ? string.Empty : ",\"inputEncoding\":\"" + inputEncoding + "\"";
+        var encodingField =
+            inputEncoding == null ? string.Empty : ",\"inputEncoding\":\"" + inputEncoding + "\"";
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"message-1"}""",
-                """{"type":"tool-input-start","toolCallId":"text","toolName":"exec","inputEncoding":"text"}""",
-                "{\"type\":\"tool-input-start\",\"toolCallId\":\"json\",\"toolName\":\"weather\"" + encodingField + "}",
-                "{\"type\":\"tool-input-start\",\"toolCallId\":\"encoded-string\",\"toolName\":\"legacy\"" + encodingField + "}",
-                """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\"quoted"}""",
-                """{"type":"tool-input-delta","toolCallId":"json","inputTextDelta":"{\"city\":\"Paris\"}"}""",
-                """{"type":"tool-input-delta","toolCallId":"encoded-string","inputTextDelta":"\"already encoded\""}""",
-                """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\""}"""))
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"message-1"}""",
+                    """{"type":"tool-input-start","toolCallId":"text","toolName":"exec","inputEncoding":"text"}""",
+                    "{\"type\":\"tool-input-start\",\"toolCallId\":\"json\",\"toolName\":\"weather\""
+                        + encodingField
+                        + "}",
+                    "{\"type\":\"tool-input-start\",\"toolCallId\":\"encoded-string\",\"toolName\":\"legacy\""
+                        + encodingField
+                        + "}",
+                    """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\"quoted"}""",
+                    """{"type":"tool-input-delta","toolCallId":"json","inputTextDelta":"{\"city\":\"Paris\"}"}""",
+                    """{"type":"tool-input-delta","toolCallId":"encoded-string","inputTextDelta":"\"already encoded\""}""",
+                    """{"type":"tool-input-delta","toolCallId":"text","inputTextDelta":"\""}"""
+                )
+            )
             {
                 TerminateOnError = true,
-            });
+            }
+        );
 
         var parts = messages[messages.Count - 1].Parts.OfType<ToolUIPart>().ToList();
         Assert.Equal(3, parts.Count);
@@ -119,8 +155,15 @@ public sealed class ReadUIMessageStreamTests
     [Theory]
     [InlineData("the same message id", true)]
     [InlineData("no message id", false)]
-    [UpstreamTest(Prefix + "should preserve a seeded assistant message with $name", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
-    public async Task Should_preserve_a_seeded_assistant_message_with_name(string name, bool hasStartChunk)
+    [UpstreamTest(
+        Prefix + "should preserve a seeded assistant message with $name",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
+    public async Task Should_preserve_a_seeded_assistant_message_with_name(
+        string name,
+        bool hasStartChunk
+    )
     {
         Assert.NotEmpty(name);
         var seeded = new UIMessage(UIMessageRole.Assistant, [new TextUIPart("Partial response")])
@@ -140,7 +183,12 @@ public sealed class ReadUIMessageStreamTests
         chunks.Add("""{"type":"text-end","id":"text-1"}""");
         chunks.Add("""{"type":"finish"}""");
 
-        var messages = await Read(new ReadUIMessageStreamOptions(CreateUIMessageStream(chunks.ToArray())) { Message = seeded });
+        var messages = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream(chunks.ToArray()))
+            {
+                Message = seeded,
+            }
+        );
 
         var last = messages[messages.Count - 1];
         Assert.Equal("resumed-response", last.Id);
@@ -156,14 +204,24 @@ public sealed class ReadUIMessageStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should continue a hydrated partial static tool call", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should continue a hydrated partial static tool call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_continue_a_hydrated_partial_static_tool_call()
     {
-        await AssertHydratedPartialToolCall(JsonDocument.Parse("\"{\\\"title\\\":\\\"Hel\"").RootElement.Clone());
+        await AssertHydratedPartialToolCall(
+            JsonDocument.Parse("\"{\\\"title\\\":\\\"Hel\"").RootElement.Clone()
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should accept a hydrated partial static tool call without raw input", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should accept a hydrated partial static tool call without raw input",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_accept_a_hydrated_partial_static_tool_call_without_raw_input()
     {
         await AssertHydratedPartialToolCall(null);
@@ -179,19 +237,24 @@ public sealed class ReadUIMessageStreamTests
                     Input = JsonDocument.Parse("""{"title":"Hel"}""").RootElement.Clone(),
                     RawInput = rawInput,
                 },
-            ])
+            ]
+        )
         {
             Id = "msg-123",
         };
 
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"tool-input-delta","toolCallId":"tool-1","inputTextDelta":"lo\"}"}""",
-                """{"type":"tool-input-available","toolCallId":"tool-1","toolName":"createDocument","input":{"title":"Hello"}}"""))
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"tool-input-delta","toolCallId":"tool-1","inputTextDelta":"lo\"}"}""",
+                    """{"type":"tool-input-available","toolCallId":"tool-1","toolName":"createDocument","input":{"title":"Hello"}}"""
+                )
+            )
             {
                 Message = message,
                 TerminateOnError = true,
-            });
+            }
+        );
 
         var part = Assert.IsType<ToolUIPart>(Assert.Single(messages[messages.Count - 1].Parts));
         Assert.Equal("tool-createDocument", part.Type);
@@ -201,19 +264,27 @@ public sealed class ReadUIMessageStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should return a ui message object stream for a basic input stream", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should return a ui message object stream for a basic input stream",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_return_a_ui_message_object_stream_for_a_basic_input_stream()
     {
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"msg-123"}""",
-                """{"type":"start-step"}""",
-                """{"type":"text-start","id":"text-1"}""",
-                """{"type":"text-delta","id":"text-1","delta":"Hello, "}""",
-                """{"type":"text-delta","id":"text-1","delta":"world!"}""",
-                """{"type":"text-end","id":"text-1"}""",
-                """{"type":"finish-step"}""",
-                """{"type":"finish"}""")));
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"msg-123"}""",
+                    """{"type":"start-step"}""",
+                    """{"type":"text-start","id":"text-1"}""",
+                    """{"type":"text-delta","id":"text-1","delta":"Hello, "}""",
+                    """{"type":"text-delta","id":"text-1","delta":"world!"}""",
+                    """{"type":"text-end","id":"text-1"}""",
+                    """{"type":"finish-step"}""",
+                    """{"type":"finish"}"""
+                )
+            )
+        );
 
         Assert.Equal(5, messages.Count);
         Assert.All(messages, message =>
@@ -232,21 +303,29 @@ public sealed class ReadUIMessageStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should preserve tool parts when tool call ids repeat across steps", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should preserve tool parts when tool call ids repeat across steps",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_preserve_tool_parts_when_tool_call_ids_repeat_across_steps()
     {
         var messages = await Read(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"msg-123"}""",
-                """{"type":"start-step"}""",
-                """{"type":"tool-input-available","toolCallId":"call-0","toolName":"recordStep","input":{"step":1},"providerMetadata":{"openai":{"itemId":"fc-step-1"}}}""",
-                """{"type":"tool-output-available","toolCallId":"call-0","output":{"recorded":1}}""",
-                """{"type":"finish-step"}""",
-                """{"type":"start-step"}""",
-                """{"type":"tool-input-available","toolCallId":"call-0","toolName":"recordStep","input":{"step":2},"providerMetadata":{"openai":{"itemId":"fc-step-2"}}}""",
-                """{"type":"tool-output-available","toolCallId":"call-0","output":{"recorded":2}}""",
-                """{"type":"finish-step"}""",
-                """{"type":"finish"}""")));
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"msg-123"}""",
+                    """{"type":"start-step"}""",
+                    """{"type":"tool-input-available","toolCallId":"call-0","toolName":"recordStep","input":{"step":1},"providerMetadata":{"openai":{"itemId":"fc-step-1"}}}""",
+                    """{"type":"tool-output-available","toolCallId":"call-0","output":{"recorded":1}}""",
+                    """{"type":"finish-step"}""",
+                    """{"type":"start-step"}""",
+                    """{"type":"tool-input-available","toolCallId":"call-0","toolName":"recordStep","input":{"step":2},"providerMetadata":{"openai":{"itemId":"fc-step-2"}}}""",
+                    """{"type":"tool-output-available","toolCallId":"call-0","output":{"recorded":2}}""",
+                    """{"type":"finish-step"}""",
+                    """{"type":"finish"}"""
+                )
+            )
+        );
 
         var toolParts = messages[messages.Count - 1].Parts.OfType<ToolUIPart>().ToList();
 
@@ -256,30 +335,40 @@ public sealed class ReadUIMessageStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw an error when encountering an error UI stream part", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should throw an error when encountering an error UI stream part",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_throw_an_error_when_encountering_an_error_UI_stream_part()
     {
         var uiMessages = UIMessageStreamConverter.ReadUIMessageStream(
-            new ReadUIMessageStreamOptions(CreateUIMessageStream(
-                """{"type":"start","messageId":"msg-123"}""",
-                """{"type":"text-start","id":"text-1"}""",
-                """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
-                """{"type":"error","errorText":"Test error message"}"""))
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"start","messageId":"msg-123"}""",
+                    """{"type":"text-start","id":"text-1"}""",
+                    """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
+                    """{"type":"error","errorText":"Test error message"}"""
+                )
+            )
             {
                 TerminateOnError = true,
-            });
+            }
+        );
 
         var error = await Assert.ThrowsAsync<Exception>(async () =>
         {
-            await foreach (var unused in uiMessages)
-            {
-            }
+            await foreach (var unused in uiMessages) { }
         });
         Assert.Contains("Test error message", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should cancel the input stream when iteration exits early", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    [UpstreamTest(
+        Prefix + "should cancel the input stream when iteration exits early",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc"
+    )]
     public async Task Should_cancel_the_input_stream_when_iteration_exits_early()
     {
         var cancelCount = 0;
@@ -299,7 +388,11 @@ public sealed class ReadUIMessageStreamTests
             }
         }
 
-        await foreach (var message in UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(Source())))
+        await foreach (
+            var message in UIMessageStreamConverter.ReadUIMessageStream(
+                new ReadUIMessageStreamOptions(Source())
+            )
+        )
         {
             if (message.Parts.Any(part => part is TextUIPart { Text.Length: > 0 }))
             {
@@ -327,7 +420,10 @@ public sealed class ReadUIMessageStreamTests
         Assert.Equal(ToolUIPartState.OutputAvailable, part.State);
         Assert.Equal("{\"step\":" + step + "}", part.Input!.Value.GetRawText());
         Assert.Equal("{\"recorded\":" + step + "}", part.Output!.Value.GetRawText());
-        Assert.Equal(itemId, part.CallProviderMetadata!["openai"].GetProperty("itemId").GetString());
+        Assert.Equal(
+            itemId,
+            part.CallProviderMetadata!["openai"].GetProperty("itemId").GetString()
+        );
     }
 
     private static JsonObject Chunk(string json) => (JsonObject)JsonNode.Parse(json)!;

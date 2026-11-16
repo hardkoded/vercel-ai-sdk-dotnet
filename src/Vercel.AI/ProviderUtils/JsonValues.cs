@@ -10,11 +10,17 @@ namespace Vercel.AI.ProviderUtils;
 public static class JsonValues
 {
     /// <summary>Serializer options used for provider bodies.</summary>
-    public static JsonSerializerOptions Options { get; } = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-    };
+    public static JsonSerializerOptions Options { get; } =
+        new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System
+                .Text
+                .Json
+                .Serialization
+                .JsonIgnoreCondition
+                .WhenWritingNull,
+        };
 
     /// <summary>Parses a JSON object or returns an empty object.</summary>
     public static JsonElement ParseOrEmpty(string? json)
@@ -38,7 +44,10 @@ public static class JsonValues
     /// <summary>Reads a string property, or null.</summary>
     public static string? GetString(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var value))
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty(name, out var value)
+        )
         {
             return null;
         }
@@ -49,7 +58,10 @@ public static class JsonValues
     /// <summary>Reads an integer property, or null.</summary>
     public static int? GetInt(JsonElement element, string name)
     {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(name, out var value))
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty(name, out var value)
+        )
         {
             return null;
         }
@@ -89,7 +101,9 @@ public static class JsonValues
                         if (!string.IsNullOrEmpty(message))
                         {
                             var param = GetString(error, "param");
-                            return string.IsNullOrEmpty(param) ? message! : message + " (" + param + ")";
+                            return string.IsNullOrEmpty(param)
+                                ? message!
+                                : message + " (" + param + ")";
                         }
 
                         var type = GetString(error, "type");
@@ -102,7 +116,10 @@ public static class JsonValues
 
                 if (root.TryGetProperty("detail", out var detail))
                 {
-                    if (detail.ValueKind == JsonValueKind.String && !string.IsNullOrEmpty(detail.GetString()))
+                    if (
+                        detail.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrEmpty(detail.GetString())
+                    )
                     {
                         return detail.GetString()!;
                     }
@@ -133,9 +150,7 @@ public static class JsonValues
                 }
             }
         }
-        catch (JsonException)
-        {
-        }
+        catch (JsonException) { }
 
         return body!;
     }

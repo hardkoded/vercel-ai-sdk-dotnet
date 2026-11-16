@@ -18,38 +18,46 @@ public sealed class UiMessageResponseTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/create-ui-message-stream-response.test.ts::createUIMessageStreamResponse::should create a Response with correct headers and encoded stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Creates_a_response_with_protocol_headers_and_an_encoded_stream()
     {
         var context = await Execute(
             new[] { Chunk("type", "text-delta", "id", "1", "delta", "test-data") },
-            new KeyValuePair<string, string>("Custom-Header", "test"));
+            new KeyValuePair<string, string>("Custom-Header", "test")
+        );
 
         Assert.Equal(200, context.Response.StatusCode);
         AssertProtocolHeaders(context);
         Assert.Equal("test", context.Response.Headers["Custom-Header"].ToString());
         Assert.Equal(
             "data: {\"type\":\"text-delta\",\"id\":\"1\",\"delta\":\"test-data\"}\n\ndata: [DONE]\n\n",
-            Body(context));
+            Body(context)
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/create-ui-message-stream-response.test.ts::createUIMessageStreamResponse::should handle errors in the stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Encodes_an_error_chunk_and_done()
     {
-        var context = await Execute(new[] { Chunk("type", "error", "errorText", "Custom error message") });
+        var context = await Execute(
+            new[] { Chunk("type", "error", "errorText", "Custom error message") }
+        );
 
         Assert.Equal(
             "data: {\"type\":\"error\",\"errorText\":\"Custom error message\"}\n\ndata: [DONE]\n\n",
-            Body(context));
+            Body(context)
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/pipe-ui-message-stream-to-response.test.ts::pipeUIMessageStreamToResponse::should write to ServerResponse with correct headers and encoded stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Pipes_chunks_with_protocol_headers()
     {
         var context = await Execute(
@@ -59,23 +67,26 @@ public sealed class UiMessageResponseTests
                 Chunk("type", "text-delta", "id", "1", "delta", "test-data"),
                 Chunk("type", "text-end", "id", "1"),
             },
-            new KeyValuePair<string, string>("Custom-Header", "test"));
+            new KeyValuePair<string, string>("Custom-Header", "test")
+        );
 
         Assert.Equal(200, context.Response.StatusCode);
         AssertProtocolHeaders(context);
         Assert.Equal("test", context.Response.Headers["Custom-Header"].ToString());
         Assert.Equal(
             "data: {\"type\":\"text-start\",\"id\":\"1\"}\n\n"
-            + "data: {\"type\":\"text-delta\",\"id\":\"1\",\"delta\":\"test-data\"}\n\n"
-            + "data: {\"type\":\"text-end\",\"id\":\"1\"}\n\n"
-            + "data: [DONE]\n\n",
-            Body(context));
+                + "data: {\"type\":\"text-delta\",\"id\":\"1\",\"delta\":\"test-data\"}\n\n"
+                + "data: {\"type\":\"text-end\",\"id\":\"1\"}\n\n"
+                + "data: [DONE]\n\n",
+            Body(context)
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/pipe-ui-message-stream-to-response.test.ts::pipeUIMessageStreamToResponse::should preserve multiple Set-Cookie headers with $name",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_multiple_set_cookie_headers()
     {
         var cookies = new[]
@@ -84,13 +95,10 @@ public sealed class UiMessageResponseTests
             "locale=en; Path=/",
         };
         var context = await Execute(
-            new[]
-            {
-                Chunk("type", "start", "messageId", "message-id"),
-                Chunk("type", "finish"),
-            },
+            new[] { Chunk("type", "start", "messageId", "message-id"), Chunk("type", "finish") },
             new KeyValuePair<string, string>("Set-Cookie", cookies[0]),
-            new KeyValuePair<string, string>("Set-Cookie", cookies[1]));
+            new KeyValuePair<string, string>("Set-Cookie", cookies[1])
+        );
 
         var setCookie = context.Response.Headers["Set-Cookie"];
         Assert.Equal(2, setCookie.Count);
@@ -101,20 +109,25 @@ public sealed class UiMessageResponseTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/ui-message-stream/pipe-ui-message-stream-to-response.test.ts::pipeUIMessageStreamToResponse::should handle errors in the stream",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Pipes_an_error_chunk_and_done()
     {
-        var context = await Execute(new[] { Chunk("type", "error", "errorText", "Custom error message") });
+        var context = await Execute(
+            new[] { Chunk("type", "error", "errorText", "Custom error message") }
+        );
 
         Assert.Equal(
             "data: {\"type\":\"error\",\"errorText\":\"Custom error message\"}\n\ndata: [DONE]\n\n",
-            Body(context));
+            Body(context)
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > result.toUIMessageStream::should send tool call, tool call stream start, tool call deltas, and tool result stream parts",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_tool_input_stream_and_tool_result_chunks()
     {
         var model = new TestLanguageModel
@@ -129,19 +142,26 @@ public sealed class UiMessageResponseTests
                 new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(3, 10, 13), "stop"),
             },
         };
-        var stream = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "test-input",
-            Tools = new[]
-            {
-                Tool.Function(
-                    "tool1",
-                    null,
-                    "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
-                    (input, _) => Task.FromResult("\"" + input.GetProperty("value").GetString() + "-result\"")),
-            },
-        });
+        var stream = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = new[]
+                    {
+                        Tool.Function(
+                            "tool1",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
+                            (input, _) =>
+                                Task.FromResult(
+                                    "\"" + input.GetProperty("value").GetString() + "-result\""
+                                )
+                        ),
+                    },
+                }
+            );
         using var buffer = new MemoryStream();
         await UIMessageStreamResult.WriteAsync(stream, buffer);
         var frames = Frames(Body(buffer));
@@ -149,11 +169,26 @@ public sealed class UiMessageResponseTests
         Assert.Equal(10, frames.Count);
         Assert.Equal("start", (string?)frames[0]?["type"]);
         AssertFrame("{\"type\":\"start-step\"}", frames[1]);
-        AssertFrame("{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\"}", frames[2]);
-        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\"{ \\\"value\\\":\"}", frames[3]);
-        AssertFrame("{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\" \\\"value\\\" }\"}", frames[4]);
-        AssertFrame("{\"type\":\"tool-input-available\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\",\"input\":{\"value\":\"value\"}}", frames[5]);
-        AssertFrame("{\"type\":\"tool-output-available\",\"toolCallId\":\"call-1\",\"output\":\"value-result\"}", frames[6]);
+        AssertFrame(
+            "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\"}",
+            frames[2]
+        );
+        AssertFrame(
+            "{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\"{ \\\"value\\\":\"}",
+            frames[3]
+        );
+        AssertFrame(
+            "{\"type\":\"tool-input-delta\",\"toolCallId\":\"call-1\",\"inputTextDelta\":\" \\\"value\\\" }\"}",
+            frames[4]
+        );
+        AssertFrame(
+            "{\"type\":\"tool-input-available\",\"toolCallId\":\"call-1\",\"toolName\":\"tool1\",\"input\":{\"value\":\"value\"}}",
+            frames[5]
+        );
+        AssertFrame(
+            "{\"type\":\"tool-output-available\",\"toolCallId\":\"call-1\",\"output\":\"value-result\"}",
+            frames[6]
+        );
         AssertFrame("{\"type\":\"finish-step\"}", frames[7]);
         AssertFrame("{\"type\":\"finish\",\"finishReason\":\"stop\"}", frames[8]);
         Assert.Null(frames[9]);
@@ -162,36 +197,65 @@ public sealed class UiMessageResponseTests
     [Fact]
     public async Task Writes_protocol_finish_reasons_metadata_and_null_tool_output()
     {
-        using var metadataDocument = JsonDocument.Parse("{\"testProvider\":{\"signature\":\"sig-1\"}}");
+        using var metadataDocument = JsonDocument.Parse(
+            "{\"testProvider\":{\"signature\":\"sig-1\"}}"
+        );
         var metadata = metadataDocument.RootElement.Clone();
-        var toolCalls = await Write(new LanguageModelStreamPart[]
-        {
-            new ToolCallStreamPart("call_1", "lookup", "{\"q\":1}", metadata),
-            new SourceStreamPart("src_1", "https://example.test/doc", null, metadata),
-            new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(1, 1, 2), "tool-calls"),
-        }, "null");
+        var toolCalls = await Write(
+            new LanguageModelStreamPart[]
+            {
+                new ToolCallStreamPart("call_1", "lookup", "{\"q\":1}", metadata),
+                new SourceStreamPart("src_1", "https://example.test/doc", null, metadata),
+                new FinishStreamPart(
+                    FinishReason.ToolCalls,
+                    new LanguageModelUsage(1, 1, 2),
+                    "tool-calls"
+                ),
+            },
+            "null"
+        );
         Assert.Contains("\"finishReason\":\"tool-calls\"", toolCalls, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"finishReason\":\"toolcalls\"", toolCalls, StringComparison.Ordinal);
-        Assert.Contains("\"providerMetadata\":{\"testProvider\":{\"signature\":\"sig-1\"}}", toolCalls, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "\"finishReason\":\"toolcalls\"",
+            toolCalls,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "\"providerMetadata\":{\"testProvider\":{\"signature\":\"sig-1\"}}",
+            toolCalls,
+            StringComparison.Ordinal
+        );
         Assert.Contains("\"type\":\"source-url\"", toolCalls, StringComparison.Ordinal);
         Assert.DoesNotContain("\"title\"", toolCalls, StringComparison.Ordinal);
         Assert.Contains("\"type\":\"tool-output-available\"", toolCalls, StringComparison.Ordinal);
         Assert.Contains("\"output\":null", toolCalls, StringComparison.Ordinal);
 
-        var filtered = await Write(new LanguageModelStreamPart[]
-        {
-            new FinishStreamPart(FinishReason.ContentFilter, new LanguageModelUsage(1, 1, 2), "content-filter"),
-        });
+        var filtered = await Write(
+            new LanguageModelStreamPart[]
+            {
+                new FinishStreamPart(
+                    FinishReason.ContentFilter,
+                    new LanguageModelUsage(1, 1, 2),
+                    "content-filter"
+                ),
+            }
+        );
         Assert.Contains("\"type\":\"start-step\"", filtered, StringComparison.Ordinal);
         Assert.Contains("\"type\":\"finish-step\"", filtered, StringComparison.Ordinal);
         Assert.Contains("\"finishReason\":\"content-filter\"", filtered, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"finishReason\":\"contentfilter\"", filtered, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "\"finishReason\":\"contentfilter\"",
+            filtered,
+            StringComparison.Ordinal
+        );
 
-        var reasoning = await Write(new LanguageModelStreamPart[]
-        {
-            new ReasoningDeltaStreamPart("r1", "thinking"),
-            new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
-        });
+        var reasoning = await Write(
+            new LanguageModelStreamPart[]
+            {
+                new ReasoningDeltaStreamPart("r1", "thinking"),
+                new FinishStreamPart(FinishReason.Stop, new LanguageModelUsage(1, 1, 2), "stop"),
+            }
+        );
         Assert.Contains("\"type\":\"reasoning-start\"", reasoning, StringComparison.Ordinal);
         Assert.Contains("\"type\":\"reasoning-delta\"", reasoning, StringComparison.Ordinal);
         Assert.Contains("\"delta\":\"thinking\"", reasoning, StringComparison.Ordinal);
@@ -201,43 +265,59 @@ public sealed class UiMessageResponseTests
             new LanguageModelStreamPart[]
             {
                 new ToolCallStreamPart("call_2", "lookup", "{}"),
-                new FinishStreamPart(FinishReason.ToolCalls, new LanguageModelUsage(1, 1, 2), "tool-calls"),
+                new FinishStreamPart(
+                    FinishReason.ToolCalls,
+                    new LanguageModelUsage(1, 1, 2),
+                    "tool-calls"
+                ),
             },
             output: null,
-            throwOnExecute: true);
+            throwOnExecute: true
+        );
         Assert.Contains("\"type\":\"tool-output-error\"", failed, StringComparison.Ordinal);
         Assert.Contains("\"toolCallId\":\"call_2\"", failed, StringComparison.Ordinal);
-        Assert.Contains("\"errorText\":\"InvalidOperationException: tool failed\"", failed, StringComparison.Ordinal);
+        Assert.Contains(
+            "\"errorText\":\"InvalidOperationException: tool failed\"",
+            failed,
+            StringComparison.Ordinal
+        );
     }
 
     private static async Task<string> Write(
         LanguageModelStreamPart[] parts,
         string? output = "{\"n\":1}",
         bool throwOnExecute = false,
-        bool sendSources = true)
+        bool sendSources = true
+    )
     {
         var model = new TestLanguageModel { StreamParts = parts };
-        var stream = Client().StreamTextAsync(new StreamTextOptions
-        {
-            Model = model,
-            Prompt = "hi",
-            Tools = new[]
-            {
-                Tool.Function(
-                    "lookup",
-                    "find",
-                    "{\"type\":\"object\"}",
-                    (_, _) => throwOnExecute
-                        ? Task.FromException<string>(new InvalidOperationException("tool failed"))
-                        : Task.FromResult(output ?? "null")),
-            },
-        });
+        var stream = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "hi",
+                    Tools = new[]
+                    {
+                        Tool.Function("lookup", "find", "{\"type\":\"object\"}", (_, _) =>
+                            throwOnExecute
+                                ? Task.FromException<string>(
+                                    new InvalidOperationException("tool failed")
+                                )
+                                : Task.FromResult(output ?? "null")
+                        ),
+                    },
+                }
+            );
         using var buffer = new MemoryStream();
         await UIMessageStreamResult.WriteAsync(stream, buffer, sendSources: true);
         return Body(buffer);
     }
 
-    private static async Task<HttpContext> Execute(JsonObject[] chunks, params KeyValuePair<string, string>[] headers)
+    private static async Task<HttpContext> Execute(
+        JsonObject[] chunks,
+        params KeyValuePair<string, string>[] headers
+    )
     {
         var context = new DefaultHttpContext();
         using var body = new MemoryStream();
@@ -278,9 +358,10 @@ public sealed class UiMessageResponseTests
 
     private static List<JsonNode?> Frames(string body)
     {
-        return body
-            .Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(frame => frame == "data: [DONE]" ? null : JsonNode.Parse(frame.Substring("data: ".Length)))
+        return body.Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(frame =>
+                frame == "data: [DONE]" ? null : JsonNode.Parse(frame.Substring("data: ".Length))
+            )
             .ToList();
     }
 

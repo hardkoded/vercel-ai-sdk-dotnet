@@ -27,7 +27,11 @@ public sealed class StitchableStream<T>
     }
 
     /// <summary>Queues <paramref name="inner"/> to be read after the streams already added.</summary>
-    public void AddStream(ReadableStream<T>? inner, Action<object>? onError = null, Action? onCancel = null)
+    public void AddStream(
+        ReadableStream<T>? inner,
+        Action<object>? onError = null,
+        Action? onCancel = null
+    )
     {
         if (inner == null)
         {
@@ -45,7 +49,9 @@ public sealed class StitchableStream<T>
             }
             else if (_closed)
             {
-                throw new InvalidOperationException("Cannot add inner stream: outer stream is closed");
+                throw new InvalidOperationException(
+                    "Cannot add inner stream: outer stream is closed"
+                );
             }
             else
             {
@@ -111,7 +117,10 @@ public sealed class StitchableStream<T>
     // A cancel nobody awaits must not leave a faulted task unobserved. Upstream also drops the error.
     private static void ObserveCancel(Task cancel)
     {
-        _ = cancel.ContinueWith(static task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = cancel.ContinueWith(
+            static task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
     }
 
     private async Task PullAsync(ReadableStreamController<T> controller)
@@ -303,24 +312,32 @@ public static class SimulateReadableStream
     /// Creates a stream of <paramref name="chunks"/>.
     /// A null delay skips the wait. <c>0</c> still invokes the delay with zero.
     /// </summary>
-    public static ReadableStream<T> Create<T>(IReadOnlyList<T> chunks, int? initialDelayInMs = 0, int? chunkDelayInMs = 0, Func<int?, Task>? delay = null)
+    public static ReadableStream<T> Create<T>(
+        IReadOnlyList<T> chunks,
+        int? initialDelayInMs = 0,
+        int? chunkDelayInMs = 0,
+        Func<int?, Task>? delay = null
+    )
     {
         var index = 0;
         var wait = delay ?? DefaultDelay;
-        return new ReadableStream<T>(pull: async delegate (ReadableStreamController<T> controller)
-        {
-            if (index < chunks.Count)
+        return new ReadableStream<T>(
+            pull: async delegate(ReadableStreamController<T> controller)
             {
-                await wait(index == 0 ? initialDelayInMs : chunkDelayInMs).ConfigureAwait(false);
-                var value = chunks[index];
-                index++;
-                controller.Enqueue(value);
+                if (index < chunks.Count)
+                {
+                    await wait(index == 0 ? initialDelayInMs : chunkDelayInMs)
+                        .ConfigureAwait(false);
+                    var value = chunks[index];
+                    index++;
+                    controller.Enqueue(value);
+                }
+                else
+                {
+                    controller.Close();
+                }
             }
-            else
-            {
-                controller.Close();
-            }
-        });
+        );
     }
 
     private static Task DefaultDelay(int? milliseconds)

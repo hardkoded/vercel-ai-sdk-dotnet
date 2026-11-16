@@ -14,9 +14,13 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIRealtimeFactory;
 /// <summary>Port of <c>openai-realtime-factory.test.ts</c> &gt; <c>OpenAI realtime factory</c>.</summary>
 public sealed class OpenAIRealtimeFactoryTests
 {
-    private const string Prefix = "packages/openai/src/realtime/openai-realtime-factory.test.ts::OpenAI realtime factory::";
+    private const string Prefix =
+        "packages/openai/src/realtime/openai-realtime-factory.test.ts::OpenAI realtime factory::";
 
-    private static OpenAIProvider KeylessProvider(OpenAICapture capture, Action<OpenAIOptions>? configure = null)
+    private static OpenAIProvider KeylessProvider(
+        OpenAICapture capture,
+        Action<OpenAIOptions>? configure = null
+    )
     {
         // An environment variable that is never set stands for upstream's stubbed empty OPENAI_API_KEY.
         return OpenAIUpstream.Provider(capture, options =>
@@ -54,7 +58,10 @@ public sealed class OpenAIRealtimeFactoryTests
     {
         var provider = OpenAIUpstream.Provider(new OpenAICapture());
 
-        var model = provider.RealtimeModel(modelId, hasOptions ? new OpenAIRealtimeOptions { Api = api } : null);
+        var model = provider.RealtimeModel(
+            modelId,
+            hasOptions ? new OpenAIRealtimeOptions { Api = api } : null
+        );
 
         if (live)
         {
@@ -73,28 +80,48 @@ public sealed class OpenAIRealtimeFactoryTests
     [Theory]
     [InlineData("invalid")]
     [InlineData("")]
-    [UpstreamTest(Prefix + "rejects an invalid selector %j in construction and token minting", Coverage = UpstreamCoverage.Partial, Note = "Only the string selectors can be expressed: OpenAIRealtimeOptions.Api is a string?, so null (undefined), false, 1 and {} cannot be passed.")]
-    public async Task Partial_Rejects_an_invalid_selector_in_construction_and_token_minting(string api)
+    [UpstreamTest(
+        Prefix + "rejects an invalid selector %j in construction and token minting",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Only the string selectors can be expressed: OpenAIRealtimeOptions.Api is a string?, so null (undefined), false, 1 and {} cannot be passed."
+    )]
+    public async Task Partial_Rejects_an_invalid_selector_in_construction_and_token_minting(
+        string api
+    )
     {
         var capture = new OpenAICapture();
         var provider = OpenAIUpstream.Provider(capture);
         var options = new OpenAIRealtimeOptions { Api = api };
 
-        Assert.Throws<InvalidArgumentException>(() => provider.RealtimeModel("gpt-live-1", options));
-        var exception = Assert.Throws<InvalidArgumentException>(() => provider.RealtimeModel("unknown", options));
-        Assert.Contains("OpenAI realtime api must be \"live\" or \"realtime\".", exception.Message, StringComparison.Ordinal);
-        await Assert.ThrowsAsync<InvalidArgumentException>(() => provider.ExperimentalRealtimeGetTokenAsync("gpt-live-1", options));
+        Assert.Throws<InvalidArgumentException>(() =>
+            provider.RealtimeModel("gpt-live-1", options)
+        );
+        var exception = Assert.Throws<InvalidArgumentException>(() =>
+            provider.RealtimeModel("unknown", options)
+        );
+        Assert.Contains(
+            "OpenAI realtime api must be \"live\" or \"realtime\".",
+            exception.Message,
+            StringComparison.Ordinal
+        );
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            provider.ExperimentalRealtimeGetTokenAsync("gpt-live-1", options)
+        );
         Assert.Equal(0, capture.Calls);
     }
 
     [Theory]
     [InlineData("live")]
     [InlineData("realtime")]
-    [UpstreamTest(Prefix + "constructs %s codecs without an API key or network request", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "constructs %s codecs without an API key or network request",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Constructs_codecs_without_an_API_key_or_network_request(string api)
     {
         var capture = new OpenAICapture();
-        var model = KeylessProvider(capture).RealtimeModel("not-yet-released", new OpenAIRealtimeOptions { Api = api });
+        var model = KeylessProvider(capture)
+            .RealtimeModel("not-yet-released", new OpenAIRealtimeOptions { Api = api });
         var unknown = OpenAIUpstream.Json("{\"type\":\"unknown\"}");
         var append = new RealtimeModelV4ClientEvent("input-audio-append") { Audio = "AA==" };
 
@@ -124,8 +151,15 @@ public sealed class OpenAIRealtimeFactoryTests
     [Theory]
     [InlineData("live")]
     [InlineData("realtime")]
-    [UpstreamTest(Prefix + "forwards the shared constructor configuration to %s without serializing the selector", Coverage = UpstreamCoverage.Partial, Note = "Upstream inspects the model's private config.baseURL and config.fetch fields; the port checks the same configuration through the server WebSocket URL and headers, and the provider name.")]
-    public async Task Partial_Forwards_the_shared_constructor_configuration_without_serializing_the_selector(string api)
+    [UpstreamTest(
+        Prefix
+            + "forwards the shared constructor configuration to %s without serializing the selector",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Upstream inspects the model's private config.baseURL and config.fetch fields; the port checks the same configuration through the server WebSocket URL and headers, and the provider name."
+    )]
+    public async Task Partial_Forwards_the_shared_constructor_configuration_without_serializing_the_selector(
+        string api
+    )
     {
         var provider = OpenAIUpstream.Provider(new OpenAICapture(), options =>
         {
@@ -135,7 +169,10 @@ public sealed class OpenAIRealtimeFactoryTests
             options.ProviderName = "custom";
         });
 
-        var model = provider.RealtimeModel("not-yet-released", new OpenAIRealtimeOptions { Api = api });
+        var model = provider.RealtimeModel(
+            "not-yet-released",
+            new OpenAIRealtimeOptions { Api = api }
+        );
 
         Assert.Equal("custom." + api, model.Provider);
         if (model is Live live)
@@ -145,15 +182,27 @@ public sealed class OpenAIRealtimeFactoryTests
             Assert.Equal("Bearer test-key", connection.Headers["authorization"]);
             Assert.Equal("value", connection.Headers["x-custom"]);
             Assert.Null(live.BuildSessionConfig(new RealtimeModelV4SessionConfig())["api"]);
-            var start = live.SerializeClientEvent(new RealtimeModelV4ClientEvent("session-start") { Config = new RealtimeModelV4SessionConfig() })!;
+            var start = live.SerializeClientEvent(
+                new RealtimeModelV4ClientEvent("session-start")
+                {
+                    Config = new RealtimeModelV4SessionConfig(),
+                }
+            )!;
             Assert.Equal("not-yet-released", start["session"]!["model"]!.GetValue<string>());
             Assert.Null(start["session"]!["api"]);
         }
         else
         {
             var realtime = (Realtime)model;
-            var connection = await realtime.GetServerWebSocketConfigAsync(null, CancellationToken.None);
-            Assert.StartsWith("wss://example.com/proxy/v1/realtime", connection.Url, StringComparison.Ordinal);
+            var connection = await realtime.GetServerWebSocketConfigAsync(
+                null,
+                CancellationToken.None
+            );
+            Assert.StartsWith(
+                "wss://example.com/proxy/v1/realtime",
+                connection.Url,
+                StringComparison.Ordinal
+            );
             Assert.Equal("Bearer test-key", connection.Headers["authorization"]);
             Assert.Equal("value", connection.Headers["x-custom"]);
             Assert.Null(realtime.BuildSessionConfig(new RealtimeModelV4SessionConfig())["api"]);

@@ -40,9 +40,14 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new LumaProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new LumaProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new OpenAICompatibleOptions();
@@ -56,7 +61,10 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "LUMA_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -72,7 +80,11 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     public override IImageModel ImageModel(string modelId) => new LumaImageModel(this, modelId);
 
     /// <summary>Generates one image with Dream Machine.</summary>
-    public Task<LumaImageGeneration> GenerateImageAsync(string modelId, LumaImageRequest request, CancellationToken cancellationToken)
+    public Task<LumaImageGeneration> GenerateImageAsync(
+        string modelId,
+        LumaImageRequest request,
+        CancellationToken cancellationToken
+    )
     {
         return new LumaImageModel(this, modelId).GenerateAsync(request, cancellationToken);
     }
@@ -82,14 +94,20 @@ public sealed class LumaProvider : OpenAICompatibleProvider
 public static class LumaServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddLuma(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddLuma(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(LumaProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new LumaProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(LumaProvider.ProviderId), options);
+            return new LumaProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(LumaProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

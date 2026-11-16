@@ -12,7 +12,8 @@ public sealed class ConstructorTests
     [Fact]
     [UpstreamTest(
         "packages/black-forest-labs/src/black-forest-labs-video-model.test.ts::BlackForestLabsVideoModel > constructor::should expose correct provider and model information",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void ShouldExposeCorrectProviderAndModelInformation()
     {
         var model = CreateModel(CreateServer());

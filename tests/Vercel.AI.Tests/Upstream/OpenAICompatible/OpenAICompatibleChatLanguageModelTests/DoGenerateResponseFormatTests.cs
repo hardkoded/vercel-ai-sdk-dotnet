@@ -8,7 +8,10 @@ namespace Vercel.AI.Tests.OpenAICompatibleChatLanguageModelTests;
 public sealed class DoGenerateResponseFormatTests
 {
     [Fact]
-    [UpstreamTest("packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should pass top-level max reasoning as reasoning_effort", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should pass top-level max reasoning as reasoning_effort",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_pass_top_level_max_reasoning_as_reasoning_effort()
     {
         var capture = new UpstreamCapture();

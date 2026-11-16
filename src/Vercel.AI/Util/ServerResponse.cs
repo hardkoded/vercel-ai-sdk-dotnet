@@ -14,7 +14,9 @@ public sealed class ServerResponse
 {
     private readonly object _gate = new object();
     private TaskCompletionSource<bool>? _drain;
-    private TaskCompletionSource<bool> _ended = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private TaskCompletionSource<bool> _ended = new TaskCompletionSource<bool>(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
     private bool _hold;
 
     /// <summary>Creates an empty response.</summary>
@@ -142,13 +144,25 @@ public sealed class ServerResponse
     public Task WaitForDrainAsync(CancellationToken cancellationToken = default)
     {
         var drain = WaitForDrainCore();
-        return cancellationToken.CanBeCanceled && !drain.IsCompleted ? WaitWithCancellationAsync(drain, cancellationToken) : drain;
+        return cancellationToken.CanBeCanceled && !drain.IsCompleted
+            ? WaitWithCancellationAsync(drain, cancellationToken)
+            : drain;
     }
 
-    private static async Task WaitWithCancellationAsync(Task task, CancellationToken cancellationToken)
+    private static async Task WaitWithCancellationAsync(
+        Task task,
+        CancellationToken cancellationToken
+    )
     {
-        var cancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using (cancellationToken.Register(static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true), cancelled))
+        var cancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        using (
+            cancellationToken.Register(
+                static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                cancelled
+            )
+        )
         {
             if (await Task.WhenAny(task, cancelled.Task).ConfigureAwait(false) != task)
             {
@@ -170,7 +184,9 @@ public sealed class ServerResponse
 
             if (_drain == null)
             {
-                _drain = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _drain = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously
+                );
             }
 
             return _drain.Task;
@@ -211,7 +227,14 @@ public static class ServerResponseWriter
     /// A false write waits for <see cref="ServerResponse.SimulateDrain"/>.
     /// The response is ended even when reading the stream fails.
     /// </summary>
-    public static async Task WriteAsync(ServerResponse? response, ReadableStream<byte[]> stream, int? status = null, string? statusText = null, HeaderCollection? headers = null, CancellationToken cancellationToken = default)
+    public static async Task WriteAsync(
+        ServerResponse? response,
+        ReadableStream<byte[]> stream,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        CancellationToken cancellationToken = default
+    )
     {
         if (response == null)
         {

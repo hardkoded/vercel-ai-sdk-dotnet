@@ -13,7 +13,11 @@ namespace Vercel.AI.Mistral;
 internal sealed class MistralPreparedConversationTools
 {
     /// <summary>Creates a result.</summary>
-    public MistralPreparedConversationTools(JsonArray? tools, string? toolChoice, IReadOnlyList<CallWarning> toolWarnings)
+    public MistralPreparedConversationTools(
+        JsonArray? tools,
+        string? toolChoice,
+        IReadOnlyList<CallWarning> toolWarnings
+    )
     {
         Tools = tools;
         ToolChoice = toolChoice;
@@ -34,22 +38,33 @@ internal sealed class MistralPreparedConversationTools
 internal static class MistralConversationPrepareTools
 {
     /// <summary>Maps provider tool ids to Mistral tool names. Maps to <c>mistralProviderToolNames</c>.</summary>
-    public static readonly IReadOnlyDictionary<string, string> MistralProviderToolNames = new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["mistral.web_search"] = "web_search",
-        ["mistral.web_search_premium"] = "web_search_premium",
-    };
+    public static readonly IReadOnlyDictionary<string, string> MistralProviderToolNames =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["mistral.web_search"] = "web_search",
+            ["mistral.web_search_premium"] = "web_search_premium",
+        };
 
     /// <summary>Builds the name mapping for the tools of a call. Maps to <c>createToolNameMapping({ tools, providerToolNames })</c>.</summary>
     public static ToolNameMapping CreateToolNameMapping(IReadOnlyList<LanguageModelTool>? tools)
     {
         return ToolNames.CreateToolNameMapping(
-            tools?.Select(tool => new MappedTool(tool.IsProviderDefined ? "provider" : "function", tool.Name, tool.ProviderToolId)).ToList(),
-            MistralProviderToolNames);
+            tools
+                ?.Select(tool => new MappedTool(
+                    tool.IsProviderDefined ? "provider" : "function",
+                    tool.Name,
+                    tool.ProviderToolId
+                ))
+                .ToList(),
+            MistralProviderToolNames
+        );
     }
 
     /// <summary>Prepares the tools and tool choice. Maps to <c>prepareConversationTools</c>.</summary>
-    public static MistralPreparedConversationTools PrepareConversationTools(IReadOnlyList<LanguageModelTool>? tools, ToolChoice? toolChoice = null)
+    public static MistralPreparedConversationTools PrepareConversationTools(
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice = null
+    )
     {
         // When the tools array is empty, treat it as undefined to prevent errors.
         if (tools is not { Count: > 0 })
@@ -63,13 +78,22 @@ internal static class MistralConversationPrepareTools
         {
             if (tool.IsProviderDefined)
             {
-                if (tool.ProviderToolId is { } id && MistralProviderToolNames.TryGetValue(id, out var name))
+                if (
+                    tool.ProviderToolId is { } id
+                    && MistralProviderToolNames.TryGetValue(id, out var name)
+                )
                 {
                     mistralTools.Add(new JsonObject { ["type"] = name });
                     continue;
                 }
 
-                toolWarnings.Add(new CallWarning("unsupported", "provider-defined tool " + tool.ProviderToolId, null));
+                toolWarnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        "provider-defined tool " + tool.ProviderToolId,
+                        null
+                    )
+                );
             }
             else
             {
@@ -104,20 +128,37 @@ internal static class MistralConversationPrepareTools
 
             // Mistral does not support tool mode directly, so the tools are filtered and the tool choice is forced through 'any'.
             case "tool":
-                var toolName = CreateToolNameMapping(tools).ToProviderToolName(((ToolChoice.NamedChoice)toolChoice).ToolName);
+                var toolName = CreateToolNameMapping(tools)
+                    .ToProviderToolName(((ToolChoice.NamedChoice)toolChoice).ToolName);
                 return Result(
-                    mistralTools.Where(tool => tool["type"]!.GetValue<string>() == "function"
-                        ? tool["function"]!["name"]!.GetValue<string>() == toolName
-                        : tool["type"]!.GetValue<string>() == toolName).ToList(),
+                    mistralTools
+                        .Where(tool =>
+                            tool["type"]!.GetValue<string>() == "function"
+                                ? tool["function"]!["name"]!.GetValue<string>() == toolName
+                                : tool["type"]!.GetValue<string>() == toolName
+                        )
+                        .ToList(),
                     "any",
-                    toolWarnings);
+                    toolWarnings
+                );
             default:
-                throw new UnsupportedFunctionalityException("tool choice type: " + toolChoice.Type, "'tool choice type: " + toolChoice.Type + "' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "tool choice type: " + toolChoice.Type,
+                    "'tool choice type: " + toolChoice.Type + "' functionality not supported."
+                );
         }
     }
 
-    private static MistralPreparedConversationTools Result(List<JsonObject> tools, string? toolChoice, List<CallWarning> toolWarnings)
+    private static MistralPreparedConversationTools Result(
+        List<JsonObject> tools,
+        string? toolChoice,
+        List<CallWarning> toolWarnings
+    )
     {
-        return new MistralPreparedConversationTools(new JsonArray(tools.Cast<JsonNode?>().ToArray()), toolChoice, toolWarnings);
+        return new MistralPreparedConversationTools(
+            new JsonArray(tools.Cast<JsonNode?>().ToArray()),
+            toolChoice,
+            toolWarnings
+        );
     }
 }

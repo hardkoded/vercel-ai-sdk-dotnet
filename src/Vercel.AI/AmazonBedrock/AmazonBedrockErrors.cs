@@ -35,13 +35,20 @@ public static class AmazonBedrockErrors
     /// <summary>Formats a parsed Bedrock error object.</summary>
     public static string? FormatMessage(JsonElement root)
     {
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("message", out var messageElement) || messageElement.ValueKind != JsonValueKind.String)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("message", out var messageElement)
+            || messageElement.ValueKind != JsonValueKind.String
+        )
         {
             return null;
         }
 
         var message = messageElement.GetString() ?? string.Empty;
-        if (root.TryGetProperty("type", out var typeElement) && typeElement.ValueKind == JsonValueKind.String)
+        if (
+            root.TryGetProperty("type", out var typeElement)
+            && typeElement.ValueKind == JsonValueKind.String
+        )
         {
             var type = typeElement.GetString();
             if (!string.IsNullOrEmpty(type))

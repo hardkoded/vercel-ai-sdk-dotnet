@@ -12,19 +12,27 @@ namespace Vercel.AI.Tests.Upstream.ProcessUiMessageStream;
 /// <summary>Port of <c>process-ui-message-stream.test.ts</c> &gt; <c>processUIMessageStream</c> &gt; <c>server-side tool roundtrip with multiple assistant reasoning</c>.</summary>
 public sealed class ServerSideToolRoundtripWithMultipleAssistantReasoningTests
 {
-    private const string Prefix = "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
+    private const string Prefix =
+        "packages/ai/src/ui/process-ui-message-stream.test.ts::processUIMessageStream > ";
 
     [Fact]
-    [UpstreamTest(Prefix + "server-side tool roundtrip with multiple assistant reasoning::should call the update function with the correct arguments", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "server-side tool roundtrip with multiple assistant reasoning::should call the update function with the correct arguments",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_call_the_update_function_with_the_correct_arguments()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"reasoning-start","id":"reasoning-1"},{"type":"reasoning-delta","id":"reasoning-1","delta":"I will ","providerMetadata":{"testProvider":{"signature":"1234567890"}}},{"type":"reasoning-delta","id":"reasoning-1","delta":"use a tool to get the weather in London."},{"type":"reasoning-end","id":"reasoning-1"},{"type":"tool-input-available","toolCallId":"tool-call-id","toolName":"tool-name","input":{"city":"London"}},{"type":"tool-output-available","toolCallId":"tool-call-id","output":{"weather":"sunny"}},{"type":"finish-step"},{"type":"start-step"},{"type":"reasoning-start","id":"reasoning-2"},{"type":"reasoning-delta","id":"reasoning-2","delta":"I now know the weather in London.","providerMetadata":{"testProvider":{"signature":"abc123"}}},{"type":"reasoning-end","id":"reasoning-2"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"The weather in London is sunny."},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             [
               {
                 "message": {
@@ -472,20 +480,29 @@ public sealed class ServerSideToolRoundtripWithMultipleAssistantReasoningTests
                 }
               }
             ]
-            """, harness.WriteCalls);
+            """,
+            harness.WriteCalls
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "server-side tool roundtrip with multiple assistant reasoning::should have the correct final message state", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "server-side tool roundtrip with multiple assistant reasoning::should have the correct final message state",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_have_the_correct_final_message_state()
     {
         var harness = new ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
-        await harness.ProcessAsync("""
+        await harness.ProcessAsync(
+            """
             [{"type":"start","messageId":"msg-123"},{"type":"start-step"},{"type":"reasoning-start","id":"reasoning-1"},{"type":"reasoning-delta","id":"reasoning-1","delta":"I will ","providerMetadata":{"testProvider":{"signature":"1234567890"}}},{"type":"reasoning-delta","id":"reasoning-1","delta":"use a tool to get the weather in London."},{"type":"reasoning-end","id":"reasoning-1"},{"type":"tool-input-available","toolCallId":"tool-call-id","toolName":"tool-name","input":{"city":"London"}},{"type":"tool-output-available","toolCallId":"tool-call-id","output":{"weather":"sunny"}},{"type":"finish-step"},{"type":"start-step"},{"type":"reasoning-start","id":"reasoning-2"},{"type":"reasoning-delta","id":"reasoning-2","delta":"I now know the weather in London.","providerMetadata":{"testProvider":{"signature":"abc123"}}},{"type":"reasoning-end","id":"reasoning-2"},{"type":"text-start","id":"text-1"},{"type":"text-delta","id":"text-1","delta":"The weather in London is sunny."},{"type":"text-end","id":"text-1"},{"type":"finish-step"},{"type":"finish"}]
-            """);
+            """
+        );
 
-        ProcessUIMessageStreamHarness.AssertJson("""
+        ProcessUIMessageStreamHarness.AssertJson(
+            """
             {
               "id": "msg-123",
               "parts": [
@@ -536,6 +553,8 @@ public sealed class ServerSideToolRoundtripWithMultipleAssistantReasoningTests
               ],
               "role": "assistant"
             }
-            """, harness.Message);
+            """,
+            harness.Message
+        );
     }
 }

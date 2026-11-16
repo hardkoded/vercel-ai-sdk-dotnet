@@ -35,17 +35,26 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean" };
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     /// <summary>Sends the state and every question in one request.</summary>
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken = default
+    )
     {
         if (call == null)
         {
@@ -70,7 +79,11 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             questions[pair.Key] = question;
         }
 
-        var body = new JsonObject { ["stateParts"] = StateParts(call.State), ["questions"] = questions };
+        var body = new JsonObject
+        {
+            ["stateParts"] = StateParts(call.State),
+            ["questions"] = questions,
+        };
         if (call.MaxOutputTokens != null)
         {
             body["maxOutputTokens"] = call.MaxOutputTokens;
@@ -95,12 +108,22 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         ProviderTextResponse response;
         try
         {
-            response = await _provider.Http.SendJsonStringAsync(
-                HttpMethod.Post,
-                _provider.Route("decision-model"),
-                body.ToJsonString(),
-                _provider.Headers("ai-decision-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
-                cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .Http.SendJsonStringAsync(
+                    HttpMethod.Post,
+                    _provider.Route("decision-model"),
+                    body.ToJsonString(),
+                    _provider.Headers(
+                        "ai-decision-model-specification-version",
+                        "4",
+                        "ai-model-id",
+                        ModelId,
+                        null,
+                        headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -111,7 +134,9 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             throw GatewayProvider.MapFailure(exception);
         }
 
-        using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var root = document.RootElement.Clone();
         var answers = new Dictionary<string, DecisionAnswer>();
         foreach (var answer in root.GetProperty("answers").EnumerateObject())
@@ -120,33 +145,54 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         }
 
         DecisionRounding? rounding = null;
-        if (root.TryGetProperty("rounding", out var roundingElement) && roundingElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("rounding", out var roundingElement)
+            && roundingElement.ValueKind == JsonValueKind.Object
+        )
         {
-            rounding = new DecisionRounding(Integer(roundingElement, "probabilityDecimals"), Integer(roundingElement, "scoreDecimals"));
+            rounding = new DecisionRounding(
+                Integer(roundingElement, "probabilityDecimals"),
+                Integer(roundingElement, "scoreDecimals")
+            );
         }
 
         OperationUsage? usage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
-            usage = new OperationUsage(Integer(usageElement, "inputTokens"), Integer(usageElement, "outputTokens"));
+            usage = new OperationUsage(
+                Integer(usageElement, "inputTokens"),
+                Integer(usageElement, "outputTokens")
+            );
         }
 
         var warnings = new List<OperationWarning>();
-        if (root.TryGetProperty("warnings", out var warningList) && warningList.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("warnings", out var warningList)
+            && warningList.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var warning in warningList.EnumerateArray())
             {
-                warnings.Add(new OperationWarning(
-                    warning.GetProperty("type").GetString()!,
-                    message: Text(warning, "message"),
-                    feature: Text(warning, "feature"),
-                    details: Text(warning, "details"),
-                    setting: Text(warning, "setting")));
+                warnings.Add(
+                    new OperationWarning(
+                        warning.GetProperty("type").GetString()!,
+                        message: Text(warning, "message"),
+                        feature: Text(warning, "feature"),
+                        details: Text(warning, "details"),
+                        setting: Text(warning, "setting")
+                    )
+                );
             }
         }
 
         JsonElement? providerMetadata = null;
-        if (root.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("providerMetadata", out var metadata)
+            && metadata.ValueKind == JsonValueKind.Object
+        )
         {
             providerMetadata = metadata;
         }
@@ -157,14 +203,18 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
             usage,
             rounding,
             providerMetadata,
-            new ProviderResponse(response.Headers, root, modelId: Text(root, "model") ?? ModelId));
+            new ProviderResponse(response.Headers, root, modelId: Text(root, "model") ?? ModelId)
+        );
     }
 
     private static DecisionAnswer ParseAnswer(JsonElement answer)
     {
         var type = answer.GetProperty("type").GetString()!;
         IReadOnlyDictionary<string, double>? probabilities = null;
-        if (answer.TryGetProperty("probabilities", out var map) && map.ValueKind == JsonValueKind.Object)
+        if (
+            answer.TryGetProperty("probabilities", out var map)
+            && map.ValueKind == JsonValueKind.Object
+        )
         {
             var values = new Dictionary<string, double>();
             foreach (var item in map.EnumerateObject())
@@ -178,26 +228,48 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         switch (type)
         {
             case "choice":
-                return new DecisionAnswer(type, choice: answer.GetProperty("choice").GetString(), probabilities: probabilities);
+                return new DecisionAnswer(
+                    type,
+                    choice: answer.GetProperty("choice").GetString(),
+                    probabilities: probabilities
+                );
             case "score":
-                return new DecisionAnswer(type, score: answer.GetProperty("score").GetDouble(), probabilities: probabilities);
+                return new DecisionAnswer(
+                    type,
+                    score: answer.GetProperty("score").GetDouble(),
+                    probabilities: probabilities
+                );
             case "boolean":
-                return new DecisionAnswer(type, probability: answer.GetProperty("probability").GetDouble());
+                return new DecisionAnswer(
+                    type,
+                    probability: answer.GetProperty("probability").GetDouble()
+                );
             case "refusal":
                 return new DecisionAnswer(type);
             default:
-                throw new InvalidResponseDataException(answer, "Unknown answer type \"" + type + "\".");
+                throw new InvalidResponseDataException(
+                    answer,
+                    "Unknown answer type \"" + type + "\"."
+                );
         }
     }
 
     private static int? Integer(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : null;
+        return
+            element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            ? number
+            : null;
     }
 
     private static string? Text(JsonElement element, string name)
     {
-        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     /// <summary>Serializes the ordered state parts. File data goes out as base64. Maps to <c>toGatewayDecisionState</c>.</summary>
@@ -212,7 +284,13 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
                     parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
                     break;
                 case DecisionModelJsonPart json:
-                    parts.Add(new JsonObject { ["type"] = "json", ["value"] = JsonNode.Parse(json.Value.GetRawText()) });
+                    parts.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "json",
+                            ["value"] = JsonNode.Parse(json.Value.GetRawText()),
+                        }
+                    );
                     break;
                 case DecisionModelFilePart file:
                     parts.Add(FilePart(file));
@@ -228,10 +306,14 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         if (file.Data.DataType != "data")
         {
             var functionality = "Gateway decision file input: " + file.Data.DataType + " data";
-            throw new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                functionality,
+                "'" + functionality + "' functionality not supported."
+            );
         }
 
-        var data = file.Data.Base64 ?? ByteEncoding.ToBase64(file.Data.Bytes ?? Array.Empty<byte>());
+        var data = file.Data.Base64
+            ?? ByteEncoding.ToBase64(file.Data.Bytes ?? Array.Empty<byte>());
         var node = new JsonObject { ["type"] = "file", ["mediaType"] = file.MediaType };
         if (file.FileName != null)
         {
@@ -263,12 +345,16 @@ internal static class GatewayDecisionProviderOptions
 
     public static void Validate(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object || !providerOptions.TryGetProperty("gateway", out var gateway))
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
+            || !providerOptions.TryGetProperty("gateway", out var gateway)
+        )
         {
             return;
         }
 
-        string? problem = gateway.ValueKind != JsonValueKind.Object ? "gateway options must be an object" : null;
+        string? problem =
+            gateway.ValueKind != JsonValueKind.Object ? "gateway options must be an object" : null;
         if (problem == null && gateway.TryGetProperty("models", out var models))
         {
             problem = Models(models);
@@ -276,7 +362,11 @@ internal static class GatewayDecisionProviderOptions
 
         if (problem != null)
         {
-            throw new InvalidArgumentException("providerOptions", gateway.ToString(), "invalid gateway provider options: " + problem);
+            throw new InvalidArgumentException(
+                "providerOptions",
+                gateway.ToString(),
+                "invalid gateway provider options: " + problem
+            );
         }
     }
 
@@ -335,12 +425,18 @@ internal static class GatewayDecisionProviderOptions
             }
         }
 
-        if (!entry.TryGetProperty("model", out var model) || model.ValueKind != JsonValueKind.String || model.GetString()!.Length == 0)
+        if (
+            !entry.TryGetProperty("model", out var model)
+            || model.ValueKind != JsonValueKind.String
+            || model.GetString()!.Length == 0
+        )
         {
             return "a conditional fallback requires a model";
         }
 
-        return entry.TryGetProperty("when", out var when) ? Condition(when, 1) : "a conditional fallback requires a when condition";
+        return entry.TryGetProperty("when", out var when)
+            ? Condition(when, 1)
+            : "a conditional fallback requires a when condition";
     }
 
     private static string? Condition(JsonElement condition, int depth)
@@ -363,7 +459,9 @@ internal static class GatewayDecisionProviderOptions
 
         if (depth == MaxDepth)
         {
-            return "conditions can be nested at most " + MaxDepth.ToString(CultureInfo.InvariantCulture) + " levels deep";
+            return "conditions can be nested at most "
+                + MaxDepth.ToString(CultureInfo.InvariantCulture)
+                + " levels deep";
         }
 
         var group = condition.GetProperty(keys[0]);
@@ -385,7 +483,12 @@ internal static class GatewayDecisionProviderOptions
             }
         }
 
-        if (!group.TryGetProperty("count", out var count) || count.ValueKind != JsonValueKind.Number || !count.TryGetInt32(out var number) || number < 1)
+        if (
+            !group.TryGetProperty("count", out var count)
+            || count.ValueKind != JsonValueKind.Number
+            || !count.TryGetInt32(out var number)
+            || number < 1
+        )
         {
             return "atLeast count must be an integer of at least 1";
         }
@@ -406,9 +509,15 @@ internal static class GatewayDecisionProviderOptions
 
     private static string? List(JsonElement list, int depth)
     {
-        if (list.ValueKind != JsonValueKind.Array || list.GetArrayLength() < 1 || list.GetArrayLength() > MaxConditionsPerList)
+        if (
+            list.ValueKind != JsonValueKind.Array
+            || list.GetArrayLength() < 1
+            || list.GetArrayLength() > MaxConditionsPerList
+        )
         {
-            return "a condition list must contain between 1 and " + MaxConditionsPerList.ToString(CultureInfo.InvariantCulture) + " conditions";
+            return "a condition list must contain between 1 and "
+                + MaxConditionsPerList.ToString(CultureInfo.InvariantCulture)
+                + " conditions";
         }
 
         foreach (var child in list.EnumerateArray())
@@ -434,9 +543,18 @@ internal static class GatewayDecisionProviderOptions
             }
         }
 
-        if (condition.TryGetProperty("question", out var question) && (question.ValueKind != JsonValueKind.String || question.GetString()!.Length < 1 || question.GetString()!.Length > MaxQuestionLength))
+        if (
+            condition.TryGetProperty("question", out var question)
+            && (
+                question.ValueKind != JsonValueKind.String
+                || question.GetString()!.Length < 1
+                || question.GetString()!.Length > MaxQuestionLength
+            )
+        )
         {
-            return "question must be a string of 1 to " + MaxQuestionLength.ToString(CultureInfo.InvariantCulture) + " characters";
+            return "question must be a string of 1 to "
+                + MaxQuestionLength.ToString(CultureInfo.InvariantCulture)
+                + " characters";
         }
 
         var value = condition.GetProperty(allowed);
@@ -445,16 +563,24 @@ internal static class GatewayDecisionProviderOptions
             return Probability(value) ? null : "confidenceBelow must be a number between 0 and 1";
         }
 
-        if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() != 2 || !value.EnumerateArray().All(Probability))
+        if (
+            value.ValueKind != JsonValueKind.Array
+            || value.GetArrayLength() != 2
+            || !value.EnumerateArray().All(Probability)
+        )
         {
             return "probabilityBetween must be two numbers between 0 and 1";
         }
 
-        return value[0].GetDouble() <= value[1].GetDouble() ? null : "probabilityBetween minimum must be less than or equal to maximum";
+        return value[0].GetDouble() <= value[1].GetDouble()
+            ? null
+            : "probabilityBetween minimum must be less than or equal to maximum";
     }
 
     private static bool Probability(JsonElement value)
     {
-        return value.ValueKind == JsonValueKind.Number && value.GetDouble() >= 0 && value.GetDouble() <= 1;
+        return value.ValueKind == JsonValueKind.Number
+            && value.GetDouble() >= 0
+            && value.GetDouble() <= 1;
     }
 }

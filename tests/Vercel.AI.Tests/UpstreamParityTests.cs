@@ -15,9 +15,13 @@ public sealed class UpstreamParityTests
 
         Assert.Equal(commit, manifest.UpstreamCommit);
         Assert.Equal("https://github.com/vercel/ai", manifest.UpstreamRepo);
-        Assert.Equal(tests.Count, tests.Select(test => test.Id).Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(
+            tests.Count,
+            tests.Select(test => test.Id).Distinct(StringComparer.Ordinal).Count()
+        );
 
-        var ordered = tests.OrderBy(test => test.File, StringComparer.Ordinal)
+        var ordered = tests
+            .OrderBy(test => test.File, StringComparer.Ordinal)
             .ThenBy(test => test.Line)
             .ThenBy(test => test.Id, StringComparer.Ordinal)
             .Select(test => test.Id);
@@ -30,7 +34,8 @@ public sealed class UpstreamParityTests
         var tests = UpstreamCatalog.LoadTests();
         var byId = tests.ToDictionary(test => test.Id, StringComparer.Ordinal);
         var links = UpstreamCatalog.LoadLinks(typeof(UpstreamParityTests).Assembly);
-        var duplicates = links.GroupBy(link => link.UpstreamId, StringComparer.Ordinal)
+        var duplicates = links
+            .GroupBy(link => link.UpstreamId, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
             .Select(group => group.Key)
             .ToList();
@@ -38,12 +43,20 @@ public sealed class UpstreamParityTests
         Assert.Empty(duplicates);
         foreach (var link in links)
         {
-            Assert.True(link.Coverage is nameof(UpstreamCoverage.Covered) or nameof(UpstreamCoverage.Partial));
+            Assert.True(
+                link.Coverage
+                    is nameof(UpstreamCoverage.Covered)
+                        or nameof(UpstreamCoverage.Partial)
+            );
             if (!byId.ContainsKey(link.UpstreamId))
             {
                 Assert.True(
-                    link.Commit is { Length: 40 } && link.Commit.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f'),
-                    "Unknown upstream id must name its commit: " + link.UpstreamId);
+                    link.Commit is { Length: 40 }
+                        && link.Commit.All(character =>
+                            character is >= '0' and <= '9' or >= 'a' and <= 'f'
+                        ),
+                    "Unknown upstream id must name its commit: " + link.UpstreamId
+                );
                 continue;
             }
 

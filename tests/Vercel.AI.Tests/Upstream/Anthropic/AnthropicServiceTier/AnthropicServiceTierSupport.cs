@@ -10,21 +10,26 @@ namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicServiceTier;
 /// <summary>The <c>message</c> and <c>events</c> fixtures of <c>anthropic-service-tier.test.ts</c>.</summary>
 internal static class AnthropicServiceTierSupport
 {
-    public static JsonObject Message() => new JsonObject
-    {
-        ["id"] = "msg_tier",
-        ["type"] = "message",
-        ["role"] = "assistant",
-        ["model"] = "claude-haiku-4-5",
-        ["content"] = new JsonArray(),
-        ["stop_reason"] = "end_turn",
-        ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 1 },
-    };
+    public static JsonObject Message() =>
+        new JsonObject
+        {
+            ["id"] = "msg_tier",
+            ["type"] = "message",
+            ["role"] = "assistant",
+            ["model"] = "claude-haiku-4-5",
+            ["content"] = new JsonArray(),
+            ["stop_reason"] = "end_turn",
+            ["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 1 },
+        };
 
     public static string Events(JsonObject message)
     {
         return Sse(new JsonObject { ["type"] = "message_start", ["message"] = message })
-            + Sse(JsonNode.Parse("{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}")!)
+            + Sse(
+                JsonNode.Parse(
+                    "{\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":1}}"
+                )!
+            )
             + Sse(JsonNode.Parse("{\"type\":\"message_stop\"}")!);
     }
 
@@ -32,7 +37,9 @@ internal static class AnthropicServiceTierSupport
 
     public static CaptureHandler Handler(string mode, JsonObject message)
     {
-        var handler = AnthropicParity.Ok(mode == "generate" ? message.ToJsonString() : Events(message));
+        var handler = AnthropicParity.Ok(
+            mode == "generate" ? message.ToJsonString() : Events(message)
+        );
         if (mode != "generate")
         {
             handler.ContentType = "text/event-stream";
@@ -41,7 +48,10 @@ internal static class AnthropicServiceTierSupport
         return handler;
     }
 
-    public static async Task<(IReadOnlyList<CallWarning> Warnings, System.Text.Json.JsonElement? Metadata)> Run(string mode, CaptureHandler handler, LanguageModelCallOptions options)
+    public static async Task<(
+        IReadOnlyList<CallWarning> Warnings,
+        System.Text.Json.JsonElement? Metadata
+    )> Run(string mode, CaptureHandler handler, LanguageModelCallOptions options)
     {
         var model = AnthropicParity.Client(handler).LanguageModel("claude-haiku-4-5");
         if (mode == "generate")
@@ -56,7 +66,10 @@ internal static class AnthropicServiceTierSupport
             parts.Add(part);
         }
 
-        return (Assert.Single(parts.OfType<StreamStartStreamPart>()).Warnings, parts.OfType<FinishStreamPart>().FirstOrDefault()?.ProviderMetadata);
+        return (
+            Assert.Single(parts.OfType<StreamStartStreamPart>()).Warnings,
+            parts.OfType<FinishStreamPart>().FirstOrDefault()?.ProviderMetadata
+        );
     }
 
     public static LanguageModelCallOptions Options(string? providerOptions = null)
@@ -65,7 +78,10 @@ internal static class AnthropicServiceTierSupport
         options.MaxOutputTokens = 16;
         if (providerOptions != null)
         {
-            options.ProviderOptions = AnthropicParity.Json(providerOptions).EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
+            options.ProviderOptions = AnthropicParity
+                .Json(providerOptions)
+                .EnumerateObject()
+                .ToDictionary(p => p.Name, p => p.Value.Clone());
         }
 
         return options;

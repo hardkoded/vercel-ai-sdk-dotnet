@@ -16,11 +16,15 @@ internal static class ConvertToModelMessagesSupport
 
     internal static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
-    internal static UIMessage Assistant(params UIMessagePart[] parts) => new(UIMessageRole.Assistant, parts);
+    internal static UIMessage Assistant(params UIMessagePart[] parts) =>
+        new(UIMessageRole.Assistant, parts);
 
     internal static UIMessage User(params UIMessagePart[] parts) => new(UIMessageRole.User, parts);
 
-    internal static IReadOnlyList<ModelMessage> Convert(IReadOnlyList<UIMessage> messages, ConvertToModelMessagesOptions? options = null)
+    internal static IReadOnlyList<ModelMessage> Convert(
+        IReadOnlyList<UIMessage> messages,
+        ConvertToModelMessagesOptions? options = null
+    )
     {
         return Ai.ConvertToModelMessages(messages, options);
     }
@@ -43,65 +47,86 @@ internal static class ConvertToModelMessagesSupport
             switch (message)
             {
                 case SystemModelMessage system:
-                    array.Add(WithProviderOptions(new JsonObject { ["content"] = system.Content, ["role"] = "system" }, system.ProviderOptions));
+                    array.Add(
+                        WithProviderOptions(
+                            new JsonObject { ["content"] = system.Content, ["role"] = "system" },
+                            system.ProviderOptions
+                        )
+                    );
                     break;
                 case UserModelMessage user:
+                {
+                    var content = new JsonArray();
+                    foreach (var part in user.Content)
                     {
-                        var content = new JsonArray();
-                        foreach (var part in user.Content)
-                        {
-                            content.Add(part switch
+                        content.Add(
+                            part switch
                             {
-                                TextContentPart text => WithProviderOptions(new JsonObject { ["text"] = text.Text, ["type"] = "text" }, text.ProviderOptions),
-                                FileContentPart file => RenderFile(file.MediaType, file.FileName, file.Url, file.ProviderReference, file.ProviderOptions),
+                                TextContentPart text => WithProviderOptions(
+                                    new JsonObject { ["text"] = text.Text, ["type"] = "text" },
+                                    text.ProviderOptions
+                                ),
+                                FileContentPart file => RenderFile(
+                                    file.MediaType,
+                                    file.FileName,
+                                    file.Url,
+                                    file.ProviderReference,
+                                    file.ProviderOptions
+                                ),
                                 _ => throw new InvalidOperationException(part.GetType().Name),
-                            });
-                        }
-
-                        array.Add(new JsonObject { ["content"] = content, ["role"] = "user" });
-                        break;
+                            }
+                        );
                     }
+
+                    array.Add(new JsonObject { ["content"] = content, ["role"] = "user" });
+                    break;
+                }
 
                 case AssistantModelMessage assistant:
+                {
+                    var content = new JsonArray();
+                    foreach (var part in assistant.Parts)
                     {
-                        var content = new JsonArray();
-                        foreach (var part in assistant.Parts)
-                        {
-                            content.Add(RenderAssistantPart(part));
-                        }
-
-                        array.Add(new JsonObject { ["content"] = content, ["role"] = "assistant" });
-                        break;
+                        content.Add(RenderAssistantPart(part));
                     }
+
+                    array.Add(new JsonObject { ["content"] = content, ["role"] = "assistant" });
+                    break;
+                }
 
                 case ToolApprovalResponseModelMessage response:
+                {
+                    toolContent ??= NewToolMessage(array);
+                    var node = new JsonObject
                     {
-                        toolContent ??= NewToolMessage(array);
-                        var node = new JsonObject { ["approvalId"] = response.ApprovalId, ["approved"] = response.Approved, ["type"] = "tool-approval-response" };
-                        if (response.Reason != null)
-                        {
-                            node["reason"] = response.Reason;
-                        }
-
-                        if (response.ProviderExecuted)
-                        {
-                            node["providerExecuted"] = true;
-                        }
-
-                        toolContent.Add(node);
-                        break;
+                        ["approvalId"] = response.ApprovalId,
+                        ["approved"] = response.Approved,
+                        ["type"] = "tool-approval-response",
+                    };
+                    if (response.Reason != null)
+                    {
+                        node["reason"] = response.Reason;
                     }
+
+                    if (response.ProviderExecuted)
+                    {
+                        node["providerExecuted"] = true;
+                    }
+
+                    toolContent.Add(node);
+                    break;
+                }
 
                 case ToolModelMessage tool:
+                {
+                    toolContent ??= NewToolMessage(array);
+                    foreach (var result in tool.Results)
                     {
-                        toolContent ??= NewToolMessage(array);
-                        foreach (var result in tool.Results)
-                        {
-                            toolContent.Add(RenderToolResult(result));
-                        }
-
-                        break;
+                        toolContent.Add(RenderToolResult(result));
                     }
+
+                    break;
+                }
 
                 default:
                     throw new InvalidOperationException(message.GetType().Name);
@@ -114,7 +139,8 @@ internal static class ConvertToModelMessagesSupport
     /// <summary>Maps to <c>recordAssistantMessageFromChunks</c>. Returns the message state of the stream as JSON.</summary>
     internal static async Task<JsonObject> RecordAssistantMessageJsonFromChunks(string chunksJson)
     {
-        var harness = new Vercel.AI.Tests.Upstream.ProcessUiMessageStream.ProcessUIMessageStreamHarness();
+        var harness =
+            new Vercel.AI.Tests.Upstream.ProcessUiMessageStream.ProcessUIMessageStreamHarness();
         harness.CreateState("msg-123", null);
         await harness.ProcessAsync(chunksJson);
         return (JsonObject)harness.Message.DeepClone();
@@ -129,14 +155,21 @@ internal static class ConvertToModelMessagesSupport
     /// <summary>Maps to <c>JSON.parse(JSON.stringify(messages))</c> and <c>structuredClone</c>.</summary>
     internal static IReadOnlyList<UIMessage> Reload(IReadOnlyList<UIMessage> messages)
     {
-        var array = new JsonArray(messages.Select(message => (JsonNode)UIMessageJson.ToJson(message)).ToArray());
-        return ((JsonArray)JsonNode.Parse(array.ToJsonString())!).Select(node => UIMessageJson.FromJson((JsonObject)node!)).ToList();
+        var array = new JsonArray(
+            messages.Select(message => (JsonNode)UIMessageJson.ToJson(message)).ToArray()
+        );
+        return ((JsonArray)JsonNode.Parse(array.ToJsonString())!)
+            .Select(node => UIMessageJson.FromJson((JsonObject)node!))
+            .ToList();
     }
 
     internal static void AssertEqual(JsonNode expected, IReadOnlyList<ModelMessage> actual)
     {
         var rendered = Render(actual);
-        Assert.True(JsonNode.DeepEquals(expected, rendered), "Expected: " + expected.ToJsonString() + "\nActual: " + rendered.ToJsonString());
+        Assert.True(
+            JsonNode.DeepEquals(expected, rendered),
+            "Expected: " + expected.ToJsonString() + "\nActual: " + rendered.ToJsonString()
+        );
     }
 
     internal static void AssertEqual(string expectedJson, IReadOnlyList<ModelMessage> actual)
@@ -156,13 +189,33 @@ internal static class ConvertToModelMessagesSupport
         switch (part)
         {
             case AssistantTextPart text:
-                return WithProviderOptions(new JsonObject { ["text"] = text.Text, ["type"] = "text" }, text.ProviderOptions);
+                return WithProviderOptions(
+                    new JsonObject { ["text"] = text.Text, ["type"] = "text" },
+                    text.ProviderOptions
+                );
             case AssistantReasoningPart reasoning:
-                return WithProviderOptions(new JsonObject { ["text"] = reasoning.Text, ["type"] = "reasoning" }, reasoning.ProviderOptions);
+                return WithProviderOptions(
+                    new JsonObject { ["text"] = reasoning.Text, ["type"] = "reasoning" },
+                    reasoning.ProviderOptions
+                );
             case AssistantReasoningFilePart reasoningFile:
-                return WithProviderOptions(new JsonObject { ["data"] = new JsonObject { ["type"] = "url", ["url"] = reasoningFile.Url }, ["mediaType"] = reasoningFile.MediaType, ["type"] = "reasoning-file" }, reasoningFile.ProviderOptions);
+                return WithProviderOptions(
+                    new JsonObject
+                    {
+                        ["data"] = new JsonObject { ["type"] = "url", ["url"] = reasoningFile.Url },
+                        ["mediaType"] = reasoningFile.MediaType,
+                        ["type"] = "reasoning-file",
+                    },
+                    reasoningFile.ProviderOptions
+                );
             case AssistantFilePart file:
-                return RenderFile(file.MediaType, file.FileName, file.Url, file.ProviderReference, file.ProviderOptions);
+                return RenderFile(
+                    file.MediaType,
+                    file.FileName,
+                    file.Url,
+                    file.ProviderReference,
+                    file.ProviderOptions
+                );
             case AssistantToolCallPart call:
                 return WithProviderOptions(
                     new JsonObject
@@ -172,32 +225,38 @@ internal static class ConvertToModelMessagesSupport
                         ["toolName"] = call.ToolCall.ToolName,
                         ["type"] = "tool-call",
                     },
-                    call.ProviderOptions);
+                    call.ProviderOptions
+                );
             case AssistantToolApprovalRequestPart request:
+            {
+                var node = new JsonObject
                 {
-                    var node = new JsonObject { ["approvalId"] = request.ApprovalId, ["toolCallId"] = request.ToolCallId, ["type"] = "tool-approval-request" };
-                    if (request.IsAutomatic != null)
-                    {
-                        node["isAutomatic"] = request.IsAutomatic;
-                    }
-
-                    if (request.Reason != null)
-                    {
-                        node["reason"] = request.Reason;
-                    }
-
-                    if (request.InputSchemaInput is { } inputSchemaInput)
-                    {
-                        node["inputSchemaInput"] = JsonNode.Parse(inputSchemaInput.GetRawText());
-                    }
-
-                    if (request.Signature != null)
-                    {
-                        node["signature"] = request.Signature;
-                    }
-
-                    return node;
+                    ["approvalId"] = request.ApprovalId,
+                    ["toolCallId"] = request.ToolCallId,
+                    ["type"] = "tool-approval-request",
+                };
+                if (request.IsAutomatic != null)
+                {
+                    node["isAutomatic"] = request.IsAutomatic;
                 }
+
+                if (request.Reason != null)
+                {
+                    node["reason"] = request.Reason;
+                }
+
+                if (request.InputSchemaInput is { } inputSchemaInput)
+                {
+                    node["inputSchemaInput"] = JsonNode.Parse(inputSchemaInput.GetRawText());
+                }
+
+                if (request.Signature != null)
+                {
+                    node["signature"] = request.Signature;
+                }
+
+                return node;
+            }
 
             default:
                 throw new InvalidOperationException(part.Type);
@@ -222,13 +281,19 @@ internal static class ConvertToModelMessagesSupport
         string? fileName,
         string? url,
         IReadOnlyDictionary<string, string>? providerReference,
-        IReadOnlyDictionary<string, JsonElement>? providerOptions)
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         var node = new JsonObject
         {
-            ["data"] = providerReference != null
-                ? new JsonObject { ["reference"] = JsonSerializer.SerializeToNode(providerReference), ["type"] = "reference" }
-                : new JsonObject { ["type"] = "url", ["url"] = url },
+            ["data"] =
+                providerReference != null
+                    ? new JsonObject
+                    {
+                        ["reference"] = JsonSerializer.SerializeToNode(providerReference),
+                        ["type"] = "reference",
+                    }
+                    : new JsonObject { ["type"] = "url", ["url"] = url },
             ["mediaType"] = mediaType,
             ["type"] = "file",
         };
@@ -243,7 +308,9 @@ internal static class ConvertToModelMessagesSupport
     private static JsonObject RenderToolResult(ToolModelMessage result)
     {
         var output = new JsonObject { ["type"] = result.OutputType };
-        output["value"] = result.OutputType is "json" or "error-json" ? JsonNode.Parse(result.OutputJson) : result.OutputJson;
+        output["value"] = result.OutputType is "json" or "error-json"
+            ? JsonNode.Parse(result.OutputJson)
+            : result.OutputJson;
         return WithProviderOptions(
             new JsonObject
             {
@@ -252,10 +319,14 @@ internal static class ConvertToModelMessagesSupport
                 ["toolName"] = result.ToolName,
                 ["type"] = "tool-result",
             },
-            result.ProviderOptions);
+            result.ProviderOptions
+        );
     }
 
-    private static JsonObject WithProviderOptions(JsonObject node, IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    private static JsonObject WithProviderOptions(
+        JsonObject node,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         if (providerOptions != null)
         {

@@ -15,33 +15,40 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XAI_API_KEY")))
 var xai = XaiProvider.Create();
 
 Console.WriteLine("Step 1: generating a source video...");
-var source = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video"),
-    Prompt = new VideoPrompt("A cat sitting on a windowsill."),
-    Duration = 3,
-    ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
-});
+var source = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video"),
+        Prompt = new VideoPrompt("A cat sitting on a windowsill."),
+        Duration = 3,
+        ProviderOptions = OperationJson.Parse("""{ "xai": { "pollTimeoutMs": 600000 } }"""),
+    }
+);
 
 var sourceUrl = source.ProviderMetadata.GetProperty("xai").GetProperty("videoUrl").GetString()
-    ?? throw new InvalidOperationException("xAI provider metadata did not include a source videoUrl.");
+    ?? throw new InvalidOperationException(
+        "xAI provider metadata did not include a source videoUrl."
+    );
 Console.WriteLine("Source video URL: " + sourceUrl);
 
 Console.WriteLine("\nStep 2: editing with unsupported params...");
 #region generate-video-xai-legacy-edit-warnings
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video"),
-    Prompt = new VideoPrompt("Add sunglasses to the cat"),
-    Duration = 10,
-    AspectRatio = "16:9",
-    Resolution = "1280x720",
-    ProviderOptions = OperationJson.Parse(
-        new JsonObject
-        {
-            ["xai"] = new JsonObject { ["videoUrl"] = sourceUrl, ["pollTimeoutMs"] = 600000 },
-        }.ToJsonString()),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video"),
+        Prompt = new VideoPrompt("Add sunglasses to the cat"),
+        Duration = 10,
+        AspectRatio = "16:9",
+        Resolution = "1280x720",
+        ProviderOptions = OperationJson.Parse(
+            new JsonObject
+            {
+                ["xai"] = new JsonObject { ["videoUrl"] = sourceUrl, ["pollTimeoutMs"] = 600000 },
+            }.ToJsonString()
+        ),
+    }
+);
 #endregion
 
 Console.WriteLine("\nWarnings:");

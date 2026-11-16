@@ -33,7 +33,12 @@ public sealed class GoogleProviderTool
 public sealed class GoogleToolPreparation
 {
     /// <summary>Creates a preparation result.</summary>
-    public GoogleToolPreparation(JsonArray? tools, JsonObject? toolConfig, IReadOnlyList<GoogleWarning> warnings, IReadOnlyDictionary<string, string> names)
+    public GoogleToolPreparation(
+        JsonArray? tools,
+        JsonObject? toolConfig,
+        IReadOnlyList<GoogleWarning> warnings,
+        IReadOnlyDictionary<string, string> names
+    )
     {
         Tools = tools;
         ToolConfig = toolConfig;
@@ -69,16 +74,18 @@ public static class GoogleTools
         IReadOnlyList<GoogleProviderTool>? providerTools,
         ToolChoice? toolChoice,
         string modelId,
-        bool isVertexProvider)
+        bool isVertexProvider
+    )
     {
         var warnings = new List<GoogleWarning>();
         var names = new Dictionary<string, string>(StringComparer.Ordinal);
         var functions = functionTools ?? Array.Empty<LanguageModelTool>();
         // NONE only disables function calling in the Google API. Provider tools must be omitted so they cannot
         // execute server-side. Function declarations stay for conversation history containing function calls.
-        var providers = toolChoice?.Type == "none"
-            ? Array.Empty<GoogleProviderTool>()
-            : providerTools ?? Array.Empty<GoogleProviderTool>();
+        var providers =
+            toolChoice?.Type == "none"
+                ? Array.Empty<GoogleProviderTool>()
+                : providerTools ?? Array.Empty<GoogleProviderTool>();
         if (functions.Count == 0 && providers.Count == 0)
         {
             return new GoogleToolPreparation(null, null, warnings, names);
@@ -95,7 +102,9 @@ public static class GoogleTools
         var capabilities = GoogleModelCapability.Get(modelId);
         if (functions.Count > 0 && providers.Count > 0 && !capabilities.UsesGemini3Features)
         {
-            warnings.Add(GoogleWarning.Unsupported("combination of function and provider-defined tools"));
+            warnings.Add(
+                GoogleWarning.Unsupported("combination of function and provider-defined tools")
+            );
         }
 
         if (providers.Count > 0)
@@ -126,10 +135,16 @@ public static class GoogleTools
                     Join(googleTools, Declarations(functions)),
                     config,
                     warnings,
-                    names);
+                    names
+                );
             }
 
-            return new GoogleToolPreparation(googleTools.Count > 0 ? googleTools : null, null, warnings, names);
+            return new GoogleToolPreparation(
+                googleTools.Count > 0 ? googleTools : null,
+                null,
+                warnings,
+                names
+            );
         }
 
         var strict = false;
@@ -141,7 +156,10 @@ public static class GoogleTools
             }
         }
 
-        var declarations = new JsonArray { new JsonObject { ["functionDeclarations"] = Declarations(functions) } };
+        var declarations = new JsonArray
+        {
+            new JsonObject { ["functionDeclarations"] = Declarations(functions) },
+        };
         if (toolChoice == null)
         {
             JsonObject? config = strict ? Mode("VALIDATED", null) : null;
@@ -155,7 +173,9 @@ public static class GoogleTools
             "tool" => "ANY",
             _ => strict ? "VALIDATED" : "AUTO",
         };
-        IReadOnlyList<string>? allowed = toolChoice is ToolChoice.NamedChoice named ? new[] { named.ToolName } : null;
+        IReadOnlyList<string>? allowed = toolChoice is ToolChoice.NamedChoice named
+            ? new[] { named.ToolName }
+            : null;
         return new GoogleToolPreparation(declarations, Mode(mode, allowed), warnings, names);
     }
 
@@ -220,35 +240,62 @@ public static class GoogleTools
         var declarations = new JsonArray();
         foreach (var tool in tools)
         {
-            declarations.Add(new JsonObject
-            {
-                ["name"] = tool.Name,
-                ["description"] = tool.Description ?? string.Empty,
-                ["parametersJsonSchema"] = GoogleJson.Clone(tool.InputSchema) ?? new JsonObject(),
-            });
+            declarations.Add(
+                new JsonObject
+                {
+                    ["name"] = tool.Name,
+                    ["description"] = tool.Description ?? string.Empty,
+                    ["parametersJsonSchema"] = GoogleJson.Clone(tool.InputSchema)
+                        ?? new JsonObject(),
+                }
+            );
         }
 
         return declarations;
     }
 
-    private static JsonObject? ProviderTool(GoogleProviderTool tool, GoogleModelCapabilities capabilities, List<GoogleWarning> warnings)
+    private static JsonObject? ProviderTool(
+        GoogleProviderTool tool,
+        GoogleModelCapabilities capabilities,
+        List<GoogleWarning> warnings
+    )
     {
         switch (tool.Id)
         {
             case "google.google_search":
-                return Gemini2(tool, capabilities, warnings, "Google Search requires Gemini 2.0 or newer.")
+                return Gemini2(
+                    tool,
+                    capabilities,
+                    warnings,
+                    "Google Search requires Gemini 2.0 or newer."
+                )
                     ? new JsonObject { ["googleSearch"] = Args(tool) }
                     : null;
             case "google.enterprise_web_search":
-                return Gemini2(tool, capabilities, warnings, "Enterprise Web Search requires Gemini 2.0 or newer.")
+                return Gemini2(
+                    tool,
+                    capabilities,
+                    warnings,
+                    "Enterprise Web Search requires Gemini 2.0 or newer."
+                )
                     ? new JsonObject { ["enterpriseWebSearch"] = new JsonObject() }
                     : null;
             case "google.url_context":
-                return Gemini2(tool, capabilities, warnings, "The URL context tool is not supported with other Gemini models than Gemini 2.")
+                return Gemini2(
+                    tool,
+                    capabilities,
+                    warnings,
+                    "The URL context tool is not supported with other Gemini models than Gemini 2."
+                )
                     ? new JsonObject { ["urlContext"] = new JsonObject() }
                     : null;
             case "google.code_execution":
-                return Gemini2(tool, capabilities, warnings, "The code execution tool is not supported with other Gemini models than Gemini 2.")
+                return Gemini2(
+                    tool,
+                    capabilities,
+                    warnings,
+                    "The code execution tool is not supported with other Gemini models than Gemini 2."
+                )
                     ? new JsonObject { ["codeExecution"] = new JsonObject() }
                     : null;
             case "google.file_search":
@@ -257,22 +304,51 @@ public static class GoogleTools
                     return new JsonObject { ["fileSearch"] = Args(tool) };
                 }
 
-                warnings.Add(GoogleWarning.Unsupported("provider-defined tool " + tool.Id, "The file search tool is only supported with Gemini 2.5 models and Gemini 3 models."));
+                warnings.Add(
+                    GoogleWarning.Unsupported(
+                        "provider-defined tool " + tool.Id,
+                        "The file search tool is only supported with Gemini 2.5 models and Gemini 3 models."
+                    )
+                );
                 return null;
             case "google.vertex_rag_store":
                 if (!capabilities.SupportsGemini2Tools)
                 {
-                    warnings.Add(GoogleWarning.Unsupported("provider-defined tool " + tool.Id, "The RAG store tool is not supported with other Gemini models than Gemini 2."));
+                    warnings.Add(
+                        GoogleWarning.Unsupported(
+                            "provider-defined tool " + tool.Id,
+                            "The RAG store tool is not supported with other Gemini models than Gemini 2."
+                        )
+                    );
                     return null;
                 }
 
-                var corpus = tool.Args is { } args && args.TryGetProperty("ragCorpus", out var value) ? value.GetString() : null;
-                int? topK = tool.Args is { } top && top.TryGetProperty("topK", out var topValue) && topValue.TryGetInt32(out var parsed) ? parsed : null;
-                var store = new JsonObject { ["rag_resources"] = new JsonObject { ["rag_corpus"] = corpus } };
+                var corpus =
+                    tool.Args is { } args && args.TryGetProperty("ragCorpus", out var value)
+                        ? value.GetString()
+                        : null;
+                int? topK =
+                    tool.Args is { } top
+                    && top.TryGetProperty("topK", out var topValue)
+                    && topValue.TryGetInt32(out var parsed)
+                        ? parsed
+                        : null;
+                var store = new JsonObject
+                {
+                    ["rag_resources"] = new JsonObject { ["rag_corpus"] = corpus },
+                };
                 GoogleJson.Set(store, "similarity_top_k", topK);
-                return new JsonObject { ["retrieval"] = new JsonObject { ["vertex_rag_store"] = store } };
+                return new JsonObject
+                {
+                    ["retrieval"] = new JsonObject { ["vertex_rag_store"] = store },
+                };
             case "google.google_maps":
-                return Gemini2(tool, capabilities, warnings, "The Google Maps grounding tool is not supported with Gemini models other than Gemini 2 or newer.")
+                return Gemini2(
+                    tool,
+                    capabilities,
+                    warnings,
+                    "The Google Maps grounding tool is not supported with Gemini models other than Gemini 2 or newer."
+                )
                     ? new JsonObject { ["googleMaps"] = new JsonObject() }
                     : null;
             default:
@@ -281,7 +357,12 @@ public static class GoogleTools
         }
     }
 
-    private static bool Gemini2(GoogleProviderTool tool, GoogleModelCapabilities capabilities, List<GoogleWarning> warnings, string details)
+    private static bool Gemini2(
+        GoogleProviderTool tool,
+        GoogleModelCapabilities capabilities,
+        List<GoogleWarning> warnings,
+        string details
+    )
     {
         if (capabilities.SupportsGemini2Tools)
         {

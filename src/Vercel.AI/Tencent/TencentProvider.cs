@@ -65,7 +65,10 @@ public sealed class TencentProvider : OpenAICompatibleProvider
 
     internal TencentOptions TencentOptions => Options as TencentOptions ?? new TencentOptions();
 
-    internal string VodBaseUrl => string.IsNullOrEmpty(TencentOptions.VodBaseUrl) ? DefaultVodBaseUrl : TencentOptions.VodBaseUrl!.TrimEnd('/');
+    internal string VodBaseUrl =>
+        string.IsNullOrEmpty(TencentOptions.VodBaseUrl)
+            ? DefaultVodBaseUrl
+            : TencentOptions.VodBaseUrl!.TrimEnd('/');
 
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
@@ -85,11 +88,16 @@ public sealed class TencentProvider : OpenAICompatibleProvider
     /// Optional message handler. The provider follows redirects by hand so a status poll cannot send the credentials to another host.
     /// It sets <c>AllowAutoRedirect = false</c> on a supplied handler that exposes it (see <see cref="Vercel.AI.KlingAI.KlingAIProvider.Create"/>).
     /// </param>
-    public static new TencentProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new TencentProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
         RedirectGuard.DisableAutoRedirect(handler);
-        var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new TencentOptions();
@@ -100,7 +108,8 @@ public sealed class TencentProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId) => new TencentChatLanguageModel(this, modelId);
+    public override OpenAICompatibleLanguageModel CreateChatModel(string modelId) =>
+        new TencentChatLanguageModel(this, modelId);
 
     /// <summary>Creates a TokenHub model for text generation.</summary>
     public ILanguageModel Chat(string modelId) => LanguageModel(modelId);
@@ -132,16 +141,35 @@ public sealed class TencentProvider : OpenAICompatibleProvider
             : LoadSetting(null, "subAppId", "TENCENTCLOUD_VOD_SUB_APP_ID", "Tencent VOD SubAppId");
         return new TencentVodCredentials
         {
-            SecretId = LoadSetting(options.SecretId, "secretId", "TENCENTCLOUD_SECRET_ID", "Tencent Cloud SecretId"),
-            SecretKey = LoadSetting(options.SecretKey, "secretKey", "TENCENTCLOUD_SECRET_KEY", "Tencent Cloud SecretKey"),
-            SessionToken = options.SessionToken ?? OptionalEnvironment("TENCENTCLOUD_SESSION_TOKEN"),
+            SecretId = LoadSetting(
+                options.SecretId,
+                "secretId",
+                "TENCENTCLOUD_SECRET_ID",
+                "Tencent Cloud SecretId"
+            ),
+            SecretKey = LoadSetting(
+                options.SecretKey,
+                "secretKey",
+                "TENCENTCLOUD_SECRET_KEY",
+                "Tencent Cloud SecretKey"
+            ),
+            SessionToken = options.SessionToken
+                ?? OptionalEnvironment("TENCENTCLOUD_SESSION_TOKEN"),
             SubAppId = ParseSubAppId(subAppId),
         };
     }
 
     private static long ParseSubAppId(string value)
     {
-        if (!long.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var subAppId) || subAppId <= 0)
+        if (
+            !long.TryParse(
+                value.Trim(),
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var subAppId
+            )
+            || subAppId <= 0
+        )
         {
             throw new AiSdkException("Tencent VOD SubAppId must be a positive integer.");
         }
@@ -155,7 +183,12 @@ public sealed class TencentProvider : OpenAICompatibleProvider
         return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
-    private static string LoadSetting(string? value, string settingName, string environmentVariable, string description)
+    private static string LoadSetting(
+        string? value,
+        string settingName,
+        string environmentVariable,
+        string description
+    )
     {
         if (!string.IsNullOrEmpty(value))
         {
@@ -164,14 +197,24 @@ public sealed class TencentProvider : OpenAICompatibleProvider
 
         var fromEnvironment = OptionalEnvironment(environmentVariable);
         return fromEnvironment
-            ?? throw new AiSdkException(description + " setting is missing. Pass it using the '" + settingName + "' parameter or the " + environmentVariable + " environment variable.");
+            ?? throw new AiSdkException(
+                description
+                    + " setting is missing. Pass it using the '"
+                    + settingName
+                    + "' parameter or the "
+                    + environmentVariable
+                    + " environment variable."
+            );
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new TencentOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl.TrimEnd('/');
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl.TrimEnd('/');
         options.ApiKeyEnvironmentVariable = "TENCENT_TOKENHUB_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -191,15 +234,26 @@ public sealed class TencentProvider : OpenAICompatibleProvider
 public static class TencentServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddTencent(this IServiceCollection services, Action<TencentOptions>? configure = null)
+    public static IServiceCollection AddTencent(
+        this IServiceCollection services,
+        Action<TencentOptions>? configure = null
+    )
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
-        services.AddHttpClient(TencentProvider.ProviderId).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services
+            .AddHttpClient(TencentProvider.ProviderId)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler { AllowAutoRedirect = false }
+            );
         services.AddSingleton(sp =>
         {
             var options = new TencentOptions();
             configure?.Invoke(options);
-            return new TencentProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(TencentProvider.ProviderId), options);
+            return new TencentProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(TencentProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

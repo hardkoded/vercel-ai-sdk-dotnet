@@ -64,13 +64,28 @@ public sealed class DeploymentBasedUrlsTests
     [InlineData(true, "chat", "stream")]
     [InlineData(true, "completion", "generate")]
     [InlineData(true, "completion", "stream")]
-    [UpstreamTest("packages/azure/src/azure-model-id.test.ts::separate Azure deployment and model IDs > deployment-based URLs: %s > %s::%s routes by deployment and infers capabilities from the model ID", Coverage = UpstreamCoverage.Covered)]
-    public async Task RoutesByDeploymentAndInfersCapabilitiesFromTheModelId(bool useDeploymentBasedUrls, string api, string operation)
+    [UpstreamTest(
+        "packages/azure/src/azure-model-id.test.ts::separate Azure deployment and model IDs > deployment-based URLs: %s > %s::%s routes by deployment and infers capabilities from the model ID",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task RoutesByDeploymentAndInfersCapabilitiesFromTheModelId(
+        bool useDeploymentBasedUrls,
+        string api,
+        string operation
+    )
     {
-        var handler = new UpstreamRecordingHandler(operation == "generate" ? Response(api) : StreamBody(api));
+        var handler = new UpstreamRecordingHandler(
+            operation == "generate" ? Response(api) : StreamBody(api)
+        );
         var provider = AzureOpenAIProvider.Create(
-            new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-api-key", UseDeploymentBasedUrls = useDeploymentBasedUrls },
-            handler);
+            new AzureOpenAIOptions
+            {
+                ResourceName = "test-resource",
+                ApiKey = "test-api-key",
+                UseDeploymentBasedUrls = useDeploymentBasedUrls,
+            },
+            handler
+        );
         var model = CreateModel(provider, api);
         var url = useDeploymentBasedUrls
             ? BaseUrl + "/deployments/" + DeploymentId + Path(api)
@@ -91,7 +106,9 @@ public sealed class DeploymentBasedUrlsTests
             }
 
             Assert.DoesNotContain(parts, part => part is ErrorStreamPart);
-            Assert.Contains(parts, part => part is ResponseMetadataStreamPart metadata && metadata.ModelId == ResponseModelId);
+            Assert.Contains(parts, part =>
+                part is ResponseMetadataStreamPart metadata && metadata.ModelId == ResponseModelId
+            );
         }
 
         Assert.Equal(url + "?api-version=v1", handler.Uri);
@@ -112,22 +129,30 @@ public sealed class DeploymentBasedUrlsTests
     private static string Response(string api)
     {
         return api == "responses"
-            ? "{\"id\":\"resp-test\",\"created_at\":1741257730,\"model\":\"" + ResponseModelId + "\",\"output\":[],\"status\":\"completed\",\"usage\":{\"input_tokens\":4,\"output_tokens\":0,\"total_tokens\":4}}"
-            : "{\"id\":\"chatcmpl-test\",\"created\":1741257730,\"model\":\"" + ResponseModelId + "\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"text\":\"Hello\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":1,\"total_tokens\":5}}";
+            ? "{\"id\":\"resp-test\",\"created_at\":1741257730,\"model\":\""
+                + ResponseModelId
+                + "\",\"output\":[],\"status\":\"completed\",\"usage\":{\"input_tokens\":4,\"output_tokens\":0,\"total_tokens\":4}}"
+            : "{\"id\":\"chatcmpl-test\",\"created\":1741257730,\"model\":\""
+                + ResponseModelId
+                + "\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"text\":\"Hello\",\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":1,\"total_tokens\":5}}";
     }
 
     private static string StreamBody(string api)
     {
-        var chunks = api == "responses"
-            ? new[]
-            {
-                "{\"type\":\"response.created\",\"response\":" + Response(api) + "}",
-                "{\"type\":\"response.completed\",\"response\":" + Response(api) + "}",
-            }
-            : new[]
-            {
-                "{\"id\":\"chatcmpl-test\",\"created\":1741257730,\"model\":\"" + ResponseModelId + "\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"text\":\"Hello\",\"finish_reason\":\"stop\"}]}",
-            };
-        return string.Concat(chunks.Select(chunk => "data: " + chunk + "\n\n")) + "data: [DONE]\n\n";
+        var chunks =
+            api == "responses"
+                ? new[]
+                {
+                    "{\"type\":\"response.created\",\"response\":" + Response(api) + "}",
+                    "{\"type\":\"response.completed\",\"response\":" + Response(api) + "}",
+                }
+                : new[]
+                {
+                    "{\"id\":\"chatcmpl-test\",\"created\":1741257730,\"model\":\""
+                        + ResponseModelId
+                        + "\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"text\":\"Hello\",\"finish_reason\":\"stop\"}]}",
+                };
+        return string.Concat(chunks.Select(chunk => "data: " + chunk + "\n\n"))
+            + "data: [DONE]\n\n";
     }
 }

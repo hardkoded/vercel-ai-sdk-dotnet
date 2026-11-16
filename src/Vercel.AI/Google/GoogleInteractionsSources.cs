@@ -27,17 +27,28 @@ internal static class GoogleInteractionsSources
     /// Maps one <c>url_citation</c>, <c>file_citation</c> or <c>place_citation</c> annotation onto a source.
     /// Returns null when the annotation lacks what a source needs, such as a URL citation without a <c>url</c>.
     /// </summary>
-    internal static LanguageModelStreamPart? AnnotationToSource(JsonObject annotation, Func<string> generateId)
+    internal static LanguageModelStreamPart? AnnotationToSource(
+        JsonObject annotation,
+        Func<string> generateId
+    )
     {
         switch (GoogleInteractionsStreaming.String(annotation, "type"))
         {
             case "url_citation":
                 return Url(annotation, "url", "title", generateId);
             case "file_citation":
-                {
-                    var fileName = GoogleInteractionsStreaming.String(annotation, "file_name");
-                    return FileSource(GoogleInteractionsStreaming.String(annotation, "url") ?? GoogleInteractionsStreaming.String(annotation, "document_uri") ?? fileName, fileName, fileName, null, generateId);
-                }
+            {
+                var fileName = GoogleInteractionsStreaming.String(annotation, "file_name");
+                return FileSource(
+                    GoogleInteractionsStreaming.String(annotation, "url")
+                        ?? GoogleInteractionsStreaming.String(annotation, "document_uri")
+                        ?? fileName,
+                    fileName,
+                    fileName,
+                    null,
+                    generateId
+                );
+            }
             case "place_citation":
                 return Url(annotation, "url", "name", generateId);
             default:
@@ -46,7 +57,10 @@ internal static class GoogleInteractionsSources
     }
 
     /// <summary>Maps the annotations of one text block onto sources. A URL or file that repeats is returned once.</summary>
-    internal static IReadOnlyList<LanguageModelStreamPart> AnnotationsToSources(JsonArray? annotations, Func<string> generateId)
+    internal static IReadOnlyList<LanguageModelStreamPart> AnnotationsToSources(
+        JsonArray? annotations,
+        Func<string> generateId
+    )
     {
         var sources = new List<LanguageModelStreamPart>();
         if (annotations == null)
@@ -57,7 +71,11 @@ internal static class GoogleInteractionsSources
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in annotations)
         {
-            if (node is JsonObject annotation && AnnotationToSource(annotation, generateId) is { } source && seen.Add(Key(source)))
+            if (
+                node is JsonObject annotation
+                && AnnotationToSource(annotation, generateId) is { } source
+                && seen.Add(Key(source))
+            )
             {
                 sources.Add(source);
             }
@@ -70,7 +88,10 @@ internal static class GoogleInteractionsSources
     /// Maps a built-in tool result block (<c>type</c>, <c>call_id</c>, <c>result</c>) onto sources. A result that carries
     /// no sources, such as <c>code_execution_result</c>, maps to none.
     /// </summary>
-    internal static IReadOnlyList<LanguageModelStreamPart> BuiltinToolResultToSources(JsonObject block, Func<string> generateId)
+    internal static IReadOnlyList<LanguageModelStreamPart> BuiltinToolResultToSources(
+        JsonObject block,
+        Func<string> generateId
+    )
     {
         var sources = new List<LanguageModelStreamPart>();
         var entries = block["result"] as JsonArray;
@@ -106,7 +127,11 @@ internal static class GoogleInteractionsSources
             case "google_maps_result":
                 foreach (var entry in entries.OfType<JsonObject>())
                 {
-                    foreach (var place in (entry["places"] as JsonArray ?? new JsonArray()).OfType<JsonObject>())
+                    foreach (
+                        var place in (
+                            entry["places"] as JsonArray ?? new JsonArray()
+                        ).OfType<JsonObject>()
+                    )
                     {
                         if (Url(place, "url", "name", generateId) is { } source)
                         {
@@ -121,7 +146,9 @@ internal static class GoogleInteractionsSources
                 {
                     var fileName = GoogleInteractionsStreaming.String(entry, "file_name");
                     var title = GoogleInteractionsStreaming.String(entry, "title");
-                    var uri = GoogleInteractionsStreaming.String(entry, "url") ?? GoogleInteractionsStreaming.String(entry, "document_uri") ?? fileName;
+                    var uri = GoogleInteractionsStreaming.String(entry, "url")
+                        ?? GoogleInteractionsStreaming.String(entry, "document_uri")
+                        ?? fileName;
                     if (FileSource(uri, fileName, title, title, generateId) is { } source)
                     {
                         sources.Add(source);
@@ -145,27 +172,52 @@ internal static class GoogleInteractionsSources
         };
     }
 
-    private static LanguageModelStreamPart? Url(JsonObject node, string urlName, string titleName, Func<string> generateId)
+    private static LanguageModelStreamPart? Url(
+        JsonObject node,
+        string urlName,
+        string titleName,
+        Func<string> generateId
+    )
     {
         var url = GoogleInteractionsStreaming.String(node, urlName);
-        return string.IsNullOrEmpty(url) ? null : new SourceStreamPart(generateId(), url!, GoogleInteractionsStreaming.String(node, titleName));
+        return string.IsNullOrEmpty(url)
+            ? null
+            : new SourceStreamPart(
+                generateId(),
+                url!,
+                GoogleInteractionsStreaming.String(node, titleName)
+            );
     }
 
     // A file reference that is an http(s) URL is a URL source. Any other reference is a document source.
-    private static LanguageModelStreamPart? FileSource(string? uri, string? fileName, string? urlTitle, string? documentTitle, Func<string> generateId)
+    private static LanguageModelStreamPart? FileSource(
+        string? uri,
+        string? fileName,
+        string? urlTitle,
+        string? documentTitle,
+        Func<string> generateId
+    )
     {
         if (string.IsNullOrEmpty(uri))
         {
             return null;
         }
 
-        if (uri!.StartsWith("http://", StringComparison.Ordinal) || uri.StartsWith("https://", StringComparison.Ordinal))
+        if (
+            uri!.StartsWith("http://", StringComparison.Ordinal)
+            || uri.StartsWith("https://", StringComparison.Ordinal)
+        )
         {
             return new SourceStreamPart(generateId(), uri, urlTitle);
         }
 
         var filename = fileName ?? Basename(uri);
-        return new DocumentSourceStreamPart(generateId(), MediaType(uri), documentTitle ?? fileName ?? filename ?? uri, filename);
+        return new DocumentSourceStreamPart(
+            generateId(),
+            MediaType(uri),
+            documentTitle ?? fileName ?? filename ?? uri,
+            filename
+        );
     }
 
     private static string MediaType(string uriOrName)

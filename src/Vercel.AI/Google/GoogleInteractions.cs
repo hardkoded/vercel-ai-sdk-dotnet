@@ -68,40 +68,49 @@ public static class GoogleInteractionsInput
                 {
                     if (!string.IsNullOrEmpty(assistant.Text))
                     {
-                        input.Add(new JsonObject
-                        {
-                            ["type"] = "model_output",
-                            ["content"] = new JsonArray { new JsonObject { ["type"] = "text", ["text"] = assistant.Text } },
-                        });
+                        input.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "model_output",
+                                ["content"] = new JsonArray
+                                {
+                                    new JsonObject { ["type"] = "text", ["text"] = assistant.Text },
+                                },
+                            }
+                        );
                     }
 
                     foreach (var call in assistant.ToolCalls)
                     {
-                        input.Add(new JsonObject
-                        {
-                            ["type"] = "function_call",
-                            ["name"] = call.ToolName,
-                            ["id"] = call.ToolCallId,
-                            ["arguments"] = GoogleJson.ParseObject(call.ArgumentsJson),
-                        });
+                        input.Add(
+                            new JsonObject
+                            {
+                                ["type"] = "function_call",
+                                ["name"] = call.ToolName,
+                                ["id"] = call.ToolCallId,
+                                ["arguments"] = GoogleJson.ParseObject(call.ArgumentsJson),
+                            }
+                        );
                     }
                 }
                 else if (message is ToolModelMessage tool)
                 {
-                    input.Add(new JsonObject
-                    {
-                        ["type"] = "user_input",
-                        ["content"] = new JsonArray
+                    input.Add(
+                        new JsonObject
                         {
-                            new JsonObject
+                            ["type"] = "user_input",
+                            ["content"] = new JsonArray
                             {
-                                ["type"] = "function_result",
-                                ["name"] = tool.ToolName,
-                                ["call_id"] = tool.ToolCallId,
-                                ["result"] = GoogleJson.ParseObject(tool.OutputJson),
+                                new JsonObject
+                                {
+                                    ["type"] = "function_result",
+                                    ["name"] = tool.ToolName,
+                                    ["call_id"] = tool.ToolCallId,
+                                    ["result"] = GoogleJson.ParseObject(tool.OutputJson),
+                                },
                             },
-                        },
-                    });
+                        }
+                    );
                 }
             }
         }
@@ -120,7 +129,9 @@ public static class GoogleInteractionsInput
 public static class GoogleInteractionsOutput
 {
     /// <summary>Parses <c>steps</c> into generated content and reports whether a client function call is present.</summary>
-    public static (IReadOnlyList<GeneratedContent> Content, bool HasFunctionCall) Parse(JsonObject response)
+    public static (IReadOnlyList<GeneratedContent> Content, bool HasFunctionCall) Parse(
+        JsonObject response
+    )
     {
         var content = new List<GeneratedContent>();
         var function = false;
@@ -137,7 +148,13 @@ public static class GoogleInteractionsOutput
                 if (type == "function_call")
                 {
                     function = true;
-                    content.Add(new GeneratedToolCall((string?)step["id"] ?? "call", (string?)step["name"] ?? string.Empty, step["arguments"]?.ToJsonString() ?? "{}"));
+                    content.Add(
+                        new GeneratedToolCall(
+                            (string?)step["id"] ?? "call",
+                            (string?)step["name"] ?? string.Empty,
+                            step["arguments"]?.ToJsonString() ?? "{}"
+                        )
+                    );
                 }
 
                 if (step["content"] is JsonArray parts)
@@ -156,7 +173,13 @@ public static class GoogleInteractionsOutput
                         else if ((string?)part["type"] == "function_call")
                         {
                             function = true;
-                            content.Add(new GeneratedToolCall((string?)part["id"] ?? "call", (string?)part["name"] ?? string.Empty, part["arguments"]?.ToJsonString() ?? "{}"));
+                            content.Add(
+                                new GeneratedToolCall(
+                                    (string?)part["id"] ?? "call",
+                                    (string?)part["name"] ?? string.Empty,
+                                    part["arguments"]?.ToJsonString() ?? "{}"
+                                )
+                            );
                         }
                     }
                 }
@@ -173,7 +196,9 @@ public sealed class GoogleInteractionsAgent
     /// <summary>Creates an agent input for a Gemini agent preset such as <c>deep-research-pro-preview-12-2025</c>.</summary>
     public GoogleInteractionsAgent(string agent)
     {
-        Agent = !string.IsNullOrEmpty(agent) ? agent : throw new ArgumentException("The agent name is required.", nameof(agent));
+        Agent = !string.IsNullOrEmpty(agent)
+            ? agent
+            : throw new ArgumentException("The agent name is required.", nameof(agent));
     }
 
     /// <summary>The agent name, sent as <c>agent</c> in the request body.</summary>
@@ -217,59 +242,80 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     {
         get
         {
-            return _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
+            return
+                _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
                 ? "google.vertex.interactions"
                 : _provider.ModelProvider + ".interactions";
         }
     }
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, string> SupportedUrls { get; } = new Dictionary<string, string>
-    {
-        ["image/*"] = "^https?://.+\\z",
-        ["application/pdf"] = "^https?://.+\\z",
-        ["audio/*"] = "^https?://.+\\z",
-        ["video/*"] = "^https?://(www\\.)?youtube\\.com/watch\\?v=.+\\z|^https?://youtu\\.be/.+\\z|^gs://.+\\z",
-    };
+    public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
+        new Dictionary<string, string>
+        {
+            ["image/*"] = "^https?://.+\\z",
+            ["application/pdf"] = "^https?://.+\\z",
+            ["audio/*"] = "^https?://.+\\z",
+            ["video/*"] =
+                "^https?://(www\\.)?youtube\\.com/watch\\?v=.+\\z|^https?://youtu\\.be/.+\\z|^gs://.+\\z",
+        };
 
     /// <inheritdoc />
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<LanguageModelGenerateResult> DoGenerateAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var (input, warnings) = Prepare(options);
         var background = Background(options);
         var pollingTimeout = PollingTimeout(options);
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
-        var post = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
-            GoogleJson.Write(input),
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var post = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
+                GoogleJson.Write(input),
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(post.Body) ? "{}" : post.Body);
 
         // A background or agent call (such as Gemini 4 long decode, where the server runs every hop) may return a
         // non-terminal status. Poll GET /interactions/{id} until it is terminal so the result matches a synchronous call.
         if (background || _isAgent)
         {
-            document = await PollIfNonTerminalAsync(document, baseUrl, headers, pollingTimeout, cancellationToken).ConfigureAwait(false);
+            document = await PollIfNonTerminalAsync(
+                    document,
+                    baseUrl,
+                    headers,
+                    pollingTimeout,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         using (document)
         {
-            var response = JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
+            var response =
+                JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? new JsonObject();
             var parsed = GoogleInteractionsOutput.Parse(response);
             var status = (string?)response["status"];
 
             // The API omits `id` when `store: false`. Surface an interaction id only when the API returned one.
-            var interactionId = GoogleInteractionsStreaming.String(response, "id") is { Length: > 0 } id ? id : null;
+            var interactionId = GoogleInteractionsStreaming.String(response, "id")
+                is { Length: > 0 } id
+                ? id
+                : null;
 
             // The Interactions API returns the applied tier in the body. The header is a defensive fallback.
             post.Headers.TryGetValue("x-gemini-service-tier", out var headerServiceTier);
-            var serviceTier = GoogleInteractionsStreaming.String(response, "service_tier") ?? headerServiceTier;
+            var serviceTier = GoogleInteractionsStreaming.String(response, "service_tier")
+                ?? headerServiceTier;
             var usage = response["usage"] as JsonObject;
             return new LanguageModelGenerateResult(
                 parsed.Content,
@@ -278,12 +324,17 @@ public sealed class GoogleInteractionsModel : ILanguageModel
                 status,
                 warnings,
                 interactionId,
-                ProviderMetadata(interactionId, serviceTier, OutputTokensByModality(usage)));
+                ProviderMetadata(interactionId, serviceTier, OutputTokensByModality(usage))
+            );
         }
     }
 
     // The `google` provider metadata of a result: the interaction id, the applied service tier, and the output token breakdown.
-    internal static JsonElement ProviderMetadata(string? interactionId, string? serviceTier, JsonObject? outputTokensByModality)
+    internal static JsonElement ProviderMetadata(
+        string? interactionId,
+        string? serviceTier,
+        JsonObject? outputTokensByModality
+    )
     {
         var google = new JsonObject();
         if (interactionId != null)
@@ -315,7 +366,11 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var result = new JsonObject();
         foreach (var entry in entries)
         {
-            if (entry is JsonObject item && GoogleInteractionsStreaming.String(item, "modality") is { } modality && item["tokens"] is JsonValue tokens)
+            if (
+                entry is JsonObject item
+                && GoogleInteractionsStreaming.String(item, "modality") is { } modality
+                && item["tokens"] is JsonValue tokens
+            )
             {
                 result[modality] = tokens.DeepClone();
             }
@@ -325,10 +380,20 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     }
 
     // Builds the request body. An agent call sends `agent` and no generation_config, because the API rejects it.
-    private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(LanguageModelCallOptions options)
+    private (JsonObject Body, IReadOnlyList<CallWarning> Warnings) Prepare(
+        LanguageModelCallOptions options
+    )
     {
         var warnings = new List<CallWarning>();
-        var thinkingLevel = EnumOption(options, "thinkingLevel", "minimal", "low", "medium", "high", "xhigh");
+        var thinkingLevel = EnumOption(
+            options,
+            "thinkingLevel",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+        );
         var reasoningWarnings = new List<ModelWarning>();
         var thinkingSummaries = EnumOption(options, "thinkingSummaries", "auto", "none");
         var serviceTier = EnumOption(options, "serviceTier", "flex", "standard", "priority");
@@ -362,11 +427,20 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         {
             if (_isAgent)
             {
-                warnings.Add(new CallWarning("other", "google.interactions: structured output (responseFormat) is not supported when an agent is set; responseFormat will be ignored."));
+                warnings.Add(
+                    new CallWarning(
+                        "other",
+                        "google.interactions: structured output (responseFormat) is not supported when an agent is set; responseFormat will be ignored."
+                    )
+                );
             }
             else
             {
-                var entry = new JsonObject { ["type"] = "text", ["mime_type"] = "application/json" };
+                var entry = new JsonObject
+                {
+                    ["type"] = "text",
+                    ["mime_type"] = "application/json",
+                };
                 if (options.JsonSchema is { } schema)
                 {
                     entry["schema"] = JsonNode.Parse(schema.GetRawText());
@@ -379,7 +453,12 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var input = GoogleInteractionsInput.Convert(options.Prompt);
         if (previousInteractionId != null && store == false)
         {
-            warnings.Add(new CallWarning("other", "google.interactions: providerOptions.google.previousInteractionId was set together with store: false. These are incoherent (the prior interaction cannot be referenced when nothing was stored on the server); the full history will be sent and previous_interaction_id will still be emitted."));
+            warnings.Add(
+                new CallWarning(
+                    "other",
+                    "google.interactions: providerOptions.google.previousInteractionId was set together with store: false. These are incoherent (the prior interaction cannot be referenced when nothing was stored on the server); the full history will be sent and previous_interaction_id will still be emitted."
+                )
+            );
         }
 
         input[_isAgent ? "agent" : "model"] = ModelId;
@@ -405,7 +484,15 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             AddIf(dropped, thinkingSummaries != null, "thinkingSummaries");
             if (dropped.Count > 0)
             {
-                warnings.Add(new CallWarning("other", "google.interactions: " + string.Join(", ", dropped) + (dropped.Count == 1 ? " is" : " are") + " not supported when an agent is set; use providerOptions.google.agentConfig instead. Dropped from the request body."));
+                warnings.Add(
+                    new CallWarning(
+                        "other",
+                        "google.interactions: "
+                            + string.Join(", ", dropped)
+                            + (dropped.Count == 1 ? " is" : " are")
+                            + " not supported when an agent is set; use providerOptions.google.agentConfig instead. Dropped from the request body."
+                    )
+                );
             }
         }
         else
@@ -417,16 +504,28 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             GoogleJson.Set(generationConfig, "seed", options.Seed);
             if (options.StopSequences is { Count: > 0 } stopSequences)
             {
-                generationConfig["stop_sequences"] = new JsonArray(stopSequences.Select(sequence => (JsonNode?)JsonValue.Create(sequence)).ToArray());
+                generationConfig["stop_sequences"] = new JsonArray(
+                    stopSequences
+                        .Select(sequence => (JsonNode?)JsonValue.Create(sequence))
+                        .ToArray()
+                );
             }
 
             GoogleJson.Set(generationConfig, "max_output_tokens", options.MaxOutputTokens);
             string? mappedLevel = thinkingLevel;
             if (thinkingLevel == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
             {
-                var effortMap = GoogleThinking.ReasoningEfforts(ModelId).ToDictionary(level => level, level => level);
-                mappedLevel = ReasoningMap.MapReasoningToProviderEffort(options.Reasoning!, effortMap, reasoningWarnings);
-                warnings.AddRange(reasoningWarnings.Select(ReasoningMap.ToCallWarning).OfType<CallWarning>());
+                var effortMap = GoogleThinking
+                    .ReasoningEfforts(ModelId)
+                    .ToDictionary(level => level, level => level);
+                mappedLevel = ReasoningMap.MapReasoningToProviderEffort(
+                    options.Reasoning!,
+                    effortMap,
+                    reasoningWarnings
+                );
+                warnings.AddRange(
+                    reasoningWarnings.Select(ReasoningMap.ToCallWarning).OfType<CallWarning>()
+                );
             }
 
             GoogleJson.Set(generationConfig, "thinking_level", mappedLevel);
@@ -447,7 +546,12 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         {
             if (!_isAgent)
             {
-                warnings.Add(new CallWarning("other", "google.interactions: environment is only supported when an agent is set; environment will be omitted from the request body."));
+                warnings.Add(
+                    new CallWarning(
+                        "other",
+                        "google.interactions: environment is only supported when an agent is set; environment will be omitted from the request body."
+                    )
+                );
             }
             else
             {
@@ -471,14 +575,28 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             throw new AiSdkException("providerOptions.google.agentConfig must be an object.");
         }
 
-        var type = config.TryGetProperty("type", out var typeValue) && typeValue.ValueKind == JsonValueKind.String ? typeValue.GetString() : null;
+        var type =
+            config.TryGetProperty("type", out var typeValue)
+            && typeValue.ValueKind == JsonValueKind.String
+                ? typeValue.GetString()
+                : null;
         switch (type)
         {
             case "deep-research":
                 var result = new JsonObject { ["type"] = "deep-research" };
-                CopyOption(result, "thinking_summaries", config, "thinkingSummaries", "auto", "none");
+                CopyOption(
+                    result,
+                    "thinking_summaries",
+                    config,
+                    "thinkingSummaries",
+                    "auto",
+                    "none"
+                );
                 CopyOption(result, "visualization", config, "visualization", "off", "auto");
-                if (config.TryGetProperty("collaborativePlanning", out var planning) && planning.ValueKind is JsonValueKind.True or JsonValueKind.False)
+                if (
+                    config.TryGetProperty("collaborativePlanning", out var planning)
+                    && planning.ValueKind is JsonValueKind.True or JsonValueKind.False
+                )
                 {
                     result["collaborative_planning"] = planning.GetBoolean();
                 }
@@ -487,18 +605,32 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             case "dynamic":
                 return new JsonObject { ["type"] = "dynamic" };
             default:
-                throw new AiSdkException("providerOptions.google.agentConfig.type must be one of: dynamic, deep-research.");
+                throw new AiSdkException(
+                    "providerOptions.google.agentConfig.type must be one of: dynamic, deep-research."
+                );
         }
     }
 
-    private static void CopyOption(JsonObject target, string key, JsonElement source, string name, params string[] allowed)
+    private static void CopyOption(
+        JsonObject target,
+        string key,
+        JsonElement source,
+        string name,
+        params string[] allowed
+    )
     {
         if (source.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
         {
             var text = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
             if (text == null || Array.IndexOf(allowed, text) < 0)
             {
-                throw new AiSdkException("providerOptions.google.agentConfig." + name + " must be one of: " + string.Join(", ", allowed) + ".");
+                throw new AiSdkException(
+                    "providerOptions.google.agentConfig."
+                        + name
+                        + " must be one of: "
+                        + string.Join(", ", allowed)
+                        + "."
+                );
             }
 
             target[key] = text;
@@ -513,14 +645,23 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             return environment.GetString();
         }
 
-        if (environment.ValueKind != JsonValueKind.Object
-            || !environment.TryGetProperty("type", out var type) || type.ValueKind != JsonValueKind.String || type.GetString() != "remote")
+        if (
+            environment.ValueKind != JsonValueKind.Object
+            || !environment.TryGetProperty("type", out var type)
+            || type.ValueKind != JsonValueKind.String
+            || type.GetString() != "remote"
+        )
         {
-            throw new AiSdkException("providerOptions.google.environment must be a string or an object with type \"remote\".");
+            throw new AiSdkException(
+                "providerOptions.google.environment must be a string or an object with type \"remote\"."
+            );
         }
 
         var result = new JsonObject { ["type"] = "remote" };
-        if (environment.TryGetProperty("sources", out var sources) && sources.ValueKind == JsonValueKind.Array)
+        if (
+            environment.TryGetProperty("sources", out var sources)
+            && sources.ValueKind == JsonValueKind.Array
+        )
         {
             var list = new JsonArray();
             foreach (var source in sources.EnumerateArray())
@@ -539,7 +680,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
                 }
                 else
                 {
-                    throw new AiSdkException("providerOptions.google.environment.sources[].type must be one of: gcs, repository, inline.");
+                    throw new AiSdkException(
+                        "providerOptions.google.environment.sources[].type must be one of: gcs, repository, inline."
+                    );
                 }
 
                 list.Add(entry);
@@ -551,19 +694,33 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
         }
 
-        if (environment.TryGetProperty("network", out var network) && network.ValueKind != JsonValueKind.Null)
+        if (
+            environment.TryGetProperty("network", out var network)
+            && network.ValueKind != JsonValueKind.Null
+        )
         {
             if (network.ValueKind == JsonValueKind.String && network.GetString() == "disabled")
             {
                 result["network"] = "disabled";
             }
-            else if (network.ValueKind == JsonValueKind.Object && network.TryGetProperty("allowlist", out var allowlist) && allowlist.ValueKind == JsonValueKind.Array)
+            else if (
+                network.ValueKind == JsonValueKind.Object
+                && network.TryGetProperty("allowlist", out var allowlist)
+                && allowlist.ValueKind == JsonValueKind.Array
+            )
             {
                 var entries = new JsonArray();
                 foreach (var item in allowlist.EnumerateArray())
                 {
-                    var entry = new JsonObject { ["domain"] = item.ValueKind == JsonValueKind.Object ? Str(item, "domain") : null };
-                    if (item.TryGetProperty("transform", out var transform) && transform.ValueKind != JsonValueKind.Null)
+                    var entry = new JsonObject
+                    {
+                        ["domain"] =
+                            item.ValueKind == JsonValueKind.Object ? Str(item, "domain") : null,
+                    };
+                    if (
+                        item.TryGetProperty("transform", out var transform)
+                        && transform.ValueKind != JsonValueKind.Null
+                    )
                     {
                         entry["transform"] = JsonNode.Parse(transform.GetRawText());
                     }
@@ -575,7 +732,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
             else
             {
-                throw new AiSdkException("providerOptions.google.environment.network must be \"disabled\" or an object with an allowlist.");
+                throw new AiSdkException(
+                    "providerOptions.google.environment.network must be \"disabled\" or an object with an allowlist."
+                );
             }
         }
 
@@ -584,7 +743,12 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
     private static string? Str(JsonElement node, string name)
     {
-        return node.ValueKind == JsonValueKind.Object && node.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        return
+            node.ValueKind == JsonValueKind.Object
+            && node.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 
     private static void AddIf(List<string> list, bool condition, string name)
@@ -597,7 +761,8 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
     private static JsonElement? GoogleOption(LanguageModelCallOptions options, string name)
     {
-        return options.ProviderOptions != null
+        return
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue("google", out var google)
             && google.ValueKind == JsonValueKind.Object
             && google.TryGetProperty(name, out var value)
@@ -609,7 +774,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     private static string? StringOption(LanguageModelCallOptions options, string name)
     {
         return GoogleOption(options, name) is { } value
-            ? value.ValueKind == JsonValueKind.String ? value.GetString() : throw new AiSdkException("providerOptions.google." + name + " must be a string.")
+            ? value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : throw new AiSdkException("providerOptions.google." + name + " must be a string.")
             : null;
     }
 
@@ -623,7 +790,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
         if (value.ValueKind != JsonValueKind.Object)
         {
-            throw new AiSdkException("providerOptions.google.labels must be an object of string values.");
+            throw new AiSdkException(
+                "providerOptions.google.labels must be an object of string values."
+            );
         }
 
         var labels = new JsonObject();
@@ -631,7 +800,9 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         {
             if (property.Value.ValueKind != JsonValueKind.String)
             {
-                throw new AiSdkException("providerOptions.google.labels." + property.Name + " must be a string.");
+                throw new AiSdkException(
+                    "providerOptions.google.labels." + property.Name + " must be a string."
+                );
             }
 
             labels[property.Name] = property.Value.GetString();
@@ -640,12 +811,22 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         return labels;
     }
 
-    private static string? EnumOption(LanguageModelCallOptions options, string name, params string[] allowed)
+    private static string? EnumOption(
+        LanguageModelCallOptions options,
+        string name,
+        params string[] allowed
+    )
     {
         var text = StringOption(options, name);
         if (text != null && Array.IndexOf(allowed, text) < 0)
         {
-            throw new AiSdkException("providerOptions.google." + name + " must be one of: " + string.Join(", ", allowed) + ".");
+            throw new AiSdkException(
+                "providerOptions.google."
+                    + name
+                    + " must be one of: "
+                    + string.Join(", ", allowed)
+                    + "."
+            );
         }
 
         return text;
@@ -653,7 +834,8 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
     private static bool? Store(LanguageModelCallOptions options)
     {
-        return options.ProviderOptions != null
+        return
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue("google", out var google)
             && google.ValueKind == JsonValueKind.Object
             && google.TryGetProperty("store", out var flag)
@@ -673,15 +855,24 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
     private static TimeSpan? PollingTimeout(LanguageModelCallOptions options)
     {
-        if (options.ProviderOptions != null
+        if (
+            options.ProviderOptions != null
             && options.ProviderOptions.TryGetValue("google", out var google)
             && google.ValueKind == JsonValueKind.Object
             && google.TryGetProperty("pollingTimeoutMs", out var value)
-            && value.ValueKind != JsonValueKind.Null)
+            && value.ValueKind != JsonValueKind.Null
+        )
         {
-            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt64(out var milliseconds) || milliseconds <= 0 || milliseconds > int.MaxValue)
+            if (
+                value.ValueKind != JsonValueKind.Number
+                || !value.TryGetInt64(out var milliseconds)
+                || milliseconds <= 0
+                || milliseconds > int.MaxValue
+            )
             {
-                throw new AiSdkException("providerOptions.google.pollingTimeoutMs must be a positive integer of at most 2147483647.");
+                throw new AiSdkException(
+                    "providerOptions.google.pollingTimeoutMs must be a positive integer of at most 2147483647."
+                );
             }
 
             return TimeSpan.FromMilliseconds(milliseconds);
@@ -690,17 +881,42 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         return null;
     }
 
-    private async Task<JsonDocument> PollIfNonTerminalAsync(JsonDocument first, string baseUrl, IReadOnlyDictionary<string, string?> headers, TimeSpan? timeout, CancellationToken cancellationToken)
+    private async Task<JsonDocument> PollIfNonTerminalAsync(
+        JsonDocument first,
+        string baseUrl,
+        IReadOnlyDictionary<string, string?> headers,
+        TimeSpan? timeout,
+        CancellationToken cancellationToken
+    )
     {
-        var status = first.RootElement.TryGetProperty("status", out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        var status =
+            first.RootElement.TryGetProperty("status", out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
         if (GoogleInteractionsPolling.IsTerminal(status))
         {
             return first;
         }
 
-        var id = first.RootElement.TryGetProperty("id", out var idValue) && idValue.ValueKind == JsonValueKind.String ? idValue.GetString() : null;
+        var id =
+            first.RootElement.TryGetProperty("id", out var idValue)
+            && idValue.ValueKind == JsonValueKind.String
+                ? idValue.GetString()
+                : null;
         first.Dispose();
-        return await GoogleInteractionsPolling.PollUntilTerminalAsync(_provider.Http, baseUrl, id, headers, null, null, timeout, cancellationToken).ConfigureAwait(false);
+        return await GoogleInteractionsPolling
+            .PollUntilTerminalAsync(
+                _provider.Http,
+                baseUrl,
+                id,
+                headers,
+                null,
+                null,
+                timeout,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     // total_output_tokens is the text count. Thought tokens add to the output total.
@@ -715,19 +931,35 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         var output = Count(usage, "total_output_tokens");
         var thought = Count(usage, "total_thought_tokens");
         var cached = Count(usage, "total_cached_tokens");
-        int? outputTotal = output == null && thought == null ? null : (output ?? 0) + (thought ?? 0);
+        int? outputTotal =
+            output == null && thought == null ? null : (output ?? 0) + (thought ?? 0);
         int? noCache = input == null ? null : input - (cached ?? 0);
         var raw = JsonSerializer.SerializeToElement(usage);
-        return new LanguageModelUsage(input, outputTotal, input == null && outputTotal == null ? null : (input ?? 0) + (outputTotal ?? 0), cached, null, thought, raw, noCache, output);
+        return new LanguageModelUsage(
+            input,
+            outputTotal,
+            input == null && outputTotal == null ? null : (input ?? 0) + (outputTotal ?? 0),
+            cached,
+            null,
+            thought,
+            raw,
+            noCache,
+            output
+        );
     }
 
     private static int? Count(JsonObject usage, string name)
     {
-        return usage[name] is JsonValue value && value.TryGetValue<int>(out var count) ? count : null;
+        return usage[name] is JsonValue value && value.TryGetValue<int>(out var count)
+            ? count
+            : null;
     }
 
     /// <inheritdoc />
-    public async Task<LanguageModelStreamResult> DoStreamAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         if (Background(options))
         {
@@ -738,25 +970,45 @@ public sealed class GoogleInteractionsModel : ILanguageModel
     }
 
     // POSTs with `stream: true` and pipes the SSE feed through the transform.
-    private async Task<LanguageModelStreamResult> StreamLiveAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private async Task<LanguageModelStreamResult> StreamLiveAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var (body, warnings) = Prepare(options);
         body["stream"] = true;
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var requestJson = GoogleJson.Write(body);
-        var sse = await _provider.Http.OpenSseResponseAsync(
-            ProviderUtils.ApiKeys.Combine(InteractionsBase(_provider.Options.BaseUrl), "interactions"),
-            requestJson,
-            headers,
-            cancellationToken).ConfigureAwait(false);
+        var sse = await _provider
+            .Http.OpenSseResponseAsync(
+                ProviderUtils.ApiKeys.Combine(
+                    InteractionsBase(_provider.Options.BaseUrl),
+                    "interactions"
+                ),
+                requestJson,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         // The tier is in the interaction.completed body. The header is the fallback, and the body wins.
         sse.Headers.TryGetValue("x-gemini-service-tier", out var headerServiceTier);
-        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId, headerServiceTier);
-        return sse.ToStreamResult(transform.Pipe(ParseEvents(sse.Events, cancellationToken), cancellationToken), requestJson);
+        var transform = new GoogleInteractionsStreamTransform(
+            warnings,
+            options.IncludeRawChunks,
+            _provider.Options.GenerateId,
+            headerServiceTier
+        );
+        return sse.ToStreamResult(
+            transform.Pipe(ParseEvents(sse.Events, cancellationToken), cancellationToken),
+            requestJson
+        );
     }
 
-    private static async IAsyncEnumerable<GoogleInteractionsEvent> ParseEvents(IAsyncEnumerable<string> data, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    private static async IAsyncEnumerable<GoogleInteractionsEvent> ParseEvents(
+        IAsyncEnumerable<string> data,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         await foreach (var raw in data.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -766,31 +1018,49 @@ public sealed class GoogleInteractionsModel : ILanguageModel
 
     // `background: true` is incompatible with `stream: true` on POST. POST the background call, then stream
     // GET /interactions/{id}?stream=true. A terminal POST response has nothing left to stream, so replay it.
-    private async Task<LanguageModelStreamResult> StreamBackgroundAsync(LanguageModelCallOptions options, CancellationToken cancellationToken)
+    private async Task<LanguageModelStreamResult> StreamBackgroundAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var (body, warnings) = Prepare(options);
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
         var requestJson = GoogleJson.Write(body);
-        var post = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
-            requestJson,
-            headers,
-            cancellationToken).ConfigureAwait(false);
-        var response = (string.IsNullOrWhiteSpace(post.Body) ? null : JsonNode.Parse(post.Body)) as JsonObject ?? new JsonObject();
+        var post = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
+                requestJson,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var response =
+            (string.IsNullOrWhiteSpace(post.Body) ? null : JsonNode.Parse(post.Body)) as JsonObject
+            ?? new JsonObject();
         var id = (string?)response["id"];
         if (string.IsNullOrEmpty(id))
         {
-            throw new InvalidOperationException("google.interactions: background POST response did not include an interaction id; cannot stream the result.");
+            throw new InvalidOperationException(
+                "google.interactions: background POST response did not include an interaction id; cannot stream the result."
+            );
         }
 
-        var transform = new GoogleInteractionsStreamTransform(warnings, options.IncludeRawChunks, _provider.Options.GenerateId);
+        var transform = new GoogleInteractionsStreamTransform(
+            warnings,
+            options.IncludeRawChunks,
+            _provider.Options.GenerateId
+        );
         var request = LanguageModelStreamRequest.FromJson(requestJson);
         var postResponse = new LanguageModelStreamResponse(post.Headers);
         if (GoogleInteractionsPolling.IsTerminal((string?)response["status"]))
         {
-            return new LanguageModelStreamResult(ToAsync(transform.Replay(response)), request, postResponse);
+            return new LanguageModelStreamResult(
+                ToAsync(transform.Replay(response)),
+                request,
+                postResponse
+            );
         }
 
         var events = GoogleInteractionsStreaming.StreamEvents(
@@ -800,11 +1070,18 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             headers,
             GoogleInteractionsStreaming.DefaultMaxRetries,
             GoogleInteractionsStreaming.DefaultRetryDelay,
-            cancellationToken);
-        return new LanguageModelStreamResult(transform.Pipe(events, cancellationToken), request, postResponse);
+            cancellationToken
+        );
+        return new LanguageModelStreamResult(
+            transform.Pipe(events, cancellationToken),
+            request,
+            postResponse
+        );
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> ToAsync(IEnumerable<LanguageModelStreamPart> parts)
+    private static async IAsyncEnumerable<LanguageModelStreamPart> ToAsync(
+        IEnumerable<LanguageModelStreamPart> parts
+    )
     {
         foreach (var part in parts)
         {

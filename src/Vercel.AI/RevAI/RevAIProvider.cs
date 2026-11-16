@@ -111,7 +111,12 @@ public sealed class RevAITranscriptionSegment
 public sealed class RevAITranscriptionResponse
 {
     /// <summary>Creates response metadata.</summary>
-    public RevAITranscriptionResponse(DateTimeOffset timestamp, string modelId, IReadOnlyDictionary<string, string> headers, string body)
+    public RevAITranscriptionResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers,
+        string body
+    )
     {
         Timestamp = timestamp;
         ModelId = modelId ?? string.Empty;
@@ -141,7 +146,8 @@ public sealed class RevAITranscriptionResult
         IReadOnlyList<RevAITranscriptionSegment> segments,
         string? language,
         double durationInSeconds,
-        RevAITranscriptionResponse response)
+        RevAITranscriptionResponse response
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<RevAITranscriptionSegment>();
@@ -185,9 +191,14 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>Creates a provider.</summary>
-    public static new RevAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new RevAIProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new RevAIProvider(client, options);
     }
 
@@ -207,7 +218,10 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl;
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl;
         options.ApiKeyEnvironmentVariable = "REVAI_API_KEY";
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -238,14 +252,22 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
         public string ModelId { get; }
 
         /// <inheritdoc />
-        public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+        public async Task<TranscriptionResult> DoTranscribeAsync(
+            AudioInput audio,
+            CancellationToken cancellationToken
+        )
         {
-            var result = await TranscribeAsync(audio, null, cancellationToken).ConfigureAwait(false);
+            var result = await TranscribeAsync(audio, null, cancellationToken)
+                .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
         }
 
         /// <summary>Submits a job, polls until it is transcribed, and reads the transcript.</summary>
-        public async Task<RevAITranscriptionResult> TranscribeAsync(AudioInput audio, RevAITranscriptionRequest? request, CancellationToken cancellationToken)
+        public async Task<RevAITranscriptionResult> TranscribeAsync(
+            AudioInput audio,
+            RevAITranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
             if (audio == null)
             {
@@ -260,7 +282,8 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             {
                 foreach (var pair in request.Config)
                 {
-                    config[pair.Key] = pair.Value == null ? null : JsonNode.Parse(pair.Value.ToJsonString());
+                    config[pair.Key] =
+                        pair.Value == null ? null : JsonNode.Parse(pair.Value.ToJsonString());
                 }
             }
 
@@ -273,20 +296,33 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
             form.Add(media, "media", "audio." + Extension(audio.MediaType));
             media.Headers.Remove("Content-Disposition");
-            media.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"media\"; filename=\"audio." + Extension(audio.MediaType) + "\"");
+            media.Headers.TryAddWithoutValidation(
+                "Content-Disposition",
+                "form-data; name=\"media\"; filename=\"audio." + Extension(audio.MediaType) + "\""
+            );
             var configContent = new StringContent(config.ToJsonString(), Encoding.UTF8);
             form.Add(configContent, "config");
             configContent.Headers.Remove("Content-Disposition");
-            configContent.Headers.TryAddWithoutValidation("Content-Disposition", "form-data; name=\"config\"");
+            configContent.Headers.TryAddWithoutValidation(
+                "Content-Disposition",
+                "form-data; name=\"config\""
+            );
 
-            var submission = await ProviderExchange.SendAsync(
-                _provider._httpClient,
-                HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs"),
-                form,
-                headers,
-                cancellationToken).ConfigureAwait(false);
-            using (var submitted = JsonDocument.Parse(string.IsNullOrWhiteSpace(submission.Body) ? "{}" : submission.Body))
+            var submission = await ProviderExchange
+                .SendAsync(
+                    _provider._httpClient,
+                    HttpMethod.Post,
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs"),
+                    form,
+                    headers,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            using (
+                var submitted = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(submission.Body) ? "{}" : submission.Body
+                )
+            )
             {
                 var job = submitted.RootElement;
                 var status = ReadString(job, "status");
@@ -305,7 +341,8 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                     {
                         if (string.Equals(status, "in_progress", StringComparison.Ordinal))
                         {
-                            job = await PollAsync(jobId, headers, cancellationToken).ConfigureAwait(false);
+                            job = await PollAsync(jobId, headers, cancellationToken)
+                                .ConfigureAwait(false);
                             language = ReadString(job, "language") ?? language;
                             status = ReadString(job, "status");
                             if (string.Equals(status, "failed", StringComparison.Ordinal))
@@ -314,19 +351,31 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                             }
                         }
 
-                        var transcript = await ProviderExchange.SendAsync(
-                            _provider._httpClient,
-                            HttpMethod.Get,
-                            ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + PathSegments.Encode(jobId) + "/transcript"),
-                            null,
-                            headers,
-                            cancellationToken).ConfigureAwait(false);
+                        var transcript = await ProviderExchange
+                            .SendAsync(
+                                _provider._httpClient,
+                                HttpMethod.Get,
+                                ApiKeys.Combine(
+                                    _provider.Options.BaseUrl,
+                                    "/speechtotext/v1/jobs/"
+                                        + PathSegments.Encode(jobId)
+                                        + "/transcript"
+                                ),
+                                null,
+                                headers,
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
                         transcriptBody = transcript.Body;
                         transcriptHeaders = transcript.Headers;
                     }
                 }
 
-                using (var transcriptDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(transcriptBody) ? "{}" : transcriptBody))
+                using (
+                    var transcriptDocument = JsonDocument.Parse(
+                        string.IsNullOrWhiteSpace(transcriptBody) ? "{}" : transcriptBody
+                    )
+                )
                 {
                     var parsed = ReadTranscript(transcriptDocument.RootElement);
                     return new RevAITranscriptionResult(
@@ -334,12 +383,22 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                         parsed.Segments,
                         language,
                         parsed.Duration,
-                        new RevAITranscriptionResponse(started, ModelId, transcriptHeaders, transcriptBody));
+                        new RevAITranscriptionResponse(
+                            started,
+                            ModelId,
+                            transcriptHeaders,
+                            transcriptBody
+                        )
+                    );
                 }
             }
         }
 
-        private async Task<JsonElement> PollAsync(string jobId, IReadOnlyDictionary<string, string?> headers, CancellationToken cancellationToken)
+        private async Task<JsonElement> PollAsync(
+            string jobId,
+            IReadOnlyDictionary<string, string?> headers,
+            CancellationToken cancellationToken
+        )
         {
             var options = _provider.Options as RevAIOptions;
             var started = DateTime.UtcNow;
@@ -350,17 +409,30 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
                     throw new AiSdkException("Transcription job polling timed out.");
                 }
 
-                var statusResponse = await ProviderExchange.SendAsync(
-                    _provider._httpClient,
-                    HttpMethod.Get,
-                    ApiKeys.Combine(_provider.Options.BaseUrl, "/speechtotext/v1/jobs/" + PathSegments.Encode(jobId)),
-                    null,
-                    headers,
-                    cancellationToken).ConfigureAwait(false);
-                using (var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(statusResponse.Body) ? "{}" : statusResponse.Body))
+                var statusResponse = await ProviderExchange
+                    .SendAsync(
+                        _provider._httpClient,
+                        HttpMethod.Get,
+                        ApiKeys.Combine(
+                            _provider.Options.BaseUrl,
+                            "/speechtotext/v1/jobs/" + PathSegments.Encode(jobId)
+                        ),
+                        null,
+                        headers,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                using (
+                    var document = JsonDocument.Parse(
+                        string.IsNullOrWhiteSpace(statusResponse.Body) ? "{}" : statusResponse.Body
+                    )
+                )
                 {
                     var status = ReadString(document.RootElement, "status");
-                    if (string.Equals(status, "transcribed", StringComparison.Ordinal) || string.Equals(status, "failed", StringComparison.Ordinal))
+                    if (
+                        string.Equals(status, "transcribed", StringComparison.Ordinal)
+                        || string.Equals(status, "failed", StringComparison.Ordinal)
+                    )
                     {
                         return document.RootElement.Clone();
                     }
@@ -394,9 +466,11 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
     private static string? ReadString(JsonElement element, string name)
     {
-        if (element.ValueKind == JsonValueKind.Object
+        if (
+            element.ValueKind == JsonValueKind.Object
             && element.TryGetProperty(name, out var value)
-            && value.ValueKind == JsonValueKind.String)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             return value.GetString();
         }
@@ -409,9 +483,15 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
         var text = new StringBuilder();
         var segments = new List<RevAITranscriptionSegment>();
         var duration = 0d;
-        if (!root.TryGetProperty("monologues", out var monologues) || monologues.ValueKind != JsonValueKind.Array)
+        if (
+            !root.TryGetProperty("monologues", out var monologues)
+            || monologues.ValueKind != JsonValueKind.Array
+        )
         {
-            if (root.TryGetProperty("text", out var plain) && plain.ValueKind == JsonValueKind.String)
+            if (
+                root.TryGetProperty("text", out var plain)
+                && plain.ValueKind == JsonValueKind.String
+            )
             {
                 return new TranscriptRead(plain.GetString() ?? string.Empty, segments, duration);
             }
@@ -429,7 +509,10 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
             first = false;
             var monologueText = new StringBuilder();
-            if (!monologue.TryGetProperty("elements", out var elements) || elements.ValueKind != JsonValueKind.Array)
+            if (
+                !monologue.TryGetProperty("elements", out var elements)
+                || elements.ValueKind != JsonValueKind.Array
+            )
             {
                 continue;
             }
@@ -439,11 +522,15 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             var startedSegment = false;
             foreach (var element in elements.EnumerateArray())
             {
-                var value = element.TryGetProperty("value", out var raw) && raw.ValueKind == JsonValueKind.String
-                    ? raw.GetString() ?? string.Empty
-                    : string.Empty;
+                var value =
+                    element.TryGetProperty("value", out var raw)
+                    && raw.ValueKind == JsonValueKind.String
+                        ? raw.GetString() ?? string.Empty
+                        : string.Empty;
                 monologueText.Append(value);
-                var type = element.TryGetProperty("type", out var typeValue) ? typeValue.GetString() : null;
+                var type = element.TryGetProperty("type", out var typeValue)
+                    ? typeValue.GetString()
+                    : null;
                 if (!string.Equals(type, "text", StringComparison.Ordinal))
                 {
                     continue;
@@ -451,23 +538,37 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
                 current.Append(value);
 
-                if (element.TryGetProperty("end_ts", out var endValue) && endValue.TryGetDouble(out var end) && end > duration)
+                if (
+                    element.TryGetProperty("end_ts", out var endValue)
+                    && endValue.TryGetDouble(out var end)
+                    && end > duration
+                )
                 {
                     duration = end;
                 }
 
-                if (!startedSegment && element.TryGetProperty("ts", out var startValue) && startValue.TryGetDouble(out var start))
+                if (
+                    !startedSegment
+                    && element.TryGetProperty("ts", out var startValue)
+                    && startValue.TryGetDouble(out var start)
+                )
                 {
                     segmentStart = start;
                     startedSegment = true;
                 }
 
-                if (startedSegment && element.TryGetProperty("end_ts", out var endTs) && endTs.TryGetDouble(out var segmentEnd))
+                if (
+                    startedSegment
+                    && element.TryGetProperty("end_ts", out var endTs)
+                    && endTs.TryGetDouble(out var segmentEnd)
+                )
                 {
                     var segmentText = current.ToString().Trim();
                     if (segmentText.Length > 0)
                     {
-                        segments.Add(new RevAITranscriptionSegment(segmentText, segmentStart, segmentEnd));
+                        segments.Add(
+                            new RevAITranscriptionSegment(segmentText, segmentStart, segmentEnd)
+                        );
                     }
 
                     current.Clear();
@@ -478,7 +579,13 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             if (startedSegment && current.ToString().Trim().Length > 0)
             {
                 var endSecond = duration > segmentStart ? duration : segmentStart + 1;
-                segments.Add(new RevAITranscriptionSegment(current.ToString().Trim(), segmentStart, endSecond));
+                segments.Add(
+                    new RevAITranscriptionSegment(
+                        current.ToString().Trim(),
+                        segmentStart,
+                        endSecond
+                    )
+                );
             }
 
             text.Append(monologueText);
@@ -500,7 +607,10 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             return "wav";
         }
 
-        if (value.IndexOf("mpeg", StringComparison.OrdinalIgnoreCase) >= 0 || value.IndexOf("mp3", StringComparison.OrdinalIgnoreCase) >= 0)
+        if (
+            value.IndexOf("mpeg", StringComparison.OrdinalIgnoreCase) >= 0
+            || value.IndexOf("mp3", StringComparison.OrdinalIgnoreCase) >= 0
+        )
         {
             return "mp3";
         }
@@ -530,7 +640,11 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
     private sealed class TranscriptRead
     {
-        public TranscriptRead(string text, List<RevAITranscriptionSegment> segments, double duration)
+        public TranscriptRead(
+            string text,
+            List<RevAITranscriptionSegment> segments,
+            double duration
+        )
         {
             Text = text;
             Segments = segments;
@@ -549,14 +663,20 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 public static class RevAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddRevAI(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddRevAI(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(RevAIProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new RevAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(RevAIProvider.ProviderId), options);
+            return new RevAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient(RevAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

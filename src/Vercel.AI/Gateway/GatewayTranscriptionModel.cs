@@ -23,7 +23,11 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
     /// <param name="provider">Gateway provider that sends the requests.</param>
     /// <param name="modelId">Model id.</param>
     /// <param name="providerName">Value of <see cref="Provider"/> (upstream <c>GatewayConfig.provider</c>). Defaults to <c>gateway</c>.</param>
-    public GatewayTranscriptionModel(GatewayProvider provider, string modelId, string? providerName = null)
+    public GatewayTranscriptionModel(
+        GatewayProvider provider,
+        string modelId,
+        string? providerName = null
+    )
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
@@ -34,7 +38,10 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
     public string Provider { get; }
 
     /// <summary>Resolves the config headers of a streaming call. Maps to <c>config.headers</c>. Defaults to the provider's auth headers.</summary>
-    internal Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersResolver { get; set; }
+    internal Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? HeadersResolver { get; set; }
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -46,15 +53,31 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
     public bool CanStream => true;
 
     /// <inheritdoc />
-    public async Task<TranscriptionResult> DoTranscribeAsync(AudioInput audio, CancellationToken cancellationToken)
+    public async Task<TranscriptionResult> DoTranscribeAsync(
+        AudioInput audio,
+        CancellationToken cancellationToken
+    )
     {
         audio = audio ?? throw new ArgumentNullException(nameof(audio));
-        var result = await DoGenerateAsync(new TranscriptionModelCall(audio.Data, string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType, OperationJson.Parse("{}"), new Dictionary<string, string>(), cancellationToken), cancellationToken).ConfigureAwait(false);
+        var result = await DoGenerateAsync(
+                new TranscriptionModelCall(
+                    audio.Data,
+                    string.IsNullOrEmpty(audio.MediaType) ? "audio/wav" : audio.MediaType,
+                    OperationJson.Parse("{}"),
+                    new Dictionary<string, string>(),
+                    cancellationToken
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new TranscriptionResult(result.Text ?? string.Empty);
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var body = new JsonObject
@@ -76,12 +99,22 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         ProviderTextResponse response;
         try
         {
-            response = await _provider.Http.SendJsonStringAsync(
-                HttpMethod.Post,
-                _provider.Route("transcription-model"),
-                body.ToJsonString(),
-                _provider.Headers("ai-transcription-model-specification-version", "4", "ai-model-id", ModelId, null, headers),
-                cancellationToken).ConfigureAwait(false);
+            response = await _provider
+                .Http.SendJsonStringAsync(
+                    HttpMethod.Post,
+                    _provider.Route("transcription-model"),
+                    body.ToJsonString(),
+                    _provider.Headers(
+                        "ai-transcription-model-specification-version",
+                        "4",
+                        "ai-model-id",
+                        ModelId,
+                        null,
+                        headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
@@ -100,19 +133,32 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         }
         catch (JsonException)
         {
-            throw new InvalidResponseDataException(response.Body, "Invalid Gateway transcription response: the body is not valid JSON.");
+            throw new InvalidResponseDataException(
+                response.Body,
+                "Invalid Gateway transcription response: the body is not valid JSON."
+            );
         }
 
-        if (root.ValueKind != JsonValueKind.Object
-            || !root.TryGetProperty("text", out var textElement) || textElement.ValueKind != JsonValueKind.String)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("text", out var textElement)
+            || textElement.ValueKind != JsonValueKind.String
+        )
         {
-            throw new InvalidResponseDataException(response.Body, "Invalid Gateway transcription response: expected text.");
+            throw new InvalidResponseDataException(
+                response.Body,
+                "Invalid Gateway transcription response: expected text."
+            );
         }
 
-        var segments = ReadSegments(root, "segments", response.Body) ?? new List<TranscriptSegment>();
+        var segments = ReadSegments(root, "segments", response.Body)
+            ?? new List<TranscriptSegment>();
         var words = ReadSegments(root, "words", response.Body);
         var warnings = new List<OperationWarning>();
-        if (root.TryGetProperty("warnings", out var warningArray) && warningArray.ValueKind == JsonValueKind.Array)
+        if (
+            root.TryGetProperty("warnings", out var warningArray)
+            && warningArray.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var warning in warningArray.EnumerateArray())
             {
@@ -122,36 +168,69 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
         if (call.TimestampGranularities is { Count: > 0 })
         {
-            warnings.Add(new OperationWarning(
-                "unsupported",
-                feature: "timestampGranularities",
-                details: "The AI Gateway adapter does not forward the shared timestampGranularities option."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "timestampGranularities",
+                    details: "The AI Gateway adapter does not forward the shared timestampGranularities option."
+                )
+            );
         }
 
-        if (IsXaiTranscriptionModel(ModelId) && RequestsXaiDiarization(call.ProviderOptions) && !ContainsSpeaker(root))
+        if (
+            IsXaiTranscriptionModel(ModelId)
+            && RequestsXaiDiarization(call.ProviderOptions)
+            && !ContainsSpeaker(root)
+        )
         {
-            warnings.Add(new OperationWarning(
-                "unsupported",
-                feature: "providerOptions.xai.diarize",
-                details: "AI Gateway does not currently expose xAI speaker diarization metadata."));
+            warnings.Add(
+                new OperationWarning(
+                    "unsupported",
+                    feature: "providerOptions.xai.diarize",
+                    details: "AI Gateway does not currently expose xAI speaker diarization metadata."
+                )
+            );
         }
 
-        JsonElement? usage = root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object ? usageElement.Clone() : null;
-        JsonElement? providerMetadata = root.TryGetProperty("providerMetadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object ? metadata.Clone() : null;
+        JsonElement? usage =
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+                ? usageElement.Clone()
+                : null;
+        JsonElement? providerMetadata =
+            root.TryGetProperty("providerMetadata", out var metadata)
+            && metadata.ValueKind == JsonValueKind.Object
+                ? metadata.Clone()
+                : null;
         return new TranscriptionModelResult(
             textElement.GetString(),
             segments,
-            root.TryGetProperty("language", out var language) && language.ValueKind == JsonValueKind.String ? language.GetString() : null,
-            root.TryGetProperty("durationInSeconds", out var duration) && duration.ValueKind == JsonValueKind.Number ? duration.GetDouble() : null,
+            root.TryGetProperty("language", out var language)
+            && language.ValueKind == JsonValueKind.String
+                ? language.GetString()
+                : null,
+            root.TryGetProperty("durationInSeconds", out var duration)
+            && duration.ValueKind == JsonValueKind.Number
+                ? duration.GetDouble()
+                : null,
             warnings,
             providerMetadata,
-            new ProviderResponse(response.Headers, root, timestamp: DateTime.UtcNow, modelId: ModelId),
+            new ProviderResponse(
+                response.Headers,
+                root,
+                timestamp: DateTime.UtcNow,
+                modelId: ModelId
+            ),
             words,
-            usage);
+            usage
+        );
     }
 
     /// <inheritdoc />
-    public async Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var currentDate = _provider.Options.CurrentDate?.Invoke().UtcDateTime ?? DateTime.UtcNow;
@@ -184,7 +263,8 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         var startFrame = new TranscriptionStreamStartFrame(
             call.InputAudioFormat,
             call.ProviderOptions.ValueKind == JsonValueKind.Object ? call.ProviderOptions : null,
-            call.IncludeRawChunks);
+            call.IncludeRawChunks
+        );
 
         var startFrameJson = startFrame.ToJson();
         var session = new Session(call, authMethod);
@@ -193,11 +273,13 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             GetProtocolsFromHeaders(headers),
             headers,
             startFrameJson,
-            _provider.Options.WebSocket);
+            _provider.Options.WebSocket
+        );
         return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: currentDate, modelId: ModelId),
-            new ProviderRequest(startFrameJson));
+            new ProviderRequest(startFrameJson)
+        );
     }
 
     /// <summary>
@@ -207,8 +289,12 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
     public static string ToGatewayTranscriptionUrl(string baseUrl, string modelId)
     {
         var trimmed = baseUrl.TrimEnd('/');
-        var wsBase = trimmed.StartsWith("http", StringComparison.Ordinal) ? "ws" + trimmed.Substring(4) : trimmed;
-        return new Uri(wsBase + "/transcription-model").AbsoluteUri + "?ai-model-id=" + GatewayRealtimeModel.FormEncode(modelId);
+        var wsBase = trimmed.StartsWith("http", StringComparison.Ordinal)
+            ? "ws" + trimmed.Substring(4)
+            : trimmed;
+        return new Uri(wsBase + "/transcription-model").AbsoluteUri
+            + "?ai-model-id="
+            + GatewayRealtimeModel.FormEncode(modelId);
     }
 
     /// <summary>
@@ -219,7 +305,8 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
     public static IReadOnlyList<string> GetProtocolsFromHeaders(
         IReadOnlyDictionary<string, string?> headers,
         string marker = GatewayRealtimeAuth.GatewayTranscriptionSubprotocol,
-        Func<string, string?, IReadOnlyList<string>>? getProtocols = null)
+        Func<string, string?, IReadOnlyList<string>>? getProtocols = null
+    )
     {
         var normalized = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var pair in headers)
@@ -228,9 +315,11 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         }
 
         normalized.TryGetValue("authorization", out var authorization);
-        var token = authorization is not null && authorization.StartsWith("Bearer ", StringComparison.Ordinal)
-            ? authorization.Substring("Bearer ".Length)
-            : null;
+        var token =
+            authorization is not null
+            && authorization.StartsWith("Bearer ", StringComparison.Ordinal)
+                ? authorization.Substring("Bearer ".Length)
+                : null;
         if (token is null)
         {
             return new[] { marker };
@@ -249,21 +338,34 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
         if (items.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidResponseDataException(body, "Invalid Gateway transcription response: " + name + " must be an array.");
+            throw new InvalidResponseDataException(
+                body,
+                "Invalid Gateway transcription response: " + name + " must be an array."
+            );
         }
 
         var result = new List<TranscriptSegment>();
         foreach (var item in items.EnumerateArray())
         {
-            if (item.ValueKind != JsonValueKind.Object
-                || !item.TryGetProperty("text", out var text) || text.ValueKind != JsonValueKind.String
-                || !item.TryGetProperty("startSecond", out var start) || start.ValueKind != JsonValueKind.Number
-                || !item.TryGetProperty("endSecond", out var end) || end.ValueKind != JsonValueKind.Number)
+            if (
+                item.ValueKind != JsonValueKind.Object
+                || !item.TryGetProperty("text", out var text)
+                || text.ValueKind != JsonValueKind.String
+                || !item.TryGetProperty("startSecond", out var start)
+                || start.ValueKind != JsonValueKind.Number
+                || !item.TryGetProperty("endSecond", out var end)
+                || end.ValueKind != JsonValueKind.Number
+            )
             {
-                throw new InvalidResponseDataException(body, "Invalid Gateway transcription response: an entry of " + name + " is malformed.");
+                throw new InvalidResponseDataException(
+                    body,
+                    "Invalid Gateway transcription response: an entry of " + name + " is malformed."
+                );
             }
 
-            result.Add(new TranscriptSegment(text.GetString()!, start.GetDouble(), end.GetDouble()));
+            result.Add(
+                new TranscriptSegment(text.GetString()!, start.GetDouble(), end.GetDouble())
+            );
         }
 
         return result;
@@ -271,7 +373,8 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
     private static bool IsXaiTranscriptionModel(string modelId)
     {
-        return modelId.StartsWith("spacexai/", StringComparison.Ordinal) || modelId.StartsWith("xai/", StringComparison.Ordinal);
+        return modelId.StartsWith("spacexai/", StringComparison.Ordinal)
+            || modelId.StartsWith("xai/", StringComparison.Ordinal);
     }
 
     private static bool RequestsXaiDiarization(JsonElement providerOptions)
@@ -283,10 +386,12 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
         foreach (var name in new[] { "xai", "spacexai" })
         {
-            if (providerOptions.TryGetProperty(name, out var options)
+            if (
+                providerOptions.TryGetProperty(name, out var options)
                 && options.ValueKind == JsonValueKind.Object
                 && options.TryGetProperty("diarize", out var diarize)
-                && diarize.ValueKind == JsonValueKind.True)
+                && diarize.ValueKind == JsonValueKind.True
+            )
             {
                 return true;
             }
@@ -302,9 +407,14 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             case JsonValueKind.Array:
                 return value.EnumerateArray().Any(ContainsSpeaker);
             case JsonValueKind.Object:
-                return value.EnumerateObject().Any(property =>
-                    (property.Name == "speaker" && property.Value.ValueKind != JsonValueKind.Null)
-                    || ContainsSpeaker(property.Value));
+                return value
+                    .EnumerateObject()
+                    .Any(property =>
+                        (
+                            property.Name == "speaker"
+                            && property.Value.ValueKind != JsonValueKind.Null
+                        ) || ContainsSpeaker(property.Value)
+                    );
             default:
                 return false;
         }
@@ -334,50 +444,72 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
         public PartQueue<ModelStreamPart> Queue { get; } = new PartQueue<ModelStreamPart>();
 
-        public void Start(Uri url, IReadOnlyList<string> protocols, IReadOnlyDictionary<string, string?> headers, string startFrame, WebSocketFactory? webSocket)
+        public void Start(
+            Uri url,
+            IReadOnlyList<string> protocols,
+            IReadOnlyDictionary<string, string?> headers,
+            string startFrame,
+            WebSocketFactory? webSocket
+        )
         {
-            var connection = ConnectToWebSocket.Connect(new ConnectToWebSocketOptions
-            {
-                Url = url,
-                Protocols = protocols,
-                Headers = headers,
-                WebSocket = webSocket,
-                AbortSignal = _call.CancellationToken,
-                AbortReason = _call.AbortReason,
-                OnAbort = FinishWithAbort,
-                OnProcessingError = FinishWithError,
-                OnOpen = socket =>
+            var connection = ConnectToWebSocket.Connect(
+                new ConnectToWebSocketOptions
                 {
-                    socket.Send(startFrame);
-                    _ = SendAudioOrFailAsync(socket);
-                },
-                // Server frames are envelope-serialized stream parts; the codec handles parsing, unknown-part skipping, and timestamp revival.
-                OnMessageText = OnMessageTextAsync,
-                OnSocketError = () => FinishWithError(new AiSdkException("Connection error on AI Gateway transcription stream")),
-                OnClose = (_, _) =>
-                {
-                    bool hasServerErrorPart;
-                    JsonElement? lastServerError;
-                    lock (_gate)
+                    Url = url,
+                    Protocols = protocols,
+                    Headers = headers,
+                    WebSocket = webSocket,
+                    AbortSignal = _call.CancellationToken,
+                    AbortReason = _call.AbortReason,
+                    OnAbort = FinishWithAbort,
+                    OnProcessingError = FinishWithError,
+                    OnOpen = socket =>
                     {
-                        hasServerErrorPart = _hasServerErrorPart;
-                        lastServerError = _lastServerError;
-                    }
-
-                    if (hasServerErrorPart)
+                        socket.Send(startFrame);
+                        _ = SendAudioOrFailAsync(socket);
+                    },
+                    // Server frames are envelope-serialized stream parts; the codec handles parsing, unknown-part skipping, and timestamp revival.
+                    OnMessageText = OnMessageTextAsync,
+                    OnSocketError = () =>
+                        FinishWithError(
+                            new AiSdkException(
+                                "Connection error on AI Gateway transcription stream"
+                            )
+                        ),
+                    OnClose = (_, _) =>
                     {
-                        if (IsFinished)
+                        bool hasServerErrorPart;
+                        JsonElement? lastServerError;
+                        lock (_gate)
                         {
+                            hasServerErrorPart = _hasServerErrorPart;
+                            lastServerError = _lastServerError;
+                        }
+
+                        if (hasServerErrorPart)
+                        {
+                            if (IsFinished)
+                            {
+                                return;
+                            }
+
+                            FinishWithError(
+                                GatewayStreamErrors.CreateErrorFromServerErrorPart(
+                                    lastServerError,
+                                    _authMethod
+                                )
+                            );
                             return;
                         }
 
-                        FinishWithError(GatewayStreamErrors.CreateErrorFromServerErrorPart(lastServerError, _authMethod));
-                        return;
-                    }
-
-                    FinishWithError(new AiSdkException("AI Gateway transcription stream closed before a finish part was received"));
-                },
-            });
+                        FinishWithError(
+                            new AiSdkException(
+                                "AI Gateway transcription stream closed before a finish part was received"
+                            )
+                        );
+                    },
+                }
+            );
 
             // An abort during `Connect` finishes the session before the connection exists; close it then.
             bool finished;
@@ -508,7 +640,10 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             catch (Exception error)
             {
                 // The abort signal also cancels the pending audio read; the stream fails with the abort reason, as for `onAbort`.
-                if (error is OperationCanceledException && _call.CancellationToken.IsCancellationRequested)
+                if (
+                    error is OperationCanceledException
+                    && _call.CancellationToken.IsCancellationRequested
+                )
                 {
                     FinishWithAbort(_call.AbortReason ?? error);
                     return;
@@ -530,7 +665,9 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             {
                 while (true)
                 {
-                    var bytes = await reader.ReadAsync(_call.CancellationToken).ConfigureAwait(false);
+                    var bytes = await reader
+                        .ReadAsync(_call.CancellationToken)
+                        .ConfigureAwait(false);
                     if (bytes is null || IsFinished)
                     {
                         break;
@@ -549,7 +686,12 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
                         var frame = new byte[length];
                         Buffer.BlockCopy(bytes, offset, frame, 0, length);
                         socket.Send(frame);
-                        await WebSocketUtils.WaitForWebSocketBufferDrainAsync(socket, cancellationToken: _call.CancellationToken).ConfigureAwait(false);
+                        await WebSocketUtils
+                            .WaitForWebSocketBufferDrainAsync(
+                                socket,
+                                cancellationToken: _call.CancellationToken
+                            )
+                            .ConfigureAwait(false);
                     }
                 }
             }
@@ -574,7 +716,13 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
 
             if (!IsFinished && !audioStopped)
             {
-                socket.Send(new JsonObject { ["type"] = TranscriptionStreamEnvelope.TranscriptionStreamAudioDoneFrameType }.ToJsonString());
+                socket.Send(
+                    new JsonObject
+                    {
+                        ["type"] =
+                            TranscriptionStreamEnvelope.TranscriptionStreamAudioDoneFrameType,
+                    }.ToJsonString()
+                );
             }
         }
 

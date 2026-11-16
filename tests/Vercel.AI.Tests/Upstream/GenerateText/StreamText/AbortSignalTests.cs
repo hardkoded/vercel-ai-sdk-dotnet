@@ -16,16 +16,24 @@ public sealed class AbortSignalTests
 
     [Theory]
     [MemberData(nameof(Apis))]
-    [UpstreamTest("packages/ai/src/generate-text/stream-text.test.ts::streamText > abort signal::%s should reject on abort without waiting for callbacks or cancellation", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/stream-text.test.ts::streamText > abort signal::%s should reject on abort without waiting for callbacks or cancellation",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_on_abort_without_waiting_for_callbacks_or_cancellation(string api)
     {
         var abortController = new AbortController();
         var reason = new JsError("manual abort");
-        var outputReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var abortCallback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var outputReceived = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var abortCallback = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var model = new StreamTextAbortSupport.OpenStreamModel(
             new TextStartStreamPart("1"),
-            new TextDeltaStreamPart("1", "Hello"));
+            new TextDeltaStreamPart("1", "Hello")
+        );
         var onAbortCalls = new List<StreamAbortContext>();
         var onErrorCalls = 0;
         var onFinishCalls = 0;
@@ -38,28 +46,34 @@ public sealed class AbortSignalTests
         StreamTextResult result;
         if (api == "streamText")
         {
-            result = StreamTextAbortSupport.Client().StreamTextAsync(new StreamTextOptions
-            {
-                Model = model,
-                Prompt = "test-input",
-                AbortSignal = abortController.Signal,
-                OnAbort = OnAbort,
-                OnError = (_, _) =>
-                {
-                    onErrorCalls++;
-                    return Task.CompletedTask;
-                },
-                OnFinish = (_, _) =>
-                {
-                    onFinishCalls++;
-                    return Task.CompletedTask;
-                },
-            });
+            result = StreamTextAbortSupport
+                .Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Prompt = "test-input",
+                        AbortSignal = abortController.Signal,
+                        OnAbort = OnAbort,
+                        OnError = (_, _) =>
+                        {
+                            onErrorCalls++;
+                            return Task.CompletedTask;
+                        },
+                        OnFinish = (_, _) =>
+                        {
+                            onFinishCalls++;
+                            return Task.CompletedTask;
+                        },
+                    }
+                );
         }
         else
         {
-            result = new Agent(new AgentOptions { Model = model, OnAbort = OnAbort }, StreamTextAbortSupport.Client())
-                .Stream("test-input", abortSignal: abortController.Signal);
+            result = new Agent(
+                new AgentOptions { Model = model, OnAbort = OnAbort },
+                StreamTextAbortSupport.Client()
+            ).Stream("test-input", abortSignal: abortController.Signal);
         }
 
         var stream = StreamTextAbortSupport.Collect(result, outputReceived);

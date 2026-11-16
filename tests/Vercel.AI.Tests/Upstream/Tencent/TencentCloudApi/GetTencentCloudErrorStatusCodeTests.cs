@@ -13,7 +13,8 @@ namespace Vercel.AI.Tests.Upstream.Tencent.TencentCloudApi;
 /// <summary>Port of <c>tencent-cloud-api.test.ts</c> &gt; <c>getTencentCloudErrorStatusCode</c>.</summary>
 public sealed class GetTencentCloudErrorStatusCodeTests
 {
-    private const string Prefix = "packages/tencent/src/tencent-cloud-api.test.ts::getTencentCloudErrorStatusCode::";
+    private const string Prefix =
+        "packages/tencent/src/tencent-cloud-api.test.ts::getTencentCloudErrorStatusCode::";
     private const string Commit = "1c7a311d5384a6741daade550e4d3a7f9253d71e";
 
     [Theory]

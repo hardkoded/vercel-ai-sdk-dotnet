@@ -54,7 +54,8 @@ public static class ProviderOptionsResolver
         IEnumerable<string> namespaces,
         ProviderOptionsResolution resolution,
         Func<JsonElement, T> parse,
-        Func<T, T, T>? merge = null)
+        Func<T, T, T>? merge = null
+    )
     {
         if (namespaces == null)
         {
@@ -68,7 +69,10 @@ public static class ProviderOptionsResolver
 
         if (resolution == ProviderOptionsResolution.Merge && merge == null)
         {
-            throw new ArgumentException("A merge function is required to merge namespaces.", nameof(merge));
+            throw new ArgumentException(
+                "A merge function is required to merge namespaces.",
+                nameof(merge)
+            );
         }
 
         var matched = new List<string>();
@@ -81,10 +85,12 @@ public static class ProviderOptionsResolver
                 continue;
             }
 
-            if (providerOptions == null
+            if (
+                providerOptions == null
                 || !providerOptions.TryGetValue(name, out var element)
                 || element.ValueKind == JsonValueKind.Null
-                || element.ValueKind == JsonValueKind.Undefined)
+                || element.ValueKind == JsonValueKind.Undefined
+            )
             {
                 continue;
             }

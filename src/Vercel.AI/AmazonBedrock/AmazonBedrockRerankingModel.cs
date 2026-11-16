@@ -29,9 +29,22 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
     public string ModelId { get; }
 
     /// <inheritdoc />
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, CancellationToken cancellationToken, IReadOnlyDictionary<string, string?>? headers = null)
+    public async Task<RerankResult> DoRerankAsync(
+        string query,
+        IReadOnlyList<string> documents,
+        int? topN,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string?>? headers = null
+    )
     {
-        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents.ToArray()), query, topN, null, ProviderExchange.ToRequestHeaders(headers), cancellationToken);
+        var call = new Operations.RerankModelCall(
+            new Operations.RerankModelDocuments("text", documents.ToArray()),
+            query,
+            topN,
+            null,
+            ProviderExchange.ToRequestHeaders(headers),
+            cancellationToken
+        );
         return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
@@ -39,16 +52,42 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
     /// Reranks text documents. <paramref name="providerOptions"/> is the V4 provider-options object
     /// (<c>amazonBedrock</c> or legacy <c>bedrock</c>).
     /// </summary>
-    public async Task<RerankResult> DoRerankAsync(string query, IReadOnlyList<string> documents, int? topN, JsonElement? providerOptions, CancellationToken cancellationToken)
+    public async Task<RerankResult> DoRerankAsync(
+        string query,
+        IReadOnlyList<string> documents,
+        int? topN,
+        JsonElement? providerOptions,
+        CancellationToken cancellationToken
+    )
     {
-        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("text", documents.ToArray()), query, topN, providerOptions, null, cancellationToken);
+        var call = new Operations.RerankModelCall(
+            new Operations.RerankModelDocuments("text", documents.ToArray()),
+            query,
+            topN,
+            providerOptions,
+            null,
+            cancellationToken
+        );
         return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary>Reranks JSON documents. Each value is sent as an inline JSON document.</summary>
-    public async Task<RerankResult> DoRerankObjectsAsync(string query, IReadOnlyList<JsonElement> documents, int? topN, JsonElement? providerOptions, CancellationToken cancellationToken)
+    public async Task<RerankResult> DoRerankObjectsAsync(
+        string query,
+        IReadOnlyList<JsonElement> documents,
+        int? topN,
+        JsonElement? providerOptions,
+        CancellationToken cancellationToken
+    )
     {
-        var call = new Operations.RerankModelCall(new Operations.RerankModelDocuments("object", documents.Cast<object?>().ToArray()), query, topN, providerOptions, null, cancellationToken);
+        var call = new Operations.RerankModelCall(
+            new Operations.RerankModelDocuments("object", documents.Cast<object?>().ToArray()),
+            query,
+            topN,
+            providerOptions,
+            null,
+            cancellationToken
+        );
         return ToResult(await DoRerankAsync(call, cancellationToken).ConfigureAwait(false));
     }
 
@@ -56,43 +95,48 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
     /// Reranks text or object documents. Call headers are sent before SigV4 signing.
     /// The response carries the headers and raw body, with no warnings or provider metadata.
     /// </summary>
-    public async Task<Operations.RerankModelResponse> DoRerankAsync(Operations.RerankModelCall call, CancellationToken cancellationToken)
+    public async Task<Operations.RerankModelResponse> DoRerankAsync(
+        Operations.RerankModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         call = call ?? throw new ArgumentNullException(nameof(call));
         var sources = new JsonArray();
         foreach (var document in call.Documents.Values)
         {
-            sources.Add(new JsonObject
-            {
-                ["type"] = "INLINE",
-                ["inlineDocumentSource"] = call.Documents.Type == "text"
-                    ? new JsonObject
-                    {
-                        ["type"] = "TEXT",
-                        ["textDocument"] = new JsonObject { ["text"] = (string?)document },
-                    }
-                    : new JsonObject
-                    {
-                        ["type"] = "JSON",
-                        ["jsonDocument"] = JsonSerializer.SerializeToNode(document),
-                    },
-            });
+            sources.Add(
+                new JsonObject
+                {
+                    ["type"] = "INLINE",
+                    ["inlineDocumentSource"] =
+                        call.Documents.Type == "text"
+                            ? new JsonObject
+                            {
+                                ["type"] = "TEXT",
+                                ["textDocument"] = new JsonObject { ["text"] = (string?)document },
+                            }
+                            : new JsonObject
+                            {
+                                ["type"] = "JSON",
+                                ["jsonDocument"] = JsonSerializer.SerializeToNode(document),
+                            },
+                }
+            );
         }
 
         var options = ReadOptions(call.ProviderOptions);
         var modelConfiguration = new JsonObject
         {
-            ["modelArn"] = "arn:aws:bedrock:" + _provider.Options.Region + "::foundation-model/" + ModelId,
+            ["modelArn"] =
+                "arn:aws:bedrock:" + _provider.Options.Region + "::foundation-model/" + ModelId,
         };
         if (options.AdditionalModelRequestFields != null)
         {
-            modelConfiguration["additionalModelRequestFields"] = options.AdditionalModelRequestFields;
+            modelConfiguration["additionalModelRequestFields"] =
+                options.AdditionalModelRequestFields;
         }
 
-        var configuration = new JsonObject
-        {
-            ["modelConfiguration"] = modelConfiguration,
-        };
+        var configuration = new JsonObject { ["modelConfiguration"] = modelConfiguration };
         if (call.TopN is { } count)
         {
             configuration["numberOfResults"] = count;
@@ -121,25 +165,58 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
         }
 
         var json = body.ToJsonString();
-        var uri = new Uri(AmazonBedrockEndpoints.Resolve(_provider.Options.AgentRuntimeBaseUrl, _provider.Options.Region, "bedrock-agent-runtime") + "/rerank");
+        var uri = new Uri(
+            AmazonBedrockEndpoints.Resolve(
+                _provider.Options.AgentRuntimeBaseUrl,
+                _provider.Options.Region,
+                "bedrock-agent-runtime"
+            ) + "/rerank"
+        );
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
-        await _provider.AddHeadersAsync(request, call.Headers?.Select(header => new KeyValuePair<string, string?>(header.Key, header.Value)), cancellationToken).ConfigureAwait(false);
+        await _provider
+            .AddHeadersAsync(
+                request,
+                call.Headers?.Select(header => new KeyValuePair<string, string?>(
+                    header.Key,
+                    header.Value
+                )),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
         var payload = Encoding.UTF8.GetBytes(json);
-        var accessKey = _provider.Options.AccessKeyId ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-        var secret = _provider.Options.SecretAccessKey ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+        var accessKey = _provider.Options.AccessKeyId
+            ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+        var secret = _provider.Options.SecretAccessKey
+            ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
         {
-            throw new AiSdkException("AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.");
+            throw new AiSdkException(
+                "AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+            );
         }
 
-        var token = _provider.Options.SessionToken ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-        AwsSigV4.Sign(request, payload, _provider.Options.Region, "bedrock", accessKey!, secret!, token, _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow);
-        using var response = await _provider.HttpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-        var text = await CancellableReads.ReadAsStringAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        var token = _provider.Options.SessionToken
+            ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
+        AwsSigV4.Sign(
+            request,
+            payload,
+            _provider.Options.Region,
+            "bedrock",
+            accessKey!,
+            secret!,
+            token,
+            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow
+        );
+        using var response = await _provider
+            .HttpClient.SendAsync(request, cancellationToken)
+            .ConfigureAwait(false);
+        var text = await CancellableReads
+            .ReadAsStringAsync(response.Content, cancellationToken)
+            .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             throw AmazonBedrockErrors.Create((int)response.StatusCode, text);
@@ -152,18 +229,32 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
         {
             foreach (var result in results.EnumerateArray())
             {
-                var index = result.TryGetProperty("index", out var indexElement) ? indexElement.GetInt32() : 0;
-                var score = result.TryGetProperty("relevanceScore", out var scoreElement) ? scoreElement.GetDouble() : 0;
+                var index = result.TryGetProperty("index", out var indexElement)
+                    ? indexElement.GetInt32()
+                    : 0;
+                var score = result.TryGetProperty("relevanceScore", out var scoreElement)
+                    ? scoreElement.GetDouble()
+                    : 0;
                 ranking.Add(new Operations.RerankModelRank(index, score));
             }
         }
 
-        return new Operations.RerankModelResponse(ranking, response: new Operations.ProviderResponse(JsonStreams.ExtractResponseHeaders(response), root.Clone()));
+        return new Operations.RerankModelResponse(
+            ranking,
+            response: new Operations.ProviderResponse(
+                JsonStreams.ExtractResponseHeaders(response),
+                root.Clone()
+            )
+        );
     }
 
     private static RerankResult ToResult(Operations.RerankModelResponse response)
     {
-        return new RerankResult(response.Ranking.Select(rank => new RerankItem(rank.Index, rank.RelevanceScore)).ToList());
+        return new RerankResult(
+            response
+                .Ranking.Select(rank => new RerankItem(rank.Index, rank.RelevanceScore))
+                .ToList()
+        );
     }
 
     private static RerankOptions ReadOptions(JsonElement? providerOptions)
@@ -174,7 +265,10 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
         }
 
         JsonElement provider;
-        if (!root.TryGetProperty("amazonBedrock", out provider) && !root.TryGetProperty("bedrock", out provider))
+        if (
+            !root.TryGetProperty("amazonBedrock", out provider)
+            && !root.TryGetProperty("bedrock", out provider)
+        )
         {
             return default;
         }
@@ -184,10 +278,16 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
             return default;
         }
 
-        string? nextToken = provider.TryGetProperty("nextToken", out var token) && token.ValueKind == JsonValueKind.String ? token.GetString() : null;
-        JsonNode? fields = provider.TryGetProperty("additionalModelRequestFields", out var extra) && extra.ValueKind == JsonValueKind.Object
-            ? JsonNode.Parse(extra.GetRawText())
-            : null;
+        string? nextToken =
+            provider.TryGetProperty("nextToken", out var token)
+            && token.ValueKind == JsonValueKind.String
+                ? token.GetString()
+                : null;
+        JsonNode? fields =
+            provider.TryGetProperty("additionalModelRequestFields", out var extra)
+            && extra.ValueKind == JsonValueKind.Object
+                ? JsonNode.Parse(extra.GetRawText())
+                : null;
         return new RerankOptions(nextToken, fields);
     }
 

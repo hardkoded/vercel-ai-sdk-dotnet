@@ -12,7 +12,8 @@ public sealed class SseMcpTransportProtocolVersionDowngradeTests
     [Fact]
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-sse-transport.test.ts::SseMCPTransport > protocol version downgrade::should use negotiated protocolVersion in POST headers after it is set",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldUseNegotiatedProtocolVersionInPostHeadersAfterItIsSet()
     {
         var server = new SseTestServer();
@@ -28,7 +29,9 @@ public sealed class SseMcpTransportProtocolVersionDowngradeTests
         // Simulate protocol version negotiation
         transport.ProtocolVersion = "2025-06-18";
 
-        using var document = JsonDocument.Parse("{\"jsonrpc\":\"2.0\",\"method\":\"tools/list\",\"params\":{},\"id\":\"1\"}");
+        using var document = JsonDocument.Parse(
+            "{\"jsonrpc\":\"2.0\",\"method\":\"tools/list\",\"params\":{},\"id\":\"1\"}"
+        );
         await transport.SendAsync(document.RootElement);
 
         var postCall = server.Calls.First(call => call.Method == "POST");

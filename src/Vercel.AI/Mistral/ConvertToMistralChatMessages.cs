@@ -15,7 +15,10 @@ namespace Vercel.AI.Mistral;
 /// <summary>Converts a prompt to Mistral chat messages. Maps to <c>convert-to-mistral-chat-messages.ts</c>.</summary>
 internal static class ConvertToMistralChatMessages
 {
-    private static readonly JsonSerializerOptions CompactOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions CompactOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// Returns the tool call arguments as JSON text: valid JSON is kept as it is and any other text is sent as a JSON string.
@@ -44,10 +47,14 @@ internal static class ConvertToMistralChatMessages
             switch (prompt[i])
             {
                 case SystemModelMessage system:
-                    messages.Add(new JsonObject { ["role"] = "system", ["content"] = system.Content });
+                    messages.Add(
+                        new JsonObject { ["role"] = "system", ["content"] = system.Content }
+                    );
                     break;
                 case UserModelMessage user:
-                    messages.Add(new JsonObject { ["role"] = "user", ["content"] = UserContent(user) });
+                    messages.Add(
+                        new JsonObject { ["role"] = "user", ["content"] = UserContent(user) }
+                    );
                     break;
                 case AssistantModelMessage assistant:
                     messages.Add(Assistant(assistant, isLastMessage));
@@ -136,12 +143,18 @@ internal static class ConvertToMistralChatMessages
     {
         if (part.ProviderReference != null)
         {
-            throw new UnsupportedFunctionalityException("file parts with provider references", "'file parts with provider references' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "file parts with provider references",
+                "'file parts with provider references' functionality not supported."
+            );
         }
 
         if (part.Text != null)
         {
-            throw new UnsupportedFunctionalityException("text file parts", "'text file parts' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "text file parts",
+                "'text file parts' functionality not supported."
+            );
         }
 
         if (MediaTypes.GetTopLevelMediaType(part.MediaType) == "image")
@@ -153,12 +166,18 @@ internal static class ConvertToMistralChatMessages
         {
             if (MediaTypes.ResolveFullMediaType(part.MediaType, part.Data) != "application/pdf")
             {
-                throw new UnsupportedFunctionalityException("Only images and PDF file parts are supported", "'Only images and PDF file parts are supported' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "Only images and PDF file parts are supported",
+                    "'Only images and PDF file parts are supported' functionality not supported."
+                );
             }
         }
         else if (part.MediaType != "application/pdf")
         {
-            throw new UnsupportedFunctionalityException("Only images and PDF file parts are supported", "'Only images and PDF file parts are supported' functionality not supported.");
+            throw new UnsupportedFunctionalityException(
+                "Only images and PDF file parts are supported",
+                "'Only images and PDF file parts are supported' functionality not supported."
+            );
         }
 
         return new JsonObject { ["type"] = "document_url", ["document_url"] = FormatFileUrl(part) };
@@ -171,7 +190,10 @@ internal static class ConvertToMistralChatMessages
             return part.Url;
         }
 
-        return "data:" + MediaTypes.ResolveFullMediaType(part.MediaType, part.Data) + ";base64," + System.Convert.ToBase64String(part.Data ?? Array.Empty<byte>());
+        return "data:"
+            + MediaTypes.ResolveFullMediaType(part.MediaType, part.Data)
+            + ";base64,"
+            + System.Convert.ToBase64String(part.Data ?? Array.Empty<byte>());
     }
 
     private static JsonObject Assistant(AssistantModelMessage message, bool isLastMessage)
@@ -186,26 +208,34 @@ internal static class ConvertToMistralChatMessages
             {
                 case AssistantTextPart textPart:
                     text.Append(textPart.Text);
-                    contentParts.Add(new JsonObject { ["type"] = "text", ["text"] = textPart.Text });
+                    contentParts.Add(
+                        new JsonObject { ["type"] = "text", ["text"] = textPart.Text }
+                    );
                     break;
                 case AssistantToolCallPart call:
-                    toolCalls.Add(new JsonObject
-                    {
-                        ["id"] = call.ToolCall.ToolCallId,
-                        ["type"] = "function",
-                        ["function"] = new JsonObject
+                    toolCalls.Add(
+                        new JsonObject
                         {
-                            ["name"] = call.ToolCall.ToolName,
-                            ["arguments"] = SerializeMistralToolCallArguments(call.ToolCall.ArgumentsJson),
-                        },
-                    });
+                            ["id"] = call.ToolCall.ToolCallId,
+                            ["type"] = "function",
+                            ["function"] = new JsonObject
+                            {
+                                ["name"] = call.ToolCall.ToolName,
+                                ["arguments"] = SerializeMistralToolCallArguments(
+                                    call.ToolCall.ArgumentsJson
+                                ),
+                            },
+                        }
+                    );
                     break;
                 case AssistantReasoningPart reasoning:
                     hasReasoning = true;
                     contentParts.Add(Thinking(reasoning.Text));
                     break;
                 default:
-                    throw new InvalidOperationException("Unsupported content type in assistant message: " + part.Type);
+                    throw new InvalidOperationException(
+                        "Unsupported content type in assistant message: " + part.Type
+                    );
             }
         }
 

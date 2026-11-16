@@ -61,7 +61,15 @@ public sealed class OpenAISpeechCall
 /// <summary>Speech audio plus the response metadata recorded for the call.</summary>
 public sealed class OpenAISpeechResult
 {
-    internal OpenAISpeechResult(byte[] audio, string mediaType, IReadOnlyList<OpenAICallWarning> warnings, string modelId, DateTimeOffset timestamp, IReadOnlyDictionary<string, string> headers, string? requestBody = null)
+    internal OpenAISpeechResult(
+        byte[] audio,
+        string mediaType,
+        IReadOnlyList<OpenAICallWarning> warnings,
+        string modelId,
+        DateTimeOffset timestamp,
+        IReadOnlyDictionary<string, string> headers,
+        string? requestBody = null
+    )
     {
         RequestBody = requestBody;
         Audio = audio;
@@ -95,7 +103,15 @@ public sealed class OpenAISpeechResult
 
     internal OpenAISpeechResult WithWarnings(IReadOnlyList<OpenAICallWarning> warnings)
     {
-        return new OpenAISpeechResult(Audio, MediaType, warnings, ModelId, Timestamp, Headers, RequestBody);
+        return new OpenAISpeechResult(
+            Audio,
+            MediaType,
+            warnings,
+            ModelId,
+            Timestamp,
+            Headers,
+            RequestBody
+        );
     }
 }
 
@@ -123,11 +139,18 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
     private readonly ProviderHttp _http;
     private readonly string _providerName;
     private readonly Func<Uri> _url;
-    private readonly Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> _headers;
+    private readonly Func<
+        IReadOnlyDictionary<string, string?>?,
+        Dictionary<string, string?>
+    > _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
     /// <summary>Creates a speech model.</summary>
-    public OpenAISpeechModel(OpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public OpenAISpeechModel(
+        OpenAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         if (provider == null)
         {
@@ -146,7 +169,11 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
     /// Creates an Azure OpenAI speech model for a deployment. The provider id is <c>azure.speech</c> and requests go to
     /// <c>/openai/v1/audio/speech</c> (or the deployments route) with the Azure headers.
     /// </summary>
-    public OpenAISpeechModel(Azure.AzureOpenAIProvider provider, string modelId, Func<DateTimeOffset>? clock = null)
+    public OpenAISpeechModel(
+        Azure.AzureOpenAIProvider provider,
+        string modelId,
+        Func<DateTimeOffset>? clock = null
+    )
     {
         if (provider == null)
         {
@@ -181,10 +208,13 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
             }
             else
             {
-                warnings.Add(new OpenAICallWarning(
-                    "unsupported",
-                    "outputFormat",
-                    "Unsupported output format: " + call.OutputFormat + ". Using mp3 instead."));
+                warnings.Add(
+                    new OpenAICallWarning(
+                        "unsupported",
+                        "outputFormat",
+                        "Unsupported output format: " + call.OutputFormat + ". Using mp3 instead."
+                    )
+                );
             }
         }
 
@@ -218,17 +248,25 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
 
         if (!string.IsNullOrEmpty(call.Language))
         {
-            warnings.Add(new OpenAICallWarning(
-                "unsupported",
-                "language",
-                "OpenAI speech models do not support language selection. Language parameter \"" + call.Language + "\" was ignored."));
+            warnings.Add(
+                new OpenAICallWarning(
+                    "unsupported",
+                    "language",
+                    "OpenAI speech models do not support language selection. Language parameter \""
+                        + call.Language
+                        + "\" was ignored."
+                )
+            );
         }
 
         return new OpenAISpeechPreparation(body, warnings);
     }
 
     /// <inheritdoc />
-    public async Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+    public async Task<SpeechModelResult> DoGenerateAsync(
+        SpeechModelCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (call is null)
         {
@@ -236,48 +274,84 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
         }
 
         var result = await GenerateAsync(
-            new OpenAISpeechCall(call.Text)
-            {
-                Voice = call.Voice,
-                Speed = call.Speed,
-                Instructions = call.Instructions,
-                OutputFormat = call.OutputFormat,
-                Language = call.Language,
-                ProviderOptions = call.ProviderOptions,
-                Headers = call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
-            },
-            cancellationToken).ConfigureAwait(false);
-        var warnings = result.Warnings
-            .Select(warning => new OperationWarning(warning.Type, warning.Message, warning.Feature, warning.Details))
+                new OpenAISpeechCall(call.Text)
+                {
+                    Voice = call.Voice,
+                    Speed = call.Speed,
+                    Instructions = call.Instructions,
+                    OutputFormat = call.OutputFormat,
+                    Language = call.Language,
+                    ProviderOptions = call.ProviderOptions,
+                    Headers = call.Headers.ToDictionary(
+                        pair => pair.Key,
+                        pair => (string?)pair.Value
+                    ),
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        var warnings = result
+            .Warnings.Select(warning => new OperationWarning(
+                warning.Type,
+                warning.Message,
+                warning.Feature,
+                warning.Details
+            ))
             .ToList();
         return new SpeechModelResult(
             result.Audio,
             warnings,
-            response: new ProviderResponse(result.Headers, timestamp: result.Timestamp.UtcDateTime, modelId: result.ModelId));
+            response: new ProviderResponse(
+                result.Headers,
+                timestamp: result.Timestamp.UtcDateTime,
+                modelId: result.ModelId
+            )
+        );
     }
 
     /// <inheritdoc />
-    public async Task<SpeechResult> DoGenerateAsync(SpeechCallOptions options, CancellationToken cancellationToken)
+    public async Task<SpeechResult> DoGenerateAsync(
+        SpeechCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var result = await GenerateAsync(new OpenAISpeechCall(options.Text) { Voice = options.Voice }, cancellationToken).ConfigureAwait(false);
+        var result = await GenerateAsync(
+                new OpenAISpeechCall(options.Text) { Voice = options.Voice },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         return new SpeechResult(result.Audio, result.MediaType);
     }
 
     /// <summary>Synthesizes speech and returns the audio bytes, warnings, and response headers.</summary>
-    public async Task<OpenAISpeechResult> GenerateAsync(OpenAISpeechCall call, CancellationToken cancellationToken)
+    public async Task<OpenAISpeechResult> GenerateAsync(
+        OpenAISpeechCall call,
+        CancellationToken cancellationToken
+    )
     {
         var prepared = Prepare(ModelId, call);
         var requestBody = prepared.Body.ToJsonString();
-        var response = await _http.SendBinaryAsync(
-            HttpMethod.Post,
-            _url(),
-            new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json"),
-            _headers(call.Headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _http
+            .SendBinaryAsync(
+                HttpMethod.Post,
+                _url(),
+                new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json"),
+                _headers(call.Headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var bytes = response.Body;
 
         var format = prepared.Body["response_format"]?.GetValue<string>() ?? "mp3";
-        return new OpenAISpeechResult(bytes, MediaType(format), prepared.Warnings, ModelId, OpenAIClock.Now(_clock), response.Headers, requestBody);
+        return new OpenAISpeechResult(
+            bytes,
+            MediaType(format),
+            prepared.Warnings,
+            ModelId,
+            OpenAIClock.Now(_clock),
+            response.Headers,
+            requestBody
+        );
     }
 
     /// <summary>Clock used when a caller records a response timestamp.</summary>

@@ -72,11 +72,16 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     /// including one wrapped in <see cref="DelegatingHandler"/>s. This changes the handler you pass, and it throws if the handler has already sent a request.
     /// Any other handler type that exposes a public settable <c>bool AllowAutoRedirect</c> property is changed by reflection. Any remaining handler is left as is. It must not follow redirects on its own.
     /// </param>
-    public static new KlingAIProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new KlingAIProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
         RedirectGuard.DisableAutoRedirect(handler);
-        var client = handler is null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+            : new HttpClient(handler, disposeHandler: false);
         if (handler is not null)
         {
             options = options?.Copy() ?? new KlingAIOptions();
@@ -105,7 +110,10 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     {
         options = options?.Copy() ?? new KlingAIOptions();
         options.ProviderName = ProviderId;
-        options.BaseUrl = string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1" ? DefaultBaseUrl : options.BaseUrl.TrimEnd('/');
+        options.BaseUrl =
+            string.IsNullOrEmpty(options.BaseUrl) || options.BaseUrl == "https://api.openai.com/v1"
+                ? DefaultBaseUrl
+                : options.BaseUrl.TrimEnd('/');
         options.ApiKeyEnvironmentVariable = KlingAIAuth.ApiKeyEnvironmentVariable;
         options.SupportsEmbeddings = false;
         options.SupportsImages = false;
@@ -119,15 +127,26 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
 public static class KlingAIServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddKlingAI(this IServiceCollection services, Action<KlingAIOptions>? configure = null)
+    public static IServiceCollection AddKlingAI(
+        this IServiceCollection services,
+        Action<KlingAIOptions>? configure = null
+    )
     {
         // Redirects are followed by hand so a status poll cannot be bounced to a private address.
-        services.AddHttpClient(KlingAIProvider.ProviderId).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        services
+            .AddHttpClient(KlingAIProvider.ProviderId)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler { AllowAutoRedirect = false }
+            );
         services.AddSingleton(sp =>
         {
             var options = new KlingAIOptions();
             configure?.Invoke(options);
-            return new KlingAIProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(KlingAIProvider.ProviderId), options);
+            return new KlingAIProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(KlingAIProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

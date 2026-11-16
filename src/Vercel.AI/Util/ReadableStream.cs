@@ -46,9 +46,7 @@ public sealed class UndefinedStreamError : Exception
 {
     /// <summary>Creates the error.</summary>
     public UndefinedStreamError()
-        : base("undefined")
-    {
-    }
+        : base("undefined") { }
 
     /// <summary>Always <c>null</c>, matching a missing rejection reason.</summary>
     public object? Reason
@@ -147,7 +145,8 @@ public class ReadableStream<T>
 {
     private readonly object _gate = new object();
     private readonly Queue<T> _queue = new Queue<T>();
-    private readonly Queue<TaskCompletionSource<StreamRead<T>>> _waiters = new Queue<TaskCompletionSource<StreamRead<T>>>();
+    private readonly Queue<TaskCompletionSource<StreamRead<T>>> _waiters =
+        new Queue<TaskCompletionSource<StreamRead<T>>>();
     private readonly Func<ReadableStreamController<T>, Task>? _pull;
     private readonly Func<Task>? _onCancel;
     private readonly ReadableStreamController<T> _controller;
@@ -160,7 +159,11 @@ public class ReadableStream<T>
     private object? _error;
 
     /// <summary>Creates a stream. <paramref name="start"/> runs before the constructor returns.</summary>
-    public ReadableStream(Action<ReadableStreamController<T>>? start = null, Func<ReadableStreamController<T>, Task>? pull = null, Func<Task>? cancel = null)
+    public ReadableStream(
+        Action<ReadableStreamController<T>>? start = null,
+        Func<ReadableStreamController<T>, Task>? pull = null,
+        Func<Task>? cancel = null
+    )
     {
         _pull = pull;
         _onCancel = cancel;
@@ -253,7 +256,9 @@ public class ReadableStream<T>
         ReadableStreamController<T>? second = null;
         var gate = new SemaphoreSlim(1, 1);
         var cancelled = 0;
-        var sourceCancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sourceCancelled = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var finished = false;
 
         async Task PullAsync(ReadableStreamController<T> own)
@@ -293,11 +298,21 @@ public class ReadableStream<T>
 
         Task CancelBranchAsync()
         {
-            return Interlocked.Increment(ref cancelled) == 2 ? reader.CancelAsync() : Task.CompletedTask;
+            return Interlocked.Increment(ref cancelled) == 2
+                ? reader.CancelAsync()
+                : Task.CompletedTask;
         }
 
-        var firstStream = new ReadableStream<T>(start: c => first = c, pull: PullAsync, cancel: CancelBranchAsync);
-        var secondStream = new ReadableStream<T>(start: c => second = c, pull: PullAsync, cancel: CancelBranchAsync);
+        var firstStream = new ReadableStream<T>(
+            start: c => first = c,
+            pull: PullAsync,
+            cancel: CancelBranchAsync
+        );
+        var secondStream = new ReadableStream<T>(
+            start: c => second = c,
+            pull: PullAsync,
+            cancel: CancelBranchAsync
+        );
         return (firstStream, secondStream);
     }
 
@@ -360,37 +375,42 @@ public class ReadableStream<T>
                 if (pending != null && !pending.IsCompleted)
                 {
                     // An enumerator cannot be disposed while a read is in flight. A source that ignores its token gets a short grace period.
-                    await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(1))).ConfigureAwait(false);
+                    await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(1)))
+                        .ConfigureAwait(false);
                     if (!pending.IsCompleted)
                     {
                         _ = pending.ContinueWith(
                             static task => _ = task.Exception,
                             CancellationToken.None,
                             TaskContinuationOptions.OnlyOnFaulted,
-                            TaskScheduler.Default);
+                            TaskScheduler.Default
+                        );
                         return;
                     }
                 }
 
                 await DisposeEnumeratorAsync().ConfigureAwait(false);
-            });
+            }
+        );
     }
 
     /// <summary>A stream that emits <paramref name="values"/> and then closes.</summary>
     public static ReadableStream<T> FromArray(IReadOnlyList<T>? values)
     {
-        return new ReadableStream<T>(delegate (ReadableStreamController<T> controller)
-        {
-            if (values != null)
+        return new ReadableStream<T>(
+            delegate(ReadableStreamController<T> controller)
             {
-                for (var i = 0; i < values.Count; i++)
+                if (values != null)
                 {
-                    controller.Enqueue(values[i]);
+                    for (var i = 0; i < values.Count; i++)
+                    {
+                        controller.Enqueue(values[i]);
+                    }
                 }
-            }
 
-            controller.Close();
-        });
+                controller.Close();
+            }
+        );
     }
 
     internal void Enqueue(T chunk)
@@ -459,7 +479,9 @@ public class ReadableStream<T>
                 return ready;
             }
 
-            var source = new TaskCompletionSource<StreamRead<T>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var source = new TaskCompletionSource<StreamRead<T>>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
             _waiters.Enqueue(source);
             pending = source.Task;
         }
@@ -507,9 +529,7 @@ public class ReadableStream<T>
             {
                 await onCancel().ConfigureAwait(false);
             }
-            catch (Exception)
-            {
-            }
+            catch (Exception) { }
         }
     }
 
@@ -548,7 +568,10 @@ public class ReadableStream<T>
         return waiters;
     }
 
-    private static void Complete(List<TaskCompletionSource<StreamRead<T>>>? waiters, StreamRead<T> read)
+    private static void Complete(
+        List<TaskCompletionSource<StreamRead<T>>>? waiters,
+        StreamRead<T> read
+    )
     {
         if (waiters == null)
         {
@@ -567,7 +590,14 @@ public class ReadableStream<T>
         lock (_gate)
         {
             var candidate = _pull;
-            if (_pulling || candidate == null || _closed || _errored || _cancelled || _waiters.Count == 0)
+            if (
+                _pulling
+                || candidate == null
+                || _closed
+                || _errored
+                || _cancelled
+                || _waiters.Count == 0
+            )
             {
                 return;
             }
@@ -586,25 +616,30 @@ public class ReadableStream<T>
             pulled = Task.FromException(exception);
         }
 
-        pulled.ContinueWith(delegate (Task task)
-        {
-            if (task.IsFaulted && task.Exception != null)
+        pulled.ContinueWith(
+            delegate(Task task)
             {
-                _controller.Error(task.Exception.GetBaseException());
-            }
-            else if (task.IsCanceled)
-            {
-                // A cancelled pull would be retried in a loop while readers wait, so it fails the stream.
-                _controller.Error(new OperationCanceledException());
-            }
+                if (task.IsFaulted && task.Exception != null)
+                {
+                    _controller.Error(task.Exception.GetBaseException());
+                }
+                else if (task.IsCanceled)
+                {
+                    // A cancelled pull would be retried in a loop while readers wait, so it fails the stream.
+                    _controller.Error(new OperationCanceledException());
+                }
 
-            lock (_gate)
-            {
-                _pulling = false;
-            }
+                lock (_gate)
+                {
+                    _pulling = false;
+                }
 
-            Pump();
-        }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                Pump();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default
+        );
     }
 }
 
@@ -761,7 +796,10 @@ public sealed class AsyncIterableStream<T> : IAsyncEnumerable<T>
             if (cancellationToken.CanBeCanceled)
             {
                 // Cancelling the stream completes a pending read, so the wait in MoveNextAsync ends.
-                _registration = cancellationToken.Register(static state => _ = ((StreamIterator<T>)state!).ReturnAsync(), iterator);
+                _registration = cancellationToken.Register(
+                    static state => _ = ((StreamIterator<T>)state!).ReturnAsync(),
+                    iterator
+                );
             }
         }
 
@@ -809,7 +847,7 @@ public static class AsyncIterableStreams
     {
         var reader = source.GetReader();
         var outer = new ReadableStream<T>(
-            pull: async delegate (ReadableStreamController<T> controller)
+            pull: async delegate(ReadableStreamController<T> controller)
             {
                 var read = await reader.ReadAsync().ConfigureAwait(false);
                 if (read.Rejected)
@@ -826,7 +864,11 @@ public static class AsyncIterableStreams
 
                 controller.Enqueue(read.Value);
             },
-            cancel: delegate { return reader.CancelAsync(); });
+            cancel: delegate
+            {
+                return reader.CancelAsync();
+            }
+        );
         return new AsyncIterableStream<T>(outer);
     }
 }

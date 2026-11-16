@@ -13,7 +13,8 @@ internal static class RealtimeMapperSupport
 {
     internal const string Commit = "892af4dab7f1351fd2ced70dcaba288746d8a782";
 
-    internal const string File = "packages/openai/src/realtime/openai-realtime-event-mapper.test.ts::";
+    internal const string File =
+        "packages/openai/src/realtime/openai-realtime-event-mapper.test.ts::";
 
     /// <summary>The non-null usage fields by their upstream names, like <c>toEqual</c> sees an object without undefined fields.</summary>
     internal static JsonObject UsageFields(RealtimeModelV4Usage? usage)

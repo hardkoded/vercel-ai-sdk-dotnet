@@ -17,10 +17,8 @@ public static class PathSegments
         var encoded = Uri.EscapeDataString(value ?? string.Empty);
 
         // URL parsing normalizes both literal and percent-encoded dot segments.
-        return encoded == "."
-            ? "%252E"
-            : encoded == ".."
-                ? "%252E%252E"
-                : encoded;
+        return encoded == "." ? "%252E"
+            : encoded == ".." ? "%252E%252E"
+            : encoded;
     }
 }

@@ -13,13 +13,17 @@ namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAIRealtimeFactory;
 /// <summary>Port of <c>openai-realtime-factory.test.ts</c> &gt; <c>OpenAI realtime factory getToken</c>.</summary>
 public sealed class OpenAIRealtimeFactoryGetTokenTests
 {
-    private const string Prefix = "packages/openai/src/realtime/openai-realtime-factory.test.ts::OpenAI realtime factory getToken::";
+    private const string Prefix =
+        "packages/openai/src/realtime/openai-realtime-factory.test.ts::OpenAI realtime factory getToken::";
 
     [Theory]
     [InlineData("gpt-live-1", null)]
     [InlineData("not-yet-released", "live")]
     [InlineData("gpt-realtime", "live")]
-    [UpstreamTest(Prefix + "rejects Live credentials without fetching (%j)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "rejects Live credentials without fetching (%j)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Rejects_Live_credentials_without_fetching(string model, string? api)
     {
         var capture = new OpenAICapture();
@@ -30,9 +34,17 @@ public sealed class OpenAIRealtimeFactoryGetTokenTests
         });
         var options = api == null ? null : new OpenAIRealtimeOptions { Api = api };
 
-        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => provider.ExperimentalRealtimeGetTokenAsync(model, options));
-        var exception = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() => provider.ExperimentalRealtimeGetTokenAsync(model, options));
-        Assert.Contains("Use server WebSocket setup via GetServerWebSocketConfigAsync()", exception.Message, StringComparison.Ordinal);
+        await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            provider.ExperimentalRealtimeGetTokenAsync(model, options)
+        );
+        var exception = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
+            provider.ExperimentalRealtimeGetTokenAsync(model, options)
+        );
+        Assert.Contains(
+            "Use server WebSocket setup via GetServerWebSocketConfigAsync()",
+            exception.Message,
+            StringComparison.Ordinal
+        );
         Assert.Equal(0, capture.Calls);
     }
 
@@ -41,10 +53,16 @@ public sealed class OpenAIRealtimeFactoryGetTokenTests
     [InlineData("unknown", null)]
     [InlineData("gpt-live-1-preview", null)]
     [InlineData("gpt-live-1", "realtime")]
-    [UpstreamTest(Prefix + "preserves the Realtime mint request and result (%j)", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "preserves the Realtime mint request and result (%j)",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Preserves_the_Realtime_mint_request_and_result(string model, string? api)
     {
-        var capture = new OpenAICapture { ResponseJson = "{\"value\":\"secret\",\"expires_at\":123}" };
+        var capture = new OpenAICapture
+        {
+            ResponseJson = "{\"value\":\"secret\",\"expires_at\":123}",
+        };
         var provider = OpenAIUpstream.Provider(capture, options =>
         {
             options.ApiKey = "test-key";
@@ -54,7 +72,11 @@ public sealed class OpenAIRealtimeFactoryGetTokenTests
             options.Headers["X-Custom"] = "value";
         });
 
-        var secret = await provider.ExperimentalRealtimeGetTokenAsync(model, api == null ? null : new OpenAIRealtimeOptions { Api = api }, expiresAfterSeconds: 60);
+        var secret = await provider.ExperimentalRealtimeGetTokenAsync(
+            model,
+            api == null ? null : new OpenAIRealtimeOptions { Api = api },
+            expiresAfterSeconds: 60
+        );
 
         Assert.Equal("secret", secret.Token);
         Assert.Equal("wss://example.com/v1/realtime?model=" + model, secret.Url);
@@ -68,18 +90,27 @@ public sealed class OpenAIRealtimeFactoryGetTokenTests
         Assert.Equal("value", capture.Headers["X-Custom"]);
         OpenAIUpstream.Equal(
             JsonNode.Parse(capture.Body),
-            "{\"session\":{\"type\":\"realtime\",\"model\":\"" + model + "\"},\"expires_after\":{\"anchor\":\"created_at\",\"seconds\":60}}");
+            "{\"session\":{\"type\":\"realtime\",\"model\":\""
+                + model
+                + "\"},\"expires_after\":{\"anchor\":\"created_at\",\"seconds\":60}}"
+        );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "forwards session configuration and omits unspecified expiry", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "forwards session configuration and omits unspecified expiry",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Forwards_session_configuration_and_omits_unspecified_expiry()
     {
         var capture = new OpenAICapture { ResponseJson = "{\"value\":\"secret\"}" };
 
-        await OpenAIUpstream.Provider(capture).ExperimentalRealtimeGetTokenAsync(
-            "gpt-realtime",
-            sessionConfig: new RealtimeModelV4SessionConfig { Instructions = "Be concise." });
+        await OpenAIUpstream
+            .Provider(capture)
+            .ExperimentalRealtimeGetTokenAsync(
+                "gpt-realtime",
+                sessionConfig: new RealtimeModelV4SessionConfig { Instructions = "Be concise." }
+            );
 
         var body = JsonNode.Parse(capture.Body)!;
         Assert.Equal("realtime", body["session"]!["type"]!.GetValue<string>());
@@ -89,12 +120,22 @@ public sealed class OpenAIRealtimeFactoryGetTokenTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not fall back to Live after a Realtime HTTP error", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "does not fall back to Live after a Realtime HTTP error",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Does_not_fall_back_to_Live_after_a_Realtime_HTTP_error()
     {
-        var capture = new OpenAICapture { Status = HttpStatusCode.NotFound, ResponseJson = "Unknown model", ResponseMediaType = "text/plain" };
+        var capture = new OpenAICapture
+        {
+            Status = HttpStatusCode.NotFound,
+            ResponseJson = "Unknown model",
+            ResponseMediaType = "text/plain",
+        };
 
-        var exception = await Assert.ThrowsAnyAsync<ApiException>(() => OpenAIUpstream.Provider(capture).ExperimentalRealtimeGetTokenAsync("not-yet-released"));
+        var exception = await Assert.ThrowsAnyAsync<ApiException>(() =>
+            OpenAIUpstream.Provider(capture).ExperimentalRealtimeGetTokenAsync("not-yet-released")
+        );
 
         Assert.Contains("Unknown model", exception.Message, StringComparison.Ordinal);
         Assert.Equal(404, exception.StatusCode);

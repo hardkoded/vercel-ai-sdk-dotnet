@@ -79,9 +79,15 @@ public static class DownloadUrls
             return;
         }
 
-        if (!string.Equals(url.Scheme, "http", StringComparison.OrdinalIgnoreCase) && !string.Equals(url.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(url.Scheme, "http", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(url.Scheme, "https", StringComparison.OrdinalIgnoreCase)
+        )
         {
-            throw new DownloadException(text, "URL scheme must be http, https, or data, got " + url.Scheme + ":");
+            throw new DownloadException(
+                text,
+                "URL scheme must be http, https, or data, got " + url.Scheme + ":"
+            );
         }
 
         var hostname = url.Host.TrimEnd('.').ToLowerInvariant();
@@ -90,16 +96,27 @@ public static class DownloadUrls
             throw new DownloadException(text, "URL must have a hostname");
         }
 
-        if (string.Equals(hostname, "localhost", StringComparison.Ordinal) || hostname.EndsWith(".local", StringComparison.Ordinal) || hostname.EndsWith(".localhost", StringComparison.Ordinal) || hostname.EndsWith(".internal", StringComparison.Ordinal))
+        if (
+            string.Equals(hostname, "localhost", StringComparison.Ordinal)
+            || hostname.EndsWith(".local", StringComparison.Ordinal)
+            || hostname.EndsWith(".localhost", StringComparison.Ordinal)
+            || hostname.EndsWith(".internal", StringComparison.Ordinal)
+        )
         {
             throw new DownloadException(text, "URL with hostname " + hostname + " is not allowed");
         }
 
-        if (hostname.StartsWith("[", StringComparison.Ordinal) && hostname.EndsWith("]", StringComparison.Ordinal))
+        if (
+            hostname.StartsWith("[", StringComparison.Ordinal)
+            && hostname.EndsWith("]", StringComparison.Ordinal)
+        )
         {
             if (Download.IsPrivateIPv6(hostname.Substring(1, hostname.Length - 2)))
             {
-                throw new DownloadException(text, "URL with IPv6 address " + hostname + " is not allowed");
+                throw new DownloadException(
+                    text,
+                    "URL with IPv6 address " + hostname + " is not allowed"
+                );
             }
 
             return;
@@ -107,7 +124,10 @@ public static class DownloadUrls
 
         if (Download.IsIPv4(hostname) && Download.IsPrivateIPv4(hostname))
         {
-            throw new DownloadException(text, "URL with IP address " + hostname + " is not allowed");
+            throw new DownloadException(
+                text,
+                "URL with IP address " + hostname + " is not allowed"
+            );
         }
     }
 }

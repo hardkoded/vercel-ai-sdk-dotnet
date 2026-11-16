@@ -19,7 +19,8 @@ public static class TextUIMessageStream
     /// <param name="cancellationToken">Cancels reading <paramref name="text"/>.</param>
     public static async IAsyncEnumerable<JsonObject> TransformAsync(
         IAsyncEnumerable<string> text,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         if (text is null)
         {
@@ -51,7 +52,8 @@ public static class TextUIMessageStream
     public static async Task ProcessAsync(
         IAsyncEnumerable<byte[]> chunks,
         Func<string, Task> onTextPart,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (chunks is null)
         {
@@ -63,7 +65,9 @@ public static class TextUIMessageStream
             throw new ArgumentNullException(nameof(onTextPart));
         }
 
-        await foreach (var chunk in chunks.WithCancellation(cancellationToken).ConfigureAwait(false))
+        await foreach (
+            var chunk in chunks.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
         {
             if (chunk == null || chunk.Length == 0)
             {

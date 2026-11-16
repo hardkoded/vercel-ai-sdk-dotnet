@@ -82,7 +82,15 @@ internal sealed class MultipartPart
                 }
             }
 
-            parts.Add(new MultipartPart { Name = name ?? string.Empty, FileName = fileName, ContentType = type, Data = Encoding.Latin1.GetBytes(content) });
+            parts.Add(
+                new MultipartPart
+                {
+                    Name = name ?? string.Empty,
+                    FileName = fileName,
+                    ContentType = type,
+                    Data = Encoding.Latin1.GetBytes(content),
+                }
+            );
         }
 
         return parts;
@@ -111,19 +119,23 @@ internal sealed class MultipartPart
 /// <summary>Records every request, including image downloads, and answers with a response factory.</summary>
 internal sealed class AzureImageHandler : HttpMessageHandler
 {
-    private readonly Func<RecordedImageRequest, CancellationToken, Task<HttpResponseMessage>> _respond;
+    private readonly Func<
+        RecordedImageRequest,
+        CancellationToken,
+        Task<HttpResponseMessage>
+    > _respond;
     private readonly object _gate = new();
     private readonly List<RecordedImageRequest> _requests = new();
 
-    public AzureImageHandler(Func<RecordedImageRequest, CancellationToken, Task<HttpResponseMessage>> respond)
+    public AzureImageHandler(
+        Func<RecordedImageRequest, CancellationToken, Task<HttpResponseMessage>> respond
+    )
     {
         _respond = respond;
     }
 
     public AzureImageHandler(Func<HttpResponseMessage> respond)
-        : this((_, _) => Task.FromResult(respond()))
-    {
-    }
+        : this((_, _) => Task.FromResult(respond())) { }
 
     public IReadOnlyList<RecordedImageRequest> Requests
     {
@@ -138,20 +150,35 @@ internal sealed class AzureImageHandler : HttpMessageHandler
 
     public RecordedImageRequest Last => Requests[^1];
 
-    public static HttpResponseMessage JsonResponse(object body, HttpStatusCode status = HttpStatusCode.OK)
+    public static HttpResponseMessage JsonResponse(
+        object body,
+        HttpStatusCode status = HttpStatusCode.OK
+    )
     {
         return new HttpResponseMessage(status)
         {
-            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json"),
+            Content = new StringContent(
+                JsonSerializer.Serialize(body),
+                Encoding.UTF8,
+                "application/json"
+            ),
         };
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
     {
         var recorded = new RecordedImageRequest
         {
             Url = request.RequestUri!.AbsoluteUri,
-            Body = request.Content == null ? Array.Empty<byte>() : await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false),
+            Body =
+                request.Content == null
+                    ? Array.Empty<byte>()
+                    : await request
+                        .Content.ReadAsByteArrayAsync(cancellationToken)
+                        .ConfigureAwait(false),
             ContentType = request.Content?.Headers.ContentType?.ToString(),
         };
         foreach (var header in request.Headers)
@@ -171,24 +198,41 @@ internal sealed class AzureImageHandler : HttpMessageHandler
 /// <summary>Shared fixtures of the Azure image tests.</summary>
 internal static class AzureImageTestSupport
 {
-    public const string GenerationsUrl = "https://test-resource.services.ai.azure.com/mai/v1/images/generations";
+    public const string GenerationsUrl =
+        "https://test-resource.services.ai.azure.com/mai/v1/images/generations";
 
-    public const string EditsUrl = "https://test-resource.services.ai.azure.com/mai/v1/images/edits";
+    public const string EditsUrl =
+        "https://test-resource.services.ai.azure.com/mai/v1/images/edits";
 
     public static readonly object MaiResponse = new
     {
         created = 1791229019,
         model = "MAI-Image-2.6-Flash",
         size = "768x768",
-        usage = new { num_output_tokens = 576, num_input_text_tokens = 10, num_input_image_tokens = 0 },
+        usage = new
+        {
+            num_output_tokens = 576,
+            num_input_text_tokens = 10,
+            num_input_image_tokens = 0,
+        },
         data = new[] { new { b64_json = "iVBORw0KGgo=" } },
     };
 
-    public static readonly object OpenAIResponse = new { data = new[] { new { b64_json = "aGk=" } } };
-
-    public static AzureOpenAIProvider CreateProvider(AzureImageHandler? handler, Action<AzureOpenAIOptions>? configure = null)
+    public static readonly object OpenAIResponse = new
     {
-        var options = new AzureOpenAIOptions { ResourceName = "test-resource", ApiKey = "test-key" };
+        data = new[] { new { b64_json = "aGk=" } },
+    };
+
+    public static AzureOpenAIProvider CreateProvider(
+        AzureImageHandler? handler,
+        Action<AzureOpenAIOptions>? configure = null
+    )
+    {
+        var options = new AzureOpenAIOptions
+        {
+            ResourceName = "test-resource",
+            ApiKey = "test-key",
+        };
         configure?.Invoke(options);
         return AzureOpenAIProvider.Create(options, handler);
     }
@@ -205,7 +249,9 @@ internal static class AzureImageTestSupport
     public static IReadOnlyDictionary<string, JsonElement> ProviderOptionsOf(string json)
     {
         using var document = JsonDocument.Parse(json);
-        return document.RootElement.EnumerateObject().ToDictionary(property => property.Name, property => property.Value.Clone());
+        return document
+            .RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.Clone());
     }
 
     public static JsonElement Json(string json)

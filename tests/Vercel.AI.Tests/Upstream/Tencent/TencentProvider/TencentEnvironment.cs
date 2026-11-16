@@ -17,7 +17,11 @@ internal sealed class TencentEnvironment : IDisposable
 {
     private static readonly string[] Names =
     [
-        "TENCENT_TOKENHUB_API_KEY", "TENCENTCLOUD_SECRET_ID", "TENCENTCLOUD_SECRET_KEY", "TENCENTCLOUD_SESSION_TOKEN", "TENCENTCLOUD_VOD_SUB_APP_ID",
+        "TENCENT_TOKENHUB_API_KEY",
+        "TENCENTCLOUD_SECRET_ID",
+        "TENCENTCLOUD_SECRET_KEY",
+        "TENCENTCLOUD_SESSION_TOKEN",
+        "TENCENTCLOUD_VOD_SUB_APP_ID",
     ];
 
     private readonly Dictionary<string, string?> _saved = new(StringComparer.Ordinal);

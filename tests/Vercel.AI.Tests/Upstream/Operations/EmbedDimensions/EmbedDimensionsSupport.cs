@@ -68,20 +68,54 @@ internal static class EmbedDimensionsSupport
     {
         return new DimensionsModel
         {
-            MaxEmbeddingsPerCall = name.EndsWith("chunks", StringComparison.Ordinal) && !name.EndsWith("byte chunks", StringComparison.Ordinal) ? 2 : null,
+            MaxEmbeddingsPerCall =
+                name.EndsWith("chunks", StringComparison.Ordinal)
+                && !name.EndsWith("byte chunks", StringComparison.Ordinal)
+                    ? 2
+                    : null,
             MaxInputBytesPerCall = name == "embedMany with input byte chunks" ? 6 : null,
             SupportsParallelCalls = name == "embedMany with parallel chunks",
         };
     }
 
-    public static Task Run(string name, DimensionsModel model, int? dimensions = null, JsonElement? providerOptions = null, Func<EmbedStartEvent, Task>? onStart = null, EmbedTelemetry? telemetry = null, int? maxRetries = null)
+    public static Task Run(
+        string name,
+        DimensionsModel model,
+        int? dimensions = null,
+        JsonElement? providerOptions = null,
+        Func<EmbedStartEvent, Task>? onStart = null,
+        EmbedTelemetry? telemetry = null,
+        int? maxRetries = null
+    )
     {
         if (name == "embed")
         {
-            return Embed.EmbedAsync(new EmbedRequest { Model = model, Value = "one", Dimensions = dimensions, ProviderOptions = providerOptions, OnStart = onStart, Telemetry = telemetry, MaxRetries = maxRetries });
+            return Embed.EmbedAsync(
+                new EmbedRequest
+                {
+                    Model = model,
+                    Value = "one",
+                    Dimensions = dimensions,
+                    ProviderOptions = providerOptions,
+                    OnStart = onStart,
+                    Telemetry = telemetry,
+                    MaxRetries = maxRetries,
+                }
+            );
         }
 
-        return EmbedMany.EmbedManyAsync(new EmbedManyRequest { Model = model, Values = new[] { "one", "two", "three" }, Dimensions = dimensions, ProviderOptions = providerOptions, OnStart = onStart, Telemetry = telemetry, MaxRetries = maxRetries });
+        return EmbedMany.EmbedManyAsync(
+            new EmbedManyRequest
+            {
+                Model = model,
+                Values = new[] { "one", "two", "three" },
+                Dimensions = dimensions,
+                ProviderOptions = providerOptions,
+                OnStart = onStart,
+                Telemetry = telemetry,
+                MaxRetries = maxRetries,
+            }
+        );
     }
 
     internal sealed class DimensionsModel : IEmbeddingCaller
@@ -107,12 +141,21 @@ internal static class EmbedDimensionsSupport
 
         public List<EmbeddingModelCall> Calls { get; } = new();
 
-        public Task<JsonElement?> TransformProviderOptionsAsync(JsonElement? providerOptions, IReadOnlyList<string> values, int startIndex, int endIndex, CancellationToken cancellationToken)
+        public Task<JsonElement?> TransformProviderOptionsAsync(
+            JsonElement? providerOptions,
+            IReadOnlyList<string> values,
+            int startIndex,
+            int endIndex,
+            CancellationToken cancellationToken
+        )
         {
             return Task.FromResult(providerOptions);
         }
 
-        public Task<EmbeddingModelResponse> DoEmbedAsync(EmbeddingModelCall call, CancellationToken cancellationToken)
+        public Task<EmbeddingModelResponse> DoEmbedAsync(
+            EmbeddingModelCall call,
+            CancellationToken cancellationToken
+        )
         {
             lock (Calls)
             {
@@ -121,7 +164,11 @@ internal static class EmbedDimensionsSupport
 
             if (FailFirstAttempt && Interlocked.Increment(ref _attempts) == 1)
             {
-                throw new RetryableCallException("Retry this request", 429, new Dictionary<string, string> { ["retry-after-ms"] = "0" });
+                throw new RetryableCallException(
+                    "Retry this request",
+                    429,
+                    new Dictionary<string, string> { ["retry-after-ms"] = "0" }
+                );
             }
 
             if (!FailFirstAttempt)
@@ -129,7 +176,12 @@ internal static class EmbedDimensionsSupport
                 Interlocked.Increment(ref _attempts);
             }
 
-            return Task.FromResult(new EmbeddingModelResponse(call.Values.Select(_ => new[] { 0.1, 0.2, 0.3 }).ToArray(), warnings: Array.Empty<OperationWarning>()));
+            return Task.FromResult(
+                new EmbeddingModelResponse(
+                    call.Values.Select(_ => new[] { 0.1, 0.2, 0.3 }).ToArray(),
+                    warnings: Array.Empty<OperationWarning>()
+                )
+            );
         }
     }
 }

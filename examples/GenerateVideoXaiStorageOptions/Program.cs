@@ -14,21 +14,27 @@ if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("XAI_API_KEY")))
 var xai = XaiProvider.Create();
 
 #region generate-video-xai-storage-options
-var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
-{
-    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
-    Prompt = new VideoPrompt("A tiny paper airplane glides through a bright modern library, cinematic tracking shot."),
-    Duration = 5,
-    AspectRatio = "16:9",
-    ProviderOptions = OperationJson.Parse("""
-        {
-          "xai": {
-            "storageOptions": { "filename": "paper-airplane.mp4", "expiresAfter": 86400, "publicUrl": { "expiresAfter": 3600 } },
-            "pollTimeoutMs": 600000
-          }
-        }
-        """),
-});
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+        Prompt = new VideoPrompt(
+            "A tiny paper airplane glides through a bright modern library, cinematic tracking shot."
+        ),
+        Duration = 5,
+        AspectRatio = "16:9",
+        ProviderOptions = OperationJson.Parse(
+            """
+            {
+              "xai": {
+                "storageOptions": { "filename": "paper-airplane.mp4", "expiresAfter": 86400, "publicUrl": { "expiresAfter": 3600 } },
+                "pollTimeoutMs": 600000
+              }
+            }
+            """
+        ),
+    }
+);
 #endregion
 
 foreach (var warning in result.Warnings)

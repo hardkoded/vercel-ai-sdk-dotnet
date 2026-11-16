@@ -13,10 +13,14 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayImageModel;
 /// <summary>Port of <c>gateway-image-model.test.ts</c> &gt; <c>GatewayImageModel &gt; constructor</c>.</summary>
 public sealed class GatewayImageModelConstructorTests
 {
-    private const string Prefix = "packages/gateway/src/gateway-image-model.test.ts::GatewayImageModel > constructor::";
+    private const string Prefix =
+        "packages/gateway/src/gateway-image-model.test.ts::GatewayImageModel > constructor::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should create instance with correct properties", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should create instance with correct properties",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_create_instance_with_correct_properties()
     {
         var model = GatewayImageModelSupport.CreateTestModel(new UpstreamRecordingHandler("{}"));
@@ -28,20 +32,35 @@ public sealed class GatewayImageModelConstructorTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should avoid client-side splitting even for BFL models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should avoid client-side splitting even for BFL models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_avoid_client_side_splitting_even_for_BFL_models()
     {
-        var model = GatewayImageModelSupport.CreateTestModel(new UpstreamRecordingHandler("{}"), "bfl/flux-pro-1.1");
+        var model = GatewayImageModelSupport.CreateTestModel(
+            new UpstreamRecordingHandler("{}"),
+            "bfl/flux-pro-1.1"
+        );
 
         Assert.Equal(int.MaxValue, model.MaxImagesPerCall);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should accept custom provider name", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should accept custom provider name",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Should_accept_custom_provider_name()
     {
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" });
-        var model = new Vercel.AI.Gateway.GatewayImageModel(provider, "openai/dall-e-3", "custom-gateway");
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { ApiKey = "test-token", BaseUrl = "https://api.test.com" }
+        );
+        var model = new Vercel.AI.Gateway.GatewayImageModel(
+            provider,
+            "openai/dall-e-3",
+            "custom-gateway"
+        );
 
         Assert.Equal("custom-gateway", model.Provider);
         Assert.Equal("openai/dall-e-3", model.ModelId);

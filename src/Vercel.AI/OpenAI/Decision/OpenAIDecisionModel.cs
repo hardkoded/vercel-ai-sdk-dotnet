@@ -23,7 +23,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
     private const int InputJsonMaxValues = 10_000;
     private const int InputJsonMaxBytes = 256 * 1024;
 
-    private static readonly JsonSerializerOptions Text = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+    private static readonly JsonSerializerOptions Text = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     private readonly OpenAIProvider _provider;
 
@@ -44,17 +47,26 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public IReadOnlyList<string> SupportedQuestionTypes { get; } = new[] { "choice", "score", "boolean" };
+    public IReadOnlyList<string> SupportedQuestionTypes { get; } =
+        new[] { "choice", "score", "boolean" };
 
     /// <summary>Deprecated. Use <see cref="DoDecideAsync(DecisionModelCall, CancellationToken)"/>.</summary>
     [Obsolete("Use DoDecideAsync instead.")]
-    public async Task<EvaluationModelResult> DoEvaluateAsync(EvaluationModelCall call, CancellationToken cancellationToken)
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    )
     {
-        return EvaluationModelResult.From(await DoDecideAsync(call, cancellationToken).ConfigureAwait(false));
+        return EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     /// <summary>Sends every question in one Decisions request.</summary>
-    public async Task<DecisionModelResult> DoDecideAsync(DecisionModelCall call, CancellationToken cancellationToken = default)
+    public async Task<DecisionModelResult> DoDecideAsync(
+        DecisionModelCall call,
+        CancellationToken cancellationToken = default
+    )
     {
         if (call == null)
         {
@@ -73,15 +85,28 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         {
             warnings.Add(new OperationWarning("unsupported", feature: "reasoning"));
         }
-        if (call.ProviderOptions.ValueKind == JsonValueKind.Object && call.ProviderOptions.TryGetProperty("openai", out var openai) && openai.ValueKind == JsonValueKind.Object)
+        if (
+            call.ProviderOptions.ValueKind == JsonValueKind.Object
+            && call.ProviderOptions.TryGetProperty("openai", out var openai)
+            && openai.ValueKind == JsonValueKind.Object
+        )
         {
             foreach (var option in openai.EnumerateObject())
             {
                 if (option.Name == "safetyIdentifier")
                 {
-                    if (option.Value.ValueKind != JsonValueKind.String || option.Value.GetString()!.Length > MaxSafetyIdentifierLength)
+                    if (
+                        option.Value.ValueKind != JsonValueKind.String
+                        || option.Value.GetString()!.Length > MaxSafetyIdentifierLength
+                    )
                     {
-                        throw new InvalidArgumentException("providerOptions", option.Value.ToString(), "invalid openai provider options: safetyIdentifier must be a string of at most " + MaxSafetyIdentifierLength.ToString(CultureInfo.InvariantCulture) + " characters");
+                        throw new InvalidArgumentException(
+                            "providerOptions",
+                            option.Value.ToString(),
+                            "invalid openai provider options: safetyIdentifier must be a string of at most "
+                                + MaxSafetyIdentifierLength.ToString(CultureInfo.InvariantCulture)
+                                + " characters"
+                        );
                     }
 
                     safetyIdentifier = option.Value.GetString();
@@ -90,14 +115,23 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                 {
                     if (option.Value.ValueKind != JsonValueKind.String)
                     {
-                        throw new InvalidArgumentException("providerOptions", option.Value.ToString(), "invalid openai provider options: promptCacheKey must be a string");
+                        throw new InvalidArgumentException(
+                            "providerOptions",
+                            option.Value.ToString(),
+                            "invalid openai provider options: promptCacheKey must be a string"
+                        );
                     }
 
                     promptCacheKey = option.Value.GetString();
                 }
                 else
                 {
-                    warnings.Add(new OperationWarning("unsupported", feature: "providerOptions.openai." + option.Name));
+                    warnings.Add(
+                        new OperationWarning(
+                            "unsupported",
+                            feature: "providerOptions.openai." + option.Name
+                        )
+                    );
                 }
             }
         }
@@ -126,12 +160,15 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             headers[pair.Key] = pair.Value;
         }
 
-        var response = await _provider.Http.SendJsonStringAsync(
-            HttpMethod.Post,
-            ApiKeys.Combine(_provider.Options.BaseUrl, "decisions"),
-            body.ToJsonString(Text),
-            _provider.CreateOpenAIHeaders(headers),
-            cancellationToken).ConfigureAwait(false);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
+                HttpMethod.Post,
+                ApiKeys.Combine(_provider.Options.BaseUrl, "decisions"),
+                body.ToJsonString(Text),
+                _provider.CreateOpenAIHeaders(headers),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         using var document = ParseDocument(response.Body);
         var root = document.RootElement.Clone();
         var parsed = ParseAnswers(root, response.Body);
@@ -143,7 +180,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             {
                 if (answer.Name == null)
                 {
-                    throw new InvalidResponseDataException(root, "OpenAI Decisions refused an unnamed question.");
+                    throw new InvalidResponseDataException(
+                        root,
+                        "OpenAI Decisions refused an unnamed question."
+                    );
                 }
 
                 answers[answer.Name] = new DecisionAnswer("refusal");
@@ -152,7 +192,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
             if (answer.Type == "predicate")
             {
-                answers[answer.Name!] = new DecisionAnswer("boolean", probability: answer.Probability);
+                answers[answer.Name!] = new DecisionAnswer(
+                    "boolean",
+                    probability: answer.Probability
+                );
                 continue;
             }
 
@@ -161,29 +204,54 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             {
                 if (probabilities.ContainsKey(item.Key))
                 {
-                    throw new InvalidResponseDataException(root, "Decisions returned duplicate probability values.");
+                    throw new InvalidResponseDataException(
+                        root,
+                        "Decisions returned duplicate probability values."
+                    );
                 }
 
                 probabilities[item.Key] = item.Value;
             }
 
-            answers[answer.Name!] = answer.Type == "choice"
-                ? new DecisionAnswer("choice", choice: answer.Choice, probabilities: probabilities)
-                : new DecisionAnswer("score", score: answer.Score, probabilities: probabilities);
+            answers[answer.Name!] =
+                answer.Type == "choice"
+                    ? new DecisionAnswer(
+                        "choice",
+                        choice: answer.Choice,
+                        probabilities: probabilities
+                    )
+                    : new DecisionAnswer(
+                        "score",
+                        score: answer.Score,
+                        probabilities: probabilities
+                    );
         }
 
         var names = parsed.Select(answer => answer.Name).ToArray();
-        if (names.Length != call.Questions.Count || names.Distinct().Count() != names.Length || names.Any(name => name == null || !call.Questions.ContainsKey(name)))
+        if (
+            names.Length != call.Questions.Count
+            || names.Distinct().Count() != names.Length
+            || names.Any(name => name == null || !call.Questions.ContainsKey(name))
+        )
         {
-            throw new InvalidResponseDataException(root, "Decisions must return exactly one answer for every question.");
+            throw new InvalidResponseDataException(
+                root,
+                "Decisions must return exactly one answer for every question."
+            );
         }
 
         OperationUsage? usage = null;
         JsonElement? rawUsage = null;
-        if (root.TryGetProperty("usage", out var usageElement) && usageElement.ValueKind == JsonValueKind.Object)
+        if (
+            root.TryGetProperty("usage", out var usageElement)
+            && usageElement.ValueKind == JsonValueKind.Object
+        )
         {
             rawUsage = usageElement;
-            usage = new OperationUsage(Count(usageElement, "input_tokens"), Count(usageElement, "output_tokens"));
+            usage = new OperationUsage(
+                Count(usageElement, "input_tokens"),
+                Count(usageElement, "output_tokens")
+            );
         }
 
         var confidence = new JsonObject();
@@ -202,9 +270,14 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         }
 
         metadata["confidence"] = confidence;
-        var providerMetadata = JsonSerializer.SerializeToElement(new JsonObject { ["openai"] = metadata });
+        var providerMetadata = JsonSerializer.SerializeToElement(
+            new JsonObject { ["openai"] = metadata }
+        );
         string? modelId = null;
-        if (root.TryGetProperty("model", out var modelElement) && modelElement.ValueKind == JsonValueKind.String)
+        if (
+            root.TryGetProperty("model", out var modelElement)
+            && modelElement.ValueKind == JsonValueKind.String
+        )
         {
             modelId = modelElement.GetString();
         }
@@ -216,12 +289,17 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             // The Decisions API reports probabilities and scores to two decimal places.
             new DecisionRounding(2, 2),
             providerMetadata,
-            new ProviderResponse(response.Headers, root, modelId: modelId ?? ModelId));
+            new ProviderResponse(response.Headers, root, modelId: modelId ?? ModelId)
+        );
     }
 
     private static int? Count(JsonElement usage, string name)
     {
-        if (usage.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var count))
+        if (
+            usage.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var count)
+        )
         {
             return count;
         }
@@ -241,7 +319,13 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         }
     }
 
-    private static readonly string[] ImageMediaTypes = { "image/png", "image/jpeg", "image/webp", "image/gif" };
+    private static readonly string[] ImageMediaTypes =
+    {
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+    };
 
     private static JsonArray BuildInput(IReadOnlyList<DecisionModelStatePart> state)
     {
@@ -257,9 +341,15 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             if (part is DecisionModelJsonPart json)
             {
                 var serialized = JsonSerializer.Serialize(json.Value, Text);
-                content.Add(IsInputJsonData(json.Value, serialized)
-                    ? new JsonObject { ["type"] = "input_json", ["data"] = JsonNode.Parse(serialized) }
-                    : new JsonObject { ["type"] = "input_text", ["text"] = serialized });
+                content.Add(
+                    IsInputJsonData(json.Value, serialized)
+                        ? new JsonObject
+                        {
+                            ["type"] = "input_json",
+                            ["data"] = JsonNode.Parse(serialized),
+                        }
+                        : new JsonObject { ["type"] = "input_text", ["text"] = serialized }
+                );
                 continue;
             }
 
@@ -268,20 +358,41 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             var dataType = file.Data.DataType;
             if (dataType != "data")
             {
-                throw new UnsupportedFunctionalityException("OpenAI decision file input", "'OpenAI decision file input: " + mediaType + " (" + dataType + ")' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "OpenAI decision file input",
+                    "'OpenAI decision file input: "
+                        + mediaType
+                        + " ("
+                        + dataType
+                        + ")' functionality not supported."
+                );
             }
 
             var bytes = file.Data.Bytes;
             var base64Text = file.Data.Base64 ?? string.Empty;
             // Direct DoDecideAsync calls can bypass the media type detection in DecisionState.
-            var resolved = MediaTypes.IsFullMediaType(mediaType) ? mediaType : bytes != null ? MediaTypes.DetectMediaType(bytes, "image") : MediaTypes.DetectMediaType(base64Text, "image");
+            var resolved =
+                MediaTypes.IsFullMediaType(mediaType) ? mediaType
+                : bytes != null ? MediaTypes.DetectMediaType(bytes, "image")
+                : MediaTypes.DetectMediaType(base64Text, "image");
             if (resolved == null || !ImageMediaTypes.Contains(resolved))
             {
-                throw new UnsupportedFunctionalityException("OpenAI decision image media type", "'OpenAI decision image media type: " + mediaType + "' functionality not supported.");
+                throw new UnsupportedFunctionalityException(
+                    "OpenAI decision image media type",
+                    "'OpenAI decision image media type: "
+                        + mediaType
+                        + "' functionality not supported."
+                );
             }
 
             var base64 = bytes != null ? Convert.ToBase64String(bytes) : base64Text;
-            content.Add(new JsonObject { ["type"] = "input_image", ["image_url"] = "data:" + resolved + ";base64," + base64 });
+            content.Add(
+                new JsonObject
+                {
+                    ["type"] = "input_image",
+                    ["image_url"] = "data:" + resolved + ";base64," + base64,
+                }
+            );
         }
 
         return new JsonArray(new JsonObject { ["role"] = "user", ["content"] = content });
@@ -289,9 +400,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
     private static bool IsInputJsonData(JsonElement value, string serialized)
     {
-        var hasInputJsonShape = value.ValueKind == JsonValueKind.Array
-            ? value.GetArrayLength() > 0 && value.EnumerateArray().All(IsJsonObject)
-            : IsJsonObject(value);
+        var hasInputJsonShape =
+            value.ValueKind == JsonValueKind.Array
+                ? value.GetArrayLength() > 0 && value.EnumerateArray().All(IsJsonObject)
+                : IsJsonObject(value);
         return hasInputJsonShape && FitsInputJsonLimits(value, serialized);
     }
 
@@ -331,11 +443,18 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
 
     private static string ToText(DecisionInput input)
     {
-        return input.Value.ValueKind == JsonValueKind.String ? input.Value.GetString()! : JsonSerializer.Serialize(input.Value, Text);
+        return input.Value.ValueKind == JsonValueKind.String
+            ? input.Value.GetString()!
+            : JsonSerializer.Serialize(input.Value, Text);
     }
 
     // Instructions are left out when absent, so the wire order stays type, name, instructions, then the options.
-    private static JsonObject WithInstructions(JsonObject question, string? instructions, string optionsName, JsonArray options)
+    private static JsonObject WithInstructions(
+        JsonObject question,
+        string? instructions,
+        string optionsName,
+        JsonArray options
+    )
     {
         if (instructions != null)
         {
@@ -369,7 +488,12 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     parts.Add("Criteria for false:\n" + ToText(criteria.False));
                 }
 
-                return new JsonObject { ["type"] = "predicate", ["name"] = name, ["instructions"] = string.Join("\n\n", parts) };
+                return new JsonObject
+                {
+                    ["type"] = "predicate",
+                    ["name"] = name,
+                    ["instructions"] = string.Join("\n\n", parts),
+                };
             case "choice":
                 var choices = new JsonArray();
                 foreach (var option in ((DecisionChoiceCriteria)question.Criteria!).Options)
@@ -383,14 +507,22 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     choices.Add(choice);
                 }
 
-                return WithInstructions(new JsonObject { ["type"] = "choice", ["name"] = name }, instructions, "choices", choices);
+                return WithInstructions(
+                    new JsonObject { ["type"] = "choice", ["name"] = name },
+                    instructions,
+                    "choices",
+                    choices
+                );
             default:
                 var levels = new JsonArray();
                 var index = 0;
                 foreach (var description in ((DecisionScoreCriteria)question.Criteria!).Levels)
                 {
                     // Score criteria have no separate labels; indices identify each level.
-                    var level = new JsonObject { ["label"] = index.ToString(CultureInfo.InvariantCulture) };
+                    var level = new JsonObject
+                    {
+                        ["label"] = index.ToString(CultureInfo.InvariantCulture),
+                    };
                     if (description != null)
                     {
                         level["description"] = ToText(description);
@@ -400,7 +532,12 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     index++;
                 }
 
-                return WithInstructions(new JsonObject { ["type"] = "score", ["name"] = name }, instructions, "levels", levels);
+                return WithInstructions(
+                    new JsonObject { ["type"] = "score", ["name"] = name },
+                    instructions,
+                    "levels",
+                    levels
+                );
         }
     }
 
@@ -411,14 +548,23 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             return new ApiException("Type validation failed: " + reason, 200, body);
         }
 
-        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("answers", out var list) || list.ValueKind != JsonValueKind.Array)
+        if (
+            root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("answers", out var list)
+            || list.ValueKind != JsonValueKind.Array
+        )
         {
             throw Malformed("answers must be an array.");
         }
 
         double Probability(JsonElement element, string property)
         {
-            if (!element.TryGetProperty(property, out var value) || value.ValueKind != JsonValueKind.Number || value.GetDouble() < 0 || value.GetDouble() > 1)
+            if (
+                !element.TryGetProperty(property, out var value)
+                || value.ValueKind != JsonValueKind.Number
+                || value.GetDouble() < 0
+                || value.GetDouble() > 1
+            )
             {
                 throw Malformed(property + " must be a number between 0 and 1.");
             }
@@ -429,18 +575,29 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
         var result = new List<ParsedAnswer>();
         foreach (var element in list.EnumerateArray())
         {
-            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty("type", out var typeElement) || typeElement.ValueKind != JsonValueKind.String)
+            if (
+                element.ValueKind != JsonValueKind.Object
+                || !element.TryGetProperty("type", out var typeElement)
+                || typeElement.ValueKind != JsonValueKind.String
+            )
             {
                 throw Malformed("answer type is required.");
             }
 
             var type = typeElement.GetString()!;
             string? name = null;
-            if (element.TryGetProperty("name", out var nameElement) && nameElement.ValueKind == JsonValueKind.String)
+            if (
+                element.TryGetProperty("name", out var nameElement)
+                && nameElement.ValueKind == JsonValueKind.String
+            )
             {
                 name = nameElement.GetString();
             }
-            else if (type != "refusal" || !element.TryGetProperty("name", out nameElement) || nameElement.ValueKind != JsonValueKind.Null)
+            else if (
+                type != "refusal"
+                || !element.TryGetProperty("name", out nameElement)
+                || nameElement.ValueKind != JsonValueKind.Null
+            )
             {
                 throw Malformed("answer name must be a string.");
             }
@@ -457,7 +614,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                 case "score":
                     if (type == "choice")
                     {
-                        if (!element.TryGetProperty("choice", out var choice) || choice.ValueKind != JsonValueKind.String)
+                        if (
+                            !element.TryGetProperty("choice", out var choice)
+                            || choice.ValueKind != JsonValueKind.String
+                        )
                         {
                             throw Malformed("choice must be a string.");
                         }
@@ -466,7 +626,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     }
                     else
                     {
-                        if (!element.TryGetProperty("score", out var score) || score.ValueKind != JsonValueKind.Number)
+                        if (
+                            !element.TryGetProperty("score", out var score)
+                            || score.ValueKind != JsonValueKind.Number
+                        )
                         {
                             throw Malformed("score must be a number.");
                         }
@@ -474,12 +637,18 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                         answer.Score = score.GetDouble();
                     }
 
-                    if (element.TryGetProperty("confidence", out var confidence) && confidence.ValueKind == JsonValueKind.Number)
+                    if (
+                        element.TryGetProperty("confidence", out var confidence)
+                        && confidence.ValueKind == JsonValueKind.Number
+                    )
                     {
                         answer.Confidence = Probability(element, "confidence");
                     }
 
-                    if (!element.TryGetProperty("probabilities", out var probabilities) || probabilities.ValueKind != JsonValueKind.Array)
+                    if (
+                        !element.TryGetProperty("probabilities", out var probabilities)
+                        || probabilities.ValueKind != JsonValueKind.Array
+                    )
                     {
                         throw Malformed("probabilities must be an array.");
                     }
@@ -487,7 +656,10 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                     answer.Probabilities = new List<KeyValuePair<string, double>>();
                     foreach (var item in probabilities.EnumerateArray())
                     {
-                        if (item.ValueKind != JsonValueKind.Object || !item.TryGetProperty("value", out var value))
+                        if (
+                            item.ValueKind != JsonValueKind.Object
+                            || !item.TryGetProperty("value", out var value)
+                        )
                         {
                             throw Malformed("probability value is required.");
                         }
@@ -497,7 +669,12 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                         {
                             key = value.GetString()!;
                         }
-                        else if (type == "score" && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var level) && level >= 0)
+                        else if (
+                            type == "score"
+                            && value.ValueKind == JsonValueKind.Number
+                            && value.TryGetInt32(out var level)
+                            && level >= 0
+                        )
                         {
                             key = level.ToString(CultureInfo.InvariantCulture);
                         }
@@ -506,7 +683,9 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                             throw Malformed("probability value has the wrong type.");
                         }
 
-                        answer.Probabilities.Add(new KeyValuePair<string, double>(key, Probability(item, "probability")));
+                        answer.Probabilities.Add(
+                            new KeyValuePair<string, double>(key, Probability(item, "probability"))
+                        );
                     }
 
                     break;

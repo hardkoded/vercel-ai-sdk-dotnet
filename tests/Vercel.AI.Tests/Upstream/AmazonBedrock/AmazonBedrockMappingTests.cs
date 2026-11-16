@@ -12,17 +12,28 @@ namespace Vercel.AI.Tests;
 public sealed class AmazonBedrockErrorMappingTests
 {
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-error.test.ts::amazonBedrockFailedResponseHandler::preserves the provider message when the error type is omitted", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-error.test.ts::amazonBedrockFailedResponseHandler::preserves the provider message when the error type is omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_the_provider_message_when_the_error_type_is_omitted()
     {
         Assert.Equal("boom", AmazonBedrockErrors.FormatMessage("{\"message\":\"boom\"}"));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/amazon-bedrock-error.test.ts::amazonBedrockFailedResponseHandler::prefixes the provider message when the error type is present", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-error.test.ts::amazonBedrockFailedResponseHandler::prefixes the provider message when the error type is present",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Prefixes_the_provider_message_when_the_error_type_is_present()
     {
-        Assert.Equal("ValidationException: boom", AmazonBedrockErrors.FormatMessage("{\"type\":\"ValidationException\",\"message\":\"boom\"}"));
+        Assert.Equal(
+            "ValidationException: boom",
+            AmazonBedrockErrors.FormatMessage(
+                "{\"type\":\"ValidationException\",\"message\":\"boom\"}"
+            )
+        );
     }
 }
 
@@ -31,7 +42,8 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert basic usage without cache tokens",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Converts_basic_usage_without_cache_tokens()
     {
         const string json = "{\"inputTokens\":100,\"outputTokens\":50}";
@@ -46,7 +58,8 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with cache read tokens",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Converts_usage_with_cache_read_tokens()
     {
         const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80}";
@@ -61,10 +74,12 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with cache write tokens",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Converts_usage_with_cache_write_tokens()
     {
-        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheWriteInputTokens\":60}";
+        const string json =
+            "{\"inputTokens\":100,\"outputTokens\":50,\"cacheWriteInputTokens\":60}";
         var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(160, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
@@ -76,10 +91,12 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should convert usage with both cache read and write tokens",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Converts_usage_with_both_cache_counts()
     {
-        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}";
+        const string json =
+            "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}";
         var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(240, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
@@ -91,10 +108,12 @@ public sealed class AmazonBedrockUsageMappingTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should handle null cache tokens",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Handles_null_cache_tokens()
     {
-        const string json = "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":null,\"cacheWriteInputTokens\":null}";
+        const string json =
+            "{\"inputTokens\":100,\"outputTokens\":50,\"cacheReadInputTokens\":null,\"cacheWriteInputTokens\":null}";
         var usage = AmazonBedrockUsage.Convert(Json(json));
         Assert.Equal(100, usage.InputTokens);
         Assert.Equal(100, usage.NoCacheInputTokens);
@@ -107,7 +126,8 @@ public sealed class AmazonBedrockUsageMappingTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should handle null usage",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Input and output stay unset. TotalTokens becomes 0 because the usage type sums missing counts.")]
+        Note = "Input and output stay unset. TotalTokens becomes 0 because the usage type sums missing counts."
+    )]
     public void Handles_null_usage()
     {
         var usage = AmazonBedrockUsage.Convert(null);
@@ -123,7 +143,8 @@ public sealed class AmazonBedrockUsageMappingTests
     [UpstreamTest(
         "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should handle undefined usage",
         Coverage = UpstreamCoverage.Partial,
-        Note = "A missing usage object leaves the token counts unset. TotalTokens becomes 0.")]
+        Note = "A missing usage object leaves the token counts unset. TotalTokens becomes 0."
+    )]
     public void Handles_undefined_usage()
     {
         var usage = AmazonBedrockUsage.Convert(default(JsonElement));
@@ -133,20 +154,32 @@ public sealed class AmazonBedrockUsageMappingTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should include totalTokens in raw when provided", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should include totalTokens in raw when provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Includes_total_tokens_in_raw_when_provided()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"totalTokens\":150}"));
+        var usage = AmazonBedrockUsage.Convert(
+            Json("{\"inputTokens\":100,\"outputTokens\":50,\"totalTokens\":150}")
+        );
         Assert.Equal(100, usage.Raw!.Value.GetProperty("inputTokens").GetInt32());
         Assert.Equal(50, usage.Raw.Value.GetProperty("outputTokens").GetInt32());
         Assert.Equal(150, usage.Raw.Value.GetProperty("totalTokens").GetInt32());
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should preserve raw usage data", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/convert-amazon-bedrock-usage.test.ts::convertAmazonBedrockUsage::should preserve raw usage data",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_raw_usage_data()
     {
-        var usage = AmazonBedrockUsage.Convert(Json("{\"inputTokens\":100,\"outputTokens\":50,\"totalTokens\":150,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}"));
+        var usage = AmazonBedrockUsage.Convert(
+            Json(
+                "{\"inputTokens\":100,\"outputTokens\":50,\"totalTokens\":150,\"cacheReadInputTokens\":80,\"cacheWriteInputTokens\":60}"
+            )
+        );
         var raw = usage.Raw!.Value;
         Assert.Equal(100, raw.GetProperty("inputTokens").GetInt32());
         Assert.Equal(50, raw.GetProperty("outputTokens").GetInt32());
@@ -173,7 +206,10 @@ public sealed class AmazonBedrockUsageMappingTests
 public sealed class AmazonBedrockToolIdTests
 {
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return true for mistral models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return true for mistral models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_true_for_mistral_models()
     {
         Assert.True(AmazonBedrockToolIds.IsMistralModel("mistral.mistral-7b-instruct-v0:2"));
@@ -186,7 +222,10 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return true for region-prefixed mistral models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return true for region-prefixed mistral models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_true_for_region_prefixed_mistral_models()
     {
         Assert.True(AmazonBedrockToolIds.IsMistralModel("us.mistral.pixtral-large-2502-v1:0"));
@@ -194,17 +233,25 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return false for non-mistral models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::isMistralModel::should return false for non-mistral models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_false_for_non_mistral_models()
     {
-        Assert.False(AmazonBedrockToolIds.IsMistralModel("anthropic.claude-3-5-sonnet-20241022-v2:0"));
+        Assert.False(
+            AmazonBedrockToolIds.IsMistralModel("anthropic.claude-3-5-sonnet-20241022-v2:0")
+        );
         Assert.False(AmazonBedrockToolIds.IsMistralModel("amazon.nova-pro-v1:0"));
         Assert.False(AmazonBedrockToolIds.IsMistralModel("openai.gpt-4o"));
         Assert.False(AmazonBedrockToolIds.IsMistralModel("meta.llama3-70b-instruct-v1:0"));
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should return the original ID when not a Mistral model", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should return the original ID when not a Mistral model",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_the_original_id_when_not_a_mistral_model()
     {
         const string original = "tooluse_bpe71yCfRu2b5i-nKGDr5g";
@@ -212,17 +259,28 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should hash incompatible IDs deterministically for Mistral models", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should hash incompatible IDs deterministically for Mistral models",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Hashes_incompatible_ids_deterministically_for_mistral_models()
     {
         const string toolCallId = "tooluse_bpe71yCfRu2b5i-nKGDr5g";
         Assert.Equal(
             new[] { "8eHypBDcw", "8eHypBDcw" },
-            new[] { AmazonBedrockToolIds.Normalize(toolCallId, true), AmazonBedrockToolIds.Normalize(toolCallId, true) });
+            new[]
+            {
+                AmazonBedrockToolIds.Normalize(toolCallId, true),
+                AmazonBedrockToolIds.Normalize(toolCallId, true),
+            }
+        );
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should produce 9 alphanumeric characters for incompatible IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should produce 9 alphanumeric characters for incompatible IDs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Produces_nine_alphanumeric_characters_for_incompatible_ids()
     {
         var normalizedIds = new[]
@@ -234,7 +292,10 @@ public sealed class AmazonBedrockToolIdTests
             AmazonBedrockToolIds.Normalize("___---___", true),
         };
 
-        Assert.Equal(new[] { "hvVDqPNyj", "TnzPqldGU", "GRuIyUwcV", "PceAgWDYe", "5C589HVqG" }, normalizedIds);
+        Assert.Equal(
+            new[] { "hvVDqPNyj", "TnzPqldGU", "GRuIyUwcV", "PceAgWDYe", "5C589HVqG" },
+            normalizedIds
+        );
         foreach (var normalizedId in normalizedIds)
         {
             Assert.Matches("^[a-zA-Z0-9]{9}$", normalizedId);
@@ -242,7 +303,10 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should preserve IDs that are already valid Mistral tool call IDs", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should preserve IDs that are already valid Mistral tool call IDs",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Preserves_ids_that_are_already_valid_mistral_tool_call_ids()
     {
         Assert.Equal("abcdefghi", AmazonBedrockToolIds.Normalize("abcdefghi", true));
@@ -250,7 +314,10 @@ public sealed class AmazonBedrockToolIdTests
     }
 
     [Fact]
-    [UpstreamTest("packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should keep distinct Bedrock IDs distinct when their prefixes match", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/normalize-tool-call-id.test.ts::normalizeToolCallId::should keep distinct Bedrock IDs distinct when their prefixes match",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Keeps_distinct_bedrock_ids_distinct_when_their_prefixes_match()
     {
         Assert.Equal(
@@ -259,6 +326,7 @@ public sealed class AmazonBedrockToolIdTests
             {
                 AmazonBedrockToolIds.Normalize("tooluse_Ac1Xq9ZklmNoPq", true),
                 AmazonBedrockToolIds.Normalize("tooluse_Ac2Yt7WrstUvWx", true),
-            });
+            }
+        );
     }
 }

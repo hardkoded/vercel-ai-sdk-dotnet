@@ -13,13 +13,17 @@ public sealed class DoStreamMissingUsageHandlingTests
     private const string Prefix = TestFile + " > doStream > missing usage handling::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should handle missing usage in streaming response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should handle missing usage in streaming response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_handle_missing_usage_in_streaming_response()
     {
         var capture = StreamResponse(
             """{"type":"response.created","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","created_at":1700000000,"status":"in_progress","output":[]}}""",
             """{"type":"response.output_text.delta","output_index":0,"content_index":0,"delta":"Hello"}""",
-            """{"type":"response.completed","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","created_at":1700000000,"status":"completed","output":[{"type":"message","id":"msg_001","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Hello"}]}]}}""");
+            """{"type":"response.completed","response":{"id":"resp_123","object":"response","model":"grok-4-fast-non-reasoning","created_at":1700000000,"status":"completed","output":[{"type":"message","id":"msg_001","role":"assistant","status":"completed","content":[{"type":"output_text","text":"Hello"}]}]}}"""
+        );
 
         var parts = await Collect(Model(capture), HelloPrompt());
 

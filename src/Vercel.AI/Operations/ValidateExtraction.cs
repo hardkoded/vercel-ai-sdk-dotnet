@@ -14,20 +14,40 @@ public static class ValidateExtraction
 {
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromSeconds(1);
 
-    private static readonly Regex Time = new Regex(@"^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?\z", RegexOptions.CultureInvariant, MatchTimeout);
+    private static readonly Regex Time = new Regex(
+        @"^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?\z",
+        RegexOptions.CultureInvariant,
+        MatchTimeout
+    );
 
-    private static readonly Regex Datetime = new Regex(@"^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?(Z|[+-]([01][0-9]|2[0-3]):[0-5][0-9])?\z", RegexOptions.CultureInvariant, MatchTimeout);
+    private static readonly Regex Datetime = new Regex(
+        @"^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?(Z|[+-]([01][0-9]|2[0-3]):[0-5][0-9])?\z",
+        RegexOptions.CultureInvariant,
+        MatchTimeout
+    );
 
-    private static readonly Regex DatePattern = new Regex(@"^([0-9]{4})-([0-9]{2})-([0-9]{2})\z", RegexOptions.CultureInvariant, MatchTimeout);
+    private static readonly Regex DatePattern = new Regex(
+        @"^([0-9]{4})-([0-9]{2})-([0-9]{2})\z",
+        RegexOptions.CultureInvariant,
+        MatchTimeout
+    );
 
     /// <summary>Validates state, reference date, and fields before any model call. Maps to <c>validateExtractionInput</c>.</summary>
-    public static void ValidateExtractionInput(DecisionState? state, IReadOnlyDictionary<string, ExtractionField>? fields, string? referenceDate = null)
+    public static void ValidateExtractionInput(
+        DecisionState? state,
+        IReadOnlyDictionary<string, ExtractionField>? fields,
+        string? referenceDate = null
+    )
     {
         Decide.ValidateDecisionState(state);
 
         if (referenceDate != null && !IsDate(referenceDate))
         {
-            throw new InvalidArgumentException("referenceDate", referenceDate, "must be a YYYY-MM-DD calendar date");
+            throw new InvalidArgumentException(
+                "referenceDate",
+                referenceDate,
+                "must be a YYYY-MM-DD calendar date"
+            );
         }
 
         if (fields == null || fields.Count == 0)
@@ -46,22 +66,49 @@ public static class ValidateExtraction
 
             if (field.Instructions != null && !IsSerializableJson(field.Instructions.Value))
             {
-                throw new InvalidArgumentException(parameter, field, "instructions must not contain non-finite numbers, cycles, or array holes");
+                throw new InvalidArgumentException(
+                    parameter,
+                    field,
+                    "instructions must not contain non-finite numbers, cycles, or array holes"
+                );
             }
 
-            if (field.Decimals is { } decimals && !(Math.Floor(decimals) == decimals && decimals >= 0 && decimals <= 6))
+            if (
+                field.Decimals is { } decimals
+                && !(Math.Floor(decimals) == decimals && decimals >= 0 && decimals <= 6)
+            )
             {
-                throw new InvalidArgumentException(parameter, field, "decimals must be an integer from 0 to 6");
+                throw new InvalidArgumentException(
+                    parameter,
+                    field,
+                    "decimals must be an integer from 0 to 6"
+                );
             }
 
-            if (field.Type == "duration" && field.Unit != null && !ExtractionField.DurationUnits.Contains(field.Unit))
+            if (
+                field.Type == "duration"
+                && field.Unit != null
+                && !ExtractionField.DurationUnits.Contains(field.Unit)
+            )
             {
-                throw new InvalidArgumentException(parameter, field, "duration unit must be one of " + string.Join(", ", ExtractionField.DurationUnits));
+                throw new InvalidArgumentException(
+                    parameter,
+                    field,
+                    "duration unit must be one of "
+                        + string.Join(", ", ExtractionField.DurationUnits)
+                );
             }
 
-            if (field.Type == "list" && (field.Items == null || !ExtractionField.ListItems.Contains(field.Items)))
+            if (
+                field.Type == "list"
+                && (field.Items == null || !ExtractionField.ListItems.Contains(field.Items))
+            )
             {
-                throw new InvalidArgumentException(parameter, field, "list items must be one of " + string.Join(", ", ExtractionField.ListItems));
+                throw new InvalidArgumentException(
+                    parameter,
+                    field,
+                    "list items must be one of " + string.Join(", ", ExtractionField.ListItems)
+                );
             }
         }
     }
@@ -69,9 +116,17 @@ public static class ValidateExtraction
     /// <summary>
     /// Validates answers strictly. No partial results. Maps to <c>validateExtractionAnswers</c>.
     /// </summary>
-    public static void ValidateExtractionAnswers(IReadOnlyDictionary<string, ExtractionField> fields, IReadOnlyList<DecisionModelStatePart> state, IReadOnlyDictionary<string, ExtractionAnswer>? answers)
+    public static void ValidateExtractionAnswers(
+        IReadOnlyDictionary<string, ExtractionField> fields,
+        IReadOnlyList<DecisionModelStatePart> state,
+        IReadOnlyDictionary<string, ExtractionAnswer>? answers
+    )
     {
-        if (answers == null || answers.Count != fields.Count || !fields.Keys.All(answers.ContainsKey))
+        if (
+            answers == null
+            || answers.Count != fields.Count
+            || !fields.Keys.All(answers.ContainsKey)
+        )
         {
             throw Invalid(answers, "Extraction must return exactly one answer for every field.");
         }
@@ -88,12 +143,23 @@ public static class ValidateExtraction
 
             if (answer == null || answer.Type != field.Type)
             {
-                throw Invalid(answers, "Field \"" + id + "\" returned an answer with the wrong type.");
+                throw Invalid(
+                    answers,
+                    "Field \"" + id + "\" returned an answer with the wrong type."
+                );
             }
 
-            if ((answer.PNull is { } pNull && !IsProbability(pNull)) || (answer.Confidence is { } confidence && !IsProbability(confidence)))
+            if (
+                (answer.PNull is { } pNull && !IsProbability(pNull))
+                || (answer.Confidence is { } confidence && !IsProbability(confidence))
+            )
             {
-                throw Invalid(answers, "Field \"" + id + "\" must return pNull and confidence as finite probabilities in [0, 1].");
+                throw Invalid(
+                    answers,
+                    "Field \""
+                        + id
+                        + "\" must return pNull and confidence as finite probabilities in [0, 1]."
+                );
             }
 
             if (field.Type == "list")
@@ -103,19 +169,48 @@ public static class ValidateExtraction
             }
 
             var numeric = field.Type is "number" or "duration";
-            if (answer.TextItems != null || answer.NumberItems != null || answer.Items != null || (numeric ? answer.Text != null : answer.Number != null))
+            if (
+                answer.TextItems != null
+                || answer.NumberItems != null
+                || answer.Items != null
+                || (numeric ? answer.Text != null : answer.Number != null)
+            )
             {
-                throw Invalid(answers, "Field \"" + id + "\" must return null or a valid " + field.Type + " value.");
+                throw Invalid(
+                    answers,
+                    "Field \"" + id + "\" must return null or a valid " + field.Type + " value."
+                );
             }
 
-            if (numeric ? answer.Number != null && !IsValue(field, answer.Number.Value) : answer.Text != null && !IsValue(field, answer.Text))
+            if (
+                numeric
+                    ? answer.Number != null && !IsValue(field, answer.Number.Value)
+                    : answer.Text != null && !IsValue(field, answer.Text)
+            )
             {
-                throw Invalid(answers, "Field \"" + id + "\" must return null or a valid " + field.Type + " value.");
+                throw Invalid(
+                    answers,
+                    "Field \"" + id + "\" must return null or a valid " + field.Type + " value."
+                );
             }
 
-            if ((numeric ? answer.GuessText != null || (answer.GuessNumber != null && !IsValue(field, answer.GuessNumber.Value)) : answer.GuessNumber != null || (answer.GuessText != null && !IsValue(field, answer.GuessText))))
+            if (
+                (
+                    numeric
+                        ? answer.GuessText != null
+                            || (
+                                answer.GuessNumber != null
+                                && !IsValue(field, answer.GuessNumber.Value)
+                            )
+                        : answer.GuessNumber != null
+                            || (answer.GuessText != null && !IsValue(field, answer.GuessText))
+                )
+            )
             {
-                throw Invalid(answers, "Field \"" + id + "\" must return a valid " + field.Type + " guess.");
+                throw Invalid(
+                    answers,
+                    "Field \"" + id + "\" must return a valid " + field.Type + " guess."
+                );
             }
 
             if (answer.Source != null && !IsSource(answer.Source, state))
@@ -125,28 +220,59 @@ public static class ValidateExtraction
         }
     }
 
-    private static void ValidateList(IReadOnlyDictionary<string, ExtractionAnswer> answers, string id, ExtractionField field, ExtractionAnswer answer, IReadOnlyList<DecisionModelStatePart> state)
+    private static void ValidateList(
+        IReadOnlyDictionary<string, ExtractionAnswer> answers,
+        string id,
+        ExtractionField field,
+        ExtractionAnswer answer,
+        IReadOnlyList<DecisionModelStatePart> state
+    )
     {
         var number = field.Items == "number";
-        var item = number ? new ExtractionField("number") { Integer = field.Integer, Decimals = field.Decimals } : new ExtractionField(field.Items!);
+        var item = number
+            ? new ExtractionField("number") { Integer = field.Integer, Decimals = field.Decimals }
+            : new ExtractionField(field.Items!);
         var misplaced = number ? answer.TextItems != null : answer.NumberItems != null;
         var count = number ? answer.NumberItems?.Count : answer.TextItems?.Count;
-        var valid = !misplaced
+        var valid =
+            !misplaced
             && answer.Text == null
             && answer.Number == null
             && answer.Source == null
-            && (number ? answer.NumberItems == null || answer.NumberItems.All(entry => IsValue(item, entry)) : answer.TextItems == null || answer.TextItems.All(entry => IsValue(item, entry)));
+            && (
+                number
+                    ? answer.NumberItems == null
+                        || answer.NumberItems.All(entry => IsValue(item, entry))
+                    : answer.TextItems == null
+                        || answer.TextItems.All(entry => IsValue(item, entry))
+            );
         if (!valid)
         {
-            throw Invalid(answers, "Field \"" + id + "\" must return null or a list of " + field.Items + " values.");
+            throw Invalid(
+                answers,
+                "Field \"" + id + "\" must return null or a list of " + field.Items + " values."
+            );
         }
 
-        if (answer.Items != null
-            && !(count != null
+        if (
+            answer.Items != null
+            && !(
+                count != null
                 && answer.Items.Count == count
-                && answer.Items.All(entry => entry != null && (entry.Confidence == null || IsProbability(entry.Confidence.Value)) && (entry.Source == null || IsSource(entry.Source, state)))))
+                && answer.Items.All(entry =>
+                    entry != null
+                    && (entry.Confidence == null || IsProbability(entry.Confidence.Value))
+                    && (entry.Source == null || IsSource(entry.Source, state))
+                )
+            )
+        )
         {
-            throw Invalid(answers, "Field \"" + id + "\" must return one item entry per list value, with confidences in [0, 1] and sources inside the state.");
+            throw Invalid(
+                answers,
+                "Field \""
+                    + id
+                    + "\" must return one item entry per list value, with confidences in [0, 1] and sources inside the state."
+            );
         }
     }
 
@@ -161,7 +287,9 @@ public static class ValidateExtraction
         switch (value.ValueKind)
         {
             case JsonValueKind.Number:
-                return value.TryGetDouble(out var number) && !double.IsInfinity(number) && !double.IsNaN(number);
+                return value.TryGetDouble(out var number)
+                    && !double.IsInfinity(number)
+                    && !double.IsNaN(number);
             case JsonValueKind.Array:
                 return value.EnumerateArray().All(IsSerializableJson);
             case JsonValueKind.Object:
@@ -217,7 +345,13 @@ public static class ValidateExtraction
 
         // Number(value.toFixed(decimals)) === value
         return field.Decimals is not { } decimals
-            || double.Parse(value.ToString("F" + ((int)decimals).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), CultureInfo.InvariantCulture) == value;
+            || double.Parse(
+                value.ToString(
+                    "F" + ((int)decimals).ToString(CultureInfo.InvariantCulture),
+                    CultureInfo.InvariantCulture
+                ),
+                CultureInfo.InvariantCulture
+            ) == value;
     }
 
     private static bool IsValue(ExtractionField field, double value)
@@ -255,7 +389,10 @@ public static class ValidateExtraction
         }
     }
 
-    private static bool IsSource(ExtractionSource source, IReadOnlyList<DecisionModelStatePart> state)
+    private static bool IsSource(
+        ExtractionSource source,
+        IReadOnlyList<DecisionModelStatePart> state
+    )
     {
         if (source.Part < 0 || source.Part >= state.Count)
         {

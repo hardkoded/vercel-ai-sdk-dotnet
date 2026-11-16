@@ -22,9 +22,7 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public HuggingFaceProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient)
-    {
-    }
+        : base(Prepare(options), httpClient) { }
 
     /// <summary>Creates a Responses API model. <see cref="OpenAICompatibleProvider.LanguageModel(string)"/> stays on Chat Completions.</summary>
     public HuggingFaceResponsesLanguageModel ResponsesModel(string modelId)
@@ -35,26 +33,38 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
-        throw new AiSdkException("Hugging Face Responses API does not support text embeddings. Use the Hugging Face Inference API directly for embeddings.");
+        throw new AiSdkException(
+            "Hugging Face Responses API does not support text embeddings. Use the Hugging Face Inference API directly for embeddings."
+        );
     }
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId)
     {
-        throw new AiSdkException("Hugging Face Responses API does not support image generation. Use the Hugging Face Inference API directly for image models.");
+        throw new AiSdkException(
+            "Hugging Face Responses API does not support image generation. Use the Hugging Face Inference API directly for image models."
+        );
     }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
-    public static new HuggingFaceProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
+    public static new HuggingFaceProvider Create(
+        OpenAICompatibleOptions? options = null,
+        HttpMessageHandler? handler = null
+    )
     {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
+        var client = handler is null
+            ? new HttpClient()
+            : new HttpClient(handler, disposeHandler: false);
         return new HuggingFaceProvider(client, options);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
         options = options?.Copy() ?? new OpenAICompatibleOptions();
-        if (string.IsNullOrEmpty(options.ProviderName) || options.ProviderName == "openai-compatible")
+        if (
+            string.IsNullOrEmpty(options.ProviderName)
+            || options.ProviderName == "openai-compatible"
+        )
         {
             options.ProviderName = ProviderId;
         }
@@ -84,14 +94,21 @@ public sealed class HuggingFaceProvider : OpenAICompatibleProvider
 public static class HuggingFaceServiceCollectionExtensions
 {
     /// <summary>Adds the provider.</summary>
-    public static IServiceCollection AddHuggingFace(this IServiceCollection services, Action<OpenAICompatibleOptions>? configure = null)
+    public static IServiceCollection AddHuggingFace(
+        this IServiceCollection services,
+        Action<OpenAICompatibleOptions>? configure = null
+    )
     {
         services.AddHttpClient(HuggingFaceProvider.ProviderId);
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();
             configure?.Invoke(options);
-            return new HuggingFaceProvider(sp.GetRequiredService<IHttpClientFactory>().CreateClient(HuggingFaceProvider.ProviderId), options);
+            return new HuggingFaceProvider(
+                sp.GetRequiredService<IHttpClientFactory>()
+                    .CreateClient(HuggingFaceProvider.ProviderId),
+                options
+            );
         });
         return services;
     }

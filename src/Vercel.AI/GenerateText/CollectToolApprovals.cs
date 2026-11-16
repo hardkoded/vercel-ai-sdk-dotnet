@@ -98,7 +98,13 @@ public sealed class ApprovalResponsePart : ApprovalHistoryPart
 public sealed class ApprovalToolResultPart : ApprovalHistoryPart
 {
     /// <summary>Creates a tool result part.</summary>
-    public ApprovalToolResultPart(string toolCallId, string toolName, string outputType, JsonElement? outputValue = null, string? reason = null)
+    public ApprovalToolResultPart(
+        string toolCallId,
+        string toolName,
+        string outputType,
+        JsonElement? outputValue = null,
+        string? reason = null
+    )
         : base("tool-result")
     {
         ToolCallId = toolCallId ?? throw new ArgumentNullException(nameof(toolCallId));
@@ -128,7 +134,11 @@ public sealed class ApprovalToolResultPart : ApprovalHistoryPart
 public sealed class ApprovalHistoryMessage
 {
     /// <summary>Creates a message. <paramref name="parts"/> is null when the message content is a string.</summary>
-    public ApprovalHistoryMessage(string role, string? text = null, IReadOnlyList<ApprovalHistoryPart>? parts = null)
+    public ApprovalHistoryMessage(
+        string role,
+        string? text = null,
+        IReadOnlyList<ApprovalHistoryPart>? parts = null
+    )
     {
         Role = role ?? throw new ArgumentNullException(nameof(role));
         Text = text;
@@ -153,10 +163,13 @@ public sealed class CollectedToolApproval
         ApprovalRequestPart approvalRequest,
         ApprovalResponsePart approvalResponse,
         ApprovalToolCallPart toolCall,
-        ApprovalToolResultPart? existingToolResult = null)
+        ApprovalToolResultPart? existingToolResult = null
+    )
     {
-        ApprovalRequest = approvalRequest ?? throw new ArgumentNullException(nameof(approvalRequest));
-        ApprovalResponse = approvalResponse ?? throw new ArgumentNullException(nameof(approvalResponse));
+        ApprovalRequest = approvalRequest
+            ?? throw new ArgumentNullException(nameof(approvalRequest));
+        ApprovalResponse = approvalResponse
+            ?? throw new ArgumentNullException(nameof(approvalResponse));
         ToolCall = toolCall ?? throw new ArgumentNullException(nameof(toolCall));
         ExistingToolResult = existingToolResult;
     }
@@ -178,7 +191,10 @@ public sealed class CollectedToolApproval
 public sealed class CollectedToolApprovalSet
 {
     /// <summary>Creates an empty or filled set.</summary>
-    public CollectedToolApprovalSet(IReadOnlyList<CollectedToolApproval> approvedToolApprovals, IReadOnlyList<CollectedToolApproval> deniedToolApprovals)
+    public CollectedToolApprovalSet(
+        IReadOnlyList<CollectedToolApproval> approvedToolApprovals,
+        IReadOnlyList<CollectedToolApproval> deniedToolApprovals
+    )
     {
         ApprovedToolApprovals = approvedToolApprovals ?? Array.Empty<CollectedToolApproval>();
         DeniedToolApprovals = deniedToolApprovals ?? Array.Empty<CollectedToolApproval>();
@@ -196,7 +212,10 @@ public sealed class InvalidToolApprovalException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public InvalidToolApprovalException(string approvalId)
-        : base("Tool approval response references unknown approvalId: " + JsonSerializer.Serialize(approvalId))
+        : base(
+            "Tool approval response references unknown approvalId: "
+                + JsonSerializer.Serialize(approvalId)
+        )
     {
         ApprovalId = approvalId;
     }
@@ -210,7 +229,13 @@ public sealed class ToolCallNotFoundForApprovalException : AiSdkException
 {
     /// <summary>Creates the exception.</summary>
     public ToolCallNotFoundForApprovalException(string toolCallId, string approvalId)
-        : base("Tool call \"" + toolCallId + "\" not found for approval request \"" + approvalId + "\".")
+        : base(
+            "Tool call \""
+                + toolCallId
+                + "\" not found for approval request \""
+                + approvalId
+                + "\"."
+        )
     {
         ToolCallId = toolCallId;
         ApprovalId = approvalId;
@@ -230,16 +255,24 @@ public static class ToolApprovalCollection
     /// Reads approval responses from the last message when it is a tool message.
     /// Returns empty lists for every other ending.
     /// </summary>
-    public static CollectedToolApprovalSet CollectToolApprovals(IReadOnlyList<ApprovalHistoryMessage> messages)
+    public static CollectedToolApprovalSet CollectToolApprovals(
+        IReadOnlyList<ApprovalHistoryMessage> messages
+    )
     {
         if (messages is null)
         {
             throw new ArgumentNullException(nameof(messages));
         }
 
-        if (messages.Count == 0 || !string.Equals(messages[messages.Count - 1].Role, "tool", StringComparison.Ordinal))
+        if (
+            messages.Count == 0
+            || !string.Equals(messages[messages.Count - 1].Role, "tool", StringComparison.Ordinal)
+        )
         {
-            return new CollectedToolApprovalSet(Array.Empty<CollectedToolApproval>(), Array.Empty<CollectedToolApproval>());
+            return new CollectedToolApprovalSet(
+                Array.Empty<CollectedToolApproval>(),
+                Array.Empty<CollectedToolApproval>()
+            );
         }
 
         var last = messages[messages.Count - 1];
@@ -249,7 +282,10 @@ public static class ToolApprovalCollection
         var requests = new Dictionary<string, ApprovalRequestPart>(StringComparer.Ordinal);
         foreach (var message in messages)
         {
-            if (!string.Equals(message.Role, "assistant", StringComparison.Ordinal) || message.Parts is null)
+            if (
+                !string.Equals(message.Role, "assistant", StringComparison.Ordinal)
+                || message.Parts is null
+            )
             {
                 continue;
             }
@@ -296,14 +332,27 @@ public static class ToolApprovalCollection
             }
 
             results.TryGetValue(request.ToolCallId, out var existing);
-            if (existing != null && (response.Approved || !string.Equals(existing.OutputType, "execution-denied", StringComparison.Ordinal)))
+            if (
+                existing != null
+                && (
+                    response.Approved
+                    || !string.Equals(
+                        existing.OutputType,
+                        "execution-denied",
+                        StringComparison.Ordinal
+                    )
+                )
+            )
             {
                 continue;
             }
 
             if (!toolCalls.TryGetValue(request.ToolCallId, out var toolCall))
             {
-                throw new ToolCallNotFoundForApprovalException(request.ToolCallId, request.ApprovalId);
+                throw new ToolCallNotFoundForApprovalException(
+                    request.ToolCallId,
+                    request.ApprovalId
+                );
             }
 
             // Only the first response for a tool call is collected. Later responses (replays,
@@ -327,6 +376,9 @@ public static class ToolApprovalCollection
 
         // Approval responses can arrive in a different order than the model's calls.
         // Restore model order before either generation API schedules their execution.
-        return new CollectedToolApprovalSet(approved.OrderBy(approval => toolCallOrder[approval.ToolCall.ToolCallId]).ToList(), denied);
+        return new CollectedToolApprovalSet(
+            approved.OrderBy(approval => toolCallOrder[approval.ToolCall.ToolCallId]).ToList(),
+            denied
+        );
     }
 }

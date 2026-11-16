@@ -19,19 +19,30 @@ internal static class ProviderOptionShape
     /// <summary>Maps to <c>z.string()</c> with an optional <c>.min(length)</c>.</summary>
     public static OptionValidator String(int minLength = 0)
     {
-        return value => value.ValueKind != JsonValueKind.String
-            ? "expected string, received " + Describe(value)
-            : minLength > 0 && value.GetString()!.Length < minLength ? "expected at least " + minLength.ToString(CultureInfo.InvariantCulture) + " character(s)" : null;
+        return value =>
+            value.ValueKind != JsonValueKind.String ? "expected string, received " + Describe(value)
+            : minLength > 0 && value.GetString()!.Length < minLength
+                ? "expected at least "
+                    + minLength.ToString(CultureInfo.InvariantCulture)
+                    + " character(s)"
+            : null;
     }
 
     /// <summary>Maps to <c>z.boolean()</c>.</summary>
     public static OptionValidator Boolean()
     {
-        return value => value.ValueKind is JsonValueKind.True or JsonValueKind.False ? null : "expected boolean, received " + Describe(value);
+        return value =>
+            value.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? null
+                : "expected boolean, received " + Describe(value);
     }
 
     /// <summary>Maps to <c>z.number()</c> with optional <c>.int()</c>, <c>.min()</c> and <c>.max()</c>.</summary>
-    public static OptionValidator Number(double? min = null, double? max = null, bool integer = false)
+    public static OptionValidator Number(
+        double? min = null,
+        double? max = null,
+        bool integer = false
+    )
     {
         return value =>
         {
@@ -47,25 +58,32 @@ internal static class ProviderOptionShape
 
             if (min is { } lower && number < lower)
             {
-                return "expected a number of at least " + lower.ToString(CultureInfo.InvariantCulture);
+                return "expected a number of at least "
+                    + lower.ToString(CultureInfo.InvariantCulture);
             }
 
-            return max is { } upper && number > upper ? "expected a number of at most " + upper.ToString(CultureInfo.InvariantCulture) : null;
+            return max is { } upper && number > upper
+                ? "expected a number of at most " + upper.ToString(CultureInfo.InvariantCulture)
+                : null;
         };
     }
 
     /// <summary>Maps to <c>z.enum([...])</c>.</summary>
     public static OptionValidator Enum(params string[] values)
     {
-        return value => value.ValueKind == JsonValueKind.String && Array.IndexOf(values, value.GetString()) >= 0
-            ? null
-            : "expected one of " + string.Join(" | ", values);
+        return value =>
+            value.ValueKind == JsonValueKind.String && Array.IndexOf(values, value.GetString()) >= 0
+                ? null
+                : "expected one of " + string.Join(" | ", values);
     }
 
     /// <summary>Maps to <c>z.literal(...)</c> for a string.</summary>
     public static OptionValidator Literal(string expected)
     {
-        return value => value.ValueKind == JsonValueKind.String && value.GetString() == expected ? null : "expected " + expected;
+        return value =>
+            value.ValueKind == JsonValueKind.String && value.GetString() == expected
+                ? null
+                : "expected " + expected;
     }
 
     /// <summary>Maps to <c>z.array(item)</c> with an optional <c>.length(n)</c>.</summary>
@@ -80,7 +98,9 @@ internal static class ProviderOptionShape
 
             if (length is { } expected && value.GetArrayLength() != expected)
             {
-                return "expected an array of exactly " + expected.ToString(CultureInfo.InvariantCulture) + " item(s)";
+                return "expected an array of exactly "
+                    + expected.ToString(CultureInfo.InvariantCulture)
+                    + " item(s)";
             }
 
             var index = 0;
@@ -126,13 +146,22 @@ internal static class ProviderOptionShape
     /// Maps to <c>z.object(shape)</c>, or <c>z.strictObject(shape)</c> when <paramref name="strict"/> is true. Names in
     /// <paramref name="required"/> must be present.
     /// </summary>
-    public static OptionValidator ObjectOf(IReadOnlyDictionary<string, OptionValidator> shape, bool strict = false, params string[] required)
+    public static OptionValidator ObjectOf(
+        IReadOnlyDictionary<string, OptionValidator> shape,
+        bool strict = false,
+        params string[] required
+    )
     {
         return value => Validate(value, shape, strict, required);
     }
 
     /// <summary>Validates <paramref name="value"/> against <paramref name="shape"/>. Returns the first error, or null.</summary>
-    public static string? Validate(JsonElement value, IReadOnlyDictionary<string, OptionValidator> shape, bool strict, params string[] required)
+    public static string? Validate(
+        JsonElement value,
+        IReadOnlyDictionary<string, OptionValidator> shape,
+        bool strict,
+        params string[] required
+    )
     {
         if (value.ValueKind != JsonValueKind.Object)
         {
@@ -170,7 +199,10 @@ internal static class ProviderOptionShape
     }
 
     /// <summary>Copies the entries of <paramref name="overrides"/> over <paramref name="target"/>, like an object spread.</summary>
-    public static Dictionary<string, OptionValidator> Spread(Dictionary<string, OptionValidator> target, IReadOnlyDictionary<string, OptionValidator> overrides)
+    public static Dictionary<string, OptionValidator> Spread(
+        Dictionary<string, OptionValidator> target,
+        IReadOnlyDictionary<string, OptionValidator> overrides
+    )
     {
         foreach (var pair in overrides)
         {

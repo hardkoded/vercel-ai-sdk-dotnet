@@ -12,7 +12,8 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/executable-tool.test.ts::isExecutableTool::returns true for tools with an execute function",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Executable_tool_detects_a_delegate()
     {
         Func<Task<string>> execute = () => Task.FromResult("sunny");
@@ -22,7 +23,8 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/executable-tool.test.ts::isExecutableTool::returns false for tools without an execute function",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Executable_tool_rejects_a_missing_delegate()
     {
         Assert.False(ToolExecution.IsExecutable(null));
@@ -31,7 +33,8 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/executable-tool.test.ts::isExecutableTool::returns false for undefined",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Executable_tool_rejects_null()
     {
         Delegate? execute = null;
@@ -41,10 +44,12 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/executable-tool.test.ts::isExecutableTool::allows executable tools to be passed to executeTool after narrowing",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Executable_tool_can_be_run_after_narrowing()
     {
-        Func<string, string, Task<Weather>> execute = (city, requestId) => Task.FromResult(new Weather(city, requestId));
+        Func<string, string, Task<Weather>> execute = (city, requestId) =>
+            Task.FromResult(new Weather(city, requestId));
         Assert.True(ToolExecution.IsExecutable(execute));
         var steps = new List<ToolExecution.ToolStep<Weather>>();
         await foreach (var step in ToolExecution.ExecuteAsync(() => execute("Berlin", "req-1")))
@@ -61,11 +66,16 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/execute-tool.test.ts::executeTool::yields a single final output for non-streaming tools",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Execute_yields_one_final_value()
     {
         var steps = new List<ToolExecution.ToolStep<Weather>>();
-        await foreach (var step in ToolExecution.ExecuteAsync(() => Task.FromResult(new Weather("Berlin", "req-1"))))
+        await foreach (
+            var step in ToolExecution.ExecuteAsync(() =>
+                Task.FromResult(new Weather("Berlin", "req-1"))
+            )
+        )
         {
             steps.Add(step);
         }
@@ -78,7 +88,8 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/execute-tool.test.ts::executeTool::yields streamed values as preliminary output and repeats the last one as final",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Execute_stream_marks_values_preliminary_and_repeats_the_last()
     {
         var steps = new List<ToolExecution.ToolStep<string>>();
@@ -99,7 +110,8 @@ public sealed class ToolExecutionTests
     [Fact]
     [UpstreamTest(
         "packages/provider-utils/src/types/execute-tool.test.ts::executeTool::preserves `this` for a class-based tool.execute",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Execute_keeps_the_instance_of_a_method_delegate()
     {
         var calculator = new Calculator("calc");

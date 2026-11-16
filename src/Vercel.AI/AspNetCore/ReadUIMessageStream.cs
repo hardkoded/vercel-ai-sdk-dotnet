@@ -40,7 +40,8 @@ public static partial class UIMessageStreamConverter
     /// <param name="cancellationToken">Cancels the read of the stream.</param>
     public static async IAsyncEnumerable<UIMessage> ReadUIMessageStream(
         ReadUIMessageStreamOptions options,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
     {
         if (options is null)
         {
@@ -52,7 +53,8 @@ public static partial class UIMessageStreamConverter
 
         var state = UIMessageStreamProcessing.CreateStreamingUIMessageState(
             options.Message != null ? UIMessageJson.ToJson(options.Message) : null,
-            options.Message?.Id ?? string.Empty);
+            options.Message?.Id ?? string.Empty
+        );
 
         void HandleError(Exception error)
         {
@@ -64,13 +66,23 @@ public static partial class UIMessageStreamConverter
             }
         }
 
-        Task RunUpdateMessageJob(Func<UpdateMessageJobContext, Task> job)
-            => job(new UpdateMessageJobContext(state, _ => snapshots.Enqueue(UIMessageJson.FromJson(state.Message))));
+        Task RunUpdateMessageJob(Func<UpdateMessageJobContext, Task> job) =>
+            job(
+                new UpdateMessageJobContext(state, _ =>
+                    snapshots.Enqueue(UIMessageJson.FromJson(state.Message))
+                )
+            );
 
-        await using var enumerator = UIMessageStreamProcessing.ProcessUIMessageStream(
-            options.Stream,
-            new ProcessUIMessageStreamOptions(RunUpdateMessageJob, HandleError) { ResetStateOnMessageIdChange = true },
-            cancellationToken).GetAsyncEnumerator(cancellationToken);
+        await using var enumerator = UIMessageStreamProcessing
+            .ProcessUIMessageStream(
+                options.Stream,
+                new ProcessUIMessageStreamOptions(RunUpdateMessageJob, HandleError)
+                {
+                    ResetStateOnMessageIdChange = true,
+                },
+                cancellationToken
+            )
+            .GetAsyncEnumerator(cancellationToken);
 
         while (true)
         {

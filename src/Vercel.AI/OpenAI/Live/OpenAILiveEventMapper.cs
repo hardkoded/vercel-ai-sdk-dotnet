@@ -31,20 +31,28 @@ internal static class OpenAILiveEventMapper
     };
 
     /// <summary>Returns a parser for server events. Maps to <c>createOpenAILiveServerEventParser</c>.</summary>
-    public static Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>> CreateOpenAILiveServerEventParser()
+    public static Func<
+        JsonElement,
+        IReadOnlyList<RealtimeModelV4ServerEvent>
+    > CreateOpenAILiveServerEventParser()
     {
         // A fresh, stateless parser per call, like upstream's closure; a static method group would be one cached delegate.
         return new LiveServerEventParser().Parse;
     }
 
     /// <summary>Parses a raw Live server event. Maps to <c>parseOpenAILiveServerEvent</c>.</summary>
-    public static IReadOnlyList<RealtimeModelV4ServerEvent> ParseOpenAILiveServerEvent(JsonElement raw)
+    public static IReadOnlyList<RealtimeModelV4ServerEvent> ParseOpenAILiveServerEvent(
+        JsonElement raw
+    )
     {
         return [ParseServerEvent(raw)];
     }
 
     /// <summary>Serializes a normalized client event into the Live wire format. Maps to <c>serializeOpenAILiveClientEvent</c>.</summary>
-    public static JsonNode SerializeOpenAILiveClientEvent(RealtimeModelV4ClientEvent @event, string modelId)
+    public static JsonNode SerializeOpenAILiveClientEvent(
+        RealtimeModelV4ClientEvent @event,
+        string modelId
+    )
     {
         JsonObject WithEventId(JsonObject target)
         {
@@ -59,17 +67,30 @@ internal static class OpenAILiveEventMapper
         switch (@event.Type)
         {
             case "session-start":
-                return WithEventId(new JsonObject
-                {
-                    ["type"] = "session.start",
-                    ["session"] = OpenAILiveSessionConfig.BuildOpenAILiveSessionConfig(@event.Config ?? new RealtimeModelV4SessionConfig(), modelId),
-                });
+                return WithEventId(
+                    new JsonObject
+                    {
+                        ["type"] = "session.start",
+                        ["session"] = OpenAILiveSessionConfig.BuildOpenAILiveSessionConfig(
+                            @event.Config ?? new RealtimeModelV4SessionConfig(),
+                            modelId
+                        ),
+                    }
+                );
             case "session-update":
-                throw Unsupported("OpenAI Live session-update; startup settings are immutable; use context-append or input-audio-mute/input-audio-unmute");
+                throw Unsupported(
+                    "OpenAI Live session-update; startup settings are immutable; use context-append or input-audio-mute/input-audio-unmute"
+                );
             case "session-close":
                 return WithEventId(new JsonObject { ["type"] = "session.close" });
             case "input-audio-append":
-                return WithEventId(new JsonObject { ["type"] = "session.input_audio.append", ["audio"] = @event.Audio });
+                return WithEventId(
+                    new JsonObject
+                    {
+                        ["type"] = "session.input_audio.append",
+                        ["audio"] = @event.Audio,
+                    }
+                );
             case "input-audio-mute":
                 return WithEventId(new JsonObject { ["type"] = "session.input_audio.mute" });
             case "input-audio-unmute":
@@ -77,23 +98,37 @@ internal static class OpenAILiveEventMapper
             case "context-append":
                 if (@event.Content == null)
                 {
-                    throw new InvalidArgumentException("content", null, "context-append requires content.");
+                    throw new InvalidArgumentException(
+                        "content",
+                        null,
+                        "context-append requires content."
+                    );
                 }
 
                 if (@event.DelegationId is { Length: 0 })
                 {
-                    throw new InvalidArgumentException("delegationId", @event.DelegationId, "delegationId must be null or a non-empty string.");
+                    throw new InvalidArgumentException(
+                        "delegationId",
+                        @event.DelegationId,
+                        "delegationId must be null or a non-empty string."
+                    );
                 }
 
                 var channel = ReadChannel(@event.ProviderOptions);
-                return WithEventId(new JsonObject
-                {
-                    ["type"] = "session." + channel + ".append",
-                    ["content"] = @event.Content,
-                    ["delegation_id"] = @event.DelegationId,
-                });
+                return WithEventId(
+                    new JsonObject
+                    {
+                        ["type"] = "session." + channel + ".append",
+                        ["content"] = @event.Content,
+                        ["delegation_id"] = @event.DelegationId,
+                    }
+                );
             default:
-                throw Unsupported("OpenAI Live command: " + @event.Type + "; use continuous audio and context-append instead of voice-turn commands");
+                throw Unsupported(
+                    "OpenAI Live command: "
+                        + @event.Type
+                        + "; use continuous audio and context-append instead of voice-turn commands"
+                );
         }
     }
 
@@ -116,14 +151,22 @@ internal static class OpenAILiveEventMapper
 
         if (openai is not JsonObject options)
         {
-            throw new InvalidArgumentException("providerOptions", openai, "providerOptions.openai must be an object.");
+            throw new InvalidArgumentException(
+                "providerOptions",
+                openai,
+                "providerOptions.openai must be an object."
+            );
         }
 
         foreach (var pair in options)
         {
             if (pair.Key != "channel")
             {
-                throw new InvalidArgumentException("providerOptions", pair.Key, "providerOptions.openai has unrecognized key '" + pair.Key + "'.");
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    pair.Key,
+                    "providerOptions.openai has unrecognized key '" + pair.Key + "'."
+                );
             }
         }
 
@@ -132,24 +175,36 @@ internal static class OpenAILiveEventMapper
             return "thinking";
         }
 
-        if (channelNode is JsonValue value
+        if (
+            channelNode is JsonValue value
             && value.TryGetValue<string>(out var channel)
-            && (channel == "instructions" || channel == "thinking" || channel == "commentary"))
+            && (channel == "instructions" || channel == "thinking" || channel == "commentary")
+        )
         {
             return channel;
         }
 
-        throw new InvalidArgumentException("providerOptions", channelNode, "providerOptions.openai.channel must be instructions, thinking or commentary.");
+        throw new InvalidArgumentException(
+            "providerOptions",
+            channelNode,
+            "providerOptions.openai.channel must be instructions, thinking or commentary."
+        );
     }
 
     private static RealtimeModelV4ServerEvent ParseServerEvent(JsonElement raw)
     {
-        if (raw.ValueKind == JsonValueKind.Object
+        if (
+            raw.ValueKind == JsonValueKind.Object
             && raw.TryGetProperty("type", out var typeElement)
             && typeElement.ValueKind == JsonValueKind.String
-            && !s_knownTypes.Contains(typeElement.GetString()!))
+            && !s_knownTypes.Contains(typeElement.GetString()!)
+        )
         {
-            return new RealtimeModelV4ServerEvent("custom") { RawType = typeElement.GetString(), Raw = raw };
+            return new RealtimeModelV4ServerEvent("custom")
+            {
+                RawType = typeElement.GetString(),
+                Raw = raw,
+            };
         }
 
         try
@@ -191,7 +246,12 @@ internal static class OpenAILiveEventMapper
                 string? delegationType = null;
                 if (startedDelegation is { } startedDelegationValue)
                 {
-                    delegationType = RequireEnum(startedDelegationValue, "type", "client", "responses");
+                    delegationType = RequireEnum(
+                        startedDelegationValue,
+                        "type",
+                        "client",
+                        "responses"
+                    );
                 }
 
                 @event = Tagged("session-started");
@@ -209,7 +269,9 @@ internal static class OpenAILiveEventMapper
                 var closedUsage = RequireUsage(raw);
                 var reason = RequireString(raw, "reason");
                 @event = Tagged("session-closed");
-                @event.SessionId = closedSession is { } session ? RequireNonEmpty(session, "id") : null;
+                @event.SessionId = closedSession is { } session
+                    ? RequireNonEmpty(session, "id")
+                    : null;
                 @event.Usage = new RealtimeModelV4Usage { Seconds = closedUsage };
                 @event.Reason = reason;
                 return @event;
@@ -277,18 +339,30 @@ internal static class OpenAILiveEventMapper
 
             case "session.input_audio.muted":
             case "session.input_audio.unmuted":
-                return Acknowledged(Tagged("command-acknowledged"), raw, type.Substring(0, type.Length - 1));
+                return Acknowledged(
+                    Tagged("command-acknowledged"),
+                    raw,
+                    type.Substring(0, type.Length - 1)
+                );
 
             default:
                 // session.instructions.appended, session.thinking.appended and session.commentary.appended
                 var appendStart = RequireNonNegative(raw, "start_ms");
                 var appendEnd = RequireNonNegative(raw, "end_ms");
                 RequireInterval(appendStart, appendEnd);
-                return Acknowledged(Tagged("command-acknowledged"), raw, type.Substring(0, type.Length - 2));
+                return Acknowledged(
+                    Tagged("command-acknowledged"),
+                    raw,
+                    type.Substring(0, type.Length - 2)
+                );
         }
     }
 
-    private static RealtimeModelV4ServerEvent Acknowledged(RealtimeModelV4ServerEvent @event, JsonElement raw, string command)
+    private static RealtimeModelV4ServerEvent Acknowledged(
+        RealtimeModelV4ServerEvent @event,
+        JsonElement raw,
+        string command
+    )
     {
         @event.Command = command;
         @event.ClientEventId = OptionalString(raw, "client_event_id");
@@ -405,6 +479,9 @@ internal static class OpenAILiveEventMapper
 
     private static UnsupportedFunctionalityException Unsupported(string functionality)
     {
-        return new UnsupportedFunctionalityException(functionality, "'" + functionality + "' functionality not supported.");
+        return new UnsupportedFunctionalityException(
+            functionality,
+            "'" + functionality + "' functionality not supported."
+        );
     }
 }

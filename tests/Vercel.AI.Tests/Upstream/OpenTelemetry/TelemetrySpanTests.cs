@@ -13,15 +13,19 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordSpan::should execute the function and return its result",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_executes_the_function_and_returns_its_result()
     {
         using var probe = new Probe();
         var result = await TelemetrySpan.RecordAsync(
             "test-span",
             _ => Task.FromResult("test-result"),
-            Task.FromResult<IReadOnlyDictionary<string, object?>>(new Dictionary<string, object?> { ["key"] = "value" }),
-            activitySource: probe.Source);
+            Task.FromResult<IReadOnlyDictionary<string, object?>>(
+                new Dictionary<string, object?> { ["key"] = "value" }
+            ),
+            activitySource: probe.Source
+        );
 
         Assert.Equal("test-result", result);
         Assert.Equal("test-span", probe.Stopped!.OperationName);
@@ -31,11 +35,16 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordSpan::should end span when endWhenDone is true (default)",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_ends_the_span_when_end_when_done_is_true()
     {
         using var probe = new Probe();
-        await TelemetrySpan.RecordAsync("test-span", _ => Task.FromResult("result"), activitySource: probe.Source);
+        await TelemetrySpan.RecordAsync(
+            "test-span",
+            _ => Task.FromResult("result"),
+            activitySource: probe.Source
+        );
 
         Assert.NotNull(probe.Stopped);
         Assert.True(probe.Stopped!.IsStopped);
@@ -44,7 +53,8 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordSpan::should not end span when endWhenDone is false",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_leaves_the_span_open_when_end_when_done_is_false()
     {
         using var probe = new Probe();
@@ -57,7 +67,8 @@ public sealed class TelemetrySpanTests
                 return Task.FromResult("result");
             },
             endWhenDone: false,
-            activitySource: probe.Source);
+            activitySource: probe.Source
+        );
 
         Assert.NotNull(activity);
         Assert.False(activity!.IsStopped);
@@ -68,16 +79,20 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordSpan::should record error and end span on exception",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_sets_error_status_and_ends_the_span_on_exception()
     {
         using var probe = new Probe();
         var error = new InvalidOperationException("Test error");
 
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => TelemetrySpan.RecordAsync<string>(
-            "test-span",
-            _ => throw error,
-            activitySource: probe.Source));
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            TelemetrySpan.RecordAsync<string>(
+                "test-span",
+                _ => throw error,
+                activitySource: probe.Source
+            )
+        );
 
         Assert.Same(error, thrown);
         Assert.Equal(ActivityStatusCode.Error, probe.Stopped!.Status);
@@ -89,16 +104,21 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordSpan::should support async attributes",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_applies_attributes_that_arrive_asynchronously()
     {
         using var probe = new Probe();
-        var attributes = Task.FromResult<IReadOnlyDictionary<string, object?>>(new Dictionary<string, object?>
-        {
-            ["async"] = "attribute",
-        });
+        var attributes = Task.FromResult<IReadOnlyDictionary<string, object?>>(
+            new Dictionary<string, object?> { ["async"] = "attribute" }
+        );
 
-        await TelemetrySpan.RecordAsync("test-span", _ => Task.FromResult("result"), attributes, activitySource: probe.Source);
+        await TelemetrySpan.RecordAsync(
+            "test-span",
+            _ => Task.FromResult("result"),
+            attributes,
+            activitySource: probe.Source
+        );
 
         Assert.Equal("attribute", probe.Stopped!.GetTagItem("async"));
     }
@@ -106,20 +126,24 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordErrorOnSpan::should record exception for Error instances",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Record_error_records_an_exception_event_for_an_error()
     {
         using var probe = new Probe();
         var error = new InvalidOperationException("Test error");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => TelemetrySpan.RecordAsync<string>(
-            "test-span",
-            activity =>
-            {
-                TelemetrySpan.RecordError(activity!, error);
-                throw error;
-            },
-            activitySource: probe.Source));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            TelemetrySpan.RecordAsync<string>(
+                "test-span",
+                activity =>
+                {
+                    TelemetrySpan.RecordError(activity!, error);
+                    throw error;
+                },
+                activitySource: probe.Source
+            )
+        );
 
         Assert.Equal(ActivityStatusCode.Error, probe.Stopped!.Status);
         Assert.Equal("Test error", probe.Stopped.StatusDescription);
@@ -130,7 +154,8 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordErrorOnSpan::should set error status for non-Error exceptions",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Record_error_sets_status_without_a_message_for_a_non_exception()
     {
         using var probe = new Probe();
@@ -147,7 +172,8 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/record-span.test.ts::recordErrorOnSpan::should record the HTTP status code from an API call error",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Record_error_sets_the_http_status_from_an_api_exception()
     {
         using var probe = new Probe();
@@ -164,7 +190,8 @@ public sealed class TelemetrySpanTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepFinish::sets cache token attributes when available",
-        Coverage = UpstreamCoverage.Covered)]
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Usage_records_cache_token_attributes_when_they_are_present()
     {
         using var probe = new Probe();
@@ -177,7 +204,9 @@ public sealed class TelemetrySpanTests
                 totalTokens: 150,
                 cacheReadTokens: 20,
                 cacheWriteTokens: 10,
-                reasoningTokens: 10));
+                reasoningTokens: 10
+            )
+        );
 
         Assert.Equal(100, activity.GetTagItem("gen_ai.usage.input_tokens"));
         Assert.Equal(50, activity.GetTagItem("gen_ai.usage.output_tokens"));
@@ -234,8 +263,10 @@ public sealed class TelemetrySpanTests
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == _name,
-                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                    ActivitySamplingResult.AllDataAndRecorded,
+                SampleUsingParentId = (ref ActivityCreationOptions<string> _) =>
+                    ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = activity => Stopped = activity,
             };
             ActivitySource.AddActivityListener(_listener);

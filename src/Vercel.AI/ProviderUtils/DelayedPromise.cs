@@ -7,7 +7,9 @@ namespace Vercel.AI.ProviderUtils;
 /// <summary>A task that is completed from outside. Maps to <c>DelayedPromise</c>.</summary>
 public sealed class DelayedPromise<T>
 {
-    private readonly TaskCompletionSource<T> _source = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<T> _source = new TaskCompletionSource<T>(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
 
     /// <summary>The task that completes on <see cref="Resolve"/> or faults on <see cref="Reject"/>.</summary>
     public Task<T> Promise

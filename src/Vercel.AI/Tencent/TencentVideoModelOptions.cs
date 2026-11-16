@@ -119,9 +119,11 @@ public sealed class TencentVideoModelOptions
     /// <summary>Reads <c>providerOptions.tencent</c>. Returns null when absent. An invalid value throws <see cref="InvalidArgumentException"/>.</summary>
     public static TencentVideoModelOptions? Parse(JsonElement providerOptions)
     {
-        if (providerOptions.ValueKind != JsonValueKind.Object
+        if (
+            providerOptions.ValueKind != JsonValueKind.Object
             || !providerOptions.TryGetProperty("tencent", out var raw)
-            || raw.ValueKind == JsonValueKind.Null)
+            || raw.ValueKind == JsonValueKind.Null
+        )
         {
             return null;
         }
@@ -141,12 +143,20 @@ public sealed class TencentVideoModelOptions
             Elements = reader.List("elements", item =>
             {
                 var entry = new Reader(item);
-                return new TencentVideoElement { ElementId = entry.Required("elementId"), Id = entry.String("id") };
+                return new TencentVideoElement
+                {
+                    ElementId = entry.Required("elementId"),
+                    Id = entry.String("id"),
+                };
             }),
             Voices = reader.List("voices", item =>
             {
                 var entry = new Reader(item);
-                return new TencentVideoVoice { VoiceId = entry.Required("voiceId"), Id = entry.Required("id") };
+                return new TencentVideoVoice
+                {
+                    VoiceId = entry.Required("voiceId"),
+                    Id = entry.Required("id"),
+                };
             }),
             ReferenceVideoType = reader.Enum("referenceVideoType", "feature", "base"),
             Watermark = reader.Bool("watermark"),
@@ -179,37 +189,42 @@ public sealed class TencentVideoModelOptions
     }
 
     /// <summary>Whether the option named <paramref name="key"/> (a camelCase option name) is set.</summary>
-    internal bool IsSet(string key) => key switch
-    {
-        "resolution" => Resolution != null,
-        "audio" => Audio != null,
-        "multiShot" => MultiShot != null,
-        "characterOrientation" => CharacterOrientation != null,
-        "elements" => Elements != null,
-        "voices" => Voices != null,
-        "referenceVideoType" => ReferenceVideoType != null,
-        "watermark" => Watermark != null,
-        "externalTaskId" => ExternalTaskId != null,
-        "negativePrompt" => NegativePrompt != null,
-        "enhancePrompt" => EnhancePrompt != null,
-        "inputRegion" => InputRegion != null,
-        "sceneType" => SceneType != null,
-        "personGeneration" => PersonGeneration != null,
-        "inputComplianceCheck" => InputComplianceCheck != null,
-        "outputComplianceCheck" => OutputComplianceCheck != null,
-        "enhanceSwitch" => EnhanceSwitch != null,
-        "offPeak" => OffPeak != null,
-        "sessionId" => SessionId != null,
-        "sessionContext" => SessionContext != null,
-        "tasksPriority" => TasksPriority != null,
-        "extInfo" => ExtInfo != null,
-        "assets" => Assets != null,
-        _ => false,
-    };
+    internal bool IsSet(string key) =>
+        key switch
+        {
+            "resolution" => Resolution != null,
+            "audio" => Audio != null,
+            "multiShot" => MultiShot != null,
+            "characterOrientation" => CharacterOrientation != null,
+            "elements" => Elements != null,
+            "voices" => Voices != null,
+            "referenceVideoType" => ReferenceVideoType != null,
+            "watermark" => Watermark != null,
+            "externalTaskId" => ExternalTaskId != null,
+            "negativePrompt" => NegativePrompt != null,
+            "enhancePrompt" => EnhancePrompt != null,
+            "inputRegion" => InputRegion != null,
+            "sceneType" => SceneType != null,
+            "personGeneration" => PersonGeneration != null,
+            "inputComplianceCheck" => InputComplianceCheck != null,
+            "outputComplianceCheck" => OutputComplianceCheck != null,
+            "enhanceSwitch" => EnhanceSwitch != null,
+            "offPeak" => OffPeak != null,
+            "sessionId" => SessionId != null,
+            "sessionContext" => SessionContext != null,
+            "tasksPriority" => TasksPriority != null,
+            "extInfo" => ExtInfo != null,
+            "assets" => Assets != null,
+            _ => false,
+        };
 
     private static InvalidArgumentException Invalid(string message)
     {
-        return new InvalidArgumentException("providerOptions.tencent", null, "Invalid Tencent provider options: " + message);
+        return new InvalidArgumentException(
+            "providerOptions.tencent",
+            null,
+            "Invalid Tencent provider options: " + message
+        );
     }
 
     // Reads one object. A null value counts as not set, like zod `.optional()` after provider-option parsing.
@@ -229,7 +244,11 @@ public sealed class TencentVideoModelOptions
 
         public string? String(string name)
         {
-            return Get(name) is { } value ? value.ValueKind == JsonValueKind.String ? value.GetString() : throw Invalid(name + " must be a string.") : null;
+            return Get(name) is { } value
+                ? value.ValueKind == JsonValueKind.String
+                    ? value.GetString()
+                    : throw Invalid(name + " must be a string.")
+                : null;
         }
 
         public string Required(string name)
@@ -240,7 +259,9 @@ public sealed class TencentVideoModelOptions
         public bool? Bool(string name)
         {
             return Get(name) is { } value
-                ? value.ValueKind is JsonValueKind.True or JsonValueKind.False ? value.GetBoolean() : throw Invalid(name + " must be a boolean.")
+                ? value.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? value.GetBoolean()
+                    : throw Invalid(name + " must be a boolean.")
                 : null;
         }
 
@@ -251,7 +272,12 @@ public sealed class TencentVideoModelOptions
                 return null;
             }
 
-            if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var number) || number < min || number > max)
+            if (
+                value.ValueKind != JsonValueKind.Number
+                || !value.TryGetInt32(out var number)
+                || number < min
+                || number > max
+            )
             {
                 throw Invalid(name + " must be an integer from " + min + " to " + max + ".");
             }
@@ -293,7 +319,9 @@ public sealed class TencentVideoModelOptions
 
         private JsonElement? Get(string name)
         {
-            return _raw.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null ? value : null;
+            return _raw.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null
+                ? value
+                : null;
         }
     }
 }
