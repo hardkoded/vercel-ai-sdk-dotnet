@@ -540,8 +540,8 @@ internal static class OpenResponsesInput
 
     private static JsonNode ToolOutput(ToolModelMessage tool)
     {
-        return tool.OutputType == "execution-denied" && string.IsNullOrEmpty(tool.OutputJson)
-            ? "Tool call execution denied."
+        return tool.OutputType == "execution-denied"
+            ? tool.ExecutionDeniedReason ?? "Tool call execution denied."
             : tool.OutputJson;
     }
 
