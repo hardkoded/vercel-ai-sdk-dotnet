@@ -148,7 +148,7 @@ public static class AnthropicMessagesRequest
         var usedCustom = resolvedCustom.Namespaces.Count > 0 && resolvedCustom.Namespaces[0] == providerOptionsName;
         var anthropic = Merge(canonical, custom);
         var serviceTier = ResolveServiceTier(anthropic, canonical, custom, providerOptionsName, warnings);
-        var mode =String(anthropic, "structuredOutputMode") ?? "auto";
+        var mode = String(anthropic, "structuredOutputMode") ?? "auto";
         var supportsStructured = supportsNativeStructuredOutput && capabilities.SupportsStructuredOutput;
         var supportsResponseSchema = options.JsonSchema is not { } responseSchema
             || SupportsNativeStructuredOutputSchemaChecker.SupportsNativeStructuredOutputSchema(responseSchema);
