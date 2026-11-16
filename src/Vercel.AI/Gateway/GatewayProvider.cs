@@ -339,9 +339,9 @@ public sealed class GatewayProvider : ProviderBase, Operations.IBatchProvider, O
             }
 
             long? expiresAt = null;
-            if (root.TryGetProperty("expiresAt", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number)
+            if (root.TryGetProperty("expiresAt", out var expiresValue) && expiresValue.ValueKind == JsonValueKind.Number && expiresValue.TryGetInt64(out var expires))
             {
-                expiresAt = expiresValue.GetInt64();
+                expiresAt = expires;
             }
 
             return new GatewayMintedClientSecret(token, expiresAt);
