@@ -77,6 +77,15 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
 
         using (document)
         {
+            if (!DeepSeekResponsesApi.IsValidResponse(document.RootElement))
+            {
+                throw new ApiException(
+                    "Invalid JSON response",
+                    200,
+                    http.Body,
+                    new ProviderUtils.TypeValidationException("Type validation failed: Value: " + http.Body + ".", document.RootElement.Clone()));
+            }
+
             try
             {
                 return Parse(document.RootElement, prepared, http.Body, http.Headers, uri);
