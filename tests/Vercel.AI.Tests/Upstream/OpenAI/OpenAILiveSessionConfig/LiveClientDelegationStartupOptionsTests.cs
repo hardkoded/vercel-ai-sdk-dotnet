@@ -6,8 +6,8 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
-using SessionConfig = Vercel.AI.OpenAI.OpenAILiveSessionConfig;
 using Live = Vercel.AI.OpenAI.OpenAIRealtimeModelLive;
+using SessionConfig = Vercel.AI.OpenAI.OpenAILiveSessionConfig;
 
 namespace Vercel.AI.Tests.Upstream.OpenAI.OpenAILiveSessionConfig;
 
