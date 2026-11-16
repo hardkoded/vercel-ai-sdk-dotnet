@@ -443,7 +443,7 @@ public sealed class GoogleVertexXaiProvider
 internal sealed class GoogleVertexOpenAICompatibleProvider : OpenAICompatibleProvider
 {
     public GoogleVertexOpenAICompatibleProvider(OpenAICompatibleOptions options, GoogleVertexPartnerOptions vertex, HttpMessageHandler? handler)
-        : base(options, new HttpClient(new GoogleVertexAuthHandler(vertex, handler ?? new HttpClientHandler()), disposeHandler: false))
+        : base(options, new HttpClient(new GoogleVertexAuthHandler(vertex, handler ?? new GlobalFetchHandler(allowAutoRedirect: true)), disposeHandler: false))
     {
     }
 
