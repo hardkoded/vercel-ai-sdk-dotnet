@@ -18,8 +18,11 @@ jobs:
         run: dotnet tool restore
       - name: CSharpier
         run: dotnet csharpier check .
-      - name: Format
-        run: dotnet format Vercel.AI.slnx --verify-no-changes
+      # CSharpier owns whitespace and layout, so dotnet format runs only the style and analyzer passes.
+      - name: Format (style)
+        run: dotnet format style Vercel.AI.slnx --verify-no-changes
+      - name: Format (analyzers)
+        run: dotnet format analyzers Vercel.AI.slnx --verify-no-changes
       - name: Build
         run: dotnet build Vercel.AI.slnx -c Release --nologo
       - name: Check README and docs snippets

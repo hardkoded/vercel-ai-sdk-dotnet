@@ -27,6 +27,12 @@ Projects multi-target `net10.0` and `netstandard2.0` unless they depend on ASP.N
 
 Warnings are errors. `dotnet test Vercel.AI.slnx -c Release` is the check that has to pass.
 
+## Formatting
+
+[CSharpier](https://csharpier.com) owns formatting. Run `dotnet tool restore` once, then `dotnet csharpier format .` before you push. Do not run `dotnet format whitespace`, because it fights CSharpier (`IDE0055` is off). A [Husky.Net](https://github.com/alirezanet/Husky.Net) pre-push hook runs `dotnet csharpier check .` and blocks unformatted pushes. Building `src/Vercel.AI` installs the hook, except in CI (`CI=true`) or when `HUSKY=0` is set. CI runs the same check.
+
+To skip the bulk-format commit in `git blame`, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
 Provider tests should mock `HttpMessageHandler` and assert the request URL and authentication header. Live calls belong in `[SkippableFact]` tests that skip when the provider’s environment variable is empty.
 
 When the upstream commit in `COMPATIBILITY.md` moves, update that file and the provider notes in the same change.
