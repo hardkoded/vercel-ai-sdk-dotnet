@@ -395,21 +395,19 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
     /// <summary>Validates a message like <c>anthropicResponseSchema</c>. Unknown content blocks are skipped. A malformed known block invalidates the message.</summary>
     private static JsonElement? ParseResponse(JsonElement message)
     {
-        if (message.ValueKind != JsonValueKind.Object || Str(message, "type") != "message"
-            || !message.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array
-            || !message.TryGetProperty("usage", out var usage) || !IsValidUsage(usage))
+        if (!AnthropicResponseSchema.IsValidMessage(message))
         {
             return null;
         }
 
-        foreach (var part in content.EnumerateArray())
+        foreach (var part in message.GetProperty("content").EnumerateArray())
         {
-            if (part.ValueKind != JsonValueKind.Object || Str(part, "type") is not { } type)
+            if (AnthropicResponseSchema.IsValidContentPart(part))
             {
-                return null;
+                continue;
             }
 
-            if (s_knownContentTypes.Contains(type) && !IsValidPart(type, part))
+            if (part.ValueKind != JsonValueKind.Object || Str(part, "type") is not { } type || s_knownContentTypes.Contains(type))
             {
                 return null;
             }
@@ -417,63 +415,6 @@ public sealed class AnthropicBatchApi : BatchResultsApiBase
 
         return message;
     }
-
-    private static bool IsValidUsage(JsonElement usage) =>
-        usage.ValueKind == JsonValueKind.Object
-        && usage.TryGetProperty("input_tokens", out var input) && input.ValueKind == JsonValueKind.Number
-        && usage.TryGetProperty("output_tokens", out var output) && output.ValueKind == JsonValueKind.Number;
-
-    private static bool IsValidPart(string type, JsonElement part)
-    {
-        switch (type)
-        {
-            case "text":
-                return Str(part, "text") != null && (!part.TryGetProperty("citations", out var citations) || citations.ValueKind is JsonValueKind.Null or JsonValueKind.Array);
-            case "thinking":
-                return Str(part, "thinking") != null && Str(part, "signature") != null;
-            case "redacted_thinking":
-                return Str(part, "data") != null;
-            case "compaction":
-                return NullableString(part, "content") && NullableString(part, "signature");
-            case "tool_use":
-            case "server_tool_use":
-                return Str(part, "id") != null && Str(part, "name") != null;
-            case "mcp_tool_use":
-                return Str(part, "id") != null && Str(part, "name") != null && Str(part, "server_name") != null;
-            case "mcp_tool_result":
-                return Str(part, "tool_use_id") != null && part.TryGetProperty("is_error", out var isError) && isError.ValueKind is JsonValueKind.True or JsonValueKind.False && part.TryGetProperty("content", out _);
-            case "container_upload":
-                return Str(part, "file_id") != null;
-            case "fallback":
-                return true;
-            case "web_fetch_tool_result":
-                return Str(part, "tool_use_id") != null && part.TryGetProperty("content", out var fetch) && fetch.ValueKind == JsonValueKind.Object
-                    && (Str(fetch, "type") == "web_fetch_tool_result_error"
-                        ? Str(fetch, "error_code") != null
-                        : Str(fetch, "type") == "web_fetch_result" && Str(fetch, "url") != null && fetch.TryGetProperty("content", out var document) && document.ValueKind == JsonValueKind.Object
-                            && document.TryGetProperty("source", out var source) && source.ValueKind == JsonValueKind.Object);
-            case "web_search_tool_result":
-                if (Str(part, "tool_use_id") == null || !part.TryGetProperty("content", out var search))
-                {
-                    return false;
-                }
-
-                if (search.ValueKind == JsonValueKind.Array)
-                {
-                    return search.EnumerateArray().All(result => Str(result, "url") != null && Str(result, "encrypted_content") != null && NullableString(result, "title"));
-                }
-
-                return search.ValueKind == JsonValueKind.Object && Str(search, "error_code") != null;
-            case "advisor_tool_result":
-                return Str(part, "tool_use_id") != null && part.TryGetProperty("content", out var advisor) && advisor.ValueKind == JsonValueKind.Object
-                    && Str(advisor, "type") is "advisor_result" or "advisor_redacted_result" or "advisor_tool_result_error";
-            default:
-                return Str(part, "tool_use_id") != null && part.TryGetProperty("content", out var body) && body.ValueKind is JsonValueKind.Object or JsonValueKind.Array;
-        }
-    }
-
-    private static bool NullableString(JsonElement element, string name) =>
-        !element.TryGetProperty(name, out var value) || value.ValueKind is JsonValueKind.Null or JsonValueKind.String;
 
     private static BatchTextGeneration ConvertResponse(JsonElement? validated, Func<string> generateId)
     {
