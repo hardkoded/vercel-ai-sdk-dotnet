@@ -1463,6 +1463,24 @@ public sealed class FilePart : TextStreamPart
     public JsonElement? ProviderMetadata { get; }
 }
 
+/// <summary>A file the model generated as part of its reasoning. A URL has been downloaded by the time this part is emitted. Maps to the <c>reasoning-file</c> stream part.</summary>
+public sealed class ReasoningFilePart : TextStreamPart
+{
+    /// <summary>Creates a reasoning-file part.</summary>
+    public ReasoningFilePart(GeneratedFile file, JsonElement? providerMetadata = null)
+        : base("reasoning-file")
+    {
+        File = file ?? throw new ArgumentNullException(nameof(file));
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>The file, with its bytes.</summary>
+    public GeneratedFile File { get; }
+
+    /// <summary>Provider metadata.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
 /// <summary>A cited source.</summary>
 public sealed class SourcePart : TextStreamPart
 {
