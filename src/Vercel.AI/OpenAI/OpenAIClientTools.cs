@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using Vercel.AI.GenerateText;
 using System.Text.Json.Serialization;
+using Vercel.AI.GenerateText;
 
 namespace Vercel.AI.OpenAI;
 
