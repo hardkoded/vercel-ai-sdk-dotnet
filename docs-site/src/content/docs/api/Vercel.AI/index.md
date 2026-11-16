@@ -49,7 +49,9 @@ Client, text generation, streaming, tools, and agents.
 | [PrepareStepUpdate](/api/Vercel.AI/PrepareStepUpdate/) | Optional changes applied before a step. |
 | [ProviderRegistry](/api/Vercel.AI/ProviderRegistry/) | Looks up provider models by provider:model ids. Maps to createProviderRegistry. Everything after the first separator is the model id, so model ids may contain the separator. |
 | [RawPart](/api/Vercel.AI/RawPart/) | A raw chunk of the provider stream. It appears only when RawChunks is set. |
-| [ReasoningDeltaPart](/api/Vercel.AI/ReasoningDeltaPart/) | Reasoning delta. |
+| [ReasoningDeltaPart](/api/Vercel.AI/ReasoningDeltaPart/) | Reasoning delta. Maps to reasoning-delta. |
+| [ReasoningEndPart](/api/Vercel.AI/ReasoningEndPart/) | A reasoning block ended. Maps to reasoning-end. |
+| [ReasoningStartPart](/api/Vercel.AI/ReasoningStartPart/) | A reasoning block started. Maps to reasoning-start. |
 | [RerankOptions](/api/Vercel.AI/RerankOptions/) | Rerank options. |
 | [SimulateStreamingMiddleware](/api/Vercel.AI/SimulateStreamingMiddleware/) | Turns a non-streaming model into text deltas. Maps to simulateStreamingMiddleware. |
 | [SourcePart](/api/Vercel.AI/SourcePart/) | A cited source. |
@@ -65,7 +67,9 @@ Client, text generation, streaming, tools, and agents.
 | [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/) | What streamText keeps of the request and the provider stream. Maps to StreamTextInclude. |
 | [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/) | Options for CancellationToken). |
 | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | Result of streamText. Enumerating Stream(CancellationToken) or awaiting Text consumes the same buffered events. |
-| [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. |
+| [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
+| [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
+| [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
 | [TextStreamPart](/api/Vercel.AI/TextStreamPart/) | A part of the streamText full stream. |
 | [Tool](/api/Vercel.AI/Tool/) | A tool the model can call. Maps to tool(). |
 | [ToolApprovalRequest](/api/Vercel.AI/ToolApprovalRequest/) | A tool call the caller may approve before it runs. |

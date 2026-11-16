@@ -15,7 +15,7 @@ public static partial class UIMessageStreamConverter
 {
     /// <summary>
     /// Converts a stream of <see cref="TextStreamPart"/> parts (as emitted by <c>streamText</c>) into a stream of UI message chunks.
-    /// It adds the text and reasoning start and end chunks, which the .NET stream parts do not carry, and the response message id.
+    /// It adds the response message id.
     /// </summary>
     /// <param name="stream">The parts to convert.</param>
     /// <param name="options">Conversion options.</param>
@@ -41,8 +41,6 @@ public static partial class UIMessageStreamConverter
             ResponseMessageId = options.ResponseMessageId ?? JsonValues.GenerateId("msg_"),
         };
 
-        string? textId = null;
-        string? reasoningId = null;
         var knownToolInvalidIds = new HashSet<string>(StringComparer.Ordinal);
 
         // streamText follows each invalid tool call with a tool-error part so the model receives a tool result. The
@@ -81,24 +79,12 @@ public static partial class UIMessageStreamConverter
                 mismatchedToolCallIdInCurrentStep = null;
             }
 
-            if (part is TextDeltaPart && textId == null)
-            {
-                textId = TextId;
-                yield return new JsonObject { ["type"] = "text-start", ["id"] = textId };
-            }
-
             var chunk = ToUIMessageChunk(part, chunkOptions);
 
-            if (part is ReasoningDeltaPart && chunk != null && reasoningId == null)
+            if (part is ReasoningStartPart && chunk != null && mismatchedToolCallIdInEarlierStep != null && !hasWarnedAboutToolErrorMismatch)
             {
-                reasoningId = ReasoningId;
-                if (mismatchedToolCallIdInEarlierStep != null && !hasWarnedAboutToolErrorMismatch)
-                {
-                    hasWarnedAboutToolErrorMismatch = true;
-                    LogToolErrorMismatchWarning(mismatchedToolCallIdInEarlierStep);
-                }
-
-                yield return new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningId };
+                hasWarnedAboutToolErrorMismatch = true;
+                LogToolErrorMismatchWarning(mismatchedToolCallIdInEarlierStep);
             }
 
             if (part is ToolCallPart { ToolCall: { Invalid: true, ProviderExecuted: false } } mismatchedCall
@@ -117,50 +103,6 @@ public static partial class UIMessageStreamConverter
             if (chunk != null && part is ToolErrorPart knownError && knownToolInvalidIds.Contains(knownError.Result.ToolCallId))
             {
                 chunk.Remove("dynamic");
-            }
-
-            if (part is StepFinishPart stepFinish)
-            {
-                if (textId != null)
-                {
-                    var textEnd = new JsonObject { ["type"] = "text-end", ["id"] = textId };
-                    var citations = new List<Citation>();
-                    foreach (var content in stepFinish.Step.Content)
-                    {
-                        if (content is GeneratedText { Citations: { } textCitations })
-                        {
-                            citations.AddRange(textCitations);
-                        }
-                    }
-
-                    if (citations.Count > 0)
-                    {
-                        textEnd["citations"] = CitationJson.ToJson(citations);
-                    }
-
-                    yield return textEnd;
-                    textId = null;
-                }
-
-                if (reasoningId != null)
-                {
-                    yield return new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId };
-                    reasoningId = null;
-                }
-            }
-            else if (part is FinishPart)
-            {
-                if (textId != null)
-                {
-                    yield return new JsonObject { ["type"] = "text-end", ["id"] = textId };
-                    textId = null;
-                }
-
-                if (reasoningId != null)
-                {
-                    yield return new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningId };
-                    reasoningId = null;
-                }
             }
 
             if (chunk != null)

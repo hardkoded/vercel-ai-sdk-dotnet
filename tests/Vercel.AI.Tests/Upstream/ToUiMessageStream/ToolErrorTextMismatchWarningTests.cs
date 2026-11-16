@@ -15,7 +15,6 @@ public sealed class ToolErrorTextMismatchWarningTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/to-ui-message-stream.test.ts::toUIMessageStream > tool error text mismatch warning::";
     private const string Commit = "ceeee29f9a7b7ca8c12a9270a542581bd760bdc7";
-    private const string PartialNote = "The .NET stream parts have no reasoning-start, reasoning-end, text-start, or text-end parts, so the reasoning is one reasoning delta.";
 
     private static readonly StartStepPart StartStep = new();
 
@@ -32,13 +31,13 @@ public sealed class ToolErrorTextMismatchWarningTests
         ModelOutput = "Error: execution failed",
     });
 
-    private static readonly TextStreamPart[] Reasoning = [new ReasoningDeltaPart("thinking")];
+    private static readonly TextStreamPart[] Reasoning = [new ReasoningStartPart("r1"), new ReasoningDeltaPart("r1", "thinking"), new ReasoningEndPart("r1")];
 
     // the tool call fails in the first step and the model reasons about the tool error in the second step
     private static readonly TextStreamPart[] ToolErrorThenReasoning = [StartStep, ToolCall, ToolError, TestStep, StartStep, .. Reasoning, TestStep];
 
     [Fact]
-    [UpstreamTest(Prefix + "warns when a masked tool error is followed by reasoning from a later step", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "warns when a masked tool error is followed by reasoning from a later step", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Warns_when_a_masked_tool_error_is_followed_by_reasoning_from_a_later_step()
     {
         var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { RedactToolErrors = true });
@@ -52,7 +51,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns once per stream", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "warns once per stream", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Warns_once_per_stream()
     {
         var secondToolCall = new ToolCallPart(new GeneratedToolCall("call-2", "test-tool", "{\"value\":\"valid\"}") { Dynamic = true });
@@ -65,14 +64,14 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn by default because the UI receives the text the model received", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn by default because the UI receives the text the model received", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_by_default_because_the_UI_receives_the_text_the_model_received()
     {
         Assert.Empty(await Consume(ToolErrorThenReasoning));
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn when a provided onError does not redact tool errors", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_when_a_provided_onError_does_not_redact_tool_errors()
     {
         var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => error.Message, RedactToolErrors = false });
@@ -81,7 +80,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns when onError returns a text that differs from the text the model received", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "warns when onError returns a text that differs from the text the model received", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Warns_when_onError_returns_a_text_that_differs_from_the_text_the_model_received()
     {
         var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => error.Message });
@@ -90,7 +89,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn when onError returns the text the model received", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn when onError returns the text the model received", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_when_onError_returns_the_text_the_model_received()
     {
         var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { OnError = error => "Error: " + error.Message });
@@ -99,7 +98,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn when reasoning is not sent", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn when reasoning is not sent", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_when_reasoning_is_not_sent()
     {
         var logged = await Consume(ToolErrorThenReasoning, new ToUIMessageChunkOptions { SendReasoning = false });
@@ -108,17 +107,17 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn when the reasoning precedes the tool error", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn when the reasoning precedes the tool error", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_when_the_reasoning_precedes_the_tool_error()
     {
         var logged = await Consume(
-            [StartStep, .. Reasoning, ToolCall, ToolError, TestStep, StartStep, new TextDeltaPart("The tool failed."), TestStep]);
+            [StartStep, .. Reasoning, ToolCall, ToolError, TestStep, StartStep, new TextStartPart("t1"), new TextDeltaPart("t1", "The tool failed."), new TextEndPart("t1"), TestStep]);
 
         Assert.Empty(logged);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn when the reasoning follows the tool error in the same step", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn when the reasoning follows the tool error in the same step", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_when_the_reasoning_follows_the_tool_error_in_the_same_step()
     {
         var logged = await Consume([StartStep, ToolCall, ToolError, .. Reasoning, TestStep]);
@@ -127,7 +126,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns when a masked tool error precedes the first step", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "warns when a masked tool error precedes the first step", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Warns_when_a_masked_tool_error_precedes_the_first_step()
     {
         // approved tool calls run before the first step of the next call
@@ -137,7 +136,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "warns when a masked invalid tool call is followed by reasoning from a later step", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "warns when a masked invalid tool call is followed by reasoning from a later step", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Warns_when_a_masked_invalid_tool_call_is_followed_by_reasoning_from_a_later_step()
     {
         var invalidCall = new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"valid\"}") { Dynamic = true, Invalid = true, Error = new JsError("invalid tool input") });
@@ -150,7 +149,7 @@ public sealed class ToolErrorTextMismatchWarningTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "does not warn for provider-executed tool errors", Coverage = UpstreamCoverage.Partial, Note = PartialNote, Commit = Commit)]
+    [UpstreamTest(Prefix + "does not warn for provider-executed tool errors", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Does_not_warn_for_provider_executed_tool_errors()
     {
         var providerCall = new ToolCallPart(new GeneratedToolCall("call-1", "test-tool", "{\"value\":\"valid\"}") { Dynamic = true, ProviderExecuted = true });

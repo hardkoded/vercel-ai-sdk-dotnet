@@ -1171,32 +1171,124 @@ public sealed class RawPart : TextStreamPart
     public JsonElement RawValue { get; }
 }
 
-/// <summary>Text delta.</summary>
+/// <summary>A text block started. Maps to <c>text-start</c>.</summary>
+public sealed class TextStartPart : TextStreamPart
+{
+    /// <summary>Creates a text start.</summary>
+    public TextStartPart(string id, JsonElement? providerMetadata = null)
+        : base("text-start")
+    {
+        Id = id;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Id of the text block.</summary>
+    public string Id { get; }
+
+    /// <summary>Provider metadata of the text block.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>Text delta. Maps to <c>text-delta</c>.</summary>
 public sealed class TextDeltaPart : TextStreamPart
 {
     /// <summary>Creates a text delta.</summary>
-    public TextDeltaPart(string text)
+    public TextDeltaPart(string id, string text, JsonElement? providerMetadata = null)
         : base("text-delta")
     {
+        Id = id;
         Text = text ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
+
+    /// <summary>Id of the text block.</summary>
+    public string Id { get; }
 
     /// <summary>Delta text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider metadata of the delta.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
-/// <summary>Reasoning delta.</summary>
+/// <summary>A text block ended. Maps to <c>text-end</c>.</summary>
+public sealed class TextEndPart : TextStreamPart
+{
+    /// <summary>Creates a text end.</summary>
+    public TextEndPart(string id, IReadOnlyList<Citation>? citations = null, JsonElement? providerMetadata = null)
+        : base("text-end")
+    {
+        Id = id;
+        Citations = citations;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Id of the text block.</summary>
+    public string Id { get; }
+
+    /// <summary>References that support the text block, or null when there are none.</summary>
+    public IReadOnlyList<Citation>? Citations { get; }
+
+    /// <summary>Provider metadata of the text block.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>A reasoning block started. Maps to <c>reasoning-start</c>.</summary>
+public sealed class ReasoningStartPart : TextStreamPart
+{
+    /// <summary>Creates a reasoning start.</summary>
+    public ReasoningStartPart(string id, JsonElement? providerMetadata = null)
+        : base("reasoning-start")
+    {
+        Id = id;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Id of the reasoning block.</summary>
+    public string Id { get; }
+
+    /// <summary>Provider metadata of the reasoning block.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>Reasoning delta. Maps to <c>reasoning-delta</c>.</summary>
 public sealed class ReasoningDeltaPart : TextStreamPart
 {
     /// <summary>Creates a reasoning delta.</summary>
-    public ReasoningDeltaPart(string text)
+    public ReasoningDeltaPart(string id, string text, JsonElement? providerMetadata = null)
         : base("reasoning-delta")
     {
+        Id = id;
         Text = text ?? string.Empty;
+        ProviderMetadata = providerMetadata;
     }
+
+    /// <summary>Id of the reasoning block.</summary>
+    public string Id { get; }
 
     /// <summary>Delta text.</summary>
     public string Text { get; }
+
+    /// <summary>Provider metadata of the delta, such as a reasoning signature.</summary>
+    public JsonElement? ProviderMetadata { get; }
+}
+
+/// <summary>A reasoning block ended. Maps to <c>reasoning-end</c>.</summary>
+public sealed class ReasoningEndPart : TextStreamPart
+{
+    /// <summary>Creates a reasoning end.</summary>
+    public ReasoningEndPart(string id, JsonElement? providerMetadata = null)
+        : base("reasoning-end")
+    {
+        Id = id;
+        ProviderMetadata = providerMetadata;
+    }
+
+    /// <summary>Id of the reasoning block.</summary>
+    public string Id { get; }
+
+    /// <summary>Provider metadata of the reasoning block, such as encrypted reasoning content.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>A tool call.</summary>

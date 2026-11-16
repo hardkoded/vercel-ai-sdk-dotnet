@@ -110,13 +110,15 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 ### Converting stream parts to UI message chunks
 
-`UIMessageStreamConverter.ToUIMessageChunk(part, options)` converts one `TextStreamPart` into a UI message chunk (a `JsonObject`), or returns `null` for a part that produces no chunk. `UIMessageStreamConverter.ToUIMessageStream(parts, options)` converts a whole stream of parts, adds the text and reasoning start and end chunks and the response message id, and logs the tool error text mismatch warning. `ToUIMessageStreamResult` uses it. Both take a `ToUIMessageChunkOptions` with `SendReasoning` (default `true`), `SendStart`, `SendFinish`, `OnError`, `RedactToolErrors`, and `ResponseMessageId`. Use them to convert parts that you built or changed yourself.
+`UIMessageStreamConverter.ToUIMessageChunk(part, options)` converts one `TextStreamPart` into a UI message chunk (a `JsonObject`), or returns `null` for a part that produces no chunk. `UIMessageStreamConverter.ToUIMessageStream(parts, options)` converts a whole stream of parts, adds the response message id, and logs the tool error text mismatch warning. `ToUIMessageStreamResult` uses it. Both take a `ToUIMessageChunkOptions` with `SendReasoning` (default `true`), `SendStart`, `SendFinish`, `OnError`, `RedactToolErrors`, and `ResponseMessageId`. Use them to convert parts that you built or changed yourself.
 
 `ToolInputStartPart.InputEncoding` (from `ToolInputStartStreamPart.InputEncoding`) is `ToolInputEncoding.Json` or `ToolInputEncoding.Text`. It says how to read the `tool-input-delta` parts that follow. When it is `null` or `Json`, the deltas concatenate to partial JSON. With `Text`, they concatenate to the raw string input, such as code or HTML from a custom tool. The final tool call input stays JSON-encoded either way. `UIMessageStream` writes it as the `inputEncoding` field (`"json"` or `"text"`) of the `tool-input-start` chunk and leaves the field out when it is `null`.
 
 ## Full stream parts
 
 `result.Stream()` yields these parts in order: one `StartPart` (`start`), then for each step a `StartStepPart` (`start-step`, with the step's `Warnings` and `Request`), the step's text, reasoning, tool-input, tool-call, source and tool parts, and a `StepFinishPart` (`finish-step`), and finally a `FinishPart` (`finish`).
+
+A text block is a `TextStartPart` (`text-start`), one or more `TextDeltaPart` values (`text-delta`), and a `TextEndPart` (`text-end`, with the block's `Citations`). A reasoning block is a `ReasoningStartPart`, `ReasoningDeltaPart` values, and a `ReasoningEndPart`. Every one of them has the block's `Id` and `ProviderMetadata`. The id is the provider's block id, made unique across the steps of the stream. A provider that sends a delta without a start, or never ends a block, still gets the start and end parts, so `ToUIMessageChunk` maps each part to one chunk.
 
 A tool call that succeeds is a `ToolResultPart` (`tool-result`). One that fails or is denied is a `ToolErrorPart` (`tool-error`), and its `Result.OutputJson` holds the error. This includes provider-executed tools, which are streamed in the order the provider sent them. Their `ExecutedTool` has `ProviderExecuted`, `ProviderMetadata`, and the call's `InputJson`.
 

@@ -1,6 +1,6 @@
 ---
 title: "ReasoningDeltaPart"
-description: "Reasoning delta."
+description: "Reasoning delta. Maps to reasoning-delta."
 editUrl: false
 prev: false
 next: false
@@ -19,22 +19,22 @@ public sealed class ReasoningDeltaPart : TextStreamPart
 ```
 
 
-Reasoning delta.
+Reasoning delta. Maps to `reasoning-delta`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1161)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1255)
 
 ## Constructors
 
 <a id="Vercel_AI_ReasoningDeltaPart__ctor_"></a>
-<a id="Vercel_AI_ReasoningDeltaPart__ctor_System_String_"></a>
+<a id="Vercel_AI_ReasoningDeltaPart__ctor_System_String_System_String_System_Nullable_System_Text_Json_JsonElement__"></a>
 
-### ReasoningDeltaPart(string)
+### ReasoningDeltaPart(string, string, JsonElement?)
 
 
 ```csharp
-public ReasoningDeltaPart(string text)
+public ReasoningDeltaPart(string id, string text, JsonElement? providerMetadata = null)
 ```
 
 
@@ -44,11 +44,47 @@ Creates a reasoning delta.
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1164)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1258)
 
 ## Properties
+
+<a id="Vercel_AI_ReasoningDeltaPart_Id_"></a>
+<a id="Vercel_AI_ReasoningDeltaPart_Id"></a>
+
+### Id
+
+
+```csharp
+public string Id { get; }
+```
+
+
+Id of the reasoning block.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1267)
+
+<a id="Vercel_AI_ReasoningDeltaPart_ProviderMetadata_"></a>
+<a id="Vercel_AI_ReasoningDeltaPart_ProviderMetadata"></a>
+
+### ProviderMetadata
+
+
+```csharp
+public JsonElement? ProviderMetadata { get; }
+```
+
+
+Provider metadata of the delta, such as a reasoning signature.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1273)
 
 <a id="Vercel_AI_ReasoningDeltaPart_Text_"></a>
 <a id="Vercel_AI_ReasoningDeltaPart_Text"></a>
@@ -65,4 +101,4 @@ Delta text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1270)
