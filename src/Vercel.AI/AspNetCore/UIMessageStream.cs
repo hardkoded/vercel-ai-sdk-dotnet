@@ -51,6 +51,50 @@ public static class UIMessageStreamExtensions
 
         return new UIMessageStreamResult(result, keepAliveMs, onError, redactToolErrors);
     }
+
+    /// <summary>
+    /// Pipes the UI message stream to a <see cref="ServerResponse"/> as Server-Sent Events.
+    /// Mirrors upstream <c>pipeUIMessageStreamToResponse</c>.
+    /// </summary>
+    /// <param name="result">The stream to write.</param>
+    /// <param name="response">The response to write to.</param>
+    /// <param name="status">The HTTP status code. Defaults to 200.</param>
+    /// <param name="statusText">The HTTP status text.</param>
+    /// <param name="headers">Additional HTTP headers. They take precedence over the protocol headers.</param>
+    /// <param name="keepAliveMs">Optional idle interval, in milliseconds. Null sends no SSE comments.</param>
+    /// <param name="onError">Optional mapper from the error to the <c>error</c> chunk text. Null writes <c>An error occurred.</c>.</param>
+    /// <param name="redactToolErrors">Replaces the error text of failed tool calls with the result of <c>onError</c>. Defaults to <c>true</c> when <c>onError</c> is provided and to <c>false</c> otherwise.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>A task that completes when the stream has been written and the response has ended.</returns>
+    public static Task PipeUIMessageStreamToResponseAsync(
+        this StreamTextResult result,
+        ServerResponse response,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        int? keepAliveMs = null,
+        Func<Exception, string>? onError = null,
+        bool? redactToolErrors = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (result is null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
+        if (response is null)
+        {
+            throw new ArgumentNullException(nameof(response));
+        }
+
+        UIMessageStreamResult.ValidateKeepAlive(keepAliveMs);
+        var prepared = PrepareHeaders.Apply(headers, UIMessageStreamResult.ProtocolHeaders);
+        var sse = UIMessageStreamResult.CreateSseStreamWithKeepAlive(
+            UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken),
+            keepAliveMs,
+            cancellationToken);
+        return ServerResponseWriter.WriteAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared);
+    }
 }
 
 /// <summary>SSE result for the AI SDK UI message protocol.</summary>
@@ -59,6 +103,15 @@ public sealed class UIMessageStreamResult : IResult
     private const int MaxKeepAliveMilliseconds = 2147483647;
     private const string StreamOpenComment = ": stream-open\n\n";
     private const string KeepAliveComment = ": keep-alive\n\n";
+
+    internal static readonly IReadOnlyDictionary<string, string> ProtocolHeaders = new Dictionary<string, string>
+    {
+        { "content-type", "text/event-stream" },
+        { "cache-control", "no-cache" },
+        { "connection", "keep-alive" },
+        { "x-vercel-ai-ui-message-stream", "v1" },
+        { "x-accel-buffering", "no" },
+    };
 
     private readonly StreamTextResult _result;
     private readonly int? _keepAliveMs;
@@ -155,6 +208,40 @@ public sealed class UIMessageStreamResult : IResult
         return KeepAlive(source, keepAliveMs.Value, cancellationToken);
     }
 
+    /// <summary>Encodes an SSE chunk stream as UTF-8 bytes, one body chunk per SSE chunk.</summary>
+    internal static ReadableStream<byte[]> Encode(IAsyncEnumerable<string> source, CancellationToken cancellationToken)
+    {
+        var enumerator = source.GetAsyncEnumerator(cancellationToken);
+        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        return new ReadableStream<byte[]>(
+            pull: async controller =>
+            {
+                try
+                {
+                    if (await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        controller.Enqueue(utf8.GetBytes(enumerator.Current));
+                        return;
+                    }
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    controller.Error(error);
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    await enumerator.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+
+                await enumerator.DisposeAsync().ConfigureAwait(false);
+                controller.Close();
+            },
+            cancel: () => enumerator.DisposeAsync().AsTask());
+    }
+
     /// <summary>Writes protocol headers for an AI SDK UI message response.</summary>
     /// <param name="response">The HTTP response.</param>
     internal static void ApplyProtocolHeaders(HttpResponse response)
@@ -208,7 +295,7 @@ public sealed class UIMessageStreamResult : IResult
         await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private static async IAsyncEnumerable<string> ReadSseChunks(
+    internal static async IAsyncEnumerable<string> ReadSseChunks(
         StreamTextResult result,
         Func<Exception, string>? onError,
         bool? redactToolErrors,
@@ -297,7 +384,7 @@ public sealed class UIMessageStreamResult : IResult
         }
     }
 
-    private static void ValidateKeepAlive(int? keepAliveMs)
+    internal static void ValidateKeepAlive(int? keepAliveMs)
     {
         if (keepAliveMs is null)
         {
