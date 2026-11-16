@@ -634,6 +634,21 @@ public static class Ai
         return Ui.UIMessageConversion.ConvertToModelMessages(messages, options);
     }
 
+    /// <summary>
+    /// Validates a list of UI messages. Metadata, data parts, and tool parts are only validated if the corresponding schemas are
+    /// provided. Maps to <c>validateUIMessages</c>.
+    /// </summary>
+    public static Task<IReadOnlyList<Ui.UIMessage>> ValidateUIMessagesAsync(Ui.ValidateUIMessagesOptions options)
+    {
+        return Ui.UIMessageValidation.ValidateUIMessagesAsync(options);
+    }
+
+    /// <summary>Validates UI messages like <see cref="ValidateUIMessagesAsync"/>, but returns the error instead of throwing. Maps to <c>safeValidateUIMessages</c>.</summary>
+    public static Task<Ui.SafeValidateUIMessagesResult> SafeValidateUIMessagesAsync(Ui.ValidateUIMessagesOptions options)
+    {
+        return Ui.UIMessageValidation.SafeValidateUIMessagesAsync(options);
+    }
+
     /// <summary>Cosine similarity of two vectors.</summary>
     public static double CosineSimilarity(IReadOnlyList<float> left, IReadOnlyList<float> right)
     {

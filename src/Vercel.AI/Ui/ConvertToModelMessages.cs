@@ -382,7 +382,7 @@ public static class UIMessageConversion
         Tool? definition = null;
         options?.Tools?.TryGetValue(tool.ToolName, out definition);
 
-        if (errorMode == "none" && definition == null && tool.IsDynamic && tool.Dynamic == false)
+        if (errorMode == "none" && definition == null && UnavailableTool.IsToolPartFromUnavailableTool(tool))
         {
             return new TextToolModelOutput("Tool output omitted because the tool is no longer available.");
         }
