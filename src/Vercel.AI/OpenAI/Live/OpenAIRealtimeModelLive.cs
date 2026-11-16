@@ -65,16 +65,16 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     /// <summary>The conversation mode and the connection kinds this model supports. Maps to <c>capabilities</c>.</summary>
     public RealtimeCapabilities Capabilities { get; } = new()
     {
-        Conversation = "continuous",
-        Transports = ["websocket", "webrtc"],
-        Connections = ["server-websocket", "webrtc"],
+        Conversation = OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Conversation,
+        Transports = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Transports],
+        Connections = [.. OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Connections],
     };
 
     /// <summary>How a session starts. Maps to <c>capabilities.startup</c>.</summary>
-    public string Startup => "session-start";
+    public string Startup => OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Startup;
 
     /// <summary>How a session ends. Maps to <c>capabilities.finalization</c>.</summary>
-    public string Finalization => "session-close";
+    public string Finalization => OpenAIModelCatalog.OpenAILiveRealtimeCapabilities.Finalization;
 
     /// <inheritdoc />
     public Uri BuildUri()

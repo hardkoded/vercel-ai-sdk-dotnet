@@ -29,6 +29,22 @@ public sealed class OpenAIRealtimeClientSecret
     public long? ExpiresAt { get; }
 }
 
+/// <summary>URL and subprotocols a client opens a WebSocket with. Maps to the result of <c>getWebSocketConfig</c>.</summary>
+public sealed class OpenAIRealtimeWebSocketConfig
+{
+    internal OpenAIRealtimeWebSocketConfig(string url, IReadOnlyList<string>? protocols)
+    {
+        Url = url;
+        Protocols = protocols;
+    }
+
+    /// <summary>The WebSocket URL.</summary>
+    public string Url { get; }
+
+    /// <summary>Subprotocols to offer.</summary>
+    public IReadOnlyList<string>? Protocols { get; }
+}
+
 /// <summary>OpenAI Realtime session URI builder and WebSocket client.</summary>
 public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
 {
@@ -109,9 +125,15 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
             expires = seconds;
         }
 
-        var host = new Uri(_provider.Options.BaseUrl).Host;
+        var host = new Uri(_provider.Options.BaseUrl).Authority;
         var url = "wss://" + host + "/v1/realtime?model=" + Uri.EscapeDataString(ModelId);
         return new OpenAIRealtimeClientSecret(token, url, expires);
+    }
+
+    /// <summary>Returns the URL and the subprotocols that carry the token (a browser has no header channel). Maps to <c>getWebSocketConfig</c>.</summary>
+    public OpenAIRealtimeWebSocketConfig GetWebSocketConfig(string token, string url)
+    {
+        return new OpenAIRealtimeWebSocketConfig(url, ["realtime", "openai-insecure-api-key." + token]);
     }
 
     /// <inheritdoc />

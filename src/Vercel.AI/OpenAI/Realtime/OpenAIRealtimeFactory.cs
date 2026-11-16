@@ -25,6 +25,28 @@ internal static class OpenAIRealtimeFactory
             : new OpenAIRealtimeModel(provider, modelId);
     }
 
+    /// <summary>
+    /// Mints a client secret for a Realtime model. A Live model has no short-lived credential, so it is rejected before
+    /// any request. Maps to <c>getToken</c>.
+    /// </summary>
+    internal static async Task<OpenAIRealtimeClientSecret> GetTokenAsync(
+        OpenAIProvider provider,
+        string model,
+        OpenAIRealtimeOptions? options,
+        RealtimeModelV4SessionConfig? sessionConfig,
+        int? expiresAfterSeconds,
+        CancellationToken cancellationToken)
+    {
+        var created = CreateModel(provider, model, options);
+        if (created is OpenAIRealtimeModelLive)
+        {
+            const string Functionality = "Short-lived OpenAI credentials for the Live API. Use server WebSocket setup via GetServerWebSocketConfigAsync() with a server-side API key instead.";
+            throw new UnsupportedFunctionalityException(Functionality, "'" + Functionality + "' functionality not supported.");
+        }
+
+        return await ((OpenAIRealtimeModel)created).CreateClientSecretAsync(sessionConfig, expiresAfterSeconds, cancellationToken).ConfigureAwait(false);
+    }
+
     private static string ResolveRealtimeApi(string modelId, OpenAIRealtimeOptions? options)
     {
         var api = options?.Api;
@@ -38,7 +60,6 @@ internal static class OpenAIRealtimeFactory
             return api;
         }
 
-        // The catalog entry of a known Live model selects the Live API; every other id uses the Realtime API.
-        return modelId == "gpt-live-1" ? "live" : "realtime";
+        return OpenAIModelCatalog.GetOpenAIRealtimeModelEntry(modelId).Api;
     }
 }
