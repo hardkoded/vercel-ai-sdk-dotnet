@@ -18,6 +18,19 @@ public sealed class GatewayConfig
     /// <summary>Gets or sets the function that resolves the request headers.</summary>
     public Func<IReadOnlyDictionary<string, string?>>? Headers { get; set; }
 
+    /// <summary>Gets or sets the asynchronous function that resolves the request headers. Takes precedence over <see cref="Headers"/>. Upstream's <c>headers</c> is async.</summary>
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? HeadersAsync { get; set; }
+
+    internal async Task<IReadOnlyDictionary<string, string?>?> ResolveHeadersAsync(CancellationToken cancellationToken)
+    {
+        if (HeadersAsync is not null)
+        {
+            return await HeadersAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Headers?.Invoke();
+    }
+
     /// <summary>Gets or sets the HTTP client (stands in for upstream's <c>fetch</c>).</summary>
     public ProviderHttp? Http { get; set; }
 }
@@ -143,7 +156,7 @@ public sealed class GatewayGenerationInfoFetcher
                 HttpMethod.Get,
                 uri,
                 null,
-                _config.Headers?.Invoke(),
+                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken).ConfigureAwait(false);
             return Parse(document.RootElement);
         }

@@ -44,7 +44,7 @@ public sealed class GatewayFetchMetadata
                 HttpMethod.Get,
                 new Uri(_config.BaseUrl + "/config"),
                 null,
-                _config.Headers?.Invoke(),
+                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken).ConfigureAwait(false);
             return ParseAvailableModels(document.RootElement);
         }
@@ -60,7 +60,7 @@ public sealed class GatewayFetchMetadata
         try
         {
             var baseUrl = new Uri(_config.BaseUrl);
-            var headers = _config.Headers?.Invoke();
+            var headers = await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false);
 
             // The credits endpoint selects the team from the `teamId` / `slug`
             // query parameter rather than the team header, so forward it there.

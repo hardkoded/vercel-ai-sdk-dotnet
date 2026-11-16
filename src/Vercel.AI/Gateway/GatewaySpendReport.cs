@@ -202,7 +202,7 @@ public sealed class GatewaySpendReport
                 HttpMethod.Get,
                 new Uri(baseUrl.GetLeftPart(UriPartial.Authority) + "/v1/report?" + query),
                 null,
-                _config.Headers?.Invoke(),
+                await _config.ResolveHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken).ConfigureAwait(false);
             return Parse(document.RootElement);
         }
