@@ -318,6 +318,8 @@ internal static class Generation
             var stop = options.StopWhen ?? StopWhen.IsStepCount(1);
             var current = model;
             buffer.Add(new StartPart());
+            var textPartIds = new PartIdReserver();
+            var reasoningPartIds = new PartIdReserver();
             while (steps.Count < HardStepCap)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -455,18 +457,27 @@ internal static class Generation
                         switch (part)
                         {
                             case TextStartStreamPart textStart:
-                                TextBlock.Start(textBlocks, textStart.Id).ProviderMetadata = textStart.ProviderMetadata;
+                                var startedText = TextBlock.Start(textBlocks, textStart.Id, textPartIds);
+                                startedText.ProviderMetadata = textStart.ProviderMetadata;
+                                buffer.Add(new TextStartPart(startedText.PartId, textStart.ProviderMetadata));
                                 break;
                             case TextDeltaStreamPart delta:
+                                var activeText = TextBlock.Find(textBlocks, delta.Id, textPartIds, buffer);
                                 text.Append(delta.Delta);
-                                TextBlock.Find(textBlocks, delta.Id).Text.Append(delta.Delta);
-                                outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(new TextDeltaPart(delta.Delta));
+                                activeText.Text.Append(delta.Delta);
+                                if (delta.Delta.Length > 0 || delta.ProviderMetadata != null)
+                                {
+                                    outputChunkTimes.Add(ElapsedMs());
+                                    buffer.Add(new TextDeltaPart(activeText.PartId, delta.Delta, delta.ProviderMetadata));
+                                }
+
                                 break;
                             case TextEndStreamPart textEnd:
-                                var ended = TextBlock.Find(textBlocks, textEnd.Id);
+                                var ended = TextBlock.Find(textBlocks, textEnd.Id, textPartIds, buffer);
                                 ended.Citations = textEnd.Citations;
                                 ended.ProviderMetadata = textEnd.ProviderMetadata ?? ended.ProviderMetadata;
+                                ended.Open = false;
+                                buffer.Add(new TextEndPart(ended.PartId, textEnd.Citations, textEnd.ProviderMetadata));
                                 break;
                             case DocumentSourceStreamPart documentSource:
                                 documentSources.Add(new GeneratedDocumentSource(
@@ -477,18 +488,22 @@ internal static class Generation
                                     documentSource.ProviderMetadata));
                                 break;
                             case ReasoningStartStreamPart reasoningStart:
-                                ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id).ProviderMetadata = reasoningStart.ProviderMetadata;
+                                var startedReasoning = ReasoningBlock.Start(reasoningBlocks, reasoningStart.Id, reasoningPartIds);
+                                startedReasoning.ProviderMetadata = reasoningStart.ProviderMetadata;
+                                buffer.Add(new ReasoningStartPart(startedReasoning.PartId, reasoningStart.ProviderMetadata));
                                 break;
                             case ReasoningEndStreamPart reasoningEnd:
-                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id);
+                                var endedReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningEnd.Id, reasoningPartIds, buffer);
                                 endedReasoning.ProviderMetadata = reasoningEnd.ProviderMetadata ?? endedReasoning.ProviderMetadata;
+                                endedReasoning.Open = false;
+                                buffer.Add(new ReasoningEndPart(endedReasoning.PartId, reasoningEnd.ProviderMetadata));
                                 break;
                             case ReasoningDeltaStreamPart reasoningDelta:
-                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id);
+                                var activeReasoning = ReasoningBlock.Find(reasoningBlocks, reasoningDelta.Id, reasoningPartIds, buffer);
                                 activeReasoning.Text.Append(reasoningDelta.Delta);
                                 activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata ?? activeReasoning.ProviderMetadata;
                                 outputChunkTimes.Add(ElapsedMs());
-                                buffer.Add(new ReasoningDeltaPart(reasoningDelta.Delta));
+                                buffer.Add(new ReasoningDeltaPart(activeReasoning.PartId, reasoningDelta.Delta, reasoningDelta.ProviderMetadata));
                                 break;
                             case ToolCallStreamPart toolCall:
                                 var call = ParseProviderExecutedInput(
@@ -618,6 +633,26 @@ internal static class Generation
                 }
 
                 var responseTimeMs = ElapsedMs();
+
+                // Providers that skip text-end or reasoning-end still produce a closed block in the stream.
+                foreach (var openText in textBlocks)
+                {
+                    if (openText.Open)
+                    {
+                        openText.Open = false;
+                        buffer.Add(new TextEndPart(openText.PartId, openText.Citations, openText.ProviderMetadata));
+                    }
+                }
+
+                foreach (var openReasoning in reasoningBlocks)
+                {
+                    if (openReasoning.Open)
+                    {
+                        openReasoning.Open = false;
+                        buffer.Add(new ReasoningEndPart(openReasoning.PartId, openReasoning.ProviderMetadata));
+                    }
+                }
+
                 if (!stepStarted)
                 {
                     buffer.Add(new StartStepPart(null, stepRequest));
@@ -846,12 +881,18 @@ internal static class Generation
     // One streamed text block. Citations arrive with its text-end part.
     private sealed class TextBlock
     {
-        private TextBlock(string id)
+        private TextBlock(string id, string partId)
         {
             Id = id;
+            PartId = partId;
         }
 
         public string Id { get; }
+
+        // The id of the block in the stream parts. It is unique across the steps of a stream.
+        public string PartId { get; }
+
+        public bool Open { get; set; } = true;
 
         public StringBuilder Text { get; } = new();
 
@@ -859,15 +900,15 @@ internal static class Generation
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static TextBlock Start(List<TextBlock> blocks, string id)
+        public static TextBlock Start(List<TextBlock> blocks, string id, PartIdReserver reserver)
         {
-            var block = new TextBlock(id);
+            var block = new TextBlock(id, reserver.Reserve(id));
             blocks.Add(block);
             return block;
         }
 
-        // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here.
-        public static TextBlock Find(List<TextBlock> blocks, string id)
+        // Deltas and ends belong to the latest block with their id. Providers that skip text-start get one here, with its text-start part.
+        public static TextBlock Find(List<TextBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer)
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -877,33 +918,41 @@ internal static class Generation
                 }
             }
 
-            return Start(blocks, id);
+            var block = Start(blocks, id, reserver);
+            buffer.Add(new TextStartPart(block.PartId));
+            return block;
         }
     }
 
     // One streamed reasoning block. The latest provider metadata of its start, delta, and end parts wins, as upstream.
     private sealed class ReasoningBlock
     {
-        private ReasoningBlock(string id)
+        private ReasoningBlock(string id, string partId)
         {
             Id = id;
+            PartId = partId;
         }
 
         public string Id { get; }
+
+        // The id of the block in the stream parts. It is unique across the steps of a stream.
+        public string PartId { get; }
+
+        public bool Open { get; set; } = true;
 
         public StringBuilder Text { get; } = new();
 
         public JsonElement? ProviderMetadata { get; set; }
 
-        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id)
+        public static ReasoningBlock Start(List<ReasoningBlock> blocks, string id, PartIdReserver reserver)
         {
-            var block = new ReasoningBlock(id);
+            var block = new ReasoningBlock(id, reserver.Reserve(id));
             blocks.Add(block);
             return block;
         }
 
-        // Deltas and ends belong to the latest block with their id. Providers that skip reasoning-start get one here.
-        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id)
+        // Deltas and ends belong to the latest block with their id. Providers that skip reasoning-start get one here, with its reasoning-start part.
+        public static ReasoningBlock Find(List<ReasoningBlock> blocks, string id, PartIdReserver reserver, PartBuffer buffer)
         {
             for (var i = blocks.Count - 1; i >= 0; i--)
             {
@@ -913,7 +962,33 @@ internal static class Generation
                 }
             }
 
-            return Start(blocks, id);
+            var block = Start(blocks, id, reserver);
+            buffer.Add(new ReasoningStartPart(block.PartId));
+            return block;
+        }
+    }
+
+    // Maps the block ids of a stream to ids that are unique across its steps. Maps to createPartIdReserver.
+    private sealed class PartIdReserver
+    {
+        private readonly HashSet<string> _usedIds = new(StringComparer.Ordinal);
+
+        public string Reserve(string id)
+        {
+            if (_usedIds.Add(id))
+            {
+                return id;
+            }
+
+            var generatedId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("id-");
+            var uniqueId = generatedId;
+            var suffix = 0;
+            while (!_usedIds.Add(uniqueId))
+            {
+                uniqueId = generatedId + "-" + (++suffix).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return uniqueId;
         }
     }
 

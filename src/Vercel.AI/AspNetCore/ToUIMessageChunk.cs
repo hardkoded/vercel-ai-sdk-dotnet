@@ -60,7 +60,6 @@ public static partial class UIMessageStreamConverter
     /// <summary>
     /// Converts one <see cref="TextStreamPart"/> into a UI message chunk.
     /// Returns <see langword="null"/> for stream parts that do not produce UI message chunks.
-    /// The .NET stream has no text-start, text-end, reasoning-start, or reasoning-end parts, so <see cref="ToUIMessageStream"/> adds those chunks.
     /// </summary>
     /// <param name="part">The part to convert.</param>
     /// <param name="options">Conversion options.</param>
@@ -81,12 +80,50 @@ public static partial class UIMessageStreamConverter
 
         switch (part)
         {
+            case TextStartPart textStart:
+                var textStartChunk = new JsonObject { ["type"] = "text-start", ["id"] = textStart.Id };
+                AddProviderMetadata(textStartChunk, textStart.ProviderMetadata);
+                return textStartChunk;
             case TextDeltaPart text:
-                return new JsonObject { ["type"] = "text-delta", ["id"] = TextId, ["delta"] = text.Text };
+                var textChunk = new JsonObject { ["type"] = "text-delta", ["id"] = text.Id, ["delta"] = text.Text };
+                AddProviderMetadata(textChunk, text.ProviderMetadata);
+                return textChunk;
+            case TextEndPart textEnd:
+                var textEndChunk = new JsonObject { ["type"] = "text-end", ["id"] = textEnd.Id };
+                if (textEnd.Citations != null)
+                {
+                    textEndChunk["citations"] = CitationJson.ToJson(textEnd.Citations);
+                }
+
+                AddProviderMetadata(textEndChunk, textEnd.ProviderMetadata);
+                return textEndChunk;
+            case ReasoningStartPart reasoningStart:
+                if (!options.SendReasoning)
+                {
+                    return null;
+                }
+
+                var reasoningStartChunk = new JsonObject { ["type"] = "reasoning-start", ["id"] = reasoningStart.Id };
+                AddProviderMetadata(reasoningStartChunk, reasoningStart.ProviderMetadata);
+                return reasoningStartChunk;
             case ReasoningDeltaPart reasoning:
-                return options.SendReasoning
-                    ? new JsonObject { ["type"] = "reasoning-delta", ["id"] = ReasoningId, ["delta"] = reasoning.Text }
-                    : null;
+                if (!options.SendReasoning)
+                {
+                    return null;
+                }
+
+                var reasoningChunk = new JsonObject { ["type"] = "reasoning-delta", ["id"] = reasoning.Id, ["delta"] = reasoning.Text };
+                AddProviderMetadata(reasoningChunk, reasoning.ProviderMetadata);
+                return reasoningChunk;
+            case ReasoningEndPart reasoningEnd:
+                if (!options.SendReasoning)
+                {
+                    return null;
+                }
+
+                var reasoningEndChunk = new JsonObject { ["type"] = "reasoning-end", ["id"] = reasoningEnd.Id };
+                AddProviderMetadata(reasoningEndChunk, reasoningEnd.ProviderMetadata);
+                return reasoningEndChunk;
             case FilePart file:
                 var fileChunk = new JsonObject
                 {
@@ -267,10 +304,6 @@ public static partial class UIMessageStreamConverter
                 return null;
         }
     }
-
-    internal const string TextId = "text";
-
-    internal const string ReasoningId = "reasoning";
 
     // The error text that the model receives for a failed tool call, or null when the error cannot be serialized. In that case the model
     // did not receive an error text either, because creating the tool result fails the same way. Maps to getModelToolErrorText.
