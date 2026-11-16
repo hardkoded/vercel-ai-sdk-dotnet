@@ -248,10 +248,14 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
                         if (part.ValueKind == JsonValueKind.Object
                             && part.TryGetProperty("inlineData", out var inline)
                             && inline.ValueKind == JsonValueKind.Object
-                            && !string.IsNullOrEmpty(GoogleJson.String(inline, "data")))
+                            && inline.TryGetProperty("data", out var audioData)
+                            && audioData.ValueKind == JsonValueKind.String
+                            && !string.IsNullOrEmpty(audioData.GetString()))
                         {
-                            base64Audio = GoogleJson.String(inline, "data");
-                            mimeType = GoogleJson.String(inline, "mimeType");
+                            base64Audio = audioData.GetString();
+                            mimeType = inline.TryGetProperty("mimeType", out var mimeTypeValue) && mimeTypeValue.ValueKind == JsonValueKind.String
+                                ? mimeTypeValue.GetString()
+                                : null;
                             break;
                         }
                     }
@@ -270,7 +274,8 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
         // Older models return PCM, which needs a container for default WAV output.
         // Gemini 3.8 returns WAV itself, and adding another header corrupts that audio.
         var isPcm = PcmMimeType.IsMatch(mimeType ?? string.Empty) || (mimeType == null && !prepared.UsesStructuredSpeech);
-        var audio = prepared.OutputFormat == "AUDIO_WAV" && isPcm && bytes.Length > 0 ? AddWavHeader(bytes, sampleRate) : bytes;
+        var isWrapped = prepared.OutputFormat == "AUDIO_WAV" && isPcm && bytes.Length > 0;
+        var audio = isWrapped ? AddWavHeader(bytes, sampleRate) : bytes;
 
         var warnings = new List<GoogleWarning>(prepared.Warnings);
         if (prepared.OutputFormat == "AUDIO_L16" && bytes.Length > 0 && !prepared.UsesStructuredSpeech)
@@ -290,7 +295,7 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
 
         return new GoogleSpeechResult(
             audio,
-            mimeType ?? "audio/wav",
+            isWrapped ? "audio/wav" : (mimeType ?? "audio/wav"),
             warnings,
             usage,
             requestBody,

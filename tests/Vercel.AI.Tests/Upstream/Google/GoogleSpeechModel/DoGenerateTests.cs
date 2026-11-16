@@ -222,6 +222,8 @@ public sealed class DoGenerateTests
         Assert.Equal(1, BitConverter.ToUInt16(audio, 22));
         Assert.Equal(16, BitConverter.ToUInt16(audio, 34));
         Assert.Equal(PcmBytes, audio[44..]);
+        Assert.Equal("audio/wav", result.MediaType);
+        Assert.Equal("audio/L16;rate=24000", result.MimeType);
     }
 
     [Fact]
