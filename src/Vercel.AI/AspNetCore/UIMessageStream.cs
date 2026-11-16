@@ -93,7 +93,21 @@ public static class UIMessageStreamExtensions
             UIMessageStreamResult.ReadSseChunks(result, onError, redactToolErrors, cancellationToken),
             keepAliveMs,
             cancellationToken);
-        return ServerResponseWriter.WriteAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared);
+        return WriteEncodedAsync(response, UIMessageStreamResult.Encode(sse, cancellationToken), status, statusText, prepared, cancellationToken);
+    }
+
+    private static async Task WriteEncodedAsync(ServerResponse response, ReadableStream<byte[]> encoded, int? status, string? statusText, HeaderCollection headers, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await ServerResponseWriter.WriteAsync(response, encoded, status, statusText, headers, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The writer released its reader but does not cancel the stream. Release the SSE enumerator and any pending read.
+            await encoded.CancelAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 }
 
