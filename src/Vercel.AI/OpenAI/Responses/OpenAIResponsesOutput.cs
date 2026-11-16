@@ -94,6 +94,65 @@ internal static class OpenAIResponsesOutput
     public static string ProgramOutputResult(JsonElement item) =>
         new JsonObject { ["result"] = OpenAIJson.String(item, "result"), ["status"] = OpenAIJson.String(item, "status") }.ToJsonString(JsonOptions);
 
+    /// <summary>The input of a <c>shell_call</c> item: its commands and the optional execution controls. Null controls are omitted.</summary>
+    public static string ShellCallInput(JsonElement item)
+    {
+        var action = new JsonObject();
+        var source = item.TryGetProperty("action", out var actionElement) && actionElement.ValueKind == JsonValueKind.Object ? actionElement : default;
+        action["commands"] = source.ValueKind == JsonValueKind.Object && source.TryGetProperty("commands", out var commands)
+            ? JsonNode.Parse(commands.GetRawText())
+            : new JsonArray();
+        if (source.ValueKind == JsonValueKind.Object && OpenAIJson.Int(source, "timeout_ms") is { } timeoutMs)
+        {
+            action["timeoutMs"] = timeoutMs;
+        }
+
+        if (source.ValueKind == JsonValueKind.Object && OpenAIJson.Int(source, "max_output_length") is { } maxOutputLength)
+        {
+            action["maxOutputLength"] = maxOutputLength;
+        }
+
+        return new JsonObject { ["action"] = action }.ToJsonString(JsonOptions);
+    }
+
+    /// <summary>The result of a <c>shell_call_output</c> item, in the shape of upstream's <c>shellOutputSchema</c>.</summary>
+    public static string ShellCallOutputResult(JsonElement item)
+    {
+        var result = new JsonObject();
+        if (OpenAIJson.Int(item, "max_output_length") is { } maxOutputLength)
+        {
+            result["maxOutputLength"] = maxOutputLength;
+        }
+
+        var output = new JsonArray();
+        if (item.TryGetProperty("output", out var entries) && entries.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var entry in entries.EnumerateArray())
+            {
+                var outcome = entry.TryGetProperty("outcome", out var outcomeElement) ? outcomeElement : default;
+                output.Add(new JsonObject
+                {
+                    ["stdout"] = OpenAIJson.String(entry, "stdout"),
+                    ["stderr"] = OpenAIJson.String(entry, "stderr"),
+                    ["outcome"] = outcome.ValueKind == JsonValueKind.Object && OpenAIJson.String(outcome, "type") == "exit"
+                        ? new JsonObject { ["type"] = "exit", ["exitCode"] = OpenAIJson.Int(outcome, "exit_code") }
+                        : new JsonObject { ["type"] = "timeout" },
+                });
+            }
+        }
+
+        result["output"] = output;
+        return result.ToJsonString(JsonOptions);
+    }
+
+    /// <summary>The input of an <c>apply_patch_call</c> item: its call id and operation.</summary>
+    public static string ApplyPatchInput(JsonElement item) =>
+        new JsonObject
+        {
+            ["callId"] = OpenAIJson.String(item, "call_id"),
+            ["operation"] = item.TryGetProperty("operation", out var operation) ? JsonNode.Parse(operation.GetRawText()) : null,
+        }.ToJsonString(JsonOptions);
+
     /// <summary>Provider metadata that carries only the output item id.</summary>
     public static JsonElement ItemMetadata(JsonElement item, string providerName = "openai") =>
         OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = OpenAIJson.String(item, "id") }, providerName);
