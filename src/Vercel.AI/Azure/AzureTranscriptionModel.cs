@@ -34,6 +34,12 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
         _mai = mai;
     }
 
+    /// <summary>
+    /// The model that handles <c>doStream</c> for the OpenAI API. It defaults to the OpenAI transcription model. Tests set it to
+    /// observe the delegated call, as upstream spies on <c>OpenAITranscriptionModel.prototype.doStream</c>.
+    /// </summary>
+    internal ITranscriptionCaller? OpenAIStreamModel { get; set; }
+
     /// <inheritdoc />
     public string Provider => "azure.transcription";
 
@@ -135,7 +141,7 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
                 SpeechOnlyWarnings(options.SpeechOptions).Concat(OpenAITranscriptionOnlyWarnings(options.OpenAIOptions)).ToList()).ConfigureAwait(false);
         }
 
-        return await _openai.DoStreamAsync(
+        return await (OpenAIStreamModel ?? _openai).DoStreamAsync(
             new TranscriptionStreamCall(
                 call.Audio,
                 call.InputAudioFormat,

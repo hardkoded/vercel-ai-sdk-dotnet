@@ -131,13 +131,13 @@ public sealed class TranscriptionModelResult
 public sealed class TranscriptionStreamCall
 {
     /// <summary>Creates a stream call.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken)
+    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken)
         : this(audio, inputAudioFormat, providerOptions, headers, includeRawChunks, cancellationToken, null)
     {
     }
 
     /// <summary>Creates a stream call that fails with <paramref name="abortReason"/> when cancelled.</summary>
-    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason)
+    public TranscriptionStreamCall(AudioChunkStream audio, AudioFormat inputAudioFormat, JsonElement providerOptions, IReadOnlyDictionary<string, string?> headers, bool? includeRawChunks, CancellationToken cancellationToken, Exception? abortReason)
     {
         Audio = audio;
         InputAudioFormat = inputAudioFormat;
@@ -158,7 +158,7 @@ public sealed class TranscriptionStreamCall
     public JsonElement ProviderOptions { get; }
 
     /// <summary>Headers including the user-agent suffix.</summary>
-    public IReadOnlyDictionary<string, string> Headers { get; }
+    public IReadOnlyDictionary<string, string?> Headers { get; }
 
     /// <summary>When true, raw parts are requested.</summary>
     public bool? IncludeRawChunks { get; }
@@ -457,7 +457,7 @@ public sealed class StreamTranscribeResult
         {
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-            var start = await model.DoStreamAsync(new TranscriptionStreamCall(audio, request.InputAudioFormat, providerOptions, headers, request.IncludeRawChunks, cancellationToken, request.AbortReason), cancellationToken).ConfigureAwait(false);
+            var start = await model.DoStreamAsync(new TranscriptionStreamCall(audio, request.InputAudioFormat, providerOptions, (IReadOnlyDictionary<string, string?>)headers, request.IncludeRawChunks, cancellationToken, request.AbortReason), cancellationToken).ConfigureAwait(false);
             if (start == null)
             {
                 throw Unsupported(model, request.ModelWasString);
