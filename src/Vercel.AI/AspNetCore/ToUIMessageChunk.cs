@@ -46,6 +46,13 @@ public sealed class ToUIMessageChunkOptions
     /// <summary>Metadata of the response message, sent with the <c>start</c> and <c>finish</c> chunks. Maps to <c>messageMetadata</c>.</summary>
     public JsonElement? MessageMetadata { get; init; }
 
+    /// <summary>
+    /// Called for each stream part. Its value is sent with the <c>start</c> and <c>finish</c> chunks, and with a separate <c>message-metadata</c> chunk for any other part.
+    /// It takes precedence over <see cref="MessageMetadata"/>. Only <see cref="UIMessageStreamConverter.ToUIMessageStream"/> calls it.
+    /// Maps to the function form of <c>messageMetadata</c> (C# cannot overload a property by type).
+    /// </summary>
+    public Func<TextStreamPart, JsonElement?>? MessageMetadataSelector { get; init; }
+
     /// <summary>Id of the response message sent with the <c>start</c> chunk. Maps to <c>responseMessageId</c>.</summary>
     public string? ResponseMessageId { get; init; }
 
@@ -88,6 +95,9 @@ public static partial class UIMessageStreamConverter
     /// <param name="part">The part to convert.</param>
     /// <param name="options">Conversion options.</param>
     public static JsonObject? ToUIMessageChunk(TextStreamPart part, ToUIMessageChunkOptions? options = null)
+        => ToUIMessageChunkWithMetadata(part, options, options?.MessageMetadata);
+
+    internal static JsonObject? ToUIMessageChunkWithMetadata(TextStreamPart part, ToUIMessageChunkOptions? options, JsonElement? messageMetadata)
     {
         if (part is null)
         {
@@ -419,7 +429,7 @@ public static partial class UIMessageStreamConverter
                 }
 
                 var start = new JsonObject { ["type"] = "start" };
-                AddMessageMetadata(start, options.MessageMetadata);
+                AddMessageMetadata(start, messageMetadata);
                 if (options.ResponseMessageId != null)
                 {
                     start["messageId"] = options.ResponseMessageId;
@@ -433,7 +443,7 @@ public static partial class UIMessageStreamConverter
                 }
 
                 var finishChunk = new JsonObject { ["type"] = "finish", ["finishReason"] = GenAiConventions.FormatFinishReason(finish.FinishReason) };
-                AddMessageMetadata(finishChunk, options.MessageMetadata);
+                AddMessageMetadata(finishChunk, messageMetadata);
                 return finishChunk;
             case AbortPart abort:
                 return new JsonObject { ["type"] = "abort", ["reason"] = abort.Reason };
