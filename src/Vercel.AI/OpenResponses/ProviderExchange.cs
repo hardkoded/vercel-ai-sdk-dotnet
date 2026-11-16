@@ -97,8 +97,14 @@ internal static class ProviderExchange
         IReadOnlyDictionary<string, string?>? trustedHeaders,
         CancellationToken cancellationToken,
         HttpClient? downloadClient = null,
-        IReadOnlyDictionary<string, string?>? untrustedHeaders = null)
+        IReadOnlyDictionary<string, string?>? untrustedHeaders = null,
+        Vercel.AI.Util.DownloadFetch? downloadFetch = null)
     {
+        if (downloadFetch != null)
+        {
+            return await GetResponseUrlThroughFetchAsync(url, trustedOrigin, trustedHeaders, untrustedHeaders, downloadFetch, cancellationToken).ConfigureAwait(false);
+        }
+
         var current = new Uri(url);
         for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
         {
@@ -151,6 +157,50 @@ internal static class ProviderExchange
         }
 
         throw new DownloadError(url, "Too many redirects (max " + MaxRedirects + ")");
+    }
+
+    /// <summary>
+    /// Gets a URL through a fetch, like upstream's <c>getFromApi</c>: every hop is validated, and a browser's opaque redirect is retried
+    /// with the native <c>follow</c> mode. Credentials go only to the first hop when it is on <paramref name="trustedOrigin"/>.
+    /// </summary>
+    private static async Task<ProviderExchangeResult> GetResponseUrlThroughFetchAsync(
+        string url,
+        string? trustedOrigin,
+        IReadOnlyDictionary<string, string?>? trustedHeaders,
+        IReadOnlyDictionary<string, string?>? untrustedHeaders,
+        Vercel.AI.Util.DownloadFetch fetch,
+        CancellationToken cancellationToken)
+    {
+        var trusted = trustedOrigin != null && ProviderValues.IsSameOrigin(url, trustedOrigin);
+        var headers = new Vercel.AI.Util.HeaderCollection();
+        foreach (var pair in (trusted ? trustedHeaders : untrustedHeaders) ?? new Dictionary<string, string?>())
+        {
+            if (pair.Value != null)
+            {
+                headers.Add(pair.Key, pair.Value);
+            }
+        }
+
+        var response = await Vercel.AI.Util.Download.FetchWithValidatedRedirectsAsync(url, headers, cancellationToken, MaxRedirects, fetch, trustedOrigin).ConfigureAwait(false);
+        var bytes = response.Body ?? Array.Empty<byte>();
+        if (!response.Ok)
+        {
+            response.Cancel();
+            throw ProviderHttp.MapStatus(response.Status, bytes.LongLength > MaxErrorBodyBytes ? string.Empty : Encoding.UTF8.GetString(bytes));
+        }
+
+        if (bytes.LongLength > Vercel.AI.Util.Download.DefaultMaxBytes)
+        {
+            throw new DownloadError(url, "Download of " + url + " exceeded maximum size of " + Vercel.AI.Util.Download.DefaultMaxBytes + " bytes.");
+        }
+
+        var copied = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in response.Headers.Entries())
+        {
+            copied[header.Key] = header.Value;
+        }
+
+        return new ProviderExchangeResult(Encoding.UTF8.GetString(bytes), bytes, copied);
     }
 
     /// <summary>Client for hops off the provider origin: it never follows a redirect, so the loop can check each hop first.</summary>
