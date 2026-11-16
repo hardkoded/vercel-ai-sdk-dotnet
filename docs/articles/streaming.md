@@ -118,7 +118,7 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 ## Reading UI message streams
 
-`UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks))` turns a stream of UI message chunks into an `IAsyncEnumerable<UIMessage>`. Each element is another state of the same message while it is being built. Set `Message` to continue the last assistant message when you resume a conversation. A chunk that starts a different message id replaces it. `OnError` receives errors, including `error` chunks, and `TerminateOnError` ends the enumeration with the error instead. Stopping the enumeration early disposes the chunk stream.
+`UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks))` turns a stream of UI message chunks into an `IAsyncEnumerable<UIMessage>`. Each element is another state of the same message while it is being built. Set `Message` to continue the last assistant message when you resume a conversation. A chunk that starts a different message id replaces it. `OnError` receives errors, including `error` chunks, and `TerminateOnError` ends the enumeration with the error instead. Stopping the enumeration early disposes the chunk stream. The typed `UIMessage` keeps the fields that the chunks carry: `TextUIPart.Citations`, `ToolUIPart.InputEncoding` (while the call is `InputStreaming`, an input with `Text` encoding stays a raw string), `ToolUIPart.ToolMetadata`, and `SteeringMessageUIPart` (`steering-message`).
 
 ```csharp
 var chunks = UIMessageStreamConverter.ToUIMessageStream(result.Stream());
