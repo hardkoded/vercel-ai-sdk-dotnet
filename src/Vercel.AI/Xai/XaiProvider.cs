@@ -94,6 +94,18 @@ public sealed class XaiProvider : OpenAICompatibleProvider
         return new XaiRealtimeModel(modelId, _httpClient, Options.BaseUrl, () => CreateHeaders());
     }
 
+    /// <summary>Creates a video model. The provider id is <c>xai.video</c>.</summary>
+    public override IVideoModel VideoModel(string modelId)
+    {
+        return new XaiVideoModel(this, modelId);
+    }
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel(string)"/>.</summary>
+    public IVideoModel Video(string modelId)
+    {
+        return VideoModel(modelId);
+    }
+
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static new XaiProvider Create(OpenAICompatibleOptions? options = null, HttpMessageHandler? handler = null)
     {

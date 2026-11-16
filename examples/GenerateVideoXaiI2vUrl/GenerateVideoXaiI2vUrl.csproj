@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a video from an image URL and a text prompt.</Description>
+  </PropertyGroup>
+</Project>

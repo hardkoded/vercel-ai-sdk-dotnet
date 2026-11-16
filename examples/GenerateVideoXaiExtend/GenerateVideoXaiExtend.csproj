@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Extends an existing video from its last frame.</Description>
+  </PropertyGroup>
+</Project>
