@@ -242,6 +242,140 @@ public class ReadableStream<T>
         }
     }
 
+    /// <summary>
+    /// Splits this stream into two branches that receive every chunk. The stream is locked, and cancelled once both branches are cancelled.
+    /// Mirrors <c>ReadableStream.tee()</c>.
+    /// </summary>
+    public (ReadableStream<T> First, ReadableStream<T> Second) Tee()
+    {
+        var reader = GetReader();
+        ReadableStreamController<T>? first = null;
+        ReadableStreamController<T>? second = null;
+        var gate = new SemaphoreSlim(1, 1);
+        var cancelled = 0;
+        var sourceCancelled = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finished = false;
+
+        async Task PullAsync(ReadableStreamController<T> own)
+        {
+            await gate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                if (finished)
+                {
+                    return;
+                }
+
+                var read = await reader.ReadAsync().ConfigureAwait(false);
+                if (read.Rejected)
+                {
+                    finished = true;
+                    first!.Error(read.Reason);
+                    second!.Error(read.Reason);
+                }
+                else if (read.Done)
+                {
+                    finished = true;
+                    first!.Close();
+                    second!.Close();
+                }
+                else
+                {
+                    first!.Enqueue(read.Value);
+                    second!.Enqueue(read.Value);
+                }
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }
+
+        Task CancelBranchAsync()
+        {
+            return Interlocked.Increment(ref cancelled) == 2 ? reader.CancelAsync() : Task.CompletedTask;
+        }
+
+        var firstStream = new ReadableStream<T>(start: c => first = c, pull: PullAsync, cancel: CancelBranchAsync);
+        var secondStream = new ReadableStream<T>(start: c => second = c, pull: PullAsync, cancel: CancelBranchAsync);
+        return (firstStream, secondStream);
+    }
+
+    /// <summary>
+    /// Creates a stream that reads <paramref name="source"/>. Cancelling the stream cancels the enumerator's token and disposes it.
+    /// Mirrors <c>ReadableStream.from</c>.
+    /// </summary>
+    public static ReadableStream<T> From(IAsyncEnumerable<T> source)
+    {
+        if (source is null)
+        {
+            throw new ArgumentNullException(nameof(source));
+        }
+
+        var cancellation = new CancellationTokenSource();
+        var enumerator = source.GetAsyncEnumerator(cancellation.Token);
+        var disposed = 0;
+        Task? moving = null;
+
+        async Task DisposeEnumeratorAsync()
+        {
+            if (Interlocked.Exchange(ref disposed, 1) == 0)
+            {
+                await enumerator.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
+        return new ReadableStream<T>(
+            pull: async controller =>
+            {
+                try
+                {
+                    var move = enumerator.MoveNextAsync().AsTask();
+                    moving = move;
+                    if (await move.ConfigureAwait(false))
+                    {
+                        controller.Enqueue(enumerator.Current);
+                        return;
+                    }
+                }
+                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+                {
+                    // The consumer cancelled the stream. The cancel callback disposes the enumerator.
+                    return;
+                }
+                catch (Exception error)
+                {
+                    await DisposeEnumeratorAsync().ConfigureAwait(false);
+                    controller.Error(error);
+                    return;
+                }
+
+                await DisposeEnumeratorAsync().ConfigureAwait(false);
+                controller.Close();
+            },
+            cancel: async () =>
+            {
+                cancellation.Cancel();
+                var pending = moving;
+                if (pending != null && !pending.IsCompleted)
+                {
+                    // An enumerator cannot be disposed while a read is in flight. A source that ignores its token gets a short grace period.
+                    await Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(1))).ConfigureAwait(false);
+                    if (!pending.IsCompleted)
+                    {
+                        _ = pending.ContinueWith(
+                            static task => _ = task.Exception,
+                            CancellationToken.None,
+                            TaskContinuationOptions.OnlyOnFaulted,
+                            TaskScheduler.Default);
+                        return;
+                    }
+                }
+
+                await DisposeEnumeratorAsync().ConfigureAwait(false);
+            });
+    }
+
     /// <summary>A stream that emits <paramref name="values"/> and then closes.</summary>
     public static ReadableStream<T> FromArray(IReadOnlyList<T>? values)
     {

@@ -25,6 +25,7 @@ Errors, downloads, warnings, and helpers.
 | [CanonicalHash](/api/Vercel.AI.Util/CanonicalHash/) | Canonical JSON and its SHA-256 base64url digest. |
 | [Collections](/api/Vercel.AI.Util/Collections/) | Array and property helpers from the AI SDK util package. |
 | [CompatibilityWarning](/api/Vercel.AI.Util/CompatibilityWarning/) | A feature running in compatibility mode. |
+| [ConsumeStream](/api/Vercel.AI.Util/ConsumeStream/) | Reads a stream to the end. Maps to consumeStream. |
 | [DataObject](/api/Vercel.AI.Util/DataObject/) | Object with an explicit constructor token and own properties. Used where JavaScript distinguishes prototypes and inherited names. |
 | [DataUrl](/api/Vercel.AI.Util/DataUrl/) | Reads text from text/ data URLs. |
 | [DecisionRefusalError](/api/Vercel.AI.Util/DecisionRefusalError/) | A decision model refused one or more questions. |
