@@ -186,17 +186,18 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             call.ProviderOptions.ValueKind == JsonValueKind.Object ? call.ProviderOptions : null,
             call.IncludeRawChunks);
 
+        var startFrameJson = startFrame.ToJson();
         var session = new Session(call, authMethod);
         session.Start(
             new Uri(ToGatewayTranscriptionUrl(_provider.Options.BaseUrl, ModelId)),
             GetProtocolsFromHeaders(headers),
             headers,
-            startFrame.ToJson(),
+            startFrameJson,
             _provider.Options.WebSocket);
         return new TranscriptionStreamStart(
             new ModelPartStream(session.Queue, session.Cancel),
             new ProviderResponse(timestamp: currentDate, modelId: ModelId),
-            new ProviderRequest(startFrame.ToJson()));
+            new ProviderRequest(startFrameJson));
     }
 
     /// <summary>
@@ -491,9 +492,9 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
             catch (Exception error)
             {
                 // The abort signal also cancels the pending audio read; the stream fails with the abort reason, as for `onAbort`.
-                if (error is OperationCanceledException && _call.CancellationToken.IsCancellationRequested && _call.AbortReason is { } reason)
+                if (error is OperationCanceledException && _call.CancellationToken.IsCancellationRequested)
                 {
-                    FinishWithAbort(reason);
+                    FinishWithAbort(_call.AbortReason ?? error);
                     return;
                 }
 

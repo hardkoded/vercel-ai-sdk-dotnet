@@ -368,7 +368,7 @@ public static class TranscriptionStreamEnvelope
                         Id = GetString(part, "id"),
                         StartSecond = GetNumber(part, "startSecond"),
                         DurationInSeconds = GetNumber(part, "durationInSeconds"),
-                        ChannelIndex = (int?)GetNumber(part, "channelIndex"),
+                        ChannelIndex = GetInt(part, "channelIndex"),
                     },
                     part);
             case "transcript-final":
@@ -390,7 +390,7 @@ public static class TranscriptionStreamEnvelope
                         Id = GetString(part, "id"),
                         StartSecond = GetNumber(part, "startSecond"),
                         EndSecond = GetNumber(part, "endSecond"),
-                        ChannelIndex = (int?)GetNumber(part, "channelIndex"),
+                        ChannelIndex = GetInt(part, "channelIndex"),
                     },
                     part);
             case "finish":
@@ -424,9 +424,9 @@ public static class TranscriptionStreamEnvelope
                 if (part.TryGetProperty("usage", out var usageValue) && usageValue.ValueKind == JsonValueKind.Object)
                 {
                     usage = new OperationUsage(
-                        (int?)GetNumber(usageValue, "inputTokens"),
-                        (int?)GetNumber(usageValue, "outputTokens"),
-                        (int?)GetNumber(usageValue, "totalTokens"),
+                        GetInt(usageValue, "inputTokens"),
+                        GetInt(usageValue, "outputTokens"),
+                        GetInt(usageValue, "totalTokens"),
                         GetNumber(usageValue, "tokens"),
                         GetNumber(usageValue, "seconds"));
                 }
@@ -523,6 +523,12 @@ public static class TranscriptionStreamEnvelope
     private static double? GetNumber(JsonElement value, string name)
     {
         return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number ? property.GetDouble() : null;
+    }
+
+    // A number that is not a 32-bit integer is dropped rather than wrapped or truncated.
+    private static int? GetInt(JsonElement value, string name)
+    {
+        return value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var number) ? number : null;
     }
 
     // An absent property is valid. Upstream treats `undefined` as absent, and JSON has no `undefined`, so null counts as mistyped.
