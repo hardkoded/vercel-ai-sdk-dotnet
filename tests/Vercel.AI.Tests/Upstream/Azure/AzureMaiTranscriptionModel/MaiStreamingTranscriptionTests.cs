@@ -241,7 +241,7 @@ public sealed class MaiStreamingTranscriptionTests
         var chunks = new AudioChunkStream();
         chunks.Write(Pcm);
         chunks.Complete();
-        var call = new TranscriptionStreamCall(chunks, new AudioFormat(type, rate), JsonSerializer.Deserialize<JsonElement>("{}"), new Dictionary<string, string>(), null, CancellationToken.None);
+        var call = new TranscriptionStreamCall(chunks, new AudioFormat(type, rate), JsonSerializer.Deserialize<JsonElement>("{}"), new Dictionary<string, string?>(), null, CancellationToken.None);
 
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() => model.DoStreamAsync(call, CancellationToken.None));
 

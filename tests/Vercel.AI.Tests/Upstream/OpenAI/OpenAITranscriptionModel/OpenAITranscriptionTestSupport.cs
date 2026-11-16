@@ -47,13 +47,13 @@ internal static class OpenAITranscriptionTestSupport
         TranscriptionModel model,
         AudioChunkStream? audio = null,
         string? providerOptions = null,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string?>? headers = null)
     {
         var call = new TranscriptionStreamCall(
             audio ?? Audio(),
             new AudioFormat("audio/pcm", 24000),
             JsonSerializer.Deserialize<JsonElement>(providerOptions ?? "{}"),
-            headers ?? new Dictionary<string, string>(),
+            headers ?? new Dictionary<string, string?>(),
             null,
             CancellationToken.None);
         var start = await model.DoStreamAsync(call, CancellationToken.None);

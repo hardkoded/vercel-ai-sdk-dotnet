@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Tests.Upstream.ProviderUtils;
 using static Vercel.AI.Tests.Upstream.Azure.AzureTranscriptionTestSupport;
@@ -18,21 +17,49 @@ public sealed class StreamingAndSerializationTests
     private const string Prefix = "packages/azure/src/azure-transcription-model.test.ts::streaming and serialization::";
 
     [Fact]
-    [UpstreamTest(Prefix + "delegates OpenAI streaming without changing call options", Coverage = UpstreamCoverage.Partial, Note = "Upstream spies on OpenAITranscriptionModel.doStream and checks the result and options by identity. Upstream calls the mai-transcribe-2 deployment, which the real OpenAI model does not stream, so the port streams the gpt-realtime-whisper deployment and checks that the OpenAI realtime session is opened with the unchanged openai options.")]
-    public async Task Partial_Delegates_OpenAI_streaming_without_changing_call_options()
+    [UpstreamTest(Prefix + "delegates OpenAI streaming without changing call options", Coverage = UpstreamCoverage.Covered)]
+    public async Task Delegates_OpenAI_streaming_without_changing_call_options()
     {
-        var stream = await AzureMaiTestSupport.StartStream(
-            options => options.NativeWebSocket = MockWebSocket.Factory,
-            modelId: "gpt-realtime-whisper",
-            providerOptions: "{\"azure\":{\"api\":\"openai\"},\"openai\":{\"language\":\"en\"}}",
-            customWebSocket: false);
+        var harness = Setup();
+        var result = new TranscriptionStreamStart(new ModelPartStream(Array.Empty<ModelStreamPart>()));
+        var spy = new DoStreamSpy(result);
+        var model = harness.Provider.Transcription("mai-transcribe-2");
+        model.OpenAIStreamModel = spy;
+        var audio = new AudioChunkStream();
+        var providerOptions = JsonSerializer.Deserialize<JsonElement>("{\"azure\":{\"api\":\"openai\"},\"openai\":{\"language\":\"en\"}}");
+        var call = new TranscriptionStreamCall(audio, new AudioFormat("audio/pcm", 24000), providerOptions, new Dictionary<string, string?>(), null, CancellationToken.None);
 
-        var transcription = JsonNode.Parse(stream.Start.Request!.Body!)!["session"]!["audio"]!["input"]!["transcription"]!;
-        Assert.Equal("gpt-realtime-whisper", transcription["model"]!.GetValue<string>());
-        Assert.Equal("en", transcription["language"]!.GetValue<string>());
-        Assert.Contains("/realtime?intent=transcription&api-version=", stream.Socket.Url.AbsoluteUri, StringComparison.Ordinal);
-        Assert.Equal(new[] { "realtime" }, stream.Socket.Protocols);
-        stream.Start.Stream.Cancel();
+        Assert.Same(result, await model.DoStreamAsync(call, CancellationToken.None));
+
+        var received = Assert.Single(spy.Calls);
+        Assert.Same(audio, received.Audio);
+        Assert.Equal(call.InputAudioFormat.Type, received.InputAudioFormat.Type);
+        Assert.Equal(call.InputAudioFormat.Rate, received.InputAudioFormat.Rate);
+        Assert.Equal(providerOptions.GetRawText(), received.ProviderOptions.GetRawText());
+        Assert.Same(call.Headers, received.Headers);
+        Assert.Equal(call.IncludeRawChunks, received.IncludeRawChunks);
+        Assert.Equal(call.CancellationToken, received.CancellationToken);
+    }
+
+    private sealed class DoStreamSpy(TranscriptionStreamStart result) : ITranscriptionCaller
+    {
+        public List<TranscriptionStreamCall> Calls { get; } = new();
+
+        public string Provider => "spy";
+
+        public string ModelId => "spy";
+
+        public string SpecificationVersion => "v4";
+
+        public bool CanStream => true;
+
+        public Task<TranscriptionModelResult> DoGenerateAsync(TranscriptionModelCall call, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task<TranscriptionStreamStart?> DoStreamAsync(TranscriptionStreamCall call, CancellationToken cancellationToken)
+        {
+            Calls.Add(call);
+            return Task.FromResult<TranscriptionStreamStart?>(result);
+        }
     }
 
     [Fact]
@@ -44,7 +71,7 @@ public sealed class StreamingAndSerializationTests
             new AudioChunkStream(),
             new AudioFormat("audio/pcm", 24000),
             JsonSerializer.Deserialize<JsonElement>("{}"),
-            new Dictionary<string, string>(),
+            new Dictionary<string, string?>(),
             null,
             CancellationToken.None);
 

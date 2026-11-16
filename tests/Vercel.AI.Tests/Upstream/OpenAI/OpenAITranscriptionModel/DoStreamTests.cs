@@ -177,15 +177,13 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should strip undefined header values before the WebSocket constructor", Coverage = UpstreamCoverage.Partial, Note = "TranscriptionStreamCall.Headers is not nullable, so the unset value comes from the configuration headers instead of the call headers.")]
-    public async Task Partial_Should_strip_undefined_header_values_before_the_WebSocket_constructor()
+    [UpstreamTest(Prefix + "should strip undefined header values before the WebSocket constructor", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_strip_undefined_header_values_before_the_WebSocket_constructor()
     {
         MockWebSocket.Reset();
-        var model = Model(
-            "gpt-realtime-whisper",
-            () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-api-key", ["X-Unset"] = null });
+        var model = Model("gpt-realtime-whisper");
 
-        var (start, _, ws) = await StartAsync(model, headers: new Dictionary<string, string> { ["Custom-Header"] = "custom-value" });
+        var (start, _, ws) = await StartAsync(model, headers: new Dictionary<string, string?> { ["Custom-Header"] = "custom-value", ["X-Unset"] = null });
 
         start.Stream.Cancel();
         Assert.DoesNotContain("X-Unset", ws.Headers!.Keys);
@@ -255,7 +253,7 @@ public sealed class DoStreamTests
         var model = Model("gpt-realtime-whisper", () => new Dictionary<string, string?> { ["Authorization"] = "Bearer config-key" });
 
         // lowercase scheme + lowercase header key, both case-insensitive
-        var (start, _, ws) = await StartAsync(model, headers: new Dictionary<string, string> { ["authorization"] = "bearer per-call-key" });
+        var (start, _, ws) = await StartAsync(model, headers: new Dictionary<string, string?> { ["authorization"] = "bearer per-call-key" });
 
         start.Stream.Cancel();
         Assert.Equal(new[] { "realtime", "openai-insecure-api-key.per-call-key" }, ws.Protocols);
@@ -336,7 +334,7 @@ public sealed class DoStreamTests
             audio,
             new AudioFormat("audio/pcm", 24000),
             System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>("{}"),
-            new Dictionary<string, string>(),
+            new Dictionary<string, string?>(),
             null,
             CancellationToken.None);
         var start = await model.DoStreamAsync(call, CancellationToken.None);

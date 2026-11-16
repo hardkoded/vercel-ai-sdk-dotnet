@@ -496,7 +496,7 @@ public sealed class DeepgramStreamingTranscriptionTests
 
     private static async Task<TranscriptionStreamStart> StartAsync(ITranscriptionCaller model, AudioChunkStream audio, AudioFormat format, bool? includeRawChunks, string? providerOptions, IReadOnlyDictionary<string, string>? headers, CancellationToken cancellationToken, Exception? abortReason)
     {
-        var call = new TranscriptionStreamCall(audio, format, OperationJson.Parse(providerOptions ?? "{}"), headers ?? new Dictionary<string, string>(), includeRawChunks, cancellationToken, abortReason);
+        var call = new TranscriptionStreamCall(audio, format, OperationJson.Parse(providerOptions ?? "{}"), (IReadOnlyDictionary<string, string?>?)headers ?? new Dictionary<string, string?>(), includeRawChunks, cancellationToken, abortReason);
         var start = await model.DoStreamAsync(call, cancellationToken);
         return start!;
     }

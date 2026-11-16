@@ -76,7 +76,7 @@ internal static class AzureMaiTestSupport
         chunks.Complete();
         var model = (ITranscriptionCaller)Setup(settings, customWebSocket).Transcription(modelId);
         var start = await model.DoStreamAsync(
-            new TranscriptionStreamCall(chunks, new AudioFormat("audio/pcm", rate), JsonSerializer.Deserialize<JsonElement>(providerOptions ?? "{}"), new Dictionary<string, string>(), includeRawChunks, cancellationToken),
+            new TranscriptionStreamCall(chunks, new AudioFormat("audio/pcm", rate), JsonSerializer.Deserialize<JsonElement>(providerOptions ?? "{}"), new Dictionary<string, string?>(), includeRawChunks, cancellationToken),
             cancellationToken);
         return new StartedMaiStream(start!, Collect(start!), MockWebSocket.Instances[^1]);
     }
