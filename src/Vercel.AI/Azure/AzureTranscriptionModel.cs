@@ -112,7 +112,9 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
             openai.DurationInSeconds,
             openai.Warnings.Select(ToWarning).Concat(SpeechOnlyWarnings(options.SpeechOptions)).ToList(),
             openai.ProviderMetadata,
-            new ProviderResponse(openai.Response.Headers, OpenAIJson.Parse(openai.Response.Body), timestamp: openai.Response.Timestamp.UtcDateTime, modelId: openai.Response.ModelId));
+            new ProviderResponse(openai.Response.Headers, OpenAIJson.Parse(openai.Response.Body), timestamp: openai.Response.Timestamp.UtcDateTime, modelId: openai.Response.ModelId),
+            openai.Words,
+            openai.Usage);
     }
 
     /// <inheritdoc />
@@ -157,7 +159,8 @@ public sealed class AzureTranscriptionModel : ITranscriptionModel, ITranscriptio
             warnings.ToList(),
             result.ProviderMetadata,
             result.Response,
-            result.Words);
+            result.Words,
+            result.Usage);
     }
 
     private static OperationWarning ToWarning(OpenAICallWarning warning)
