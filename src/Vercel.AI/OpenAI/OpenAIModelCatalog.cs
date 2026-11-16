@@ -27,8 +27,9 @@ internal sealed class OpenAITranscriptionCapabilities
 /// <summary>A catalog entry of an OpenAI transcription model. Maps to <c>OpenAITranscriptionModelEntry</c>.</summary>
 internal sealed class OpenAITranscriptionModelEntry
 {
-    internal OpenAITranscriptionModelEntry(OpenAITranscriptionCapabilities capabilities, string languageField, string? responseFormat = null)
+    internal OpenAITranscriptionModelEntry(OpenAITranscriptionCapabilities capabilities, string languageField, string? responseFormat = null, string? chunkingStrategy = null)
     {
+        ChunkingStrategy = chunkingStrategy;
         Capabilities = capabilities;
         ResponseFormat = responseFormat;
         LanguageField = languageField;
@@ -42,6 +43,9 @@ internal sealed class OpenAITranscriptionModelEntry
 
     /// <summary>The response format the model requests by default, or <see langword="null"/> for the provider default JSON. Maps to <c>requestConfig.transcription.responseFormat</c>.</summary>
     public string? ResponseFormat { get; }
+
+    /// <summary>The chunking strategy the model requests by default, or <see langword="null"/> for none. Maps to <c>requestConfig.transcription.chunkingStrategy</c>.</summary>
+    public string? ChunkingStrategy { get; }
 }
 
 /// <summary>OpenAI model catalog. Maps to <c>openai-model-catalog.ts</c>.</summary>
@@ -54,7 +58,7 @@ internal static class OpenAIModelCatalog
         ["whisper-1"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language", "verbose_json"),
         ["gpt-4o-mini-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language"),
         ["gpt-4o-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language"),
-        ["gpt-4o-transcribe-diarize"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language", "diarized_json"),
+        ["gpt-4o-transcribe-diarize"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, false, false), "language", "diarized_json", "auto"),
         ["gpt-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(true, true, false), "languages"),
         ["gpt-live-transcribe"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(false, true, true), "languages"),
         ["gpt-realtime-whisper"] = new OpenAITranscriptionModelEntry(new OpenAITranscriptionCapabilities(false, true, true), "language"),

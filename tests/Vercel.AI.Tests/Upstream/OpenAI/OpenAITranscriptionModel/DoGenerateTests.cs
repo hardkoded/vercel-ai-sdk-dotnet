@@ -283,4 +283,41 @@ public sealed class DoGenerateTests
         Assert.Equal(new[] { ("Hello world", 0d, 1d) }, result.Segments.Select(segment => (segment.Text, segment.StartSecond, segment.EndSecond)));
         Assert.Equal(new[] { ("Hello", 0d, 0.4), ("world", 0.4, 1d) }, result.Words!.Select(word => (word.Text, word.StartSecond, word.EndSecond)));
     }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should extract usage", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_extract_usage()
+    {
+        var (_, result) = await Generate("whisper-1", "{\"text\":\"Hello\",\"usage\":{\"type\":\"duration\",\"seconds\":37}}");
+
+        Assert.Equal("duration", result.Usage!.Value.GetProperty("type").GetString());
+        Assert.Equal(37, result.Usage.Value.GetProperty("seconds").GetDouble());
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should read the duration from duration usage when the response has no duration", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_read_the_duration_from_duration_usage_when_the_response_has_no_duration()
+    {
+        var (_, result) = await Generate("gpt-transcribe", "{\"text\":\"Hello from the Vercel AI SDK!\",\"languages\":[{\"code\":\"en\"}],\"usage\":{\"type\":\"duration\",\"seconds\":37}}");
+
+        Assert.Equal(37d, result.DurationInSeconds);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should prefer the response duration over duration usage", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_prefer_the_response_duration_over_duration_usage()
+    {
+        var (_, result) = await Generate("whisper-1", "{\"text\":\"Hello from the Vercel AI SDK!\",\"duration\":36.71,\"usage\":{\"type\":\"duration\",\"seconds\":37}}");
+
+        Assert.Equal(36.71, result.DurationInSeconds);
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "should not read a duration from token usage", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_not_read_a_duration_from_token_usage()
+    {
+        var (_, result) = await Generate("gpt-4o-transcribe", "{\"text\":\"Hello from the Vercel AI SDK!\",\"usage\":{\"type\":\"tokens\",\"input_tokens\":14,\"output_tokens\":45}}");
+
+        Assert.Null(result.DurationInSeconds);
+    }
 }

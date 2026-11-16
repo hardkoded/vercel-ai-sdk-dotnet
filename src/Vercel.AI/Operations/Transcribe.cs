@@ -62,8 +62,9 @@ public sealed class TranscriptionModelCall
 public sealed class TranscriptionModelResult
 {
     /// <summary>Creates a result.</summary>
-    public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, IReadOnlyList<TranscriptSegment>? words = null)
+    public TranscriptionModelResult(string? text, IReadOnlyList<TranscriptSegment>? segments = null, string? language = null, double? durationInSeconds = null, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, IReadOnlyList<TranscriptSegment>? words = null, JsonElement? usage = null)
     {
+        Usage = usage;
         Text = text;
         Words = words;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
@@ -97,6 +98,9 @@ public sealed class TranscriptionModelResult
 
     /// <summary>Response metadata.</summary>
     public ProviderResponse Response { get; }
+
+    /// <summary>Raw provider usage, such as <c>{ "type": "duration", "seconds": 37 }</c>, when the provider reports one. Maps to <c>usage</c>.</summary>
+    public JsonElement? Usage { get; }
 }
 
 /// <summary>Arguments for streaming transcription.</summary>
