@@ -123,7 +123,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [XaiProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L86)
 
 <a id="Vercel_AI_Xai_XaiProvider_CreateChatModel_"></a>
 <a id="Vercel_AI_Xai_XaiProvider_CreateChatModel_System_String_"></a>
@@ -255,3 +255,49 @@ Creates a Responses API model. The provider id is `xai.responses`.
 **Returns:** [XaiResponsesLanguageModel](/api/Vercel.AI.Xai/XaiResponsesLanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L41)
+
+<a id="Vercel_AI_Xai_XaiProvider_Video_"></a>
+<a id="Vercel_AI_Xai_XaiProvider_Video_System_String_"></a>
+
+### Video(string)
+
+
+```csharp
+public IVideoModel Video(string modelId)
+```
+
+
+Creates a video model. Same as [VideoModel(string)](#Vercel_AI_Xai_XaiProvider_VideoModel_System_String_).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L80)
+
+<a id="Vercel_AI_Xai_XaiProvider_VideoModel_"></a>
+<a id="Vercel_AI_Xai_XaiProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Creates a video model. The provider id is `xai.video`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiProvider.cs#L74)

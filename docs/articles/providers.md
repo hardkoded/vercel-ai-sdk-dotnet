@@ -323,7 +323,7 @@ if (result.Videos.Count == 0)
 }
 ```
 
-An `uploaded` output never carries the signed upload URL. The Gateway video model accepts `uploaded` outcomes in its SSE result and in completed status responses. The xAI video model is not ported yet. Implement `IVideoCaller` to return `uploaded` from another model.
+An `uploaded` output never carries the signed upload URL. The Gateway video model accepts `uploaded` outcomes in its SSE result and in completed status responses. The [xAI video model](#xai-video-models) returns `uploaded` when you set `output.uploadUrl`. Implement `IVideoCaller` to return `uploaded` from another model.
 
 ## Gateway video model
 
@@ -1121,6 +1121,92 @@ Streams send `tool-input-start`, `tool-input-delta`, `tool-input-end`, and `tool
 ### Not included
 
 Tool results whose output is content with images (`input_image` in `function_call_output`) are not sent, because `ToolModelMessage` has no multipart content ([#327](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/327)).
+
+## xAI video models
+
+Create a model with `xai.VideoModel("grok-imagine-video-1.5")` or its alias `xai.Video("grok-imagine-video-1.5")`. The provider id is `xai.video`. `XaiVideoModel` implements `IVideoCaller`, so pass it as the `Model` of `GenerateVideoRequest`. It supports standard generation from a text prompt or an image, plus explicit video editing, video extension, and reference-to-video (R2V). It implements `DoStartAsync` and `DoStatusAsync`, and `GenerateVideo` polls for the result. xAI has no webhooks, so a `Webhook` option is ignored with a warning and the SDK polls. Any other model id is sent as is. Runnable examples are in `examples/GenerateVideoXai*`.
+
+```csharp
+using Vercel.AI.Operations;
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create();
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+    Prompt = new VideoPrompt("A yorkie among dandelions at Crissy Field in San Francisco."),
+    AspectRatio = "16:9",
+    Duration = 5,
+    ProviderOptions = OperationJson.Parse("""{ "xai": { "user": "user-123", "pollTimeoutMs": 600000 } }"""),
+});
+```
+
+An image start frame works as a prompt image, `new VideoPrompt(text, image)`, or as a `FrameImages` entry with the `first_frame` role. `grok-imagine-video-1.5` also accepts a `last_frame`. Other models ignore it with a warning, so use `extend-video` to continue an existing video. A `first_frame` is sent as xAI's `image` input.
+
+### Editing, extension, and reference-to-video
+
+Select the operation with `mode` in the `xai` provider options. Each mode is exclusive. Omitting `mode` while setting `videoUrl` behaves like `edit-video`, and omitting it while setting `referenceImageUrls` or passing image or audio `InputReferences` behaves like `reference-to-video`.
+
+| `mode` | Needs | Endpoint |
+| --- | --- | --- |
+| none | a prompt, optionally an image | `POST /videos/generations` |
+| `edit-video` | `videoUrl` | `POST /videos/edits` |
+| `extend-video` | `videoUrl` | `POST /videos/extensions` |
+| `reference-to-video` | `referenceImageUrls` or `InputReferences` | `POST /videos/generations` |
+
+Editing accepts videos up to 8.7 seconds. `Duration`, `AspectRatio`, and `Resolution` are not supported for editing, and each one is ignored with a warning: the output matches the input video, capped at 720p. Extension continues from the last frame. `Duration` is the length of the extension only. `AspectRatio` and `Resolution` are ignored with a warning, because the output inherits them from the source video.
+
+The xAI-hosted video URL is in `ProviderMetadata` at `xai.videoUrl`. Use it to chain edits, or to branch into concurrent edits with `Task.WhenAll`.
+
+Reference images guide the style and content of the video, and are not used as the first frame. Refer to them in the prompt as `<IMAGE_1>`, `<IMAGE_2>`, and so on. `referenceImageUrls` holds 1 to 7 URLs or base64 data URIs. The top-level `InputReferences` option takes precedence and selects reference-to-video. It accepts image and audio references, and an audio reference must declare an audio media type. Audio goes to `reference_audios`, alone or together with images. A reference with no media type is an image. A video reference is ignored with a warning. `referenceVoiceIds` holds up to 3 xAI preset voice ids that give the subject a voice. Refer to audio in the prompt as `<AUDIO_0>`, `<AUDIO_1>`, and `<AUDIO_2>`, in the order passed. Ids are case-insensitive, and an unknown id returns a `400` that lists the available voices. More than 3 audio inputs are cut to the first 3 with a warning. `referenceVoiceIds` is ignored with a warning outside reference-to-video. Reference-to-video is capped at `720p`: a `1080p` request is downgraded with a warning.
+
+### Provider options
+
+Pass these under the `xai` key of `ProviderOptions`. `XaiVideoModelOptions.Parse` reads them. An option of the wrong type throws `InvalidArgumentException` before any request. Options that the model does not know are sent to the API unchanged.
+
+- **pollIntervalMs** _number_ and **pollTimeoutMs** _number_: positive numbers. The poll settings of the `GenerateVideoRequest` control polling, as upstream.
+- **resolution** _string_: `480p`, `720p`, or `1080p`. The standard `Resolution` option maps `1920x1080` to `1080p`, `1280x720` to `720p`, and `854x480` and `640x480` to `480p`. Any other value is ignored with a warning. `1080p` needs `grok-imagine-video-1.5`. With `grok-imagine-video` the request is sent with `1080p` and a warning. The provider option wins over the standard option.
+- **output** _object_: delivers the completed video to storage you manage. Set **output.uploadUrl** to a signed HTTPS PUT URL, for example an S3 or GCS presigned URL or an Azure Blob SAS URL. It works for generation, editing, and extension. The URL must allow `Content-Type: video/mp4`, and Azure Blob hosts also receive `x-ms-blob-type: BlockBlob`. Allow enough time for generation and upload before the signature expires. A URL with user info or a fragment, a URL that is not HTTPS, and any other `output` shape are rejected before the request starts. xAI performs the upload and the SDK keeps polling. It does not download the destination, even when xAI also returns a video URL. The result has `UploadedVideos` set to 1 and no `Videos`, so use `UploadedVideos` and do not read `Video`. Without `output`, the video is downloaded as usual. Completion means xAI reported the operation as done, not that the storage object exists, so confirm the object before relying on it.
+- **storageOptions** _object_: persists a copy in the xAI Files API. Set `filename` and optionally `expiresAfter` (a positive integer up to 30 days, in seconds) and `publicUrl` (`true`, or `{ "expiresAfter": 3600 }` with a lifetime from 3,600 to 2,592,000 seconds). It is independent of `output`, and both are sent when set together. Files details and errors are in `ProviderMetadata` at `xai.fileOutput` and `xai.storageError`. Files URLs are not downloaded in upload mode.
+- **user** _string_: an opaque end-user identifier for abuse monitoring. It is sent for generation, reference-to-video, and editing, and omitted for extension.
+- **mode**, **videoUrl**, **referenceImageUrls**, **referenceVoiceIds**: as above.
+- **keyframes** _array_: up to four mid-video image anchors, `{ "imageUrl": "...", "timestampSeconds": 1.5 }`, each with a positive timestamp. Keyframes need `grok-imagine-video-1.5`. For other models, and for editing and extension, they are ignored with a warning.
+
+`GenerateAudio` is sent as `generate_audio` for generation. Editing and extension ignore it with a warning. `Fps` and `Seed` are ignored with a warning, and so is `N` above 1: xAI makes one video per call.
+
+Signed upload URLs are credentials. An invalid `output` throws an `InvalidArgumentException` with no value and no inner exception. The operation keeps only a `hasUploadUrl` flag, never the URL. A failed upload start request throws an `ApiException` with the message `xAI video upload request failed.`, the original status code and retry flag, and `output.upload_url` set to `[REDACTED]` in `RequestBodyValues`. A failed upload status request throws one with `xAI video upload status request failed.` and no response body. A failed upload does not echo xAI's failure message. Avoid logging provider options, custom HTTP handlers, or raw provider diagnostics.
+
+```csharp
+var result = await GenerateVideo.GenerateVideoAsync(new GenerateVideoRequest
+{
+    Model = (IVideoCaller)xai.Video("grok-imagine-video-1.5"),
+    Prompt = new VideoPrompt("A blue ball rolls across a white surface."),
+    ProviderOptions = OperationJson.Parse(
+        new JsonObject { ["xai"] = new JsonObject { ["output"] = new JsonObject { ["uploadUrl"] = signedPutUrl } } }.ToJsonString()),
+});
+Console.WriteLine("Videos delivered by xAI: " + result.UploadedVideos);
+```
+
+### Status and metadata
+
+A status of `done` with a video URL completes the call. Other outcomes:
+
+- `failed` is an error: `Video generation failed: <message>`. In upload mode the message is left out: `Video generation failed.`.
+- `expired` is an error: `Video generation request expired.`.
+- A video with `respect_moderation` set to `false` is an error: `Video generation was blocked due to a content policy violation.`.
+- `done` with no video URL is an error: `Video generation completed but no video URL was returned.`. Upload mode needs no URL.
+- A `202` response, with or without a body, means the video is still pending.
+
+`ProviderMetadata` at `xai` holds `requestId`, and when xAI returns them `videoUrl` (not in upload mode), `duration`, `costInUsdTicks`, `progress`, `fileOutput` (`fileId`, `filename`, `expiresAt`, `publicUrl`, `publicUrlError`, `publicUrlExpiresAt`), and `storageError`. A Files `publicUrl` is the video URL when xAI returns no other one. The request id is encoded as one URL path segment, so a request id with a slash or dots stays in one segment.
+
+### Video model capabilities
+
+| Model | Duration | Resolution | Image-to-video | Editing | Extension | R2V |
+| --- | --- | --- | --- | --- | --- | --- |
+| `grok-imagine-video` | 1-15s | `480p`, `720p` | yes | yes | yes | yes |
+| `grok-imagine-video-1.5` | 1-15s | `480p`, `720p`, `1080p` | yes | yes | yes | yes |
+
+Aspect ratios are `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, and `2:3`. The default aspect ratio is `16:9` and the default resolution is `480p`. Native `1080p` applies to text-to-video and image-to-video. Image-to-video keeps the aspect ratio of the input image unless you set `AspectRatio`, which stretches it. Generated video URLs are ephemeral, so download them promptly. Video generation can take several minutes.
 
 ## DeepSeek Responses API
 

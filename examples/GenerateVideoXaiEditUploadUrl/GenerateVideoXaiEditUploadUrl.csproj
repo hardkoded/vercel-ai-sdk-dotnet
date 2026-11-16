@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Edits a video and has xAI upload the result to a signed URL.</Description>
+  </PropertyGroup>
+</Project>

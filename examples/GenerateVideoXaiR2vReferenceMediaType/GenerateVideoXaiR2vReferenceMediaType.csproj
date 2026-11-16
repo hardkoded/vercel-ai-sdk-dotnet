@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Generates a reference-to-video clip from references with an explicit media type.</Description>
+  </PropertyGroup>
+</Project>
