@@ -23,7 +23,7 @@ One content part inside a batch text result.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L227)
 
 ## Constructors
 
@@ -46,9 +46,26 @@ Creates a part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L230)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_BatchContentPart_Citations_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_Citations"></a>
+
+### Citations
+
+
+```csharp
+public IReadOnlyList<Citation>? Citations { get; set; }
+```
+
+
+Citations of a text part.
+
+**Value:** [IReadOnlyList&lt;Citation&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L275)
 
 <a id="Vercel_AI_Operations_BatchContentPart_Dynamic_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_Dynamic"></a>
@@ -65,7 +82,7 @@ True for a dynamic tool.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L257)
 
 <a id="Vercel_AI_Operations_BatchContentPart_FileBytes_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_FileBytes"></a>
@@ -82,7 +99,7 @@ Downloaded file bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L269)
 
 <a id="Vercel_AI_Operations_BatchContentPart_FileUrl_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_FileUrl"></a>
@@ -99,7 +116,7 @@ File URL before download.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L272)
 
 <a id="Vercel_AI_Operations_BatchContentPart_Input_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_Input"></a>
@@ -116,7 +133,7 @@ Parsed tool input.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L248)
 
 <a id="Vercel_AI_Operations_BatchContentPart_IsError_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_IsError"></a>
@@ -133,7 +150,24 @@ True when a tool result is an error.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L260)
+
+<a id="Vercel_AI_Operations_BatchContentPart_Kind_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_Kind"></a>
+
+### Kind
+
+
+```csharp
+public string? Kind { get; set; }
+```
+
+
+Kind of a `custom` part, such as `anthropic.fallback`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L290)
 
 <a id="Vercel_AI_Operations_BatchContentPart_MediaType_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_MediaType"></a>
@@ -150,7 +184,7 @@ File media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L266)
 
 <a id="Vercel_AI_Operations_BatchContentPart_Output_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_Output"></a>
@@ -167,7 +201,7 @@ Tool output.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L251)
 
 <a id="Vercel_AI_Operations_BatchContentPart_ProviderExecuted_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_ProviderExecuted"></a>
@@ -184,7 +218,7 @@ True when the provider executed the tool.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L254)
 
 <a id="Vercel_AI_Operations_BatchContentPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_ProviderMetadata"></a>
@@ -201,7 +235,41 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L263)
+
+<a id="Vercel_AI_Operations_BatchContentPart_SourceId_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_SourceId"></a>
+
+### SourceId
+
+
+```csharp
+public string? SourceId { get; set; }
+```
+
+
+Source id of a `source` part.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L278)
+
+<a id="Vercel_AI_Operations_BatchContentPart_SourceType_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_SourceType"></a>
+
+### SourceType
+
+
+```csharp
+public string? SourceType { get; set; }
+```
+
+
+`url` or `document` for a `source` part.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L281)
 
 <a id="Vercel_AI_Operations_BatchContentPart_Text_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_Text"></a>
@@ -218,7 +286,24 @@ Text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L239)
+
+<a id="Vercel_AI_Operations_BatchContentPart_Title_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_Title"></a>
+
+### Title
+
+
+```csharp
+public string? Title { get; set; }
+```
+
+
+Title of a `source` part.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L287)
 
 <a id="Vercel_AI_Operations_BatchContentPart_ToolCallId_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_ToolCallId"></a>
@@ -235,7 +320,7 @@ Tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L242)
 
 <a id="Vercel_AI_Operations_BatchContentPart_ToolName_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_ToolName"></a>
@@ -252,7 +337,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L245)
 
 <a id="Vercel_AI_Operations_BatchContentPart_Type_"></a>
 <a id="Vercel_AI_Operations_BatchContentPart_Type"></a>
@@ -269,4 +354,21 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L236)
+
+<a id="Vercel_AI_Operations_BatchContentPart_Url_"></a>
+<a id="Vercel_AI_Operations_BatchContentPart_Url"></a>
+
+### Url
+
+
+```csharp
+public string? Url { get; set; }
+```
+
+
+URL of a `url` source.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L284)

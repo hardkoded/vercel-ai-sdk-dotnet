@@ -8,8 +8,10 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
+using static Vercel.AI.Tests.Upstream.Anthropic.AnthropicBatch.AnthropicBatchTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.Anthropic.AnthropicBatch;
 
@@ -60,8 +62,19 @@ public sealed class AnthropicBatchTests
         Assert.Equal(0, calls);
     }
 
-    private const string BatchesUrl = "https://api.anthropic.com/v1/messages/batches";
-    private const string ResultsUrl = "https://api.anthropic.com/v1/messages/batches/msgbatch_123/results";
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::exposes the applied service tier from batch result usage", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
+    public async Task Exposes_the_applied_service_tier_from_batch_result_usage()
+    {
+        var message = MessageResultBody("OK");
+        message["usage"] = new JsonObject { ["input_tokens"] = 1, ["output_tokens"] = 1, ["service_tier"] = "batch" };
+
+        var results = await GetResultsAsync(new RecordingHandler(), SucceededLine("tier", message) + "\n");
+
+        var result = Succeeded(Assert.Single(results));
+        Assert.Equal("batch", result.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("serviceTier").GetString());
+    }
 
     [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::rejects unsupported request types before making an API request", Coverage = UpstreamCoverage.Covered)]
@@ -508,6 +521,309 @@ public sealed class AnthropicBatchTests
     }
 
     [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::incrementally maps all Anthropic JSONL result variants", Coverage = UpstreamCoverage.Covered)]
+    public async Task Incrementally_maps_all_Anthropic_JSONL_result_variants()
+    {
+        var succeeded = SucceededLine("france", MessageResultBody("Paris"));
+        var errored = """{"custom_id":"invalid","result":{"type":"errored","error":{"type":"error","error":{"type":"invalid_request_error","message":"Invalid request."},"request_id":"req_123"}}}""";
+        var canceled = """{"custom_id":"canceled","result":{"type":"canceled"}}""";
+        var expired = """{"custom_id":"expired","result":{"type":"expired"}}""";
+        var handler = new RecordingHandler();
+        handler.Respond(BatchResponse()).RespondChunks(
+            ResultsUrl,
+            succeeded[..17],
+            succeeded[17..] + "\r",
+            "\n\n" + errored[..23],
+            errored[23..] + "\n" + canceled + "\r\n" + expired[..11],
+            expired[11..]);
+
+        var results = await (await CreateBatch(handler).DoGetResultsAsync(OperationCall(), CancellationToken.None)).ToListAsync().AsTask();
+
+        Assert.Equal(4, results.Count);
+        Assert.Equal("text", results[0].Type);
+        Assert.Equal("france", results[0].Id);
+        var result = Succeeded(results[0]);
+        var text = Assert.Single(result.Content);
+        Assert.Equal("text", text.Type);
+        Assert.Equal("Paris", text.Text);
+        Assert.Equal("stop", result.FinishReason);
+        Assert.Equal("end_turn", result.RawFinishReason);
+        Assert.Equal(13, result.Usage!.InputTotal);
+        Assert.Equal(10, result.Usage.NoCache);
+        Assert.Equal(2, result.Usage.CacheRead);
+        Assert.Equal(1, result.Usage.CacheWrite);
+        Assert.Equal(3, result.Usage.OutputTotal);
+        Assert.Null(result.Usage.Text);
+        Assert.Null(result.Usage.Reasoning);
+        AssertJson("""{"input_tokens":10,"output_tokens":3,"cache_creation_input_tokens":1,"cache_read_input_tokens":2}""", result.Usage.Raw);
+        Assert.Equal("msg_123", result.ResponseId);
+        Assert.Equal("claude-3-haiku-20240307", result.ModelId);
+        AssertJson(
+            """{"anthropic":{"usage":{"input_tokens":10,"output_tokens":3,"cache_creation_input_tokens":1,"cache_read_input_tokens":2},"stopSequence":null,"iterations":null,"container":null,"contextManagement":null}}""",
+            result.ProviderMetadata);
+
+        Assert.Equal("invalid", results[1].Id);
+        Assert.Equal("failed", results[1].Status);
+        Assert.Equal("Invalid request.", results[1].ErrorMessage);
+        Assert.Equal("invalid_request_error", results[1].ErrorType);
+        AssertJson("""{"anthropic":{"requestId":"req_123"}}""", results[1].ProviderMetadata);
+        Assert.Equal(("canceled", "cancelled"), (results[2].Id, results[2].Status));
+        Assert.Equal(("expired", "expired"), (results[3].Id, results[3].Status));
+        Assert.Equal([BatchesUrl + "/msgbatch_123", ResultsUrl], handler.Requests.Select(request => request.Url));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::exposes safeguard results on batch result metadata", Coverage = UpstreamCoverage.Covered)]
+    public async Task Exposes_safeguard_results_on_batch_result_metadata()
+    {
+        var safeguardResults = JsonNode.Parse("""[{"type":"dangerous_tool_use","status":{"type":"available","tool_uses":{"toolu_123":{"type":"evaluated","outcome":"not_flagged"}}}}]""")!;
+        var message = MessageWith(
+            string.Empty,
+            JsonNode.Parse("""[{"type":"tool_use","id":"toolu_123","name":"bash","input":{"command":"echo hello"}}]""")!.AsArray(),
+            ("stop_reason", "tool_use"),
+            ("safeguard_results", safeguardResults.DeepClone()));
+
+        var results = await GetResultsAsync(new RecordingHandler(), SucceededLine("safeguarded", message));
+
+        var result = Succeeded(Assert.Single(results));
+        Assert.True(JsonNode.DeepEquals(safeguardResults, JsonNode.Parse(result.ProviderMetadata!.Value.GetProperty("anthropic").GetProperty("safeguardResults").GetRawText())));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::preserves signed compaction blocks in batch results", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_signed_compaction_blocks_in_batch_results()
+    {
+        var message = MessageWith(
+            string.Empty,
+            JsonNode.Parse("""[{"type":"compaction","content":"Summary of the conversation.","signature":"compaction-signature"}]""")!.AsArray(),
+            ("stop_reason", "compaction"));
+
+        var results = await GetResultsAsync(new RecordingHandler(), SucceededLine("compaction", message));
+
+        var item = Assert.Single(results);
+        Assert.Equal("compaction", item.Id);
+        var result = Succeeded(item);
+        var part = Assert.Single(result.Content);
+        Assert.Equal("text", part.Type);
+        Assert.Equal("Summary of the conversation.", part.Text);
+        AssertJson("""{"anthropic":{"type":"compaction","signature":"compaction-signature"}}""", part.ProviderMetadata);
+        Assert.Equal("other", result.FinishReason);
+        Assert.Equal("compaction", result.RawFinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::preserves client and provider-executed tool content", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_client_and_provider_executed_tool_content()
+    {
+        var message = MessageWith(
+            string.Empty,
+            JsonNode.Parse("""
+                [
+                  {"type":"tool_use","id":"toolu_123","name":"get_weather","input":{"city":"Paris"}},
+                  {"type":"server_tool_use","id":"srvtoolu_123","name":"web_search","input":{"query":"weather Paris"}},
+                  {"type":"server_tool_use","id":"code_123","name":"code_execution","input":{"code":"print(\"Paris\")"}},
+                  {"type":"web_search_tool_result","tool_use_id":"srvtoolu_123","content":[{"type":"web_search_result","url":"https://example.com/weather","title":"Paris weather","encrypted_content":"encrypted"}]},
+                  {"type":"mcp_tool_use","id":"mcp_123","name":"lookup","server_name":"weather","input":{"city":"Paris"}},
+                  {"type":"mcp_tool_result","tool_use_id":"mcp_123","is_error":false,"content":[{"type":"text","text":"sunny","citations":[{"type":"web_search_result_location","cited_text":"sunny","url":"https://example.com/weather","title":"Paris weather","encrypted_index":"encrypted-index"}]}]}
+                ]
+                """)!.AsArray(),
+            ("stop_reason", "tool_use"));
+        var handler = new RecordingHandler();
+        handler.Respond(BatchResponse()).RespondChunks(ResultsUrl, SucceededLine("tool-call", message));
+
+        var results = await (await CreateBatch(handler, generateId: () => "source-1").DoGetResultsAsync(OperationCall(), CancellationToken.None)).ToListAsync().AsTask();
+
+        var item = Assert.Single(results);
+        Assert.Equal("tool-call", item.Id);
+        var content = Succeeded(item).Content;
+        Assert.Equal(7, content.Count);
+
+        Assert.Equal(("tool-call", "toolu_123", "get_weather", """{"city":"Paris"}"""), (content[0].Type, content[0].ToolCallId, content[0].ToolName, content[0].Text));
+        Assert.Null(content[0].ProviderExecuted);
+
+        Assert.Equal(("tool-call", "srvtoolu_123", "web_search", """{"query":"weather Paris"}"""), (content[1].Type, content[1].ToolCallId, content[1].ToolName, content[1].Text));
+        Assert.True(content[1].ProviderExecuted);
+
+        Assert.Equal(("tool-call", "code_123", "code_execution", """{"type":"programmatic-tool-call","code":"print(\"Paris\")"}"""), (content[2].Type, content[2].ToolCallId, content[2].ToolName, content[2].Text));
+        Assert.True(content[2].ProviderExecuted);
+        Assert.True(content[2].Dynamic);
+
+        Assert.Equal(("tool-result", "srvtoolu_123", "web_search"), (content[3].Type, content[3].ToolCallId, content[3].ToolName));
+        AssertJson("""[{"encryptedContent":"encrypted","pageAge":null,"title":"Paris weather","type":"web_search_result","url":"https://example.com/weather"}]""", content[3].Output);
+
+        Assert.Equal(("source", "url", "source-1", "https://example.com/weather", "Paris weather"), (content[4].Type, content[4].SourceType, content[4].SourceId, content[4].Url, content[4].Title));
+        AssertJson("""{"anthropic":{"pageAge":null}}""", content[4].ProviderMetadata);
+
+        Assert.Equal(("tool-call", "mcp_123", "lookup", """{"city":"Paris"}"""), (content[5].Type, content[5].ToolCallId, content[5].ToolName, content[5].Text));
+        Assert.True(content[5].ProviderExecuted);
+        Assert.True(content[5].Dynamic);
+        AssertJson("""{"anthropic":{"serverName":"weather","type":"mcp-tool-use"}}""", content[5].ProviderMetadata);
+
+        Assert.Equal(("tool-result", "mcp_123", "lookup"), (content[6].Type, content[6].ToolCallId, content[6].ToolName));
+        Assert.False(content[6].IsError);
+        Assert.True(content[6].Dynamic);
+        AssertJson("""[{"type":"text","text":"sunny","citations":[{"type":"web_search_result_location","cited_text":"sunny","url":"https://example.com/weather","title":"Paris weather","encrypted_index":"encrypted-index"}]}]""", content[6].Output);
+        AssertJson("""{"anthropic":{"serverName":"weather","type":"mcp-tool-use"}}""", content[6].ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::preserves raw batch citations without misattributing document indices", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_raw_batch_citations_without_misattributing_document_indices()
+    {
+        const string RawCitations = """
+            [
+              {"type":"page_location","cited_text":"Paris is sunny.","document_index":0,"document_title":"Weather report","start_page_number":1,"end_page_number":1,"file_id":"file_page"},
+              {"type":"char_location","cited_text":"Paris is sunny.","document_index":0,"document_title":"Weather report","start_char_index":0,"end_char_index":15,"file_id":"file_char"},
+              {"type":"web_search_result_location","cited_text":"Paris is sunny.","url":"https://example.com/weather","title":"Paris weather","encrypted_index":"encrypted-index"}
+            ]
+            """;
+        var message = MessageWith(
+            "Paris is sunny.",
+            new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "Paris is sunny.", ["citations"] = JsonNode.Parse(RawCitations) }));
+        var handler = new RecordingHandler();
+        handler.Respond(BatchResponse()).RespondChunks(ResultsUrl, SucceededLine("citation", message));
+
+        var results = await (await CreateBatch(handler, generateId: () => "citation-source").DoGetResultsAsync(OperationCall(), CancellationToken.None)).ToListAsync().AsTask();
+
+        var item = Assert.Single(results);
+        Assert.Equal("citation", item.Id);
+        var content = Succeeded(item).Content;
+        Assert.Equal(2, content.Count);
+        var text = content[0];
+        Assert.Equal("Paris is sunny.", text.Text);
+        Assert.Equal(3, text.Citations!.Count);
+        var page = Assert.IsType<GeneratedDocumentSource>(text.Citations[0].Source);
+        Assert.Equal(("file_page", "Weather report"), (page.Id, page.Title));
+        var chars = Assert.IsType<GeneratedDocumentSource>(text.Citations[1].Source);
+        Assert.Equal(("file_char", "Weather report"), (chars.Id, chars.Title));
+        var web = Assert.IsType<GeneratedSource>(text.Citations[2].Source);
+        Assert.Equal("https://example.com/weather", web.Url);
+        Assert.All(text.Citations, citation => Assert.Equal("Paris is sunny.", citation.CitedText));
+        AssertJson("{\"anthropic\":{\"citations\":" + RawCitations + "}}", text.ProviderMetadata);
+
+        var source = content[1];
+        Assert.Equal(("source", "url", "citation-source", "https://example.com/weather", "Paris weather"), (source.Type, source.SourceType, source.SourceId, source.Url, source.Title));
+        AssertJson("""{"anthropic":{"citedText":"Paris is sunny.","encryptedIndex":"encrypted-index"}}""", source.ProviderMetadata);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::accepts nullable web result fields", Coverage = UpstreamCoverage.Covered)]
+    public async Task Accepts_nullable_web_result_fields()
+    {
+        var message = MessageWith(
+            string.Empty,
+            JsonNode.Parse("""
+                [
+                  {"type":"web_fetch_tool_result","tool_use_id":"web-fetch-1","content":{"type":"web_fetch_result","url":"https://example.com/document","retrieved_at":null,"content":{"type":"document","title":null,"source":{"type":"text","media_type":"text/plain","data":"document text"}}}},
+                  {"type":"web_search_tool_result","tool_use_id":"web-search-1","content":[{"type":"web_search_result","url":"https://example.com/search-result","title":null,"encrypted_content":"encrypted"}]},
+                  {"type":"text","text":"Document excerpt","citations":[{"type":"char_location","cited_text":"document text","document_index":0,"document_title":null,"start_char_index":0,"end_char_index":13}]}
+                ]
+                """)!.AsArray());
+        var handler = new RecordingHandler();
+        handler.Respond(BatchResponse()).RespondChunks(ResultsUrl, SucceededLine("nullable-web-fields", message));
+
+        var results = await (await CreateBatch(handler, generateId: () => "nullable-source").DoGetResultsAsync(OperationCall(), CancellationToken.None)).ToListAsync().AsTask();
+
+        var item = Assert.Single(results);
+        Assert.Equal("nullable-web-fields", item.Id);
+        var content = Succeeded(item).Content;
+        Assert.Equal(4, content.Count);
+        Assert.Equal(("tool-result", "web-fetch-1", "web_fetch"), (content[0].Type, content[0].ToolCallId, content[0].ToolName));
+        AssertJson("""{"type":"web_fetch_result","url":"https://example.com/document","retrievedAt":null,"content":{"type":"document","title":null,"source":{"type":"text","mediaType":"text/plain","data":"document text"}}}""", content[0].Output);
+        Assert.Equal(("tool-result", "web-search-1", "web_search"), (content[1].Type, content[1].ToolCallId, content[1].ToolName));
+        AssertJson("""[{"type":"web_search_result","url":"https://example.com/search-result","pageAge":null,"encryptedContent":"encrypted"}]""", content[1].Output);
+        Assert.Equal(("source", "url", "nullable-source", "https://example.com/search-result"), (content[2].Type, content[2].SourceType, content[2].SourceId, content[2].Url));
+        Assert.Equal(("text", "Document excerpt"), (content[3].Type, content[3].Text));
+        AssertJson("""{"anthropic":{"citations":[{"type":"char_location","cited_text":"document text","document_index":0,"document_title":null,"start_char_index":0,"end_char_index":13}]}}""", content[3].ProviderMetadata);
+        Assert.False(content[1].Output!.Value[0].TryGetProperty("title", out _));
+        Assert.Null(content[2].Title);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::normalizes advisor tool results to the provider output shape", Coverage = UpstreamCoverage.Covered)]
+    public async Task Normalizes_advisor_tool_results_to_the_provider_output_shape()
+    {
+        var message = MessageWith(
+            string.Empty,
+            JsonNode.Parse("""
+                [
+                  {"type":"advisor_tool_result","tool_use_id":"advisor-plain","content":{"type":"advisor_result","text":"Use a queue.","stop_reason":"end_turn"}},
+                  {"type":"advisor_tool_result","tool_use_id":"advisor-redacted","content":{"type":"advisor_redacted_result","encrypted_content":"opaque-advice","stop_reason":"max_tokens"}},
+                  {"type":"advisor_tool_result","tool_use_id":"advisor-error","content":{"type":"advisor_tool_result_error","error_code":"max_uses_exceeded"}}
+                ]
+                """)!.AsArray());
+
+        var results = await GetResultsAsync(new RecordingHandler(), SucceededLine("advisor-results", message));
+
+        var item = Assert.Single(results);
+        Assert.Equal("advisor-results", item.Id);
+        var content = Succeeded(item).Content;
+        Assert.Equal(3, content.Count);
+        Assert.Equal(("tool-result", "advisor-plain", "advisor"), (content[0].Type, content[0].ToolCallId, content[0].ToolName));
+        AssertJson("""{"type":"advisor_result","text":"Use a queue.","stopReason":"end_turn"}""", content[0].Output);
+        Assert.Equal(("tool-result", "advisor-redacted", "advisor"), (content[1].Type, content[1].ToolCallId, content[1].ToolName));
+        AssertJson("""{"type":"advisor_redacted_result","encryptedContent":"opaque-advice","stopReason":"max_tokens"}""", content[1].Output);
+        Assert.Equal(("tool-result", "advisor-error", "advisor"), (content[2].Type, content[2].ToolCallId, content[2].ToolName));
+        Assert.True(content[2].IsError);
+        AssertJson("""{"type":"advisor_tool_result_error","errorCode":"max_uses_exceeded"}""", content[2].Output);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::fails an invalid succeeded item without aborting later results", Coverage = UpstreamCoverage.Covered)]
+    public async Task Fails_an_invalid_succeeded_item_without_aborting_later_results()
+    {
+        var results = await GetResultsAsync(
+            new RecordingHandler(),
+            SucceededLine("invalid", new JsonObject { ["type"] = "message" }) + "\n",
+            SucceededLine("valid", MessageResultBody("Paris")));
+
+        Assert.Equal(2, results.Count);
+        AssertInvalid(results[0], "invalid");
+        Assert.Equal("valid", results[1].Id);
+        var text = Assert.Single(Succeeded(results[1]).Content);
+        Assert.Equal(("text", "Paris"), (text.Type, text.Text));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::fails an unknown result type without aborting later results", Coverage = UpstreamCoverage.Covered)]
+    public async Task Fails_an_unknown_result_type_without_aborting_later_results()
+    {
+        var results = await GetResultsAsync(
+            new RecordingHandler(),
+            """{"custom_id":"unknown","result":{"type":"future_result","data":"opaque"}}""" + "\n",
+            SucceededLine("valid", MessageResultBody("Paris")));
+
+        Assert.Equal(2, results.Count);
+        AssertInvalid(results[0], "unknown");
+        Assert.Equal("valid", results[1].Id);
+        var text = Assert.Single(Succeeded(results[1]).Content);
+        Assert.Equal(("text", "Paris"), (text.Type, text.Text));
+    }
+
+    [Fact]
+    [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::skips unknown content blocks in a succeeded result", Coverage = UpstreamCoverage.Covered)]
+    public async Task Skips_unknown_content_blocks_in_a_succeeded_result()
+    {
+        var future = MessageWith(
+            "Paris",
+            JsonNode.Parse("""[{"type":"future_content","data":"opaque"},{"type":"text","text":"Paris"}]""")!.AsArray());
+        var malformed = MessageWith(
+            "Paris",
+            JsonNode.Parse("""[{"type":"text"},{"type":"text","text":"Paris"}]""")!.AsArray());
+
+        var results = await GetResultsAsync(new RecordingHandler(), SucceededLine("future-content", future) + "\n", SucceededLine("malformed-known-content", malformed));
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal("future-content", results[0].Id);
+        var result = Succeeded(results[0]);
+        var text = Assert.Single(result.Content);
+        Assert.Equal(("text", "Paris"), (text.Type, text.Text));
+        Assert.Equal(13, result.Usage!.InputTotal);
+        Assert.Equal(3, result.Usage.OutputTotal);
+        AssertInvalid(results[1], "malformed-known-content");
+    }
+
+    [Fact]
     [UpstreamTest("packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::forwards operation headers and the abort signal while retrieving results", Coverage = UpstreamCoverage.Partial, Note = "Checks that the caller token reaches both HTTP calls, not the identity of the JS abort signal.")]
     public async Task Forwards_operation_headers_and_the_abort_signal_while_retrieving_results()
     {
@@ -537,111 +853,5 @@ public sealed class AnthropicBatchTests
         Assert.True(batch!.CanCancel);
         Assert.True(batch.CanList);
         Assert.Equal("anthropic.batch", batch.Provider);
-    }
-
-    private static IBatchApi CreateBatch(HttpMessageHandler handler, IReadOnlyDictionary<string, string>? headers = null)
-    {
-        var options = new AnthropicOptions { ApiKey = "test-api-key" };
-        foreach (var header in headers ?? new Dictionary<string, string>())
-        {
-            options.Headers[header.Key] = header.Value;
-        }
-
-        return AnthropicProvider.Create(options, handler).ExperimentalBatch()!;
-    }
-
-    private static JsonElement Json(string json)
-    {
-        using var document = JsonDocument.Parse(json);
-        return document.RootElement.Clone();
-    }
-
-    private static JsonArray Messages(string prompt) => new(new JsonObject { ["role"] = "user", ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = prompt }) });
-
-    private static NormalizedBatchRequest TextRequest(string id, string prompt, JsonObject? extra = null, string modelId = "claude-3-haiku-20240307")
-    {
-        var options = new JsonObject { ["prompt"] = new JsonArray(new JsonObject { ["role"] = "user", ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = prompt }) }) };
-        foreach (var pair in extra ?? new JsonObject())
-        {
-            options[pair.Key] = pair.Value?.DeepClone();
-        }
-
-        return new NormalizedBatchRequest(id, "text", modelId, Json(options.ToJsonString()));
-    }
-
-    private static BatchOperationCall StartCall(NormalizedBatchRequest request) => StartCall([request]);
-
-    private static BatchOperationCall StartCall(IReadOnlyList<NormalizedBatchRequest> requests, JsonObject? providerOptions = null, IReadOnlyDictionary<string, string>? headers = null, string? webhookUrl = null) =>
-        new(null, providerOptions == null ? null : Json(providerOptions.ToJsonString()), headers ?? new Dictionary<string, string>(), CancellationToken.None, webhookUrl: webhookUrl, requests: requests);
-
-    private static BatchOperationCall OperationCall(IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default) =>
-        new("msgbatch_123", null, headers ?? new Dictionary<string, string>(), cancellationToken);
-
-    private static JsonObject Counts(int processing, int succeeded, int errored, int canceled, int expired) =>
-        new() { ["processing"] = processing, ["succeeded"] = succeeded, ["errored"] = errored, ["canceled"] = canceled, ["expired"] = expired };
-
-    private static JsonObject BatchResponse(params (string Key, object? Value)[] overrides)
-    {
-        var batch = new JsonObject
-        {
-            ["id"] = "msgbatch_123",
-            ["type"] = "message_batch",
-            ["processing_status"] = "ended",
-            ["request_counts"] = Counts(0, 1, 0, 0, 0),
-            ["created_at"] = "2024-09-24T18:37:24.100Z",
-            ["expires_at"] = "2024-09-25T18:37:24.100Z",
-            ["archived_at"] = null,
-            ["cancel_initiated_at"] = null,
-            ["ended_at"] = "2024-09-24T18:38:24.100Z",
-            ["results_url"] = ResultsUrl,
-        };
-        foreach (var (key, value) in overrides)
-        {
-            batch[key] = value is JsonNode node ? node : JsonValue.Create(value as string);
-        }
-
-        return batch;
-    }
-
-    private sealed record RecordedRequest(string Method, string Url, string Body, Dictionary<string, string> Headers, bool TokenCancelledByCaller, bool TokenCanBeCanceled);
-
-    private sealed class RecordingHandler : HttpMessageHandler
-    {
-        private string _response = "{}";
-        private readonly Dictionary<string, string> _routes = new();
-
-        public List<RecordedRequest> Requests { get; } = [];
-
-        public Action? OnSend { get; set; }
-
-        public RecordingHandler Respond(JsonNode response)
-        {
-            _response = response.ToJsonString();
-            return this;
-        }
-
-        public RecordingHandler Respond(string url, string jsonLines)
-        {
-            _routes[url] = jsonLines;
-            return this;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var body = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var headers = request.Headers.ToDictionary(header => header.Key, header => string.Join(",", header.Value), StringComparer.OrdinalIgnoreCase);
-            OnSend?.Invoke();
-            Requests.Add(new RecordedRequest(request.Method.Method, request.RequestUri!.AbsoluteUri, body, headers, cancellationToken.IsCancellationRequested, cancellationToken.CanBeCanceled));
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(_routes.TryGetValue(request.RequestUri.AbsoluteUri, out var routed) ? routed : _response, Encoding.UTF8, "application/json") };
-        }
-    }
-
-    private sealed class CountingHandler(Action onCall) : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            onCall();
-            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError));
-        }
     }
 }

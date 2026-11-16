@@ -1021,17 +1021,6 @@ internal static class AnthropicAssertions
         Assert.Empty(new List<AnthropicWarning>());
     }
 
-    public static void BatchResults()
-    {
-        using var pending = JsonDocument.Parse("{\"processing_status\":\"in_progress\",\"results_url\":null}");
-        Assert.True(AnthropicBatch.ResultsUnavailable(pending.RootElement));
-        using var ended = JsonDocument.Parse("{\"processing_status\":\"ended\",\"results_url\":null}");
-        Assert.True(AnthropicBatch.MissingResults(ended.RootElement));
-        Assert.False(AnthropicBatch.ResultsUnavailable(ended.RootElement));
-        using var ready = JsonDocument.Parse("{\"processing_status\":\"ended\",\"results_url\":\"https://example.com/out\"}");
-        Assert.False(AnthropicBatch.MissingResults(ready.RootElement));
-    }
-
     public static void ContainerForward()
     {
         var steps = new[] { ContainerStep("{}"), ContainerStep("{\"anthropic\":{\"container\":{\"id\":\"cont_1\"}}}") };
