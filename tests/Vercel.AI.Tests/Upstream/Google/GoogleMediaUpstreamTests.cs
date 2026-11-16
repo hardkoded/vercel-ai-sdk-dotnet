@@ -121,6 +121,67 @@ public sealed class GoogleMediaUpstreamTests
     }
 
     [Fact]
+    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should warn for the unsupported speed option", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb43")]
+    public void Warns_for_the_unsupported_speech_speed_option()
+    {
+        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!") { Speed = 1.5, Language = "en" });
+        Assert.Contains(prepared.Warnings, warning => warning.Type == "unsupported" && warning.Feature == "speed");
+        Assert.DoesNotContain(prepared.Warnings, warning => warning.Feature == "language");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should map language onto single-speaker speechConfig", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb43")]
+    public void Maps_speech_language_onto_the_single_speaker_speech_config()
+    {
+        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Hello from the AI SDK!") { Language = "en-US" });
+        GoogleUpstream.JsonEqual(prepared.Body["generationConfig"]!["speechConfig"]!, "{\"languageCode\":\"en-US\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}");
+    }
+
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData(null, true)]
+    [InlineData("auto", false)]
+    [InlineData("auto", true)]
+    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::omits an automatic language without warnings (%j)", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb43")]
+    public void Omits_an_automatic_speech_language_without_warnings(string? language, bool multi)
+    {
+        var call = new GoogleSpeechCall(multi ? "Joe: Hello." : "Hello.") { Language = language };
+        if (multi)
+        {
+            call.ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[{\"speaker\":\"Joe\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}]}}}");
+        }
+
+        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", call);
+        Assert.Null(prepared.Body["generationConfig"]!["speechConfig"]!["languageCode"]);
+        Assert.Empty(prepared.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should map multi-speaker provider options into speechConfig", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb43")]
+    public void Maps_multi_speaker_speech_provider_options_into_the_speech_config()
+    {
+        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.generative-ai", new GoogleSpeechCall("Joe: Hi. Jane: Hello.")
+        {
+            Language = "en-US",
+            ProviderOptions = GoogleUpstream.ProviderOptions("{\"google\":{\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[{\"speaker\":\"Joe\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}},{\"speaker\":\"Jane\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Puck\"}}}]}}}"),
+        });
+        GoogleUpstream.JsonEqual(prepared.Body, "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Joe: Hi. Jane: Hello.\"}]}],\"generationConfig\":{\"responseModalities\":[\"AUDIO\"],\"speechConfig\":{\"languageCode\":\"en-US\",\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[{\"speaker\":\"Joe\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}},{\"speaker\":\"Jane\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Puck\"}}}]}}}}");
+    }
+
+    [Fact]
+    [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::should read provider options under `googleVertex` for a Vertex provider", Coverage = UpstreamCoverage.Covered, Commit = "3c6fb43")]
+    public void Reads_speech_provider_options_under_googleVertex_for_a_Vertex_provider()
+    {
+        var prepared = GoogleSpeechModel.Prepare("gemini-2.5-flash-preview-tts", "google.vertex.speech", new GoogleSpeechCall("Joe: Hi. Jane: Hello.")
+        {
+            Language = "en-US",
+            ProviderOptions = GoogleUpstream.ProviderOptions("{\"googleVertex\":{\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[{\"speaker\":\"Joe\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}},{\"speaker\":\"Jane\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Puck\"}}}]}}}"),
+        });
+        GoogleUpstream.JsonEqual(prepared.Body, "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Joe: Hi. Jane: Hello.\"}]}],\"generationConfig\":{\"responseModalities\":[\"AUDIO\"],\"speechConfig\":{\"languageCode\":\"en-US\",\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[{\"speaker\":\"Joe\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}},{\"speaker\":\"Jane\",\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Puck\"}}}]}}}}");
+        Assert.Empty(prepared.Warnings);
+    }
+
+    [Fact]
     [UpstreamTest("packages/google/src/google-speech-model.test.ts::doGenerate::rejects an empty transcript before fetching for %s", Coverage = UpstreamCoverage.Covered)]
     public void Rejects_an_empty_speech_transcript_before_the_request()
     {

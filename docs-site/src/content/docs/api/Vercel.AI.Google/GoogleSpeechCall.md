@@ -78,7 +78,7 @@ public string? Language { get; set; }
 ```
 
 
-Language. Gemini TTS ignores it.
+Language code forwarded as `speechConfig.languageCode`. `auto` lets Gemini detect it.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
