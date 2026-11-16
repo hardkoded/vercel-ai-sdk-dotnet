@@ -57,6 +57,13 @@ public sealed class Tool
     public Func<JsonElement, ToolExecutionOptions, Task<string>>? ExecuteWithOptions { get; set; }
 
     /// <summary>
+    /// Executes the tool and streams its outputs, each a JSON string. When it is set, the loop calls it instead of <see cref="Execute"/>
+    /// and <see cref="ExecuteWithOptions"/>. <c>streamText</c> emits each output as a preliminary tool result, and the last one is the final result.
+    /// Maps to an async-iterable <c>execute</c>.
+    /// </summary>
+    public Func<JsonElement, ToolExecutionOptions, IAsyncEnumerable<string>>? ExecuteStream { get; set; }
+
+    /// <summary>
     /// Converts the JSON output of the tool into the result sent to the model. Null sends the output as it is.
     /// Maps to <c>toModelOutput</c>.
     /// </summary>
