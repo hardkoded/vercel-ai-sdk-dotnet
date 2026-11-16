@@ -36,8 +36,27 @@ public sealed class TranscriptionModelCall
         CancellationToken = cancellationToken;
     }
 
-    /// <summary>Audio bytes.</summary>
-    public byte[] Audio { get; }
+    /// <summary>Creates a call whose audio is a base64 string. Maps to upstream's <c>audio: string</c>.</summary>
+    public TranscriptionModelCall(string audioBase64, string mediaType, JsonElement providerOptions, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+    {
+        AudioBase64 = audioBase64 ?? throw new ArgumentNullException(nameof(audioBase64));
+        MediaType = mediaType;
+        ProviderOptions = providerOptions;
+        Headers = headers;
+        CancellationToken = cancellationToken;
+    }
+
+    /// <summary>
+    /// Audio bytes. When the call was created from a base64 string, the string is decoded on first access, so a
+    /// provider that forwards the string untouched never decodes it.
+    /// </summary>
+    public byte[] Audio
+    {
+        get => field ??= AudioBase64 is null ? Array.Empty<byte>() : Convert.FromBase64String(AudioBase64);
+    }
+
+    /// <summary>The audio as the base64 string the caller passed, or <see langword="null"/> when the call carries bytes.</summary>
+    public string? AudioBase64 { get; }
 
     /// <summary>Detected media type, or <c>audio/wav</c>.</summary>
     public string MediaType { get; }
