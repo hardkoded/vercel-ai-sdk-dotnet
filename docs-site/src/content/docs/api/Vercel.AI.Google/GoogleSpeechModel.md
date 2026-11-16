@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Google](/api/Vercel.AI.Google/)
 
 
 ```csharp
-public sealed class GoogleSpeechModel : ISpeechModel
+public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
 ```
 
 
@@ -23,9 +23,9 @@ Gemini text-to-speech. Posts to `generateContent` with an audio response modalit
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
+**Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/), [ISpeechCaller](/api/Vercel.AI.Operations/ISpeechCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L118)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a speech model.
 | `provider` | [GoogleProvider](/api/Vercel.AI.Google/GoogleProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L128)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L146)
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L135)
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechModel_Warnings"></a>
@@ -102,11 +102,34 @@ Warnings from the last call.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L149)
 
 ## Methods
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_DoGenerateAsync_"></a>
+<a id="Vercel_AI_Google_GoogleSpeechModel_DoGenerateAsync_Vercel_AI_Operations_SpeechModelCall_System_Threading_CancellationToken_"></a>
+
+### DoGenerateAsync(SpeechModelCall, CancellationToken)
+
+
+```csharp
+public Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+```
+
+
+Generates speech audio.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `call` | [SpeechModelCall](/api/Vercel.AI.Operations/SpeechModelCall/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;SpeechModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L166)
+
 <a id="Vercel_AI_Google_GoogleSpeechModel_DoGenerateAsync_Vercel_AI_Provider_SpeechCallOptions_System_Threading_CancellationToken_"></a>
 
 ### DoGenerateAsync(SpeechCallOptions, CancellationToken)
@@ -128,7 +151,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L152)
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechModel_GenerateAsync_Vercel_AI_Google_GoogleSpeechCall_System_Threading_CancellationToken_"></a>
@@ -137,7 +160,7 @@ Synthesizes speech.
 
 
 ```csharp
-public Task<SpeechResult> GenerateAsync(GoogleSpeechCall call, CancellationToken cancellationToken)
+public Task<GoogleSpeechResult> GenerateAsync(GoogleSpeechCall call, CancellationToken cancellationToken)
 ```
 
 
@@ -150,9 +173,9 @@ Synthesizes speech with Gemini-specific options.
 | `call` | [GoogleSpeechCall](/api/Vercel.AI.Google/GoogleSpeechCall/) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-**Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+**Returns:** [Task&lt;GoogleSpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L203)
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_Prepare_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechModel_Prepare_System_String_System_String_Vercel_AI_Google_GoogleSpeechCall_"></a>
@@ -177,4 +200,4 @@ Builds the speech request body and warnings.
 
 **Returns:** [GoogleSpeechPreparation](/api/Vercel.AI.Google/GoogleSpeechPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L306)
