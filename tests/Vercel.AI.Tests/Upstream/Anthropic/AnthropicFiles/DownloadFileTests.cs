@@ -47,6 +47,16 @@ public sealed class DownloadFileTests
     }
 
     [Fact]
+    [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles > downloadFile::uses the test server default content-type header", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
+    public async Task Uses_the_test_server_default_content_type_header()
+    {
+        var (files, _) = FilesFixture.Create(_ => ParityHandler.TestServerBinary(Encoding.UTF8.GetBytes("test file content")));
+        var result = await files.DownloadFileAsync(FilesFixture.Ref("file-abc123"), CancellationToken.None).ConfigureAwait(false);
+        using var content = result.Content;
+        Assert.Equal("application/octet-stream", result.MediaType);
+    }
+
+    [Fact]
     [UpstreamTest("packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles > downloadFile::should reject a blank anthropic file id", Coverage = UpstreamCoverage.Covered, Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05")]
     public async Task Rejects_a_blank_file_id()
     {
