@@ -27,6 +27,14 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+  <!--
+    Installs the Husky.Net git hooks (.husky/) for contributors on restore/build.
+    Skipped in CI (CI=true or HUSKY=0) and when the checkout has no .git directory.
+  -->
+  <Target Name="Husky" BeforeTargets="Restore;CollectPackageReferences" Condition="'$(HUSKY)' != '0' AND '$(CI)' != 'true' AND Exists('$(MSBuildThisFileDirectory)../../.git')">
+    <Exec Command="dotnet tool restore" WorkingDirectory="$(MSBuildThisFileDirectory)../../" StandardOutputImportance="Low" StandardErrorImportance="High" ContinueOnError="true" />
+    <Exec Command="dotnet husky install" WorkingDirectory="$(MSBuildThisFileDirectory)../../" StandardOutputImportance="Low" StandardErrorImportance="High" ContinueOnError="true" />
+  </Target>
   <ItemGroup>
     <InternalsVisibleTo Include="Vercel.AI.Tests" />
   </ItemGroup>
