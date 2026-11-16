@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
+using Vercel.AI.Provider;
 using Vercel.AI.Ui;
 using Vercel.AI.Util;
 
@@ -14,6 +15,44 @@ namespace Vercel.AI.Tests.Upstream.ReadUiMessageStream;
 public sealed class ReadUIMessageStreamTests
 {
     private const string Prefix = "packages/ai/src/ui-message-stream/read-ui-message-stream.test.ts::readUIMessageStream::";
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [UpstreamTest(Prefix + "resumes raw text input after persistence (dynamic: %s)", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
+    public async Task Resumes_raw_text_input_after_persistence_dynamic(bool dynamic)
+    {
+        var dynamicField = dynamic ? "true" : "false";
+        var messages = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream(
+                """{"type":"start","messageId":"message-1"}""",
+                "{\"type\":\"tool-input-start\",\"toolCallId\":\"call-1\",\"toolName\":\"exec\",\"inputEncoding\":\"text\",\"dynamic\":" + dynamicField + "}",
+                """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"text(\""}""")));
+        var validated = await Ai.ValidateUIMessagesAsync(new ValidateUIMessagesOptions
+        {
+            Messages = [messages[messages.Count - 1]],
+        });
+        var persisted = validated[0];
+        var persistedPart = Assert.IsType<ToolUIPart>(persisted.Parts[0]);
+        Assert.Equal(ToolUIPartState.InputStreaming, persistedPart.State);
+        Assert.Equal(ToolInputEncoding.Text, persistedPart.InputEncoding);
+        Assert.Equal("text(\"", persistedPart.Input!.Value.GetString());
+        Assert.Equal("text(\"", persistedPart.RawInput!.Value.GetString());
+
+        var resumed = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream(
+                """{"type":"tool-input-delta","toolCallId":"call-1","inputTextDelta":"probe\");\n"}"""))
+            {
+                Message = persisted,
+                TerminateOnError = true,
+            });
+
+        var resumedPart = Assert.IsType<ToolUIPart>(resumed[resumed.Count - 1].Parts[0]);
+        Assert.Equal(ToolUIPartState.InputStreaming, resumedPart.State);
+        Assert.Equal(ToolInputEncoding.Text, resumedPart.InputEncoding);
+        Assert.Equal("text(\"probe\");\n", resumedPart.Input!.Value.GetString());
+        Assert.Equal("text(\"probe\");\n", resumedPart.RawInput!.Value.GetString());
+    }
 
     [Fact]
     [UpstreamTest(Prefix + "should discard a seeded assistant message when the stream starts with a different message id", Coverage = UpstreamCoverage.Covered, Commit = "1a94af38c72f7f4c0df39984a170f3b02ae24bdc")]
