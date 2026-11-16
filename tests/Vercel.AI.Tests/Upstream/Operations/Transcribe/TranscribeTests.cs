@@ -21,14 +21,20 @@ public sealed class TranscribeTests
     [Theory]
     [InlineData("http:")]
     [InlineData("https:")]
-    [UpstreamTest(Once + "passes %s audio URLs directly to capable models with accurate telemetry", Coverage = UpstreamCoverage.Partial, Commit = NativeUrlCommit, Note = "The port has no transcribe telemetry events, so the start/end audio metadata assertions are not ported.")]
-    public async Task Partial_Passes_audio_URLs_directly_to_capable_models(string protocol)
+    [UpstreamTest(Once + "passes %s audio URLs directly to capable models with accurate telemetry", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Passes_audio_URLs_directly_to_capable_models(string protocol)
     {
         var url = new Uri(protocol + "//example.com/large-audio.mp3");
         var model = new TranscriptFake { FromUrl = _ => Task.FromResult<TranscriptionModelResult?>(new TranscriptionModelResult("hello")) };
         using var cancellation = new CancellationTokenSource();
+        var events = new List<TranscriptionAudioInfo>();
         var result = await TranscribeOperation.TranscribeAsync(new TranscribeRequest
         {
+            Telemetry = new TranscribeTelemetry
+            {
+                OnStart = e => { events.Add(e.Audio); return Task.CompletedTask; },
+                OnEnd = e => { events.Add(e.Audio); return Task.CompletedTask; },
+            },
             Model = model,
             AudioUrl = url.AbsoluteUri,
             MaxRetries = 0,
@@ -45,11 +51,17 @@ public sealed class TranscribeTests
         Assert.Equal("value", call.Headers["custom-header"]);
         Assert.Equal("en", call.ProviderOptions.GetProperty("groq").GetProperty("language").GetString());
         Assert.Equal(new[] { "word", "segment" }, call.TimestampGranularities);
+        Assert.Equal(2, events.Count);
+        Assert.All(events, audio =>
+        {
+            Assert.Null(audio.ByteLength);
+            Assert.Null(audio.MediaType);
+        });
     }
 
     [Fact]
-    [UpstreamTest(Once + "downloads locally when native URL transcription is declined and retries only the file call", Coverage = UpstreamCoverage.Partial, Commit = NativeUrlCommit, Note = "The port has no transcribe telemetry events, so the onEnd audio metadata assertion is not ported.")]
-    public async Task Partial_Downloads_locally_when_native_URL_transcription_is_declined_and_retries_only_the_file_call()
+    [UpstreamTest(Once + "downloads locally when native URL transcription is declined and retries only the file call", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Downloads_locally_when_native_URL_transcription_is_declined_and_retries_only_the_file_call()
     {
         var audio = new byte[] { 1, 2, 3, 4 };
         var previous = Download.Fetch;
@@ -73,12 +85,14 @@ public sealed class TranscribeTests
                         : Task.FromResult(new TranscriptionModelResult("hello"));
                 },
             };
+            TranscriptionEndEvent? end = null;
             var result = await TranscribeOperation.TranscribeAsync(new TranscribeRequest
             {
                 Model = model,
                 AudioUrl = "https://example.com/redirect",
                 MaxRetries = 1,
                 TimestampGranularities = Array.Empty<string>(),
+                Telemetry = new TranscribeTelemetry { OnEnd = e => { end = e; return Task.CompletedTask; } },
             });
             Assert.Equal("hello", result.Text);
             Assert.Equal(1, model.UrlCalls);
@@ -88,6 +102,8 @@ public sealed class TranscribeTests
             Assert.Equal(audio, model.Generated!.Audio);
             Assert.Equal("audio/mpeg", model.Generated.MediaType);
             Assert.Empty(model.Generated.TimestampGranularities!);
+            Assert.Equal(audio.Length, end!.Audio.ByteLength);
+            Assert.Equal("audio/mpeg", end.Audio.MediaType);
         }
         finally
         {
@@ -284,5 +300,186 @@ public sealed class TranscribeTests
         var result = await TranscribeOperation.TranscribeAsync(new TranscribeRequest { Model = new TranscriptFake { Response = response, Metadata = OperationJson.Parse("{\"p\":1}") }, Audio = new byte[] { 1 } });
         Assert.Equal("response", result.Responses[0].Id);
         Assert.Equal(1, result.ProviderMetadata.GetProperty("p").GetInt32());
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "emits a correlated error when native URL transcription fails", Coverage = UpstreamCoverage.Covered, Commit = NativeUrlCommit)]
+    public async Task Emits_a_correlated_error_when_native_URL_transcription_fails()
+    {
+        var error = new InvalidOperationException("Provider could not fetch audio");
+        var starts = new List<TranscriptionStartEvent>();
+        var ends = 0;
+        var errors = new List<(string CallId, Exception Error)>();
+        var model = new TranscriptFake { FromUrl = _ => throw error };
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = model,
+            AudioUrl = "https://example.com/audio.mp3",
+            MaxRetries = 0,
+            GenerateCallId = () => "url-error",
+            Telemetry = new TranscribeTelemetry
+            {
+                OnStart = e => { starts.Add(e); return Task.CompletedTask; },
+                OnEnd = _ => { ends++; return Task.CompletedTask; },
+                OnError = (id, e) => { errors.Add((id, e)); return Task.CompletedTask; },
+            },
+        }));
+        Assert.Same(error, thrown);
+        Assert.Equal("url-error", Assert.Single(starts).CallId);
+        var recorded = Assert.Single(errors);
+        Assert.Equal("url-error", recorded.CallId);
+        Assert.Same(error, recorded.Error);
+        Assert.Equal(0, ends);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should preserve downloaded media type in provider arguments and telemetry", Coverage = UpstreamCoverage.Covered)]
+    public async Task Preserves_downloaded_media_type_in_provider_arguments_and_telemetry()
+    {
+        var model = new TranscriptFake();
+        var start = default(TranscriptionStartEvent);
+        var end = default(TranscriptionEndEvent);
+        await TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = model,
+            AudioUrl = "https://example.com/audio",
+            Download = (_, _) => Task.FromResult(new DownloadedMedia(new byte[] { 1, 2, 3, 4 }, "audio/mpeg")),
+            GenerateCallId = () => "call-url",
+            Telemetry = new TranscribeTelemetry
+            {
+                OnStart = e => { start = e; return Task.CompletedTask; },
+                OnEnd = e => { end = e; return Task.CompletedTask; },
+            },
+        });
+        Assert.Equal("audio/mpeg", model.Generated!.MediaType);
+        Assert.Equal("call-url", start!.CallId);
+        Assert.Equal(4, start.Audio.ByteLength);
+        Assert.Equal("audio/mpeg", start.Audio.MediaType);
+        Assert.Equal("call-url", end!.CallId);
+        Assert.Equal(4, end.Audio.ByteLength);
+        Assert.Equal("audio/mpeg", end.Audio.MediaType);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should not send word timings to telemetry when recordOutputs is false", Coverage = UpstreamCoverage.Covered, Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023")]
+    public async Task Does_not_send_word_timings_to_telemetry_when_recordOutputs_is_false()
+    {
+        var words = new[] { new TranscriptSegment("Hello", 0, 0.4), new TranscriptSegment("world", 0.4, 1) };
+        var end = default(TranscriptionEndEvent);
+        var result = await TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = new TranscriptFake { Text = "Hello world", Segments = new[] { new TranscriptSegment("Hello world", 0, 1) }, Words = words },
+            Audio = new byte[] { 1, 2, 3, 4 },
+            Telemetry = new TranscribeTelemetry { OnEnd = e => { end = e; return Task.CompletedTask; }, RecordOutputs = false },
+        });
+        Assert.Equal(string.Empty, end!.Text);
+        Assert.Empty(end.Segments);
+        Assert.NotNull(end.Words);
+        Assert.Empty(end.Words!);
+        Assert.Equal(words, result.Words);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should emit telemetry start and end events with audio metadata", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_telemetry_start_and_end_events_with_audio_metadata()
+    {
+        var events = new List<object>();
+        await TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = new TranscriptFake
+            {
+                Text = "hello world",
+                Metadata = OperationJson.Parse("{\"mock\":{\"traceId\":\"trace-1\"}}"),
+                Usage = OperationJson.Parse("{\"inputTokens\":12}"),
+            },
+            Audio = new byte[] { 1, 2, 3, 4 },
+            GenerateCallId = () => "call-1",
+            Telemetry = new TranscribeTelemetry
+            {
+                FunctionId = "transcribe-audio",
+                RecordInputs = false,
+                OnStart = e => { events.Add(e); return Task.CompletedTask; },
+                OnEnd = e => { events.Add(e); return Task.CompletedTask; },
+            },
+        });
+        Assert.Equal(2, events.Count);
+        var start = Assert.IsType<TranscriptionStartEvent>(events[0]);
+        Assert.Equal("call-1", start.CallId);
+        Assert.Equal("ai.transcribe", start.OperationId);
+        Assert.Equal("test-provider", start.Provider);
+        Assert.Equal("test-model", start.ModelId);
+        Assert.Equal(4, start.Audio.ByteLength);
+        Assert.Equal("audio/wav", start.Audio.MediaType);
+        Assert.Equal("transcribe-audio", start.FunctionId);
+        Assert.False(start.RecordInputs);
+        var end = Assert.IsType<TranscriptionEndEvent>(events[1]);
+        Assert.Equal("call-1", end.CallId);
+        Assert.Equal("ai.transcribe", end.OperationId);
+        Assert.Equal("hello world", end.Text);
+        Assert.Equal(4, end.Audio.ByteLength);
+        Assert.Equal("audio/wav", end.Audio.MediaType);
+        Assert.Equal(12, end.Usage!.Value.GetProperty("inputTokens").GetInt32());
+        Assert.Null(end.ProviderMetadata);
+        Assert.Equal("transcribe-audio", end.FunctionId);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [UpstreamTest(Once + "should include timestampGranularities $timestampGranularities in start telemetry", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Includes_timestampGranularities_in_start_telemetry(int variant)
+    {
+        string[]? granularities = variant switch { 0 => null, 1 => Array.Empty<string>(), _ => new[] { "word", "segment" } };
+        var events = new List<TranscriptionStartEvent>();
+        await TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = new TranscriptFake(),
+            Audio = new byte[] { 1, 2, 3, 4 },
+            TimestampGranularities = granularities,
+            Telemetry = new TranscribeTelemetry { OnStart = e => { events.Add(e); return Task.CompletedTask; } },
+        });
+        Assert.Single(events);
+        Assert.Equal(granularities, events[0].TimestampGranularities);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [UpstreamTest(Once + "should include provider words $words in end telemetry", Coverage = UpstreamCoverage.Covered, Commit = "41465fd1b634dfe8311885230589e19c9b4f431e")]
+    public async Task Includes_provider_words_in_end_telemetry(int variant)
+    {
+        TranscriptSegment[]? words = variant switch { 0 => null, 1 => Array.Empty<TranscriptSegment>(), _ => new[] { new TranscriptSegment("Hello", 0, 0.4) } };
+        var events = new List<TranscriptionEndEvent>();
+        var result = await TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = new TranscriptFake { Words = words },
+            Audio = new byte[] { 1, 2, 3, 4 },
+            Telemetry = new TranscribeTelemetry { OnEnd = e => { events.Add(e); return Task.CompletedTask; } },
+        });
+        Assert.Single(events);
+        Assert.Equal(words, events[0].Words);
+        Assert.Equal(words, result.Words);
+    }
+
+    [Fact]
+    [UpstreamTest(Once + "should emit a telemetry error event when transcription fails", Coverage = UpstreamCoverage.Covered)]
+    public async Task Emits_a_telemetry_error_event_when_transcription_fails()
+    {
+        var error = new InvalidOperationException("transcription failed");
+        var errors = new List<(string CallId, Exception Error)>();
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => TranscribeOperation.TranscribeAsync(new TranscribeRequest
+        {
+            Model = new TranscriptFake { Generate = _ => throw error },
+            Audio = new byte[] { 1, 2, 3, 4 },
+            MaxRetries = 0,
+            GenerateCallId = () => "call-1",
+            Telemetry = new TranscribeTelemetry { OnError = (id, e) => { errors.Add((id, e)); return Task.CompletedTask; } },
+        }));
+        Assert.Same(error, thrown);
+        var recorded = Assert.Single(errors);
+        Assert.Equal("call-1", recorded.CallId);
+        Assert.Same(error, recorded.Error);
     }
 }

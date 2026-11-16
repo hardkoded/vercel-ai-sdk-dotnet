@@ -283,6 +283,184 @@ public sealed class TranscribeResult
     public JsonElement ProviderMetadata { get; }
 }
 
+/// <summary>Metadata about the input audio on a transcription telemetry event.</summary>
+public sealed class TranscriptionAudioInfo
+{
+    /// <summary>Creates the metadata.</summary>
+    public TranscriptionAudioInfo(int? byteLength, string? mediaType)
+    {
+        ByteLength = byteLength;
+        MediaType = mediaType;
+    }
+
+    /// <summary>Byte length. Unknown for native URL transcription and for inputs that fail to prepare.</summary>
+    public int? ByteLength { get; }
+
+    /// <summary>Media type, when it is known before input preparation completes.</summary>
+    public string? MediaType { get; }
+}
+
+/// <summary>Event passed to telemetry when <see cref="Transcribe.TranscribeAsync"/> begins. Maps to <c>TranscriptionStartEvent</c>.</summary>
+public sealed class TranscriptionStartEvent
+{
+    /// <summary>Creates the event.</summary>
+    public TranscriptionStartEvent(string callId, string provider, string modelId, TranscriptionAudioInfo audio, int? maxRetries, IReadOnlyDictionary<string, string>? headers, JsonElement providerOptions, IReadOnlyList<string>? timestampGranularities, AudioFormat? inputAudioFormat = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    {
+        CallId = callId;
+        Provider = provider;
+        ModelId = modelId;
+        Audio = audio;
+        InputAudioFormat = inputAudioFormat;
+        MaxRetries = maxRetries;
+        Headers = headers;
+        ProviderOptions = providerOptions;
+        TimestampGranularities = timestampGranularities;
+        RecordInputs = recordInputs;
+        RecordOutputs = recordOutputs;
+        FunctionId = functionId;
+    }
+
+    /// <summary>Unique identifier for this call.</summary>
+    public string CallId { get; }
+
+    /// <summary><c>ai.transcribe</c>.</summary>
+    public string OperationId => "ai.transcribe";
+
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Input audio metadata.</summary>
+    public TranscriptionAudioInfo Audio { get; }
+
+    /// <summary>Raw input format. Always <see langword="null"/> for non-streaming transcription.</summary>
+    public AudioFormat? InputAudioFormat { get; }
+
+    /// <summary>Resolved retry limit.</summary>
+    public int? MaxRetries { get; }
+
+    /// <summary>Caller headers, without the user-agent suffix.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; }
+
+    /// <summary>Provider options.</summary>
+    public JsonElement ProviderOptions { get; }
+
+    /// <summary>Requested shared timing granularities, when specified.</summary>
+    public IReadOnlyList<string>? TimestampGranularities { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordInputs"/>.</summary>
+    public bool? RecordInputs { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordOutputs"/>.</summary>
+    public bool? RecordOutputs { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.FunctionId"/>.</summary>
+    public string? FunctionId { get; }
+}
+
+/// <summary>Event passed to telemetry when <see cref="Transcribe.TranscribeAsync"/> completes. Raw audio is not included. Maps to <c>TranscriptionEndEvent</c>.</summary>
+public sealed class TranscriptionEndEvent
+{
+    /// <summary>Creates the event.</summary>
+    public TranscriptionEndEvent(string callId, string provider, string modelId, TranscriptionAudioInfo audio, string text, IReadOnlyList<TranscriptSegment> segments, IReadOnlyList<TranscriptSegment>? words, string? language, double? durationInSeconds, JsonElement? usage, IReadOnlyList<OperationWarning> warnings, JsonElement? providerMetadata, ProviderResponse response, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+    {
+        CallId = callId;
+        Provider = provider;
+        ModelId = modelId;
+        Audio = audio;
+        Text = text;
+        Segments = segments;
+        Words = words;
+        Language = language;
+        DurationInSeconds = durationInSeconds;
+        Usage = usage;
+        Warnings = warnings;
+        ProviderMetadata = providerMetadata;
+        Response = response;
+        RecordInputs = recordInputs;
+        RecordOutputs = recordOutputs;
+        FunctionId = functionId;
+    }
+
+    /// <summary>Unique identifier for this call.</summary>
+    public string CallId { get; }
+
+    /// <summary><c>ai.transcribe</c>.</summary>
+    public string OperationId => "ai.transcribe";
+
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Input audio metadata. Byte length and media type are unknown for native URL transcription.</summary>
+    public TranscriptionAudioInfo Audio { get; }
+
+    /// <summary>The complete transcript.</summary>
+    public string Text { get; }
+
+    /// <summary>Segments with timing information.</summary>
+    public IReadOnlyList<TranscriptSegment> Segments { get; }
+
+    /// <summary>Word timings returned by the provider, whether requested or returned by default.</summary>
+    public IReadOnlyList<TranscriptSegment>? Words { get; }
+
+    /// <summary>Detected language.</summary>
+    public string? Language { get; }
+
+    /// <summary>Duration of the input audio, when available.</summary>
+    public double? DurationInSeconds { get; }
+
+    /// <summary>Usage reported by the provider, when available.</summary>
+    public JsonElement? Usage { get; }
+
+    /// <summary>Warnings from the transcription model.</summary>
+    public IReadOnlyList<OperationWarning> Warnings { get; }
+
+    /// <summary>Provider metadata. Hidden when inputs or outputs are not recorded.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Response metadata.</summary>
+    public ProviderResponse Response { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordInputs"/>.</summary>
+    public bool? RecordInputs { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordOutputs"/>.</summary>
+    public bool? RecordOutputs { get; }
+
+    /// <summary>Copied from <see cref="TranscribeTelemetry.FunctionId"/>.</summary>
+    public string? FunctionId { get; }
+}
+
+/// <summary>Telemetry callbacks for <see cref="Transcribe.TranscribeAsync"/>.</summary>
+public sealed class TranscribeTelemetry
+{
+    /// <summary>Called when the operation starts.</summary>
+    public Func<TranscriptionStartEvent, Task>? OnStart { get; set; }
+
+    /// <summary>Called when the operation ends.</summary>
+    public Func<TranscriptionEndEvent, Task>? OnEnd { get; set; }
+
+    /// <summary>Called with the call id when the operation fails.</summary>
+    public Func<string, Exception, Task>? OnError { get; set; }
+
+    /// <summary>When false, input fields such as provider options are hidden from events.</summary>
+    public bool? RecordInputs { get; set; }
+
+    /// <summary>When false, <c>text</c>, <c>segments</c> and <c>words</c> are hidden from events.</summary>
+    public bool? RecordOutputs { get; set; }
+
+    /// <summary>Identifies the call in telemetry.</summary>
+    public string? FunctionId { get; set; }
+
+    /// <summary>When false, telemetry callbacks are skipped.</summary>
+    public bool IsEnabled { get; set; } = true;
+}
+
 /// <summary>Options for <see cref="Transcribe.TranscribeAsync"/>.</summary>
 public sealed class TranscribeRequest : OperationRequest
 {
@@ -303,6 +481,9 @@ public sealed class TranscribeRequest : OperationRequest
 
     /// <summary>Timing granularities to request, <c>word</c> and <c>segment</c>. Maps to <c>timestampGranularities</c>.</summary>
     public IReadOnlyList<string>? TimestampGranularities { get; set; }
+
+    /// <summary>Telemetry callbacks.</summary>
+    public TranscribeTelemetry? Telemetry { get; set; }
 }
 
 /// <summary>Options for <see cref="StreamTranscribe.Start"/>.</summary>
@@ -647,30 +828,50 @@ public static class Transcribe
         var token = request.CancellationToken.CanBeCanceled ? request.CancellationToken : cancellationToken;
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
+        var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
+        var callId = (request.GenerateCallId ?? (() => "call-" + Guid.NewGuid().ToString("N")))();
+        var telemetry = request.Telemetry is { IsEnabled: true } ? request.Telemetry : null;
+
+        TranscriptionStartEvent CreateStartEvent(int? byteLength, string? startMediaType)
+        {
+            var hideInputs = telemetry?.RecordInputs == false;
+            return new TranscriptionStartEvent(callId, model.Provider, model.ModelId, new TranscriptionAudioInfo(byteLength, startMediaType), maxRetries, request.Headers, hideInputs ? OperationJson.Parse("{}") : providerOptions, request.TimestampGranularities, null, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId);
+        }
+
         byte[] audio = Array.Empty<byte>();
         string mediaType = "audio/wav";
         Uri? nativeUrl = null;
         string? downloadedMediaType = null;
-        if (!string.IsNullOrEmpty(request.AudioUrl))
+        try
         {
-            if (model is ITranscriptionUrlCaller
-                && request.Download is null
-                && Uri.TryCreate(request.AudioUrl, UriKind.Absolute, out var parsed)
-                && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
+            if (!string.IsNullOrEmpty(request.AudioUrl))
             {
-                nativeUrl = parsed;
+                if (model is ITranscriptionUrlCaller
+                    && request.Download is null
+                    && Uri.TryCreate(request.AudioUrl, UriKind.Absolute, out var parsed)
+                    && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp))
+                {
+                    nativeUrl = parsed;
+                }
+                else
+                {
+                    var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
+                    var downloadedAudio = await download(request.AudioUrl!, token).ConfigureAwait(false);
+                    audio = downloadedAudio.Data;
+                    downloadedMediaType = downloadedAudio.MediaType;
+                }
             }
             else
             {
-                var download = request.Download ?? throw new InvalidArgumentException("download", null, "download is required for URL audio");
-                var downloadedAudio = await download(request.AudioUrl!, token).ConfigureAwait(false);
-                audio = downloadedAudio.Data;
-                downloadedMediaType = downloadedAudio.MediaType;
+                audio = request.Audio ?? Array.Empty<byte>();
             }
         }
-        else
+        catch (Exception preparationError)
         {
-            audio = request.Audio ?? Array.Empty<byte>();
+            // Upstream still reports a start event, with unknown audio metadata, before the error.
+            await NotifyStartAsync(telemetry, CreateStartEvent(null, null)).ConfigureAwait(false);
+            await NotifyErrorAsync(telemetry, callId, preparationError).ConfigureAwait(false);
+            throw;
         }
 
         if (nativeUrl is null)
@@ -678,42 +879,96 @@ public static class Transcribe
             mediaType = GetAudioMediaType(downloadedMediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
         }
 
-        var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
+        int? byteLength = nativeUrl is null ? audio.Length : null;
+        string? startMediaType = nativeUrl is null ? mediaType : null;
+        await NotifyStartAsync(telemetry, CreateStartEvent(byteLength, startMediaType)).ConfigureAwait(false);
+        try
         {
-            if (nativeUrl is not null)
+            var result = await OperationRetry.ExecuteAsync(request.MaxRetries, token, request.AbortReason, async ct =>
             {
-                var native = await ((ITranscriptionUrlCaller)model).DoGenerateFromUrlAsync(new TranscriptionModelUrlCall(nativeUrl, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
-                if (native is not null)
+                if (nativeUrl is not null)
                 {
-                    return native;
+                    var native = await ((ITranscriptionUrlCaller)model).DoGenerateFromUrlAsync(new TranscriptionModelUrlCall(nativeUrl, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
+                    if (native is not null)
+                    {
+                        return native;
+                    }
+
+                    // A capable provider can decline an unsupported URL (for example, a redirect).
+                    // Keep the existing secure download and file path, and retry only the file call.
+                    DownloadedMedia downloaded;
+                    try
+                    {
+                        downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
+                    }
+                    catch (Util.DownloadError) when (ct.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException(ct);
+                    }
+
+                    audio = downloaded.Data;
+                    mediaType = GetAudioMediaType(downloaded.MediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
+                    byteLength = audio.Length;
+                    startMediaType = mediaType;
+                    nativeUrl = null;
                 }
 
-                // A capable provider can decline an unsupported URL (for example, a redirect).
-                // Keep the existing secure download and file path, and retry only the file call.
-                DownloadedMedia downloaded;
-                try
-                {
-                    downloaded = await ((Func<string, CancellationToken, Task<DownloadedMedia>>)Util.Download.CreateDownload())(nativeUrl.AbsoluteUri, ct).ConfigureAwait(false);
-                }
-                catch (Util.DownloadError) when (ct.IsCancellationRequested)
-                {
-                    throw new OperationCanceledException(ct);
-                }
-
-                audio = downloaded.Data;
-                mediaType = GetAudioMediaType(downloaded.MediaType) ?? MediaTypeDetector.Detect(audio, "audio") ?? "audio/wav";
-                nativeUrl = null;
+                return await model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
+            }, null).ConfigureAwait(false);
+            WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
+            if (result.Text is null)
+            {
+                throw new NoTranscriptGeneratedException(new[] { result.Response });
             }
 
-            return await model.DoGenerateAsync(new TranscriptionModelCall(audio, mediaType, providerOptions, headers, ct) { TimestampGranularities = request.TimestampGranularities }, ct).ConfigureAwait(false);
-        }, null).ConfigureAwait(false);
-        WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
-        if (result.Text is null)
+            await NotifyEndAsync(telemetry, new TranscriptionEndEvent(callId, model.Provider, model.ModelId, new TranscriptionAudioInfo(byteLength, startMediaType), result.Text, result.Segments, result.Words, result.Language, result.DurationInSeconds, result.Usage, result.Warnings, result.ProviderMetadata, result.Response, telemetry?.RecordInputs, telemetry?.RecordOutputs, telemetry?.FunctionId)).ConfigureAwait(false);
+            return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
+        }
+        catch (Exception error)
         {
-            throw new NoTranscriptGeneratedException(new[] { result.Response });
+            await NotifyErrorAsync(telemetry, callId, error).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private static Task NotifyStartAsync(TranscribeTelemetry? telemetry, TranscriptionStartEvent payload)
+    {
+        return telemetry?.OnStart is null ? Task.CompletedTask : OperationCallbacks.NotifyAsync(payload, telemetry.OnStart);
+    }
+
+    private static Task NotifyEndAsync(TranscribeTelemetry? telemetry, TranscriptionEndEvent payload)
+    {
+        if (telemetry?.OnEnd is null)
+        {
+            return Task.CompletedTask;
         }
 
-        return new TranscribeResult(result.Text, result.Segments, result.Language, result.DurationInSeconds, result.Warnings, new[] { result.Response }, result.ProviderMetadata ?? OperationJson.Parse("{}"), result.Words);
+        // Raw provider metadata can contain inputs or outputs, so any hidden side hides it.
+        var hideInputs = telemetry.RecordInputs == false;
+        var hideOutputs = telemetry.RecordOutputs == false;
+        if (hideInputs || hideOutputs)
+        {
+            payload = new TranscriptionEndEvent(payload.CallId, payload.Provider, payload.ModelId, payload.Audio, hideOutputs ? string.Empty : payload.Text, hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Segments, hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Words, payload.Language, payload.DurationInSeconds, payload.Usage, payload.Warnings, null, payload.Response, payload.RecordInputs, payload.RecordOutputs, payload.FunctionId);
+        }
+
+        return OperationCallbacks.NotifyAsync(payload, telemetry.OnEnd);
+    }
+
+    private static async Task NotifyErrorAsync(TranscribeTelemetry? telemetry, string callId, Exception error)
+    {
+        if (telemetry?.OnError is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await telemetry.OnError(callId, error).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // Callback failures are isolated.
+        }
     }
 
     /// <summary>
