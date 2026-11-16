@@ -69,10 +69,10 @@ var shell = await Ai.GenerateTextAsync(new GenerateTextOptions
     Model = azure.ResponsesModel("gpt-5.4-mini"),
     Tools = new[]
     {
-        ToTool(AzureOpenAITools.Shell(new OpenAIShellToolOptions
+        AzureOpenAITools.Shell(new OpenAIShellToolOptions
         {
             Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-        })),
+        }),
     },
     StopWhen = StopWhen.IsStepCount(20),
     Prompt = "Print \"Hello from container!\" and show the system info using uname -a",
@@ -87,10 +87,10 @@ var shellStream = Ai.StreamTextAsync(new StreamTextOptions
     Model = azure.ResponsesModel("gpt-5.4-mini"),
     Tools = new[]
     {
-        ToTool(AzureOpenAITools.Shell(new OpenAIShellToolOptions
+        AzureOpenAITools.Shell(new OpenAIShellToolOptions
         {
             Environment = new OpenAIShellEnvironment { Type = "containerAuto" },
-        })),
+        }),
     },
     StopWhen = StopWhen.IsStepCount(20),
     Prompt = "Print \"Hello from container!\" and show the system info using uname -a",

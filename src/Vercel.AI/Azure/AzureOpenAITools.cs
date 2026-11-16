@@ -15,7 +15,7 @@ namespace Vercel.AI.Azure;
 public static class AzureOpenAITools
 {
     /// <summary>The apply patch tool (<c>openai.apply_patch</c>).</summary>
-    public static LanguageModelTool ApplyPatch() => OpenAITools.ApplyPatch();
+    public static Tool ApplyPatch(OpenAIApplyPatchToolOptions? options = null) => OpenAITools.ApplyPatch(options);
 
     /// <summary>The code interpreter tool (<c>openai.code_interpreter</c>).</summary>
     public static LanguageModelTool CodeInterpreter(OpenAICodeInterpreterToolOptions? options = null) => OpenAITools.CodeInterpreter(options);
@@ -30,7 +30,7 @@ public static class AzureOpenAITools
     public static LanguageModelTool ImageGeneration(OpenAIImageGenerationToolOptions? options = null) => OpenAITools.ImageGeneration(options);
 
     /// <summary>The shell tool (<c>openai.shell</c>).</summary>
-    public static LanguageModelTool Shell(OpenAIShellToolOptions? options = null) => OpenAITools.Shell(options);
+    public static Tool Shell(OpenAIShellToolOptions? options = null) => OpenAITools.Shell(options);
 
     /// <summary>The tool search tool (<c>openai.tool_search</c>).</summary>
     public static LanguageModelTool ToolSearch(OpenAIToolSearchToolOptions? options = null) => OpenAITools.ToolSearch(options);

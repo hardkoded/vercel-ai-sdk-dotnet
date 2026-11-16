@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.Azure;
+using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Azure.AzureOpenAIProviderTests.AzureResponsesToolSupport;
 
@@ -29,11 +30,14 @@ public sealed class ResponsesDoGenerateApplyPatchToolTests
     [Fact]
     [UpstreamTest(
         Id + "should expose a client-executed Azure tool factory",
-        Coverage = UpstreamCoverage.Partial, Commit = "bf10079bc232aaa84e9f6ca03c1487bb06fa4b7d",
-        Note = "The port has no provider.tools member: AzureOpenAITools.ApplyPatch is the shared factory and builds the openai.apply_patch provider tool. The port's factory takes no execute callback.")]
+        Coverage = UpstreamCoverage.Covered, Commit = "bf10079bc232aaa84e9f6ca03c1487bb06fa4b7d",
+        Note = "The port has no provider.tools member: AzureOpenAITools.ApplyPatch is the shared factory.")]
     public void Should_expose_a_client_executed_Azure_tool_factory()
     {
-        var tool = AzureOpenAITools.ApplyPatch();
+        var tool = AzureOpenAITools.ApplyPatch(new OpenAIApplyPatchToolOptions
+        {
+            Execute = (_, _) => Task.FromResult(new OpenAIApplyPatchOutput { Status = "completed" }),
+        });
 
         Assert.True(tool.IsProviderDefined);
         Assert.Equal("openai.apply_patch", tool.ProviderToolId);

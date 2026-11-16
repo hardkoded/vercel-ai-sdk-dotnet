@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Azure;
+using Vercel.AI.OpenAI;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.Azure.AzureOpenAIProviderTests.AzureResponsesToolSupport;
 
@@ -48,11 +49,14 @@ public sealed class ResponsesDoGenerateShellToolTests
     [Fact]
     [UpstreamTest(
         Id + "should expose the shared Azure shell factory",
-        Coverage = UpstreamCoverage.Partial, Commit = "5cc6d284e83b365506e2c577151d82453d8c31d4",
-        Note = "The port has no provider.tools member: AzureOpenAITools.Shell is the shared factory and builds the openai.shell provider tool. The port's factory takes no execute callback.")]
+        Coverage = UpstreamCoverage.Covered, Commit = "5cc6d284e83b365506e2c577151d82453d8c31d4",
+        Note = "The port has no provider.tools member: AzureOpenAITools.Shell is the shared factory.")]
     public void Should_expose_the_shared_Azure_shell_factory()
     {
-        var tool = AzureOpenAITools.Shell();
+        var tool = AzureOpenAITools.Shell(new OpenAIShellToolOptions
+        {
+            Execute = (_, _) => Task.FromResult(new OpenAIShellOutput()),
+        });
 
         Assert.True(tool.IsProviderDefined);
         Assert.Equal("openai.shell", tool.ProviderToolId);
